@@ -1,0 +1,1152 @@
+{
+    "conferences" : 
+    [
+        {
+            "confName" : "SEC",
+            "confFullName" : "Southeastern Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Alabama",
+                    "mascot" : "Crimson Tide",
+                    "abbreviation" : "BAMA",
+                    "prestige" : 95,
+                    "colorPrimary" : "#9E1B32",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Georgia",
+                    "mascot" : "Bulldogs",
+                    "abbreviation" : "UGA",
+                    "prestige" : 95,
+                    "colorPrimary" : "#BA0C2F",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "LSU",
+                    "mascot" : "Tigers",
+                    "abbreviation" : "LSU",
+                    "prestige" : 88,
+                    "colorPrimary" : "#461D7C",
+                    "colorSecondary" : "#FDD023"
+                },
+                {
+                    "name" : "Texas A&M",
+                    "mascot" : "Aggies",
+                    "abbreviation" : "TAMU",
+                    "prestige" : 85,
+                    "colorPrimary" : "#500000",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Florida",
+                    "mascot" : "Gators",
+                    "abbreviation" : "UF",
+                    "prestige" : 83,
+                    "colorPrimary" : "#0021A5",
+                    "colorSecondary" : "#FA4616"
+                },
+                {
+                    "name" : "Kentucky",
+                    "mascot" : "Wildcats",
+                    "abbreviation" : "UK",
+                    "prestige" : 80,
+                    "colorPrimary" : "#0033A0",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Tennessee",
+                    "mascot" : "Volunteers",
+                    "abbreviation" : "TEN",
+                    "prestige" : 85,
+                    "colorPrimary" : "#FF8200",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Auburn",
+                    "mascot" : "Tigers",
+                    "abbreviation" : "AUB",
+                    "prestige" : 80,
+                    "colorPrimary" : "#0C2340",
+                    "colorSecondary" : "#E87722"
+                },
+                {
+                    "name" : "Arkansas",
+                    "mascot" : "Razorbacks",
+                    "abbreviation" : "ARK",
+                    "prestige" : 83,
+                    "colorPrimary" : "#9D2235",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Mississippi State",
+                    "mascot" : "Bulldogs",
+                    "abbreviation" : "MSST",
+                    "prestige" : 80,
+                    "colorPrimary" : "#660000",
+                    "colorSecondary" : "#CCCCCC"
+                },
+                {
+                    "name" : "Vanderbilt",
+                    "mascot" : "Commodores",
+                    "abbreviation" : "VAN",
+                    "prestige" : 70,
+                    "colorPrimary" : "#866D4B",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "South Carolina",
+                    "mascot" : "Gamecocks",
+                    "abbreviation" : "SCAR",
+                    "prestige" : 80,
+                    "colorPrimary" : "#73000A",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Ole Miss",
+                    "mascot" : "Rebels",
+                    "abbreviation" : "MISS",
+                    "prestige" : 85,
+                    "colorPrimary" : "#CE1126",
+                    "colorSecondary" : "#006BA6"
+                },
+                {
+                    "name" : "Missouri",
+                    "mascot" : "Tigers",
+                    "abbreviation" : "MIZZ",
+                    "prestige" : 75,
+                    "colorPrimary" : "#000000",
+                    "colorSecondary" : "#F1B82D"
+                }
+            ]
+        },  
+        {
+            "confName" : "B1G",
+            "confFullName" : "Big Ten Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Purdue",
+                    "mascot" : "Boilermakers",
+                    "abbreviation" : "PUR",
+                    "prestige" : 83,
+                    "colorPrimary" : "#CEB888",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Iowa",
+                    "mascot" : "Hawkeyes",
+                    "abbreviation" : "IOWA",
+                    "prestige" : 82,
+                    "colorPrimary" : "#FFCD00",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Illinois",
+                    "mascot" : "Fighting Illini",
+                    "abbreviation" : "ILL",
+                    "prestige" : 80,
+                    "colorPrimary" : "#13294B",
+                    "colorSecondary" : "#E84A27"
+                },
+                {
+                    "name" : "Michigan",
+                    "mascot" : "Wolverines",
+                    "abbreviation" : "MICH",
+                    "prestige" : 90,
+                    "colorPrimary" : "#00274C",
+                    "colorSecondary" : "#FFCB05"
+                },
+                {
+                    "name" : "Ohio State",
+                    "mascot" : "Buckeyes",
+                    "abbreviation" : "OSU",
+                    "prestige" : 95,
+                    "colorPrimary" : "#BB0000",
+                    "colorSecondary" : "#666666"
+                },
+                {
+                    "name" : "Michigan State",
+                    "mascot" : "Spartans",
+                    "abbreviation" : "MSU",
+                    "prestige" : 82,
+                    "colorPrimary" : "#18453B",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Wisconsin",
+                    "mascot" : "Badgers",
+                    "abbreviation" : "WISC",
+                    "prestige" : 85,
+                    "colorPrimary" : "#C5050C",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Indiana",
+                    "mascot" : "Hoosiers",
+                    "abbreviation" : "IU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#990000",
+                    "colorSecondary" : "#EEEDEB"
+                },
+                {
+                    "name" : "Maryland",
+                    "mascot" : "Terrapins",
+                    "abbreviation" : "UMD",
+                    "prestige" : 80,
+                    "colorPrimary" : "#E03A3E",
+                    "colorSecondary" : "#FFD520"
+                },
+                {
+                    "name" : "Northwestern",
+                    "mascot" : "Wildcats",
+                    "abbreviation" : "NU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#4E2A84",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Rutgers",
+                    "mascot" : "Scarlet Knights",
+                    "abbreviation" : "RUT",
+                    "prestige" : 75,
+                    "colorPrimary" : "#CC0033",
+                    "colorSecondary" : "#5F6A72"
+                },
+                {
+                    "name" : "Penn State",
+                    "mascot" : "Nittany Lions",
+                    "abbreviation" : "PSU",
+                    "prestige" : 88,
+                    "colorPrimary" : "#041E42",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Minnesota",
+                    "mascot" : "Golden Gophers",
+                    "abbreviation" : "MINN",
+                    "prestige" : 82,
+                    "colorPrimary" : "#7A0019",
+                    "colorSecondary" : "#FFCC33"
+                },
+                {
+                    "name" : "Nebraska",
+                    "mascot" : "Cornhuskers",
+                    "abbreviation" : "NEB",
+                    "prestige" : 75,
+                    "colorPrimary" : "#E41C38",
+                    "colorSecondary" : "#FDF2D9"
+                }
+            ]
+        },  
+        {
+            "confName" : "ACC",
+            "confFullName" : "Atlantic Coast Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Clemson",
+                    "mascot" : "Tigers",
+                    "abbreviation" : "CLEM",
+                    "prestige" : 92,
+                    "colorPrimary" : "#F56600",
+                    "colorSecondary" : "#522D80"
+                },
+                {
+                    "name" : "Florida State",
+                    "mascot" : "Seminoles",
+                    "abbreviation" : "FSU",
+                    "prestige" : 85,
+                    "colorPrimary" : "#782F40",
+                    "colorSecondary" : "#CEB888"
+                },
+                {
+                    "name" : "Miami",
+                    "mascot" : "Hurricanes",
+                    "abbreviation" : "MIA",
+                    "prestige" : 82,
+                    "colorPrimary" : "#F47321",
+                    "colorSecondary" : "#005030"
+                },
+                {
+                    "name" : "Virginia Tech",
+                    "mascot" : "Hokies",
+                    "abbreviation" : "VT",
+                    "prestige" : 80,
+                    "colorPrimary" : "#630031",
+                    "colorSecondary" : "#CF4420"
+                },
+                {
+                    "name" : "Georgia Tech",
+                    "mascot" : "Yellow Jackets",
+                    "abbreviation" : "GT",
+                    "prestige" : 75,
+                    "colorPrimary" : "#B3A369",
+                    "colorSecondary" : "#003057"
+                },
+                {
+                    "name" : "North Carolina",
+                    "mascot" : "Tar Heels",
+                    "abbreviation" : "UNC",
+                    "prestige" : 80,
+                    "colorPrimary" : "#7BAFD4",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Pittsburgh",
+                    "mascot" : "Panthers",
+                    "abbreviation" : "PITT",
+                    "prestige" : 80,
+                    "colorPrimary" : "#003594",
+                    "colorSecondary" : "#FFB81C"
+                },
+                {
+                    "name" : "Virginia",
+                    "mascot" : "Cavaliers",
+                    "abbreviation" : "UVA",
+                    "prestige" : 75,
+                    "colorPrimary" : "#232D4B",
+                    "colorSecondary" : "#F84C1E"
+                },
+                {
+                    "name" : "NC State",
+                    "mascot" : "Wolfpack",
+                    "abbreviation" : "NCST",
+                    "prestige" : 80,
+                    "colorPrimary" : "#CC0000",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Wake Forest",
+                    "mascot" : "Demon Deacons",
+                    "abbreviation" : "WAKE",
+                    "prestige" : 80,
+                    "colorPrimary" : "#9E7E38",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Syracuse",
+                    "mascot" : "Orange",
+                    "abbreviation" : "CUSE",
+                    "prestige" : 75,
+                    "colorPrimary" : "#F76900",
+                    "colorSecondary" : "#000E54"
+                },
+                {
+                    "name" : "Louisville",
+                    "mascot" : "Cardinals",
+                    "abbreviation" : "LOU",
+                    "prestige" : 80,
+                    "colorPrimary" : "#AD0000",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Duke",
+                    "mascot" : "Blue Devils",
+                    "abbreviation" : "DUKE",
+                    "prestige" : 70,
+                    "colorPrimary" : "#003087",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Boston College",
+                    "mascot" : "Eagles",
+                    "abbreviation" : "BC",
+                    "prestige" : 75,
+                    "colorPrimary" : "#98002E",
+                    "colorSecondary" : "#BC9B6A"
+                }
+            ]
+        },  
+        {
+            "confName" : "XII",
+            "confFullName" : "Big 12 Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Kansas",
+                    "mascot" : "Jayhawks",
+                    "abbreviation" : "KU",
+                    "prestige" : 75,
+                    "colorPrimary" : "#0051BA",
+                    "colorSecondary" : "#E8000D"
+                },
+                {
+                    "name" : "BYU",
+                    "mascot" : "Cougars",
+                    "abbreviation" : "BYU",
+                    "prestige" : 83,
+                    "colorPrimary" : "#002E5D",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Houston",
+                    "mascot" : "Cougars",
+                    "abbreviation" : "HOU",
+                    "prestige" : 80,
+                    "colorPrimary" : "#C8102E",
+                    "colorSecondary" : "#B2B4B2"
+                },
+                {
+                    "name" : "Baylor",
+                    "mascot" : "Bears",
+                    "abbreviation" : "BAY",
+                    "prestige" : 82,
+                    "colorPrimary" : "#154734",
+                    "colorSecondary" : "#FFB81C"
+                },
+                {
+                    "name" : "Texas Tech",
+                    "mascot" : "Red Raiders",
+                    "abbreviation" : "TTU",
+                    "prestige" : 80,
+                    "colorPrimary" : "#CC0000",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Cincinnati",
+                    "mascot" : "Bearcats",
+                    "abbreviation" : "CINC",
+                    "prestige" : 85,
+                    "colorPrimary" : "#E00122",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Central Florida",
+                    "mascot" : "Knights",
+                    "abbreviation" : "UCF",
+                    "prestige" : 82,
+                    "colorPrimary" : "#BA9B37",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Texas",
+                    "mascot" : "Longhorns",
+                    "abbreviation" : "TEX",
+                    "prestige" : 88,
+                    "colorPrimary" : "#BF5700",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Oklahoma",
+                    "mascot" : "Sooners",
+                    "abbreviation" : "OU",
+                    "prestige" : 90,
+                    "colorPrimary" : "#841617",
+                    "colorSecondary" : "#FDF9D8"
+                },
+                {
+                    "name" : "Texas Christian",
+                    "mascot" : "Horned Frogs",
+                    "abbreviation" : "TCU",
+                    "prestige" : 82,
+                    "colorPrimary" : "#4D1979",
+                    "colorSecondary" : "#A3A9AC"
+                },
+                {
+                    "name" : "Oklahoma State",
+                    "mascot" : "Cowboys",
+                    "abbreviation" : "OKST",
+                    "prestige" : 85,
+                    "colorPrimary" : "#FF7300",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Iowa State",
+                    "mascot" : "Cyclones",
+                    "abbreviation" : "ISU",
+                    "prestige" : 80,
+                    "colorPrimary" : "#C8102E",
+                    "colorSecondary" : "#F1BE48"
+                },
+                {
+                    "name" : "Kansas State",
+                    "mascot" : "Wildcats",
+                    "abbreviation" : "KSU",
+                    "prestige" : 80,
+                    "colorPrimary" : "#512888",
+                    "colorSecondary" : "#D1D1D1"
+                },
+                {
+                    "name" : "West Virginia",
+                    "mascot" : "Mountaineers",
+                    "abbreviation" : "WVU",
+                    "prestige" : 80,
+                    "colorPrimary" : "#002855",
+                    "colorSecondary" : "#EAAA00"
+                }
+            ]
+        },
+        {
+            "confName" : "Pac-12",
+            "confFullName" : "Pac-12 Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Arizona",
+                    "mascot" : "Wildcats",
+                    "abbreviation" : "ZONA",
+                    "prestige" : 75,
+                    "colorPrimary" : "#CC0033",
+                    "colorSecondary" : "#003366"
+                },
+                {
+                    "name" : "UCLA",
+                    "mascot" : "Bruins",
+                    "abbreviation" : "UCLA",
+                    "prestige" : 80,
+                    "colorPrimary" : "#2D68C4",
+                    "colorSecondary" : "#F2A900"
+                },
+                {
+                    "name" : "Washington State",
+                    "mascot" : "Cougars",
+                    "abbreviation" : "WSU",
+                    "prestige" : 75,
+                    "colorPrimary" : "#981E32",
+                    "colorSecondary" : "#5E6A71"
+                },
+                {
+                    "name" : "USC",
+                    "mascot" : "Trojans",
+                    "abbreviation" : "USC",
+                    "prestige" : 90,
+                    "colorPrimary" : "#990000",
+                    "colorSecondary" : "#FFC72C"
+                },
+                {
+                    "name" : "Oregon",
+                    "mascot" : "Ducks",
+                    "abbreviation" : "ORE",
+                    "prestige" : 88,
+                    "colorPrimary" : "#154733",
+                    "colorSecondary" : "#FEE123"
+                },
+                {
+                    "name" : "Colorado",
+                    "mascot" : "Buffaloes",
+                    "abbreviation" : "CU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#CFB87C",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Arizona State",
+                    "mascot" : "Sun Devils",
+                    "abbreviation" : "ASU",
+                    "prestige" : 80,
+                    "colorPrimary" : "#8C1D40",
+                    "colorSecondary" : "#FFC627"
+                },
+                {
+                    "name" : "Stanford",
+                    "mascot" : "Cardinal",
+                    "abbreviation" : "STAN",
+                    "prestige" : 75,
+                    "colorPrimary" : "#8C1515",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Utah",
+                    "mascot" : "Utes",
+                    "abbreviation" : "UTAH",
+                    "prestige" : 88,
+                    "colorPrimary" : "#CC0000",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Washington",
+                    "mascot" : "Huskies",
+                    "abbreviation" : "WASH",
+                    "prestige" : 82,
+                    "colorPrimary" : "#4B2E83",
+                    "colorSecondary" : "#B7A57A"
+                },
+                {
+                    "name" : "California",
+                    "mascot" : "Golden Bears",
+                    "abbreviation" : "CAL",
+                    "prestige" : 75,
+                    "colorPrimary" : "#003262",
+                    "colorSecondary" : "#FDB515"
+                },
+                {
+                    "name" : "Oregon State",
+                    "mascot" : "Beavers",
+                    "abbreviation" : "ORST",
+                    "prestige" : 80,
+                    "colorPrimary" : "#DC4405",
+                    "colorSecondary" : "#000000"
+                }
+            ]
+        },
+        {
+            "confName" : "American",
+            "confFullName" : "American Athletic Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Florida Atlantic",
+                    "mascot" : "Owls",
+                    "abbreviation" : "FAU",
+                    "prestige" : 65,
+                    "colorPrimary" : "#003366",
+                    "colorSecondary" : "#CC0000"
+                },
+                {
+                    "name" : "Charlotte",
+                    "mascot" : "49ers",
+                    "abbreviation" : "CHA",
+                    "prestige" : 65,
+                    "colorPrimary" : "#046A38",
+                    "colorSecondary" : "#B9975B"
+                },
+                {
+                    "name" : "Texas San Antonio",
+                    "mascot" : "Roadrunners",
+                    "abbreviation" : "UTSA",
+                    "prestige" : 75,
+                    "colorPrimary" : "#F15A22",
+                    "colorSecondary" : "#0C2340"
+                },
+                {
+                    "name" : "East Carolina",
+                    "mascot" : "Pirates",
+                    "abbreviation" : "ECU",
+                    "prestige" : 75,
+                    "colorPrimary" : "#592A8A",
+                    "colorSecondary" : "#FDC82F"
+                },
+                {
+                    "name" : "Rice",
+                    "mascot" : "Owls",
+                    "abbreviation" : "RICE",
+                    "prestige" : 70,
+                    "colorPrimary" : "#00205B",
+                    "colorSecondary" : "#C1C6C8"
+                },
+                {
+                    "name" : "Memphis",
+                    "mascot" : "Tigers",
+                    "abbreviation" : "MEM",
+                    "prestige" : 75,
+                    "colorPrimary" : "#003087",
+                    "colorSecondary" : "#898D8D"
+                },
+                {
+                    "name" : "Navy",
+                    "mascot" : "Midshipmen",
+                    "abbreviation" : "NAVY",
+                    "prestige" : 70,
+                    "colorPrimary" : "#00205B",
+                    "colorSecondary" : "#C5B783"
+                },
+                {
+                    "name" : "Southern Methodist",
+                    "mascot" : "Mustangs",
+                    "abbreviation" : "SMU",
+                    "prestige" : 75,
+                    "colorPrimary" : "#0033A0",
+                    "colorSecondary" : "#C8102E"
+                },
+                {
+                    "name" : "North Texas",
+                    "mascot" : "Mean Green",
+                    "abbreviation" : "UNT",
+                    "prestige" : 70,
+                    "colorPrimary" : "#00853E",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "South Florida",
+                    "mascot" : "Bulls",
+                    "abbreviation" : "USF",
+                    "prestige" : 70,
+                    "colorPrimary" : "#006747",
+                    "colorSecondary" : "#CFC493"
+                },
+                {
+                    "name" : "Temple",
+                    "mascot" : "Owls",
+                    "abbreviation" : "TEMP",
+                    "prestige" : 70,
+                    "colorPrimary" : "#9D2235",
+                    "colorSecondary" : "#C1C6C8"
+                },
+                {
+                    "name" : "Alabama Birmingham",
+                    "mascot" : "Blazers",
+                    "abbreviation" : "UAB",
+                    "prestige" : 75,
+                    "colorPrimary" : "#006341",
+                    "colorSecondary" : "#CC8A00"
+                },
+                {
+                    "name" : "Tulane",
+                    "mascot" : "Green Wave",
+                    "abbreviation" : "TULN",
+                    "prestige" : 75,
+                    "colorPrimary" : "#006747",
+                    "colorSecondary" : "#418FDE"
+                },
+                {
+                    "name" : "Tulsa",
+                    "mascot" : "Golden Hurricane",
+                    "abbreviation" : "TLSA",
+                    "prestige" : 75,
+                    "colorPrimary" : "#002D72",
+                    "colorSecondary" : "#C8102E"
+                }
+            ]
+        },
+        {
+            "confName" : "MWC",
+            "confFullName" : "Mountain West Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Boise State",
+                    "mascot" : "Broncos",
+                    "abbreviation" : "BOI",
+                    "prestige" : 80,
+                    "colorPrimary" : "#0033A0",
+                    "colorSecondary" : "#D64309"
+                },
+                {
+                    "name" : "Fresno State",
+                    "mascot" : "Bulldogs",
+                    "abbreviation" : "FRES",
+                    "prestige" : 75,
+                    "colorPrimary" : "#DB0032",
+                    "colorSecondary" : "#002E6D"
+                },
+                {
+                    "name" : "Nevada",
+                    "mascot" : "Wolfpack",
+                    "abbreviation" : "NEV",
+                    "prestige" : 70,
+                    "colorPrimary" : "#003366",
+                    "colorSecondary" : "#807F84"
+                },
+                {
+                    "name" : "San Diego State",
+                    "mascot" : "Aztecs",
+                    "abbreviation" : "SDSU",
+                    "prestige" : 75,
+                    "colorPrimary" : "#A6192E",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "UNLV",
+                    "mascot" : "Rebels",
+                    "abbreviation" : "UNLV",
+                    "prestige" : 65,
+                    "colorPrimary" : "#CF0A2C",
+                    "colorSecondary" : "#CAC8C8"
+                },
+                {
+                    "name" : "Wyoming",
+                    "mascot" : "Cowboys",
+                    "abbreviation" : "WYO",
+                    "prestige" : 70,
+                    "colorPrimary" : "#492F24",
+                    "colorSecondary" : "#FFC425"
+                },
+                {
+                    "name" : "Air Force",
+                    "mascot" : "Falcons",
+                    "abbreviation" : "AFA",
+                    "prestige" : 75,
+                    "colorPrimary" : "#003087",
+                    "colorSecondary" : "#8A8D8F"
+                },
+                {
+                    "name" : "Colorado State",
+                    "mascot" : "Rams",
+                    "abbreviation" : "CSU",
+                    "prestige" : 65,
+                    "colorPrimary" : "#1E4D2B",
+                    "colorSecondary" : "#C8C372"
+                },
+                {
+                    "name" : "Hawaii",
+                    "mascot" : "Rainbow Warriors",
+                    "abbreviation" : "HAW",
+                    "prestige" : 70,
+                    "colorPrimary" : "#024731",
+                    "colorSecondary" : "#C8C8C8"
+                },
+                {
+                    "name" : "New Mexico",
+                    "mascot" : "Lobos",
+                    "abbreviation" : "UNM",
+                    "prestige" : 65,
+                    "colorPrimary" : "#BA0C2F",
+                    "colorSecondary" : "#63666A"
+                },
+                {
+                    "name" : "San Jose State",
+                    "mascot" : "Spartans",
+                    "abbreviation" : "SJSU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#0055A2",
+                    "colorSecondary" : "#E5A823"
+                },
+                {
+                    "name" : "Utah State",
+                    "mascot" : "Aggies",
+                    "abbreviation" : "USU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#00263A",
+                    "colorSecondary" : "#8A8D8F"
+                }
+            ]
+        },
+        {
+            "confName" : "SBC",
+            "confFullName" : "Sun Belt Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Appalachian State",
+                    "mascot" : "Mountaineers",
+                    "abbreviation" : "APP",
+                    "prestige" : 75,
+                    "colorPrimary" : "#222222",
+                    "colorSecondary" : "#FFCC00"
+                },
+                {
+                    "name" : "Coastal Carolina",
+                    "mascot" : "Chanticleers",
+                    "abbreviation" : "CCU",
+                    "prestige" : 75,
+                    "colorPrimary" : "#006F71",
+                    "colorSecondary" : "#A27752"
+                },
+                {
+                    "name" : "Georgia Southern",
+                    "mascot" : "Eagles",
+                    "abbreviation" : "GASO",
+                    "prestige" : 70,
+                    "colorPrimary" : "#011E41",
+                    "colorSecondary" : "#A3AAAE"
+                },
+                {
+                    "name" : "Georgia State",
+                    "mascot" : "Panthers",
+                    "abbreviation" : "GST",
+                    "prestige" : 70,
+                    "colorPrimary" : "#0039A6",
+                    "colorSecondary" : "#C60C30"
+                },
+                {
+                    "name" : "James Madison",
+                    "mascot" : "Dukes",
+                    "abbreviation" : "JMU",
+                    "prestige" : 75,
+                    "colorPrimary" : "#450084",
+                    "colorSecondary" : "#CBB677"
+                },
+                {
+                    "name" : "Marshall",
+                    "mascot" : "Thundering Herd",
+                    "abbreviation" : "MAR",
+                    "prestige" : 75,
+                    "colorPrimary" : "#00B140",
+                    "colorSecondary" : "#A2AAAD"
+                },
+                {
+                    "name" : "Old Dominion",
+                    "mascot" : "Monarchs",
+                    "abbreviation" : "ODU",
+                    "prestige" : 65,
+                    "colorPrimary" : "#003087",
+                    "colorSecondary" : "#7C878E"
+                },
+                {
+                    "name" : "Arkansas State",
+                    "mascot" : "Red Wolves",
+                    "abbreviation" : "ARST",
+                    "prestige" : 70,
+                    "colorPrimary" : "#CC092F",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Louisiana",
+                    "mascot" : "Ragin' Cajuns",
+                    "abbreviation" : "ULL",
+                    "prestige" : 75,
+                    "colorPrimary" : "#CE181E",
+                    "colorSecondary" : "#0A0203"
+                },
+                {
+                    "name" : "Louisiana Monroe",
+                    "mascot" : "Warhawks",
+                    "abbreviation" : "ULM",
+                    "prestige" : 70,
+                    "colorPrimary" : "#840029",
+                    "colorSecondary" : "#FDB913"
+                },
+                {
+                    "name" : "South Alabama",
+                    "mascot" : "Jaguars",
+                    "abbreviation" : "USA",
+                    "prestige" : 70,
+                    "colorPrimary" : "#00205B",
+                    "colorSecondary" : "#BF0D3E"
+                },
+                {
+                    "name" : "Southern Miss",
+                    "mascot" : "Golden Eagles",
+                    "abbreviation" : "SMIS",
+                    "prestige" : 70,
+                    "colorPrimary" : "#000000",
+                    "colorSecondary" : "#FFAB00"
+                },
+                {
+                    "name" : "Texas State",
+                    "mascot" : "Bobcats",
+                    "abbreviation" : "TST",
+                    "prestige" : 70,
+                    "colorPrimary" : "#501214",
+                    "colorSecondary" : "#8D734A"
+                },
+                {
+                    "name" : "Troy",
+                    "mascot" : "Trojans",
+                    "abbreviation" : "TROY",
+                    "prestige" : 70,
+                    "colorPrimary" : "#8A2432",
+                    "colorSecondary" : "#B3B5B8"
+                }
+            ]
+        },
+        {
+            "confName" : "MAC",
+            "confFullName" : "Mid-American Conference",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Buffalo",
+                    "mascot" : "Bulls",
+                    "abbreviation" : "BUFF",
+                    "prestige" : 70,
+                    "colorPrimary" : "#005BBB",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Ohio",
+                    "mascot" : "Bobcats",
+                    "abbreviation" : "OHIO",
+                    "prestige" : 70,
+                    "colorPrimary" : "#00694E",
+                    "colorSecondary" : "#CDA077"
+                },
+                {
+                    "name" : "Bowling Green",
+                    "mascot" : "Falcons",
+                    "abbreviation" : "BGSU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#FE5000",
+                    "colorSecondary" : "#4F2C1D"
+                },
+                {
+                    "name" : "Kent State",
+                    "mascot" : "Golden Flashes",
+                    "abbreviation" : "KENT",
+                    "prestige" : 70,
+                    "colorPrimary" : "#002664",
+                    "colorSecondary" : "#EAAB00"
+                },
+                {
+                    "name" : "Miami Ohio",
+                    "mascot" : "RedHawks",
+                    "abbreviation" : "MIOH",
+                    "prestige" : 70,
+                    "colorPrimary" : "#B61E2E",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Akron",
+                    "mascot" : "Zips",
+                    "abbreviation" : "AKR",
+                    "prestige" : 60,
+                    "colorPrimary" : "#041E42",
+                    "colorSecondary" : "#A89968"
+                },
+                {
+                    "name" : "Toledo",
+                    "mascot" : "Rockets",
+                    "abbreviation" : "TOL",
+                    "prestige" : 70,
+                    "colorPrimary" : "#15397F",
+                    "colorSecondary" : "#FFDA00"
+                },
+                {
+                    "name" : "Ball State",
+                    "mascot" : "Cardinals",
+                    "abbreviation" : "BALL",
+                    "prestige" : 70,
+                    "colorPrimary" : "#BA0C2F",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Western Michigan",
+                    "mascot" : "Broncos",
+                    "abbreviation" : "WMU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#6C4023",
+                    "colorSecondary" : "#B5A167"
+                },
+                {
+                    "name" : "Eastern Michigan",
+                    "mascot" : "Eagles",
+                    "abbreviation" : "EMU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#006633",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Central Michigan",
+                    "mascot" : "Chippewas",
+                    "abbreviation" : "CMU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#6A0032",
+                    "colorSecondary" : "#FFC82E"
+                },
+                {
+                    "name" : "Northern Illinois",
+                    "mascot" : "Huskies",
+                    "abbreviation" : "NIU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#BA0C2F",
+                    "colorSecondary" : "#8A8D8F"
+                }
+            ]
+        },
+        {
+            "confName" : "CUSA",
+            "confFullName" : "Conference USA",
+            "confGames" : 8,
+            "teams" :
+            [
+                {
+                    "name" : "Western Kentucky",
+                    "mascot" : "Hilltoppers",
+                    "abbreviation" : "WKU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#C60C30",
+                    "colorSecondary" : "#1E1E1E"
+                },
+                {
+                    "name" : "Florida International",
+                    "mascot" : "Golden Panthers",
+                    "abbreviation" : "FIU",
+                    "prestige" : 65,
+                    "colorPrimary" : "#081E3F",
+                    "colorSecondary" : "#B6862C"
+                },
+                {
+                    "name" : "Middle Tennessee State",
+                    "mascot" : "Blue Raiders",
+                    "abbreviation" : "MTSU",
+                    "prestige" : 65,
+                    "colorPrimary" : "#0066CC",
+                    "colorSecondary" : "#000000"
+                },
+                {
+                    "name" : "Liberty",
+                    "mascot" : "Flames",
+                    "abbreviation" : "LIB",
+                    "prestige" : 75,
+                    "colorPrimary" : "#002D62",
+                    "colorSecondary" : "#C41230"
+                },
+                {
+                    "name" : "New Mexico State",
+                    "mascot" : "Aggies",
+                    "abbreviation" : "NMSU",
+                    "prestige" : 65,
+                    "colorPrimary" : "#861F41",
+                    "colorSecondary" : "#97999B"
+                },
+                {
+                    "name" : "Texas El Paso",
+                    "mascot" : "Miners",
+                    "abbreviation" : "UTEP",
+                    "prestige" : 70,
+                    "colorPrimary" : "#041E42",
+                    "colorSecondary" : "#FF8200"
+                },
+                {
+                    "name" : "Louisiana Tech",
+                    "mascot" : "Bulldogs",
+                    "abbreviation" : "LT",
+                    "prestige" : 70,
+                    "colorPrimary" : "#002F8B",
+                    "colorSecondary" : "#E31B23"
+                },
+                {
+                    "name" : "Jacksonville State",
+                    "mascot" : "Gamecocks",
+                    "abbreviation" : "JVST",
+                    "prestige" : 70,
+                    "colorPrimary" : "#CC0000",
+                    "colorSecondary" : "#FFFFFF"
+                },
+                {
+                    "name" : "Sam Houston State",
+                    "mascot" : "Bearkats",
+                    "abbreviation" : "SHSU",
+                    "prestige" : 70,
+                    "colorPrimary" : "#FE5100",
+                    "colorSecondary" : "#FFFFFF"
+                }
+            ]
+        }                
+    ],
+    "independents":
+    [
+        {
+            "name" : "Notre Dame",
+            "mascot" : "Fighting Irish",
+            "abbreviation" : "ND",
+            "prestige" : 90,
+            "colorPrimary" : "#0C2340",
+            "colorSecondary" : "#AE9142"
+        },
+        {
+            "name" : "Connecticut",
+            "mascot" : "Huskies",
+            "abbreviation" : "UCONN",
+            "prestige" : 70,
+            "colorPrimary" : "#000E2F",
+            "colorSecondary" : "#E4002B"
+        },
+        {
+            "name" : "Massachusetts",
+            "mascot" : "Minutemen",
+            "abbreviation" : "UMASS",
+            "prestige" : 65,
+            "colorPrimary" : "#971B2F",
+            "colorSecondary" : "#B1B3B3"
+        },
+        {
+            "name" : "Army",
+            "mascot" : "Black Knights",
+            "abbreviation" : "ARMY",
+            "prestige" : 75,
+            "colorPrimary" : "#D4BF91",
+            "colorSecondary" : "#000000"
+        }
+    ]
+}

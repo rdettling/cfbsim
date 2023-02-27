@@ -1,0 +1,17 @@
+#logo {
+    height: 42px;
+    padding: 6px;
+    position: relative;
+}
+
+#teamheader {
+    text-align: center;
+}
+
+.weeksummarylogo {
+    height: 50px;
+}
+
+#weeksummary {
+    text-align: center;
+}

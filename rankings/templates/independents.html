@@ -1,0 +1,87 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link rel='stylesheet' href="{% static 'standings.css' %}">
+        <title>Independents standings</title>
+    </head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <img id = 'logo'>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id = 'teampage'>Team Page</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id = 'sim'>Sim a Week</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href = 'top25.html'>Rankings</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Conference Standings
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    {% for conference in conferences %}
+                        <a class="dropdown-item" href = '{{conference.confName}}.html'>{{conference.confName}}</a>
+                    {% endfor %}
+                    <a class="dropdown-item" href = 'independent.html'>Independent</a>
+                    </div>
+                </li>
+            </ul>   
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                  <a class="nav-link" href="../..">Reset</a>
+                </li>
+            </ul> 
+        </nav>
+
+        <div id = 'header'>
+            <h1>Independents standings</h1>
+        </div>
+
+        <table id = 'standings' class="table table-striped">
+            <thead>
+                <tr>
+                  <th>Conference Rank</th>
+                  <th>Overall Rank</th>
+                  <th>Rating</th>
+                  <th>Team</th>
+                  <th>Conference Record</th>
+                  <th>Overall Record</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in teams %}
+                    <tr>
+                        <td>{{forloop.counter}}</td>
+                        <td>{{team.ranking}}</td>
+                        <td>{{team.rating}}</td>
+                        <td>
+                            <img src='{% static team.name %}.png' class='teamlogo'>
+                            <a href='/teams/{{team.name}}.html' class='teamlink'>{{team.name}}</a> 
+                        </td>
+                        <td>{{team.confWins}}-{{team.confLosses}}</td>
+                        <td>{{team.totalWins}}-{{team.totalLosses}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <script>
+            team = decodeURI(sessionStorage.getItem('team'));
+               
+            document.getElementById('logo').src = `/static/${team}.png`; 
+            document.getElementById('teampage').href = `../teams/${team}.html`
+            document.getElementById('sim').href = `../teams/${team}/sim.html`
+        </script>
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    </body>
+</html>

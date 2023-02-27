@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link rel='stylesheet' href="{% static 'game.css' %}">
+        <title>{{team.name}} vs {{game.opponent}}</title>
+    </head>
+    
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <img id='logo' src='{% static team.name %}.png'>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href='../{{team.name}}.html'>Team Page</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href='../{{team.name}}/sim.html'>Sim a Week</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href='/rankings/top25.html'>Rankings</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Conference Standings</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    {% for conference in conferences %}
+                        <a class="dropdown-item" href='/rankings/{{conference.confName}}.html'>{{conference.confName}}</a>
+                    {% endfor %}
+                    <a class="dropdown-item" href='independent.html'>Independent</a>
+                    </div>
+                </li>
+            </ul>    
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                  <a class="nav-link" href="../..">Reset</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div id="gamesummaryheader" class="container">
+            <div class="row justify-content-center">
+                <div class="col-4">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <a href="../{{team.name}}.html" class="teamname">#{{team.ranking}} {{team.name}}</a>
+                            <img class="teamlogo" src="{% static team.name %}.png">
+                            {% if game.result != 'tbd' %}
+                                <span class="score">{{scores.team}}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-12 text-center">
+                        <h5>{{game.spread}}, {{game.moneyline}}</h5>
+                      </div>
+                    </div>
+                </div>        
+                <div class="col-3">
+                <div class="text-center">
+                    <h2>Week {{game.weekPlayed }}</h2>
+                    {% if game.weekPlayed < 13 %}
+                        {% if game.label == team.conference %}
+                            <p>{{game.label}} conference play</p>
+                        {% else %}
+                            <p>Non conference ({{game.label}})</p>
+                        {% endif %}
+                    {% else %}
+                        <span>{{game.label}}</span>
+                    {% endif %}
+                    {% if game.result != 'tbd' %}
+                        <p>Final</p>
+                    {% else %}
+                        <p>Preview of {{ game.team }} vs {{ game.opponent }}</p>
+                    {% endif %}
+                </div>
+                </div>
+                <div class="col-4">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            {% if game.result != 'tbd' %}
+                                <span class="score">{{scores.opponent}}</span>
+                            {% endif %}
+                            <img class="teamlogo" src="{% static opponent.name %}.png">
+                            <a href="../{{opponent.name}}.html" class="teamname">#{{opponent.ranking}} {{opponent.name}}</a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <h5>{{opponentGame.spread}}, {{opponentGame.moneyline}}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+          
+        {% if game.result != 'tbd' %}
+            <!-- <div class="container mt-5" style="width: 50%; float: left;">
+                <div class="row">
+                    <div class="col-12">
+                        <h1>scoring summary</h1>
+                        <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>team</th>
+                                <th>Result</th>
+                                <th>yards</th>
+                                <th>plays</th>
+                                <th>{{game.team}}</th>
+                                <th>{{game.opponent}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for drive in drives %}
+                                {% if drive.points or drive.result == 'safety' %}
+                                    <tr>
+                                        <td>
+                                            <img src='{% static drive.offense %}.png' class='drivelogo'>
+                                        </td>
+                                        <td>{{ drive.result }}</td>
+                                        <td>{{ drive.yards }}</td>
+                                        <td>{{ drive.playCount }}</td>
+                                        <td>{{ drive.teamScoreAfter }}</td>
+                                        <td>{{ drive.opponentScoreAfter }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> -->
+            <div class="container mt-5" style="width: 50%; float: left;">
+                <div class="row">
+                    <div class="col-12">
+                        <h1>Scoring Summary</h1>
+                        <div id="accordion">
+                            {% for drive in drives %}
+                                {% if drive.points or drive.result == 'safety' %}
+                                    <div class="card">
+                                        <div class="card-header" id="heading{{ drive.driveID }}">
+                                            <h5 class="mb-0">
+                                                <button class="btn btn-link" data-toggle="collapse" data-target="#collapse{{ drive.driveID }}" aria-expanded="true" aria-controls="collapse{{ drive.driveID }}">
+                                                    <img src='{% static drive.offense %}.png' class='drivelogo'>
+                                                    {{ drive.result }} ({{ drive.yards }} yards, {{ drive.playCount }} plays) {{drive.teamScoreAfter}} - {{drive.opponentScoreAfter}}
+                                                </button>
+                                            </h5>
+                                        </div>
+                                        <div id="collapse{{ drive.driveID }}" class="collapse" aria-labelledby="heading{{ drive.driveID }}" data-parent="#accordion">
+                                            <div class="card-body">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Offense</th>
+                                                            <th>Defense</th>
+                                                            <th>Starting Field Position</th>
+                                                            <th>Down</th>
+                                                            <th>Yards Left</th>
+                                                            <th>Play Type</th>
+                                                            <th>Yards Gained</th>
+                                                            <th>Result</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for play in plays|dictsort:"driveID" %}
+                                                            {% if play.driveID == drive.driveID %}
+                                                                <tr>
+                                                                    <td>{{ play.offense }}</td>
+                                                                    <td>{{ play.defense }}</td>
+                                                                    <td>{{ play.startingFP }}</td>
+                                                                    <td>{{ play.down }}</td>
+                                                                    <td>{{ play.yardsLeft }}</td>
+                                                                    <td>{{ play.playType }}</td>
+                                                                    <td>{{ play.yardsGained }}</td>
+                                                                    <td>{{ play.result }}</td>
+                                                                </tr>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        {% endif %}
+          
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    </body>
+</html>

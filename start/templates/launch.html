@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Start</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+        <link rel='stylesheet' href="{% static 'pickteam.css' %}">
+    </head>
+
+    <body class="bg-light">
+        <div class="container my-5">
+            <h1 class="mb-3">Welcome to CFB Sim</h1>
+            <form action="/pickteam.html" method="get">
+                <div class="form-group">
+                    <label for="year">Use accurate conferences and teams as of:</label>
+                    <select class="form-control" name="year" id="year">
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Begin</button>
+            </form>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    </body>
+</html>
