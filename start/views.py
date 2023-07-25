@@ -35,13 +35,16 @@ def start(request):
     return HttpResponse(template.render(context, request))
 
 def init(year):
-    Teams.objects.all().delete()
-    Players.objects.all().delete()
-    Conferences.objects.all().delete()
-    Games.objects.all().delete()
-    Info.objects.all().delete()
-    Drives.objects.all().delete()
-    Plays.objects.all().delete()
+    try:
+        Teams.objects.all().delete()
+        Players.objects.all().delete()
+        Conferences.objects.all().delete()
+        Games.objects.all().delete()
+        Info.objects.all().delete()
+        Drives.objects.all().delete()
+        Plays.objects.all().delete()
+    except:
+        pass
 
     Info.objects.create(currentWeek=1, currentYear=year)
     metadataFile = open('years/' + year + '.json')
