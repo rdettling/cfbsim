@@ -28,7 +28,7 @@ class Players(models.Model):
    
 class Conferences(models.Model):
     confName = models.CharField(max_length=255)
-    confFullName = models.CharField(max_length=10)
+    confFullName = models.CharField(max_length=255)
     confGames = models.IntegerField()
 
 class Games(models.Model):

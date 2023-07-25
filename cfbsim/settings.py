@@ -84,8 +84,6 @@ WSGI_APPLICATION = 'cfbsim.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-# settings.py
-
 # Use PostgreSQL in production
 DATABASES = {
     'default': dj_database_url.config(
@@ -98,7 +96,6 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cache'  # Use cache-based ses
 SESSION_COOKIE_SECURE = True  # Ensures cookies are only sent over HTTPS connections
 SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access to session cookies
 SESSION_COOKIE_SAMESITE = 'Lax'  # Restricts cookies to be sent in same-site requests
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
