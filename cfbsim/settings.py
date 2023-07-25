@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
+import django_heroku
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -58,7 +60,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'cfbsim.urls'
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 TEMPLATES = [
     {
@@ -85,12 +86,17 @@ WSGI_APPLICATION = 'cfbsim.wsgi.application'
 
 # settings.py
 
+# Use SQLite in local development
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite3',  # Change 'mydatabase' to 'db.sqlite3'
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Parse database configuration from the DATABASE_URL environment variable on Heroku
+db_from_env = dj_database_url.config(conn_max_age=600)
+DATABASES['default'].update(db_from_env)
 
 
 # Password validation
@@ -144,3 +150,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+django_heroku.settings(locals())
