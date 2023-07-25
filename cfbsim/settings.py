@@ -86,17 +86,18 @@ WSGI_APPLICATION = 'cfbsim.wsgi.application'
 
 # settings.py
 
-# Use SQLite in local development
+# Use PostgreSQL in production
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL')
+    )
 }
 
-# Parse database configuration from the DATABASE_URL environment variable on Heroku
-db_from_env = dj_database_url.config(conn_max_age=600)
-DATABASES['default'].update(db_from_env)
+# Enable Django's session framework
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'  # Use cache-based sessions
+SESSION_COOKIE_SECURE = True  # Ensures cookies are only sent over HTTPS connections
+SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access to session cookies
+SESSION_COOKIE_SAMESITE = 'Lax'  # Restricts cookies to be sent in same-site requests
 
 
 # Password validation
