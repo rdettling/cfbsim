@@ -1,0 +1,66 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Start</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+        <link rel='stylesheet' href="{% static 'pickteam.css' %}">
+    </head>
+
+    <body class="bg-light">
+        <div class="container my-5">
+            <h1 class="mb-3">Welcome to CFB Sim</h1>
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="new-game-tab" data-toggle="tab" href="#new-game" role="tab" aria-controls="new-game" aria-selected="true">New Game</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="load-game-tab" data-toggle="tab" href="#load-game" role="tab" aria-controls="load-game" aria-selected="false">Load Game</a>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent" style="margin-top: 10px;">
+                <div class="tab-pane show active" id="new-game" role="tabpanel" aria-labelledby="new-game-tab">
+                    <form action="/pickteam.html" method="get">
+                        <div class="form-group" style="margin-bottom: 0px;">
+                            <h5 for="year">Use accurate conferences and teams as of:</h5>
+                            <select class="form-control" name="year" id="year" style="width: 150px;">
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Begin</button>
+                    </form>
+                </div>
+                <div class="tab-pane" id="load-game" role="tabpanel" aria-labelledby="load-game-tab">
+                    {% if info %}
+                        <h5>Current save</h5>
+                        <table class="table table-striped" style="width: 50%; margin-bottom: 0px;">
+                            <thead>
+                                <tr>
+                                    <th>Year</th>
+                                    <th>Week</th>
+                                    <th>Team</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{info.currentYear}}</td>
+                                    <td>{{info.currentWeek}}</td>
+                                    <td>{{info.team.name}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <a href="dashboard.html" class="btn btn-primary mt-3">Load Game</a>
+                    {% else %}
+                        <h5>No saves detected</h5>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    </body>
+</html>

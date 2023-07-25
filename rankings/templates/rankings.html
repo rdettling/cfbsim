@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}AP top 25{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'rankings.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div id="header" class="text-center py-2">
+        <h1 class="display-5">AP Top 25</h1>
+        <h2 class="lead">Week {{weeks.currentWeek}}</h2>
+    </div>
+
+    <div id='rankings'>
+        {% for team in teams %}
+            <li class='team'>
+                <span>{{team.ranking}}.</span>
+                <img class='teamlogo' src='{% static team.name %}.png'>
+                <a class='teamlink' href='/teams/{{team.name}}/schedule.html'>{{team.name}} {{team.totalWins}}-{{team.totalLosses}} ({{team.confWins}}-{{team.confLosses}}) ({{team.resume}})</a>
+            </li>
+        {% endfor %}
+    </div>
+{% endblock %}

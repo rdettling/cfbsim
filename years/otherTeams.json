@@ -1,0 +1,28 @@
+{
+    "otherTeams" : [
+        {
+            "name" : "Holy Cross",
+            "mascot" : "Saints",
+            "abbreviation" : "HCC",
+            "prestige" : 80,
+            "colorPrimary" : "#7A0019",
+            "colorSecondary" : "#000000"
+        },
+        {
+            "name" : "Saint Mary's",
+            "mascot" : "Belles",
+            "abbreviation" : "SMC",
+            "prestige" : 95,
+            "colorPrimary" : "#06315B",
+            "colorSecondary" : "#FFFFFF"
+        },
+        {
+            "name" : "Loyola",
+            "mascot" : "Ramblers",
+            "abbreviation" : "LA",
+            "prestige" : 90,
+            "colorPrimary" : "#800000",
+            "colorSecondary" : "#F1BE48"
+        }
+    ]
+}

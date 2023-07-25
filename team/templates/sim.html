@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load mathfilters %}
+{% block title %}Roster{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'sim.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="text-center">
+        <h1>{{team.name}} week {{ info.currentWeek|sub:"1" }} result</h1>
+    </div>
+
+    {% for game in playedThisWeek %}
+        <div class="row mx-auto justify-content-center mb-3">
+            <div class="col-md-3 text-center">
+                <img class="teamlogo" src="{% static game.team %}.png" alt="{{ game.team }} Logo">
+                <a href="dashboard.html" class="teamname">{{game.team}}</a>
+            </div>
+            <div class="col-md-2 text-center">
+                <p class="score">{{ game.score }}</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <a href="/teams/{{game.opponent}}/schedule.html" class="teamname">{{game.opponent}}</a>
+                <img class="teamlogo" src="{% static game.opponent %}.png" alt="{{ game.opponent }} Logo">
+            </div>
+        </div>
+
+        <div class="text-center">
+            <div><a href="schedule/{{game.gameNum}}.html">game summary</a></div>
+            <div><a href="/dashboard.html">dashboard</a></div>
+            <div><a href="sim.html">sim another week</a></div>
+        </div>
+    {% endfor %}
+{% endblock %}

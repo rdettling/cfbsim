@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %} {{team.name}} schedule{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'schedule.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid mt-3 mb-3">
+        <div class="row">
+            <div class="col-md-1"></div>
+            <div class="col-md-2 d-flex justify-content-center">
+                <img src='{% static team.name %}.png' class="img-fluid logo" style="max-height: 150px;">
+            </div>            
+            <div class="col-md-5">
+                <div id='teamheader' class="text-center">
+                    <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
+                    <h2 class="lead">{{team.conference}}</h2>
+                    <h2 class="lead">{{team.rating}} overall</h2>
+                    <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group text-center">
+                    <label for="teamFilter">change team</label>
+                    <select class="form-control" id="teamFilter">
+                        {% for team in teams %}
+                            <option value="{{team.name}}">{{team.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-1"></div>
+        </div>
+    </div>
+
+    <table id = 'schedule' class="table table-striped mx-auto">
+        <thead>
+        <tr>
+            <th>Week</th>
+            <th>Opponent Rating</th>
+            <th>Opponent Rank</th>
+            <th>Opponent Record</th>
+            <th>Opponent</th>
+            <th>Spread</th>
+            <th>Moneyline</th>
+            <th>Result</th>
+            <th>Game Type</th>
+        </tr>
+        </thead>
+        <tbody>
+            {% for week in schedule %}
+                {% if week.result == 'W' %}
+                <tr class="table-success">
+                {% elif week.result == 'L' %}
+                <tr class="table-danger">
+                {% else %}
+                <tr>
+                {% endif %}
+                    <td>Week {{week.weekPlayed}}</td>
+                    <td>{{week.rating}}</td>
+                    <td>{{week.ranking}}</td>
+                    <td>{{week.opponentRecord}}</td>
+                    <td>
+                        <img src='{% static week.opponent %}.png' class='teamlogo'>
+                        <a href='/teams/{{week.opponent}}/schedule.html' class='teamlink'>{{week.opponent}}</a> 
+                    </td>
+                    <td>{{week.spread}}</td>
+                    <td>{{week.moneyline}}</td>
+                    {% if week.result != 'tbd' %}
+                        <td>
+                            <a href='schedule/{{week.gameNum}}.html'>{{week.result}} ({{week.score}})</a>
+                        </td>
+                    {% else %}
+                        <td>
+                            <a href='schedule/{{week.gameNum}}.html'>preview</a>
+                        </td>
+                    {% endif %}
+                    <td>{{week.label}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table> 
+
+    <script>
+        const team = window.location.href.split('/')[4];
+        document.getElementById('teamFilter').value = team;
+        document.getElementById('teamFilter').addEventListener('change', (event) => 
+        {
+            const selectedTeam = event.target.value;
+            const url = `/teams/${selectedTeam}/schedule.html`;
+            window.location.href = url;
+        });
+    </script>
+{% endblock %}

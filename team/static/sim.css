@@ -1,0 +1,18 @@
+.teamname {
+    font-size: 26px;
+}
+
+.teamlogo {
+    height: 60px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.score {
+    font-size: 26px;
+    margin: 10px;
+}
+
+p {
+    margin-bottom: 0;
+}
