@@ -96,7 +96,6 @@ DATABASES = {
 
 # Parse database configuration from the DATABASE_URL environment variable on Heroku
 db_from_env = dj_database_url.config(conn_max_age=600)
-print("Database Configuration:", db_from_env)  # Add this line
 DATABASES['default'].update(db_from_env)
 
 
