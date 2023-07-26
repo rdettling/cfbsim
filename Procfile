@@ -1,1 +1,1 @@
-web: gunicorn cfbsim.wsgi
+web: gunicorn cfbsim.wsgi:application --timeout 60
