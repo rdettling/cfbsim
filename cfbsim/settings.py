@@ -86,34 +86,40 @@ WSGI_APPLICATION = 'cfbsim.wsgi.application'
 
 # Use PostgreSQL in production
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL')
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=os.environ.get('DATABASE_URL')
+#     )
+# }
 
-# Enable Django's session framework
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'  # Use cache-based sessions
-SESSION_COOKIE_SECURE = True  # Ensures cookies are only sent over HTTPS connections
-SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access to session cookies
-SESSION_COOKIE_SAMESITE = 'Lax'  # Restricts cookies to be sent in same-site requests
+# # Enable Django's session framework
+# SESSION_ENGINE = 'django.contrib.sessions.backends.cache'  # Use cache-based sessions
+# SESSION_COOKIE_SECURE = True  # Ensures cookies are only sent over HTTPS connections
+# SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access to session cookies
+# SESSION_COOKIE_SAMESITE = 'Lax'  # Restricts cookies to be sent in same-site requests
 
-# Password validation
-# https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
+# # Password validation
+# # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+# AUTH_PASSWORD_VALIDATORS = [
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+#     },
+#     {
+#         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+#     },
+# ]
 
 
 # Internationalization
