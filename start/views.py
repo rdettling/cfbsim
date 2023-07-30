@@ -466,6 +466,8 @@ def setSchedules(data):
                                 gameID += 1
                     if done:
                         break
+
+    print('done')
     
     for currentWeek in range(1, 13):
         for team in sorted(data['teams'], key=lambda team: team['rating'], reverse=True):
