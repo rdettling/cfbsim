@@ -467,7 +467,7 @@ def setSchedules(data):
                     if done:
                         break
 
-    print('done')
+    print('done1')
     
     for currentWeek in range(1, 13):
         for team in sorted(data['teams'], key=lambda team: team['rating'], reverse=True):
@@ -488,6 +488,8 @@ def setSchedules(data):
                                         for opponentWeek in opponent['schedule']:
                                             if opponentWeek['opponent'] == team['name']:
                                                 opponentWeek['weekPlayed'] = currentWeek
+
+        print(currentWeek)
        
     data['teams'] = sorted(data['teams'], key=lambda a: a['rating'], reverse=True) 
     for i in range(len(data['teams'])):
