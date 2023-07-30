@@ -499,22 +499,27 @@ def setSchedules(data):
         data['teams'][i]['preseason'] = i+1
         data['teams'][i]['schedule'] = sorted(data['teams'][i]['schedule'], key=lambda week: week['weekPlayed'])
 
+    games_to_create = []  # Create a list to hold Games objects
+
     for team in data['teams']:
         for week in team['schedule']:
-            Games.objects.create(
-                gameID = week['gameID'],
-                team = team['name'],
-                opponent = week['opponent'],
-                label = week['label'],
-                spread = week['spread'],
-                moneyline = week['moneyline'],
-                winProb = week['winProb'],
-                weekPlayed = week['weekPlayed'],
-                gameNum = week['gameNum'],
-                result = week['result'],
-                overtime = 0
+            game = Games(
+                gameID=week['gameID'],
+                team=team['name'],
+                opponent=week['opponent'],
+                label=week['label'],
+                spread=week['spread'],
+                moneyline=week['moneyline'],
+                winProb=week['winProb'],
+                weekPlayed=week['weekPlayed'],
+                gameNum=week['gameNum'],
+                result=week['result'],
+                overtime=0
             )
-        
+            games_to_create.append(game)  # Append each game object to the list
+
+    Games.objects.bulk_create(games_to_create)  # Use bulk_create to insert all objects at once
+    
     print('done2')
 
     return data
