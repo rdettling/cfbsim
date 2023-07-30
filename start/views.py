@@ -25,7 +25,7 @@ def start(request):
     if year:
         init(year)
 
-    print('done3')
+    print('init done')
 
     teams = list(Teams.objects.all().order_by('-prestige'))
 
@@ -276,17 +276,20 @@ def init(year):
         data['teams'].append(Team)
 
     data = setSchedules(data)
+    print('schedules done')
     
-    for team in data['teams']:
-        team = Teams.objects.create(
-            name = team['name'],
-            abbreviation = team['abbreviation'],
-            prestige = team['prestige'],
-            rating = team['rating'],
-            mascot = team['mascot'],
-            colorPrimary = team['colorPrimary'],
-            colorSecondary = team['colorSecondary'],
-            conference = team['conference'],
+    teams = []
+
+    for team_data in data['teams']:
+        team = Teams(
+            name = team_data['name'],
+            abbreviation = team_data['abbreviation'],
+            prestige = team_data['prestige'],
+            rating = team_data['rating'],
+            mascot = team_data['mascot'],
+            colorPrimary = team_data['colorPrimary'],
+            colorSecondary = team_data['colorSecondary'],
+            conference = team_data['conference'],
             confWins = 0,
             confLosses = 0,
             nonConfWins = 0,
@@ -294,11 +297,14 @@ def init(year):
             totalWins = 0,
             totalLosses = 0,
             resume = 0,
-            expectedWins = team['expectedWins'],
-            ranking = team['ranking']
-        )       
+            expectedWins = team_data['expectedWins'],
+            ranking = team_data['ranking']
+        )
+        teams.append(team)
+        #players(team) 
 
-        players(team) 
+    Teams.objects.bulk_create(teams)
+    print('teams and players done ')
 
 def setSchedules(data):
     random.shuffle(data['teams'])
@@ -354,7 +360,6 @@ def setSchedules(data):
     random.shuffle(data['conferences'])
 
     for conference in data['conferences']:
-        print(conference['confName'])
         random.shuffle(conference['teams'])
         random.shuffle(data['teams'])
 
@@ -468,8 +473,6 @@ def setSchedules(data):
                                 gameID += 1
                     if done:
                         break
-
-    print('done1')
     
     for currentWeek in range(1, 13):
         for team in sorted(data['teams'], key=lambda team: team['rating'], reverse=True):
@@ -490,8 +493,6 @@ def setSchedules(data):
                                         for opponentWeek in opponent['schedule']:
                                             if opponentWeek['opponent'] == team['name']:
                                                 opponentWeek['weekPlayed'] = currentWeek
-
-        print(currentWeek)
        
     data['teams'] = sorted(data['teams'], key=lambda a: a['rating'], reverse=True) 
     for i in range(len(data['teams'])):
@@ -519,8 +520,6 @@ def setSchedules(data):
             games_to_create.append(game)  # Append each game object to the list
 
     Games.objects.bulk_create(games_to_create)  # Use bulk_create to insert all objects at once
-    
-    print('done2')
 
     return data
 
