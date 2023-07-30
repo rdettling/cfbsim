@@ -25,6 +25,8 @@ def start(request):
     if year:
         init(year)
 
+    print('done3')
+
     teams = list(Teams.objects.all().order_by('-prestige'))
 
     context = {
@@ -512,6 +514,8 @@ def setSchedules(data):
                 result = week['result'],
                 overtime = 0
             )
+        
+    print('done2')
 
     return data
 
