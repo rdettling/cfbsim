@@ -177,7 +177,10 @@ def simWeek(request, team):
                 game.result = 'L'
 
         Team.save()
-        game.save()
+        try:
+            game.save()
+        except:
+            print(game)
     
     if currentWeek == 12:
         setConferenceChampionships()
