@@ -60,7 +60,7 @@ WSGI_APPLICATION = 'cfbsim.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=os.environ.get('HEROKU_POSTGRESQL_CYAN_URL'),
         conn_max_age=600,
         ssl_require=os.environ.get('SSL_REQUIRE', 'False') == 'True'
     )
