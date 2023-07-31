@@ -180,7 +180,7 @@ def simWeek(request, team):
         try:
             game.save()
         except:
-            print(game)
+            print(game.spread, game.moneyline, game.spread, game.score)
     
     if currentWeek == 12:
         setConferenceChampionships()
