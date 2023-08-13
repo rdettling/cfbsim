@@ -16,7 +16,7 @@
             <div class="col-md-5">
                 <div id='teamheader' class="text-center">
                     <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
-                    <h2 class="lead">{{team.conference}}</h2>
+                    <h2 class="lead">{{team.conference.confName}}</h2>
                     <h2 class="lead">{{team.rating}} overall</h2>
                     <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
                 </div>
@@ -46,7 +46,7 @@
             <th>Spread</th>
             <th>Moneyline</th>
             <th>Result</th>
-            <th>Game Type</th>
+            <th>Label</th>
         </tr>
         </thead>
         <tbody>
@@ -68,7 +68,7 @@
                     </td>
                     <td>{{week.spread}}</td>
                     <td>{{week.moneyline}}</td>
-                    {% if week.result != 'tbd' %}
+                    {% if week.result %}
                         <td>
                             <a href='schedule/{{week.gameNum}}.html'>{{week.result}} ({{week.score}})</a>
                         </td>

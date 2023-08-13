@@ -1,32 +1,33 @@
 from start.models import *
-from django.template import loader
-from django.http import HttpResponse
+from django.shortcuts import render
 
 def dashboard(request):
-    team_name = request.GET.get('team_name')
-    info = Info.objects.get()
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
 
+    team_name = request.GET.get('team_name')
+    
     if team_name:
-        team = Teams.objects.get(name=team_name)
+        team = Teams.objects.get(info=info, name=team_name)
         info.team = team
         info.save()
     else:
-        team = Teams.objects.get(name=info.team.name)
+        team = info.team
 
-    schedule = Games.objects.filter(team=team.name)
-    teams = Teams.objects.all().order_by('ranking')
-    conferences = Conferences.objects.all().order_by('confName')
-    
-    confTeams = Teams.objects.filter(conference=team.conference).order_by('-confWins', '-resume')
+    games_as_teamA = team.games_as_teamA.all()
+    games_as_teamB = team.games_as_teamB.all()
+
+    schedule = list(games_as_teamA | games_as_teamB)
+    teams = Teams.objects.filter(info=info).order_by('ranking')
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
+    confTeams = Teams.objects.filter(info=info, conference=team.conference).order_by('-confWins', '-resume')
 
     for week in schedule:
         try:
-            opponent = Teams.objects.get(name=week.opponent)
+            opponent = Teams.objects.get(user=info, name=week.opponent)
             week.ranking = opponent.ranking
         except:
             week.ranking = None
-
-    template = loader.get_template('dashboard.html')
 
     context = {
          'team' : team, 
@@ -37,4 +38,4 @@ def dashboard(request):
          'schedule' : schedule
     }
     
-    return HttpResponse(template.render(context, request))
+    return render(request, 'dashboard.html', context)

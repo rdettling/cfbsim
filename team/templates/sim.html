@@ -8,29 +8,30 @@
 {% endblock %}
 
 {% block content %}
-    <div class="text-center">
-        <h1>{{team.name}} week {{ info.currentWeek|sub:"1" }} result</h1>
-    </div>
-
-    {% for game in playedThisWeek %}
-        <div class="row mx-auto justify-content-center mb-3">
-            <div class="col-md-3 text-center">
-                <img class="teamlogo" src="{% static game.team %}.png" alt="{{ game.team }} Logo">
-                <a href="dashboard.html" class="teamname">{{game.team}}</a>
+    <div id="content">
+    {% for game in teamGames %}
+        <div class="game row">
+            <div class="col-md-3 centered flex-column">
+                <p class="gametext">Week {{game.weekPlayed}}</p> 
+                <p class="gametext">{{game.label}}</p> 
+            </div>   
+            <div class="col-md-6 centered flex-column">
+                <div class="row centered">
+                    <img class="boxlogo" src='{% static game.teamA.name %}.png'>
+                    <a class="gametext" href="/teams/{{game.teamA.name}}/schedule.html">#{{game.teamA.ranking}} {{game.teamA.name}} {{game.teamA.mascot}}</a>
+                    <span class="gametext">{{game.scoreA}}</span> 
+                </div>
+                <div class="row centered">  
+                    <img class="boxlogo" src='{% static game.teamB.name %}.png'>
+                    <a class="gametext" href="/teams/{{game.teamB.name}}/schedule.html">#{{game.teamB.ranking}} {{game.teamB.name}} {{game.teamB.mascot}}</a>
+                    <span class="gametext">{{game.scoreB}}</span>   
+                </div>
             </div>
-            <div class="col-md-2 text-center">
-                <p class="score">{{ game.score }}</p>
-            </div>
-            <div class="col-md-3 text-center">
-                <a href="/teams/{{game.opponent}}/schedule.html" class="teamname">{{game.opponent}}</a>
-                <img class="teamlogo" src="{% static game.opponent %}.png" alt="{{ game.opponent }} Logo">
-            </div>
-        </div>
-
-        <div class="text-center">
-            <div><a href="schedule/{{game.gameNum}}.html">game summary</a></div>
-            <div><a href="/dashboard.html">dashboard</a></div>
-            <div><a href="sim.html">sim another week</a></div>
+            <div class="col-md-3 centered flex-column">
+                
+                <a href="/teams/{{team.name}}/schedule/{{game.num}}.html">Summary</a>
+            </div>   
         </div>
     {% endfor %}
+    </div>
 {% endblock %}

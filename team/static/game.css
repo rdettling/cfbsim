@@ -1,22 +1,31 @@
-.teamname {
-    font-size: 26px;
+#content {
+    width: 80%;
+    margin: 0 auto;
 }
 
-.teamlogo {
-    height: 60px;
-    padding-left: 10px;
-    padding-right: 10px;
+.centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.drivelogo {
+.logo {
+    height: 100px;
+    padding-left: 20px;
+    padding-right: 20px;
+    width: auto;  /* maintain aspect ratio */
+}
+
+.boxlogo {
     height: 30px;
+    width: auto;  /* maintain aspect ratio */
 }
 
-.score {
-    font-size: 26px;
-    margin: 10px;
+.summarytext {
+    font-size: 50px;
+    line-height: 1;
 }
 
-p {
-    margin-bottom: 0;
+.row {
+    margin-bottom: 20px;
 }

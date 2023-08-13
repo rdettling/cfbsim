@@ -1,15 +1,19 @@
 from django.shortcuts import render
-from django.http import HttpResponse
-from django.template import loader
 import json
 import random
 from .models import *
 import static.sim as sim
 import static.names as names
+from django.db import transaction
 
 def launch(request):
+    if not request.session.session_key:
+        request.session.create()
+      
+    user_id = request.session.session_key
+
     try:
-        info = Info.objects.get()
+        info = Info.objects.get(user_id=user_id)
     except:
         info = None
 
@@ -20,276 +24,97 @@ def launch(request):
     return render(request, 'launch.html', context)
 
 def start(request):
+    user_id = request.session.session_key   
     year = request.GET.get('year')
     
-    if year:
-        init(year)
+    init(year, user_id)
 
-    print('init done')
-
-    teams = list(Teams.objects.all().order_by('-prestige'))
+    info = Info.objects.get(user_id=user_id)       
+    teams = list(Teams.objects.filter(info=info).order_by('-prestige'))
 
     context = {
         'teams' : teams,
     }
     
-    template = loader.get_template('pickteam.html')
-    return HttpResponse(template.render(context, request))
+    return render(request, 'pickteam.html', context)
 
-def init(year):
-    try:
-        Teams.objects.all().delete()
-        Players.objects.all().delete()
-        Conferences.objects.all().delete()
-        Games.objects.all().delete()
-        Info.objects.all().delete()
-        Drives.objects.all().delete()
-        Plays.objects.all().delete()
-    except:
-        pass
+def init(year, user_id):
+    Info.objects.filter(user_id=user_id).delete()
+    info = Info.objects.create(user_id=user_id, currentWeek=1, currentYear=year)
 
-    Info.objects.create(currentWeek=1, currentYear=year)
-    metadataFile = open('years/' + year + '.json')
+    Teams.objects.filter(info=info).delete()
+    Players.objects.filter(info=info).delete()
+    Conferences.objects.filter(info=info).delete()
+    Games.objects.filter(info=info).delete()
+    Drives.objects.filter(info=info).delete()
+    Plays.objects.filter(info=info).delete()
+
+    metadataFile = open('static/years/' + year + '.json')
     
     data = json.load(metadataFile)
     data['teams'] = []
-    
+
+    teams_to_create = []
+    conferences_to_create = []
     for conference in data['conferences']:
-        Conferences.objects.create(
+        Conference = Conferences(
+            info=info,
             confName = conference['confName'],
             confFullName = conference['confFullName'],
             confGames = conference['confGames']
         )
+        conferences_to_create.append(Conference)
 
         for team in conference['teams']:
-            Team = {
+            rating = team['prestige'] + random.randint(-5, 5)
+            Team = Teams(
+                info=info,
+                name = team['name'],
+                abbreviation = team['abbreviation'],
+                prestige = team['prestige'],
+                rating = rating,
+                mascot = team['mascot'],
+                colorPrimary = team['colorPrimary'],
+                colorSecondary = team['colorSecondary'],
+                conference = Conference,
+                confWins = 0,
+                confLosses = 0,
+                nonConfWins = 0,
+                nonConfLosses = 0,
+                totalWins = 0,
+                totalLosses = 0,
+                resume = 0,
+                expectedWins = 0,
+                ranking = 0
+            )
+            team = {
                 'name' : team['name'],
-                'abbreviation' : team['abbreviation'],
-                'prestige' : team['prestige'],
-                'rating' :  team['prestige'] + random.randint(-5, 5),
-                'mascot' : team['mascot'],
-                'colorPrimary' : team['colorPrimary'],
-                'colorSecondary' : team['colorSecondary'],
+                'rating' : rating,
                 'conference' : conference['confName'],
-                'expectedWins' : 0,
-                'schedule' : 
-                [
-                    {
-                        'gameNum' : 1,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 2,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 3,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 4,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 5,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 6,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 7,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 8,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 9,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 10,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 11,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 12,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    }
-                ],      
+                'schedule' : [],   
                 'confGames' : 0,
                 'confLimit' : conference['confGames'],
                 'nonConfGames' : 0,
                 'nonConfLimit' : 12 - conference['confGames'],
-                'gamesPlayed' : 0
+                'gamesPlayed' : 0,
+                'gameNum' : 1
             }
 
-            data['teams'].append(Team)
+            teams_to_create.append(Team)
+            data['teams'].append(team)
 
     for team in data['independents']:
-        Team = {
-                'name' : team['name'],
-                'abbreviation' : team['abbreviation'],
-                'prestige' : team['prestige'],
-                'rating' :  team['prestige'] + random.randint(-5, 5),
-                'mascot' : team['mascot'],
-                'colorPrimary' : team['colorPrimary'],
-                'colorSecondary' : team['colorSecondary'],
-                'conference' : None,
-                'expectedWins' : 0,
-                'schedule' : 
-                [
-                    {
-                        'gameNum' : 1,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 2,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 3,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 4,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 5,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 6,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 7,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 8,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 9,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 10,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 11,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    },
-                    {
-                        'gameNum' : 12,
-                        'weekPlayed' : None,
-                        'opponent' : None,
-                        'result' : 'tbd',
-                        'label' : None
-                    }
-                ],      
-                'confGames' : 0,
-                'confLimit' : 0,
-                'nonConfGames' : 0,
-                'nonConfLimit' : 12,
-                'gamesPlayed' : 0
-            }
-
-        data['teams'].append(Team)
-
-    data = setSchedules(data)
-    print('schedules done')
-    
-    teams = []
-
-    for team_data in data['teams']:
-        team = Teams(
-            name = team_data['name'],
-            abbreviation = team_data['abbreviation'],
-            prestige = team_data['prestige'],
-            rating = team_data['rating'],
-            mascot = team_data['mascot'],
-            colorPrimary = team_data['colorPrimary'],
-            colorSecondary = team_data['colorSecondary'],
-            conference = team_data['conference'],
+        rating = team['prestige'] + random.randint(-5, 5)
+        Team = Teams(
+            info=info,
+            name = team['name'],
+            abbreviation = team['abbreviation'],
+            prestige = team['prestige'],
+            rating = rating,
+            mascot = team['mascot'],
+            colorPrimary = team['colorPrimary'],
+            colorSecondary = team['colorSecondary'],
+            conference = None,
             confWins = 0,
             confLosses = 0,
             nonConfWins = 0,
@@ -297,63 +122,60 @@ def init(year):
             totalWins = 0,
             totalLosses = 0,
             resume = 0,
-            expectedWins = team_data['expectedWins'],
-            ranking = team_data['ranking']
+            expectedWins = 0,
+            ranking = 0
         )
-        teams.append(team)
-        #players(team) 
+        team = {
+            'name' : team['name'],
+            'rating' : rating,
+            'conference' : None,
+            'schedule' : [],
+            'confGames' : 0,
+            'confLimit' : 0,
+            'nonConfGames' : 0,
+            'nonConfLimit' : 12,
+            'gamesPlayed' : 0,
+            'gameNum' : 1
+        }
+        
+        teams_to_create.append(Team)
+        data['teams'].append(team)
 
-    Teams.objects.bulk_create(teams)
-    print('teams and players done ')
+    # for team in data['teams']:
+    #     players(team) 
 
-def setSchedules(data):
+    teams_to_create = sorted(teams_to_create, key=lambda team: team.rating, reverse=True)
+    for i, team in enumerate(teams_to_create, start=1):
+        team.ranking = i
+
+    with transaction.atomic():
+        Conferences.objects.bulk_create(conferences_to_create)
+        Teams.objects.bulk_create(teams_to_create)
+
+    setSchedules(data, info)
+
+
+def setSchedules(data, info):
     random.shuffle(data['teams'])
 
-    gameID = 0
+    games_to_create = []  
+
+    scheduled_games = uniqueGames(info, data, games_to_create)
 
     for team in data['teams']:
         if not team['conference']:
+            Team = Teams.objects.get(info=info, name=team['name'])
+            
+            done = False
             while team['nonConfGames'] < team['nonConfLimit']:
-                for i in range(4):
+                for i in range(2):
                     for opponent in data['teams']:
                         if team['nonConfGames'] == team['nonConfLimit']:
                             done = True
                             break
-                        if opponent['name'] != team['name'] and opponent['nonConfGames'] == i:
-                            good = True
-                            for week in team['schedule']:
-                                if week['opponent'] == opponent['name']:
-                                    good = False
-                                    break
-                            if good:
-                                odds = sim.getSpread(team['rating'], opponent['rating'])
-                                for week in team['schedule']:
-                                    if week['opponent'] == None:
-                                        week['gameID'] = gameID
-                                        week['opponent'] = opponent['name']
-                                        week['abbreviation'] = opponent['abbreviation']
-                                        week['rating'] = opponent['rating']
-                                        week['label'] = opponent['conference']
-                                        week['winProb'] = odds['winProbA']
-                                        week['spread'] = odds['spreadA']
-                                        week['moneyline'] = odds['moneylineA']
-                                        team['nonConfGames'] += 1
-                                        team['expectedWins'] += odds['winProbA']
-                                        break
-                                for week in opponent['schedule']:
-                                    if week['opponent'] == None:
-                                        week['gameID'] = gameID
-                                        week['opponent'] = team['name']
-                                        week['abbreviation'] = team['abbreviation']
-                                        week['rating'] = team['rating']
-                                        week['label'] = team['conference']
-                                        week['winProb'] = odds['winProbB']
-                                        week['spread'] = odds['spreadB']
-                                        week['moneyline'] = odds['moneylineB']
-                                        opponent['nonConfGames'] += 1
-                                        opponent['expectedWins'] += odds['winProbB']
-                                        break
-                                gameID += 1
+                        if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['name'] != team['name'] and opponent['nonConfGames'] == i:
+                            Opponent = Teams.objects.get(info=info, name=opponent['name'])
+                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
                     if done:
                         break
 
@@ -364,164 +186,69 @@ def setSchedules(data):
         random.shuffle(data['teams'])
 
         confTeams = [team for team in data['teams'] if team['conference'] == conference['confName']]
-
+        confTeams = sorted(confTeams, key=lambda team: team['confGames'], reverse=True)
 
         for team in confTeams:
+            Team = Teams.objects.get(info=info, name=team['name'])
+            
+            done = False
             while team['nonConfGames'] < team['nonConfLimit']:
-                done = False 
-                for i in range(team['nonConfLimit']):
+                for i in range(12):
                     for opponent in data['teams']:
                         if team['nonConfGames'] == team['nonConfLimit']:
                             done = True
-                            break
-                        if opponent['conference'] and opponent['conference'] != team['conference'] and opponent['nonConfGames'] == i:
-                            good = True
-                            for week in team['schedule']:
-                                if week['opponent'] == opponent['name']:
-                                    good = False
-                                    break
-                            if good:
-                                odds = sim.getSpread(team['rating'], opponent['rating'])
-                                for week in team['schedule']:
-                                    if week['opponent'] == None:
-                                        week['gameID'] = gameID
-                                        week['opponent'] = opponent['name']
-                                        week['abbreviation'] = opponent['abbreviation']
-                                        week['rating'] = opponent['rating']
-                                        week['label'] = opponent['conference']
-                                        week['winProb'] = odds['winProbA']
-                                        week['spread'] = odds['spreadA']
-                                        week['moneyline'] = odds['moneylineA']
-                                        team['nonConfGames'] += 1
-                                        team['expectedWins'] += odds['winProbA']
-                                        break
-                                for week in opponent['schedule']:
-                                    if week['opponent'] == None:
-                                        week['gameID'] = gameID
-                                        week['opponent'] = team['name']
-                                        week['abbreviation'] = team['abbreviation']
-                                        week['rating'] = team['rating']
-                                        week['label'] = team['conference']
-                                        week['winProb'] = odds['winProbB']
-                                        week['spread'] = odds['spreadB']
-                                        week['moneyline'] = odds['moneylineB']
-                                        opponent['nonConfGames'] += 1
-                                        opponent['expectedWins'] += odds['winProbB']
-                                        break
-                                gameID += 1
+                            break    
+                        if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['conference'] != team['conference'] and opponent['nonConfGames'] == i:
+                            Opponent = Teams.objects.get(info=info, name=opponent['name'])
+                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
                     if done:
                         break
 
                 if not done:
-                    odds = sim.getSpread(team['rating'], 50)
-                    for week in team['schedule']:
-                        if week['opponent'] == None:
-                            week['gameID'] = gameID
-                            week['opponent'] = 'FCS'
-                            week['abbreviation'] = 'FCS'
-                            week['rating'] = 50
-                            week['label'] = 'FCS'
-                            week['winProb'] = odds['winProbA']
-                            week['spread'] = odds['spreadA']
-                            week['moneyline'] = odds['moneylineA']
-                            team['nonConfGames'] += 1
-                            team['expectedWins'] += odds['winProbA']
-                            gameID += 1
-                            break
+                    odds = sim.getSpread(Team.rating, 50)
+                    print(team['name'], 'FCSSSSS\n')
+                    team['gameNum'] += 1
+                    team['nonConfGames'] += 1                    
+            done = False
 
             while team['confGames'] < team['confLimit']:
-                done = False 
                 for i in range(team['confLimit']):
                     for opponent in confTeams:
                         if team['confGames'] == team['confLimit']:
                             done = True
                             break
-                        if opponent['name'] != team['name'] and opponent['confGames'] == i:
-                            good = True
-                            for week in team['schedule']:
-                                if week['opponent'] == opponent['name']:
-                                    good = False
-                                    break
-                            if good:
-                                odds = sim.getSpread(team['rating'], opponent['rating'])
-                                for week in team['schedule']:
-                                    if week['opponent'] == None:
-                                        week['gameID'] = gameID
-                                        week['opponent'] = opponent['name']
-                                        week['abbreviation'] = opponent['abbreviation']
-                                        week['rating'] = opponent['rating']
-                                        week['label'] = opponent['conference']
-                                        week['winProb'] = odds['winProbA']
-                                        week['spread'] = odds['spreadA']
-                                        week['moneyline'] = odds['moneylineA']
-                                        team['confGames'] += 1
-                                        team['expectedWins'] += odds['winProbA']
-                                        break
-                                for week in opponent['schedule']:
-                                    if week['opponent'] == None:
-                                        week['gameID'] = gameID
-                                        week['opponent'] = team['name']
-                                        week['abbreviation'] = team['abbreviation']
-                                        week['rating'] = team['rating']
-                                        week['label'] = team['conference']
-                                        week['winProb'] = odds['winProbB']
-                                        week['spread'] = odds['spreadB']
-                                        week['moneyline'] = odds['moneylineB']
-                                        opponent['confGames'] += 1
-                                        opponent['expectedWins'] += odds['winProbB']
-                                        break
-                                gameID += 1
+                        if opponent['confGames'] < opponent['confLimit'] and opponent['name'] not in team['schedule'] and opponent['name'] != team['name'] and opponent['confGames'] == i:
+                            Opponent = Teams.objects.get(info=info, name=opponent['name'])
+                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
                     if done:
                         break
     
     for currentWeek in range(1, 13):
+        for team in data['teams']:
+            if team['name'] in scheduled_games:
+                if currentWeek in scheduled_games[team['name']]:
+                    team['gamesPlayed'] += 1
         for team in sorted(data['teams'], key=lambda team: team['rating'], reverse=True):
             if team['gamesPlayed'] < currentWeek:
-                for week in team['schedule']:
-                    if team['gamesPlayed'] == currentWeek:
+                Team = Teams.objects.get(info=info, name=team['name'])
+                filtered_games = [game for game in games_to_create if game.teamA == Team or game.teamB == Team]
+                filtered_games = [game for game in filtered_games if game.weekPlayed == 0]
+                for game in filtered_games:
+                    if team['gamesPlayed'] >= currentWeek:
                         break
-                    if not week['weekPlayed']:
-                        if week['opponent'] == 'FCS':
-                            week['weekPlayed'] = currentWeek 
-                        else:
-                            for opponent in data['teams']:
-                                if opponent['name'] == week['opponent']:
-                                    if opponent['gamesPlayed'] < currentWeek:
-                                        week['weekPlayed'] = currentWeek       
-                                        team['gamesPlayed'] += 1
-                                        opponent['gamesPlayed'] += 1
-                                        for opponentWeek in opponent['schedule']:
-                                            if opponentWeek['opponent'] == team['name']:
-                                                opponentWeek['weekPlayed'] = currentWeek
-       
-    data['teams'] = sorted(data['teams'], key=lambda a: a['rating'], reverse=True) 
-    for i in range(len(data['teams'])):
-        data['teams'][i]['ranking'] = i+1
-        data['teams'][i]['preseason'] = i+1
-        data['teams'][i]['schedule'] = sorted(data['teams'][i]['schedule'], key=lambda week: week['weekPlayed'])
+                    for opponent in data['teams']:
+                        if game.teamA == Team:
+                            if opponent['gamesPlayed'] < currentWeek and opponent['name'] == game.teamB.name:
+                                game.weekPlayed = currentWeek
+                                team['gamesPlayed'] += 1
+                                opponent['gamesPlayed'] += 1
+                        elif game.teamB == Team:
+                            if opponent['gamesPlayed'] < currentWeek and opponent['name'] == game.teamA.name:
+                                game.weekPlayed = currentWeek
+                                team['gamesPlayed'] += 1
+                                opponent['gamesPlayed'] += 1
 
-    games_to_create = []  # Create a list to hold Games objects
-
-    for team in data['teams']:
-        for week in team['schedule']:
-            game = Games(
-                gameID=week['gameID'],
-                team=team['name'],
-                opponent=week['opponent'],
-                label=week['label'],
-                spread=week['spread'],
-                moneyline=week['moneyline'],
-                winProb=week['winProb'],
-                weekPlayed=week['weekPlayed'],
-                gameNum=week['gameNum'],
-                result=week['result'],
-                overtime=0
-            )
-            games_to_create.append(game)  # Append each game object to the list
-
-    Games.objects.bulk_create(games_to_create)  # Use bulk_create to insert all objects at once
-
-    return data
+    Games.objects.bulk_create(games_to_create)  
 
 def players(team):
     roster = {
@@ -559,3 +286,134 @@ def players(team):
                 )
             if position == 'k' or position == 'p':
                 break
+
+
+def scheduleGame(info, team, opponent, Team, Opponent, games_to_create, weekPlayed=None, gameName=None):
+    odds = sim.getSpread(Team.rating, Opponent.rating)
+
+    if Team.conference and Opponent.conference:
+        if Team.conference == Opponent.conference:
+            labelA = labelB = f'C ({Team.conference.confName})'
+        else:
+            labelA = f'NC ({Opponent.conference.confName})'
+            labelB = f'NC ({Team.conference.confName})'
+    elif not Team.conference and Opponent.conference:
+        labelA = f'NC ({Opponent.conference.confName})'
+        labelB = 'NC (Ind)'
+    elif not Opponent.conference and Team.conference:
+        labelA = 'NC (Ind)'
+        labelB = f'NC ({Team.conference.confName})'
+    else:
+        labelA = 'NC (Ind)'
+        labelB = 'NC (Ind)'
+
+    if gameName:
+        labelA = labelB = gameName
+
+    if weekPlayed:
+        game = Games(
+            info=info,
+            teamA=Team, 
+            teamB=Opponent,    
+            labelA=labelA,  
+            labelB=labelB,     
+            spreadA=odds['spreadA'],  
+            spreadB=odds['spreadB'],
+            moneylineA=odds['moneylineA'],  
+            moneylineB=odds['moneylineB'],
+            winProbA=odds['winProbA'],  
+            winProbB=odds['winProbB'],
+            weekPlayed=weekPlayed,
+            gameNumA=team['gameNum'],
+            gameNumB=opponent['gameNum'],
+            overtime=0,
+        )
+    else:
+        game = Games(
+            info=info,
+            teamA=Team, 
+            teamB=Opponent,    
+            labelA=labelA,  
+            labelB=labelB,     
+            spreadA=odds['spreadA'],  
+            spreadB=odds['spreadB'],
+            moneylineA=odds['moneylineA'],  
+            moneylineB=odds['moneylineB'],
+            winProbA=odds['winProbA'],  
+            winProbB=odds['winProbB'],
+            weekPlayed=0,
+            gameNumA=team['gameNum'],
+            gameNumB=opponent['gameNum'],
+            overtime=0,
+        )
+
+    games_to_create.append(game) 
+    team['gameNum'] += 1
+    opponent['gameNum'] += 1
+    team['schedule'].append(opponent['name'])
+    opponent['schedule'].append(team['name'])
+
+    if Team.conference:
+        if Team.conference == Opponent.conference:
+            team['confGames'] += 1
+            opponent['confGames'] += 1
+        else:
+            team['nonConfGames'] += 1
+            opponent['nonConfGames'] += 1
+    else:
+        team['nonConfGames'] += 1
+        opponent['nonConfGames'] += 1
+
+    return team, opponent
+
+def uniqueGames(info, data, games_to_create):
+    games = data['rivalries']
+        
+    # Initialize a dictionary to keep track of games each team has already scheduled
+    scheduled_games = {}
+
+    # For each game in the list of games
+    for game in games:
+        # For each team in the game (game[0] is the first team, game[1] is the second team)
+        for team_name in [game[0], game[1]]:
+            # If this team has not yet been added to the dictionary, add it with an empty set as its value
+            if team_name not in scheduled_games:
+                scheduled_games[team_name] = set()
+
+        # If a week has been specified for this game (game[2] is not None)
+        if game[2] is not None:
+            # Add this week to the set of weeks during which each team has a game scheduled
+            scheduled_games[game[0]].add(game[2])
+            scheduled_games[game[1]].add(game[2])
+
+    # Now, go through the games again to actually schedule them
+    for game in games:
+        # For each team in the list of all teams
+        for team in data['teams']:
+            # If this team is the first team in this game
+            if team['name'] == game[0]:
+                # Get the database object for this team
+                Team = Teams.objects.get(info=info, name=game[0])
+                # For each team in the list of all teams
+                for opponent in data['teams']:
+                    # If this team is the second team in this game
+                    if opponent['name'] == game[1]:
+                        # Get the database object for this team
+                        Opponent = Teams.objects.get(info=info, name=game[1])
+                        # If a week was not specified for this game
+                        if game[2] is None:
+                            # Choose a random week that neither team has a game scheduled during
+                            game_week = random.choice(list(set(range(1, 13)) - scheduled_games[game[0]] - scheduled_games[game[1]]))
+                        else:
+                            # Use the week that was specified for this game
+                            game_week = game[2]
+
+                        # Add this week to the set of weeks during which each team has a game scheduled
+                        scheduled_games[game[0]].add(game_week)
+                        scheduled_games[game[1]].add(game_week)
+
+                        # Schedule this game by calling scheduleGame function
+                        team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create, game_week, game[3])
+
+    # Return the final dictionary of teams and the weeks they have games scheduled during
+    return scheduled_games

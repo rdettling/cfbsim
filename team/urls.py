@@ -2,10 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('<str:team>/schedule.html', views.schedule),
-    path('<str:team>/schedule/<int:number>.html', views.details),
-    path('<str:team>/roster.html', views.roster),
-    path('<str:team>/roster/<int:number>.html', views.player),
-    path('<str:team>/stats.html', views.stats),
-    path('<str:team>/sim.html', views.simWeek)
+    path('<str:team_name>/schedule.html', views.schedule),
+    path('<str:team_name>/schedule/<int:game_num>.html', views.details),
+    path('<str:team_name>/roster.html', views.roster),
+    path('<str:team_name>/roster/<int:player_num>.html', views.player),
+    path('<str:team_name>/stats.html', views.stats),
+    path('<str:team_name>/<int:desired_week>/sim.html', views.simWeek)
 ]

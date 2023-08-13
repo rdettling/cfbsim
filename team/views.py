@@ -1,30 +1,60 @@
-from django.template import loader
-from django.http import HttpResponse
 from django.forms.models import model_to_dict
 from django.db.models import Max
 from start.models import *
 import static.sim as sim
+from django.shortcuts import render
+from django.db.models import Q
+from django.db.models import Sum
 
-def schedule(request, team):
-    schedule = Games.objects.filter(team=team)
-    team = Teams.objects.get(name=team)
-    teams = Teams.objects.all().order_by('name')
-    info = Info.objects.get()
-    conferences = Conferences.objects.all().order_by('confName')
+
+def schedule(request, team_name):
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
+
+    team = Teams.objects.get(info=info, name=team_name)
+
+    games_as_teamA = team.games_as_teamA.all()
+    games_as_teamB = team.games_as_teamB.all()
+    schedule = list(games_as_teamA | games_as_teamB)
+    schedule = sorted(schedule, key=lambda game: game.weekPlayed)
+
+    teams = Teams.objects.filter(info=info).order_by('name')
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
 
     for week in schedule:
-        try:
-            opponent = Teams.objects.get(name=week.opponent)
-            week.rating = opponent.rating
-            week.ranking = opponent.ranking
-            week.opponentRecord = f'{opponent.totalWins} - {opponent.totalLosses} ({opponent.confWins} - {opponent.confLosses})'
-        except:
-            week.rating = 50
-            week.ranking = None
-            week.opponentRecord = None
+        if week.teamA == team:
+            opponent = week.teamB
+            week.label = week.labelA
+            week.moneyline = week.moneylineA
+            week.spread = week.spreadA
+            week.gameNum = week.gameNumA
+            week.result = week.resultA
+            if not week.overtime:
+                week.score = f'{week.scoreA} - {week.scoreB}'
+            else:
+                if week.overtime == 1:
+                    week.score = f'{week.scoreA} - {week.scoreB} OT'
+                else:
+                    week.score = f'{week.scoreA} - {week.scoreB} {week.overtime}OT'
+        else:
+            opponent = week.teamA
+            week.label = week.labelB
+            week.moneyline = week.moneylineB
+            week.spread = week.spreadB
+            week.gameNum = week.gameNumB
+            week.result = week.resultB
+            if not week.overtime:
+                week.score = f'{week.scoreB} - {week.scoreA}'
+            else:
+                if week.overtime == 1:
+                    week.score = f'{week.scoreB} - {week.scoreA} OT'
+                else:
+                    week.score = f'{week.scoreB} - {week.scoreA} {week.overtime}OT'
+        week.opponent = opponent.name
+        week.rating = opponent.rating
+        week.ranking = opponent.ranking
+        week.opponentRecord = f'{opponent.totalWins} - {opponent.totalLosses} ({opponent.confWins} - {opponent.confLosses})'
 
-    template = loader.get_template('schedule.html')
-   
     context = {
         'team' : team,
         'teams' : teams,
@@ -33,16 +63,17 @@ def schedule(request, team):
         'conferences' : conferences
     }
     
-    return HttpResponse(template.render(context, request))
+    return render(request, 'schedule.html', context)
 
-def roster(request, team):
-    team = Teams.objects.get(name=team)
-    teams = Teams.objects.all().order_by('name')
-    roster = Players.objects.filter(team=team)
-    conferences = Conferences.objects.all().order_by('confName')
-    info = Info.objects.get()
 
-    template = loader.get_template('roster.html')
+def roster(request, team_name):
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
+
+    team = Teams.objects.get(info=info, name=team_name)
+    teams = Teams.objects.filter(info=info).order_by('name')
+    roster = Players.objects.filter(info=info, team=team)
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
 
     context = {
          'team' : team,
@@ -52,15 +83,15 @@ def roster(request, team):
          'conferences' : conferences
     }
     
-    return HttpResponse(template.render(context, request))
+    return render(request, 'roster.html', context)
 
-def player(request, team, number):
-    team = Teams.objects.get(name=team)
-    player = Players.objects.get(id=number)
-    info = Info.objects.get()
-    conferences = Conferences.objects.all().order_by('confName')
+def player(request, team_name, player_num):
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
 
-    template = loader.get_template('player.html')
+    team = Teams.objects.filter(info=info, name=team_name)
+    player = Players.objects.filter(info=info, id=player_num)
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
 
     context = {
          'team' : team,
@@ -69,15 +100,15 @@ def player(request, team, number):
          'conferences' : conferences
     }
     
-    return HttpResponse(template.render(context, request))
+    return render(request, 'player.html', context)
 
-def stats(request, team):
-    team = Teams.objects.get(name=team)
-    teams = Teams.objects.all().order_by('name')
-    conferences = Conferences.objects.all().order_by('confName')
-    info = Info.objects.get()
+def stats(request, team_name):
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
 
-    template = loader.get_template('stats.html')
+    team = Teams.objects.get(info=info, name=team_name)
+    teams = Teams.objects.filter(info=info).order_by('name')
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
 
     context = {
          'team' : team,
@@ -85,305 +116,228 @@ def stats(request, team):
          'info' : info,
          'conferences' : conferences
     }
-    
-    return HttpResponse(template.render(context, request))
 
-def simWeek(request, team):
-    teamName = team
+    print(context)
+    
+    return render(request, 'stats.html', context)
+
+def simWeek(request, team_name, desired_week):
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
+
     resumeFactor = 1.5
-
-    template = loader.get_template('sim.html')
     
-    info = Info.objects.get()
-    currentWeek = info.currentWeek
-    team = Teams.objects.get(name=team)    
-    conferences = Conferences.objects.all().order_by('confName')
-    toBeSimmed = list(Games.objects.filter(weekPlayed=currentWeek))
+    Team = Teams.objects.get(info=info, name=team_name)   
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
 
-    for game in toBeSimmed:
-        Team = Teams.objects.get(name=game.team)
-        
-        if game.opponent != 'FCS':
-            otherGame = Games.objects.get(gameID=game.gameID, team=game.opponent)
+    drives_to_create = []
+    plays_to_create = []
+    teamGames = []
 
-            if otherGame.result == 'tbd':
-                opponent = Teams.objects.get(name=game.opponent)
+    if desired_week == 1 and info.currentWeek > 1:
+        desired_week = info.currentWeek
 
-                simmedGame = sim.simGame(Team.name, Team.rating, opponent.name, opponent.rating, game.gameID)
+    while info.currentWeek <= desired_week: 
+        toBeSimmed = list(Games.objects.filter(info=info, weekPlayed=info.currentWeek))
 
-                if simmedGame['overtime']:
-                    game.score = f"{simmedGame['scoreA']} - {simmedGame['scoreB']} ({simmedGame['overtime']}OT)"
-                    game.overtime = simmedGame['overtime']
-                else:
-                    game.score = f"{simmedGame['scoreA']} - {simmedGame['scoreB']}"
-                
-                if simmedGame['winner'] == Team.name:
-                    if Team.conference == opponent.conference:
-                        Team.confWins += 1
-                        opponent.confLosses += 1
-                    else:
-                        Team.nonConfWins += 1
-                        opponent.nonConfLosses += 1
+        for game in toBeSimmed:
+            if game.teamA == Team:
+                game.num = game.gameNumA
+                game.label = game.labelA
+                teamGames.append(game)
+            elif game.teamB == Team:
+                game.num = game.gameNumB
+                game.label = game.labelB
+                teamGames.append(game)
 
-                    Team.resume += opponent.rating ** resumeFactor
-                    Team.totalWins += 1
-                    opponent.totalLosses += 1
-                    game.result = 'W'
-                else:
-                    if Team.conference == opponent.conference:
-                        Team.confLosses += 1
-                        opponent.confWins += 1
-                    else:
-                        Team.nonConfLosses += 1
-                        opponent.nonConfWins += 1
-                   
-                    opponent.resume += Team.rating ** resumeFactor
-                    Team.totalLosses += 1
-                    opponent.totalWins += 1
-                    game.result = 'L'
+            sim.simGame(info, game, drives_to_create, plays_to_create, resumeFactor)
 
-                opponent.save()
-                
-            else:
-                if otherGame.result == 'W':
-                    game.result = 'L'
-                else:
-                    game.result = 'W'
-                game.overtime = otherGame.overtime
-                a = otherGame.score.split(' ')
+        teams = Teams.objects.filter(info=info).order_by('-resume') 
+        for i, team in enumerate(teams, start=1):
+            team.ranking = i
+            team.save()
 
-                if game.overtime:
-                    game.score = f"{a[2]} - {a[0]} {a[3]}"
-                else:
-                    game.score = f"{a[2]} - {a[0]}"
+        if info.currentWeek == 12:
+            setConferenceChampionships(info)
+        elif info.currentWeek == 13:
+            setPlayoff(info)
+        elif info.currentWeek == 14:
+            setNatty(info)
+        info.currentWeek += 1
 
-        else:
-            simmedGame = sim.simGame(Team.name, Team.rating, 'FCS', 50, game.gameID)
+    Teams.objects.bulk_update(teams, ['ranking'])
+    Drives.objects.bulk_create(drives_to_create)
+    Plays.objects.bulk_create(plays_to_create)
 
-            if simmedGame['overtime']:
-                game.score = f"{simmedGame['scoreA']} - {simmedGame['scoreB']} ({simmedGame['overtime']}OT)"
-                game.overtime = simmedGame['overtime']
-            else:
-                game.score = f"{simmedGame['scoreA']} - {simmedGame['scoreB']}"
-
-            if simmedGame['winner'] == Team.name:
-                Team.nonConfWins += 1
-                Team.totalWins += 1
-                game.result = 'W'
-                Team.resume += 50 ** resumeFactor
-            else:
-                Team.nonConfLosses += 1
-                Team.totalLosses += 1
-                game.result = 'L'
-
-        Team.save()
-        try:
-            game.save()
-        except:
-            print(game.spread, game.moneyline, game.spread, game.score)
-    
-    if currentWeek == 12:
-        setConferenceChampionships()
-    elif currentWeek == 13:
-        setPlayoff()
-    elif currentWeek == 14:
-        setNatty()
-
-    teams = Teams.objects.order_by('-resume', '-totalWins')
-
-    for i, Team in enumerate(teams, start=1):
-        Team.ranking = i
-        Team.save()
-
-    playedThisWeek = list(Games.objects.filter(team=teamName, weekPlayed=currentWeek))
+    info.save()
 
     context = {
-        'team' : team,
+        'team' : Team,
         'conferences' : conferences,
-        'playedThisWeek' : playedThisWeek,
+        'teamGames' : teamGames,
         'info' : info
     }
-
-    info.currentWeek += 1
-    info.save()
     
-    return HttpResponse(template.render(context, request))
+    return render(request, 'sim.html', context)
 
-def details(request, team, number):
-    template = loader.get_template(f'game.html')
+def details(request, team_name, game_num):
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
 
-    conferences = Conferences.objects.all().order_by('confName')
-    info = Info.objects.get()
-    Team = Teams.objects.get(name=team)
-    game = Games.objects.get(team=team, gameNum=number)
-    opponentGame = Games.objects.get(team=game.opponent, opponent=team, weekPlayed=game.weekPlayed)
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
+    team = Teams.objects.get(info=info, name=team_name)
+    game = get_game_by_team_and_gamenum(info, team, game_num)
+    drives = game.drives.all()
 
-    if game.result != 'tbd':
-        if not game.overtime:
-            scores = {
-                'team' : game.score.split('-')[0].strip(),
-                'opponent' : game.score.split('-')[1].strip()
-            }
-        else:
-            scores = {
-                'team' : game.score.split('-')[0].strip(),
-                'opponent' : game.score.split('-')[1].strip().split(' ')[0]
-            }
-
-        teamyards = 0
-        teamTO = 0
-        team3Att = 0
-        team3Con = 0
-        team4Att = 0
-        team4Con = 0
-        oppyards = 0
-        oppTO = 0
-        opp3Att = 0
-        opp3Con = 0
-        opp4Att = 0
-        opp4Con = 0
-
-        plays = list(Plays.objects.filter(gameID=game.gameID, down=3))
-        for play in plays:
-            if play.offense == game.team:
-                if play.yardsGained >= play.yardsLeft:
-                    team3Con += 1
-                team3Att += 1
-            else:
-                if play.yardsGained >= play.yardsLeft:
-                    opp3Con += 1
-                opp3Att += 1
-
-        plays = list(Plays.objects.filter(gameID=game.gameID, down=4))
-        for play in plays:
-            if not (play.playType == 'punt' or play.playType == 'field goal'):
-                if play.offense == game.team:
-                    if play.yardsGained >= play.yardsLeft:
-                        team4Con += 1
-                    team4Att += 1
-                else:
-                    if play.yardsGained >= play.yardsLeft:
-                        opp4Con += 1
-                    opp4Att += 1
-
-       
-        
-        drives = list(Drives.objects.filter(gameID=game.gameID))
-        drive_dicts = []
-        
-        for drive in drives:
-            drive_dict = model_to_dict(drive)
-            drive_dict['teamScoreAfter'] = 0
-            drive_dict['opponentScoreAfter'] = 0
-            drive_dicts.append(drive_dict)
-    
-        
-        for i in range (len(drive_dicts)):
-            if drive_dicts[i]['offense'] == game.team:
-                teamyards += drive_dicts[i]['yards']
-                if drive_dicts[i]['result'] == 'fumble' or drive_dicts[i]['result'] == 'interception':
-                    teamTO += 1
-
-                if drive_dicts[i]['points']:
-                    for j in range(i, len(drive_dicts)):
-                        drive_dicts[j]['teamScoreAfter'] += drive_dicts[i]['points']
-                elif drive_dicts[i]['result'] == 'safety':
-                    for j in range(i, len(drive_dicts)):
-                        drive_dicts[j]['opponentScoreAfter'] += 2
-            elif drive_dicts[i]['offense'] == game.opponent:
-                oppyards += drive_dicts[i]['yards']
-                if drive_dicts[i]['result'] == 'fumble' or drive_dicts[i]['result'] == 'interception':
-                    oppTO += 1
-
-                if drive_dicts[i]['points']:
-                    for j in range(i, len(drive_dicts)):
-                        drive_dicts[j]['opponentScoreAfter'] += drive_dicts[i]['points']
-                elif drive_dicts[i]['result'] == 'safety':
-                    for j in range(i, len(drive_dicts)):
-                        drive_dicts[j]['teamScoreAfter'] += 2
-
-        stats = {
-            'teamyards' : teamyards,
-            'teamTO' : teamTO,
-            'team3Att' : team3Att,
-            'team3Con' : team3Con,
-            'team4Att' : team4Att,
-            'team4Con' : team4Con,
-
-            'oppyards' : oppyards,
-            'oppTO' : oppTO,
-            'opp3Att' : opp3Att,
-            'opp3Con' : opp3Con,
-            'opp4Att' : opp4Att,
-            'opp4Con' : opp4Con
-        }
-                
-        context = {
-            'team' : Team,
-            'opponent' : Teams.objects.get(name=game.opponent),
-            'plays' : Plays.objects.filter(gameID=game.gameID),
-            'game' : game,
-            'drives' : drive_dicts,
-            'scores' : scores,
-            'opponentGame' : opponentGame,
-            'conferences' : conferences,
-            'info' : info,
-            'stats' : stats
-        }
+    game.team = team
+    if game.teamA == team:
+        game.opponent = game.teamB
+        game.team.score = game.scoreA
+        game.opponent.score = game.scoreB
     else:
-        context = {
-            'team' : Team,
-            'opponent' : Teams.objects.get(name=game.opponent),
-            'game' : game,
-            'info' : info,
-            'opponentGame' : opponentGame,
-            'conferences' : conferences
-        }
-    
-    return HttpResponse(template.render(context, request))
+        game.opponent = game.teamA
+        game.team.score = game.scoreB
+        game.opponent.score = game.scoreA
 
-def setConferenceChampionships():
-    conferences = Conferences.objects.all()
-    max_game_id = Games.objects.all().aggregate(Max('gameID'))['gameID__max']
+    scoreA = scoreB = 0
+    for drive in drives:
+        if drive.offense == team:
+            if drive.points:
+                scoreA += drive.points
+            elif drive.result == 'safety':
+                scoreB += 2
+        elif drive.offense == game.opponent:
+            if drive.points:
+                scoreB += drive.points
+            elif drive.result == 'safety':
+                scoreA += 2
+        drive.teamAfter = scoreA
+        drive.oppAfter = scoreB
+
+    team_passing_yards = team_rushing_yards = opp_passing_yards = opp_rushing_yards = 0
+    team_first_downs = opp_first_downs = 0
+    team_third_down_a = team_third_down_c = opp_third_down_a = opp_third_down_c = 0
+    team_fourth_down_a = team_fourth_down_c = opp_fourth_down_a = opp_fourth_down_c = 0
+    team_turnovers = opp_turnovers = 0
+    for play in Plays.objects.filter(game=game):
+        if play.offense == team:
+            if play.playType == 'pass':
+                team_passing_yards += play.yardsGained
+            elif play.playType == 'run':
+                team_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                team_first_downs += 1
+            if play.result == 'interception' or play.result == 'fumble':
+                team_turnovers += 1
+            elif play.down == 3:
+                team_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    team_third_down_c += 1
+            elif play.down == 4:
+                if play.playType != 'punt' and play.playType != 'field goal attempt':
+                    team_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        team_fourth_down_c += 1
+        elif play.offense == game.opponent:
+            if play.playType == 'pass':
+                opp_passing_yards += play.yardsGained
+            elif play.playType == 'run':
+                opp_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                opp_first_downs += 1
+            if play.result == 'interception' or play.result == 'fumble':
+                opp_turnovers += 1
+            elif play.down == 3:
+                opp_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    opp_third_down_c += 1
+            elif play.down == 4:
+                if play.playType != 'punt' and play.playType != 'field goal attempt':
+                    opp_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        opp_fourth_down_c += 1
+
+    stats = {
+        'total yards' : {
+            'team' : drives.filter(offense=team).aggregate(Sum('plays__yardsGained'))['plays__yardsGained__sum'],
+            'opponent' :drives.filter(offense=game.opponent).aggregate(Sum('plays__yardsGained'))['plays__yardsGained__sum']
+        },
+        'passing yards' : {
+            'team' : team_passing_yards,
+            'opponent' : opp_passing_yards
+        },
+        'rushing yards' : {
+            'team' : team_rushing_yards,
+            'opponent' : opp_rushing_yards
+        },
+        '1st downs' : {
+            'team' : team_first_downs,
+            'opponent' : opp_first_downs
+        },
+        '3rd down conversions' : {
+            'team' : team_third_down_c,
+            'opponent' : opp_third_down_c
+        },
+        '3rd down attempts' : {
+            'team' : team_third_down_a,
+            'opponent' : opp_third_down_a
+        },
+        '4th down conversions' : {
+            'team' : team_fourth_down_c,
+            'opponent' : opp_fourth_down_c
+        },
+        '4th down attempts' : {
+            'team' : team_fourth_down_a,
+            'opponent' : opp_fourth_down_a
+        },
+        'turnovers' : {
+            'team' : team_turnovers,
+            'opponent' : opp_turnovers
+        }
+    }
+        
+    context = {
+        'team' : team,
+        'game' : game,
+        'info' : info,
+        'conferences' : conferences,
+        'drives' : drives,
+        'stats' : stats
+    }
+    
+    return render(request, 'game.html', context)
+
+def setConferenceChampionships(info):
+    conferences = Conferences.objects.filter(info=info)
 
     for conference in conferences:
-        teams = list(Teams.objects.filter(conference=conference.confName).order_by('-confWins', '-resume'))
+        teams = conference.teams.order_by('-confWins', '-resume')
+
         teamA = teams[0]
         teamB = teams[1]
 
         odds = sim.getSpread(teamA.rating, teamB.rating)
 
         Games.objects.create(
-            gameID = max_game_id + 1,
-            team = teamA.name,
-            opponent = teamB.name,
-            label = f"{conference.confName} championship",
-            spread = odds['spreadA'],
-            moneyline = odds['moneylineA'],
-            winProb = odds['winProbA'],
-            weekPlayed = 13,
-            gameNum = 13,
-            result = 'tbd',
-            overtime = 0
+            info=info,
+            teamA=teamA, 
+            teamB=teamB,    
+            labelA=f'{conference.confName} championship',  
+            labelB=f'{conference.confName} championship',  
+            spreadA=odds['spreadA'],  
+            spreadB=odds['spreadB'],
+            moneylineA=odds['moneylineA'],  
+            moneylineB=odds['moneylineB'],
+            winProbA=odds['winProbA'],  
+            winProbB=odds['winProbB'],
+            weekPlayed=13,
+            gameNumA=13,
+            gameNumB=13,
+            overtime=0,
         )
-        Games.objects.create(
-            gameID = max_game_id + 1,
-            team = teamB.name,
-            opponent = teamA.name,
-            label = f"{conference.confName} championship",
-            spread = odds['spreadB'],
-            moneyline = odds['moneylineB'],
-            winProb = odds['winProbB'],
-            weekPlayed = 13,
-            gameNum = 13,
-            result = 'tbd',
-            overtime = 0
-        )
-        max_game_id += 1
 
-def setPlayoff():
-    teams = list(Teams.objects.order_by('-resume'))
-    max_game_id = Games.objects.all().aggregate(Max('gameID'))['gameID__max']
+def setPlayoff(info):
+    teams = Teams.objects.filter(info=info).order_by('-resume')
 
     team1 = teams[0]
     team2 = teams[1]
@@ -391,95 +345,76 @@ def setPlayoff():
     team4 = teams[3]
 
     odds = sim.getSpread(team1.rating, team4.rating)
-
     Games.objects.create(
-        gameID = max_game_id + 1,
-        team = team1.name,
-        opponent = team4.name,
-        label = 'Playoff Semifinal 1v4',
-        spread = odds['spreadA'],
-        moneyline = odds['moneylineA'],
-        winProb = odds['winProbA'],
-        weekPlayed = 14,
-        gameNum = 14,
-        result = 'tbd',
-        overtime = 0
-    )
-    Games.objects.create(
-        gameID = max_game_id + 1,
-        team = team4.name,
-        opponent = team1.name,
-        label = 'Playoff Semifinal 4v1',
-        spread = odds['spreadB'],
-        moneyline = odds['moneylineB'],
-        winProb = odds['winProbB'],
-        weekPlayed = 14,
-        gameNum = 14,
-        result = 'tbd',
-        overtime = 0
+        info=info,
+        teamA=team1, 
+        teamB=team4,    
+        labelA='Playoff semifinal 1v4',  
+        labelB='Playoff semifinal 4v1',  
+        spreadA=odds['spreadA'],  
+        spreadB=odds['spreadB'],
+        moneylineA=odds['moneylineA'],  
+        moneylineB=odds['moneylineB'],
+        winProbA=odds['winProbA'],  
+        winProbB=odds['winProbB'],
+        weekPlayed=14,
+        gameNumA=14,
+        gameNumB=14,
+        overtime=0,
     )
 
     odds = sim.getSpread(team2.rating, team3.rating)
-
     Games.objects.create(
-        gameID = max_game_id + 2,
-        team = team2.name,
-        opponent = team3.name,
-        label = 'Playoff Semifinal 2v3',
-        spread = odds['spreadA'],
-        moneyline = odds['moneylineA'],
-        winProb = odds['winProbA'],
-        weekPlayed = 14,
-        gameNum = 14,
-        result = 'tbd',
-        overtime = 0
+        info=info,
+        teamA=team2, 
+        teamB=team3,    
+        labelA='Playoff semifinal 2v3',  
+        labelB='Playoff semifinal 3v2',  
+        spreadA=odds['spreadA'],  
+        spreadB=odds['spreadB'],
+        moneylineA=odds['moneylineA'],  
+        moneylineB=odds['moneylineB'],
+        winProbA=odds['winProbA'],  
+        winProbB=odds['winProbB'],
+        weekPlayed=14,
+        gameNumA=14,
+        gameNumB=14,
+        overtime=0,
     )
-    Games.objects.create(
-        gameID = max_game_id + 2,
-        team = team3.name,
-        opponent = team2.name,
-        label = 'Playoff Semifinal 3v2',
-        spread = odds['spreadB'],
-        moneyline = odds['moneylineB'],
-        winProb = odds['winProbB'],
-        weekPlayed = 14,
-        gameNum = 14,
-        result = 'tbd',
-        overtime = 0
-    )
+    
 
-def setNatty():
-    teams = Games.objects.filter(result='W', label__startswith='Playoff Semifinal').values_list('team', flat=True)
-    max_game_id = Games.objects.all().aggregate(Max('gameID'))['gameID__max']
+def setNatty(info):
+    games_week_14 = Games.objects.filter(info=info, weekPlayed=14)
+    week_14_winners = []
+    for game in games_week_14:
+        week_14_winners.append(game.winner)
 
-    teamA = Teams.objects.get(name=teams[0])
-    teamB = Teams.objects.get(name=teams[1])
+    teamA = week_14_winners[0]
+    teamB = week_14_winners[1]
 
     odds = sim.getSpread(teamA.rating, teamB.rating)
+    Games.objects.create(
+        info=info,
+        teamA=teamA, 
+        teamB=teamB,    
+        labelA='Natty',  
+        labelB='Natty',  
+        spreadA=odds['spreadA'],  
+        spreadB=odds['spreadB'],
+        moneylineA=odds['moneylineA'],  
+        moneylineB=odds['moneylineB'],
+        winProbA=odds['winProbA'],  
+        winProbB=odds['winProbB'],
+        weekPlayed=15,
+        gameNumA=15,
+        gameNumB=15,
+        overtime=0,
+    )
 
-    Games.objects.create(
-        gameID = max_game_id + 1,
-        team = teamA.name,
-        opponent = teamB.name,
-        label = 'Natty',
-        spread = odds['spreadA'],
-        moneyline = odds['moneylineA'],
-        winProb = odds['winProbA'],
-        weekPlayed = 15,
-        gameNum = 15,
-        result = 'tbd',
-        overtime = 0
-    )
-    Games.objects.create(
-        gameID = max_game_id + 1,
-        team = teamB.name,
-        opponent = teamA.name,
-        label = 'Natty',
-        spread = odds['spreadB'],
-        moneyline = odds['moneylineB'],
-        winProb = odds['winProbB'],
-        weekPlayed = 15,
-        gameNum = 15,
-        result = 'tbd',
-        overtime = 0
-    )
+
+def get_game_by_team_and_gamenum(info, team, game_num):
+    game = Games.objects.filter(
+        Q(info=info),
+        Q(teamA=team, gameNumA=game_num) | Q(teamB=team, gameNumB=game_num)
+    ).first()
+    return game

@@ -27,7 +27,13 @@
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href='/teams/{{info.team.name}}/sim.html'>Sim a Week</a>
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Sim</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/1/sim.html'>to next week</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/6/sim.html'>to midseason</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/12/sim.html'>to end of regular season</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/15/sim.html'>to end of season</a>
+                    </div>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href='/rankings/top25.html'>Rankings</a>

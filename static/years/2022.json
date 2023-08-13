@@ -1,4 +1,40 @@
-{
+{ 
+    "rivalries": [
+        ["Notre Dame", "USC", 12, "Jeweled Shillelagh"],
+        ["Alabama", "Auburn", 12, "Iron Bowl"],
+        ["Ohio State", "Michigan", 12, "The Game"],
+        ["Mississippi State", "Ole Miss", 12, "Egg Bowl"],
+        ["Florida", "Georgia", 8, "World's Largest Outdoor Cocktail Party"],
+        ["Army", "Navy", 12, "Army-Navy"],
+        ["Georgia", "Georgia Tech", 12, "Clean, Old-Fashioned Hate"],
+        ["Florida", "Florida State", 12, "Sunshine Showdown"],
+        ["Washington", "Washington State", 12, "Apple Cup"],
+        ["Texas", "Oklahoma", 6, "Red River Showdown"],
+        ["Kansas State", "Iowa State", null, "Farmageddon"],
+        ["Kansas State", "Kansas", 12, "Sunflower Showdown"],
+        ["Clemson", "South Carolina", 12, "Palmetto Bowl"],
+        ["Utah", "BYU", null, "Holy War"],
+        ["Indiana", "Purdue", 12, "Old Oaken Bucket"],
+        ["Iowa", "Iowa State", 2, "Cy-Hawk Trophy"],
+        ["Louisville", "Kentucky", 12, "Governor's Cup"],
+        ["Arizona", "Arizona State", 12, "Territorial Cup"],
+        ["Colorado", "Colorado State", null, "Rocky Mountain Showdown"],
+        ["Minnesota", "Wisconsin", 12, "Paul Bunyan's Axe"],
+        ["Auburn", "Georgia", 10, "Deep South's Oldest Rivalry"],
+        ["Notre Dame", "Navy", null, "Rip Miller Trophy"],
+        ["Oklahoma State", "Oklahoma", 12, "Bedlam"],
+        ["Michigan State", "Notre Dame", null, "Megaphone Trophy"],
+        ["Purdue", "Notre Dame", null, "Shillelagh Trophy"],
+        ["Arkansas", "Texas A&M", 4, "Southwest Classic"],
+        ["Oregon State", "Oregon", 12, "Civil War"],
+        ["Notre Dame", "Stanford", 6, "Legends Trophy"],
+        ["Notre Dame", "Michigan", null, null],
+        ["Pittsburgh", "West Virginia", null, "Backyard Brawl"],
+        ["Alabama", "Tennessee", 7, "Third Saturday in October"],
+        ["USC", "UCLA", 11, null],
+        ["Texas Christian", "Southern Methodist", 3, "Iron Skillet"],
+        ["Notre Dame", "Pittsburgh", null, null]
+    ],
     "conferences" : 
     [
         {

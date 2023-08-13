@@ -69,193 +69,129 @@ def runYards():
 
     return sum
 
-def simDrive(driveID, fieldPosition, teamAName, teamARating, teamBName, teamBRating, gameID=None):
-    driveInfo = {
-        'offense' : teamAName,
-        'defense' : teamBName,
-        'result' : None,
-        'points' : None,
-        'nextDriveFP' : None,
-        'yards' : 0,
-        'playCount' : 0
-    }
-
+def simDrive(info, game, driveNum, fieldPosition, offense, defense, plays_to_create):
     comp = 0.6
     passFreq = 0.5
-    af = getAF(teamARating, teamBRating)
+    af = getAF(offense.rating, defense.rating)
 
-    while True:
-        if driveInfo['result']: #end loop if a drive result has been found
-            break
+    drive = Drives(
+        info = info,
+        game = game,
+        driveNum = driveNum,
+        offense = offense,
+        defense = defense,
+        startingFP = fieldPosition,
+        result = None,
+        points = 0,
+    )
 
+    while not drive.result:
         for down in range(1, 5):
+            play = Plays(
+                info = info,
+                game = game,
+                drive = drive,
+                offense = offense,
+                defense = defense,
+                startingFP = fieldPosition,
+                down = down
+            )
             if down == 1:
                 if fieldPosition >= 90: #check if first and goal
                     yardsLeft = 100 - fieldPosition
                 else:
                     yardsLeft = 10
-            elif down == 4: #4th down logic
+
+            play.yardsLeft = yardsLeft
+
+            if down == 4: #4th down logic
                 decision = fouthDown(fieldPosition, yardsLeft)
             
                 if decision == 'field goal':
-                    yardsGained = 0
-                    driveInfo['yards'] += yardsGained
-                    driveInfo['result'] = 'field goal'
-                    driveInfo['points'] = 3
-                    driveInfo['nextDriveFP'] = 20
-                    driveInfo['playCount'] += 1
-                    if gameID:
-                        Plays.objects.create(
-                            gameID = gameID,
-                            driveID = driveID,
-                            offense = teamAName,
-                            defense = teamBName,
-                            startingFP = fieldPosition,
-                            down = down,
-                            yardsLeft = yardsLeft,
-                            playType = 'field goal',
-                            yardsGained = yardsGained,
-                            result = 'made field goal'
-                        )
-                    break
+                    play.playType = 'field goal attempt'
+                    play.yardsGained = 0
+                    play.result = 'made field goal'
+                    plays_to_create.append(play)
+                   
+                    drive.result = 'field goal'
+                    drive.points = 3
+                    
+                    return drive, 20
+                
                 elif decision == 'punt':
-                    yardsGained = 0
-                    driveInfo['yards'] += yardsGained
-                    driveInfo['result'] = 'punt'
-                    driveInfo['points'] = 0
-                    driveInfo['nextDriveFP'] = 100 - (fieldPosition + 40)
-                    driveInfo['playCount'] += 1
-                    if gameID:
-                        Plays.objects.create(
-                            gameID = gameID,
-                            driveID = driveID,
-                            offense = teamAName,
-                            defense = teamBName,
-                            startingFP = fieldPosition,
-                            down = down,
-                            yardsLeft = yardsLeft,
-                            playType = 'punt',
-                            yardsGained = yardsGained,
-                            result = 'punt'
-                        )
-                    break
+                    play.playType = 'punt'
+                    play.yardsGained = 0
+                    play.result = 'punt'
+                    plays_to_create.append(play)
+
+                    drive.result = 'punt'
+                    drive.points = 0
+                    
+                    return drive, 100 - (fieldPosition + 40)
 
             if random.random() < passFreq: #determine if pass or run occurs if not doing special teams play
                 result = simPass(comp)
-                yardsGained = result['yards']
-                driveInfo['playCount'] += 1
+                play.playType = 'pass'
 
                 if result['outcome'] == 'interception':
-                    driveInfo['result'] = 'interception'
-                    driveInfo['points'] = 0
-                    driveInfo['nextDriveFP'] = 100 - fieldPosition
-                    if gameID:
-                        Plays.objects.create(
-                            gameID = gameID,
-                            driveID = driveID,
-                            offense = teamAName,
-                            defense = teamBName,
-                            startingFP = fieldPosition,
-                            down = down,
-                            yardsLeft = yardsLeft,
-                            playType = 'pass',
-                            yardsGained = yardsGained,
-                            result = result['outcome']
-                        )
-                    break
-                else:
-                    if result['yards'] > 0:
-                        yardsGained = round(result['yards'] * af)
-                    else:
-                        yardsGained = round(result['yards'] * (1/af))
-                    
-                    if yardsGained + fieldPosition > 100: #adjust if touchdown
-                        yardsGained = 100 - fieldPosition
-                    driveInfo['yards'] += yardsGained
+                    play.yardsGained = 0
+                    play.result = 'interception'
+                    plays_to_create.append(play)
 
-                if gameID:
-                    Plays.objects.create(
-                        gameID = gameID,
-                        driveID = driveID,
-                        offense = teamAName,
-                        defense = teamBName,
-                        startingFP = fieldPosition,
-                        down = down,
-                        yardsLeft = yardsLeft,
-                        playType = 'pass',
-                        yardsGained = yardsGained,
-                        result = result['outcome']
-                    )
+                    drive.result = 'interception'
+                    drive.points = 0
+
+                    return drive, 100 - fieldPosition
+            
             else: # if run
                 result = simRun()
-                yardsGained = result['yards']
-                driveInfo['playCount'] += 1
+                play.playType = 'run'
 
                 if result['outcome'] == 'fumble':
-                    driveInfo['result'] = 'fumble'
-                    driveInfo['points'] = 0
-                    driveInfo['nextDriveFP'] = 100 - fieldPosition
-                    if gameID:
-                        Plays.objects.create(
-                            gameID = gameID,
-                            driveID = driveID,
-                            offense = teamAName,
-                            defense = teamBName,
-                            startingFP = fieldPosition,
-                            down = down,
-                            yardsLeft = yardsLeft,
-                            playType = 'run',
-                            yardsGained = yardsGained,
-                            result = result['outcome']
-                        )
-                    break
-                else:
-                    if result['yards'] > 0:
-                        yardsGained = round(result['yards'] * af)
-                    else:
-                        yardsGained = round(result['yards'] * (1/af))
-                    
-                    if yardsGained + fieldPosition > 100: #adjust if touchdown
-                        yardsGained = 100 - fieldPosition
-                    driveInfo['yards'] += yardsGained
-                    
-                if gameID:
-                    Plays.objects.create(
-                        gameID = gameID,
-                        driveID = driveID,
-                        offense = teamAName,
-                        defense = teamBName,
-                        startingFP = fieldPosition,
-                        down = down,
-                        yardsLeft = yardsLeft,
-                        playType = 'run',
-                        yardsGained = yardsGained,
-                        result = result['outcome']
-                    )
+                    play.yardsGained = 0
+                    play.result = 'fumble'
+                    plays_to_create.append(play)
+
+                    drive.result = 'fumble'
+                    drive.points = 0
+
+                    return drive, 100 - fieldPosition
+                
+            if result['yards'] > 0:
+                yardsGained = round(result['yards'] * af)
+            else:
+                yardsGained = round(result['yards'] * (1/af))
+            
+            if yardsGained + fieldPosition >= 100: #adjust if touchdown
+                play.yardsGained = 100 - fieldPosition
+                play.result = result['outcome']
+                plays_to_create.append(play)
+
+                drive.result = 'touchdown'
+                drive.points = 7
+
+                return drive, 20
             
             yardsLeft -= yardsGained
             fieldPosition += yardsGained
 
-            if fieldPosition >= 100:
-                driveInfo['result'] = 'touchdown'
-                driveInfo['points'] = 7
-                driveInfo['nextDriveFP'] = 20
-                break
-            elif down == 4 and yardsLeft > 0:
-                driveInfo['result'] = 'turnover on downs'
-                driveInfo['points'] = 0
-                driveInfo['nextDriveFP'] = 100 - fieldPosition
-                break
-            elif fieldPosition < 1:
-                driveInfo['result'] = 'safety'
-                driveInfo['points'] = 0
-                driveInfo['nextDriveFP'] = 20
-                break
+            play.yardsGained = yardsGained
+            play.result = result['outcome']
+            plays_to_create.append(play)
             
+            if down == 4 and yardsLeft > 0:
+                drive.result = 'turnover on downs'
+                drive.points = 0
+
+                return drive, 100 - fieldPosition
+            if fieldPosition < 1:
+                drive.result = 'safety'
+                drive.points = 0
+
+                return drive, 20
+               
             if yardsLeft <= 0: #new set of downs if first down has been made
                 break
-            
-    return driveInfo
 
 def fouthDown(fieldPosition, yardsLeft):
     if fieldPosition < 40:
@@ -275,194 +211,171 @@ def fouthDown(fieldPosition, yardsLeft):
             return 'go'
         else:
             return 'field goal'
+        
 
-def simGame(teamAName, teamARating, teamBName, teamBRating, gameID=None):
+def simGame(info, game, drives_to_create, plays_to_create, resumeFactor):
     drivesPerTeam = 11
     fieldPosition = None
-
-    game = {
-        'teamAName' : teamAName,
-        'teamARating' : teamARating,
-        'teamBName' : teamBName,
-        'teamBRating' : teamBRating,
-        'scoreA' : 0,
-        'scoreB' : 0, 
-        'drives' : [],
-        'overtime' : 0,
-        'winner' : None
-    }
+    game.scoreA = 0
+    game.scoreB = 0
 
     for i in range(drivesPerTeam * 2):
         if i == 0 or i == drivesPerTeam:
             fieldPosition = 20
         if i % 2 == 0:
-            drive = simDrive(i, fieldPosition, teamAName, teamARating, teamBName, teamBRating, gameID)
+            drive, fieldPosition = simDrive(info, game, i, fieldPosition, game.teamA, game.teamB, plays_to_create)
 
-            if gameID:
-                Drives.objects.create(
-                    gameID = gameID,
-                    driveID = i,
-                    offense = teamAName,
-                    defense = teamBName,
-                    startingFP = fieldPosition,
-                    result = drive['result'],
-                    yards = drive['yards'],
-                    playCount = drive['playCount'],
-                    points = drive['points']
-                )
-
-            game['drives'].append(drive)
-            fieldPosition = drive['nextDriveFP']
-        else:
-            drive = simDrive(i, fieldPosition, teamBName, teamBRating, teamAName, teamARating, gameID)
-
-            if gameID:
-                Drives.objects.create(
-                    gameID = gameID,
-                    driveID = i,
-                    offense = teamBName,
-                    defense = teamAName,
-                    startingFP = fieldPosition,
-                    result = drive['result'],
-                    yards = drive['yards'],
-                    playCount = drive['playCount'],
-                    points = drive['points']
-                )
-
-            game['drives'].append(drive)
-            fieldPosition = drive['nextDriveFP']
-
-    for drive in game['drives']:
-        if drive['offense'] == teamAName:
-            if drive['result'] != 'safety':
-                game['scoreA'] += drive['points']
+            if not drive.result == 'safety':
+                game.scoreA += drive.points
             else:
-                game['scoreB'] += 2
+                game.scoreB += 2
+            drives_to_create.append(drive)
         else:
-            if drive['result'] != 'safety':
-                game['scoreB'] += drive['points']
+            drive, fieldPosition = simDrive(info, game, i, fieldPosition, game.teamB, game.teamA, plays_to_create)
+            if not drive.result == 'safety':
+                game.scoreB += drive.points
             else:
-                game['scoreA'] += 2
+                game.scoreA += 2
+            drives_to_create.append(drive)
 
-    if game['scoreA'] == game['scoreB']:
-        game = overtime(drivesPerTeam, game, teamAName, teamARating, teamBName, teamBRating, gameID)
-    
-    if game['scoreA'] > game['scoreB']:
-        game['winner'] = teamAName
+    if game.scoreA == game.scoreB:
+        game = overtime(info, game, drives_to_create, plays_to_create, drivesPerTeam)
+
+    if game.scoreA > game.scoreB:
+        if game.teamA.conference == game.teamB.conference:
+            game.teamA.confWins += 1
+            game.teamB.confLosses += 1
+        else:
+            game.teamA.nonConfWins += 1
+            game.teamB.nonConfLosses += 1
+        game.winner = game.teamA
+        game.resultA = "W"
+        game.resultB = "L"
+        game.teamA.totalWins += 1
+        game.teamB.totalLosses += 1
+        game.teamA.resume += game.teamB.rating ** resumeFactor
+    elif game.scoreA < game.scoreB:
+        if game.teamA.conference == game.teamB.conference:
+            game.teamA.confLosses += 1
+            game.teamB.confWins += 1
+        else:
+            game.teamA.nonConfLosses += 1
+            game.teamB.nonConfWins += 1
+        game.winner = game.teamB
+        game.resultA = "L"
+        game.resultB = "W"
+        game.teamA.totalLosses += 1
+        game.teamB.totalWins += 1
+        game.teamB.resume += game.teamA.rating ** resumeFactor
     else:
-        game['winner'] = teamBName
+        game.resultA = "Tie"
+        game.resultB = "Tie"
 
-    return game
+    game.save()
+    game.teamA.save()
+    game.teamB.save()
 
-def overtime(drivesPerTeam, game, teamAName, teamARating, teamBName, teamBRating, gameID=None):
-    i = drivesPerTeam * 2
-    while game['scoreA'] == game['scoreB']:
-        game['overtime'] += 1
-        drive = simDrive(i, 50, teamAName, teamARating, teamBName, teamBRating, gameID)
-        if gameID:
-            Drives.objects.create(
-                gameID = gameID,
-                driveID = i,
-                offense = teamAName,
-                defense = teamBName,
-                startingFP = 50,
-                result = drive['result'],
-                yards = drive['yards'],
-                playCount = drive['playCount'],
-                points = drive['points']
-            )
-        game['scoreA'] += drive['points']
-        game['drives'].append(drive)
+def overtime(info, game, drives_to_create, plays_to_create, drivesPerTeam):
+    i = (drivesPerTeam * 2) + 1
+
+    while game.scoreA == game.scoreB:
+        game.overtime += 1
+
         i += 1
+        drive, fieldPosition = simDrive(info, game, i, 50, game.teamA, game.teamB, plays_to_create)
+        if not drive.result == 'safety':
+                game.scoreA += drive.points
+        else:
+                game.scoreB += 2
+        drives_to_create.append(drive)
 
-        drive = simDrive(i, 50, teamBName, teamBRating, teamAName, teamARating, gameID)
-        if gameID:
-            Drives.objects.create(
-                gameID = gameID,
-                driveID = i,
-                offense = teamBName,
-                defense = teamAName,
-                startingFP = 50,
-                result = drive['result'],
-                yards = drive['yards'],
-                playCount = drive['playCount'],
-                points = drive['points']
-            )
-        game['scoreB'] += drive['points']
-        game['drives'].append(drive)
         i += 1 
+        drive, fieldPosition = simDrive(info, game, i, 50, game.teamB, game.teamA, plays_to_create)
+        if not drive.result == 'safety':
+                game.scoreB += drive.points
+        else:
+                game.scoreA += 2
+        drives_to_create.append(drive)
 
     return game
 
 def getSpread(teamARating, teamBRating, tax_factor=0.05):
-    tests = 50
-    aWin = 0
-    bWin = 0
-    aPoints = 0
-    bPoints = 0
+    # tests = 50
+    # aWin = 0
+    # bWin = 0
+    # aPoints = 0
+    # bPoints = 0
 
-    for i in range(tests):
-        game = simGame('teamA', teamARating, 'teamB', teamBRating)
+    # for i in range(tests):
+    #     game = simGame('teamA', teamARating, 'teamB', teamBRating)
 
-        aPoints += game['scoreA']
-        bPoints += game['scoreB']
+    #     aPoints += game['scoreA']
+    #     bPoints += game['scoreB']
 
-        if game['winner'] == 'teamA':
-            aWin += 1
-        else:
-            bWin += 1
+    #     if game['winner'] == 'teamA':
+    #         aWin += 1
+    #     else:
+    #         bWin += 1
 
-    aPoints /= tests
-    bPoints /= tests
+    # aPoints /= tests
+    # bPoints /= tests
 
-    spread = round((bPoints - aPoints) * 2) / 2  # round to nearest half-point
+    # spread = round((bPoints - aPoints) * 2) / 2  # round to nearest half-point
 
-    if spread > 0:
-        spreadA = '+' + str(int(spread)) if spread.is_integer() else '+' + str(spread)
-        spreadB = '-' + str(int(spread)) if spread.is_integer() else '-' + str(spread)
-    elif spread < 0:
-        spreadA = '-' + str(abs(int(spread))) if spread.is_integer() else '-' + str(abs(spread))
-        spreadB = '+' + str(abs(int(spread))) if spread.is_integer() else '+' + str(abs(spread))
-    else:
-        spreadA = 'Even'
-        spreadB = 'Even'
+    # if spread > 0:
+    #     spreadA = '+' + str(int(spread)) if spread.is_integer() else '+' + str(spread)
+    #     spreadB = '-' + str(int(spread)) if spread.is_integer() else '-' + str(spread)
+    # elif spread < 0:
+    #     spreadA = '-' + str(abs(int(spread))) if spread.is_integer() else '-' + str(abs(spread))
+    #     spreadB = '+' + str(abs(int(spread))) if spread.is_integer() else '+' + str(abs(spread))
+    # else:
+    #     spreadA = 'Even'
+    #     spreadB = 'Even'
 
-    winProbA = aWin / tests
-    winProbB = bWin / tests
+    # winProbA = aWin / tests
+    # winProbB = bWin / tests
     
-    implied_probA = winProbA + tax_factor / 2
-    implied_probB = winProbB + tax_factor / 2
+    # implied_probA = winProbA + tax_factor / 2
+    # implied_probB = winProbB + tax_factor / 2
 
-    if implied_probA >= 1:
-        implied_probA = 0.99
-    elif implied_probA <= 0:
-        implied_probA = 0.01
-    if implied_probB >= 1:
-        implied_probB = 0.99
-    elif implied_probB <= 0:
-        implied_probB = 0.01
+    # if implied_probA >= 1:
+    #     implied_probA = 0.99
+    # elif implied_probA <= 0:
+    #     implied_probA = 0.01
+    # if implied_probB >= 1:
+    #     implied_probB = 0.99
+    # elif implied_probB <= 0:
+    #     implied_probB = 0.01
        
-    if implied_probA > 0.5:
-        moneylineA = round(implied_probA / (1 - implied_probA) * 100)
-        moneylineA = f'-{moneylineA}'
-    else:
-        moneylineA = round(((1 / implied_probA) - 1) * 100)
-        moneylineA = f'+{moneylineA}'
+    # if implied_probA > 0.5:
+    #     moneylineA = round(implied_probA / (1 - implied_probA) * 100)
+    #     moneylineA = f'-{moneylineA}'
+    # else:
+    #     moneylineA = round(((1 / implied_probA) - 1) * 100)
+    #     moneylineA = f'+{moneylineA}'
 
-    if implied_probB > 0.5:
-        moneylineB = round(implied_probB / (1 - implied_probB) * 100)
-        moneylineB = f'-{moneylineB}'
-    else:
-        moneylineB = round(((1 / implied_probB) - 1) * 100)
-        moneylineB = f'+{moneylineB}'
+    # if implied_probB > 0.5:
+    #     moneylineB = round(implied_probB / (1 - implied_probB) * 100)
+    #     moneylineB = f'-{moneylineB}'
+    # else:
+    #     moneylineB = round(((1 / implied_probB) - 1) * 100)
+    #     moneylineB = f'+{moneylineB}'
     
+    # return {
+    #     'spreadA': spreadA,
+    #     'spreadB': spreadB,
+    #     'winProbA': winProbA,
+    #     'winProbB': winProbB,
+    #     'moneylineA': moneylineA,
+    #     'moneylineB': moneylineB
+    # }
     return {
-        'spreadA': spreadA,
-        'spreadB': spreadB,
-        'winProbA': winProbA,
-        'winProbB': winProbB,
-        'moneylineA': moneylineA,
-        'moneylineB': moneylineB
+        'spreadA': 0,
+        'spreadB': 0,
+        'winProbA': 0,
+        'winProbB': 0,
+        'moneylineA': 0,
+        'moneylineB': 0
     }
 
 def testGame(a, b):

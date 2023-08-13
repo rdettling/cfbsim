@@ -1,6 +1,6 @@
-# Project Name
+# cfbsim.net
 
-Brief description of the project.
+Personal project that simulates a college football season. Inspired by https://play.basketball-gm.com/ 
 
 ## Table of Contents
 

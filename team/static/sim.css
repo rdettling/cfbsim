@@ -1,18 +1,31 @@
-.teamname {
-    font-size: 26px;
+#content {
+    width: 80%;
+    margin: 0 auto;
 }
 
-.teamlogo {
-    height: 60px;
+.centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.boxlogo {
+    height: 40px;
+    width: auto;  /* maintain aspect ratio */
+}
+
+.gametext {
+    font-size: 20px;
+    line-height: 1;
     padding-left: 10px;
-    padding-right: 10px;
 }
 
-.score {
-    font-size: 26px;
-    margin: 10px;
+.game {
+    margin-top: 30px;
+    border: 2px solid black;
+    padding: 10px; /* Optional: Add some padding to make the border look better */
 }
 
 p {
-    margin-bottom: 0;
+    margin: 0px;
 }

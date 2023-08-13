@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+SESSION_COOKIE_AGE = 1209600  # 2 weeks, in seconds
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
@@ -61,10 +65,16 @@ WSGI_APPLICATION = 'cfbsim.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('HEROKU_POSTGRESQL_CYAN_URL'),
-        conn_max_age=600,
-        ssl_require=os.environ.get('SSL_REQUIRE', 'False') == 'True'
+        ssl_require=os.environ.get('SSL_REQUIRE')
     )
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 LANGUAGE_CODE = 'en-us'
 

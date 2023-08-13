@@ -1,15 +1,12 @@
-from django.template import loader
-from django.http import HttpResponse
 from django.shortcuts import render
 from start.models import *
 
 def rankings(request):
-    template = loader.get_template('rankings.html')
-
-    teams = Teams.objects.all().order_by('ranking')
-    info = Info.objects.get()
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
     team = info.team
-    conferences = Conferences.objects.all().order_by('confName')
+    teams = Teams.objects.filter(info=info).order_by('ranking')
+    conferences = Conferences.objects.filter(info=info).order_by('confName')
 
     context = {
         'teams' : teams,
@@ -18,18 +15,17 @@ def rankings(request):
         'info' : info
     }
 
-    return HttpResponse(template.render(context, request))
+    return render(request, 'rankings.html', context)
 
-def standings(request, conference):
-    conferences = Conferences.objects.all().order_by('confName')
-    info = Info.objects.get()
+def standings(request, conference_name):
+    user_id = request.session.session_key 
+    info = Info.objects.get(user_id=user_id)
+    conferences = Conferences.objects.filter(info=info).order_by('confName')    
     team = info.team
 
-    if conference != 'independent':
-        template = loader.get_template('standings.html')
-
-        teams = Teams.objects.filter(conference=conference).order_by('-confWins', '-resume')
-        conference = Conferences.objects.get(confName=conference)
+    if conference_name != 'independent':
+        conference = Conferences.objects.get(info=info, confName=conference_name)
+        teams = conference.teams.all().order_by('-confWins', '-resume', '-totalWins')
 
         context = {
             'conference' : conference,
@@ -39,11 +35,9 @@ def standings(request, conference):
             'team' : team
         }
 
-        return HttpResponse(template.render(context, request))
+        return render(request, 'standings.html', context)
     else:
-        template = loader.get_template('independents.html')
-
-        teams = Teams.objects.filter(conference=None).order_by('-totalWins', '-resume')
+        teams = Teams.objects.filter(info=info, conference=None).order_by('-totalWins', '-resume')
 
         context = {
             'teams' : teams,
@@ -52,4 +46,4 @@ def standings(request, conference):
             'info' : info
         }
         
-        return HttpResponse(template.render(context, request))
+        return render(request, 'independents.html', context)
