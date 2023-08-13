@@ -1139,7 +1139,7 @@
         {
             "name" : "Connecticut",
             "mascot" : "Huskies",
-            "abbreviation" : "UCONN",
+            "abbreviation" : "CONN",
             "prestige" : 70,
             "colorPrimary" : "#000E2F",
             "colorSecondary" : "#E4002B"
@@ -1155,7 +1155,7 @@
         {
             "name" : "Massachusetts",
             "mascot" : "Minutemen",
-            "abbreviation" : "UMASS",
+            "abbreviation" : "MASS",
             "prestige" : 65,
             "colorPrimary" : "#971B2F",
             "colorSecondary" : "#B1B3B3"
