@@ -267,9 +267,6 @@ def simGame(info, game, drives_to_create, plays_to_create, resumeFactor):
         game.teamA.totalLosses += 1
         game.teamB.totalWins += 1
         game.teamB.resume += game.teamA.rating ** resumeFactor
-    else:
-        game.resultA = "Tie"
-        game.resultB = "Tie"
 
     game.save()
     game.teamA.save()

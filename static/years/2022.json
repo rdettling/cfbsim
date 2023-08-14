@@ -160,7 +160,7 @@
         {
             "confName" : "B1G",
             "confFullName" : "Big Ten Conference",
-            "confGames" : 8,
+            "confGames" : 9,
             "teams" :
             [
                 {
@@ -400,7 +400,7 @@
         {
             "confName" : "XII",
             "confFullName" : "Big 12 Conference",
-            "confGames" : 8,
+            "confGames" : 9,
             "teams" :
             [
                 {
@@ -488,7 +488,7 @@
         {
             "confName" : "Pac-12",
             "confFullName" : "Pac-12 Conference",
-            "confGames" : 8,
+            "confGames" : 9,
             "teams" :
             [
                 {
