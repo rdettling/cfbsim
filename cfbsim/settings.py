@@ -62,19 +62,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cfbsim.wsgi.application'
 
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=os.environ.get('HEROKU_POSTGRESQL_CYAN_URL'),
-#         ssl_require=os.environ.get('SSL_REQUIRE')
-#     )
-# }
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('HEROKU_POSTGRESQL_CYAN_URL'),
+        ssl_require=os.environ.get('SSL_REQUIRE')
+    )
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 LANGUAGE_CODE = 'en-us'
 
