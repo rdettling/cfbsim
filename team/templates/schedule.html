@@ -7,35 +7,32 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid mt-3 mb-3">
-        <div class="row">
-            <div class="col-md-1"></div>
-            <div class="col-md-2 d-flex justify-content-center">
-                <img src='{% static team.name %}.png' class="img-fluid logo" style="max-height: 150px;">
-            </div>            
-            <div class="col-md-5">
-                <div id='teamheader' class="text-center">
-                    <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
-                    <h2 class="lead">{{team.conference.confName}}</h2>
-                    <h2 class="lead">{{team.rating}} overall</h2>
-                    <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
-                </div>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <img src='{% static team.name %}.png' style="max-height: 150px;">
+        </div>            
+        <div class="col-md-5">
+            <div class="text-center">
+                <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
+                <h2 class="lead">{{team.conference.confName}}</h2>
+                <h2 class="lead">{{team.rating}} overall</h2>
+                <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
             </div>
-            <div class="col-md-3">
-                <div class="form-group text-center">
-                    <label for="teamFilter">change team</label>
-                    <select class="form-control" id="teamFilter">
-                        {% for team in teams %}
-                            <option value="{{team.name}}">{{team.name}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-1"></div>
         </div>
+        <div class="col-md-3">
+            <div class="form-group text-center">
+                <label for="teamFilter">change team</label>
+                <select class="form-control" id="teamFilter">
+                    {% for team in teams %}
+                        <option value="{{team.name}}">{{team.name}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-1"></div>
     </div>
 
-    <table id = 'schedule' class="table table-striped mx-auto">
+    <table class="table table-striped">
         <thead>
         <tr>
             <th>Week</th>
@@ -64,7 +61,7 @@
                     <td>{{week.opponentRecord}}</td>
                     <td>
                         <img src='{% static week.opponent %}.png' class='teamlogo'>
-                        <a href='/teams/{{week.opponent}}/schedule.html' class='teamlink'>{{week.opponent}}</a> 
+                        <a href='/teams/{{week.opponent}}/schedule.html'>{{week.opponent}}</a> 
                     </td>
                     <td>{{week.spread}}</td>
                     <td>{{week.moneyline}}</td>
@@ -82,15 +79,16 @@
             {% endfor %}
         </tbody>
     </table> 
+{% endblock %}
 
+{% block additional_scripts %}
     <script>
-        const team = window.location.href.split('/')[4];
-        document.getElementById('teamFilter').value = team;
-        document.getElementById('teamFilter').addEventListener('change', (event) => 
-        {
-            const selectedTeam = event.target.value;
-            const url = `/teams/${selectedTeam}/schedule.html`;
-            window.location.href = url;
+        $(document).ready(function() {
+            const team = window.location.href.split('/')[4];
+            $('#teamFilter').val(team).change(function() {
+                const selectedTeam = $(this).val();
+                window.location.href = `/teams/${selectedTeam}/schedule.html`;
+            });
         });
     </script>
 {% endblock %}

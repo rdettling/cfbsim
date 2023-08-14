@@ -16,8 +16,20 @@ def dashboard(request):
 
     games_as_teamA = team.games_as_teamA.all()
     games_as_teamB = team.games_as_teamB.all()
-
     schedule = list(games_as_teamA | games_as_teamB)
+    for week in schedule:
+        week.team = team
+        if week.teamA == team:
+            week.opponent =  week.teamB
+            week.result = week.resultA
+            week.gameNum = week.gameNumA
+            week.score = f'{week.scoreA} - {week.scoreB}'
+        else:
+            week.opponent =  week.teamA
+            week.result = week.resultB
+            week.gameNum = week.gameNumB
+            week.score = f'{week.scoreB} - {week.scoreA}'
+
     teams = Teams.objects.filter(info=info).order_by('ranking')
     conferences = Conferences.objects.filter(info=info).order_by('confName')
     confTeams = Teams.objects.filter(info=info, conference=team.conference).order_by('-confWins', '-resume')

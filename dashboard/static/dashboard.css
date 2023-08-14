@@ -1,5 +1,12 @@
 .teamlogo {
     height: 30px;
-    position: relative;
     margin-right: 10px
+}
+
+.borderedtable {
+    border: 1px solid black;
+}
+
+.card {
+    margin-top: 46px;
 }

@@ -7,12 +7,12 @@
 {% endblock %}
 
 {% block content %}
-    <div id="header" class="d-flex justify-content-center align-items-center flex-column">
-        <img id="conflogo" src="{% static conference.confName %}.png" class="mb-3">
-        <h1 class="text-center" style="max-width: 800px;">{{conference.confFullName}} standings</h1>
+    <div class="d-flex flex-column align-items-center text-center mb-3">
+        <img class='conflogo' src="{% static conference.confName %}.png">
+        <h1>{{conference.confFullName}} standings</h1>
     </div>
 
-    <table id='standings' class="table table-striped">
+    <table class="table table-striped">
         <thead>
             <tr>
             <th>Conference Rank</th>
@@ -30,8 +30,8 @@
                     <td>{{team.ranking}}</td>
                     <td>{{team.rating}}</td>
                     <td>
-                        <img src='{% static team.name %}.png' class='teamlogo'>
-                        <a href='/teams/{{team.name}}/schedule.html' class='teamlink'>{{team.name}}</a> 
+                        <img src='{% static team.name %}.png' class='teamlogo mr-3'>
+                        <a href='/teams/{{team.name}}/schedule.html'>{{team.name}}</a> 
                     </td>
                     <td>{{team.confWins}}-{{team.confLosses}}</td>
                     <td>{{team.totalWins}}-{{team.totalLosses}}</td>

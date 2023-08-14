@@ -1,15 +1,4 @@
-#schedule {
-    width: 82%;
-}
-
 .teamlogo {
     height: 30px;
-    position: relative;
+    margin-right: 8px;
 }
-
-.teamlink {
-    color: black;
-    margin: 10px;
-}
-
-

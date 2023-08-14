@@ -1,23 +1,7 @@
-#header {
-    text-align: center;
-}
-
-#conflogo {
-    height: 80px;
-    position: relative;
-    top: 14px;
-}
-
-#standings {
-    width: 70%;
-}
-
 .teamlogo {
-    height: 40px;
+    height: 30px;
 }
 
-.teamlink {
-    text-decoration: none;
-    color: black;
-    padding: 11px;
+.conflogo {
+    height: 140px;
 }

@@ -7,9 +7,9 @@
 {% endblock %}
 
 {% block content %}
-    <div id='teamheader' class="mt-3 mb-3 text-center">
+    <div class="mb-3 text-center">
         <h1 class="display-3">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
-        <h2 class="lead">{{team.conference}}</h2>
+        <h2 class="lead">{{team.conference.confName}}</h2>
         <h2 class="lead">{{team.rating}} overall</h2>
         <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
     </div>
@@ -18,25 +18,25 @@
         <div class="col-md-4">
             {% for week in schedule %}
                 {% if week.weekPlayed == info.currentWeek|add:"-1" %}
-                    <div class="card" style="width: 24rem; margin-left: 20px;">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Previous game</h5>
                             <h6 class="card-subtitle mb-2">
-                                <img src='{% static week.opponent %}.png' class='teamlogo'>
-                                <a href='teams/{{week.opponent}}/schedule.html' class='teamlink'>#{{week.ranking}} {{week.opponent}}</a> 
+                                <img src='{% static week.opponent.name %}.png' class='teamlogo'>
+                                <a href='teams/{{week.opponent.name}}/schedule.html'>#{{week.opponent.ranking}} {{week.opponent.name}}</a> 
                                 {{week.result}} ({{week.score}})
                             </h6>
                             <a href="/teams/{{team.name}}/schedule/{{week.gameNum}}.html" class="card-link">Summary</a>
                         </div>
                     </div>
                 {% elif week.weekPlayed == info.currentWeek %}
-                    <div class="card" style="width: 24rem; margin-left: 20px;">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Next game</h5>
                             <h6 class="card-subtitle mb-2">
-                                <img src='{% static week.opponent %}.png' class='teamlogo'>
-                                <a href='teams/{{week.opponent}}/schedule.html' class='teamlink'>#{{week.ranking}} {{week.opponent}}</a> 
-                                ({{week.spread}}, {{week.moneyline}})
+                                <img src='{% static week.opponent.name %}.png' class='teamlogo'>
+                                <a href='teams/{{week.opponent.name}}/schedule.html'>#{{week.opponent.ranking}} {{week.opponent.name}}</a> 
+                                {% comment %} ({{week.spread}}, {{week.moneyline}}) {% endcomment %}
                             </h6>
                             <a href="/teams/{{team.name}}/schedule/{{week.gameNum}}.html" class="card-link">Preview</a>
                         </div>
@@ -45,13 +45,13 @@
         {% endfor %}
         </div>
         <div class="col-md-4 text-center">
-            <h2>{{team.conference}} Standings</h2>
-            <table id='standings' class="table table-striped" style="border: 2px solid gray;">
+            <h2>{{team.conference.confName}} Standings</h2>
+            <table class="table table-striped borderedtable">
                 <thead>
                     <tr>
-                    <th style="width: 10%">Conference Rank</th>
-                    <th style="width: 40%">Team</th>
-                    <th style="width: 10%">Conference Record</th>
+                        <th>Conference Rank</th>
+                        <th>Team</th>
+                        <th>Conference Record</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,22 +60,22 @@
                         <td>{{forloop.counter}}</td>
                         <td>
                             <img src='{% static team.name %}.png' class='teamlogo'>
-                            <a href='/teams/{{team.name}}/schedule.html' class='teamlink'>{{team.name}}</a> 
+                            <a href='/teams/{{team.name}}/schedule.html'>{{team.name}}</a> 
                         </td>
                         <td>{{team.confWins}}-{{team.confLosses}}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+            </table>            
         </div>
         <div class="col-md-4 text-center">
             <h2>AP Top 10</h2>
-            <table id='rankings' class="table table-striped" style="border: 2px solid gray;">
+            <table class="table table-striped borderedtable">
                 <thead>
                     <tr>
-                        <th style="width: 10%">Rank</th>
-                        <th style="width: 40%">Team</th>
-                        <th style="width: 10%">Record</th>
+                        <th>Rank</th>
+                        <th>Team</th>
+                        <th>Record</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,7 +85,7 @@
                                 <td>{{forloop.counter}}</td>
                                 <td>
                                     <img src='{% static team.name %}.png' class='teamlogo'>
-                                    <a href='/teams/{{team.name}}/schedule.html' class='teamlink'>{{team.name}}</a> 
+                                    <a href='/teams/{{team.name}}/schedule.html'>{{team.name}}</a> 
                                 </td>
                                 <td>{{team.totalWins}}-{{team.totalLosses}}</td>
                             </tr>
