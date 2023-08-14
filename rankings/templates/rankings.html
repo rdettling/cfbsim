@@ -16,6 +16,7 @@
         <thead>
             <tr>
                 <th scope="col">Rank</th>
+                <th scope="col">Rating</th>
                 <th scope="col">Team</th>
                 <th scope="col">Record</th>
                 <th scope="col">Conference Record</th>
@@ -26,6 +27,7 @@
             {% for team in teams %}
             <tr>
                 <td>{{team.ranking}}</td>
+                <td>{{team.rating}}</td>
                 <td>
                     <img src='{% static team.name %}.png' class='teamlogo mr-3'> 
                     <a href='/teams/{{team.name}}/schedule.html'>{{team.name}}</a>

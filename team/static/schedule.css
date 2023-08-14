@@ -2,3 +2,15 @@
     height: 30px;
     margin-right: 8px;
 }
+
+.img-container {
+    max-height: 170px;  /* Set the maximum height for the container */
+    overflow: hidden;  /* Hide any overflowing content */
+    width: 100%;  /* Ensure container takes up full width of its parent */
+}
+
+.responsive-img {
+    width: 100%;  /* Force the image to take full width */
+    height: 100%;  /* Force the image to take full height */
+    object-fit: contain;  /* Make the image adjust within the container while being fully visible */
+}

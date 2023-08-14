@@ -20,7 +20,7 @@
                 {% if week.weekPlayed == info.currentWeek|add:"-1" %}
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Previous game</h5>
+                            <h5 class="card-title">Last week</h5>
                             <h6 class="card-subtitle mb-2">
                                 <img src='{% static week.opponent.name %}.png' class='teamlogo'>
                                 <a href='teams/{{week.opponent.name}}/schedule.html'>#{{week.opponent.ranking}} {{week.opponent.name}}</a> 
@@ -32,7 +32,7 @@
                 {% elif week.weekPlayed == info.currentWeek %}
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Next game</h5>
+                            <h5 class="card-title">This week</h5>
                             <h6 class="card-subtitle mb-2">
                                 <img src='{% static week.opponent.name %}.png' class='teamlogo'>
                                 <a href='teams/{{week.opponent.name}}/schedule.html'>#{{week.opponent.ranking}} {{week.opponent.name}}</a> 
