@@ -1,11 +1,7 @@
-from django.forms.models import model_to_dict
-from django.db.models import Max
 from start.models import *
 import static.sim as sim
 from django.shortcuts import render
 from django.db.models import Q
-from django.db.models import Sum
-
 
 def schedule(request, team_name):
     user_id = request.session.session_key 

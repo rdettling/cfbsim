@@ -77,6 +77,9 @@ class Drives(models.Model):
     points = models.IntegerField()
 
 class Plays(models.Model):
+    class Meta:
+        ordering = ['id']
+        
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name='plays')
     game = models.ForeignKey(Games, on_delete=models.CASCADE, related_name='plays')
     drive = models.ForeignKey(Drives, on_delete=models.CASCADE, related_name='plays')
