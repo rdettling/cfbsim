@@ -62,8 +62,10 @@
                                             <div class="card-body">
                                                 <!-- Content for the plays of this drive goes here -->
                                                 {% for play in drive.plays.all %}
-                                                    <!-- Display the play information here -->
-                                                    <p>{{ play.playType }} - {{ play.yardsGained }} yards</p>
+                                                    <div class="play-entry mb-3">
+                                                        <p class="mb-0 font-weight-bold border-bottom pb-1">{{play.header}}</p>
+                                                        <p class="mt-2">{{ play.text }}</p>
+                                                    </div>
                                                 {% endfor %}
                                             </div>
                                         </div>
@@ -91,8 +93,10 @@
                                         <div class="card-body">
                                             <!-- Content for the plays of this drive goes here -->
                                             {% for play in drive.plays.all %}
-                                                <!-- Display the play information here -->
-                                                <p>{{ play.playType }} - {{ play.yardsGained }} yards</p>
+                                                <div class="play-entry mb-3">
+                                                    <p class="mb-0 font-weight-bold border-bottom pb-1">{{play.header}}</p>
+                                                    <p class="mt-2">{{ play.text }}</p>
+                                                </div>
                                             {% endfor %}
                                         </div>
                                     </div>

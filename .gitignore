@@ -1,14 +1,7 @@
 __pycache__/
-*.pyc
-*.pyo
 /venv/
-/staticfiles/
-/media/
 *.sqlite3
 *.env
 *.log
-.vscode/
-.idea/
-*.swp
-*.swo
 .DS_Store
+simtest.py

@@ -22,3 +22,9 @@
 .row {
     margin-bottom: 20px;
 }
+
+.play-entry {
+    background-color: #f8f9fa; /* A light grey for a slight touch */
+    padding: 8px;
+    border-radius: 5px; /* Add some rounding */
+}

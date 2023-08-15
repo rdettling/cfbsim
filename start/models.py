@@ -12,6 +12,8 @@ class Teams(models.Model):
     abbreviation = models.CharField(max_length=4)
     prestige = models.IntegerField()
     rating = models.IntegerField()
+    offense = models.IntegerField()
+    defense = models.IntegerField()
     mascot = models.CharField(max_length=50)
     colorPrimary = models.CharField(max_length=7)
     colorSecondary = models.CharField(max_length=7)
@@ -31,7 +33,9 @@ class Players(models.Model):
     team = models.ForeignKey(Teams, on_delete=models.CASCADE, related_name='players')
     first = models.CharField(max_length=50)
     last = models.CharField(max_length=50)
+    year = models.CharField(max_length=2)
     pos = models.CharField(max_length=2)
+    rating = models.IntegerField()
     starter = models.BooleanField()
    
 class Conferences(models.Model):
@@ -84,3 +88,5 @@ class Plays(models.Model):
     playType = models.CharField(max_length=50)
     yardsGained = models.IntegerField()
     result = models.CharField(max_length=50)
+    header = models.CharField(max_length=255, null=True)
+    text = models.CharField(max_length=255)

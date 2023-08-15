@@ -56,6 +56,8 @@ def init(year, user_id):
 
     teams_to_create = []
     conferences_to_create = []
+    players_to_create = []
+
     for conference in data['conferences']:
         Conference = Conferences(
             info=info,
@@ -66,13 +68,11 @@ def init(year, user_id):
         conferences_to_create.append(Conference)
 
         for team in conference['teams']:
-            rating = team['prestige'] + random.randint(-5, 5)
             Team = Teams(
                 info=info,
                 name = team['name'],
                 abbreviation = team['abbreviation'],
                 prestige = team['prestige'],
-                rating = rating,
                 mascot = team['mascot'],
                 colorPrimary = team['colorPrimary'],
                 colorSecondary = team['colorSecondary'],
@@ -89,9 +89,9 @@ def init(year, user_id):
             )
             team = {
                 'name' : team['name'],
-                'rating' : rating,
+                'prestige' : team['prestige'],
                 'conference' : conference['confName'],
-                'schedule' : [],   
+                'schedule' : set(),   
                 'confGames' : 0,
                 'confLimit' : conference['confGames'],
                 'nonConfGames' : 0,
@@ -104,13 +104,11 @@ def init(year, user_id):
             data['teams'].append(team)
 
     for team in data['independents']:
-        rating = team['prestige'] + random.randint(-5, 5)
         Team = Teams(
             info=info,
             name = team['name'],
             abbreviation = team['abbreviation'],
             prestige = team['prestige'],
-            rating = rating,
             mascot = team['mascot'],
             colorPrimary = team['colorPrimary'],
             colorSecondary = team['colorSecondary'],
@@ -127,9 +125,9 @@ def init(year, user_id):
         )
         team = {
             'name' : team['name'],
-            'rating' : rating,
+            'prestige' : team['prestige'],
             'conference' : None,
-            'schedule' : [],
+            'schedule' : set(),
             'confGames' : 0,
             'confLimit' : 0,
             'nonConfGames' : 0,
@@ -141,8 +139,8 @@ def init(year, user_id):
         teams_to_create.append(Team)
         data['teams'].append(team)
 
-    # for team in data['teams']:
-    #     players(team) 
+    for team in teams_to_create:
+        players(info, team, players_to_create) 
 
     teams_to_create = sorted(teams_to_create, key=lambda team: team.rating, reverse=True)
     for i, team in enumerate(teams_to_create, start=1):
@@ -151,6 +149,7 @@ def init(year, user_id):
     with transaction.atomic():
         Conferences.objects.bulk_create(conferences_to_create)
         Teams.objects.bulk_create(teams_to_create)
+        Players.objects.bulk_create(players_to_create)
 
     setSchedules(data, info)
 
@@ -228,7 +227,7 @@ def setSchedules(data, info):
             if team['name'] in scheduled_games:
                 if currentWeek in scheduled_games[team['name']]:
                     team['gamesPlayed'] += 1
-        for team in sorted(data['teams'], key=lambda team: team['rating'], reverse=True):
+        for team in sorted(data['teams'], key=lambda team: team['prestige'], reverse=True):
             if team['gamesPlayed'] < currentWeek:
                 Team = Teams.objects.get(info=info, name=team['name'])
                 filtered_games = [game for game in games_to_create if game.teamA == Team or game.teamB == Team]
@@ -250,7 +249,7 @@ def setSchedules(data, info):
 
     Games.objects.bulk_create(games_to_create)  
 
-def players(team):
+def players(info, team, players_to_create):
     roster = {
         'qb': 1,
         'rb': 1,
@@ -265,27 +264,84 @@ def players(team):
         'p' : 1
     }
 
+    variance = 15
+    years = ['fr', 'so', 'jr', 'sr']
+
+    # You can adjust these values or make them dynamic if needed.
+    progression = {
+        'fr': 0,     # Freshman usually start at their initial rating.
+        'so': 3,     # Sophomores progress by 3 points.
+        'jr': 6,     # Juniors progress by 6 points.
+        'sr': 9      # Seniors progress by 9 points.
+    }
+
+    all_players = []  # Use this to keep track of all players before adding to players_to_create
+
     for position, count in roster.items():
+        position_players = []  # Keep track of players for this specific position
+
         for i in range(2 * count + 1):
-            name = names.generateName(position)
-            if i < count:
-                Players.objects.create(
-                    team = team,
-                    first = name[0],
-                    last = name[1],
-                    pos = position,
-                    starter = True
-                )
-            else:
-                Players.objects.create(
-                    team = team,
-                    first = name[0],
-                    last = name[1],
-                    pos = position,
-                    starter = False
-                )
-            if position == 'k' or position == 'p':
-                break
+            first, last = names.generateName(position)
+            year = random.choice(years)
+            
+            base_rating = team.prestige - random.randint(0, variance) - 5
+            progressed_rating = base_rating + progression[year]
+            
+            player = Players(
+                info=info,
+                team=team,
+                first=first,
+                last=last,
+                year=year,
+                pos=position,
+                rating=progressed_rating,
+                starter=False
+            )
+
+            position_players.append(player)
+
+        # Sort position_players by rating in descending order and set top players as starters
+        position_players.sort(key=lambda x: x.rating, reverse=True)
+        for i in range(roster[position]):
+            position_players[i].starter = True
+
+        all_players.extend(position_players)
+
+    # Define positions categorically.
+    offensive_positions = ['qb', 'rb', 'wr', 'te', 'ol']
+    defensive_positions = ['dl', 'lb', 'cb', 's']
+
+    offensive_weights = {
+        'qb': 35,     
+        'rb': 10,    
+        'wr': 25,   
+        'te': 10,     
+        'ol': 20     
+    }
+
+    defensive_weights = {
+        'dl': 35,     
+        'lb': 20,   
+        'cb': 30,   
+        's': 15     
+    }
+
+    # Extract starters from all_players.
+    offensive_starters = [player for player in all_players if player.pos in offensive_positions and player.starter]
+    defensive_starters = [player for player in all_players if player.pos in defensive_positions and player.starter]
+
+    # Compute the weighted average ratings.
+    team.offense = round(sum(player.rating * offensive_weights[player.pos] for player in offensive_starters) / sum(offensive_weights[player.pos] for player in offensive_starters)) if offensive_starters else 0
+    team.defense = round(sum(player.rating * defensive_weights[player.pos] for player in defensive_starters) / sum(defensive_weights[player.pos] for player in defensive_starters)) if defensive_starters else 0
+
+    # Set the weights for offense and defense
+    offense_weight = 0.60
+    defense_weight = 0.40
+
+    # Calculate the team rating
+    team.rating = round((team.offense * offense_weight) + (team.defense * defense_weight))
+
+    players_to_create.extend(all_players)
 
 
 def scheduleGame(info, team, opponent, Team, Opponent, games_to_create, weekPlayed=None, gameName=None):
@@ -350,8 +406,8 @@ def scheduleGame(info, team, opponent, Team, Opponent, games_to_create, weekPlay
     games_to_create.append(game) 
     team['gameNum'] += 1
     opponent['gameNum'] += 1
-    team['schedule'].append(opponent['name'])
-    opponent['schedule'].append(team['name'])
+    team['schedule'].add(opponent['name'])
+    opponent['schedule'].add(team['name'])
 
     if Team.conference:
         if Team.conference == Opponent.conference:

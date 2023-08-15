@@ -7,115 +7,121 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid mt-3 mb-3">
-        <div class="row">
-            <div class="col-md-1"></div>
-            <div class="col-md-2 d-flex justify-content-center">
-                <img src='{% static team.name %}.png' class="img-fluid logo" style="max-height: 150px;">
-            </div>  
-            <div class="col-md-5">
-                <div id='teamheader' class="text-center">
-                    <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
-                    <h2 class="lead">{{team.conference}}</h2>
-                    <h2 class="lead">{{team.rating}} overall</h2>
-                    <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
+    <div class="row mb-4">
+        <div class="col-md-3 img-container">
+            <img src='{% static team.name %}.png' class="responsive-img">
+        </div>                         
+        <div class="col-md-6 text-center">
+            <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
+            <h5 class="mb-2">{{team.rating}} overall</h5>
+            <div class="progress mb-3">
+                <div class="progress-bar" role="progressbar" style="width: {{team.rating}}%; background-color: {{team.colorPrimary}};" aria-valuenow="{{team.rating}}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            
+            <div class="row mb-3">
+                <!-- Offense Progress Bar -->
+                <div class="col-6 pr-2">
+                    <h6 class="mb-2 lead">Offense: {{team.offense}}</h6>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: {{team.offense}}%; background-color: {{team.colorSecondary}};" aria-valuenow="{{team.offense}}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                
+                <!-- Defense Progress Bar -->
+                <div class="col-6 pl-2">
+                    <h6 class="mb-2 lead">Defense: {{team.defense}}</h6>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: {{team.defense}}%; background-color: {{team.colorSecondary}};" aria-valuenow="{{team.defense}}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="form-group text-center">
-                    <label for="teamFilter">change team</label>
-                    <select class="form-control" id="teamFilter">
-                        {% for team in teams %}
-                            <option value="{{team.name}}">{{team.name}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group text-center">
-                    <label for="positionFilter">position:</label>
-                    <select class="form-control" id="positionFilter">
-                        <option value="">All Positions</option>
-                        <option value="qb">Quarterback</option>
-                        <option value="rb">Running Back</option>
-                        <option value="wr">Wide Receiver</option>
-                        <option value="te">Tight End</option>
-                        <option value="ol">Offensive Line</option>
-                        <option value="dl">Defensive Line</option>
-                        <option value="lb">Linebacker</option>
-                        <option value="cb">Cornerback</option>
-                        <option value="s">Safety</option>
-                        <option value="k">Kicker</option>
-                        <option value="p">Punter</option>
-                    </select>
-                </div>
+            
+            <h2 class="lead">{{team.conference.confName}}</h2>
+            <h2 class="lead mt-3">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
+        </div>
+        
+        
+        
+        
+        
+        <div class="col-md-3 text-center">
+            <div class="form-group">
+                <label for="teamFilter">change team</label>
+                <select class="form-control" id="teamFilter">
+                    {% for team in teams %}
+                        <option value="{{team.name}}">{{team.name}}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="col-md-1"></div>
+            <div class="form-group">
+                <label for="positionFilter">Filter by Position</label>
+                <select class="form-control" id="positionFilter">
+                    <option value="">All Positions</option>
+                    {% for position in positions %}
+                        <option value="{{position}}">{{position}}</option>
+                    {% endfor %}
+                </select>
+            </div>            
         </div>
     </div>
 
-    <table id='roster' class="table table-striped mx-auto">
-        <colgroup>
-            <col width="15%">
-            <col width="10%">
-            <col width="80%">
-        </colgroup>
+    <table class="table table-striped">
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Position</th>
+                <th>Year</th>
+                <th>Rating</th>
                 <th>Starter</th>
             </tr>
         </thead>
         <tbody>
             {% for player in roster %}
-                <tr class="player-row" data-position="{{ player.pos }}">  
+                <tr data-position="{{ player.pos }}">
                     <td>
-                        <a href="roster/{{player.id}}.html">{{player.first}} {{player.last}}</a>
+                        <a href="{% url 'player' id=player.id team_name=team.name%}">
+                            {{ player.first }} {{ player.last }}
+                        </a>
                     </td>
-                    <td>{{player.pos}}</td>
-                    {% if player.starter %}
-                    <td>✅</td>
-                    {% else %}
-                    <td></td>
-                    {% endif %}
+                    <td>{{ player.pos }}</td>
+                    <td>{{ player.year }}</td>
+                    <td>{{ player.rating }}</td>
+                    <td>
+                        {% if player.starter %}
+                            <span style="color: green;">✅</span>
+                        {% else %}
+                            <span style="color: red;">❌</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
     
+{% endblock %}
 
-    
-    
-    
-
+{% block additional_scripts %}
     <script>
-        $(document).ready(function() 
-        {
-            // When position filter is changed, hide/show rows based on selected position
-            $('#positionFilter').change(function() 
-            {
-                var selectedPosition = $(this).val();
-                $('.player-row').each(function() 
-                {
-                    var rowPosition = $(this).data('position');
-                    if (selectedPosition == '' || rowPosition == selectedPosition) 
-                    {
-                        $(this).show();
-                    } 
-                    else 
-                    {
-                        $(this).hide();
-                    }
-                });
+        $(document).ready(function() {
+            const team = window.location.href.split('/')[4];
+            const params = new URLSearchParams(window.location.search);
+        
+            $('#teamFilter').val(team).change(function() {
+                const selectedTeam = $(this).val();
+                window.location.href = `/teams/${selectedTeam}/roster.html`;
             });
-        });
-
-        const team = window.location.href.split('/')[4];
-        document.getElementById('teamFilter').value = team;
-        document.getElementById('teamFilter').addEventListener('change', (event) => 
-        {
-            const selectedTeam = event.target.value;
-            const url = `/teams/${selectedTeam}/roster.html`;
-            window.location.href = url;
-        });
+        
+            $('#positionFilter').change(function() {
+                const selectedPos = $(this).val();
+        
+                if (selectedPos) {
+                    // If a position is selected, hide all rows then show only those with the selected position
+                    $('tr[data-position]').hide().filter(`[data-position="${selectedPos}"]`).show();
+                } else {
+                    // If "All Positions" is selected, show all rows
+                    $('tr[data-position]').show();
+                }
+            });
+        });   
     </script>
 {% endblock %}

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %} {{team.name}} schedule{% endblock %}
+{% block title %}{{team.name}} schedule{% endblock %}
 
 {% block css %}
     <link rel="stylesheet" href="{% static 'schedule.css' %}">
@@ -11,23 +11,43 @@
         <div class="col-md-3 img-container">
             <img src='{% static team.name %}.png' class="responsive-img">
         </div>                         
-        <div class="col-md-6">
-            <div class="text-center">
-                <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
-                <h2 class="lead">{{team.conference.confName}}</h2>
-                <h2 class="lead">{{team.rating}} overall</h2>
-                <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
+        <div class="col-md-6 text-center">
+            <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
+            <h5 class="mb-2">{{team.rating}} overall</h5>
+            <div class="progress mb-3">
+                <div class="progress-bar" role="progressbar" style="width: {{team.rating}}%; background-color: {{team.colorPrimary}};" aria-valuenow="{{team.rating}}" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
+            
+            <div class="row mb-3">
+                <!-- Offense Progress Bar -->
+                <div class="col-6 pr-2">
+                    <h6 class="mb-2 lead">Offense: {{team.offense}}</h6>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: {{team.offense}}%; background-color: {{team.colorSecondary}};" aria-valuenow="{{team.offense}}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                
+                <!-- Defense Progress Bar -->
+                <div class="col-6 pl-2">
+                    <h6 class="mb-2 lead">Defense: {{team.defense}}</h6>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: {{team.defense}}%; background-color: {{team.colorSecondary}};" aria-valuenow="{{team.defense}}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="lead">{{team.conference.confName}}</h2>
+            <h2 class="lead mt-3">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
         </div>
-        <div class="col-md-3">
-            <div class="form-group text-center">
+        <div class="col-md-3 text-center">
+            <div class="form-group">
                 <label for="teamFilter">change team</label>
                 <select class="form-control" id="teamFilter">
                     {% for team in teams %}
                         <option value="{{team.name}}">{{team.name}}</option>
                     {% endfor %}
                 </select>
-            </div>
+            </div>           
         </div>
     </div>
 

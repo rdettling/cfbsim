@@ -73,24 +73,26 @@ def roster(request, team_name):
     team = Teams.objects.get(info=info, name=team_name)
     teams = Teams.objects.filter(info=info).order_by('name')
     roster = Players.objects.filter(info=info, team=team)
+    positions = roster.values_list('pos', flat=True).distinct()
     conferences = Conferences.objects.filter(info=info).order_by('confName')
 
     context = {
-         'team' : team,
-         'teams' : teams,
-         'roster' : roster,
-         'info' : info,
-         'conferences' : conferences
+        'team': team,
+        'teams': teams,
+        'roster': roster,
+        'info': info,
+        'conferences': conferences,
+        'positions': positions
     }
     
     return render(request, 'roster.html', context)
 
-def player(request, team_name, player_num):
+def player(request, team_name, id):
     user_id = request.session.session_key 
     info = Info.objects.get(user_id=user_id)
 
-    team = Teams.objects.filter(info=info, name=team_name)
-    player = Players.objects.filter(info=info, id=player_num)
+    team = Teams.objects.get(info=info, name=team_name)
+    player = Players.objects.get(info=info, id=id)
     conferences = Conferences.objects.filter(info=info).order_by('confName')
 
     context = {
@@ -150,6 +152,7 @@ def simWeek(request, team_name, desired_week):
                 game.label = game.labelB
                 teamGames.append(game)
 
+            print(f'Week: {game.weekPlayed} -> simming {game.teamA.name} vs {game.teamB.name}')
             sim.simGame(info, game, drives_to_create, plays_to_create, resumeFactor)
 
         teams = Teams.objects.filter(info=info).order_by('-resume') 
@@ -214,12 +217,41 @@ def details(request, team_name, game_num):
         drive.teamAfter = scoreA
         drive.oppAfter = scoreB
 
+    team_yards = opp_yards = 0
     team_passing_yards = team_rushing_yards = opp_passing_yards = opp_rushing_yards = 0
     team_first_downs = opp_first_downs = 0
     team_third_down_a = team_third_down_c = opp_third_down_a = opp_third_down_c = 0
     team_fourth_down_a = team_fourth_down_c = opp_fourth_down_a = opp_fourth_down_c = 0
     team_turnovers = opp_turnovers = 0
     for play in Plays.objects.filter(game=game):
+        if play.startingFP < 50:
+            location = f'own {play.startingFP}'
+        elif play.startingFP > 50:
+            location = f'opp {100 - play.startingFP}'
+        else:
+            location = f'{play.startingFP}'
+
+        if play.startingFP + play.yardsLeft >= 100:
+            if play.down == 1:
+                play.header = f'{play.down}st and goal at {location}'
+            elif play.down == 2:
+                play.header = f'{play.down}nd and goal at {location}'
+            elif play.down == 3:
+                play.header = f'{play.down}rd and goal at {location}'
+            elif play.down == 4:
+                play.header = f'{play.down}th and goal at {location}'
+        else:
+            if play.down == 1:
+                play.header = f'{play.down}st and {play.yardsLeft} at {location}'
+            elif play.down == 2:
+                play.header = f'{play.down}nd and {play.yardsLeft} at {location}'
+            elif play.down == 3:
+                play.header = f'{play.down}rd and {play.yardsLeft} at {location}'
+            elif play.down == 4:
+                play.header = f'{play.down}th and {play.yardsLeft} at {location}'
+
+        play.save()
+
         if play.offense == team:
             if play.playType == 'pass':
                 team_passing_yards += play.yardsGained
@@ -257,10 +289,13 @@ def details(request, team_name, game_num):
                     if play.yardsGained >= play.yardsLeft:
                         opp_fourth_down_c += 1
 
+    team_yards = team_passing_yards + team_rushing_yards
+    opp_yards = opp_passing_yards + opp_rushing_yards
+
     stats = {
         'total yards' : {
-            'team' : drives.filter(offense=team).aggregate(Sum('plays__yardsGained'))['plays__yardsGained__sum'],
-            'opponent' :drives.filter(offense=game.opponent).aggregate(Sum('plays__yardsGained'))['plays__yardsGained__sum']
+            'team' : team_yards,
+            'opponent' : opp_yards
         },
         'passing yards' : {
             'team' : team_passing_yards,
