@@ -2,6 +2,7 @@ from start.models import *
 import static.sim as sim
 from django.shortcuts import render
 from django.db.models import Q
+import random
 
 def schedule(request, team_name):
     user_id = request.session.session_key 
@@ -90,12 +91,84 @@ def player(request, team_name, id):
     team = Teams.objects.get(info=info, name=team_name)
     player = Players.objects.get(info=info, id=id)
     conferences = Conferences.objects.filter(info=info).order_by('confName')
+    game_logs = GameLog.objects.filter(player=player)  # Query for the game logs
+
+    cumulative_stats = {
+        'pass_yards': 0,
+        'pass_attempts': 0,
+        'pass_completions': 0,
+        'pass_touchdowns': 0,
+        'pass_interceptions': 0,
+        'rush_yards': 0,
+        'rush_attempts': 0,
+        'rush_touchdowns': 0,
+        'receiving_yards': 0,
+        'receiving_catches': 0,
+        'receiving_touchdowns': 0,
+        # ... (add all the other fields)
+    }
+
+    for game_log in game_logs:
+        if game_log.game.teamA == player.team:
+            game_log.opponent = game_log.game.teamB.name
+            game_log.label = game_log.game.labelA
+            game_log.gameNum = game_log.game.gameNumA
+            if not game_log.game.overtime:
+                game_log.result = f'{game_log.game.resultA} ({game_log.game.scoreA} - {game_log.game.scoreB})'
+            else:
+                if game_log.game.overtime == 1:
+                    game_log.result = f'{game_log.game.resultA} ({game_log.game.scoreA} - {game_log.game.scoreB} OT)'
+                else:
+                    game_log.result = f'{game_log.game.resultA} ({game_log.game.scoreA} - {game_log.game.scoreB} {game_log.game.overtime}OT)'
+        else:
+            game_log.opponent = game_log.game.teamA.name
+            game_log.label = game_log.game.labelB
+            game_log.gameNum = game_log.game.gameNumB
+            if not game_log.game.overtime:
+                game_log.result = f'{game_log.game.resultB} ({game_log.game.scoreB} - {game_log.game.scoreA})'
+            else:
+                if game_log.game.overtime == 1:
+                    game_log.result = f'{game_log.game.resultB} ({game_log.game.scoreB} - {game_log.game.scoreA} OT)'
+                else:
+                    game_log.result = f'{game_log.game.resultB} ({game_log.game.scoreB} - {game_log.game.scoreA} {game_log.game.overtime}OT)'
+
+        for key in cumulative_stats.keys():
+            cumulative_stats[key] += getattr(game_log, key, 0)
+
+    # Calculate derived statistics
+    if cumulative_stats['pass_attempts'] > 0:
+        cumulative_stats['completion_percentage'] = round((cumulative_stats['pass_completions'] / cumulative_stats['pass_attempts']) * 100, 1)
+        cumulative_stats['adjusted_pass_yards_per_attempt'] = round((cumulative_stats['pass_yards'] + (20 * cumulative_stats['pass_touchdowns']) - (45 * cumulative_stats['pass_interceptions'])) / cumulative_stats['pass_attempts'], 1)
+        
+        # Calculate Passer rating
+        a = ((cumulative_stats['completion_percentage'] / 100) - 0.3) * 5
+        b = ((cumulative_stats['pass_yards'] / cumulative_stats['pass_attempts']) - 3) * 0.25
+        c = (cumulative_stats['pass_touchdowns'] / cumulative_stats['pass_attempts']) * 20
+        d = 2.375 - ((cumulative_stats['pass_interceptions'] / cumulative_stats['pass_attempts']) * 25)
+        
+        cumulative_stats['passer_rating'] = round(((a + b + c + d) / 6) * 100, 1)
+    else:
+        cumulative_stats['completion_percentage'] = 0
+        cumulative_stats['adjusted_pass_yards_per_attempt'] = 0
+        cumulative_stats['passer_rating'] = 0
+
+    if cumulative_stats['rush_attempts'] > 0:
+        cumulative_stats['rush_yards_per_attempt'] = round(cumulative_stats['rush_yards'] / cumulative_stats['rush_attempts'], 1)
+    else:
+        cumulative_stats['rush_yards_per_attempt'] = 0
+    
+    if cumulative_stats['receiving_catches'] > 0:
+        cumulative_stats['yards_per_reception'] = cumulative_stats['receiving_yards'] / cumulative_stats['receiving_catches']
+    else:
+        cumulative_stats['yards_per_reception'] = 0
 
     context = {
          'team' : team,
          'player' : player,
          'info' : info,
-         'conferences' : conferences
+         'conferences' : conferences,
+         'game_logs' : game_logs,  # Include the game logs in the context
+         'cumulative_stats': cumulative_stats  # Include the cumulative stats in the context
     }
     
     return render(request, 'player.html', context)
@@ -164,10 +237,54 @@ def simWeek(request, team_name, desired_week):
             setNatty(info)
         info.currentWeek += 1
 
+
+    game_log_dict = {}
+
+    # Initialize dictionaries to store starters by team
+    rb_starters_by_team = {}
+    qb_starters_by_team = {}
+    wr_starters_by_team = {}
+
+    for play in plays_to_create:
+        game = play.game
+        offense_team = play.offense
+
+        # Fetch RB starters for the offensive team if not already in the dictionary
+        if offense_team not in rb_starters_by_team:
+            rb_starters_by_team[offense_team] = list(Players.objects.filter(team=offense_team, pos="rb", starter=True))
+        runner = random.choice(rb_starters_by_team[offense_team])
+        
+        # Fetch QB and WR starters for the offensive team if not already in the dictionary
+        if offense_team not in qb_starters_by_team:
+            qb_starters_by_team[offense_team] = Players.objects.filter(team=offense_team, pos="qb", starter=True).first()
+        if offense_team not in wr_starters_by_team:
+            wr_starters_by_team[offense_team] = list(Players.objects.filter(team=offense_team, pos="wr", starter=True))
+        
+        if play.playType == 'run':
+            game_log = get_game_log(info, runner, game, game_log_dict)
+            update_game_log_for_run(play, game_log)
+            game_log_dict[(runner, game)] = game_log
+            format_play_text(play, runner)
+
+        elif play.playType == 'pass':
+            qb_starter = qb_starters_by_team[offense_team]
+            receiver = random.choice(wr_starters_by_team[offense_team])
+
+            qb_game_log = get_game_log(info, qb_starter, game, game_log_dict)
+            receiver_game_log = get_game_log(info, receiver, game, game_log_dict)
+            update_game_log_for_pass(play, qb_game_log, receiver_game_log)
+            
+            game_log_dict[(qb_starter, game)] = qb_game_log
+            game_log_dict[(receiver, game)] = receiver_game_log
+            
+            format_play_text(play, qb_starter, receiver)
+
+
     Teams.objects.bulk_update(teams, ['ranking'])
     Drives.objects.bulk_create(drives_to_create)
     Plays.objects.bulk_create(plays_to_create)
-
+    field_names = [f.name for f in GameLog._meta.fields if not f.primary_key and not f.is_relation]
+    GameLog.objects.bulk_update(list(game_log_dict.values()), field_names)
     info.save()
 
     context = {
@@ -187,6 +304,49 @@ def details(request, team_name, game_num):
     team = Teams.objects.get(info=info, name=team_name)
     game = get_game_by_team_and_gamenum(info, team, game_num)
     drives = game.drives.all()
+
+    game_logs = GameLog.objects.filter(game=game)
+
+    # Initialize an empty dictionary to store categorized game log strings
+    categorized_game_log_strings = {'Passing': [], 'Rushing': [], 'Receiving': []}
+
+    for game_log in game_logs:
+        player = game_log.player
+        position = player.pos  # Assuming 'position' is a field on your 'Players' model
+        team_name = player.team.name  # Assuming 'team' is a field on your 'Players' model
+        
+        if 'qb' in position.lower():
+            qb_game_log_dict = {
+                'player_id': player.id,  # Assuming 'id' is a field on your 'Players' model
+                'team_name': team_name,
+                'game_log_string': f"{player.first} {player.last} ({team_name} - QB): {game_log.pass_completions}/{game_log.pass_attempts} for {game_log.pass_yards} yards, {game_log.pass_touchdowns} TDs, {game_log.pass_interceptions} INTs"
+            }
+            categorized_game_log_strings['Passing'].append(qb_game_log_dict)
+
+        if 'rb' in position.lower() or ('qb' in position.lower() and game_log.rush_attempts > 0):  # Include QBs with rushing attempts
+            rush_game_log_dict = {
+                'player_id': player.id,
+                'team_name': team_name,
+                'game_log_string': f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.rush_attempts} carries, {game_log.rush_yards} yards, {game_log.rush_touchdowns} TDs"
+            }
+            categorized_game_log_strings['Rushing'].append(rush_game_log_dict)
+
+        if 'wr' in position.lower() or ('rb' in position.lower() and game_log.receiving_catches > 0):  # Include RBs with receptions
+            recv_game_log_dict = {
+                'player_id': player.id,
+                'team_name': team_name,
+                'game_log_string': f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.receiving_catches} catches, {game_log.receiving_yards} yards, {game_log.receiving_touchdowns} TDs"
+            }
+            categorized_game_log_strings['Receiving'].append(recv_game_log_dict)
+
+
+
+
+    # Add this to your context so that you can render it in your template
+        
+    
+    print(categorized_game_log_strings)
+
 
     game.team = team
     if game.teamA == team:
@@ -333,7 +493,8 @@ def details(request, team_name, game_num):
         'info' : info,
         'conferences' : conferences,
         'drives' : drives,
-        'stats' : stats
+        'stats' : stats,
+        'categorized_game_log_strings' : categorized_game_log_strings
     }
     
     return render(request, 'game.html', context)
@@ -449,3 +610,50 @@ def get_game_by_team_and_gamenum(info, team, game_num):
         Q(teamA=team, gameNumA=game_num) | Q(teamB=team, gameNumB=game_num)
     ).first()
     return game
+
+def get_game_log(info, player, game, game_log_dict):
+    game_log_key = (player, game)
+    return game_log_dict.get(game_log_key) or GameLog.objects.get_or_create(info=info, player=player, game=game)[0]
+
+def update_game_log_for_run(play, game_log):
+    game_log.rush_attempts += 1
+    game_log.rush_yards += play.yardsGained
+    if play.result == 'touchdown':
+        game_log.rush_touchdowns += 1
+    elif play.result == 'fumble':
+        game_log.fumbles += 1
+
+def update_game_log_for_pass(play, qb_game_log, receiver_game_log):
+    qb_game_log.pass_attempts += 1
+    if play.result in ['pass', 'touchdown']:
+        qb_game_log.pass_completions += 1
+        qb_game_log.pass_yards += play.yardsGained
+        receiver_game_log.receiving_yards += play.yardsGained
+        receiver_game_log.receiving_catches += 1
+        if play.result == 'touchdown':
+            qb_game_log.pass_touchdowns += 1
+            receiver_game_log.receiving_touchdowns += 1
+    elif play.result == 'interception':
+        qb_game_log.pass_interceptions += 1
+
+def format_play_text(play, player1, player2=None):
+    if play.playType == 'run':
+        if play.result == 'fumble':
+            play.text = f"{player1.first} {player1.last} fumbled"
+        elif play.result == 'touchdown':
+            play.text = f"{player1.first} {player1.last} ran {play.yardsGained} yards for a touchdown"
+        else:
+            play.text = f"{player1.first} {player1.last} ran for {play.yardsGained} yards"
+
+    elif play.playType == 'pass':
+        if play.result == 'sack':
+            play.text = f"{player1.first} {player1.last} was sacked for a loss of {play.yardsGained} yards"
+        elif play.result == 'touchdown':
+            play.text = f"{player1.first} {player1.last} completed a pass to {player2.first} {player2.last} for {play.yardsGained} yards resulting in a touchdown"
+        elif play.result == 'pass':
+            play.text = f"{player1.first} {player1.last} completed a pass to {player2.first} {player2.last} for {play.yardsGained} yards"
+        elif play.result == 'interception':
+            play.text = f"{player1.first} {player1.last}'s pass was intercepted"
+        elif play.result == 'incomplete pass':
+            play.text = f"{player1.first} {player1.last}'s pass was incomplete"
+

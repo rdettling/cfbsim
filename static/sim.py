@@ -1,5 +1,4 @@
 import random
-import numpy as np
 from start.models import * 
 
 def simPass(fieldPosition, offense, defense):
@@ -10,118 +9,82 @@ def simPass(fieldPosition, offense, defense):
     result = {
         'outcome': None,
         'yards': None,
-        'text': None
     }
-
-    # Get starters from the offense.
-    qb_starter = Players.objects.filter(team=offense, pos="qb", starter=True).first() 
-    wr_starters = list(Players.objects.filter(team=offense, pos="wr", starter=True))
 
     if random.random() < sack:  # sack
         result['outcome'] = 'sack'
         result['yards'] = sackYards(offense, defense)
-        result['text'] = f"{qb_starter.first} {qb_starter.last} sacked for loss of {result['yards']} yards."
     elif random.random() < comp:  # completed pass
-        result['outcome'] = 'completed pass'
         result['yards'] = passYards(offense, defense)
-        receiver = random.choice(wr_starters)  # Pick a random WR starter
-        if result['yards'] + fieldPosition < 100:
-            result['text'] = f"{qb_starter.first} {qb_starter.last}'s pass completed for {result['yards']} yards to {receiver.first} {receiver.last}."
-        else:
+
+        if result['yards'] + fieldPosition >= 100:
             result['yards'] = 100 - fieldPosition
-            result['text'] = f"{qb_starter.first} {qb_starter.last}'s pass completed for {result['yards']} yards for a touchdown to {receiver.first} {receiver.last}."
+            result['outcome'] = 'touchdown'
+        else:
+            result['outcome'] = 'pass'
+
     elif random.random() < int:  # interception
         result['outcome'] = 'interception'
         result['yards'] = 0
-        result['text'] = f"{qb_starter.first} {qb_starter.last}'s pass intercepted."
+
     else:  # incomplete pass
         result['outcome'] = 'incomplete pass'
         result['yards'] = 0
-        result['text'] = f"{qb_starter.first} {qb_starter.last}'s pass incomplete."
-
+     
     return result
 
-
 def simRun(fieldPosition, offense, defense):
-    fumble = 0.02
+    fumble_chance = 0.02  
 
     result = {
         'outcome': None,
-        'yards': None,
-        'text': None
+        'yards': None
     }
 
-    # Get starters from the offense.
-    rb_starters = list(Players.objects.filter(team=offense, pos="rb", starter=True))
-    runner = random.choice(rb_starters)  # Pick a random RB starter
-
-    if random.random() < fumble:  # fumble
+    if random.random() < fumble_chance:  # fumble
         result['outcome'] = 'fumble'
         result['yards'] = 0
-        result['text'] = f"{runner.first} {runner.last} fumbled the ball."
-    else:  # regular run
-        result['outcome'] = 'run'
+    else:  
         result['yards'] = runYards(offense, defense)
-        if result['yards'] + fieldPosition < 100:
-            result['text'] = f"{runner.first} {runner.last} ran for {result['yards']} yards."
-        else:
-            result['yards'] = 100 - fieldPosition
-            result['text'] = f"{runner.first} {runner.last} ran {result['yards']} yards for a touchdown."
 
+        if result['yards'] + fieldPosition >= 100:
+            result['yards'] = 100 - fieldPosition
+            result['outcome'] = 'touchdown'
+        else:
+            result['outcome'] = 'run'
 
     return result
 
-
-def passYards(offense, defense, base_mean=7, base_std=7, advantage_factor=0.22):
+def passYards(offense, defense, base_mean=7.5, std_dev=7, advantage_factor=0.22):
     rating_difference = offense.offense - defense.defense
     advantage_yardage = rating_difference * advantage_factor
-    
     mean_yardage = base_mean + advantage_yardage
-    
-    raw_yardage = np.random.normal(mean_yardage, base_std)
+    raw_yardage = random.gauss(mean_yardage, std_dev)  # simulating normal distribution
     
     if raw_yardage < 0:
-        total_yardage = raw_yardage / 3
+        return round(raw_yardage / 3)
     else:
-        total_yardage = raw_yardage + (0.008 * (raw_yardage ** 2.7))
-    
-    total_yardage = round(total_yardage)
-    
-    return total_yardage
+        return round(raw_yardage + (0.008 * (raw_yardage ** 2.7)))
 
-def sackYards(offense, defense, base_mean=-6, base_std=2, advantage_factor=0.10):
+def sackYards(offense, defense, base_mean=-6, std_dev=2, advantage_factor=0.10):
     rating_difference = offense.offense - defense.defense
     advantage_yardage = rating_difference * advantage_factor
-    
     mean_yardage = base_mean + advantage_yardage
+    raw_yardage = random.gauss(mean_yardage, std_dev)
     
-    raw_yardage = np.random.normal(mean_yardage, base_std)
-    
-    if raw_yardage < 0:
-        total_yardage = raw_yardage
-    else:
-        total_yardage = 0
-    
-    total_yardage = round(total_yardage)
-    
-    return total_yardage
+    return round(min(raw_yardage, 0))
 
-def runYards(offense, defense, base_mean=2.8, base_std=5.5, advantage_factor=0.08):
+def runYards(offense, defense, base_mean=2.8, std_dev=5.5, advantage_factor=0.08):
     rating_difference = offense.offense - defense.defense
     advantage_yardage = rating_difference * advantage_factor
-    
     mean_yardage = base_mean + advantage_yardage
-    
-    raw_yardage = np.random.normal(mean_yardage, base_std)
+    raw_yardage = random.gauss(mean_yardage, std_dev)
     
     if raw_yardage < 0:
-        total_yardage = raw_yardage
+        return round(raw_yardage)
     else:
-        total_yardage = raw_yardage + (0.00044 * (raw_yardage ** 4.2))
-    
-    total_yardage = round(total_yardage)
-    
-    return total_yardage
+        return round(raw_yardage + (0.00044 * (raw_yardage ** 4.2)))
+
 
 def simDrive(info, game, driveNum, fieldPosition, offense, defense, plays_to_create):
     passFreq = 0.5
@@ -183,7 +146,6 @@ def simDrive(info, game, driveNum, fieldPosition, offense, defense, plays_to_cre
 
             if random.random() < passFreq: #determine if pass or run occurs if not doing special teams play
                 result = simPass(fieldPosition, offense, defense)
-                play.text = result['text']
                 play.playType = 'pass'
 
                 if result['outcome'] == 'interception':
@@ -198,7 +160,6 @@ def simDrive(info, game, driveNum, fieldPosition, offense, defense, plays_to_cre
             
             else: # if run
                 result = simRun(fieldPosition, offense, defense)
-                play.text = result['text']
                 play.playType = 'run'
 
                 if result['outcome'] == 'fumble':

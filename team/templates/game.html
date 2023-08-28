@@ -146,7 +146,26 @@
                     
                     <div class="tab-pane" id="box-score" role="tabpanel" aria-labelledby="box-score-tab">
                         <!-- Content for the "Box Score" tab goes here -->
+                        <div class="container">
+                            {% for category, player_game_logs in categorized_game_log_strings.items %}
+                                <h2>{{ category }}</h2>
+                                <ul class="list-group mb-4">
+                                    {% for player_game_log in player_game_logs %}
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <img src="{% static player_game_log.team_name|add:".png" %}" alt="{{ player_game_log.team_name }} logo" class="boxlogo">
+                                            <a href="{% url 'player' team_name=player_game_log.team_name id=player_game_log.player_id %}" class="ml-2">
+                                                {{ player_game_log.game_log_string }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endfor %}
+                        </div>
                     </div>
+                    
+                    
+                    
+                    
                 </div>
             </div>
         </div>

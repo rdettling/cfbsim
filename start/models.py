@@ -37,7 +37,42 @@ class Players(models.Model):
     pos = models.CharField(max_length=2)
     rating = models.IntegerField()
     starter = models.BooleanField()
-   
+
+class GameLog(models.Model):
+    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name='game_logs')
+
+    player = models.ForeignKey(Players, on_delete=models.CASCADE, related_name='game_logs')
+    game = models.ForeignKey('Games', on_delete=models.CASCADE, related_name='game_logs')
+    
+    pass_yards = models.IntegerField(default=0)
+    pass_attempts = models.IntegerField(default=0)
+    pass_completions = models.IntegerField(default=0)
+    pass_touchdowns = models.IntegerField(default=0)
+    pass_interceptions = models.IntegerField(default=0)
+    
+    rush_yards = models.IntegerField(default=0)
+    rush_attempts = models.IntegerField(default=0)
+    rush_touchdowns = models.IntegerField(default=0)
+    
+    receiving_yards = models.IntegerField(default=0)
+    receiving_catches = models.IntegerField(default=0)
+    receiving_touchdowns = models.IntegerField(default=0)
+
+    fumbles = models.IntegerField(default=0)
+
+    tackles = models.IntegerField(default=0)
+    sacks = models.FloatField(default=0.0)
+    interceptions = models.IntegerField(default=0)
+    
+    fumbles_forced = models.IntegerField(default=0)
+    fumbles_recovered = models.IntegerField(default=0)
+    
+    field_goals_made = models.IntegerField(default=0)
+    field_goals_attempted = models.IntegerField(default=0)
+    
+    extra_points_made = models.IntegerField(default=0)
+    extra_points_attempted = models.IntegerField(default=0)
+    
 class Conferences(models.Model):
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name='conferences')
     confName = models.CharField(max_length=255)
@@ -92,4 +127,4 @@ class Plays(models.Model):
     yardsGained = models.IntegerField()
     result = models.CharField(max_length=50)
     header = models.CharField(max_length=255, null=True)
-    text = models.CharField(max_length=255)
+    text = models.CharField(max_length=255, null=True)

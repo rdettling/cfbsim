@@ -1,45 +1,36 @@
-# cfbsim.net
+# CFBSim.net
 
-Personal project that simulates a college football season. Inspired by https://play.basketball-gm.com/ 
+A personal project that simulates a college football season. Inspired by [Basketball GM](https://play.basketball-gm.com/).
+
+---
 
 ## Table of Contents
 
 - [Introduction](#introduction)
 - [Features](#features)
-- [Installation](#installation)
 - [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+
+---
 
 ## Introduction
 
-A brief introduction to the project, including its purpose and goals.
+Initially started as a school project, CFBSim.net evolved into a way for me to get better at Django and databases.
+
+---
 
 ## Features
 
-List the key features or functionalities of the project.
+- **130+ Real Teams**: Includes logos for an authentic experience.
+- **Comprehensive Conferences**: Updated and accurate for the given year.
+- **Auto-Generated Players and Stats**: Fresh talent and stats that make each simulation unique.
+- **Four-Team Playoff System**: Simulates the tension and unpredictability of real college football playoffs.
+- **Real-Life Rivalry Games**: Feel the intensity in matches that mirror real-life rivalries.
 
-## Installation
-
-Step-by-step instructions on how to install the project and its dependencies. Include any prerequisites or system requirements.
+---
 
 ## Usage
 
-Explain how to use the project, including code examples and usage scenarios.
-
-## Contributing
-
-Guidelines on how to contribute to the project, including how to report issues and submit pull requests.
-
-## License
-
-Specify the project's license and provide a link to the full license text if applicable.
-
-## Contact
-
-Provide contact information for getting in touch with the project maintainers or contributors.
-
-## Acknowledgments
-
-(Optional) Acknowledge any individuals or resources that have contributed to the project.
+1. Visit [CFBSim.net](https://cfbsim.net).
+2. Select a year to begin the simulation. A schedule will automatically be generated.
+3. Choose a team to 'control.' This selection mainly affects the dashboard display and doesn't influence the simulation's outcome.
 
