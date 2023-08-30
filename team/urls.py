@@ -7,5 +7,5 @@ urlpatterns = [
     path('<str:team_name>/roster.html', views.roster),
     path('<str:team_name>/roster/<int:id>.html', views.player, name='player'),
     path('<str:team_name>/stats.html', views.stats),
-    path('<str:team_name>/<int:desired_week>/sim.html', views.simWeek)
+    path('<str:team_name>/<int:weeks>/sim.html', views.simWeek)
 ]

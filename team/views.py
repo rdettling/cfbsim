@@ -192,7 +192,7 @@ def stats(request, team_name):
     
     return render(request, 'stats.html', context)
 
-def simWeek(request, team_name, desired_week):
+def simWeek(request, team_name, weeks):
     user_id = request.session.session_key 
     info = Info.objects.get(user_id=user_id)
 
@@ -205,10 +205,9 @@ def simWeek(request, team_name, desired_week):
     plays_to_create = []
     teamGames = []
 
-    if desired_week == 1 and info.currentWeek > 1:
-        desired_week = info.currentWeek
+    desired_week = info.currentWeek + weeks
 
-    while info.currentWeek <= desired_week: 
+    while info.currentWeek < desired_week: 
         toBeSimmed = list(Games.objects.filter(info=info, weekPlayed=info.currentWeek))
 
         for game in toBeSimmed:
@@ -225,9 +224,15 @@ def simWeek(request, team_name, desired_week):
             sim.simGame(info, game, drives_to_create, plays_to_create, resumeFactor)
 
         teams = Teams.objects.filter(info=info).order_by('-resume') 
+        
         for i, team in enumerate(teams, start=1):
             team.ranking = i
-            team.save()
+
+            # games = team.totalWins + team.totalLosses
+            # if games > 0:
+            #     team.resume = round(team.resume / games, 1)
+            # else:
+            #     team.resume = 0
 
         if info.currentWeek == 12:
             setConferenceChampionships(info)
@@ -236,7 +241,6 @@ def simWeek(request, team_name, desired_week):
         elif info.currentWeek == 14:
             setNatty(info)
         info.currentWeek += 1
-
 
     game_log_dict = {}
 
@@ -278,7 +282,6 @@ def simWeek(request, team_name, desired_week):
             game_log_dict[(receiver, game)] = receiver_game_log
             
             format_play_text(play, qb_starter, receiver)
-
 
     Teams.objects.bulk_update(teams, ['ranking'])
     Drives.objects.bulk_create(drives_to_create)
@@ -338,15 +341,6 @@ def details(request, team_name, game_num):
                 'game_log_string': f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.receiving_catches} catches, {game_log.receiving_yards} yards, {game_log.receiving_touchdowns} TDs"
             }
             categorized_game_log_strings['Receiving'].append(recv_game_log_dict)
-
-
-
-
-    # Add this to your context so that you can render it in your template
-        
-    
-    print(categorized_game_log_strings)
-
 
     game.team = team
     if game.teamA == team:

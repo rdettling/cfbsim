@@ -29,10 +29,12 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Sim</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href='/teams/{{info.team.name}}/1/sim.html'>to next week</a>
-                        {% comment %} <a class="dropdown-item" href='/teams/{{info.team.name}}/6/sim.html'>to midseason</a>
-                        <a class="dropdown-item" href='/teams/{{info.team.name}}/12/sim.html'>to end of regular season</a>
-                        <a class="dropdown-item" href='/teams/{{info.team.name}}/15/sim.html'>to end of season</a> {% endcomment %}
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/1/sim.html'>1 week</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/2/sim.html'>2 weeks</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/3/sim.html'>3 weeks</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/4/sim.html'>4 weeks</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/5/sim.html'>5 weeks</a>
+                        <a class="dropdown-item" href='/teams/{{info.team.name}}/6/sim.html'>6 weeks</a>
                     </div>
                 </li>
                 <li class="nav-item">
@@ -45,6 +47,13 @@
                             <a class="dropdown-item" href="/rankings/{{conference.confName}}.html">{{conference.confName}}</a>
                         {% endfor %}
                         <a class="dropdown-item" href='/rankings/independent.html'>Independent</a>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Stats</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href='/stats/team.html'>team</a>
+                        <a class="dropdown-item" href='/stats/individual.html'>individual</a>
                     </div>
                 </li>
             </ul>    

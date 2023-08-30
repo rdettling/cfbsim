@@ -22,4 +22,5 @@ urlpatterns = [
     path('dashboard.html', include('dashboard.urls')),
     path('teams/', include('team.urls')),
     path('rankings/', include('rankings.urls')),
+    path('stats/', include('stats.urls')),
 ]
