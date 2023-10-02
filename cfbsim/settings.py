@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "rankings",
     "mathfilters",
     "stats",
+    "schedule",
 ]
 
 MIDDLEWARE = [

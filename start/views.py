@@ -2,8 +2,8 @@ from django.shortcuts import render
 import json
 import random
 from .models import *
-import static.sim as sim
-import static.names as names
+import static.code.sim as sim
+import static.code.names as names
 from django.db import transaction
 
 def launch(request):
@@ -60,7 +60,7 @@ def init(year, user_id):
 
     for conference in data['conferences']:
         Conference = Conferences(
-            info=info,
+            info = info,
             confName = conference['confName'],
             confFullName = conference['confFullName'],
             confGames = conference['confGames']
@@ -69,7 +69,7 @@ def init(year, user_id):
 
         for team in conference['teams']:
             Team = Teams(
-                info=info,
+                info = info,
                 name = team['name'],
                 abbreviation = team['abbreviation'],
                 prestige = team['prestige'],
@@ -106,7 +106,7 @@ def init(year, user_id):
 
     for team in data['independents']:
         Team = Teams(
-            info=info,
+            info = info,
             name = team['name'],
             abbreviation = team['abbreviation'],
             prestige = team['prestige'],
@@ -141,6 +141,41 @@ def init(year, user_id):
         teams_to_create.append(Team)
         data['teams'].append(team)
 
+    FCS = Teams(
+        info=info,
+        name = 'FCS',
+        abbreviation = 'FCS',
+        prestige = 50,
+        mascot = 'FCS',
+        colorPrimary = '#000000',
+        colorSecondary = '#FFFFFF',
+        conference = None,
+        confWins = 0,
+        confLosses = 0,
+        nonConfWins = 0,
+        nonConfLosses = 0,
+        totalWins = 0,
+        totalLosses = 0,
+        resume_total = 0,
+        resume = 0,
+        expectedWins = 0,
+        ranking = 0
+    )
+    fcs = {
+        'name' : 'FCS',
+        'prestige' : 50,
+        'conference' : None,
+        'schedule' : set(),
+        'confGames' : 0,
+        'confLimit' : 0,
+        'nonConfGames' : 0,
+        'nonConfLimit' : 100,
+        'gamesPlayed' : 0,
+        'gameNum' : 1
+    }
+    teams_to_create.append(FCS)
+    data['teams'].append(fcs)
+
     for team in teams_to_create:
         players(info, team, players_to_create) 
 
@@ -164,7 +199,7 @@ def setSchedules(data, info):
     scheduled_games = uniqueGames(info, data, games_to_create)
 
     for team in data['teams']:
-        if not team['conference']:
+        if not team['conference'] and team['name'] != 'FCS':
             Team = Teams.objects.get(info=info, name=team['name'])
             
             done = False
@@ -174,11 +209,12 @@ def setSchedules(data, info):
                         if team['nonConfGames'] == team['nonConfLimit']:
                             done = True
                             break
-                        if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['name'] != team['name'] and opponent['nonConfGames'] == i:
+                        if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['name'] != team['name'] and opponent['nonConfGames'] == i and opponent['name'] != 'FCS':
                             Opponent = Teams.objects.get(info=info, name=opponent['name'])
                             team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
                     if done:
                         break
+        print(f'scheduling done for {team["name"]}')
 
     random.shuffle(data['conferences'])
 
@@ -199,17 +235,18 @@ def setSchedules(data, info):
                         if team['nonConfGames'] == team['nonConfLimit']:
                             done = True
                             break    
-                        if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['conference'] != team['conference'] and opponent['nonConfGames'] == i:
+                        if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['conference'] != team['conference'] and opponent['nonConfGames'] == i and opponent['name'] != 'FCS':
                             Opponent = Teams.objects.get(info=info, name=opponent['name'])
                             team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
                     if done:
                         break
 
                 if not done:
-                    odds = sim.getSpread(Team.rating, 50)
-                    print(team['name'], 'FCSSSSS\n')
-                    team['gameNum'] += 1
-                    team['nonConfGames'] += 1                    
+                    fcs = next((team for team in data['teams'] if team['name'] == 'FCS'), None)
+                    FCS = Teams.objects.get(info=info, name='FCS')
+                    team, fcs = scheduleGame(info, team, fcs, Team, FCS, games_to_create)
+                    print(team['name'], 'FCSSSSS\n') 
+                               
             done = False
 
             while team['confGames'] < team['confLimit']:
@@ -223,6 +260,8 @@ def setSchedules(data, info):
                             team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
                     if done:
                         break
+
+        print(f'scheduling done for {team["name"]}')
     
     for currentWeek in range(1, 13):
         for team in data['teams']:

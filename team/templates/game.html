@@ -1,173 +1,293 @@
-{% extends 'base.html' %}
-{% load static %}
-{% load mathfilters %}
-{% block title %}{{game.team.name}} vs {{game.opponent.name}}{% endblock %}
+{% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block
+title %}{{game.team.name}} vs {{game.opponent.name}}{% endblock %} {% block css
+%}
+<link rel="stylesheet" href="{% static 'game.css' %}" />
+{% endblock %} {% block content %}
+<div class="row">
+  <div class="col-md-6 centered">
+    <a class="summarytext" href="/teams/{{game.team.name}}/schedule.html"
+      >{{game.team.name}}</a
+    >
+    <img class="logo" src="{% static game.team.name %}.png" />
+    <span class="summarytext">{{game.team.score}}</span>
+  </div>
+  <div class="col-md-6 centered">
+    <span class="summarytext">{{game.opponent.score}}</span>
+    <img class="logo" src="{% static game.opponent.name %}.png" />
+    <a class="summarytext" href="/teams/{{game.opponent.name}}/schedule.html"
+      >{{game.opponent.name}}</a
+    >
+  </div>
+</div>
+<div class="row centered">
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+      <a
+        class="nav-link active"
+        id="drive-summary-tab"
+        data-toggle="tab"
+        href="#drive-summary"
+        role="tab"
+        aria-controls="drive-summary"
+        aria-selected="true"
+        >Drive Summary</a
+      >
+    </li>
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        id="stats-tab"
+        data-toggle="tab"
+        href="#stats"
+        role="tab"
+        aria-controls="stats"
+        aria-selected="false"
+        >Stats</a
+      >
+    </li>
+  </ul>
+</div>
 
-{% block css %}
-    <link rel="stylesheet" href="{% static 'game.css' %}">
-{% endblock %}
+<div class="row centered">
+  <div class="tab-content">
+    <div
+      class="tab-pane show active"
+      id="drive-summary"
+      role="tabpanel"
+      aria-labelledby="drive-summary-tab"
+    >
+      <ul class="nav nav-tabs" id="driveSummaryTab" role="tablist">
+        <li class="nav-item">
+          <a
+            class="nav-link active"
+            id="scoring-drives-tab"
+            data-toggle="tab"
+            href="#scoring-drives"
+            role="tab"
+            aria-controls="scoring-drives"
+            aria-selected="true"
+            >Scoring Drives</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="all-drives-tab"
+            data-toggle="tab"
+            href="#all-drives"
+            role="tab"
+            aria-controls="all-drives"
+            aria-selected="false"
+            >All Drives</a
+          >
+        </li>
+      </ul>
+      <div class="tab-content" id="driveSummaryTabContent">
+        <div
+          class="tab-pane show active"
+          id="scoring-drives"
+          role="tabpanel"
+          aria-labelledby="scoring-drives-tab"
+        >
+          <!-- Content for the "Scoring Drives" tab goes here -->
+          {% for drive in drives %} {% if drive.points or drive.result ==
+          'safety' %}
+          <div class="accordion" id="drive{{ drive.id }}">
+            <div class="card">
+              <div class="card-header" id="heading{{ drive.id }}">
+                <h2 class="mb-0">
+                  <img
+                    class="boxlogo"
+                    src="{% static drive.offense.name %}.png"
+                  />
+                  <button
+                    class="btn btn-link"
+                    type="button"
+                    data-toggle="collapse"
+                    data-target="#collapse{{ drive.id }}"
+                    aria-expanded="true"
+                    aria-controls="collapse{{ drive.id }}"
+                  >
+                    {{ drive.result }} {{ drive.teamAfter }} - {{ drive.oppAfter
+                    }}
+                  </button>
+                </h2>
+              </div>
 
-{% block content %}
-    <div class="row">
-        <div class="col-md-6 centered">
-            <a class="summarytext" href="/teams/{{game.team.name}}/schedule.html">{{game.team.name}}</a>
-            <img class="logo" src='{% static game.team.name %}.png'>
-            <span class="summarytext">{{game.team.score}}</span>
-        </div>
-        <div class="col-md-6 centered">
-            <span class="summarytext">{{game.opponent.score}}</span>
-            <img class="logo" src='{% static game.opponent.name %}.png'>
-            <a class="summarytext" href="/teams/{{game.opponent.name}}/schedule.html">{{game.opponent.name}}</a>
-        </div>
-    </div>
-    <div class="row centered">
-        <ul class="nav nav-tabs" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" id="drive-summary-tab" data-toggle="tab" href="#drive-summary" role="tab" aria-controls="drive-summary" aria-selected="true">Drive Summary</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="stats-tab" data-toggle="tab" href="#stats" role="tab" aria-controls="stats" aria-selected="false">Stats</a>
-            </li>
-        </ul>
-    </div>
-    
-    <div class="row centered">
-        <div class="tab-content">
-            <div class="tab-pane show active" id="drive-summary" role="tabpanel" aria-labelledby="drive-summary-tab">
-                <ul class="nav nav-tabs" id="driveSummaryTab" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="scoring-drives-tab" data-toggle="tab" href="#scoring-drives" role="tab" aria-controls="scoring-drives" aria-selected="true">Scoring Drives</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="all-drives-tab" data-toggle="tab" href="#all-drives" role="tab" aria-controls="all-drives" aria-selected="false">All Drives</a>
-                    </li>
-                </ul>
-                <div class="tab-content" id="driveSummaryTabContent">
-                    <div class="tab-pane show active" id="scoring-drives" role="tabpanel" aria-labelledby="scoring-drives-tab">
-                        <!-- Content for the "Scoring Drives" tab goes here -->
-                        {% for drive in drives %}
-                            {% if drive.points or drive.result == 'safety' %}
-                                <div class="accordion" id="drive{{ drive.id }}">
-                                    <div class="card">
-                                        <div class="card-header" id="heading{{ drive.id }}">
-                                            <h2 class="mb-0">
-                                                <img class="boxlogo" src='{% static drive.offense.name %}.png'>
-                                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ drive.id }}" aria-expanded="true" aria-controls="collapse{{ drive.id }}">
-                                                    {{ drive.result }} {{ drive.teamAfter }} - {{ drive.oppAfter }}
-                                                </button>
-                                            </h2>
-                                        </div>
-                    
-                                        <div id="collapse{{ drive.id }}" class="collapse" aria-labelledby="heading{{ drive.id }}" data-parent="#drive{{ drive.id }}">
-                                            <div class="card-body">
-                                                <!-- Content for the plays of this drive goes here -->
-                                                {% for play in drive.plays.all %}
-                                                    <div class="play-entry mb-3">
-                                                        <p class="mb-0 font-weight-bold border-bottom pb-1">{{play.header}}</p>
-                                                        <p class="mt-2">{{ play.text }}</p>
-                                                    </div>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="tab-pane" id="all-drives" role="tabpanel" aria-labelledby="all-drives-tab">
-                        <!-- Content for the "All Drives" tab goes here -->
-                        {% for drive in drives %}
-                            <div class="accordion" id="drive{{ drive.id }}">
-                                <div class="card">
-                                    <div class="card-header" id="heading{{ drive.id }}">
-                                        <h2 class="mb-0">
-                                            <img class="boxlogo" src='{% static drive.offense.name %}.png'>
-                                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ drive.id }}" aria-expanded="true" aria-controls="collapse{{ drive.id }}">
-                                                {{ drive.result }} {{ drive.teamAfter }} - {{ drive.oppAfter }}
-                                            </button>
-                                        </h2>
-                                    </div>
-                
-                                    <div id="collapse{{ drive.id }}" class="collapse" aria-labelledby="heading{{ drive.id }}" data-parent="#drive{{ drive.id }}">
-                                        <div class="card-body">
-                                            <!-- Content for the plays of this drive goes here -->
-                                            {% for play in drive.plays.all %}
-                                                <div class="play-entry mb-3">
-                                                    <p class="mb-0 font-weight-bold border-bottom pb-1">{{play.header}}</p>
-                                                    <p class="mt-2">{{ play.text }}</p>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>   
-                        {% endfor %}
-                    </div>
+              <div
+                id="collapse{{ drive.id }}"
+                class="collapse"
+                aria-labelledby="heading{{ drive.id }}"
+                data-parent="#drive{{ drive.id }}"
+              >
+                <div class="card-body">
+                  <!-- Content for the plays of this drive goes here -->
+                  {% for play in drive.plays.all %}
+                  <div class="play-entry mb-3">
+                    <p class="mb-0 font-weight-bold border-bottom pb-1">
+                      {{play.header}}
+                    </p>
+                    <p class="mt-2">{{ play.text }}</p>
+                  </div>
+                  {% endfor %}
                 </div>
+              </div>
             </div>
-            <div class="tab-pane" id="stats" role="tabpanel" aria-labelledby="stats-tab">
-                <ul class="nav nav-tabs" id="statsTab" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="team-stats-tab" data-toggle="tab" href="#team-stats" role="tab" aria-controls="team-stats" aria-selected="true">Team Stats</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="box-score-tab" data-toggle="tab" href="#box-score" role="tab" aria-controls="box-score" aria-selected="false">Box Score</a>
-                    </li>
-                </ul>
-                <div class="tab-content" id="statsTabContent">
-                    <div class="tab-pane show active" id="team-stats" role="tabpanel" aria-labelledby="team-stats-tab">
-                        <!-- Content for the "Team Stats" tab goes here -->
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>
-                                        <img class="boxlogo" src='{% static team.name %}.png'>
-                                    </th>
-                                    <th>
-                                        <img class="boxlogo" src='{% static game.opponent.name %}.png'>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for stat_name, stat_values in stats.items %}
-                                    <tr>
-                                        <td>{{ stat_name }}</td>
-                                        <td>{{ stat_values.team }}</td>
-                                        <td>{{ stat_values.opponent }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    
-                    
-                    <div class="tab-pane" id="box-score" role="tabpanel" aria-labelledby="box-score-tab">
-                        <!-- Content for the "Box Score" tab goes here -->
-                        <div class="container">
-                            {% for category, player_game_logs in categorized_game_log_strings.items %}
-                                <h2>{{ category }}</h2>
-                                <ul class="list-group mb-4">
-                                    {% for player_game_log in player_game_logs %}
-                                        <li class="list-group-item d-flex align-items-center">
-                                            <img src="{% static player_game_log.team_name|add:".png" %}" alt="{{ player_game_log.team_name }} logo" class="boxlogo">
-                                            <a href="{% url 'player' team_name=player_game_log.team_name id=player_game_log.player_id %}" class="ml-2">
-                                                {{ player_game_log.game_log_string }}
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
-                    
-                    
-                    
-                </div>
-            </div>
+          </div>
+          {% endif %} {% endfor %}
         </div>
+
+        <div
+          class="tab-pane"
+          id="all-drives"
+          role="tabpanel"
+          aria-labelledby="all-drives-tab"
+        >
+          <!-- Content for the "All Drives" tab goes here -->
+          {% for drive in drives %}
+          <div class="accordion" id="drive{{ drive.id }}">
+            <div class="card">
+              <div class="card-header" id="heading{{ drive.id }}">
+                <h2 class="mb-0">
+                  <img
+                    class="boxlogo"
+                    src="{% static drive.offense.name %}.png"
+                  />
+                  <button
+                    class="btn btn-link"
+                    type="button"
+                    data-toggle="collapse"
+                    data-target="#collapse{{ drive.id }}"
+                    aria-expanded="true"
+                    aria-controls="collapse{{ drive.id }}"
+                  >
+                    {{ drive.result }} {{ drive.teamAfter }} - {{ drive.oppAfter
+                    }}
+                  </button>
+                </h2>
+              </div>
+
+              <div
+                id="collapse{{ drive.id }}"
+                class="collapse"
+                aria-labelledby="heading{{ drive.id }}"
+                data-parent="#drive{{ drive.id }}"
+              >
+                <div class="card-body">
+                  <!-- Content for the plays of this drive goes here -->
+                  {% for play in drive.plays.all %}
+                  <div class="play-entry mb-3">
+                    <p class="mb-0 font-weight-bold border-bottom pb-1">
+                      {{play.header}}
+                    </p>
+                    <p class="mt-2">{{ play.text }}</p>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
+    <div
+      class="tab-pane"
+      id="stats"
+      role="tabpanel"
+      aria-labelledby="stats-tab"
+    >
+      <ul class="nav nav-tabs" id="statsTab" role="tablist">
+        <li class="nav-item">
+          <a
+            class="nav-link active"
+            id="team-stats-tab"
+            data-toggle="tab"
+            href="#team-stats"
+            role="tab"
+            aria-controls="team-stats"
+            aria-selected="true"
+            >Team Stats</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="box-score-tab"
+            data-toggle="tab"
+            href="#box-score"
+            role="tab"
+            aria-controls="box-score"
+            aria-selected="false"
+            >Box Score</a
+          >
+        </li>
+      </ul>
+      <div class="tab-content" id="statsTabContent">
+        <div
+          class="tab-pane show active"
+          id="team-stats"
+          role="tabpanel"
+          aria-labelledby="team-stats-tab"
+        >
+          <!-- Content for the "Team Stats" tab goes here -->
+          <table class="table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>
+                  <img class="boxlogo" src="{% static team.name %}.png" />
+                </th>
+                <th>
+                  <img
+                    class="boxlogo"
+                    src="{% static game.opponent.name %}.png"
+                  />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for stat_name, stat_values in stats.items %}
+              <tr>
+                <td>{{ stat_name }}</td>
+                <td>{{ stat_values.team }}</td>
+                <td>{{ stat_values.opponent }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          class="tab-pane"
+          id="box-score"
+          role="tabpanel"
+          aria-labelledby="box-score-tab"
+        >
+          <!-- Content for the "Box Score" tab goes here -->
+          <div class="container">
+            {% for category, player_game_logs in
+            categorized_game_log_strings.items %}
+            <h2>{{ category }}</h2>
+            <ul class="list-group mb-4">
+              {% for player_game_log in player_game_logs %}
+              <li class="list-group-item d-flex align-items-center">
+                <img src="{% static player_game_log.team_name|add:".png" %}"
+                alt="{{ player_game_log.team_name }} logo" class="boxlogo">
+                <a
+                  href="{% url 'player' team_name=player_game_log.team_name id=player_game_log.player_id %}"
+                  class="ml-2"
+                >
+                  {{ player_game_log.game_log_string }}
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

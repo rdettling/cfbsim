@@ -1,0 +1,48 @@
+{% extends 'base.html' %} 
+{% load static %} 
+{% block title %}Week {{week_num}} schedule{% endblock %} 
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'week_schedule.css' %}"/>
+{% endblock %} 
+
+{% block content %}
+    <div class="container mt-4">
+        {% for game in games %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Week {{ game.weekPlayed }}</strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-5 text-center">
+                        <h5>{{ game.teamA.name }}</h5>
+                        <p>Spread: {{ game.spreadA }}</p>
+                        <p>Moneyline: {{ game.moneylineA }}</p>
+                        <p>Win Prob: {{ game.winProbA }}%</p>
+                    </div>
+                    <div class="col-sm-2 text-center">
+                        <h3>VS</h3>
+                        {% if game.scoreA and game.scoreB %}
+                        <p>Score: {{ game.scoreA }} - {{ game.scoreB }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-sm-5 text-center">
+                        <h5>{{ game.teamB.name }}</h5>
+                        <p>Spread: {{ game.spreadB }}</p>
+                        <p>Moneyline: {{ game.moneylineB }}</p>
+                        <p>Win Prob: {{ game.winProbB }}%</p>
+                    </div>
+                </div>
+                {% if game.overtime %}
+                <div class="row mt-3">
+                    <div class="col text-center">
+                        <span class="badge badge-danger">Overtime: {{ game.overtime }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}

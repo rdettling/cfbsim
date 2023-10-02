@@ -226,7 +226,7 @@ def fouthDown(fieldPosition, yardsLeft):
         
 
 def simGame(info, game, drives_to_create, plays_to_create, resumeFactor):
-    drivesPerTeam = 13
+    drivesPerTeam = 12
     fieldPosition = None
     game.scoreA = 0
     game.scoreB = 0

@@ -1,5 +1,5 @@
 from start.models import *
-import static.sim as sim
+import static.code.sim as sim
 from django.shortcuts import render
 from django.db.models import Q
 import random
