@@ -265,7 +265,7 @@ def simGame(info, game, drives_to_create, plays_to_create, resumeFactor):
         game.resultB = "L"
         game.teamA.totalWins += 1
         game.teamB.totalLosses += 1
-        game.teamA.resume += game.teamB.rating ** resumeFactor
+        game.teamA.resume_total += game.teamB.rating ** resumeFactor
     elif game.scoreA < game.scoreB:
         if game.teamA.conference == game.teamB.conference:
             game.teamA.confLosses += 1
@@ -278,7 +278,7 @@ def simGame(info, game, drives_to_create, plays_to_create, resumeFactor):
         game.resultB = "W"
         game.teamA.totalLosses += 1
         game.teamB.totalWins += 1
-        game.teamB.resume += game.teamA.rating ** resumeFactor
+        game.teamB.resume_total += game.teamA.rating ** resumeFactor
 
     game.save()
     game.teamA.save()

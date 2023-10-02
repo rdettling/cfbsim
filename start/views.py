@@ -83,6 +83,7 @@ def init(year, user_id):
                 nonConfLosses = 0,
                 totalWins = 0,
                 totalLosses = 0,
+                resume_total = 0,
                 resume = 0,
                 expectedWins = 0,
                 ranking = 0
@@ -119,6 +120,7 @@ def init(year, user_id):
             nonConfLosses = 0,
             totalWins = 0,
             totalLosses = 0,
+            resume_total = 0,
             resume = 0,
             expectedWins = 0,
             ranking = 0

@@ -223,16 +223,7 @@ def simWeek(request, team_name, weeks):
             print(f'Week: {game.weekPlayed} -> simming {game.teamA.name} vs {game.teamB.name}')
             sim.simGame(info, game, drives_to_create, plays_to_create, resumeFactor)
 
-        teams = Teams.objects.filter(info=info).order_by('-resume') 
-        
-        for i, team in enumerate(teams, start=1):
-            team.ranking = i
-
-            # games = team.totalWins + team.totalLosses
-            # if games > 0:
-            #     team.resume = round(team.resume / games, 1)
-            # else:
-            #     team.resume = 0
+        update_rankings(info)
 
         if info.currentWeek == 12:
             setConferenceChampionships(info)
@@ -283,7 +274,6 @@ def simWeek(request, team_name, weeks):
             
             format_play_text(play, qb_starter, receiver)
 
-    Teams.objects.bulk_update(teams, ['ranking'])
     Drives.objects.bulk_create(drives_to_create)
     Plays.objects.bulk_create(plays_to_create)
     field_names = [f.name for f in GameLog._meta.fields if not f.primary_key and not f.is_relation]
@@ -298,6 +288,23 @@ def simWeek(request, team_name, weeks):
     }
     
     return render(request, 'sim.html', context)
+
+def update_rankings(info):
+    teams = Teams.objects.filter(info=info)
+
+    for team in teams:
+        games_played = team.totalWins + team.totalLosses
+
+        if games_played > 0:
+            team.resume = round(team.resume_total / (games_played), 1)
+        else:
+            team.resume = 0
+
+    sorted_teams = sorted(teams, key=lambda x: x.resume, reverse=True)
+        
+    for i, team in enumerate(sorted_teams, start=1):
+        team.ranking = i
+        team.save()
 
 def details(request, team_name, game_num):
     user_id = request.session.session_key 

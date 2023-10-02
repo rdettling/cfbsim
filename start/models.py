@@ -24,6 +24,7 @@ class Teams(models.Model):
     nonConfLosses = models.IntegerField()
     totalWins = models.IntegerField()
     totalLosses = models.IntegerField()
+    resume_total = models.FloatField()
     resume = models.FloatField()
     expectedWins = models.FloatField()
     ranking = models.IntegerField()
