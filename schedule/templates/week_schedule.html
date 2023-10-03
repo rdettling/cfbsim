@@ -7,42 +7,72 @@
 {% endblock %} 
 
 {% block content %}
-    <div class="container mt-4">
+<div class="container mt-4">
+    <div class="row">
         {% for game in games %}
-        <div class="card mb-3">
-            <div class="card-header">
-                <strong>Week {{ game.weekPlayed }}</strong>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-sm-5 text-center">
-                        <h5>{{ game.teamA.name }}</h5>
-                        <p>Spread: {{ game.spreadA }}</p>
-                        <p>Moneyline: {{ game.moneylineA }}</p>
-                        <p>Win Prob: {{ game.winProbA }}%</p>
+        <div class="col-sm-3">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>{{ game.label }}</strong>
+                </div>
+                <div class="card-body pb-2">
+                    <!-- First row: Team A Name and Score -->
+                    <div class="row mb-2">
+                        <div class="col-2 p-0 mx-1 d-flex justify-content-center">
+                            <img class='teamlogo' src='{% static game.teamA.name %}.png'>
+                        </div>
+                        <div class="col p-0">
+                            {% if game.teamA.ranking < 26 %}
+                                <a href='/teams/{{game.teamA.name}}/schedule.html'>#{{game.teamA.ranking}} {{game.teamA.name}}</a> 
+                            {% else %}
+                                <a href='/teams/{{game.teamA.name}}/schedule.html'>{{game.teamA.name}}</a> 
+                            {% endif %}
+                        </div>
+                        <div class="col-2 p-0 d-flex justify-content-center">
+                            {% if game.scoreA %}
+                                {{ game.scoreA }}
+                            {% else %}
+                                {{ game.spreadA }}
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="col-sm-2 text-center">
-                        <h3>VS</h3>
-                        {% if game.scoreA and game.scoreB %}
-                        <p>Score: {{ game.scoreA }} - {{ game.scoreB }}</p>
+                    <!-- Second row: Team B Name and Score -->
+                    <div class="row mb-2">
+                        <div class="col-2 p-0 mx-1 d-flex justify-content-center">
+                            <img class='teamlogo' src='{% static game.teamB.name %}.png'>
+                        </div>
+                        <div class="col p-0">
+                            {% if game.teamB.ranking < 26 %}
+                                <a href='/teams/{{game.teamB.name}}/schedule.html'>#{{game.teamB.ranking}} {{game.teamB.name}}</a> 
+                            {% else %}
+                                <a href='/teams/{{game.teamB.name}}/schedule.html'>{{game.teamB.name}}</a> 
+                            {% endif %}
+                        </div>
+                        <div class="col-2 p-0 d-flex justify-content-center">
+                            {% if game.scoreB %}
+                                {{ game.scoreB }}
+                            {% else %}
+                                {{ game.spreadB }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Third row: Game Over text -->
+                    <div class="row d-flex justify-content-center">
+                        {% if game.scoreA %}
+                            <a href='/teams/{{game.teamA.name}}/schedule/{{game.gameNumA}}.html'>Summary</a> 
+                        {% else %}
+                            <a href='/teams/{{game.teamA.name}}/schedule/{{game.gameNumA}}.html'>Preview</a> 
                         {% endif %}
                     </div>
-                    <div class="col-sm-5 text-center">
-                        <h5>{{ game.teamB.name }}</h5>
-                        <p>Spread: {{ game.spreadB }}</p>
-                        <p>Moneyline: {{ game.moneylineB }}</p>
-                        <p>Win Prob: {{ game.winProbB }}%</p>
-                    </div>
                 </div>
-                {% if game.overtime %}
-                <div class="row mt-3">
-                    <div class="col text-center">
-                        <span class="badge badge-danger">Overtime: {{ game.overtime }}</span>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
+        {% if forloop.counter|divisibleby:4 %}
+    </div>
+    <div class="row">
+        {% endif %}
         {% endfor %}
     </div>
+</div>
 {% endblock %}
+

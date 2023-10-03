@@ -9,6 +9,17 @@ def schedule(request, week_num):
     conferences = Conferences.objects.filter(info=info).order_by('confName')
     games = Games.objects.filter(info=info, weekPlayed=week_num)
 
+    for game in games:
+        if game.labelA != game.labelB and week_num < 13:
+            if game.teamA.conference and game.teamB.conference:
+                game.label = f'NC ({game.teamA.conference.confName} vs {game.teamB.conference.confName})'
+            elif not game.teamA.conference:
+                game.label = f'NC (Ind vs {game.teamB.conference.confName})'
+            elif not game.teamB.conference:
+                game.label = f'NC ({game.teamA.conference.confName} vs Ind)'
+        else:
+            game.label = game.labelA
+
     context = {
         'week_num' : week_num,
         'games' : games,

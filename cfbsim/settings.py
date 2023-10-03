@@ -94,6 +94,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, "static", "logos"),
     os.path.join(BASE_DIR, "static", "logos", "teams"),
     os.path.join(BASE_DIR, "static", "logos", "conferences"),
 ]
