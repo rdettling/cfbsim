@@ -306,6 +306,15 @@ def update_rankings(info):
         team.ranking = i
         team.save()
 
+    games = Games.objects.filter(info=info)
+
+    for game in games:
+        if not game.winner:
+            game.rankATOG = game.teamA.ranking
+            game.rankBTOG = game.teamB.ranking
+        
+        game.save()
+
 def details(request, team_name, game_num):
     user_id = request.session.session_key 
     info = Info.objects.get(user_id=user_id)
@@ -527,6 +536,8 @@ def setConferenceChampionships(info):
             gameNumA=13,
             gameNumB=13,
             overtime=0,
+            rankATOG=teamA.ranking,
+            rankBTOG=teamB.ranking
         )
 
 def setPlayoff(info):
@@ -554,6 +565,8 @@ def setPlayoff(info):
         gameNumA=14,
         gameNumB=14,
         overtime=0,
+        rankATOG=team1.ranking,
+        rankBTOG=team4.ranking
     )
 
     odds = sim.getSpread(team2.rating, team3.rating)
@@ -573,6 +586,8 @@ def setPlayoff(info):
         gameNumA=14,
         gameNumB=14,
         overtime=0,
+        rankATOG=team2.ranking,
+        rankBTOG=team3.ranking
     )
     
 

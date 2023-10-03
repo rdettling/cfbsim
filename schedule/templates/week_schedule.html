@@ -10,10 +10,13 @@
 <div class="container mt-4">
     <div class="row">
         {% for game in games %}
-        <div class="col-sm-3">
+        <div class="col-3">
             <div class="card mb-3">
-                <div class="card-header">
+                <div class="card-header p-2 d-flex justify-content-between align-items-center">
                     <strong>{{ game.label }}</strong>
+                    {% if game.game_of_week %}
+                    <span class="badge badge-info">Game of the week</span>
+                    {% endif %}
                 </div>
                 <div class="card-body pb-2">
                     <!-- First row: Team A Name and Score -->
@@ -22,8 +25,8 @@
                             <img class='teamlogo' src='{% static game.teamA.name %}.png'>
                         </div>
                         <div class="col p-0">
-                            {% if game.teamA.ranking < 26 %}
-                                <a href='/teams/{{game.teamA.name}}/schedule.html'>#{{game.teamA.ranking}} {{game.teamA.name}}</a> 
+                            {% if game.rankATOG < 26 %}
+                                <a href='/teams/{{game.teamA.name}}/schedule.html'>#{{game.rankATOG}} {{game.teamA.name}}</a> 
                             {% else %}
                                 <a href='/teams/{{game.teamA.name}}/schedule.html'>{{game.teamA.name}}</a> 
                             {% endif %}
@@ -42,8 +45,8 @@
                             <img class='teamlogo' src='{% static game.teamB.name %}.png'>
                         </div>
                         <div class="col p-0">
-                            {% if game.teamB.ranking < 26 %}
-                                <a href='/teams/{{game.teamB.name}}/schedule.html'>#{{game.teamB.ranking}} {{game.teamB.name}}</a> 
+                            {% if game.rankBTOG < 26 %}
+                                <a href='/teams/{{game.teamB.name}}/schedule.html'>#{{game.rankBTOG}} {{game.teamB.name}}</a> 
                             {% else %}
                                 <a href='/teams/{{game.teamB.name}}/schedule.html'>{{game.teamB.name}}</a> 
                             {% endif %}

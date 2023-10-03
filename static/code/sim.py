@@ -1,5 +1,8 @@
 import random
-from start.models import * 
+try:
+    from start.models import *  
+except ModuleNotFoundError:
+    pass
 
 def simPass(fieldPosition, offense, defense):
     comp = 0.62
@@ -84,7 +87,6 @@ def runYards(offense, defense, base_mean=2.8, std_dev=5.5, advantage_factor=0.08
         return round(raw_yardage)
     else:
         return round(raw_yardage + (0.00044 * (raw_yardage ** 4.2)))
-
 
 def simDrive(info, game, driveNum, fieldPosition, offense, defense, plays_to_create):
     passFreq = 0.5
@@ -224,7 +226,6 @@ def fouthDown(fieldPosition, yardsLeft):
         else:
             return 'field goal'
         
-
 def simGame(info, game, drives_to_create, plays_to_create, resumeFactor):
     drivesPerTeam = 12
     fieldPosition = None
@@ -307,117 +308,6 @@ def overtime(info, game, drives_to_create, plays_to_create, drivesPerTeam):
         drives_to_create.append(drive)
 
     return game
-
-def getSpread(teamARating, teamBRating, tax_factor=0.05):
-    # tests = 50
-    # aWin = 0
-    # bWin = 0
-    # aPoints = 0
-    # bPoints = 0
-
-    # for i in range(tests):
-    #     game = simGame('teamA', teamARating, 'teamB', teamBRating)
-
-    #     aPoints += game['scoreA']
-    #     bPoints += game['scoreB']
-
-    #     if game['winner'] == 'teamA':
-    #         aWin += 1
-    #     else:
-    #         bWin += 1
-
-    # aPoints /= tests
-    # bPoints /= tests
-
-    # spread = round((bPoints - aPoints) * 2) / 2  # round to nearest half-point
-
-    # if spread > 0:
-    #     spreadA = '+' + str(int(spread)) if spread.is_integer() else '+' + str(spread)
-    #     spreadB = '-' + str(int(spread)) if spread.is_integer() else '-' + str(spread)
-    # elif spread < 0:
-    #     spreadA = '-' + str(abs(int(spread))) if spread.is_integer() else '-' + str(abs(spread))
-    #     spreadB = '+' + str(abs(int(spread))) if spread.is_integer() else '+' + str(abs(spread))
-    # else:
-    #     spreadA = 'Even'
-    #     spreadB = 'Even'
-
-    # winProbA = aWin / tests
-    # winProbB = bWin / tests
-    
-    # implied_probA = winProbA + tax_factor / 2
-    # implied_probB = winProbB + tax_factor / 2
-
-    # if implied_probA >= 1:
-    #     implied_probA = 0.99
-    # elif implied_probA <= 0:
-    #     implied_probA = 0.01
-    # if implied_probB >= 1:
-    #     implied_probB = 0.99
-    # elif implied_probB <= 0:
-    #     implied_probB = 0.01
-       
-    # if implied_probA > 0.5:
-    #     moneylineA = round(implied_probA / (1 - implied_probA) * 100)
-    #     moneylineA = f'-{moneylineA}'
-    # else:
-    #     moneylineA = round(((1 / implied_probA) - 1) * 100)
-    #     moneylineA = f'+{moneylineA}'
-
-    # if implied_probB > 0.5:
-    #     moneylineB = round(implied_probB / (1 - implied_probB) * 100)
-    #     moneylineB = f'-{moneylineB}'
-    # else:
-    #     moneylineB = round(((1 / implied_probB) - 1) * 100)
-    #     moneylineB = f'+{moneylineB}'
-    
-    # return {
-    #     'spreadA': spreadA,
-    #     'spreadB': spreadB,
-    #     'winProbA': winProbA,
-    #     'winProbB': winProbB,
-    #     'moneylineA': moneylineA,
-    #     'moneylineB': moneylineB
-    # }
-    return {
-        'spreadA': 0,
-        'spreadB': 0,
-        'winProbA': 0,
-        'winProbB': 0,
-        'moneylineA': 0,
-        'moneylineB': 0
-    }
-
-def testGame(a, b):
-    tests = 100
-    aWin = 0
-    aPoints = 0
-    bWin = 0 
-    bPoints = 0
-
-    for i in range(tests):
-        game = simGame('teamA', a, 'teamB', b)
-
-        aPoints += game['scoreA']
-        bPoints += game['scoreB']
-
-        if game['winner'] == 'teamA':
-            aWin += 1
-        else:
-            bWin += 1
-
-    aPoints /= tests
-    bPoints /= tests
-
-    print(f"{aWin} - {bWin}")
-    print(getWinProb(a, b))
-    print(f"{aPoints} - {bPoints}")
-    print(getSpread(a, b))
-
-def getWinProb(teamARating, teamBRating):
-    power = 15
-    sum = (teamARating ** power) + (teamBRating ** power)
-    teamAChance = (teamARating ** power) / sum
-    return teamAChance
 
 def fieldGoal(distance):
     if distance < 20:

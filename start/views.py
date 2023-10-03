@@ -2,8 +2,8 @@ from django.shortcuts import render
 import json
 import random
 from .models import *
-import static.code.sim as sim
 import static.code.names as names
+import static.code.simtest as simtest
 from django.db import transaction
 
 def launch(request):
@@ -183,20 +183,19 @@ def init(year, user_id):
     for i, team in enumerate(teams_to_create, start=1):
         team.ranking = i
 
+    odds_list = simtest.getSpread(teams_to_create[0].rating - teams_to_create[-1].rating) 
+
     with transaction.atomic():
         Conferences.objects.bulk_create(conferences_to_create)
         Teams.objects.bulk_create(teams_to_create)
         Players.objects.bulk_create(players_to_create)
 
-    setSchedules(data, info)
+    setSchedules(data, info, odds_list)
 
-
-def setSchedules(data, info):
+def setSchedules(data, info, odds_list):
     random.shuffle(data['teams'])
-
     games_to_create = []  
-
-    scheduled_games = uniqueGames(info, data, games_to_create)
+    scheduled_games = uniqueGames(info, data, games_to_create, odds_list)
 
     for team in data['teams']:
         if not team['conference'] and team['name'] != 'FCS':
@@ -211,7 +210,7 @@ def setSchedules(data, info):
                             break
                         if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['name'] != team['name'] and opponent['nonConfGames'] == i and opponent['name'] != 'FCS':
                             Opponent = Teams.objects.get(info=info, name=opponent['name'])
-                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
+                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create, odds_list)
                     if done:
                         break
         print(f'scheduling done for {team["name"]}')
@@ -237,15 +236,14 @@ def setSchedules(data, info):
                             break    
                         if opponent['nonConfGames'] < opponent['nonConfLimit'] and opponent['name'] not in team['schedule'] and opponent['conference'] != team['conference'] and opponent['nonConfGames'] == i and opponent['name'] != 'FCS':
                             Opponent = Teams.objects.get(info=info, name=opponent['name'])
-                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
+                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create, odds_list)
                     if done:
                         break
 
                 if not done:
                     fcs = next((team for team in data['teams'] if team['name'] == 'FCS'), None)
                     FCS = Teams.objects.get(info=info, name='FCS')
-                    team, fcs = scheduleGame(info, team, fcs, Team, FCS, games_to_create)
-                    print(team['name'], 'FCSSSSS\n') 
+                    team, fcs = scheduleGame(info, team, fcs, Team, FCS, games_to_create, odds_list)
                                
             done = False
 
@@ -257,7 +255,7 @@ def setSchedules(data, info):
                             break
                         if opponent['confGames'] < opponent['confLimit'] and opponent['name'] not in team['schedule'] and opponent['name'] != team['name'] and opponent['confGames'] == i:
                             Opponent = Teams.objects.get(info=info, name=opponent['name'])
-                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create)
+                            team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create, odds_list)
                     if done:
                         break
 
@@ -384,9 +382,8 @@ def players(info, team, players_to_create):
 
     players_to_create.extend(all_players)
 
-
-def scheduleGame(info, team, opponent, Team, Opponent, games_to_create, weekPlayed=None, gameName=None):
-    odds = sim.getSpread(Team.rating, Opponent.rating)
+def scheduleGame(info, team, opponent, Team, Opponent, games_to_create, odds_list, weekPlayed=None, gameName=None):
+    odds = odds_list[abs(Team.rating - Opponent.rating)]
 
     if Team.conference and Opponent.conference:
         if Team.conference == Opponent.conference:
@@ -407,42 +404,30 @@ def scheduleGame(info, team, opponent, Team, Opponent, games_to_create, weekPlay
     if gameName:
         labelA = labelB = gameName
 
-    if weekPlayed:
-        game = Games(
-            info=info,
-            teamA=Team, 
-            teamB=Opponent,    
-            labelA=labelA,  
-            labelB=labelB,     
-            spreadA=odds['spreadA'],  
-            spreadB=odds['spreadB'],
-            moneylineA=odds['moneylineA'],  
-            moneylineB=odds['moneylineB'],
-            winProbA=odds['winProbA'],  
-            winProbB=odds['winProbB'],
-            weekPlayed=weekPlayed,
-            gameNumA=team['gameNum'],
-            gameNumB=opponent['gameNum'],
-            overtime=0,
-        )
-    else:
-        game = Games(
-            info=info,
-            teamA=Team, 
-            teamB=Opponent,    
-            labelA=labelA,  
-            labelB=labelB,     
-            spreadA=odds['spreadA'],  
-            spreadB=odds['spreadB'],
-            moneylineA=odds['moneylineA'],  
-            moneylineB=odds['moneylineB'],
-            winProbA=odds['winProbA'],  
-            winProbB=odds['winProbB'],
-            weekPlayed=0,
-            gameNumA=team['gameNum'],
-            gameNumB=opponent['gameNum'],
-            overtime=0,
-        )
+    is_teamA_favorite = True  # Default to true
+
+    if Opponent.rating > Team.rating:
+        is_teamA_favorite = False
+
+    game = Games(
+        info=info,
+        teamA=Team,
+        teamB=Opponent,
+        labelA=labelA,
+        labelB=labelB,
+        spreadA=odds['favSpread'] if is_teamA_favorite or Team.rating == Opponent.rating else odds['udSpread'],
+        spreadB=odds['udSpread'] if is_teamA_favorite or Team.rating == Opponent.rating else odds['favSpread'],
+        moneylineA=odds['favMoneyline'] if is_teamA_favorite or Team.rating == Opponent.rating else odds['udMoneyline'],
+        moneylineB=odds['udMoneyline'] if is_teamA_favorite or Team.rating == Opponent.rating else odds['favMoneyline'],
+        winProbA=odds['favWinProb'] if is_teamA_favorite or Team.rating == Opponent.rating else odds['udWinProb'],
+        winProbB=odds['udWinProb'] if is_teamA_favorite or Team.rating == Opponent.rating else odds['favWinProb'],
+        weekPlayed=weekPlayed if weekPlayed else 0,
+        gameNumA=team['gameNum'],
+        gameNumB=opponent['gameNum'],
+        rankATOG=Team.ranking,
+        rankBTOG=Opponent.ranking,
+        overtime=0
+    )
 
     games_to_create.append(game) 
     team['gameNum'] += 1
@@ -463,7 +448,7 @@ def scheduleGame(info, team, opponent, Team, Opponent, games_to_create, weekPlay
 
     return team, opponent
 
-def uniqueGames(info, data, games_to_create):
+def uniqueGames(info, data, games_to_create, odds_list):
     games = data['rivalries']
         
     # Initialize a dictionary to keep track of games each team has already scheduled
@@ -510,7 +495,7 @@ def uniqueGames(info, data, games_to_create):
                         scheduled_games[game[1]].add(game_week)
 
                         # Schedule this game by calling scheduleGame function
-                        team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create, game_week, game[3])
+                        team, opponent = scheduleGame(info, team, opponent, Team, Opponent, games_to_create, odds_list, game_week, game[3])
 
     # Return the final dictionary of teams and the weeks they have games scheduled during
     return scheduled_games
