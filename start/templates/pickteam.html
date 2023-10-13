@@ -1,53 +1,45 @@
-{% extends 'basenonav.html' %}
-{% load static %}
-{% block title %}Pick team{% endblock %}
+{% extends 'basenonav.html' %} {% load static %} {% block title %}Pick team{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'pickteam.css' %}" />
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css" />
+{% endblock %} {% block content %}
+<div id="teamheader" class="mt-3 mb-3 text-center">
+    <h1 class="display-5">Select a team</h1>
+</div>
 
-{% block css %}
-    <link rel='stylesheet' href="{% static 'pickteam.css' %}">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css">
-{% endblock %}
-
-{% block content %}
-    <div id='teamheader' class="mt-3 mb-3 text-center">
-        <h1 class="display-5">Select a team</h1>
-    </div>
-
-    <table id="team-table" class="table table-striped mx-auto">
-        <thead>
-            <tr>
-                <th>Team</th>
-                <th>Prestige</th>
-                <th>Conference</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for team in teams %}
-                <tr>
-                    <td>
-                        <img src='{% static team.name %}.png' class='teamlogo mr-2'>
-                        <a href='/dashboard.html?team_name={{team.name}}' class='teamlink'>{{team.name}} {{team.mascot}}</a> 
-                    </td>
-                    <td>{{team.prestige}}</td>
-                    {% if team.conference %}
-                        <td>{{team.conference.confName}}</td>
-                    {% else %}
-                        <td>Independent</td>
-                    {% endif %}
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table> 
-{% endblock %}
-
-{% block additional_scripts %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#team-table').DataTable({
-                searching: false,
-                paging: false,
-                order: [[1, 'desc']] 
-            });
+<table id="team-table" class="table table-striped mx-auto">
+    <thead>
+        <tr>
+            <th>Team</th>
+            <th>Prestige</th>
+            <th>Conference</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for team in teams %}
+        <tr>
+            <td>
+                <img src="{% static team.name %}.png" class="teamlogo mr-2" />
+                <a href="noncon?team_name={{team.name}}" class="teamlink">{{team.name}} {{team.mascot}}</a>
+            </td>
+            <td>{{team.prestige}}</td>
+            {% if team.conference %}
+            <td>{{team.conference.confName}}</td>
+            {% else %}
+            <td>Independent</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %} {% block additional_scripts %}
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#team-table').DataTable({
+            searching: false,
+            paging: false,
+            order: [[1, 'desc']],
         });
-    </script>
+    });
+</script>
 {% endblock %}

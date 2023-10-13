@@ -1,35 +1,25 @@
-{% extends 'base.html' %}
-{% load static %}
-{% load mathfilters %}
-{% block title %}Roster{% endblock %}
-
-{% block css %}
-    <link rel="stylesheet" href="{% static 'sim.css' %}">
-{% endblock %}
-
-{% block content %}
-    {% for game in teamGames %}
-        <div class="game row">
-            <div class="col-md-3 centered flex-column">
-                <p class="gametext">Week {{game.weekPlayed}}</p> 
-                <p class="gametext">{{game.label}}</p> 
-            </div>   
-            <div class="col-md-6 centered flex-column">
-                <div class="row centered">
-                    <img class="boxlogo" src='{% static game.teamA.name %}.png'>
-                    <a class="gametext" href="/teams/{{game.teamA.name}}/schedule.html">#{{game.teamA.ranking}} {{game.teamA.name}} {{game.teamA.mascot}}</a>
-                    <span class="gametext">{{game.scoreA}}</span> 
-                </div>
-                <div class="row centered">  
-                    <img class="boxlogo" src='{% static game.teamB.name %}.png'>
-                    <a class="gametext" href="/teams/{{game.teamB.name}}/schedule.html">#{{game.teamB.ranking}} {{game.teamB.name}} {{game.teamB.mascot}}</a>
-                    <span class="gametext">{{game.scoreB}}</span>   
-                </div>
-            </div>
-            <div class="col-md-3 centered flex-column">
-                
-                <a href="/teams/{{team.name}}/schedule/{{game.num}}.html">Summary</a>
-            </div>   
+{% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block title %}Roster{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'sim.css' %}" />
+{% endblock %} {% block content %} {% for game in teamGames %}
+<div class="game row">
+    <div class="col-md-3 centered flex-column">
+        <p class="gametext">Week {{game.weekPlayed}}</p>
+        <p class="gametext">{{game.label}}</p>
+    </div>
+    <div class="col-md-6 centered flex-column">
+        <div class="row centered">
+            <img class="boxlogo" src="{% static game.teamA.name %}.png" />
+            <a class="gametext" href="/teams/{{game.teamA.name}}/schedule">#{{game.teamA.ranking}} {{game.teamA.name}} {{game.teamA.mascot}}</a>
+            <span class="gametext">{{game.scoreA}}</span>
         </div>
-    {% endfor %}
-{% endblock %}
+        <div class="row centered">
+            <img class="boxlogo" src="{% static game.teamB.name %}.png" />
+            <a class="gametext" href="/teams/{{game.teamB.name}}/schedule">#{{game.teamB.ranking}} {{game.teamB.name}} {{game.teamB.mascot}}</a>
+            <span class="gametext">{{game.scoreB}}</span>
+        </div>
+    </div>
+    <div class="col-md-3 centered flex-column">
+        <a href="/teams/{{team.name}}/schedule/{{game.id}}">Summary</a>
+    </div>
+</div>
+{% endfor %} {% endblock %}

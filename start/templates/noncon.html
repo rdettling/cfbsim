@@ -1,0 +1,136 @@
+{% extends 'basenonav.html' %} {% load static %} {% block title %}CFB Sim{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'noncon.css' %}" />
+{% endblock %} {% block content %}
+<div class="container mt-5">
+    <!-- Display the team name, nonConfGames, and nonConfLimit -->
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h2>{{ team.name }}</h2>
+            <p>Non-Conference Games Scheduled: {{ team.nonConfGames }} / {{ team.nonConfLimit }}</p>
+        </div>
+
+        <a href="/dashboard" class="btn btn-primary">Finalize Schedule</a>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Week</th>
+                <th>Opponent</th>
+                <th>Label</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in schedule %} {% if week.opponent == None %}
+            <tr>
+                <td>Week {{week.weekPlayed}}</td>
+                <td>No Game</td>
+                <td>
+                    <!-- Conditionally render the Schedule Game button based on nonConfGames and nonConfLimit -->
+                    {% if team.nonConfGames == team.nonConfLimit %}
+                    <button type="button" class="btn btn-primary" disabled>Max Games Scheduled</button>
+                    {% else %}
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#scheduleModal" data-week="{{week.weekPlayed}}">Schedule Game</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td>Week {{week.weekPlayed}}</td>
+                <td>
+                    <img src="{% static week.opponent %}.png" class="teamlogo" />
+                    <p>{{week.opponent}}</p>
+                </td>
+                <td>{{week.label}}</td>
+            </tr>
+            {% endif %} {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- The Modal -->
+<div class="modal" id="scheduleModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Schedule a Game for Week <span id="modalWeek"></span></h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <!-- Dropdown for teams -->
+                <select class="form-control" id="teamDropdown">
+                    <!-- Options will be populated dynamically -->
+                </select>
+
+                <!-- Schedule button -->
+                <button class="btn btn-success mt-3" id="scheduleGameButton">Schedule Game</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %} {% block additional_scripts %}
+<script>
+    $('#scheduleModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var week = button.data('week'); // Extract week from data-* attributes
+        var modal = $(this);
+        modal.find('#modalWeek').text(week);
+
+        $.ajax({
+            url: '/fetchteams',
+            type: 'GET',
+            data: {
+                week: week,
+            },
+            success: function (teams) {
+                var dropdown = $('#teamDropdown');
+                dropdown.empty(); // Clear any previous options
+
+                // Assuming the response is a list of team names
+                $.each(teams, function (index, team) {
+                    dropdown.append($('<option></option>').val(team).text(team));
+                });
+            },
+            error: function (error) {
+                console.log(error);
+            },
+        });
+    });
+
+    $('#scheduleGameButton').on('click', function () {
+        const selectedOpponent = $('#teamDropdown').val(); // Get the selected team from the dropdown
+        const weekNumber = $('#modalWeek').text(); // Get the week number from the modal
+
+        $.ajax({
+            url: '/schedulenc/',
+            method: 'POST',
+            data: {
+                opponent: selectedOpponent,
+                week: weekNumber,
+            },
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            success: function (response) {
+                // Handle successful scheduling
+                // For instance, you can update the page content without refreshing
+                location.reload(); // This line will refresh the page. If you want to update without refresh, you'll use DOM manipulation methods.
+            },
+            error: function (error) {
+                // Handle errors, maybe show a message to the user
+                console.log(error);
+            },
+        });
+    });
+
+    function getCookie(name) {
+        let value = '; ' + document.cookie;
+        let parts = value.split('; ' + name + '=');
+        if (parts.length == 2) return parts.pop().split(';').shift();
+    }
+</script>
+{% endblock %}

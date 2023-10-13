@@ -32,7 +32,7 @@
                             {% endif %}
                         </div>
                         <div class="col-2 p-0 d-flex justify-content-center">
-                            {% if game.scoreA %}
+                            {% if game.winner %}
                                 {{ game.scoreA }}
                             {% else %}
                                 {{ game.spreadA }}
@@ -52,7 +52,7 @@
                             {% endif %}
                         </div>
                         <div class="col-2 p-0 d-flex justify-content-center">
-                            {% if game.scoreB %}
+                            {% if game.winner %}
                                 {{ game.scoreB }}
                             {% else %}
                                 {{ game.spreadB }}

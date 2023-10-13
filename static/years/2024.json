@@ -1,8 +1,8 @@
 {
   "playoff": {
-    "size": 4,
-    "autobids": 0,
-    "byes": 0
+    "size": 12,
+    "autobids": 5,
+    "byes": 4
   },
   "rivalries": [
     ["Notre Dame", "USC", 12, "Jeweled Shillelagh"],
@@ -44,7 +44,7 @@
     {
       "confName": "SEC",
       "confFullName": "Southeastern Conference",
-      "confGames": 8,
+      "confGames": 9,
       "teams": [
         {
           "name": "Alabama",
@@ -127,6 +127,22 @@
           "colorSecondary": "#CCCCCC"
         },
         {
+          "name": "Texas",
+          "mascot": "Longhorns",
+          "abbreviation": "TEX",
+          "prestige": 91,
+          "colorPrimary": "#BF5700",
+          "colorSecondary": "#FFFFFF"
+        },
+        {
+          "name": "Oklahoma",
+          "mascot": "Sooners",
+          "abbreviation": "OU",
+          "prestige": 90,
+          "colorPrimary": "#841617",
+          "colorSecondary": "#FDF9D8"
+        },
+        {
           "name": "Vanderbilt",
           "mascot": "Commodores",
           "abbreviation": "VAN",
@@ -206,6 +222,22 @@
           "colorSecondary": "#666666"
         },
         {
+          "name": "UCLA",
+          "mascot": "Bruins",
+          "abbreviation": "UCLA",
+          "prestige": 81,
+          "colorPrimary": "#2D68C4",
+          "colorSecondary": "#F2A900"
+        },
+        {
+          "name": "USC",
+          "mascot": "Trojans",
+          "abbreviation": "USC",
+          "prestige": 90,
+          "colorPrimary": "#990000",
+          "colorSecondary": "#FFC72C"
+        },
+        {
           "name": "Michigan State",
           "mascot": "Spartans",
           "abbreviation": "MSU",
@@ -220,6 +252,22 @@
           "prestige": 85,
           "colorPrimary": "#C5050C",
           "colorSecondary": "#FFFFFF"
+        },
+        {
+          "name": "Washington",
+          "mascot": "Huskies",
+          "abbreviation": "WASH",
+          "prestige": 89,
+          "colorPrimary": "#4B2E83",
+          "colorSecondary": "#B7A57A"
+        },
+        {
+          "name": "Oregon",
+          "mascot": "Ducks",
+          "abbreviation": "ORE",
+          "prestige": 90,
+          "colorPrimary": "#154733",
+          "colorSecondary": "#FEE123"
         },
         {
           "name": "Indiana",
@@ -282,7 +330,7 @@
     {
       "confName": "ACC",
       "confFullName": "Atlantic Coast Conference",
-      "confGames": 8,
+      "confGames": 10,
       "teams": [
         {
           "name": "Clemson",
@@ -299,6 +347,14 @@
           "prestige": 89,
           "colorPrimary": "#782F40",
           "colorSecondary": "#CEB888"
+        },
+        {
+          "name": "Stanford",
+          "mascot": "Cardinal",
+          "abbreviation": "STAN",
+          "prestige": 75,
+          "colorPrimary": "#8C1515",
+          "colorSecondary": "#FFFFFF"
         },
         {
           "name": "Miami",
@@ -331,6 +387,22 @@
           "prestige": 83,
           "colorPrimary": "#7BAFD4",
           "colorSecondary": "#FFFFFF"
+        },
+        {
+          "name": "Southern Methodist",
+          "mascot": "Mustangs",
+          "abbreviation": "SMU",
+          "prestige": 78,
+          "colorPrimary": "#0033A0",
+          "colorSecondary": "#C8102E"
+        },
+        {
+          "name": "California",
+          "mascot": "Golden Bears",
+          "abbreviation": "CAL",
+          "prestige": 76,
+          "colorPrimary": "#003262",
+          "colorSecondary": "#FDB515"
         },
         {
           "name": "Pittsburgh",
@@ -428,6 +500,30 @@
           "colorSecondary": "#B2B4B2"
         },
         {
+          "name": "Colorado",
+          "mascot": "Buffaloes",
+          "abbreviation": "CU",
+          "prestige": 80,
+          "colorPrimary": "#CFB87C",
+          "colorSecondary": "#000000"
+        },
+        {
+          "name": "Arizona State",
+          "mascot": "Sun Devils",
+          "abbreviation": "ASU",
+          "prestige": 75,
+          "colorPrimary": "#8C1D40",
+          "colorSecondary": "#FFC627"
+        },
+        {
+          "name": "Utah",
+          "mascot": "Utes",
+          "abbreviation": "UTAH",
+          "prestige": 88,
+          "colorPrimary": "#CC0000",
+          "colorSecondary": "#000000"
+        },
+        {
           "name": "Baylor",
           "mascot": "Bears",
           "abbreviation": "BAY",
@@ -460,22 +556,6 @@
           "colorSecondary": "#000000"
         },
         {
-          "name": "Texas",
-          "mascot": "Longhorns",
-          "abbreviation": "TEX",
-          "prestige": 91,
-          "colorPrimary": "#BF5700",
-          "colorSecondary": "#FFFFFF"
-        },
-        {
-          "name": "Oklahoma",
-          "mascot": "Sooners",
-          "abbreviation": "OU",
-          "prestige": 90,
-          "colorPrimary": "#841617",
-          "colorSecondary": "#FDF9D8"
-        },
-        {
           "name": "Texas Christian",
           "mascot": "Horned Frogs",
           "abbreviation": "TCU",
@@ -490,6 +570,14 @@
           "prestige": 81,
           "colorPrimary": "#FF7300",
           "colorSecondary": "#000000"
+        },
+        {
+          "name": "Arizona",
+          "mascot": "Wildcats",
+          "abbreviation": "ZONA",
+          "prestige": 79,
+          "colorPrimary": "#CC0033",
+          "colorSecondary": "#003366"
         },
         {
           "name": "Iowa State",
@@ -514,109 +602,6 @@
           "prestige": 81,
           "colorPrimary": "#002855",
           "colorSecondary": "#EAAA00"
-        }
-      ]
-    },
-    {
-      "confName": "Pac-12",
-      "confFullName": "Pac-12 Conference",
-      "confGames": 9,
-      "teams": [
-        {
-          "name": "Arizona",
-          "mascot": "Wildcats",
-          "abbreviation": "ZONA",
-          "prestige": 79,
-          "colorPrimary": "#CC0033",
-          "colorSecondary": "#003366"
-        },
-        {
-          "name": "UCLA",
-          "mascot": "Bruins",
-          "abbreviation": "UCLA",
-          "prestige": 81,
-          "colorPrimary": "#2D68C4",
-          "colorSecondary": "#F2A900"
-        },
-        {
-          "name": "Washington State",
-          "mascot": "Cougars",
-          "abbreviation": "WSU",
-          "prestige": 82,
-          "colorPrimary": "#981E32",
-          "colorSecondary": "#5E6A71"
-        },
-        {
-          "name": "USC",
-          "mascot": "Trojans",
-          "abbreviation": "USC",
-          "prestige": 90,
-          "colorPrimary": "#990000",
-          "colorSecondary": "#FFC72C"
-        },
-        {
-          "name": "Oregon",
-          "mascot": "Ducks",
-          "abbreviation": "ORE",
-          "prestige": 90,
-          "colorPrimary": "#154733",
-          "colorSecondary": "#FEE123"
-        },
-        {
-          "name": "Colorado",
-          "mascot": "Buffaloes",
-          "abbreviation": "CU",
-          "prestige": 80,
-          "colorPrimary": "#CFB87C",
-          "colorSecondary": "#000000"
-        },
-        {
-          "name": "Arizona State",
-          "mascot": "Sun Devils",
-          "abbreviation": "ASU",
-          "prestige": 75,
-          "colorPrimary": "#8C1D40",
-          "colorSecondary": "#FFC627"
-        },
-        {
-          "name": "Stanford",
-          "mascot": "Cardinal",
-          "abbreviation": "STAN",
-          "prestige": 75,
-          "colorPrimary": "#8C1515",
-          "colorSecondary": "#FFFFFF"
-        },
-        {
-          "name": "Utah",
-          "mascot": "Utes",
-          "abbreviation": "UTAH",
-          "prestige": 88,
-          "colorPrimary": "#CC0000",
-          "colorSecondary": "#000000"
-        },
-        {
-          "name": "Washington",
-          "mascot": "Huskies",
-          "abbreviation": "WASH",
-          "prestige": 89,
-          "colorPrimary": "#4B2E83",
-          "colorSecondary": "#B7A57A"
-        },
-        {
-          "name": "California",
-          "mascot": "Golden Bears",
-          "abbreviation": "CAL",
-          "prestige": 76,
-          "colorPrimary": "#003262",
-          "colorSecondary": "#FDB515"
-        },
-        {
-          "name": "Oregon State",
-          "mascot": "Beavers",
-          "abbreviation": "ORST",
-          "prestige": 82,
-          "colorPrimary": "#DC4405",
-          "colorSecondary": "#000000"
         }
       ]
     },
@@ -682,14 +667,6 @@
           "colorSecondary": "#C5B783"
         },
         {
-          "name": "Southern Methodist",
-          "mascot": "Mustangs",
-          "abbreviation": "SMU",
-          "prestige": 78,
-          "colorPrimary": "#0033A0",
-          "colorSecondary": "#C8102E"
-        },
-        {
           "name": "North Texas",
           "mascot": "Mean Green",
           "abbreviation": "UNT",
@@ -744,6 +721,22 @@
       "confFullName": "Mountain West Conference",
       "confGames": 8,
       "teams": [
+        {
+          "name": "Washington State",
+          "mascot": "Cougars",
+          "abbreviation": "WSU",
+          "prestige": 82,
+          "colorPrimary": "#981E32",
+          "colorSecondary": "#5E6A71"
+        },
+        {
+          "name": "Oregon State",
+          "mascot": "Beavers",
+          "abbreviation": "ORST",
+          "prestige": 82,
+          "colorPrimary": "#DC4405",
+          "colorSecondary": "#000000"
+        },
         {
           "name": "Boise State",
           "mascot": "Broncos",
@@ -1076,6 +1069,14 @@
           "prestige": 70,
           "colorPrimary": "#C60C30",
           "colorSecondary": "#1E1E1E"
+        },
+        {
+          "name": "Kennesaw State",
+          "mascot": "Owls",
+          "abbreviation": "KENN",
+          "prestige": 70,
+          "colorPrimary": "#FDBB30",
+          "colorSecondary": "#0B1315"
         },
         {
           "name": "Florida International",

@@ -1,41 +1,35 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}Independents standings{% endblock %}
+{% extends 'base.html' %} {% load static %} {% block title %}Independents standings{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'standings.css' %}" />
+{% endblock %} {% block content %}
+<div class="d-flex flex-column align-items-center text-center mb-3">
+    <h1>Independents standings</h1>
+</div>
 
-{% block css %}
-    <link rel="stylesheet" href="{% static 'standings.css' %}">
-{% endblock %}
-
-{% block content %}
-    <div class="d-flex flex-column align-items-center text-center mb-3">
-        <h1>Independents standings</h1>
-    </div>
-
-    <table class="table table-striped">
-        <thead>
-            <tr>
+<table class="table table-striped">
+    <thead>
+        <tr>
             <th>Conference Rank</th>
             <th>Overall Rank</th>
             <th>Rating</th>
             <th>Team</th>
             <th>Conference Record</th>
             <th>Overall Record</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for team in teams %}
-                <tr>
-                    <td>{{forloop.counter}}</td>
-                    <td>{{team.ranking}}</td>
-                    <td>{{team.rating}}</td>
-                    <td>
-                        <img src='{% static team.name %}.png' class='teamlogo mr-3'>
-                        <a href='/teams/{{team.name}}/schedule.html'>{{team.name}}</a> 
-                    </td>
-                    <td>{{team.confWins}}-{{team.confLosses}}</td>
-                    <td>{{team.totalWins}}-{{team.totalLosses}}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        </tr>
+    </thead>
+    <tbody>
+        {% for team in teams %}
+        <tr>
+            <td>{{forloop.counter}}</td>
+            <td>{{team.ranking}}</td>
+            <td>{{team.rating}}</td>
+            <td>
+                <img src="{% static team.name %}.png" class="teamlogo mr-3" />
+                <a href="/teams/{{team.name}}/schedule">{{team.name}}</a>
+            </td>
+            <td>{{team.confWins}}-{{team.confLosses}}</td>
+            <td>{{team.totalWins}}-{{team.totalLosses}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

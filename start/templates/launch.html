@@ -1,61 +1,56 @@
-{% extends 'basenonav.html' %}
-{% load static %}
-{% block title %}CFB Sim{% endblock %}
-
-{% block css %}
-    <link rel='stylesheet' href="{% static 'pickteam.css' %}">
-{% endblock %}
-
-{% block content %}
-    <div class="container my-5">
-        <h1 class="mb-3">Welcome to CFB Sim</h1>
-        <ul class="nav nav-tabs" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" id="new-game-tab" data-toggle="tab" href="#new-game" role="tab" aria-controls="new-game" aria-selected="true">New Game</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="load-game-tab" data-toggle="tab" href="#load-game" role="tab" aria-controls="load-game" aria-selected="false">Load Game</a>
-            </li>
-        </ul>
-        <div class="tab-content mt-3">
-            <div class="tab-pane show active" id="new-game" role="tabpanel" aria-labelledby="new-game-tab">
-                <form action="{% url 'pickteam' %}" method="get">
-                    <div class="form-group">
-                        <h5 for="year">Use accurate conferences and teams as of:</h5>
-                        <div style="display: inline-block;">
-                            <select class="form-control custom-dropdown" name="year" id="year">
-                                <option value="2023">2023</option>
-                                <option value="2022">2022</option>
-                            </select>
-                        </div>                        
+{% extends 'basenonav.html' %} {% load static %} {% block title %}CFB Sim{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'pickteam.css' %}" />
+{% endblock %} {% block content %}
+<div class="container my-5">
+    <h1 class="mb-3">Welcome to CFB Sim</h1>
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="new-game-tab" data-toggle="tab" href="#new-game" role="tab" aria-controls="new-game" aria-selected="true">New Game</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="load-game-tab" data-toggle="tab" href="#load-game" role="tab" aria-controls="load-game" aria-selected="false">Load Game</a>
+        </li>
+    </ul>
+    <div class="tab-content mt-3">
+        <div class="tab-pane show active" id="new-game" role="tabpanel" aria-labelledby="new-game-tab">
+            <form action="{% url 'preview' %}" method="get">
+                <div class="form-group">
+                    <h5 for="year">Use accurate conferences and teams as of:</h5>
+                    <div style="display: inline-block">
+                        <select class="form-control custom-dropdown" name="year" id="year">
+                            <option value="2024">2024</option>
+                            <option value="2023" selected>2023</option>
+                            <option value="2022">2022</option>
+                        </select>
                     </div>
-                    <button type="submit" class="btn btn-primary mt-3">Begin</button>
-                </form>
-            </div>
-            <div class="tab-pane" id="load-game" role="tabpanel" aria-labelledby="load-game-tab">
-                {% if info %}
-                    <h5>Current save</h5>
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Year</th>
-                                <th>Week</th>
-                                <th>Team</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>{{info.currentYear}}</td>
-                                <td>{{info.currentWeek}}</td>
-                                <td>{{info.team.name}}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <a href="{% url 'dashboard' %}" class="btn btn-primary mt-3">Load Game</a>
-                {% else %}
-                    <h5>No saves detected</h5>
-                {% endif %}
-            </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3" id="beginButton">Begin</button>
+            </form>
+        </div>
+        <div class="tab-pane" id="load-game" role="tabpanel" aria-labelledby="load-game-tab">
+            {% if info.team %}
+            <h5>Current save</h5>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Week</th>
+                        <th>Team</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{info.currentYear}}</td>
+                        <td>{{info.currentWeek}}</td>
+                        <td>{{info.team.name}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <a href="{% url 'dashboard' %}" class="btn btn-primary mt-3">Load Game</a>
+            {% else %}
+            <h5>No saves detected</h5>
+            {% endif %}
         </div>
     </div>
+</div>
 {% endblock %}
