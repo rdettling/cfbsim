@@ -1,12 +1,6 @@
-{% extends 'base.html' %} 
-{% load static %} 
-{% block title %}Week {{week_num}} schedule{% endblock %} 
-
-{% block css %}
-    <link rel="stylesheet" href="{% static 'week_schedule.css' %}"/>
-{% endblock %} 
-
-{% block content %}
+{% extends 'base.html' %} {% load static %} {% block title %}Week {{week_num}} schedule{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'week_schedule.css' %}" />
+{% endblock %} {% block content %}
 <div class="container mt-4">
     <div class="row">
         {% for game in games %}
@@ -22,49 +16,37 @@
                     <!-- First row: Team A Name and Score -->
                     <div class="row mb-2">
                         <div class="col-2 p-0 mx-1 d-flex justify-content-center">
-                            <img class='teamlogo' src='{% static game.teamA.name %}.png'>
+                            <img class="teamlogo" src="{% static game.teamA.name %}.png" />
                         </div>
                         <div class="col p-0">
                             {% if game.rankATOG < 26 %}
-                                <a href='/teams/{{game.teamA.name}}/schedule.html'>#{{game.rankATOG}} {{game.teamA.name}}</a> 
+                            <a href="/teams/{{game.teamA.name}}/schedule">#{{game.rankATOG}} {{game.teamA.name}}</a>
                             {% else %}
-                                <a href='/teams/{{game.teamA.name}}/schedule.html'>{{game.teamA.name}}</a> 
+                            <a href="/teams/{{game.teamA.name}}/schedule">{{game.teamA.name}}</a>
                             {% endif %}
                         </div>
-                        <div class="col-2 p-0 d-flex justify-content-center">
-                            {% if game.winner %}
-                                {{ game.scoreA }}
-                            {% else %}
-                                {{ game.spreadA }}
-                            {% endif %}
-                        </div>
+                        <div class="col-2 p-0 d-flex justify-content-center">{% if game.winner %} {{ game.scoreA }} {% else %} {{ game.spreadA }} {% endif %}</div>
                     </div>
                     <!-- Second row: Team B Name and Score -->
                     <div class="row mb-2">
                         <div class="col-2 p-0 mx-1 d-flex justify-content-center">
-                            <img class='teamlogo' src='{% static game.teamB.name %}.png'>
+                            <img class="teamlogo" src="{% static game.teamB.name %}.png" />
                         </div>
                         <div class="col p-0">
                             {% if game.rankBTOG < 26 %}
-                                <a href='/teams/{{game.teamB.name}}/schedule.html'>#{{game.rankBTOG}} {{game.teamB.name}}</a> 
+                            <a href="/teams/{{game.teamB.name}}/schedule">#{{game.rankBTOG}} {{game.teamB.name}}</a>
                             {% else %}
-                                <a href='/teams/{{game.teamB.name}}/schedule.html'>{{game.teamB.name}}</a> 
+                            <a href="/teams/{{game.teamB.name}}/schedule">{{game.teamB.name}}</a>
                             {% endif %}
                         </div>
-                        <div class="col-2 p-0 d-flex justify-content-center">
-                            {% if game.winner %}
-                                {{ game.scoreB }}
-                            {% else %}
-                                {{ game.spreadB }}
-                            {% endif %}
-                        </div>
+                        <div class="col-2 p-0 d-flex justify-content-center">{% if game.winner %} {{ game.scoreB }} {% else %} {{ game.spreadB }} {% endif %}</div>
                     </div>
                     <!-- Third row: Game Over text -->
                     <div class="row d-flex justify-content-center">
                         {% if game.scoreA %}
-                            <a href='/teams/{{game.teamA.name}}/schedule/{{game.gameNumA}}.html'>Summary</a> 
+                        <a href="/teams/{{game.teamA.name}}/schedule/{{game.id}}">Summary</a>
                         {% else %}
-                            <a href='/teams/{{game.teamA.name}}/schedule/{{game.gameNumA}}.html'>Preview</a> 
+                        <a href="/teams/{{game.teamA.name}}/schedule/{{game.id}}">Preview</a>
                         {% endif %}
                     </div>
                 </div>
@@ -72,10 +54,6 @@
         </div>
         {% if forloop.counter|divisibleby:4 %}
     </div>
-    <div class="row">
-        {% endif %}
-        {% endfor %}
-    </div>
+    <div class="row">{% endif %} {% endfor %}</div>
 </div>
 {% endblock %}
-

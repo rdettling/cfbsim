@@ -1,127 +1,136 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}{{team.name}} roster{% endblock %}
-
-{% block css %}
-    <link rel="stylesheet" href="{% static 'roster.css' %}">
-{% endblock %}
-
-{% block content %}
-    <div class="row mb-4">
-        <div class="col-md-3 img-container">
-            <img src='{% static team.name %}.png' class="responsive-img">
-        </div>                         
-        <div class="col-md-6 text-center">
-            <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
-            <h5 class="mb-2">{{team.rating}} overall</h5>
-            <div class="progress mb-3">
-                <div class="progress-bar" role="progressbar" style="width: {{team.rating}}%; background-color: {{team.colorPrimary}};" aria-valuenow="{{team.rating}}" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            
-            <div class="row mb-3">
-                <!-- Offense Progress Bar -->
-                <div class="col-6 pr-2">
-                    <h6 class="mb-2 lead">Offense: {{team.offense}}</h6>
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: {{team.offense}}%; background-color: {{team.colorSecondary}};" aria-valuenow="{{team.offense}}" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
-                
-                <!-- Defense Progress Bar -->
-                <div class="col-6 pl-2">
-                    <h6 class="mb-2 lead">Defense: {{team.defense}}</h6>
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: {{team.defense}}%; background-color: {{team.colorSecondary}};" aria-valuenow="{{team.defense}}" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <h2 class="lead">{{team.conference.confName}}</h2>
-            <h2 class="lead mt-3">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
+{% extends 'base.html' %} {% load static %} {% block title %}{{team.name}} roster{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'roster.css' %}" />
+{% endblock %} {% block content %}
+<div class="row mb-4">
+    <div class="col-md-3 img-container">
+        <img src="{% static team.name %}.png" class="responsive-img" />
+    </div>
+    <div class="col-md-6 text-center">
+        <h1 class="display-5">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
+        <h5 class="mb-2">{{team.rating}} overall</h5>
+        <div class="progress mb-3">
+            <div
+                class="progress-bar"
+                role="progressbar"
+                style="width: {{team.rating}}%; background-color: {{team.colorPrimary}};"
+                aria-valuenow="{{team.rating}}"
+                aria-valuemin="0"
+                aria-valuemax="100"
+            ></div>
         </div>
-        
-        
-        
-        
-        
-        <div class="col-md-3 text-center">
-            <div class="form-group">
-                <label for="teamFilter">change team</label>
-                <select class="form-control" id="teamFilter">
-                    {% for team in teams %}
-                        <option value="{{team.name}}">{{team.name}}</option>
-                    {% endfor %}
-                </select>
+
+        <div class="row mb-3">
+            <!-- Offense Progress Bar -->
+            <div class="col-6 pr-2">
+                <h6 class="mb-2 lead">Offense: {{team.offense}}</h6>
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        role="progressbar"
+                        style="width: {{team.offense}}%; background-color: {{team.colorSecondary}};"
+                        aria-valuenow="{{team.offense}}"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                    ></div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="positionFilter">Filter by Position</label>
-                <select class="form-control" id="positionFilter">
-                    <option value="">All Positions</option>
-                    {% for position in positions %}
-                        <option value="{{position}}">{{position}}</option>
-                    {% endfor %}
-                </select>
-            </div>            
+
+            <!-- Defense Progress Bar -->
+            <div class="col-6 pl-2">
+                <h6 class="mb-2 lead">Defense: {{team.defense}}</h6>
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        role="progressbar"
+                        style="width: {{team.defense}}%; background-color: {{team.colorSecondary}};"
+                        aria-valuenow="{{team.defense}}"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                    ></div>
+                </div>
+            </div>
         </div>
+
+        <h2 class="lead">{{team.conference.confName}}</h2>
+        <h2 class="lead mt-3">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
     </div>
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Position</th>
-                <th>Year</th>
-                <th>Rating</th>
-                <th>Starter</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for player in roster %}
-                <tr data-position="{{ player.pos }}">
-                    <td>
-                        <a href="{% url 'player' id=player.id team_name=team.name%}">
-                            {{ player.first }} {{ player.last }}
-                        </a>
-                    </td>
-                    <td>{{ player.pos }}</td>
-                    <td>{{ player.year }}</td>
-                    <td>{{ player.rating }}</td>
-                    <td>
-                        {% if player.starter %}
-                            <span style="color: green;">✅</span>
-                        {% else %}
-                            <span style="color: red;">❌</span>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-{% endblock %}
+    <div class="col-md-3 text-center">
+        <div class="form-group">
+            <label for="teamFilter">change team</label>
+            <select class="form-control" id="teamFilter">
+                {% for team in teams %}
+                <option value="{{team.name}}">{{team.name}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="positionFilter">Filter by Position</label>
+            <select class="form-control" id="positionFilter">
+                <option value="">All Positions</option>
+                {% for position in positions %}
+                <option value="{{position}}">{{position}}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
 
-{% block additional_scripts %}
-    <script>
-        $(document).ready(function() {
-            const team = window.location.href.split('/')[4];
-            const params = new URLSearchParams(window.location.search);
-        
-            $('#teamFilter').val(team).change(function() {
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Year</th>
+            <th>Rating</th>
+            <th>Starter</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for player in roster %}
+        <tr data-position="{{ player.pos }}">
+            <td>
+                <a href="{% url 'player' id=player.id team_name=team.name%}"> {{ player.first }} {{ player.last }} </a>
+            </td>
+            <td>{{ player.pos }}</td>
+            <td>{{ player.year }}</td>
+            <td>{{ player.rating }}</td>
+            <td>
+                {% if player.starter %}
+                <span style="color: green">✅</span>
+                {% else %}
+                <span style="color: red">❌</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %} {% block additional_scripts %}
+<script>
+    $(document).ready(function () {
+        const team = window.location.href.split('/')[4];
+        const params = new URLSearchParams(window.location.search);
+
+        $('#teamFilter')
+            .val(team)
+            .change(function () {
                 const selectedTeam = $(this).val();
-                window.location.href = `/teams/${selectedTeam}/roster.html`;
+                window.location.href = `/teams/${selectedTeam}/roster`;
             });
-        
-            $('#positionFilter').change(function() {
-                const selectedPos = $(this).val();
-        
-                if (selectedPos) {
-                    // If a position is selected, hide all rows then show only those with the selected position
-                    $('tr[data-position]').hide().filter(`[data-position="${selectedPos}"]`).show();
-                } else {
-                    // If "All Positions" is selected, show all rows
-                    $('tr[data-position]').show();
-                }
-            });
-        });   
-    </script>
+
+        $('#positionFilter').change(function () {
+            const selectedPos = $(this).val();
+
+            if (selectedPos) {
+                // If a position is selected, hide all rows then show only those with the selected position
+                $('tr[data-position]').hide().filter(`[data-position="${selectedPos}"]`).show();
+            } else {
+                // If "All Positions" is selected, show all rows
+                $('tr[data-position]').show();
+            }
+        });
+    });
+</script>
 {% endblock %}

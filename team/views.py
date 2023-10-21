@@ -214,7 +214,6 @@ def simWeek(request, team_name, weeks):
     info = Info.objects.get(user_id=user_id)
 
     resumeFactor = 1.5
-
     Team = Teams.objects.get(info=info, name=team_name)
     conferences = Conferences.objects.filter(info=info).order_by("confName")
 
@@ -235,70 +234,103 @@ def simWeek(request, team_name, weeks):
                 game.label = game.labelB
                 teamGames.append(game)
 
-            print(
-                f"Week: {game.weekPlayed} -> simming {game.teamA.name} vs {game.teamB.name}"
-            )
             sim.simGame(info, game, drives_to_create, plays_to_create, resumeFactor)
 
-        update_rankings(info)
+        # Define all actions in a single dictionary
+        all_actions = {
+            4: {
+                12: setConferenceChampionships,
+                13: setPlayoffSemi,
+                14: setNatty,
+            },
+            12: {
+                12: setConferenceChampionships,
+                13: setPlayoffR1,
+                14: setPlayoffQuarter,
+                15: setPlayoffSemi,
+                16: setNatty,
+            },
+        }
 
-        if info.currentWeek == 12:
-            setConferenceChampionships(info)
-        elif info.currentWeek == 13:
-            setPlayoff(info)
-        elif info.currentWeek == 14:
-            setNatty(info)
+        # List of weeks to NOT update rankings
+        update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
+
+        # Check if we should update rankings
+        no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
+        if info.currentWeek not in no_update_weeks:
+            update_rankings(info)
+
+        # Fetch and perform the appropriate action
+        action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
+        if action:
+            action(info)
+
         info.currentWeek += 1
 
+    desired_positions = {"qb", "rb", "wr"}
     game_log_dict = {}
 
-    rb_starters_by_team = {}
-    qb_starters_by_team = {}
-    wr_starters_by_team = {}
+    # Get all starters outside of the play loop
+    all_starters = Players.objects.filter(
+        info=info, starter=True, pos__in=desired_positions
+    ).select_related("team")
 
+    # Group them by position and team
+    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
+    for player in all_starters:
+        starters_by_team_pos[(player.team, player.pos)].append(player)
+
+    # Get all unique games being simmed
+    simmed_games = {play.game for play in plays_to_create}
+
+    # Create a set to store (player, game) combinations for GameLog objects
+    player_game_combinations = set()
+
+    for game in simmed_games:
+        for team in [game.teamA, game.teamB]:
+            for pos in desired_positions:
+                starters = starters_by_team_pos.get((team, pos), [])
+                for starter in starters:
+                    player_game_combinations.add((starter, game))
+
+    # Create the in-memory GameLog objects
+    game_logs_to_process = [
+        GameLog(info=info, player=player, game=game)
+        for player, game in player_game_combinations
+    ]
+
+    for game_log in game_logs_to_process:
+        game_log_dict[(game_log.player, game_log.game)] = game_log
+
+    # Main logic for processing the plays
     for play in plays_to_create:
         game = play.game
         offense_team = play.offense
 
-        if offense_team not in rb_starters_by_team:
-            rb_starters_by_team[offense_team] = list(
-                Players.objects.filter(team=offense_team, pos="rb", starter=True)
-            )
-
-        if offense_team not in qb_starters_by_team:
-            qb_starters_by_team[offense_team] = Players.objects.get(
-                team=offense_team, pos="qb", starter=True
-            )
-        if offense_team not in wr_starters_by_team:
-            wr_starters_by_team[offense_team] = list(
-                Players.objects.filter(team=offense_team, pos="wr", starter=True)
-            )
+        rb_starters = starters_by_team_pos.get((offense_team, "rb"), [])
+        qb_starters = starters_by_team_pos.get((offense_team, "qb"), [])
+        wr_starters = starters_by_team_pos.get((offense_team, "wr"), [])
 
         if play.playType == "run":
-            runner = random.choice(rb_starters_by_team[offense_team])
-
-            game_log = get_game_log(info, runner, game, game_log_dict)
-            update_game_log_for_run(play, game_log)
-            game_log_dict[(runner, game)] = game_log
-            format_play_text(play, runner)
+            runner = random.choice(rb_starters) if rb_starters else None
+            if runner:
+                game_log = game_log_dict[(runner, game)]
+                update_game_log_for_run(play, game_log)
+                format_play_text(play, runner)
 
         elif play.playType == "pass":
-            qb_starter = qb_starters_by_team[offense_team]
-            receiver = random.choice(wr_starters_by_team[offense_team])
+            qb_starter = qb_starters[0] if qb_starters else None
+            receiver = random.choice(wr_starters) if wr_starters else None
+            if qb_starter and receiver:
+                qb_game_log = game_log_dict[(qb_starter, game)]
+                receiver_game_log = game_log_dict[(receiver, game)]
+                update_game_log_for_pass(play, qb_game_log, receiver_game_log)
+                format_play_text(play, qb_starter, receiver)
 
-            qb_game_log = get_game_log(info, qb_starter, game, game_log_dict)
-            receiver_game_log = get_game_log(info, receiver, game, game_log_dict)
-            update_game_log_for_pass(play, qb_game_log, receiver_game_log)
-            game_log_dict[(qb_starter, game)] = qb_game_log
-            game_log_dict[(receiver, game)] = receiver_game_log
-            format_play_text(play, qb_starter, receiver)
-
+    # Remaining operations
     Drives.objects.bulk_create(drives_to_create)
     Plays.objects.bulk_create(plays_to_create)
-    field_names = [
-        f.name for f in GameLog._meta.fields if not f.primary_key and not f.is_relation
-    ]
-    GameLog.objects.bulk_update(list(game_log_dict.values()), field_names)
+    GameLog.objects.bulk_create(game_logs_to_process)
     info.save()
 
     context = {
@@ -421,9 +453,9 @@ def details(request, team_name, id):
     team_turnovers = opp_turnovers = 0
     for play in Plays.objects.filter(game=game):
         if play.startingFP < 50:
-            location = f"own {play.startingFP}"
+            location = f"{play.offense.abbreviation} {play.startingFP}"
         elif play.startingFP > 50:
-            location = f"opp {100 - play.startingFP}"
+            location = f"{play.defense.abbreviation} {100 - play.startingFP}"
         else:
             location = f"{play.startingFP}"
 
@@ -524,113 +556,140 @@ def details(request, team_name, id):
 
 def setConferenceChampionships(info):
     conferences = Conferences.objects.filter(info=info)
+    conferences_to_update = []
 
     games_to_create = []
 
     for conference in conferences:
-        teams = conference.teams.order_by("-confWins", "-resume")
+        teams = conference.teams.order_by("-confWins", "ranking")
 
         teamA = teams[0]
         teamB = teams[1]
 
-        scheduleGame(
+        game = scheduleGame(
             info,
             teamA,
             teamB,
             games_to_create,
             13,
             f"{conference.confName} championship",
-        )
+        )[2]
+
+        conference.championship = game
+        conferences_to_update.append(conference)
 
     Games.objects.bulk_create(games_to_create)
 
+    for conf in conferences_to_update:
+        conf.save()
 
-def setPlayoff(info):
-    teams = Teams.objects.filter(info=info).order_by("-resume")
 
-    team1 = teams[0]
-    team2 = teams[1]
-    team3 = teams[2]
-    team4 = teams[3]
+def setPlayoffR1(info):
+    playoff = info.playoff
+    games_to_create = []
 
-    odds = sim.getSpread(team1.rating, team4.rating)
-    Games.objects.create(
-        info=info,
-        teamA=team1,
-        teamB=team4,
-        labelA="Playoff semifinal 1v4",
-        labelB="Playoff semifinal 4v1",
-        spreadA=odds["spreadA"],
-        spreadB=odds["spreadB"],
-        moneylineA=odds["moneylineA"],
-        moneylineB=odds["moneylineB"],
-        winProbA=odds["winProbA"],
-        winProbB=odds["winProbB"],
-        weekPlayed=14,
-        gameNumA=14,
-        gameNumB=14,
-        overtime=0,
-        rankATOG=team1.ranking,
-        rankBTOG=team4.ranking,
+    conferences = info.conferences.all()
+    conference_champions = sorted(
+        [conf.championship.winner for conf in conferences], key=lambda x: x.ranking
     )
+    autobids = conference_champions[: playoff.autobids]
+    byes = autobids[:4]
+    no_bye_autobids = autobids[4:]
 
-    odds = sim.getSpread(team2.rating, team3.rating)
-    Games.objects.create(
-        info=info,
-        teamA=team2,
-        teamB=team3,
-        labelA="Playoff semifinal 2v3",
-        labelB="Playoff semifinal 3v2",
-        spreadA=odds["spreadA"],
-        spreadB=odds["spreadB"],
-        moneylineA=odds["moneylineA"],
-        moneylineB=odds["moneylineB"],
-        winProbA=odds["winProbA"],
-        winProbB=odds["winProbB"],
-        weekPlayed=14,
-        gameNumA=14,
-        gameNumB=14,
-        overtime=0,
-        rankATOG=team2.ranking,
-        rankBTOG=team3.ranking,
-    )
+    wild_cards = info.teams.exclude(id__in=[team.id for team in autobids])
+    wild_cards = sorted(wild_cards, key=lambda x: x.ranking)
+
+    cutoff = 8 - (playoff.autobids - 4)
+    non_playoff_teams = wild_cards[cutoff:]
+    wild_cards = wild_cards[:cutoff]
+
+    wild_cards.extend(no_bye_autobids)
+    teams = byes + sorted(wild_cards, key=lambda x: x.ranking) + non_playoff_teams
+
+    teams_to_update = []
+    for i, team in enumerate(teams, 1):
+        team.ranking = i
+        teams_to_update.append(team)
+    Teams.objects.bulk_update(teams_to_update, ["ranking"])
+
+    playoff.seed_1, playoff.seed_2, playoff.seed_3, playoff.seed_4 = teams[:4]
+
+    def schedule_playoff_game(team1, team2, description):
+        return scheduleGame(info, team1, team2, games_to_create, 14, description)[2]
+
+    playoff.left_r1_1 = schedule_playoff_game(teams[7], teams[8], "Playoff round 1")
+    playoff.left_r1_2 = schedule_playoff_game(teams[4], teams[11], "Playoff round 1")
+    playoff.right_r1_1 = schedule_playoff_game(teams[6], teams[9], "Playoff round 1")
+    playoff.right_r1_2 = schedule_playoff_game(teams[5], teams[10], "Playoff round 1")
+
+    Games.objects.bulk_create(games_to_create)
+    playoff.save()
+
+
+def setPlayoffQuarter(info):
+    playoff = info.playoff
+    games_to_create = []
+
+    def schedule_playoff_game(team1, team2):
+        return scheduleGame(
+            info, team1, team2, games_to_create, 15, "Playoff quarterfinal"
+        )[2]
+
+    matchups = [
+        ("left_quarter_1", playoff.seed_1, playoff.left_r1_1.winner),
+        ("left_quarter_2", playoff.seed_4, playoff.left_r1_2.winner),
+        ("right_quarter_1", playoff.seed_2, playoff.right_r1_1.winner),
+        ("right_quarter_2", playoff.seed_3, playoff.right_r1_2.winner),
+    ]
+
+    for attr, team1, team2 in matchups:
+        setattr(playoff, attr, schedule_playoff_game(team1, team2))
+
+    Games.objects.bulk_create(games_to_create)
+    playoff.save()
+
+
+def setPlayoffSemi(info):
+    playoff = info.playoff
+    games_to_create = []
+
+    def schedule_playoff_game(team1, team2, week):
+        return scheduleGame(
+            info, team1, team2, games_to_create, week, "Playoff semifinal"
+        )[2]
+
+    if playoff.teams == 4:
+        teams = info.teams.order_by("ranking")
+        playoff.left_semi = schedule_playoff_game(teams[0], teams[3], 14)
+        playoff.right_semi = schedule_playoff_game(teams[1], teams[2], 14)
+    elif playoff.teams == 12:
+        playoff.left_semi = schedule_playoff_game(
+            playoff.left_quarter_1.winner, playoff.left_quarter_2.winner, 16
+        )
+        playoff.right_semi = schedule_playoff_game(
+            playoff.right_quarter_1.winner, playoff.right_quarter_2.winner, 16
+        )
+
+    Games.objects.bulk_create(games_to_create)
+    playoff.save()
 
 
 def setNatty(info):
-    games_week_14 = Games.objects.filter(info=info, weekPlayed=14)
-    week_14_winners = []
-    for game in games_week_14:
-        week_14_winners.append(game.winner)
+    playoff = info.playoff
+    games_to_create = []
+    week_mapping = {4: 15, 12: 17}
 
-    teamA = week_14_winners[0]
-    teamB = week_14_winners[1]
+    playoff.natty = scheduleGame(
+        info,
+        playoff.left_semi.winner,
+        playoff.right_semi.winner,
+        games_to_create,
+        week_mapping.get(playoff.teams),
+        "National Championship",
+    )[2]
 
-    odds = sim.getSpread(teamA.rating, teamB.rating)
-    Games.objects.create(
-        info=info,
-        teamA=teamA,
-        teamB=teamB,
-        labelA="Natty",
-        labelB="Natty",
-        spreadA=odds["spreadA"],
-        spreadB=odds["spreadB"],
-        moneylineA=odds["moneylineA"],
-        moneylineB=odds["moneylineB"],
-        winProbA=odds["winProbA"],
-        winProbB=odds["winProbB"],
-        weekPlayed=15,
-        gameNumA=15,
-        gameNumB=15,
-        overtime=0,
-    )
-
-
-def get_game_log(info, player, game, game_log_dict):
-    game_log_key = (player, game)
-    return (
-        game_log_dict.get(game_log_key)
-        or GameLog.objects.get_or_create(info=info, player=player, game=game)[0]
-    )
+    Games.objects.bulk_create(games_to_create)
+    playoff.save()
 
 
 def update_game_log_for_run(play, game_log):

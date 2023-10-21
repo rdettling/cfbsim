@@ -8,9 +8,9 @@ class Info(models.Model):
     team = models.ForeignKey(
         "Teams", on_delete=models.SET_NULL, null=True, related_name="infos"
     )
-    playoff_teams = models.IntegerField()
-    playoff_autobids = models.IntegerField()
-    playoff_byes = models.IntegerField()
+    playoff = models.ForeignKey(
+        "Playoff", on_delete=models.CASCADE, related_name="infos", null=True
+    )
 
 
 class Teams(models.Model):
@@ -95,13 +95,6 @@ class GameLog(models.Model):
     extra_points_attempted = models.IntegerField(default=0)
 
 
-class Conferences(models.Model):
-    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="conferences")
-    confName = models.CharField(max_length=255)
-    confFullName = models.CharField(max_length=255)
-    confGames = models.IntegerField()
-
-
 class Games(models.Model):
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="games")
     teamA = models.ForeignKey(
@@ -129,6 +122,14 @@ class Games(models.Model):
     overtime = models.IntegerField()
     scoreA = models.IntegerField(null=True)
     scoreB = models.IntegerField(null=True)
+
+
+class Conferences(models.Model):
+    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="conferences")
+    confName = models.CharField(max_length=255)
+    confFullName = models.CharField(max_length=255)
+    confGames = models.IntegerField()
+    championship = models.ForeignKey(Games, on_delete=models.CASCADE, null=True)
 
 
 class Odds(models.Model):
@@ -176,5 +177,74 @@ class Plays(models.Model):
     playType = models.CharField(max_length=50)
     yardsGained = models.IntegerField()
     result = models.CharField(max_length=50)
-    header = models.CharField(max_length=255, null=True)
     text = models.CharField(max_length=255, null=True)
+
+
+class Playoff(models.Model):
+    info = models.ForeignKey(
+        Info, on_delete=models.CASCADE, related_name="playoffs_info"
+    )
+    teams = models.IntegerField()
+    autobids = models.IntegerField()
+
+    seed_1 = models.ForeignKey(
+        Teams, on_delete=models.CASCADE, null=True, related_name="seed_1"
+    )
+    seed_2 = models.ForeignKey(
+        Teams, on_delete=models.CASCADE, null=True, related_name="seed_2"
+    )
+    seed_3 = models.ForeignKey(
+        Teams, on_delete=models.CASCADE, null=True, related_name="seed_3"
+    )
+    seed_4 = models.ForeignKey(
+        Teams, on_delete=models.CASCADE, null=True, related_name="seed_4"
+    )
+
+    left_r1_1 = models.ForeignKey(
+        Games, on_delete=models.CASCADE, null=True, related_name="left_r1_1"
+    )
+    left_r1_2 = models.ForeignKey(
+        Games, on_delete=models.CASCADE, null=True, related_name="left_r1_2"
+    )
+    right_r1_1 = models.ForeignKey(
+        Games, on_delete=models.CASCADE, null=True, related_name="right_r1_1"
+    )
+    right_r1_2 = models.ForeignKey(
+        Games, on_delete=models.CASCADE, null=True, related_name="right_r1_2"
+    )
+
+    left_quarter_1 = models.ForeignKey(
+        Games,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="left_quarter_1",
+    )
+    left_quarter_2 = models.ForeignKey(
+        Games,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="left_quarter_2",
+    )
+    right_quarter_1 = models.ForeignKey(
+        Games,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="right_quarter_1",
+    )
+    right_quarter_2 = models.ForeignKey(
+        Games,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="right_quarter_2",
+    )
+
+    left_semi = models.ForeignKey(
+        Games, on_delete=models.CASCADE, null=True, related_name="left_semi"
+    )
+    right_semi = models.ForeignKey(
+        Games, on_delete=models.CASCADE, null=True, related_name="right_semi"
+    )
+
+    natty = models.ForeignKey(
+        Games, on_delete=models.CASCADE, null=True, related_name="pnatty"
+    )

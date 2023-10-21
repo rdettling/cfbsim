@@ -169,14 +169,15 @@ def schedulenc(request):
 
 def init(data, user_id, year):
     Info.objects.filter(user_id=user_id).delete()
-    info = Info.objects.create(
-        user_id=user_id,
-        currentWeek=1,
-        currentYear=year,
-        playoff_teams=data["playoff"]["size"],
-        playoff_autobids=data["playoff"]["autobids"],
-        playoff_byes=data["playoff"]["byes"],
+    info = Info.objects.create(user_id=user_id, currentWeek=1, currentYear=year)
+
+    playoff = Playoff.objects.create(
+        info=info,
+        teams=data["playoff"]["teams"],
+        autobids=data["playoff"]["autobids"],
     )
+    info.playoff = playoff
+    info.save()
 
     Teams.objects.filter(info=info).delete()
     Players.objects.filter(info=info).delete()
@@ -255,32 +256,32 @@ def init(data, user_id, year):
         )
         teams_to_create.append(Team)
 
-    # FCS = Teams(
-    #     info=info,
-    #     name="FCS",
-    #     abbreviation="FCS",
-    #     prestige=50,
-    #     mascot="FCS",
-    #     colorPrimary="#000000",
-    #     colorSecondary="#FFFFFF",
-    #     conference=None,
-    #     confGames=0,
-    #     confLimit=0,
-    #     confWins=0,
-    #     confLosses=0,
-    #     nonConfGames=0,
-    #     nonConfLimit=100,
-    #     nonConfWins=0,
-    #     nonConfLosses=0,
-    #     gamesPlayed=0,
-    #     totalWins=0,
-    #     totalLosses=0,
-    #     resume_total=0,
-    #     resume=0,
-    #     expectedWins=0,
-    #     ranking=0,
-    # )
-    # teams_to_create.append(FCS)
+    FCS = Teams(
+        info=info,
+        name="FCS",
+        abbreviation="FCS",
+        prestige=50,
+        mascot="FCS",
+        colorPrimary="#000000",
+        colorSecondary="#FFFFFF",
+        conference=None,
+        confGames=0,
+        confLimit=0,
+        confWins=0,
+        confLosses=0,
+        nonConfGames=0,
+        nonConfLimit=100,
+        nonConfWins=0,
+        nonConfLosses=0,
+        gamesPlayed=0,
+        totalWins=0,
+        totalLosses=0,
+        resume_total=0,
+        resume=0,
+        expectedWins=0,
+        ranking=0,
+    )
+    teams_to_create.append(FCS)
 
     for team in teams_to_create:
         players(info, team, players_to_create)
@@ -357,7 +358,7 @@ def fillSchedules(info):
                             and opponent.nonConfGames == i
                             # and opponent.name != "FCS"
                         ):
-                            team, opponent = scheduleGame(
+                            team, opponent, game = scheduleGame(
                                 info,
                                 team,
                                 opponent,
@@ -396,7 +397,7 @@ def fillSchedules(info):
 
                 try:
                     opponent = valid_opponents[0]
-                    team, opponent = scheduleGame(
+                    team, opponent, game = scheduleGame(
                         info,
                         team,
                         opponent,
@@ -404,7 +405,7 @@ def fillSchedules(info):
                     )
                 except:
                     fcs = next((team for team in teams if team.name == "FCS"))
-                    team, fcs = scheduleGame(info, team, fcs, games_to_create)
+                    team, fcs, game = scheduleGame(info, team, fcs, games_to_create)
                 scheduled_games[team.name].add(opponent.name)
                 scheduled_games[opponent.name].add(team.name)
 
@@ -432,7 +433,7 @@ def fillSchedules(info):
                 )
 
                 opponent = valid_opponents[0]
-                team, opponent = scheduleGame(
+                team, opponent, game = scheduleGame(
                     info,
                     team,
                     opponent,
@@ -551,7 +552,7 @@ def players(info, team, players_to_create):
     offensive_positions = ["qb", "rb", "wr", "te", "ol"]
     defensive_positions = ["dl", "lb", "cb", "s"]
 
-    offensive_weights = {"qb": 35, "rb": 10, "wr": 25, "te": 10, "ol": 20}
+    offensive_weights = {"qb": 40, "rb": 10, "wr": 25, "te": 5, "ol": 20}
 
     defensive_weights = {"dl": 35, "lb": 20, "cb": 30, "s": 15}
 
@@ -680,7 +681,7 @@ def scheduleGame(
         team.nonConfGames += 1
         opponent.nonConfGames += 1
 
-    return team, opponent
+    return team, opponent, game
 
 
 def uniqueGames(info, data, games_to_create):
@@ -720,7 +721,7 @@ def uniqueGames(info, data, games_to_create):
                         scheduled_games[game[0]].add(game_week)
                         scheduled_games[game[1]].add(game_week)
 
-                        team, opponent = scheduleGame(
+                        team, opponent, Game = scheduleGame(
                             info,
                             team,
                             opponent,
