@@ -101,7 +101,7 @@
             </td>
             <td>{{game_log.label}}</td>
             <td>
-                <a href="{% url 'details' team_name=player.team.name id=game_log.game.id %}">{{ game_log.result }}</a>
+                <a href="{% url 'game' id=game_log.game.id %}">{{ game_log.result }}</a>
             </td>
             {% if player.pos == "qb" %}
             <td>{{ game_log.pass_yards }}</td>

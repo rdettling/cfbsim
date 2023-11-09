@@ -1,16 +1,16 @@
-{% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block title %}{{game.team.name}} vs {{game.opponent.name}}{% endblock %} {% block css %}
+{% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block title %}{{game.teamA.name}} vs {{game.opponent.name}}{% endblock %} {% block css %}
 <link rel="stylesheet" href="{% static 'game.css' %}" />
 {% endblock %} {% block content %}
 <div class="row">
     <div class="col-md-6 centered">
-        <a class="summarytext" href="/teams/{{game.team.name}}/schedule">{{game.team.name}}</a>
-        <img class="logo" src="{% static game.team.name %}.png" />
-        <span class="summarytext">{{game.team.score}}</span>
+        <a class="summarytext" href="/teams/{{game.teamA.name}}/schedule">{{game.teamA.name}}</a>
+        <img class="logo" src="{% static game.teamA.name %}.png" />
+        <span class="summarytext">{{game.scoreA}}</span>
     </div>
     <div class="col-md-6 centered">
-        <span class="summarytext">{{game.opponent.score}}</span>
-        <img class="logo" src="{% static game.opponent.name %}.png" />
-        <a class="summarytext" href="/teams/{{game.opponent.name}}/schedule">{{game.opponent.name}}</a>
+        <span class="summarytext">{{game.scoreB}}</span>
+        <img class="logo" src="{% static game.teamB.name %}.png" />
+        <a class="summarytext" href="/teams/{{game.teamB.name}}/schedule">{{game.teamB.name}}</a>
     </div>
 </div>
 <div class="row centered">
@@ -113,10 +113,10 @@
                             <tr>
                                 <th></th>
                                 <th>
-                                    <img class="boxlogo" src="{% static team.name %}.png" />
+                                    <img class="boxlogo" src="{% static game.teamA.name %}.png" />
                                 </th>
                                 <th>
-                                    <img class="boxlogo" src="{% static game.opponent.name %}.png" />
+                                    <img class="boxlogo" src="{% static game.teamB.name %}.png" />
                                 </th>
                             </tr>
                         </thead>

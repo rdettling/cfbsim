@@ -1,7 +1,8 @@
 {
     "playoff": {
         "teams": 4,
-        "autobids": 0
+        "autobids": 0,
+        "lastWeek": 15
     },
     "rivalries": [
         ["Notre Dame", "USC", 12, "Jeweled Shillelagh"],

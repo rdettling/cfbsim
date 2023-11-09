@@ -25,20 +25,22 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Team</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href="/teams/{{team.name}}/schedule">Schedule</a>
-                        <a class="dropdown-item" href="/teams/{{team.name}}/roster">Roster</a>
-                        <a class="dropdown-item" href="/teams/{{team.name}}/stats">Stats</a>
+                        <a class="dropdown-item" href="/teams/{{info.team.name}}/schedule">Schedule</a>
+                        <a class="dropdown-item" href="/teams/{{info.team.name}}/roster">Roster</a>
+                        <a class="dropdown-item" href="/teams/{{info.team.name}}/stats">Stats</a>
                     </div>
                 </li>
+                {% comment %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Sim</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href="/teams/{{info.team.name}}/sim/1">1 week</a>
-                        <a class="dropdown-item" href="/teams/{{info.team.name}}/sim/2">2 weeks</a>
-                        <a class="dropdown-item" href="/teams/{{info.team.name}}/sim/3">3 weeks</a>
-                        <a class="dropdown-item" href="/teams/{{info.team.name}}/sim/4">4 weeks</a>
+                        <a class="dropdown-item" href="/sim/1">1 week</a>
+                        <a class="dropdown-item" href="/sim/2">2 weeks</a>
+                        <a class="dropdown-item" href="/sim/3">3 weeks</a>
+                        <a class="dropdown-item" href="/sim/4">4 weeks</a>
                     </div>
                 </li>
+                {% endcomment %}
                 <li class="nav-item">
                     <a class="nav-link" href="/rankings">Rankings</a>
                 </li>
@@ -61,32 +63,55 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Schedule</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href="/schedule/1">Week 1</a>
-                        <a class="dropdown-item" href="/schedule/2">Week 2</a>
-                        <a class="dropdown-item" href="/schedule/3">Week 3</a>
-                        <a class="dropdown-item" href="/schedule/4">Week 4</a>
-                        <a class="dropdown-item" href="/schedule/5">Week 5</a>
-                        <a class="dropdown-item" href="/schedule/6">Week 6</a>
-                        <a class="dropdown-item" href="/schedule/7">Week 7</a>
-                        <a class="dropdown-item" href="/schedule/8">Week 8</a>
-                        <a class="dropdown-item" href="/schedule/9">Week 9</a>
-                        <a class="dropdown-item" href="/schedule/10">Week 10</a>
-                        <a class="dropdown-item" href="/schedule/11">Week 11</a>
-                        <a class="dropdown-item" href="/schedule/12">Week 12</a>
-                        <a class="dropdown-item" href="/schedule/13">Week 13</a>
-                        <a class="dropdown-item" href="/schedule/14">Week 14</a>
-                        <a class="dropdown-item" href="/schedule/15">Week 15</a>
-                        <a class="dropdown-item" href="/schedule/16">Week 16</a>
-                        <a class="dropdown-item" href="/schedule/17">Week 17</a>
+                        {% for week in weeks %}
+                        <a class="dropdown-item" href="/schedule/{{ week }}">Week {{ week }}</a>
+                        {% endfor %}
                     </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/recruit">recruiting</a>
                 </li>
             </ul>
             <ul class="navbar-nav ml-auto">
+                {% if info.stage == 'season' %}
                 <li class="nav-item">
-                    <a class="nav-link">{{info.currentYear}} (week {{info.currentWeek}})</a>
+                    <a class="nav-link">{{info.currentYear}} (Week {{info.currentWeek}})</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/">Main Menu</a>
+                    <a class="btn btn-primary" href="/sim/1">Sim to next week</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link">{{info.currentYear}} (Offseason)</a>
+                </li>
+                {% if info.stage == 'end of season' %}
+                <li class="nav-item">
+                    <a class="btn btn-primary" href="/season_summary">Season summary</a>
+                </li>
+                {% elif info.stage == 'season summary' %}
+                <li class="nav-item">
+                    <a class="btn btn-primary" href="/season_summary">Season summary</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-primary" href="/roster_progression">Roster progression</a>
+                </li>
+                {% elif info.stage == 'roster progression' %}
+                <li class="nav-item">
+                    <a class="btn btn-primary" href="/roster_progression">Roster progression</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-primary" href="/noncon">Schedule nonconference</a>
+                </li>
+                {% elif info.stage == 'schedule non conference' %}
+                <li class="nav-item">
+                    <a class="btn btn-primary" href="/noncon">Schedule nonconference</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-primary ml-1" href="/dashboard">Start season</a>
+                </li>
+                {% endif %} {% endif %}
+                <li class="nav-item">
+                    <a class="btn btn-danger ml-1" href="/">Main Menu</a>
                 </li>
             </ul>
         </nav>

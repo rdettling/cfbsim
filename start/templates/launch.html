@@ -31,6 +31,7 @@
             {% if info.team %}
             <h5>Current save</h5>
             <table class="table table-striped">
+                {% if info.stage == 'season' %}
                 <thead>
                     <tr>
                         <th>Year</th>
@@ -45,6 +46,22 @@
                         <td>{{info.team.name}}</td>
                     </tr>
                 </tbody>
+                {% else %}
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Stage</th>
+                        <th>Team</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{info.currentYear}}</td>
+                        <td>Offseason ({{info.stage}})</td>
+                        <td>{{info.team.name}}</td>
+                    </tr>
+                </tbody>
+                {% endif %}
             </table>
             <a href="{% url 'dashboard' %}" class="btn btn-primary mt-3">Load Game</a>
             {% else %}

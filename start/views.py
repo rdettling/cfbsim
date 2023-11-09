@@ -1,14 +1,146 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 import json
-import random
 from .models import *
 from django.db.models import F
-import static.code.names as names
-import static.code.simtest as simtest
+from .util.util import *
+from .util.sim.sim import simGame
 
 
-def launch(request):
+def make_game_logs(info, plays):
+    desired_positions = {"qb", "rb", "wr"}
+    game_log_dict = {}
+
+    # Get all starters outside of the play loop
+    all_starters = Players.objects.filter(
+        info=info, starter=True, pos__in=desired_positions
+    ).select_related("team")
+
+    # Group them by position and team
+    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
+    for player in all_starters:
+        starters_by_team_pos[(player.team, player.pos)].append(player)
+
+    # Get all unique games being simmed
+    simmed_games = {play.game for play in plays}
+
+    # Create a set to store (player, game) combinations for GameLog objects
+    player_game_combinations = set()
+
+    for game in simmed_games:
+        for team in [game.teamA, game.teamB]:
+            for pos in desired_positions:
+                starters = starters_by_team_pos.get((team, pos), [])
+                for starter in starters:
+                    player_game_combinations.add((starter, game))
+
+    # Create the in-memory GameLog objects
+    game_logs_to_process = [
+        GameLog(info=info, player=player, game=game)
+        for player, game in player_game_combinations
+    ]
+
+    for game_log in game_logs_to_process:
+        game_log_dict[(game_log.player, game_log.game)] = game_log
+
+    # Main logic for processing the plays
+    for play in plays:
+        game = play.game
+        offense_team = play.offense
+
+        rb_starters = starters_by_team_pos.get((offense_team, "rb"), [])
+        qb_starters = starters_by_team_pos.get((offense_team, "qb"), [])
+        wr_starters = starters_by_team_pos.get((offense_team, "wr"), [])
+
+        if play.playType == "run":
+            runner = random.choice(rb_starters) if rb_starters else None
+            if runner:
+                game_log = game_log_dict[(runner, game)]
+                update_game_log_for_run(play, game_log)
+                format_play_text(play, runner)
+
+        elif play.playType == "pass":
+            qb_starter = qb_starters[0] if qb_starters else None
+            receiver = random.choice(wr_starters) if wr_starters else None
+            if qb_starter and receiver:
+                qb_game_log = game_log_dict[(qb_starter, game)]
+                receiver_game_log = game_log_dict[(receiver, game)]
+                update_game_log_for_pass(play, qb_game_log, receiver_game_log)
+                format_play_text(play, qb_starter, receiver)
+
+    GameLog.objects.bulk_create(game_logs_to_process)
+
+
+def simWeek(request, weeks):
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
+
+    team = info.team
+    conferences = info.conferences.all().order_by("confName")
+
+    drives_to_create = []
+    plays_to_create = []
+    teamGames = []
+
+    desired_week = info.currentWeek + weeks
+
+    while info.currentWeek < desired_week:
+        toBeSimmed = list(Games.objects.filter(info=info, weekPlayed=info.currentWeek))
+
+        for game in toBeSimmed:
+            if game.teamA == team:
+                game.label = game.labelA
+                teamGames.append(game)
+            elif game.teamB == team:
+                game.label = game.labelB
+                teamGames.append(game)
+
+            simGame(game, info, drives_to_create, plays_to_create)
+
+        update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
+        no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
+        if info.currentWeek not in no_update_weeks:
+            update_rankings(info)
+
+        all_actions = {
+            4: {
+                12: setConferenceChampionships,
+                13: setPlayoffSemi,
+                14: setNatty,
+                1: end_season,
+            },
+            12: {
+                12: setConferenceChampionships,
+                13: setPlayoffR1,
+                14: setPlayoffQuarter,
+                15: setPlayoffSemi,
+                16: setNatty,
+                17: end_season,
+            },
+        }
+
+        action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
+        if action:
+            action(info)
+
+        info.currentWeek += 1
+
+    make_game_logs(info, plays_to_create)
+    Drives.objects.bulk_create(drives_to_create)
+    Plays.objects.bulk_create(plays_to_create)
+    info.save()
+
+    context = {
+        "conferences": conferences,
+        "teamGames": teamGames,
+        "info": info,
+        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+    }
+
+    return render(request, "sim.html", context)
+
+
+def home(request):
     if not request.session.session_key:
         request.session.create()
 
@@ -31,6 +163,11 @@ def preview(request):
     with open(f"static/years/{year}.json", "r") as metadataFile:
         data = json.load(metadataFile)
 
+        for conf in data["conferences"]:
+            conf["teams"] = sorted(
+                conf["teams"], key=lambda team: team["prestige"], reverse=True
+            )
+
         info = init(data, user_id, year)
 
     context = {
@@ -44,9 +181,8 @@ def preview(request):
 
 def pickteam(request):
     user_id = request.session.session_key
-
     info = Info.objects.get(user_id=user_id)
-    teams = list(Teams.objects.filter(info=info).order_by("-prestige"))
+    teams = info.teams.all().order_by("-prestige")
 
     context = {
         "teams": teams,
@@ -55,14 +191,34 @@ def pickteam(request):
     return render(request, "pickteam.html", context)
 
 
+def game(request, id):
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
+
+    game = Games.objects.get(id=id)
+
+    if game.winner:
+        return game_result(request, info, game)
+    else:
+        return game_preview(request, info, game)
+
+
 def noncon(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
-    team_name = request.GET.get("team_name")
-    team = Teams.objects.get(info=info, name=team_name)
-    info.team = team
-    info.save()
+    if not info.stage == "schedule non conference":
+        id = request.GET.get("id")
+        if id:
+            team = Teams.objects.get(id=id)
+            info.team = team
+        else:
+            refresh_schedule(info)
+
+        info.stage = "schedule non conference"
+        info.save()
+
+    team = info.team
 
     games_as_teamA = team.games_as_teamA.all()
     games_as_teamB = team.games_as_teamB.all()
@@ -92,7 +248,11 @@ def noncon(request):
             empty_game.label = "No Game"
             full_schedule[index] = empty_game
 
-    context = {"schedule": full_schedule, "team": team}
+    context = {
+        "info": info,
+        "schedule": full_schedule,
+        "team": team,
+    }
 
     return render(request, "noncon.html", context)
 
@@ -167,568 +327,286 @@ def schedulenc(request):
     return JsonResponse({"status": "success"})
 
 
-def init(data, user_id, year):
-    Info.objects.filter(user_id=user_id).delete()
-    info = Info.objects.create(user_id=user_id, currentWeek=1, currentYear=year)
+def dashboard(request):
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
 
-    playoff = Playoff.objects.create(
-        info=info,
-        teams=data["playoff"]["teams"],
-        autobids=data["playoff"]["autobids"],
+    team = info.team
+
+    if not info.stage == "season":
+        fillSchedules(info)
+        aiRecruitOffers(info)
+
+    games_as_teamA = team.games_as_teamA.all()
+    games_as_teamB = team.games_as_teamB.all()
+    schedule = list(games_as_teamA | games_as_teamB)
+    for week in schedule:
+        week.team = team
+        if week.teamA == team:
+            week.opponent = week.teamB
+            week.result = week.resultA
+            week.score = f"{week.scoreA} - {week.scoreB}"
+            week.spread = week.spreadA
+            week.moneyline = week.moneylineA
+        else:
+            week.opponent = week.teamA
+            week.result = week.resultB
+            week.score = f"{week.scoreB} - {week.scoreA}"
+            week.spread = week.spreadB
+            week.moneyline = week.moneylineB
+
+    teams = Teams.objects.filter(info=info).order_by("ranking")
+    conferences = Conferences.objects.filter(info=info).order_by("confName")
+    confTeams = Teams.objects.filter(info=info, conference=team.conference).order_by(
+        "-confWins", "-resume"
     )
-    info.playoff = playoff
+
+    context = {
+        "team": team,
+        "teams": teams,
+        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+        "confTeams": confTeams,
+        "conferences": conferences,
+        "info": info,
+        "schedule": schedule,
+    }
+
+    return render(request, "dashboard.html", context)
+
+
+def game_preview(request, info, game):
+    conferences = info.conferences.all().order_by("confName")
+    team = info.team
+
+    context = {
+        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+    }
+
+    return render(request, "game_preview.html", context)
+
+
+def game_result(request, info, game):
+    conferences = info.conferences.all().order_by("confName")
+    team = info.team
+    drives = game.drives.all()
+    game_logs = game.game_logs.all()
+
+    # Initialize an empty dictionary to store categorized game log strings
+    categorized_game_log_strings = {"Passing": [], "Rushing": [], "Receiving": []}
+
+    for game_log in game_logs:
+        player = game_log.player
+        position = player.pos  # Assuming 'position' is a field on your 'Players' model
+        team_name = (
+            player.team.name
+        )  # Assuming 'team' is a field on your 'Players' model
+
+        if "qb" in position.lower():
+            qb_game_log_dict = {
+                "player_id": player.id,  # Assuming 'id' is a field on your 'Players' model
+                "team_name": team_name,
+                "game_log_string": f"{player.first} {player.last} ({team_name} - QB): {game_log.pass_completions}/{game_log.pass_attempts} for {game_log.pass_yards} yards, {game_log.pass_touchdowns} TDs, {game_log.pass_interceptions} INTs",
+            }
+            categorized_game_log_strings["Passing"].append(qb_game_log_dict)
+
+        if "rb" in position.lower() or (
+            "qb" in position.lower() and game_log.rush_attempts > 0
+        ):  # Include QBs with rushing attempts
+            rush_game_log_dict = {
+                "player_id": player.id,
+                "team_name": team_name,
+                "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.rush_attempts} carries, {game_log.rush_yards} yards, {game_log.rush_touchdowns} TDs",
+            }
+            categorized_game_log_strings["Rushing"].append(rush_game_log_dict)
+
+        if "wr" in position.lower() or (
+            "rb" in position.lower() and game_log.receiving_catches > 0
+        ):  # Include RBs with receptions
+            recv_game_log_dict = {
+                "player_id": player.id,
+                "team_name": team_name,
+                "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.receiving_catches} catches, {game_log.receiving_yards} yards, {game_log.receiving_touchdowns} TDs",
+            }
+            categorized_game_log_strings["Receiving"].append(recv_game_log_dict)
+
+    # if game.teamA == team:
+    #     game.opponent = game.teamB
+    #     game.team.score = game.scoreA
+    #     game.opponent.score = game.scoreB
+    # else:
+    #     game.opponent = game.teamA
+    #     game.team.score = game.scoreB
+    #     game.opponent.score = game.scoreA
+
+    scoreA = scoreB = 0
+    for drive in drives:
+        if drive.offense == game.teamA:
+            if drive.points:
+                scoreA += drive.points
+            elif drive.result == "safety":
+                scoreB += 2
+        elif drive.offense == game.teamB:
+            if drive.points:
+                scoreB += drive.points
+            elif drive.result == "safety":
+                scoreA += 2
+        drive.teamAfter = scoreA
+        drive.oppAfter = scoreB
+
+    team_yards = opp_yards = 0
+    team_passing_yards = team_rushing_yards = opp_passing_yards = opp_rushing_yards = 0
+    team_first_downs = opp_first_downs = 0
+    team_third_down_a = team_third_down_c = opp_third_down_a = opp_third_down_c = 0
+    team_fourth_down_a = team_fourth_down_c = opp_fourth_down_a = opp_fourth_down_c = 0
+    team_turnovers = opp_turnovers = 0
+    for play in game.plays.all():
+        if play.startingFP < 50:
+            location = f"{play.offense.abbreviation} {play.startingFP}"
+        elif play.startingFP > 50:
+            location = f"{play.defense.abbreviation} {100 - play.startingFP}"
+        else:
+            location = f"{play.startingFP}"
+
+        if play.startingFP + play.yardsLeft >= 100:
+            if play.down == 1:
+                play.header = f"{play.down}st and goal at {location}"
+            elif play.down == 2:
+                play.header = f"{play.down}nd and goal at {location}"
+            elif play.down == 3:
+                play.header = f"{play.down}rd and goal at {location}"
+            elif play.down == 4:
+                play.header = f"{play.down}th and goal at {location}"
+        else:
+            if play.down == 1:
+                play.header = f"{play.down}st and {play.yardsLeft} at {location}"
+            elif play.down == 2:
+                play.header = f"{play.down}nd and {play.yardsLeft} at {location}"
+            elif play.down == 3:
+                play.header = f"{play.down}rd and {play.yardsLeft} at {location}"
+            elif play.down == 4:
+                play.header = f"{play.down}th and {play.yardsLeft} at {location}"
+
+        play.save()
+
+        if play.offense == game.teamA:
+            if play.playType == "pass":
+                team_passing_yards += play.yardsGained
+            elif play.playType == "run":
+                team_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                team_first_downs += 1
+            if play.result == "interception" or play.result == "fumble":
+                team_turnovers += 1
+            elif play.down == 3:
+                team_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    team_third_down_c += 1
+            elif play.down == 4:
+                if play.playType != "punt" and play.playType != "field goal attempt":
+                    team_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        team_fourth_down_c += 1
+        elif play.offense == game.teamB:
+            if play.playType == "pass":
+                opp_passing_yards += play.yardsGained
+            elif play.playType == "run":
+                opp_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                opp_first_downs += 1
+            if play.result == "interception" or play.result == "fumble":
+                opp_turnovers += 1
+            elif play.down == 3:
+                opp_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    opp_third_down_c += 1
+            elif play.down == 4:
+                if play.playType != "punt" and play.playType != "field goal attempt":
+                    opp_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        opp_fourth_down_c += 1
+
+    team_yards = team_passing_yards + team_rushing_yards
+    opp_yards = opp_passing_yards + opp_rushing_yards
+
+    stats = {
+        "total yards": {"team": team_yards, "opponent": opp_yards},
+        "passing yards": {"team": team_passing_yards, "opponent": opp_passing_yards},
+        "rushing yards": {"team": team_rushing_yards, "opponent": opp_rushing_yards},
+        "1st downs": {"team": team_first_downs, "opponent": opp_first_downs},
+        "3rd down conversions": {
+            "team": team_third_down_c,
+            "opponent": opp_third_down_c,
+        },
+        "3rd down attempts": {"team": team_third_down_a, "opponent": opp_third_down_a},
+        "4th down conversions": {
+            "team": team_fourth_down_c,
+            "opponent": opp_fourth_down_c,
+        },
+        "4th down attempts": {
+            "team": team_fourth_down_a,
+            "opponent": opp_fourth_down_a,
+        },
+        "turnovers": {"team": team_turnovers, "opponent": opp_turnovers},
+    }
+
+    context = {
+        "team": team,
+        "game": game,
+        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+        "info": info,
+        "conferences": conferences,
+        "drives": drives,
+        "stats": stats,
+        "categorized_game_log_strings": categorized_game_log_strings,
+    }
+
+    return render(request, "game_result.html", context)
+
+
+def season_summary(request):
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
+    info.stage = "season summary"
     info.save()
 
-    Teams.objects.filter(info=info).delete()
-    Players.objects.filter(info=info).delete()
-    Conferences.objects.filter(info=info).delete()
-    Games.objects.filter(info=info).delete()
-    Drives.objects.filter(info=info).delete()
-    Plays.objects.filter(info=info).delete()
-
-    teams_to_create = []
-    conferences_to_create = []
-    players_to_create = []
-    games_to_create = []
-
-    for conference in data["conferences"]:
-        Conference = Conferences(
-            info=info,
-            confName=conference["confName"],
-            confFullName=conference["confFullName"],
-            confGames=conference["confGames"],
-        )
-        conferences_to_create.append(Conference)
-
-        for team in conference["teams"]:
-            Team = Teams(
-                info=info,
-                name=team["name"],
-                abbreviation=team["abbreviation"],
-                prestige=team["prestige"],
-                mascot=team["mascot"],
-                colorPrimary=team["colorPrimary"],
-                colorSecondary=team["colorSecondary"],
-                conference=Conference,
-                confGames=0,
-                confLimit=conference["confGames"],
-                confWins=0,
-                confLosses=0,
-                nonConfGames=0,
-                nonConfLimit=12 - conference["confGames"],
-                nonConfWins=0,
-                nonConfLosses=0,
-                gamesPlayed=0,
-                totalWins=0,
-                totalLosses=0,
-                resume_total=0,
-                resume=0,
-                expectedWins=0,
-                ranking=0,
-            )
-            teams_to_create.append(Team)
-
-    for team in data["independents"]:
-        Team = Teams(
-            info=info,
-            name=team["name"],
-            abbreviation=team["abbreviation"],
-            prestige=team["prestige"],
-            mascot=team["mascot"],
-            colorPrimary=team["colorPrimary"],
-            colorSecondary=team["colorSecondary"],
-            conference=None,
-            confGames=0,
-            confLimit=0,
-            confWins=0,
-            confLosses=0,
-            nonConfGames=0,
-            nonConfLimit=12,
-            nonConfWins=0,
-            nonConfLosses=0,
-            gamesPlayed=0,
-            totalWins=0,
-            totalLosses=0,
-            resume_total=0,
-            resume=0,
-            expectedWins=0,
-            ranking=0,
-        )
-        teams_to_create.append(Team)
-
-    FCS = Teams(
-        info=info,
-        name="FCS",
-        abbreviation="FCS",
-        prestige=50,
-        mascot="FCS",
-        colorPrimary="#000000",
-        colorSecondary="#FFFFFF",
-        conference=None,
-        confGames=0,
-        confLimit=0,
-        confWins=0,
-        confLosses=0,
-        nonConfGames=0,
-        nonConfLimit=100,
-        nonConfWins=0,
-        nonConfLosses=0,
-        gamesPlayed=0,
-        totalWins=0,
-        totalLosses=0,
-        resume_total=0,
-        resume=0,
-        expectedWins=0,
-        ranking=0,
-    )
-    teams_to_create.append(FCS)
-
-    for team in teams_to_create:
-        players(info, team, players_to_create)
-
-    teams_to_create = sorted(
-        teams_to_create, key=lambda team: team.rating, reverse=True
-    )
-    for i, team in enumerate(teams_to_create, start=1):
-        team.ranking = i
-
-    odds_list = simtest.getSpread(
-        teams_to_create[0].rating - teams_to_create[-1].rating
-    )
-
-    odds_to_insert = []
-
-    for diff, odds_data in odds_list.items():
-        odds_instance = Odds(
-            info=info,
-            diff=diff,
-            favSpread=odds_data["favSpread"],
-            udSpread=odds_data["udSpread"],
-            favWinProb=(odds_data["favWinProb"]),
-            udWinProb=(odds_data["udWinProb"]),
-            favMoneyline=odds_data["favMoneyline"],
-            udMoneyline=odds_data["udMoneyline"],
-        )
-        odds_to_insert.append(odds_instance)
-
-    Conferences.objects.bulk_create(conferences_to_create)
-
-    Teams.objects.bulk_create(teams_to_create)
-
-    Odds.objects.bulk_create(odds_to_insert)
-
-    uniqueGames(info, data, games_to_create)
-
-    Players.objects.bulk_create(players_to_create)
-    Games.objects.bulk_create(games_to_create)
-
-
-def fillSchedules(info):
-    teams = list(Teams.objects.filter(info=info))
-    conferences = list(Conferences.objects.filter(info=info))
-    random.shuffle(teams)
-    random.shuffle(conferences)
-
-    scheduled_games = {}
-
-    for team in teams:
-        opponents_as_teamA = Games.objects.filter(info=info, teamA=team).values_list(
-            "teamB__name", flat=True
-        )
-        opponents_as_teamB = Games.objects.filter(info=info, teamB=team).values_list(
-            "teamA__name", flat=True
-        )
-        scheduled_games[team.name] = set(opponents_as_teamA).union(opponents_as_teamB)
-
-    games_to_create = []
-
-    for team in teams:
-        if not team.conference and team.name != "FCS":
-            done = False
-            while team.nonConfGames < team.nonConfLimit:
-                for i in range(2):
-                    for opponent in teams:
-                        if team.nonConfGames == team.nonConfLimit:
-                            done = True
-                            break
-                        if (
-                            opponent.nonConfGames < opponent.nonConfLimit
-                            and opponent.name not in scheduled_games[team.name]
-                            and opponent.name != team.name
-                            and opponent.nonConfGames == i
-                            # and opponent.name != "FCS"
-                        ):
-                            team, opponent, game = scheduleGame(
-                                info,
-                                team,
-                                opponent,
-                                games_to_create,
-                            )
-                            scheduled_games[team.name].add(opponent.name)
-                            scheduled_games[opponent.name].add(team.name)
-                    if done:
-                        break
-
-            team.save()
-
-    for conference in conferences:
-        confTeams = [team for team in teams if team.conference == conference]
-        confTeams.sort(key=lambda team: team.nonConfGames)
-
-        for team in confTeams:
-
-            def potential_opponents(team):
-                return [
-                    opponent
-                    for opponent in teams
-                    if opponent.nonConfGames < opponent.nonConfLimit
-                    and opponent.name not in scheduled_games[team.name]
-                    and opponent.conference != team.conference
-                    and opponent.name != "FCS"
-                ]
-
-            while team.nonConfGames < team.nonConfLimit:
-                valid_opponents = potential_opponents(team)
-
-                valid_opponents.sort(
-                    key=lambda o: len(potential_opponents(o))
-                    - (o.nonConfLimit - o.nonConfGames)
-                )
-
-                try:
-                    opponent = valid_opponents[0]
-                    team, opponent, game = scheduleGame(
-                        info,
-                        team,
-                        opponent,
-                        games_to_create,
-                    )
-                except:
-                    fcs = next((team for team in teams if team.name == "FCS"))
-                    team, fcs, game = scheduleGame(info, team, fcs, games_to_create)
-                scheduled_games[team.name].add(opponent.name)
-                scheduled_games[opponent.name].add(team.name)
-
-        confTeamsList = confTeams[:]
-        while confTeams:
-
-            def potential_opponents(team):
-                return [
-                    opponent
-                    for opponent in confTeamsList
-                    if opponent.confGames < opponent.confLimit
-                    and opponent.name not in scheduled_games[team.name]
-                    and opponent.name != team.name
-                ]
-
-            confTeams.sort(key=lambda team: team.confGames)
-            team = confTeams.pop(0)
-
-            while team.confGames < team.confLimit:
-                valid_opponents = potential_opponents(team)
-
-                valid_opponents.sort(
-                    key=lambda o: len(potential_opponents(o))
-                    - (o.confLimit - o.confGames)
-                )
-
-                opponent = valid_opponents[0]
-                team, opponent, game = scheduleGame(
-                    info,
-                    team,
-                    opponent,
-                    games_to_create,
-                )
-                scheduled_games[team.name].add(opponent.name)
-                scheduled_games[opponent.name].add(team.name)
-
-            team.save()
-
-    teams = sorted(teams, key=lambda team: team.prestige, reverse=True)
-
-    for currentWeek in range(1, 13):
-        games = Games.objects.filter(info=info, weekPlayed=currentWeek)
-
-        for game in games:
-            for team in teams:
-                if team == game.teamA or team == game.teamB:
-                    team.gamesPlayed += 1
-
-        for team in teams:
-            if team.gamesPlayed < currentWeek:
-                filtered_games = [
-                    game
-                    for game in games_to_create
-                    if game.teamA == team or game.teamB == team
-                ]
-                filtered_games = [
-                    game for game in filtered_games if game.weekPlayed == 0
-                ]
-                for game in filtered_games:
-                    if team.gamesPlayed >= currentWeek:
-                        break
-                    for opponent in teams:
-                        if game.teamA == team:
-                            if (
-                                opponent.gamesPlayed < currentWeek
-                                and opponent == game.teamB
-                            ):
-                                game.weekPlayed = currentWeek
-                                team.gamesPlayed += 1
-                                opponent.gamesPlayed += 1
-                        elif game.teamB == team:
-                            if (
-                                opponent.gamesPlayed < currentWeek
-                                and opponent == game.teamA
-                            ):
-                                game.weekPlayed = currentWeek
-                                team.gamesPlayed += 1
-                                opponent.gamesPlayed += 1
-
-    Games.objects.bulk_create(games_to_create)
-
-
-def players(info, team, players_to_create):
-    roster = {
-        "qb": 1,
-        "rb": 1,
-        "wr": 3,
-        "te": 1,
-        "ol": 5,
-        "dl": 4,
-        "lb": 3,
-        "cb": 2,
-        "s": 2,
-        "k": 1,
-        "p": 1,
+    context = {
+        "info": info,
     }
 
-    variance = 15
-    years = ["fr", "so", "jr", "sr"]
-
-    # You can adjust these values or make them dynamic if needed.
-    progression = {
-        "fr": 0,  # Freshman usually start at their initial rating.
-        "so": 3,  # Sophomores progress by 3 points.
-        "jr": 6,  # Juniors progress by 6 points.
-        "sr": 9,  # Seniors progress by 9 points.
-    }
-
-    all_players = (
-        []
-    )  # Use this to keep track of all players before adding to players_to_create
-
-    for position, count in roster.items():
-        position_players = []  # Keep track of players for this specific position
-
-        for i in range(2 * count + 1):
-            first, last = names.generateName(position)
-            year = random.choice(years)
-
-            base_rating = team.prestige - random.randint(0, variance) - 5
-            progressed_rating = base_rating + progression[year]
-
-            player = Players(
-                info=info,
-                team=team,
-                first=first,
-                last=last,
-                year=year,
-                pos=position,
-                rating=progressed_rating,
-                starter=False,
-            )
-
-            position_players.append(player)
-
-        # Sort position_players by rating in descending order and set top players as starters
-        position_players.sort(key=lambda x: x.rating, reverse=True)
-        for i in range(roster[position]):
-            position_players[i].starter = True
-
-        all_players.extend(position_players)
-
-    # Define positions categorically.
-    offensive_positions = ["qb", "rb", "wr", "te", "ol"]
-    defensive_positions = ["dl", "lb", "cb", "s"]
-
-    offensive_weights = {"qb": 40, "rb": 10, "wr": 25, "te": 5, "ol": 20}
-
-    defensive_weights = {"dl": 35, "lb": 20, "cb": 30, "s": 15}
-
-    # Extract starters from all_players.
-    offensive_starters = [
-        player
-        for player in all_players
-        if player.pos in offensive_positions and player.starter
-    ]
-    defensive_starters = [
-        player
-        for player in all_players
-        if player.pos in defensive_positions and player.starter
-    ]
-
-    # Compute the weighted average ratings.
-    team.offense = (
-        round(
-            sum(
-                player.rating * offensive_weights[player.pos]
-                for player in offensive_starters
-            )
-            / sum(offensive_weights[player.pos] for player in offensive_starters)
-        )
-        if offensive_starters
-        else 0
-    )
-    team.defense = (
-        round(
-            sum(
-                player.rating * defensive_weights[player.pos]
-                for player in defensive_starters
-            )
-            / sum(defensive_weights[player.pos] for player in defensive_starters)
-        )
-        if defensive_starters
-        else 0
-    )
-
-    # Set the weights for offense and defense
-    offense_weight = 0.60
-    defense_weight = 0.40
-
-    # Calculate the team rating
-    team.rating = round(
-        (team.offense * offense_weight) + (team.defense * defense_weight)
-    )
-
-    players_to_create.extend(all_players)
+    return render(request, "season_summary.html", context)
 
 
-def scheduleGame(
-    info,
-    team,
-    opponent,
-    games_to_create,
-    weekPlayed=None,
-    gameName=None,
-):
-    odds = Odds.objects.get(info=info, diff=abs(team.rating - opponent.rating))
+def roster_progression(request):
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
 
-    if gameName:
-        labelA = labelB = gameName
+    players = info.players.all()
+
+    if not info.stage == "roster progression":
+        rosters_update = update_rosters(players)
+        info.stage = "roster progression"
+        info.save(update_fields=["stage"])
+
+        leaving_seniors_of_team = [
+            player
+            for player in rosters_update["leaving_seniors"]
+            if player.team == info.team
+        ]
+
+        progressed_players_of_team = [
+            player
+            for player in rosters_update["progressed_players"]
+            if player.team == info.team
+        ]
+
+        context = {
+            "info": info,
+            "leaving_seniors": leaving_seniors_of_team,
+            "progressed_players": progressed_players_of_team,
+        }
     else:
-        if team.conference and opponent.conference:
-            if team.conference == opponent.conference:
-                labelA = labelB = f"C ({team.conference.confName})"
-            else:
-                labelA = f"NC ({opponent.conference.confName})"
-                labelB = f"NC ({team.conference.confName})"
-        elif not team.conference and opponent.conference:
-            labelA = f"NC ({opponent.conference.confName})"
-            labelB = "NC (Ind)"
-        elif not opponent.conference and team.conference:
-            labelA = "NC (Ind)"
-            labelB = f"NC ({team.conference.confName})"
-        else:
-            labelA = "NC (Ind)"
-            labelB = "NC (Ind)"
+        context = {
+            "info": info,
+        }
 
-    is_teamA_favorite = True  # Default to true
-
-    if opponent.rating > team.rating:
-        is_teamA_favorite = False
-
-    game = Games(
-        info=info,
-        teamA=team,
-        teamB=opponent,
-        labelA=labelA,
-        labelB=labelB,
-        spreadA=odds.favSpread
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.udSpread,
-        spreadB=odds.udSpread
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.favSpread,
-        moneylineA=odds.favMoneyline
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.udMoneyline,
-        moneylineB=odds.udMoneyline
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.favMoneyline,
-        winProbA=odds.favWinProb
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.udWinProb,
-        winProbB=odds.udWinProb
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.favWinProb,
-        weekPlayed=weekPlayed if weekPlayed else 0,
-        rankATOG=team.ranking,
-        rankBTOG=opponent.ranking,
-        overtime=0,
-    )
-
-    games_to_create.append(game)
-
-    if team.conference:
-        if team.conference == opponent.conference:
-            team.confGames += 1
-            opponent.confGames += 1
-        else:
-            team.nonConfGames += 1
-            opponent.nonConfGames += 1
-    else:
-        team.nonConfGames += 1
-        opponent.nonConfGames += 1
-
-    return team, opponent, game
-
-
-def uniqueGames(info, data, games_to_create):
-    games = data["rivalries"]
-    teams = list(Teams.objects.filter(info=info))
-
-    for team in teams:
-        team.schedule = set()
-
-    scheduled_games = {}
-
-    for game in games:
-        for team_name in [game[0], game[1]]:
-            if team_name not in scheduled_games:
-                scheduled_games[team_name] = set()
-
-        if game[2] is not None:
-            scheduled_games[game[0]].add(game[2])
-            scheduled_games[game[1]].add(game[2])
-
-    for game in games:
-        for team in teams:
-            if team.name == game[0]:
-                for opponent in teams:
-                    if opponent.name == game[1]:
-                        if game[2] is None:
-                            game_week = random.choice(
-                                list(
-                                    set(range(1, 13))
-                                    - scheduled_games[game[0]]
-                                    - scheduled_games[game[1]]
-                                )
-                            )
-                        else:
-                            game_week = game[2]
-
-                        scheduled_games[game[0]].add(game_week)
-                        scheduled_games[game[1]].add(game_week)
-
-                        team, opponent, Game = scheduleGame(
-                            info,
-                            team,
-                            opponent,
-                            games_to_create,
-                            game_week,
-                            game[3],
-                        )
-
-                        team.save()
-                        opponent.save()
+    return render(request, "roster_progression.html", context)

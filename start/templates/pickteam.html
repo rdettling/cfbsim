@@ -19,7 +19,7 @@
         <tr>
             <td>
                 <img src="{% static team.name %}.png" class="teamlogo mr-2" />
-                <a href="noncon?team_name={{team.name}}" class="teamlink">{{team.name}} {{team.mascot}}</a>
+                <a href="noncon?id={{team.id}}" class="teamlink">{{team.name}} {{team.mascot}}</a>
             </td>
             <td>{{team.prestige}}</td>
             {% if team.conference %}

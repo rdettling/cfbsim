@@ -1,9 +1,10 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Info(models.Model):
     user_id = models.CharField(max_length=255, primary_key=True)
-    currentWeek = models.IntegerField()
+    currentWeek = models.IntegerField(null=True)
     currentYear = models.IntegerField()
     team = models.ForeignKey(
         "Teams", on_delete=models.SET_NULL, null=True, related_name="infos"
@@ -11,6 +12,7 @@ class Info(models.Model):
     playoff = models.ForeignKey(
         "Playoff", on_delete=models.CASCADE, related_name="infos", null=True
     )
+    stage = models.CharField(max_length=20)
 
 
 class Teams(models.Model):
@@ -27,21 +29,24 @@ class Teams(models.Model):
     conference = models.ForeignKey(
         "Conferences", on_delete=models.CASCADE, related_name="teams", null=True
     )
-    confGames = models.IntegerField()
+    confGames = models.IntegerField(default=0)
     confLimit = models.IntegerField()
-    confWins = models.IntegerField()
-    confLosses = models.IntegerField()
-    nonConfGames = models.IntegerField()
+    confWins = models.IntegerField(default=0)
+    confLosses = models.IntegerField(default=0)
+    nonConfGames = models.IntegerField(default=0)
     nonConfLimit = models.IntegerField()
-    nonConfWins = models.IntegerField()
-    nonConfLosses = models.IntegerField()
-    gamesPlayed = models.IntegerField()
-    totalWins = models.IntegerField()
-    totalLosses = models.IntegerField()
-    resume_total = models.FloatField()
-    resume = models.FloatField()
-    expectedWins = models.FloatField()
-    ranking = models.IntegerField()
+    nonConfWins = models.IntegerField(default=0)
+    nonConfLosses = models.IntegerField(default=0)
+    gamesPlayed = models.IntegerField(default=0)
+    totalWins = models.IntegerField(default=0)
+    totalLosses = models.IntegerField(default=0)
+    resume_total = models.FloatField(default=0)
+    resume = models.FloatField(default=0)
+    expectedWins = models.FloatField(default=0)
+    ranking = models.IntegerField(null=True)
+    last_rank = models.IntegerField(null=True)
+    offers = models.IntegerField()
+    recruiting_points = models.IntegerField()
 
 
 class Players(models.Model):
@@ -53,6 +58,7 @@ class Players(models.Model):
     pos = models.CharField(max_length=2)
     rating = models.IntegerField()
     starter = models.BooleanField()
+    rating_increase = models.IntegerField(null=True)
 
 
 class GameLog(models.Model):
@@ -119,7 +125,7 @@ class Games(models.Model):
     rankBTOG = models.IntegerField()
     resultA = models.CharField(max_length=50, null=True)
     resultB = models.CharField(max_length=50, null=True)
-    overtime = models.IntegerField()
+    overtime = models.IntegerField(default=0)
     scoreA = models.IntegerField(null=True)
     scoreB = models.IntegerField(null=True)
 
@@ -164,7 +170,9 @@ class Plays(models.Model):
 
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="plays")
     game = models.ForeignKey(Games, on_delete=models.CASCADE, related_name="plays")
-    drive = models.ForeignKey(Drives, on_delete=models.CASCADE, related_name="plays")
+    drive = models.ForeignKey(
+        Drives, on_delete=models.CASCADE, related_name="plays", null=True
+    )
     offense = models.ForeignKey(
         Teams, on_delete=models.CASCADE, related_name="plays_as_offense"
     )
@@ -177,15 +185,17 @@ class Plays(models.Model):
     playType = models.CharField(max_length=50)
     yardsGained = models.IntegerField()
     result = models.CharField(max_length=50)
-    text = models.CharField(max_length=255, null=True)
+    text = models.CharField(max_length=100, null=True)
+    header = models.CharField(max_length=100, null=True)
 
 
 class Playoff(models.Model):
     info = models.ForeignKey(
-        Info, on_delete=models.CASCADE, related_name="playoffs_info"
+        Info, on_delete=models.CASCADE, related_name="playoff_info"
     )
     teams = models.IntegerField()
     autobids = models.IntegerField()
+    lastWeek = models.IntegerField()
 
     seed_1 = models.ForeignKey(
         Teams, on_delete=models.CASCADE, null=True, related_name="seed_1"
@@ -248,3 +258,40 @@ class Playoff(models.Model):
     natty = models.ForeignKey(
         Games, on_delete=models.CASCADE, null=True, related_name="pnatty"
     )
+
+
+class Recruits(models.Model):
+    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="recruits")
+    first = models.CharField(max_length=50)
+    last = models.CharField(max_length=50)
+    pos = models.CharField(max_length=2)
+    overall_rank = models.IntegerField()
+    state_rank = models.IntegerField()
+    position_rank = models.IntegerField()
+    stars = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    state = models.CharField(max_length=2)
+    min_prestige = models.IntegerField()
+    committed_team = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="committed_recruits"
+    )
+
+    def top_offer(self):
+        top_offer = self.offers.order_by("-interest_level").first()
+        return top_offer.team if top_offer else None
+
+    def top_three_offers(self):
+        return self.offers.order_by("-interest_level")[:3]
+
+
+class Offers(models.Model):
+    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="offers")
+    recruit = models.ForeignKey(
+        Recruits, on_delete=models.CASCADE, related_name="offers"
+    )
+    team = models.ForeignKey(
+        Teams, on_delete=models.CASCADE, related_name="extended_offers"
+    )
+    interest_level = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ["recruit", "team"]

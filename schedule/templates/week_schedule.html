@@ -43,10 +43,10 @@
                     </div>
                     <!-- Third row: Game Over text -->
                     <div class="row d-flex justify-content-center">
-                        {% if game.scoreA %}
-                        <a href="/teams/{{game.teamA.name}}/schedule/{{game.id}}">Summary</a>
+                        {% if game.winner %}
+                        <a href="/games/{{game.id}}">Summary</a>
                         {% else %}
-                        <a href="/teams/{{game.teamA.name}}/schedule/{{game.id}}">Preview</a>
+                        <a href="/games/{{game.id}}">Preview</a>
                         {% endif %}
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-{% extends 'basenonav.html' %} {% load static %} {% block title %}CFB Sim{% endblock %} {% block css %}
+{% extends 'base.html' %} {% load static %} {% block title %}CFB Sim{% endblock %} {% block css %}
 <link rel="stylesheet" href="{% static 'noncon.css' %}" />
 {% endblock %} {% block content %}
 <div class="container mt-5">
@@ -8,8 +8,6 @@
             <h2>{{ team.name }}</h2>
             <p>Non-Conference Games Scheduled: {{ team.nonConfGames }} / {{ team.nonConfLimit }}</p>
         </div>
-
-        <a href="/dashboard" class="btn btn-primary">Finalize Schedule</a>
     </div>
 
     <table class="table table-striped">

@@ -104,11 +104,11 @@
             <td>{{week.moneyline}}</td>
             {% if week.result %}
             <td>
-                <a href="schedule/{{week.id}}">{{week.result}} ({{week.score}})</a>
+                <a href="/games/{{week.id}}">{{week.result}} ({{week.score}})</a>
             </td>
             {% else %}
             <td>
-                <a href="schedule/{{week.id}}">preview</a>
+                <a href="/games/{{week.id}}">preview</a>
             </td>
             {% endif %}
             <td>{{week.label}}</td>

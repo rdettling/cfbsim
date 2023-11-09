@@ -5,25 +5,27 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEBUG = False
+DEV = False
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=os.environ.get("HEROKU_POSTGRESQL_CYAN_URL"),
-            ssl_require=os.environ.get("SSL_REQUIRE"),
-        )
-    }
-else:
+if DEV:
+    DEBUG = True
     SECURE_SSL_REDIRECT = False
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
         }
+    }
+else:
+    DEBUG = True
+    SECURE_SSL_REDIRECT = True
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=os.environ.get("HEROKU_POSTGRESQL_CYAN_URL"),
+            ssl_require=os.environ.get("SSL_REQUIRE"),
+        )
     }
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -44,12 +46,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "start",
-    "dashboard",
     "team",
     "rankings",
     "mathfilters",
     "stats",
     "schedule",
+    "recruit",
 ]
 
 MIDDLEWARE = [
