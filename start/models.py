@@ -135,7 +135,7 @@ class Conferences(models.Model):
     confName = models.CharField(max_length=50)
     confFullName = models.CharField(max_length=50)
     confGames = models.IntegerField()
-    championship = models.ForeignKey(Games, on_delete=models.CASCADE, null=True)
+    championship = models.ForeignKey(Games, on_delete=models.SET_NULL, null=True)
 
 
 class Odds(models.Model):

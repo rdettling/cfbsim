@@ -134,58 +134,63 @@ def generateName(position):
     return (first, last)
 
 
-def get_rating(team):
+def get_ratings(info):
     offense_weight = 0.60
     defense_weight = 0.40
 
     offensive_weights = {"qb": 40, "rb": 10, "wr": 25, "te": 5, "ol": 20}
     defensive_weights = {"dl": 35, "lb": 20, "cb": 30, "s": 15}
 
-    players = team.players.all()
+    # Fetch all players across all teams
+    all_players = info.players.all()
 
-    offense_rating = 0.0
-    defense_rating = 0.0
-    total_offensive_weight = 0
-    total_defensive_weight = 0
+    for team in info.teams.all():
+        # Filter players for the current team
+        players = all_players.filter(team=team)
 
-    for position, count in ROSTER.items():
-        position_players = players.filter(pos=position).order_by("-rating")
+        offense_rating = 0.0
+        defense_rating = 0.0
+        total_offensive_weight = 0
+        total_defensive_weight = 0
 
-        for i, player in enumerate(position_players[:count], start=1):
-            player.starter = True
-            player.save()
+        for position, count in ROSTER.items():
+            position_players = players.filter(pos=position).order_by("-rating")
 
-        position_players.exclude(
-            pk__in=[player.pk for player in position_players[:count]]
-        ).update(starter=False)
+            for _, player in enumerate(position_players[:count], start=1):
+                player.starter = True
+                player.save()
 
-        if position in offensive_weights:
-            offense_rating += (
-                sum(player.rating for player in position_players[:count])
-                * offensive_weights[position]
-            )
-            total_offensive_weight += count * offensive_weights[position]
-        elif position in defensive_weights:
-            defense_rating += (
-                sum(player.rating for player in position_players[:count])
-                * defensive_weights[position]
-            )
-            total_defensive_weight += count * defensive_weights[position]
+            position_players.exclude(
+                pk__in=[player.pk for player in position_players[:count]]
+            ).update(starter=False)
 
-    if total_offensive_weight > 0:
-        offense_rating /= total_offensive_weight
-    if total_defensive_weight > 0:
-        defense_rating /= total_defensive_weight
+            if position in offensive_weights:
+                offense_rating += (
+                    sum(player.rating for player in position_players[:count])
+                    * offensive_weights[position]
+                )
+                total_offensive_weight += count * offensive_weights[position]
+            elif position in defensive_weights:
+                defense_rating += (
+                    sum(player.rating for player in position_players[:count])
+                    * defensive_weights[position]
+                )
+                total_defensive_weight += count * defensive_weights[position]
 
-    overall_rating = (offense_rating * offense_weight) + (
-        defense_rating * defense_weight
-    )
+        if total_offensive_weight > 0:
+            offense_rating /= total_offensive_weight
+        if total_defensive_weight > 0:
+            defense_rating /= total_defensive_weight
 
-    team.offense = offense_rating
-    team.defense = defense_rating
-    team.rating = overall_rating
+        overall_rating = (offense_rating * offense_weight) + (
+            defense_rating * defense_weight
+        )
 
-    team.save()
+        team.offense = offense_rating
+        team.defense = defense_rating
+        team.rating = overall_rating
+
+        team.save()
 
 
 def fill_roster(team, players_to_create):

@@ -175,7 +175,7 @@ def scheduleGame(
     return team, opponent, game
 
 
-def refresh_schedule(info):
+def refresh_teams_and_games(info):
     info.games.all().delete()
 
     teams = info.teams.all()
@@ -191,6 +191,7 @@ def refresh_schedule(info):
         team.totalWins = 0
         team.totalLosses = 0
         team.resume_total = 0
+        team.resume = 0
 
         team.save()
 

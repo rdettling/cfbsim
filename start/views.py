@@ -225,7 +225,7 @@ def noncon(request):
                     current_year -= 1
 
             update_teams_and_rosters(info, data)
-            refresh_schedule(info)
+            refresh_teams_and_games(info)
             uniqueGames(info, data)
 
         info.stage = "schedule non conference"

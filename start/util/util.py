@@ -15,8 +15,7 @@ def update_teams_and_rosters(info, data):
             init_roster(team, players_to_create)
     Players.objects.bulk_create(players_to_create)
 
-    for team in info.teams.all():
-        get_rating(team)
+    get_ratings(info)
     initialize_rankings(info)
 
 
@@ -50,6 +49,8 @@ def realignment(info, data):
             try:
                 Team = info.teams.get(name=team["name"])
                 Team.conference = info.conferences.get(confName=conference["confName"])
+                Team.confLimit = conference["confGames"]
+                Team.nonConfLimit = 12 - conference["confGames"]
                 Team.save()
             except Teams.DoesNotExist:
                 Team = Teams.objects.create(
@@ -91,7 +92,6 @@ def realignment(info, data):
     with transaction.atomic():
         for conference in info.conferences.all():
             if conference.teams.count() == 0:
-                # Delete the conference object if it has no associated teams
                 conference.delete()
 
 
@@ -123,7 +123,6 @@ def init(data, user_id, year):
     teams_to_create = []
     players_to_create = []
     odds_to_create = []
-    games_to_create = []
     recruits_to_create = []
 
     for conference in data["conferences"]:
@@ -173,7 +172,7 @@ def init(data, user_id, year):
         info=info,
         name="FCS",
         abbreviation="FCS",
-        prestige=50,
+        prestige=60,
         mascot="FCS",
         colorPrimary="#000000",
         colorSecondary="#FFFFFF",
@@ -191,9 +190,7 @@ def init(data, user_id, year):
     for team in info.teams.all():
         init_roster(team, players_to_create)
     Players.objects.bulk_create(players_to_create)
-
-    for team in info.teams.all():
-        get_rating(team)
+    get_ratings(info)
     initialize_rankings(info)
 
     odds_list = getSpread(
@@ -217,8 +214,8 @@ def init(data, user_id, year):
 
     uniqueGames(info, data)
 
-    generate_recruits(info, recruits_to_create)
-    Recruits.objects.bulk_create(recruits_to_create)
+    # generate_recruits(info, recruits_to_create)
+    # Recruits.objects.bulk_create(recruits_to_create)
 
 
 def update_rankings(info):
