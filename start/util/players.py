@@ -18,6 +18,8 @@ ROSTER = {
     "p": 1,
 }
 
+variance = 15
+
 
 with open("start/static/states.json", "r") as file:
     STATE_FREQUENCIES = json.load(file)
@@ -132,106 +134,109 @@ def generateName(position):
     return (first, last)
 
 
-def players(info, team, players_to_create):
-    variance = 15
-    years = ["fr", "so", "jr", "sr"]
+def get_rating(team):
+    offense_weight = 0.60
+    defense_weight = 0.40
 
-    # You can adjust these values or make them dynamic if needed.
-    progression = {
-        "fr": 0,  # Freshman usually start at their initial rating.
-        "so": 3,  # Sophomores progress by 3 points.
-        "jr": 6,  # Juniors progress by 6 points.
-        "sr": 9,  # Seniors progress by 9 points.
-    }
+    offensive_weights = {"qb": 40, "rb": 10, "wr": 25, "te": 5, "ol": 20}
+    defensive_weights = {"dl": 35, "lb": 20, "cb": 30, "s": 15}
 
-    all_players = (
-        []
-    )  # Use this to keep track of all players before adding to players_to_create
+    players = team.players.all()
+
+    offense_rating = 0.0
+    defense_rating = 0.0
+    total_offensive_weight = 0
+    total_defensive_weight = 0
 
     for position, count in ROSTER.items():
-        position_players = []  # Keep track of players for this specific position
+        position_players = players.filter(pos=position).order_by("-rating")
 
+        for i, player in enumerate(position_players[:count], start=1):
+            player.starter = True
+            player.save()
+
+        position_players.exclude(
+            pk__in=[player.pk for player in position_players[:count]]
+        ).update(starter=False)
+
+        if position in offensive_weights:
+            offense_rating += (
+                sum(player.rating for player in position_players[:count])
+                * offensive_weights[position]
+            )
+            total_offensive_weight += count * offensive_weights[position]
+        elif position in defensive_weights:
+            defense_rating += (
+                sum(player.rating for player in position_players[:count])
+                * defensive_weights[position]
+            )
+            total_defensive_weight += count * defensive_weights[position]
+
+    if total_offensive_weight > 0:
+        offense_rating /= total_offensive_weight
+    if total_defensive_weight > 0:
+        defense_rating /= total_defensive_weight
+
+    overall_rating = (offense_rating * offense_weight) + (
+        defense_rating * defense_weight
+    )
+
+    team.offense = offense_rating
+    team.defense = defense_rating
+    team.rating = overall_rating
+
+    team.save()
+
+
+def fill_roster(team, players_to_create):
+    for position, count in ROSTER.items():
+        current_players = team.players.filter(pos=position)
+        current_count = current_players.count()
+
+        if current_count < (2 * count + 1):
+            needed = (2 * count + 1) - current_count
+
+            for i in range(needed):
+                first, last = generateName(position)
+
+                rating = team.prestige - random.randint(0, variance) - 5
+
+                player = Players(
+                    info=team.info,
+                    team=team,
+                    first=first,
+                    last=last,
+                    year="fr",
+                    pos=position,
+                    rating=rating,
+                    starter=False,
+                )
+                players_to_create.append(player)
+
+
+def init_roster(team, players_to_create):
+    years = ["fr", "so", "jr", "sr"]
+
+    for position, count in ROSTER.items():
         for i in range(2 * count + 1):
             first, last = generateName(position)
             year = random.choice(years)
 
-            base_rating = team.prestige - random.randint(0, variance) - 5
-            progressed_rating = base_rating + progression[year]
+            rating = team.prestige - random.randint(0, variance) - 5
+            for _ in range(years.index(year)):
+                rating += getProgression()
 
             player = Players(
-                info=info,
+                info=team.info,
                 team=team,
                 first=first,
                 last=last,
                 year=year,
                 pos=position,
-                rating=progressed_rating,
+                rating=rating,
                 starter=False,
             )
-
-            position_players.append(player)
-
-        # Sort position_players by rating in descending order and set top players as starters
-        position_players.sort(key=lambda x: x.rating, reverse=True)
-        for i in range(ROSTER[position]):
-            position_players[i].starter = True
-
-        all_players.extend(position_players)
-
-    # Define positions categorically.
-    offensive_positions = ["qb", "rb", "wr", "te", "ol"]
-    defensive_positions = ["dl", "lb", "cb", "s"]
-
-    offensive_weights = {"qb": 40, "rb": 10, "wr": 25, "te": 5, "ol": 20}
-
-    defensive_weights = {"dl": 35, "lb": 20, "cb": 30, "s": 15}
-
-    # Extract starters from all_players.
-    offensive_starters = [
-        player
-        for player in all_players
-        if player.pos in offensive_positions and player.starter
-    ]
-    defensive_starters = [
-        player
-        for player in all_players
-        if player.pos in defensive_positions and player.starter
-    ]
-
-    # Compute the weighted average ratings.
-    team.offense = (
-        round(
-            sum(
-                player.rating * offensive_weights[player.pos]
-                for player in offensive_starters
-            )
-            / sum(offensive_weights[player.pos] for player in offensive_starters)
-        )
-        if offensive_starters
-        else 0
-    )
-    team.defense = (
-        round(
-            sum(
-                player.rating * defensive_weights[player.pos]
-                for player in defensive_starters
-            )
-            / sum(defensive_weights[player.pos] for player in defensive_starters)
-        )
-        if defensive_starters
-        else 0
-    )
-
-    # Set the weights for offense and defense
-    offense_weight = 0.60
-    defense_weight = 0.40
-
-    # Calculate the team rating
-    team.rating = round(
-        (team.offense * offense_weight) + (team.defense * defense_weight)
-    )
-
-    players_to_create.extend(all_players)
+            players_to_create.append(player)
 
 
 def generate_recruit(stars, info, overall_rank, state_ranks, position_ranks):

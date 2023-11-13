@@ -1,6 +1,107 @@
 from .schedule import *
 from .players import *
 from .sim.simtest import getSpread
+from django.db import transaction
+
+
+def update_teams_and_rosters(info, data):
+    realignment(info, data)
+
+    players_to_create = []
+    for team in info.teams.all():
+        if team.rating:
+            fill_roster(team, players_to_create)
+        else:
+            init_roster(team, players_to_create)
+    Players.objects.bulk_create(players_to_create)
+
+    for team in info.teams.all():
+        get_rating(team)
+    initialize_rankings(info)
+
+
+def start_season(info):
+    fillSchedules(info)
+    # aiRecruitOffers(info)
+
+    info.currentWeek = 1
+    info.currentYear += 1
+    info.stage = "season"
+    info.save()
+
+
+def realignment(info, data):
+    info.playoff.teams = data["playoff"]["teams"]
+    info.playoff.autobids = data["playoff"]["autobids"]
+    info.playoff.lastWeek = data["playoff"]["lastWeek"]
+
+    info.playoff.save()
+
+    for conference in data["conferences"]:
+        if not info.conferences.filter(confName=conference["confName"]).exists():
+            Conferences.objects.create(
+                info=info,
+                confName=conference["confName"],
+                confFullName=conference["confFullName"],
+                confGames=conference["confGames"],
+            )
+
+        for team in conference["teams"]:
+            try:
+                Team = info.teams.get(name=team["name"])
+                Team.conference = info.conferences.get(confName=conference["confName"])
+                Team.save()
+            except Teams.DoesNotExist:
+                Team = Teams.objects.create(
+                    info=info,
+                    name=team["name"],
+                    abbreviation=team["abbreviation"],
+                    prestige=team["prestige"],
+                    mascot=team["mascot"],
+                    colorPrimary=team["colorPrimary"],
+                    colorSecondary=team["colorSecondary"],
+                    conference=info.conferences.get(confName=conference["confName"]),
+                    confLimit=conference["confGames"],
+                    nonConfLimit=12 - conference["confGames"],
+                    offers=25,
+                    recruiting_points=get_recruiting_points(team["prestige"]),
+                )
+
+    for team in data["independents"]:
+        try:
+            Team = info.teams.get(name=team["name"])
+            Team.conference = None
+            Team.save()
+        except Teams.DoesNotExist:
+            Team = Teams.objects.create(
+                info=info,
+                name=team["name"],
+                abbreviation=team["abbreviation"],
+                prestige=team["prestige"],
+                mascot=team["mascot"],
+                colorPrimary=team["colorPrimary"],
+                colorSecondary=team["colorSecondary"],
+                conference=None,
+                confLimit=0,
+                nonConfLimit=12,
+                offers=25,
+                recruiting_points=get_recruiting_points(team["prestige"]),
+            )
+
+    with transaction.atomic():
+        for conference in info.conferences.all():
+            if conference.teams.count() == 0:
+                # Delete the conference object if it has no associated teams
+                conference.delete()
+
+
+def initialize_rankings(info):
+    teams = info.teams.all().order_by("-rating")
+
+    for i, team in enumerate(teams, start=1):
+        team.ranking = i
+        team.last_rank = i
+        team.save()
 
 
 def init(data, user_id, year):
@@ -84,18 +185,21 @@ def init(data, user_id, year):
     )
     teams_to_create.append(FCS)
 
-    for team in teams_to_create:
-        players(info, team, players_to_create)
+    Conferences.objects.bulk_create(conferences_to_create)
+    Teams.objects.bulk_create(teams_to_create)
 
-    teams_to_create = sorted(
-        teams_to_create, key=lambda team: team.rating, reverse=True
+    for team in info.teams.all():
+        init_roster(team, players_to_create)
+    Players.objects.bulk_create(players_to_create)
+
+    for team in info.teams.all():
+        get_rating(team)
+    initialize_rankings(info)
+
+    odds_list = getSpread(
+        info.teams.all().order_by("-rating").first().rating
+        - info.teams.all().order_by("rating").first().rating
     )
-    for i, team in enumerate(teams_to_create, start=1):
-        team.ranking = i
-        team.last_rank = i
-
-    odds_list = getSpread(teams_to_create[0].rating - teams_to_create[-1].rating)
-
     for diff, odds_data in odds_list.items():
         odds_instance = Odds(
             info=info,
@@ -109,13 +213,9 @@ def init(data, user_id, year):
         )
         odds_to_create.append(odds_instance)
 
-    Conferences.objects.bulk_create(conferences_to_create)
-    Teams.objects.bulk_create(teams_to_create)
-    Players.objects.bulk_create(players_to_create)
     Odds.objects.bulk_create(odds_to_create)
 
-    uniqueGames(info, data, games_to_create)
-    Games.objects.bulk_create(games_to_create)
+    uniqueGames(info, data)
 
     generate_recruits(info, recruits_to_create)
     Recruits.objects.bulk_create(recruits_to_create)
@@ -158,6 +258,7 @@ def update_rankings(info):
             team.resume += max(
                 0, (win_factor * (team_count - last_rank)) * inertia_scale
             )
+            team.resume = round(team.resume, 1)
 
     sorted_teams = sorted(teams, key=lambda x: (-x.resume, x.last_rank))
 

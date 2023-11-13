@@ -1,4 +1,5 @@
 from start.models import *
+from start.util.players import ROSTER
 from django.shortcuts import render
 
 
@@ -6,15 +7,12 @@ def schedule(request, team_name):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
-    team = Teams.objects.get(info=info, name=team_name)
+    team = info.teams.get(name=team_name)
 
     games_as_teamA = team.games_as_teamA.all()
     games_as_teamB = team.games_as_teamB.all()
     schedule = list(games_as_teamA | games_as_teamB)
     schedule = sorted(schedule, key=lambda game: game.weekPlayed)
-
-    teams = Teams.objects.filter(info=info).order_by("name")
-    conferences = Conferences.objects.filter(info=info).order_by("confName")
 
     for week in schedule:
         if week.teamA == team:
@@ -50,11 +48,11 @@ def schedule(request, team_name):
 
     context = {
         "team": team,
-        "teams": teams,
+        "teams": info.teams.order_by("name"),
         "schedule": schedule,
         "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-        "conferences": conferences,
+        "conferences": info.conferences.order_by("confName"),
     }
 
     return render(request, "schedule.html", context)
@@ -64,19 +62,21 @@ def roster(request, team_name):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
-    team = Teams.objects.get(info=info, name=team_name)
-    teams = Teams.objects.filter(info=info).order_by("name")
-    roster = Players.objects.filter(info=info, team=team)
-    positions = roster.values_list("pos", flat=True).distinct()
-    conferences = Conferences.objects.filter(info=info).order_by("confName")
+    team = info.teams.get(name=team_name)
+    positions = list(ROSTER.keys())
+
+    roster = []
+    for position in positions:
+        players = team.players.filter(pos=position).order_by("-starter", "-rating")
+        roster.extend(players)
 
     context = {
         "team": team,
-        "teams": teams,
+        "teams": info.teams.order_by("name"),
         "roster": roster,
         "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-        "conferences": conferences,
+        "conferences": info.conferences.order_by("confName"),
         "positions": positions,
     }
 

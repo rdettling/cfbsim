@@ -1,13 +1,7 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}Team Stats{% endblock %}
-
-{% block css %}
-    <link rel="stylesheet" href="{% static 'team.css' %}">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap4.min.css">
-{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% load static %} {% block title %}Team Stats{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'team.css' %}" />
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap4.min.css" />
+{% endblock %} {% block content %}
 <div class="container mt-4">
     <h1>Team Stats</h1>
 
@@ -53,26 +47,26 @@
                 </thead>
                 <tbody>
                     {% for team_name, stats in offense.items %}
-                        <tr>
-                            <td>
-                                <img src='{% static team_name %}.png' class='boxlogo mr-2'> 
-                                <a href='/teams/{{team_name}}/stats.html'>{{team_name}}</a>
-                            </td>
-                            <td>{{ stats.games }}</td>
-                            <td>{{ stats.ppg }}</td>
-                            <td>{{ stats.pass_cpg }}</td>
-                            <td>{{ stats.pass_apg }}</td>
-                            <td>{{ stats.comp_percent }}</td>
-                            <td>{{ stats.pass_ypg }}</td>
-                            <td>{{ stats.pass_tdpg }}</td>
-                            <td>{{ stats.rush_apg }}</td>
-                            <td>{{ stats.rush_ypg }}</td>
-                            <td>{{ stats.rush_ypc }}</td>
-                            <td>{{ stats.rush_tdpg }}</td>
-                            <td>{{ stats.playspg }}</td>
-                            <td>{{ stats.yardspg }}</td>
-                            <td>{{ stats.ypp }}</td>
-                        </tr>
+                    <tr>
+                        <td>
+                            <img src="{% static team_name %}.png" class="boxlogo mr-2" />
+                            <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
+                        </td>
+                        <td>{{ stats.games }}</td>
+                        <td>{{ stats.ppg }}</td>
+                        <td>{{ stats.pass_cpg }}</td>
+                        <td>{{ stats.pass_apg }}</td>
+                        <td>{{ stats.comp_percent }}</td>
+                        <td>{{ stats.pass_ypg }}</td>
+                        <td>{{ stats.pass_tdpg }}</td>
+                        <td>{{ stats.rush_apg }}</td>
+                        <td>{{ stats.rush_ypg }}</td>
+                        <td>{{ stats.rush_ypc }}</td>
+                        <td>{{ stats.rush_tdpg }}</td>
+                        <td>{{ stats.playspg }}</td>
+                        <td>{{ stats.yardspg }}</td>
+                        <td>{{ stats.ypp }}</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -108,43 +102,41 @@
                 </thead>
                 <tbody>
                     {% for team_name, stats in defense.items %}
-                        <tr>
-                            <td>
-                                <img src='{% static team_name %}.png' class='boxlogo mr-2'> 
-                                <a href='/teams/{{team_name}}/stats.html'>{{team_name}}</a>
-                            </td>
-                            <td>{{ stats.games }}</td>
-                            <td>{{ stats.ppg }}</td>
-                            <td>{{ stats.pass_cpg }}</td>
-                            <td>{{ stats.pass_apg }}</td>
-                            <td>{{ stats.comp_percent }}</td>
-                            <td>{{ stats.pass_ypg }}</td>
-                            <td>{{ stats.pass_tdpg }}</td>
-                            <td>{{ stats.rush_apg }}</td>
-                            <td>{{ stats.rush_ypg }}</td>
-                            <td>{{ stats.rush_ypc }}</td>
-                            <td>{{ stats.rush_tdpg }}</td>
-                            <td>{{ stats.playspg }}</td>
-                            <td>{{ stats.yardspg }}</td>
-                            <td>{{ stats.ypp }}</td>
-                        </tr>
+                    <tr>
+                        <td>
+                            <img src="{% static team_name %}.png" class="boxlogo mr-2" />
+                            <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
+                        </td>
+                        <td>{{ stats.games }}</td>
+                        <td>{{ stats.ppg }}</td>
+                        <td>{{ stats.pass_cpg }}</td>
+                        <td>{{ stats.pass_apg }}</td>
+                        <td>{{ stats.comp_percent }}</td>
+                        <td>{{ stats.pass_ypg }}</td>
+                        <td>{{ stats.pass_tdpg }}</td>
+                        <td>{{ stats.rush_apg }}</td>
+                        <td>{{ stats.rush_ypg }}</td>
+                        <td>{{ stats.rush_ypc }}</td>
+                        <td>{{ stats.rush_tdpg }}</td>
+                        <td>{{ stats.playspg }}</td>
+                        <td>{{ stats.yardspg }}</td>
+                        <td>{{ stats.ypp }}</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block additional_scripts %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap4.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('.table').DataTable({
-                searching: false,  // Remove the search bar
-                paging: false,     // Remove the pagination (and the entries dropdown)
-            });
-        });        
-    </script>
+{% endblock %} {% block additional_scripts %}
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap4.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.table').DataTable({
+            searching: false, // Remove the search bar
+            paging: false, // Remove the pagination (and the entries dropdown)
+        });
+    });
+</script>
 {% endblock %}

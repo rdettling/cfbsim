@@ -222,10 +222,9 @@ def end_season(info):
 
 
 def setConferenceChampionships(info):
-    conferences = Conferences.objects.filter(info=info)
-    conferences_to_update = []
-
+    info.refresh_from_db()
     games_to_create = []
+    conferences = info.conferences.all()
 
     for conference in conferences:
         teams = conference.teams.order_by("-confWins", "ranking")
@@ -243,15 +242,15 @@ def setConferenceChampionships(info):
         )[2]
 
         conference.championship = game
-        conferences_to_update.append(conference)
 
     Games.objects.bulk_create(games_to_create)
 
-    for conf in conferences_to_update:
-        conf.save()
+    for conference in conferences:
+        conference.save()
 
 
-def uniqueGames(info, data, games_to_create):
+def uniqueGames(info, data):
+    games_to_create = []
     games = data["rivalries"]
     teams = list(Teams.objects.filter(info=info))
 
@@ -299,6 +298,8 @@ def uniqueGames(info, data, games_to_create):
 
                         team.save()
                         opponent.save()
+
+    Games.objects.bulk_create(games_to_create)
 
 
 def fillSchedules(info):
@@ -413,6 +414,8 @@ def fillSchedules(info):
 
         while confTeams:
             confTeams.sort(key=lambda team: team.confGames)
+            for team in confTeams:
+                print(f"{team.name}: {team.confGames}")
             team = confTeams.pop(0)
 
             while team.confGames < team.confLimit:
@@ -483,7 +486,3 @@ def fillSchedules(info):
 
     Games.objects.bulk_create(games_to_create)
     Teams.objects.bulk_update(teams, ["confGames", "nonConfGames"])
-    info.currentWeek = 1
-    info.currentYear += 1
-    info.stage = "season"
-    info.save()

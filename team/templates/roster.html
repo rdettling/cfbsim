@@ -87,23 +87,27 @@
         </tr>
     </thead>
     <tbody>
-        {% for player in roster %}
+        {% for position in positions %}
+        <tr class="position-header">
+            <td colspan="5">{{ position }}</td>
+        </tr>
+        {% for player in roster %} {% if player.pos == position %}
         <tr data-position="{{ player.pos }}">
             <td>
-                <a href="{% url 'player' id=player.id team_name=team.name%}"> {{ player.first }} {{ player.last }} </a>
+                <a href="{% url 'player' id=player.id team_name=team.name %}">{{ player.first }} {{ player.last }}</a>
             </td>
             <td>{{ player.pos }}</td>
             <td>{{ player.year }}</td>
             <td>{{ player.rating }}</td>
             <td>
                 {% if player.starter %}
-                <span style="color: green">✅</span>
+                <span>✅</span>
                 {% else %}
-                <span style="color: red">❌</span>
+                <span>❌</span>
                 {% endif %}
             </td>
         </tr>
-        {% endfor %}
+        {% endif %} {% endfor %} {% endfor %}
     </tbody>
 </table>
 

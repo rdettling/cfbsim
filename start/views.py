@@ -5,6 +5,7 @@ from .models import *
 from django.db.models import F
 from .util.util import *
 from .util.sim.sim import simGame
+import os
 
 
 def make_game_logs(info, plays):
@@ -76,7 +77,6 @@ def simWeek(request, weeks):
     info = Info.objects.get(user_id=user_id)
 
     team = info.team
-    conferences = info.conferences.all().order_by("confName")
 
     drives_to_create = []
     plays_to_create = []
@@ -107,7 +107,7 @@ def simWeek(request, weeks):
                 12: setConferenceChampionships,
                 13: setPlayoffSemi,
                 14: setNatty,
-                1: end_season,
+                15: end_season,
             },
             12: {
                 12: setConferenceChampionships,
@@ -131,7 +131,7 @@ def simWeek(request, weeks):
     info.save()
 
     context = {
-        "conferences": conferences,
+        "conferences": info.conferences.all().order_by("confName"),
         "teamGames": teamGames,
         "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
@@ -213,7 +213,20 @@ def noncon(request):
             team = Teams.objects.get(id=id)
             info.team = team
         else:
+            current_year = info.currentYear + 1
+            while current_year >= 2022:
+                file_path = f"static/years/{current_year}.json"
+                if os.path.exists(file_path):
+                    with open(file_path, "r") as metadataFile:
+                        data = json.load(metadataFile)
+
+                    break
+                else:
+                    current_year -= 1
+
+            update_teams_and_rosters(info, data)
             refresh_schedule(info)
+            uniqueGames(info, data)
 
         info.stage = "schedule non conference"
         info.save()
@@ -252,6 +265,7 @@ def noncon(request):
         "info": info,
         "schedule": full_schedule,
         "team": team,
+        "conferences": info.conferences.all().order_by("confName"),
     }
 
     return render(request, "noncon.html", context)
@@ -334,8 +348,7 @@ def dashboard(request):
     team = info.team
 
     if not info.stage == "season":
-        fillSchedules(info)
-        aiRecruitOffers(info)
+        start_season(info)
 
     games_as_teamA = team.games_as_teamA.all()
     games_as_teamB = team.games_as_teamB.all()
@@ -356,7 +369,6 @@ def dashboard(request):
             week.moneyline = week.moneylineB
 
     teams = Teams.objects.filter(info=info).order_by("ranking")
-    conferences = Conferences.objects.filter(info=info).order_by("confName")
     confTeams = Teams.objects.filter(info=info, conference=team.conference).order_by(
         "-confWins", "-resume"
     )
@@ -366,7 +378,7 @@ def dashboard(request):
         "teams": teams,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         "confTeams": confTeams,
-        "conferences": conferences,
+        "conferences": info.conferences.all().order_by("confName"),
         "info": info,
         "schedule": schedule,
     }
@@ -375,11 +387,10 @@ def dashboard(request):
 
 
 def game_preview(request, info, game):
-    conferences = info.conferences.all().order_by("confName")
-    team = info.team
-
     context = {
+        "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+        "conferences": info.conferences.all().order_by("confName"),
     }
 
     return render(request, "game_preview.html", context)
@@ -571,6 +582,8 @@ def season_summary(request):
 
     context = {
         "info": info,
+        "natty": info.playoff.natty,
+        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
     }
 
     return render(request, "season_summary.html", context)

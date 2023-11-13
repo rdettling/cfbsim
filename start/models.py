@@ -10,9 +10,9 @@ class Info(models.Model):
         "Teams", on_delete=models.SET_NULL, null=True, related_name="infos"
     )
     playoff = models.ForeignKey(
-        "Playoff", on_delete=models.CASCADE, related_name="infos", null=True
+        "Playoff", on_delete=models.SET_NULL, related_name="infos", null=True
     )
-    stage = models.CharField(max_length=20)
+    stage = models.CharField(max_length=50)
 
 
 class Teams(models.Model):
@@ -20,9 +20,9 @@ class Teams(models.Model):
     name = models.CharField(max_length=50)
     abbreviation = models.CharField(max_length=4)
     prestige = models.IntegerField()
-    rating = models.IntegerField()
-    offense = models.IntegerField()
-    defense = models.IntegerField()
+    rating = models.IntegerField(null=True)
+    offense = models.IntegerField(null=True)
+    defense = models.IntegerField(null=True)
     mascot = models.CharField(max_length=50)
     colorPrimary = models.CharField(max_length=7)
     colorSecondary = models.CharField(max_length=7)
@@ -114,17 +114,17 @@ class Games(models.Model):
     )
     labelA = models.CharField(max_length=50)
     labelB = models.CharField(max_length=50)
-    spreadA = models.CharField(max_length=50)
-    spreadB = models.CharField(max_length=50)
-    moneylineA = models.CharField(max_length=50)
-    moneylineB = models.CharField(max_length=50)
+    spreadA = models.CharField(max_length=10)
+    spreadB = models.CharField(max_length=10)
+    moneylineA = models.CharField(max_length=10)
+    moneylineB = models.CharField(max_length=10)
     winProbA = models.FloatField()
     winProbB = models.FloatField()
     weekPlayed = models.IntegerField()
     rankATOG = models.IntegerField()
     rankBTOG = models.IntegerField()
-    resultA = models.CharField(max_length=50, null=True)
-    resultB = models.CharField(max_length=50, null=True)
+    resultA = models.CharField(max_length=1, null=True)
+    resultB = models.CharField(max_length=1, null=True)
     overtime = models.IntegerField(default=0)
     scoreA = models.IntegerField(null=True)
     scoreB = models.IntegerField(null=True)
@@ -132,8 +132,8 @@ class Games(models.Model):
 
 class Conferences(models.Model):
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="conferences")
-    confName = models.CharField(max_length=255)
-    confFullName = models.CharField(max_length=255)
+    confName = models.CharField(max_length=50)
+    confFullName = models.CharField(max_length=50)
     confGames = models.IntegerField()
     championship = models.ForeignKey(Games, on_delete=models.CASCADE, null=True)
 
@@ -198,65 +198,65 @@ class Playoff(models.Model):
     lastWeek = models.IntegerField()
 
     seed_1 = models.ForeignKey(
-        Teams, on_delete=models.CASCADE, null=True, related_name="seed_1"
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_1"
     )
     seed_2 = models.ForeignKey(
-        Teams, on_delete=models.CASCADE, null=True, related_name="seed_2"
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_2"
     )
     seed_3 = models.ForeignKey(
-        Teams, on_delete=models.CASCADE, null=True, related_name="seed_3"
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_3"
     )
     seed_4 = models.ForeignKey(
-        Teams, on_delete=models.CASCADE, null=True, related_name="seed_4"
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_4"
     )
 
     left_r1_1 = models.ForeignKey(
-        Games, on_delete=models.CASCADE, null=True, related_name="left_r1_1"
+        Games, on_delete=models.SET_NULL, null=True, related_name="left_r1_1"
     )
     left_r1_2 = models.ForeignKey(
-        Games, on_delete=models.CASCADE, null=True, related_name="left_r1_2"
+        Games, on_delete=models.SET_NULL, null=True, related_name="left_r1_2"
     )
     right_r1_1 = models.ForeignKey(
-        Games, on_delete=models.CASCADE, null=True, related_name="right_r1_1"
+        Games, on_delete=models.SET_NULL, null=True, related_name="right_r1_1"
     )
     right_r1_2 = models.ForeignKey(
-        Games, on_delete=models.CASCADE, null=True, related_name="right_r1_2"
+        Games, on_delete=models.SET_NULL, null=True, related_name="right_r1_2"
     )
 
     left_quarter_1 = models.ForeignKey(
         Games,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         related_name="left_quarter_1",
     )
     left_quarter_2 = models.ForeignKey(
         Games,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         related_name="left_quarter_2",
     )
     right_quarter_1 = models.ForeignKey(
         Games,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         related_name="right_quarter_1",
     )
     right_quarter_2 = models.ForeignKey(
         Games,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         related_name="right_quarter_2",
     )
 
     left_semi = models.ForeignKey(
-        Games, on_delete=models.CASCADE, null=True, related_name="left_semi"
+        Games, on_delete=models.SET_NULL, null=True, related_name="left_semi"
     )
     right_semi = models.ForeignKey(
-        Games, on_delete=models.CASCADE, null=True, related_name="right_semi"
+        Games, on_delete=models.SET_NULL, null=True, related_name="right_semi"
     )
 
     natty = models.ForeignKey(
-        Games, on_delete=models.CASCADE, null=True, related_name="pnatty"
+        Games, on_delete=models.SET_NULL, null=True, related_name="natty"
     )
 
 

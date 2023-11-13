@@ -19,7 +19,7 @@
                     <a href="teams/{{week.opponent.name}}/schedule">#{{week.opponent.ranking}} {{week.opponent.name}}</a>
                     {{week.result}} ({{week.score}})
                 </h6>
-                <a href="/teams/{{team.name}}/schedule/{{week.id}}" class="card-link">Summary</a>
+                <a href="/games/{{week.id}}" class="card-link">Summary</a>
             </div>
         </div>
         {% elif week.weekPlayed == info.currentWeek %}
@@ -31,7 +31,7 @@
                     <a href="teams/{{week.opponent.name}}/schedule">#{{week.opponent.ranking}} {{week.opponent.name}}</a>
                     ({{week.spread}}, {{week.moneyline}})
                 </h6>
-                <a href="/teams/{{team.name}}/schedule/{{week.id}}" class="card-link">Preview</a>
+                <a href="/games/{{week.id}}" class="card-link">Preview</a>
             </div>
         </div>
         {% endif %} {% endfor %}
