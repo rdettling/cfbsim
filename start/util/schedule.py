@@ -177,7 +177,6 @@ def scheduleGame(
 
 def refresh_teams_and_games(info):
     info.games.all().delete()
-
     teams = info.teams.all()
 
     for team in teams:
@@ -193,7 +192,22 @@ def refresh_teams_and_games(info):
         team.resume_total = 0
         team.resume = 0
 
-        team.save()
+    Teams.objects.bulk_update(
+        teams,
+        [
+            "confGames",
+            "confWins",
+            "confLosses",
+            "nonConfGames",
+            "nonConfWins",
+            "nonConfLosses",
+            "gamesPlayed",
+            "totalWins",
+            "totalLosses",
+            "resume_total",
+            "resume",
+        ],
+    )
 
 
 def setNatty(info):
@@ -253,7 +267,7 @@ def setConferenceChampionships(info):
 def uniqueGames(info, data):
     games_to_create = []
     games = data["rivalries"]
-    teams = list(Teams.objects.filter(info=info))
+    teams = info.teams.all()
 
     for team in teams:
         team.schedule = set()
@@ -297,29 +311,23 @@ def uniqueGames(info, data):
                             game[3],
                         )
 
-                        team.save()
-                        opponent.save()
-
+    Teams.objects.bulk_update(teams, ["confGames", "nonConfGames"])
     Games.objects.bulk_create(games_to_create)
 
 
 def fillSchedules(info):
     teams = list(info.teams.all())
     conferences = list(info.conferences.all())
+    games = info.games.all()
     random.shuffle(teams)
     random.shuffle(conferences)
 
-    scheduled_games = {}
+    scheduled_games = {team.name: set() for team in teams}
     games_to_create = []
 
-    for team in teams:
-        opponents_as_teamA = Games.objects.filter(info=info, teamA=team).values_list(
-            "teamB__name", flat=True
-        )
-        opponents_as_teamB = Games.objects.filter(info=info, teamB=team).values_list(
-            "teamA__name", flat=True
-        )
-        scheduled_games[team.name] = set(opponents_as_teamA).union(opponents_as_teamB)
+    for game in games:
+        scheduled_games[game.teamA.name].add(game.teamB.name)
+        scheduled_games[game.teamB.name].add(game.teamA.name)
 
     for team in teams:
         if not team.conference and team.name != "FCS":
@@ -331,8 +339,7 @@ def fillSchedules(info):
                         for opponent in teams
                         if opponent.nonConfGames < opponent.nonConfLimit
                         and opponent.name not in scheduled_games[team.name]
-                        and opponent.name != "FCS"
-                        and opponent != team
+                        and opponent.conference
                     ]
 
                 valid_opponents = potential_opponents(team)

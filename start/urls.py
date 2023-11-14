@@ -11,6 +11,6 @@ urlpatterns = [
     path("games/<int:id>", views.game, name="game"),
     path("sim/<int:weeks>", views.simWeek),
     path("dashboard/", views.dashboard, name="dashboard"),
-    path("roster_progression/", views.roster_progression),
-    path("season_summary/", views.season_summary),
+    path("roster_progression/", views.roster_progression, name="roster progression"),
+    path("season_summary/", views.season_summary, name="season summary"),
 ]

@@ -2,11 +2,15 @@ from .schedule import *
 from .players import *
 from .sim.simtest import getSpread
 from django.db import transaction
+import time
 
 
 def update_teams_and_rosters(info, data):
+    start = time.time()
     realignment(info, data)
+    print(f"Realignment {time.time() - start} seconds")
 
+    start = time.time()
     players_to_create = []
     for team in info.teams.all():
         if team.rating:
@@ -14,9 +18,19 @@ def update_teams_and_rosters(info, data):
         else:
             init_roster(team, players_to_create)
     Players.objects.bulk_create(players_to_create)
+    print(f"Fill rosters {time.time() - start} seconds")
 
+    start = time.time()
+    set_starters(info)
+    print(f"Set starters {time.time() - start} seconds")
+
+    start = time.time()
     get_ratings(info)
+    print(f"Get ratings {time.time() - start} seconds")
+
+    start = time.time()
     initialize_rankings(info)
+    print(f"init rankings {time.time() - start} seconds")
 
 
 def start_season(info):
@@ -101,7 +115,8 @@ def initialize_rankings(info):
     for i, team in enumerate(teams, start=1):
         team.ranking = i
         team.last_rank = i
-        team.save()
+
+    Teams.objects.bulk_update(teams, ["ranking", "last_rank"])
 
 
 def init(data, user_id, year):
@@ -187,11 +202,27 @@ def init(data, user_id, year):
     Conferences.objects.bulk_create(conferences_to_create)
     Teams.objects.bulk_create(teams_to_create)
 
+    overall_start = time.time()
+
+    start = time.time()
     for team in info.teams.all():
         init_roster(team, players_to_create)
     Players.objects.bulk_create(players_to_create)
+    print(f"Create players {time.time() - start} seconds")
+
+    start = time.time()
+    set_starters(info)
+    print(f"Set starters {time.time() - start} seconds")
+
+    start = time.time()
     get_ratings(info)
+    print(f"Get ratings {time.time() - start} seconds")
+
+    start = time.time()
     initialize_rankings(info)
+    print(f"Init rankings {time.time() - start} seconds")
+
+    print(f"Total execution Time: {time.time() - overall_start} seconds")
 
     odds_list = getSpread(
         info.teams.all().order_by("-rating").first().rating
@@ -220,13 +251,22 @@ def init(data, user_id, year):
 
 def update_rankings(info):
     teams = info.teams.all()
-    games = info.games.all()
+    games = info.games.filter(winner=None)
+
+    current_week_games = info.games.filter(weekPlayed=info.currentWeek)
+
+    games_by_teamA = {team.id: [] for team in teams}
+    games_by_teamB = {team.id: [] for team in teams}
+
+    for game in current_week_games:
+        games_by_teamA[game.teamA.id].append(game)
+        games_by_teamB[game.teamB.id].append(game)
 
     team_count = len(teams)
     win_factor = 172
-    loss_factor = 155
+    loss_factor = 157
 
-    total_weeks = 12
+    total_weeks = 13
     weeks_left = max(0, (total_weeks - info.currentWeek))
     inertia_scale = weeks_left / total_weeks
 
@@ -239,9 +279,10 @@ def update_rankings(info):
         if games_played > 0:
             team.resume = team.resume_total / games_played
 
-            games_as_teamA = team.games_as_teamA.filter(weekPlayed=info.currentWeek)
-            games_as_teamB = team.games_as_teamB.filter(weekPlayed=info.currentWeek)
-            schedule = list(games_as_teamA | games_as_teamB)
+            games_as_teamA = games_by_teamA[team.id]
+            games_as_teamB = games_by_teamB[team.id]
+            schedule = games_as_teamA + games_as_teamB
+
             if schedule and schedule[-1].winner != team:
                 team.resume += max(
                     0, (loss_factor * (team_count - last_rank)) * inertia_scale
@@ -261,13 +302,13 @@ def update_rankings(info):
 
     for i, team in enumerate(sorted_teams, start=1):
         team.ranking = i
-        team.save()
 
     for game in games:
-        if not game.winner:
-            game.rankATOG = game.teamA.ranking
-            game.rankBTOG = game.teamB.ranking
-        game.save()
+        game.rankATOG = game.teamA.ranking
+        game.rankBTOG = game.teamB.ranking
+
+    Teams.objects.bulk_update(sorted_teams, ["ranking", "last_rank", "resume"])
+    Games.objects.bulk_update(games, ["rankATOG", "rankBTOG"])
 
 
 def update_game_log_for_run(play, game_log):

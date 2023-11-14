@@ -1,7 +1,8 @@
 import json
 import random
 from ..models import *
-from django.db.models import Count
+from django.db.models import Count, Sum
+from collections import Counter
 
 
 ROSTER = {
@@ -18,22 +19,20 @@ ROSTER = {
     "p": 1,
 }
 
-variance = 15
-
-
-with open("start/static/states.json", "r") as file:
-    STATE_FREQUENCIES = json.load(file)
-
-states_list = [state for state, freq in STATE_FREQUENCIES.items() for _ in range(freq)]
-
-positions_list = [pos for pos, freq in ROSTER.items() for _ in range(freq)]
-
 
 def getProgression():
     return random.randint(1, 5)
 
 
-def update_rosters(players):
+def getStartRating(prestige):
+    variance = 15
+
+    return prestige - random.randint(0, variance) - 5
+
+
+def update_rosters(info):
+    players = info.players.all()
+    team = info.team
     leaving_seniors = list(players.filter(year="sr"))
     players.filter(year="sr").delete()
 
@@ -45,7 +44,6 @@ def update_rosters(players):
         player.rating += increase
         player.rating_increase = increase
 
-        # Progress the year for the player
         if player.year == "fr":
             player.year = "so"
         elif player.year == "so":
@@ -58,11 +56,14 @@ def update_rosters(players):
 
     Players.objects.bulk_update(to_update, ["rating", "rating_increase", "year"])
 
-    progressed_players = list(players.filter(year__in=["so", "jr", "sr"]))
+    leaving_seniors_of_team = [
+        player for player in leaving_seniors if player.team == team
+    ]
+    progressed_players_of_team = [player for player in players if player.team == team]
 
     return {
-        "leaving_seniors": leaving_seniors,
-        "progressed_players": progressed_players,
+        "leaving_seniors": leaving_seniors_of_team,
+        "progressed_players": progressed_players_of_team,
         "rating_increases": rating_increases,
     }
 
@@ -137,86 +138,108 @@ def generateName(position):
 def get_ratings(info):
     offense_weight = 0.60
     defense_weight = 0.40
-
     offensive_weights = {"qb": 40, "rb": 10, "wr": 25, "te": 5, "ol": 20}
     defensive_weights = {"dl": 35, "lb": 20, "cb": 30, "s": 15}
 
-    # Fetch all players across all teams
-    all_players = info.players.all()
+    all_players = info.players.select_related("team").filter(starter=True)
+    teams = info.teams.all()
 
-    for team in info.teams.all():
-        # Filter players for the current team
+    team_ratings = {}
+
+    for team in teams:
+        team_ratings[team.id] = {
+            "offense": 0,
+            "defense": 0,
+            "total_offensive_weight": 0,
+            "total_defensive_weight": 0,
+        }
+
         players = all_players.filter(team=team)
 
-        offense_rating = 0.0
-        defense_rating = 0.0
-        total_offensive_weight = 0
-        total_defensive_weight = 0
-
         for position, count in ROSTER.items():
-            position_players = players.filter(pos=position).order_by("-rating")
-
-            for _, player in enumerate(position_players[:count], start=1):
-                player.starter = True
-                player.save()
-
-            position_players.exclude(
-                pk__in=[player.pk for player in position_players[:count]]
-            ).update(starter=False)
+            position_players = players.filter(pos=position).order_by("-rating")[:count]
 
             if position in offensive_weights:
-                offense_rating += (
-                    sum(player.rating for player in position_players[:count])
-                    * offensive_weights[position]
-                )
-                total_offensive_weight += count * offensive_weights[position]
+                weight = offensive_weights[position]
+                total_rating = position_players.aggregate(total=Sum("rating"))["total"]
+                team_ratings[team.id]["offense"] += total_rating * weight
+                team_ratings[team.id]["total_offensive_weight"] += count * weight
             elif position in defensive_weights:
-                defense_rating += (
-                    sum(player.rating for player in position_players[:count])
-                    * defensive_weights[position]
-                )
-                total_defensive_weight += count * defensive_weights[position]
+                weight = defensive_weights[position]
+                total_rating = position_players.aggregate(total=Sum("rating"))["total"]
+                team_ratings[team.id]["defense"] += total_rating * weight
+                team_ratings[team.id]["total_defensive_weight"] += count * weight
 
-        if total_offensive_weight > 0:
-            offense_rating /= total_offensive_weight
-        if total_defensive_weight > 0:
-            defense_rating /= total_defensive_weight
+    for team in teams:
+        team_data = team_ratings.get(team.id)
+
+        offense_rating = (
+            team_data["offense"] / team_data["total_offensive_weight"]
+            if team_data["total_offensive_weight"] > 0
+            else 0
+        )
+        defense_rating = (
+            team_data["defense"] / team_data["total_defensive_weight"]
+            if team_data["total_defensive_weight"] > 0
+            else 0
+        )
 
         overall_rating = (offense_rating * offense_weight) + (
             defense_rating * defense_weight
         )
 
-        team.offense = offense_rating
-        team.defense = defense_rating
-        team.rating = overall_rating
+        team.offense = round(offense_rating)
+        team.defense = round(defense_rating)
+        team.rating = round(overall_rating)
 
-        team.save()
+    Teams.objects.bulk_update(teams, ["offense", "defense", "rating"])
+
+
+def set_starters(info):
+    all_players = list(info.players.select_related("team").all())
+    for player in all_players:
+        player.starter = False
+
+    players_by_team_and_position = {
+        team.id: {position: [] for position in ROSTER} for team in info.teams.all()
+    }
+    for player in all_players:
+        if player.pos in ROSTER:
+            players_by_team_and_position[player.team.id][player.pos].append(player)
+
+    for team_players in players_by_team_and_position.values():
+        for position, players in team_players.items():
+            players.sort(key=lambda x: x.rating, reverse=True)
+
+    for _, positions in players_by_team_and_position.items():
+        for position, count in ROSTER.items():
+            for player in positions[position][:count]:
+                player.starter = True
+
+    Players.objects.bulk_update(all_players, ["starter"])
 
 
 def fill_roster(team, players_to_create):
+    player_counts = Counter(team.players.values_list("pos", flat=True))
+
     for position, count in ROSTER.items():
-        current_players = team.players.filter(pos=position)
-        current_count = current_players.count()
+        current_count = player_counts.get(position, 0)
+        needed = max(0, (2 * count + 1) - current_count)
 
-        if current_count < (2 * count + 1):
-            needed = (2 * count + 1) - current_count
+        for _ in range(needed):
+            first, last = generateName(position)
 
-            for i in range(needed):
-                first, last = generateName(position)
-
-                rating = team.prestige - random.randint(0, variance) - 5
-
-                player = Players(
-                    info=team.info,
-                    team=team,
-                    first=first,
-                    last=last,
-                    year="fr",
-                    pos=position,
-                    rating=rating,
-                    starter=False,
-                )
-                players_to_create.append(player)
+            player = Players(
+                info=team.info,
+                team=team,
+                first=first,
+                last=last,
+                year="fr",
+                pos=position,
+                rating=getStartRating(team.prestige),
+                starter=False,
+            )
+            players_to_create.append(player)
 
 
 def init_roster(team, players_to_create):
@@ -227,7 +250,7 @@ def init_roster(team, players_to_create):
             first, last = generateName(position)
             year = random.choice(years)
 
-            rating = team.prestige - random.randint(0, variance) - 5
+            rating = getStartRating(team.prestige)
             for _ in range(years.index(year)):
                 rating += getProgression()
 
@@ -244,7 +267,9 @@ def init_roster(team, players_to_create):
             players_to_create.append(player)
 
 
-def generate_recruit(stars, info, overall_rank, state_ranks, position_ranks):
+def generate_recruit(
+    stars, info, overall_rank, state_ranks, position_ranks, states_list, positions_list
+):
     position = random.choice(positions_list)
     first, last = generateName(position)
     state = random.choice(states_list)
@@ -279,6 +304,15 @@ def generate_recruit(stars, info, overall_rank, state_ranks, position_ranks):
 
 
 def generate_recruits(info, recruits_to_create):
+    with open("start/static/states.json", "r") as file:
+        STATE_FREQUENCIES = json.load(file)
+
+    states_list = [
+        state for state, freq in STATE_FREQUENCIES.items() for _ in range(freq)
+    ]
+
+    positions_list = [pos for pos, freq in ROSTER.items() for _ in range(freq)]
+
     stars_distribution = {5: 30, 4: 300, 3: 1000}
 
     # Overall rank starts at 1
@@ -292,7 +326,13 @@ def generate_recruits(info, recruits_to_create):
         for _ in range(count):
             recruits_to_create.append(
                 generate_recruit(
-                    stars, info, current_overall_rank, state_ranks, position_ranks
+                    stars,
+                    info,
+                    current_overall_rank,
+                    state_ranks,
+                    position_ranks,
+                    states_list,
+                    positions_list,
                 )
             )
             current_overall_rank += 1

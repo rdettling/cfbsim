@@ -73,8 +73,10 @@ def make_game_logs(info, plays):
 
 
 def simWeek(request, weeks):
+    start = time.time()
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
+    all_games = info.games.all()
 
     team = info.team
 
@@ -85,7 +87,7 @@ def simWeek(request, weeks):
     desired_week = info.currentWeek + weeks
 
     while info.currentWeek < desired_week:
-        toBeSimmed = list(Games.objects.filter(info=info, weekPlayed=info.currentWeek))
+        toBeSimmed = all_games.filter(weekPlayed=info.currentWeek)
 
         for game in toBeSimmed:
             if game.teamA == team:
@@ -99,6 +101,7 @@ def simWeek(request, weeks):
 
         update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
         no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
+
         if info.currentWeek not in no_update_weeks:
             update_rankings(info)
 
@@ -137,6 +140,7 @@ def simWeek(request, weeks):
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
     }
 
+    print(f"Sim games {time.time() - start} seconds")
     return render(request, "sim.html", context)
 
 
@@ -593,29 +597,18 @@ def roster_progression(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
-    players = info.players.all()
-
     if not info.stage == "roster progression":
-        rosters_update = update_rosters(players)
+        start = time.time()
+        rosters_update = update_rosters(info)
+        print(f"Roster update {time.time() - start} seconds")
+
         info.stage = "roster progression"
-        info.save(update_fields=["stage"])
-
-        leaving_seniors_of_team = [
-            player
-            for player in rosters_update["leaving_seniors"]
-            if player.team == info.team
-        ]
-
-        progressed_players_of_team = [
-            player
-            for player in rosters_update["progressed_players"]
-            if player.team == info.team
-        ]
+        info.save()
 
         context = {
             "info": info,
-            "leaving_seniors": leaving_seniors_of_team,
-            "progressed_players": progressed_players_of_team,
+            "leaving_seniors": rosters_update["leaving_seniors"],
+            "progressed_players": rosters_update["progressed_players"],
         }
     else:
         context = {

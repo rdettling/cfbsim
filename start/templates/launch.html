@@ -30,8 +30,9 @@
         <div class="tab-pane" id="load-game" role="tabpanel" aria-labelledby="load-game-tab">
             {% if info.team %}
             <h5>Current save</h5>
+
+            {% if info.stage == 'season' %}
             <table class="table table-striped">
-                {% if info.stage == 'season' %}
                 <thead>
                     <tr>
                         <th>Year</th>
@@ -46,7 +47,10 @@
                         <td>{{info.team.name}}</td>
                     </tr>
                 </tbody>
-                {% else %}
+            </table>
+            <a href="{% url 'dashboard' %}" class="btn btn-primary mt-3">Load Game</a>
+            {% else %}
+            <table class="table table-striped">
                 <thead>
                     <tr>
                         <th>Year</th>
@@ -61,10 +65,14 @@
                         <td>{{info.team.name}}</td>
                     </tr>
                 </tbody>
-                {% endif %}
             </table>
-            <a href="{% url 'dashboard' %}" class="btn btn-primary mt-3">Load Game</a>
-            {% else %}
+            {% if info.stage == 'season summary' or info.stage == 'end of season' %}
+            <a href="{% url 'season summary' %}" class="btn btn-primary mt-3">Load Game</a>
+            {% elif info.stage == 'roster progression'%}
+            <a href="{% url 'roster progression' %}" class="btn btn-primary mt-3">Load Game</a>
+            {% elif info.stage == 'schedule non conference'%}
+            <a href="{% url 'noncon' %}" class="btn btn-primary mt-3">Load Game</a>
+            {% endif %} {% endif %} {% else %}
             <h5>No saves detected</h5>
             {% endif %}
         </div>
