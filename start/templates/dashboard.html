@@ -1,11 +1,11 @@
-{% extends 'base.html' %} {% load static %} {% block title %} {{team.name}} dashboard{% endblock %} {% block css %}
+{% extends 'base.html' %} {% load static %} {% block title %} Dashboard{% endblock %} {% block css %}
 <link rel="stylesheet" href="{% static 'dashboard.css' %}" />
 {% endblock %} {% block content %}
 <div class="mb-3 text-center">
-    <h1 class="display-3">#{{team.ranking}} {{team.name}} {{team.mascot}}</h1>
-    <h2 class="lead">{{team.conference.confName}}</h2>
-    <h2 class="lead">{{team.rating}} overall</h2>
-    <h2 class="lead">{{team.totalWins}} - {{team.totalLosses}} ({{team.confWins}} - {{team.confLosses}})</h2>
+    <h1 class="display-3">#{{info.team.ranking}} {{info.team.name}} {{info.team.mascot}}</h1>
+    <h2 class="lead">{{info.team.conference.confName}}</h2>
+    <h2 class="lead">{{info.team.rating}} overall</h2>
+    <h2 class="lead">{{info.team.totalWins}} - {{info.team.totalLosses}} ({{info.team.confWins}} - {{info.team.confLosses}})</h2>
 </div>
 
 <div class="row">
@@ -37,7 +37,7 @@
         {% endif %} {% endfor %}
     </div>
     <div class="col-md-4 text-center">
-        <h2>{{team.conference.confName}} Standings</h2>
+        <h2>{{info.team.conference.confName}} Standings</h2>
         <table class="table table-striped borderedtable">
             <thead>
                 <tr>

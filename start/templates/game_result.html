@@ -1,4 +1,4 @@
-{% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block title %}{{game.teamA.name}} vs {{game.opponent.name}}{% endblock %} {% block css %}
+{% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block title %}{{game.teamA.abbreviation}} vs {{game.teamB.abbreviation}}{% endblock %} {% block css %}
 <link rel="stylesheet" href="{% static 'game.css' %}" />
 {% endblock %} {% block content %}
 <div class="row">

@@ -308,18 +308,20 @@ def dashboard(request):
             week.moneyline = week.moneylineB
 
     teams = info.teams.order_by("ranking")
-    confTeams = list(team.conference.teams.all())
 
-    for team in confTeams:
-        if team.confWins + team.confLosses > 0:
-            team.pct = team.confWins / (team.confWins + team.confLosses)
-        else:
-            team.pct = 0
+    if team.conference:
+        confTeams = list(team.conference.teams.all())
+        for team in confTeams:
+            if team.confWins + team.confLosses > 0:
+                team.pct = team.confWins / (team.confWins + team.confLosses)
+            else:
+                team.pct = 0
 
-    confTeams.sort(key=lambda o: (-o.pct, -o.confWins, o.confLosses, o.ranking))
+        confTeams.sort(key=lambda o: (-o.pct, -o.confWins, o.confLosses, o.ranking))
+    else:
+        confTeams = teams.filter(conference=None)
 
     context = {
-        "team": team,
         "teams": teams,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         "confTeams": confTeams,
@@ -336,13 +338,13 @@ def game_preview(request, info, game):
         "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         "conferences": info.conferences.all().order_by("confName"),
+        "game": game,
     }
 
     return render(request, "game_preview.html", context)
 
 
 def game_result(request, info, game):
-    team = info.team
     drives = game.drives.all()
     game_logs = game.game_logs.all()
 
@@ -409,7 +411,6 @@ def game_result(request, info, game):
         drive.oppAfter = scoreB
 
     context = {
-        "team": team,
         "game": game,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         "info": info,

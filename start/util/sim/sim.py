@@ -393,8 +393,18 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
             game.teamA.resume_total += game.teamB.rating**lossFactor
 
     if info:
-        game.teamA.save()
-        game.teamB.save()
+        Teams.objects.bulk_update(
+            [game.teamA, game.teamB],
+            [
+                "totalWins",
+                "totalLosses",
+                "confWins",
+                "confLosses",
+                "nonConfWins",
+                "nonConfLosses",
+                "resume_total",
+            ],
+        )
 
 
 def overtime(
