@@ -12,11 +12,13 @@ def update_teams_and_rosters(info, data):
 
     start = time.time()
     players_to_create = []
+
+    loaded_names = load_names()
     for team in info.teams.all():
         if team.rating:
-            fill_roster(team, players_to_create)
+            fill_roster(team, loaded_names, players_to_create)
         else:
-            init_roster(team, players_to_create)
+            init_roster(team, loaded_names, players_to_create)
     Players.objects.bulk_create(players_to_create)
     print(f"Fill rosters {time.time() - start} seconds")
 
@@ -193,9 +195,16 @@ def init(data, user_id, year):
     Teams.objects.bulk_create(teams_to_create)
     print(f"Create teams, conferences {time.time() - start} seconds")
 
+    teams = info.teams.all()
+
     start = time.time()
-    for team in info.teams.all():
-        init_roster(team, players_to_create)
+
+    loaded_names = load_names()
+    for team in teams:
+        init_roster(team, loaded_names, players_to_create)
+    print(f"Init roster {time.time() - start} seconds")
+
+    start = time.time()
     Players.objects.bulk_create(players_to_create)
     print(f"Create players {time.time() - start} seconds")
 
@@ -212,8 +221,8 @@ def init(data, user_id, year):
     print(f"Init rankings {time.time() - start} seconds")
 
     odds_list = getSpread(
-        info.teams.all().order_by("-rating").first().rating
-        - info.teams.all().order_by("rating").first().rating
+        teams.order_by("-rating").first().rating
+        - teams.order_by("rating").first().rating
     )
     for diff, odds_data in odds_list.items():
         odds_instance = Odds(

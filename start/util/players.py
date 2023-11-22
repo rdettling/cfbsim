@@ -20,6 +20,25 @@ ROSTER = {
 }
 
 
+def load_names():
+    with open("start/static/names.json") as f:
+        names_data = json.load(f)
+
+    processed_names = {
+        "black": {"first": [], "last": []},
+        "white": {"first": [], "last": []},
+    }
+
+    for race in ["black", "white"]:
+        for name_type in ["first", "last"]:
+            for name_info in names_data[race][name_type]:
+                processed_names[race][name_type].extend(
+                    [name_info["name"]] * name_info["weight"]
+                )
+
+    return processed_names
+
+
 def getProgression():
     return random.randint(1, 5)
 
@@ -99,7 +118,7 @@ def aiRecruitOffers(info):
     Offers.objects.bulk_create(offers_to_create)
 
 
-def generateName(position):
+def generateName(position, names):
     positions = {
         "qb": 15,
         "rb": 70,
@@ -114,23 +133,13 @@ def generateName(position):
         "p": 0,
     }
 
-    with open("start/static/names.json") as f:
-        names = json.load(f)
-
     if random.random() <= positions[position] / 100:
         race = "black"
     else:
         race = "white"
 
-    first_names = names[race]["first"]
-    last_names = names[race]["last"]
-
-    first = random.choices(
-        first_names, weights=[name["weight"] for name in first_names]
-    )[0]["name"]
-    last = random.choices(last_names, weights=[name["weight"] for name in last_names])[
-        0
-    ]["name"]
+    first = random.choice(names[race]["first"])
+    last = random.choice(names[race]["last"])
 
     return (first, last)
 
@@ -219,7 +228,7 @@ def set_starters(info):
     Players.objects.bulk_update(all_players, ["starter"])
 
 
-def fill_roster(team, players_to_create):
+def fill_roster(team, loaded_names, players_to_create):
     player_counts = Counter(team.players.values_list("pos", flat=True))
 
     for position, count in ROSTER.items():
@@ -227,7 +236,7 @@ def fill_roster(team, players_to_create):
         needed = max(0, (2 * count + 1) - current_count)
 
         for _ in range(needed):
-            first, last = generateName(position)
+            first, last = generateName(position, loaded_names)
 
             player = Players(
                 info=team.info,
@@ -242,12 +251,12 @@ def fill_roster(team, players_to_create):
             players_to_create.append(player)
 
 
-def init_roster(team, players_to_create):
+def init_roster(team, loaded_names, players_to_create):
     years = ["fr", "so", "jr", "sr"]
 
     for position, count in ROSTER.items():
         for i in range(2 * count + 1):
-            first, last = generateName(position)
+            first, last = generateName(position, loaded_names)
             year = random.choice(years)
 
             rating = getStartRating(team.prestige)
