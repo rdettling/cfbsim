@@ -87,10 +87,10 @@ def player(request, team_name, id):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
-    team = Teams.objects.get(info=info, name=team_name)
-    player = Players.objects.get(info=info, id=id)
-    conferences = Conferences.objects.filter(info=info).order_by("confName")
-    game_logs = GameLog.objects.filter(player=player)  # Query for the game logs
+    player = Players.objects.get(id=id)
+    team = player.team
+
+    game_logs = player.game_logs.all()  # Query for the game logs
 
     cumulative_stats = {
         "pass_yards": 0,
@@ -104,30 +104,38 @@ def player(request, team_name, id):
         "receiving_yards": 0,
         "receiving_catches": 0,
         "receiving_touchdowns": 0,
-        # ... (add all the other fields)
+        "field_goals_made": 0,
+        "field_goals_attempted": 0,
     }
 
     for game_log in game_logs:
-        if game_log.game.teamA == player.team:
+        game = game_log.game
+        if game.teamA == player.team:
             game_log.opponent = game_log.game.teamB.name
-            game_log.label = game_log.game.labelA
-            if not game_log.game.overtime:
-                game_log.result = f"{game_log.game.resultA} ({game_log.game.scoreA} - {game_log.game.scoreB})"
+            game_log.rank = game.rankBTOG
+            game_log.label = game.labelA
+            if not game.overtime:
+                game_log.result = f"{game.resultA} ({game.scoreA} - {game.scoreB})"
             else:
-                if game_log.game.overtime == 1:
-                    game_log.result = f"{game_log.game.resultA} ({game_log.game.scoreA} - {game_log.game.scoreB} OT)"
+                if game.overtime == 1:
+                    game_log.result = (
+                        f"{game.resultA} ({game.scoreA} - {game.scoreB} OT)"
+                    )
                 else:
-                    game_log.result = f"{game_log.game.resultA} ({game_log.game.scoreA} - {game_log.game.scoreB} {game_log.game.overtime}OT)"
+                    game_log.result = f"{game.resultA} ({game.scoreA} - {game.scoreB} {game.overtime}OT)"
         else:
-            game_log.opponent = game_log.game.teamA.name
-            game_log.label = game_log.game.labelB
+            game_log.opponent = game.teamA.name
+            game_log.rank = game.rankATOG
+            game_log.label = game.labelB
             if not game_log.game.overtime:
-                game_log.result = f"{game_log.game.resultB} ({game_log.game.scoreB} - {game_log.game.scoreA})"
+                game_log.result = f"{game.resultB} ({game.scoreB} - {game.scoreA})"
             else:
                 if game_log.game.overtime == 1:
-                    game_log.result = f"{game_log.game.resultB} ({game_log.game.scoreB} - {game_log.game.scoreA} OT)"
+                    game_log.result = (
+                        f"{game.resultB} ({game.scoreB} - {game.scoreA} OT)"
+                    )
                 else:
-                    game_log.result = f"{game_log.game.resultB} ({game_log.game.scoreB} - {game_log.game.scoreA} {game_log.game.overtime}OT)"
+                    game_log.result = f"{game.resultB} ({game.scoreB} - {game.scoreA} {game.overtime}OT)"
 
         for key in cumulative_stats.keys():
             cumulative_stats[key] += getattr(game_log, key, 0)
@@ -187,9 +195,9 @@ def player(request, team_name, id):
         "player": player,
         "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-        "conferences": conferences,
-        "game_logs": game_logs,  # Include the game logs in the context
-        "cumulative_stats": cumulative_stats,  # Include the cumulative stats in the context
+        "conferences": info.conferences.order_by("confName"),
+        "game_logs": game_logs,
+        "cumulative_stats": cumulative_stats,
     }
 
     return render(request, "player.html", context)

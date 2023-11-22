@@ -34,7 +34,10 @@ def update_teams_and_rosters(info, data):
 
 
 def start_season(info):
+    start = time.time()
     fillSchedules(info)
+    print(f"fill schedules {time.time() - start} seconds")
+
     # aiRecruitOffers(info)
 
     info.currentWeek = 1
@@ -120,6 +123,8 @@ def initialize_rankings(info):
 
 
 def init(data, user_id, year):
+    overall_start = time.time()
+
     Info.objects.filter(user_id=user_id).delete()
     info = Info.objects.create(
         user_id=user_id, currentWeek=1, currentYear=int(year) - 1
@@ -183,26 +188,10 @@ def init(data, user_id, year):
         )
         teams_to_create.append(Team)
 
-    FCS = Teams(
-        info=info,
-        name="FCS",
-        abbreviation="FCS",
-        prestige=60,
-        mascot="FCS",
-        colorPrimary="#000000",
-        colorSecondary="#FFFFFF",
-        conference=None,
-        confLimit=0,
-        nonConfLimit=100,
-        offers=0,
-        recruiting_points=0,
-    )
-    teams_to_create.append(FCS)
-
+    start = time.time()
     Conferences.objects.bulk_create(conferences_to_create)
     Teams.objects.bulk_create(teams_to_create)
-
-    overall_start = time.time()
+    print(f"Create teams, conferences {time.time() - start} seconds")
 
     start = time.time()
     for team in info.teams.all():
@@ -221,8 +210,6 @@ def init(data, user_id, year):
     start = time.time()
     initialize_rankings(info)
     print(f"Init rankings {time.time() - start} seconds")
-
-    print(f"Total execution Time: {time.time() - overall_start} seconds")
 
     odds_list = getSpread(
         info.teams.all().order_by("-rating").first().rating
@@ -243,7 +230,11 @@ def init(data, user_id, year):
 
     Odds.objects.bulk_create(odds_to_create)
 
+    start = time.time()
     uniqueGames(info, data)
+    print(f"unique games {time.time() - start} seconds")
+
+    print(f"Total execution Time: {time.time() - overall_start} seconds")
 
     # generate_recruits(info, recruits_to_create)
     # Recruits.objects.bulk_create(recruits_to_create)
@@ -266,48 +257,51 @@ def update_rankings(info):
     win_factor = 172
     loss_factor = 157
 
-    total_weeks = 13
+    total_weeks = 12
     weeks_left = max(0, (total_weeks - info.currentWeek))
     inertia_scale = weeks_left / total_weeks
 
     for team in teams:
         last_rank = team.ranking
         team.last_rank = last_rank
-
         games_played = team.totalWins + team.totalLosses
 
-        if games_played > 0:
-            team.resume = team.resume_total / games_played
+        if info.currentWeek <= total_weeks:
+            if games_played > 0:
+                team.resume = team.resume_total / games_played
 
-            games_as_teamA = games_by_teamA[team.id]
-            games_as_teamB = games_by_teamB[team.id]
-            schedule = games_as_teamA + games_as_teamB
+                games_as_teamA = games_by_teamA[team.id]
+                games_as_teamB = games_by_teamB[team.id]
+                schedule = games_as_teamA + games_as_teamB
 
-            if schedule and schedule[-1].winner != team:
+                if schedule and schedule[-1].winner != team:
+                    team.resume += max(
+                        0, (loss_factor * (team_count - last_rank)) * inertia_scale
+                    )
+                else:
+                    team.resume += max(
+                        0, (win_factor * (team_count - last_rank)) * inertia_scale
+                    )
+                team.resume = round(team.resume, 1)
+            else:
                 team.resume += max(
                     0, (loss_factor * (team_count - last_rank)) * inertia_scale
                 )
-            else:
-                team.resume += max(
-                    0, (win_factor * (team_count - last_rank)) * inertia_scale
-                )
-            team.resume = round(team.resume, 1)
-        elif team.name != "FCS":
-            team.resume += max(
-                0, (win_factor * (team_count - last_rank)) * inertia_scale
-            )
-            team.resume = round(team.resume, 1)
+                team.resume = round(team.resume, 1)
+        else:
+            team.resume = round(team.resume_total / games_played, 1)
 
     sorted_teams = sorted(teams, key=lambda x: (-x.resume, x.last_rank))
 
     for i, team in enumerate(sorted_teams, start=1):
         team.ranking = i
 
+    Teams.objects.bulk_update(sorted_teams, ["ranking", "last_rank", "resume"])
+
     for game in games:
         game.rankATOG = game.teamA.ranking
         game.rankBTOG = game.teamB.ranking
 
-    Teams.objects.bulk_update(sorted_teams, ["ranking", "last_rank", "resume"])
     Games.objects.bulk_update(games, ["rankATOG", "rankBTOG"])
 
 
@@ -334,6 +328,41 @@ def update_game_log_for_pass(play, qb_game_log, receiver_game_log):
         qb_game_log.pass_interceptions += 1
 
 
+def update_game_log_for_kick(play, game_log):
+    if play.playType == "field goal":
+        game_log.field_goals_attempted += 1
+        if play.result == "made field goal":
+            game_log.field_goals_made += 1
+
+
+def set_play_header(play):
+    if play.startingFP < 50:
+        location = f"{play.offense.abbreviation} {play.startingFP}"
+    elif play.startingFP > 50:
+        location = f"{play.defense.abbreviation} {100 - play.startingFP}"
+    else:
+        location = f"{play.startingFP}"
+
+    if play.startingFP + play.yardsLeft >= 100:
+        if play.down == 1:
+            play.header = f"{play.down}st and goal at {location}"
+        elif play.down == 2:
+            play.header = f"{play.down}nd and goal at {location}"
+        elif play.down == 3:
+            play.header = f"{play.down}rd and goal at {location}"
+        elif play.down == 4:
+            play.header = f"{play.down}th and goal at {location}"
+    else:
+        if play.down == 1:
+            play.header = f"{play.down}st and {play.yardsLeft} at {location}"
+        elif play.down == 2:
+            play.header = f"{play.down}nd and {play.yardsLeft} at {location}"
+        elif play.down == 3:
+            play.header = f"{play.down}rd and {play.yardsLeft} at {location}"
+        elif play.down == 4:
+            play.header = f"{play.down}th and {play.yardsLeft} at {location}"
+
+
 def format_play_text(play, player1, player2=None):
     if play.playType == "run":
         if play.result == "fumble":
@@ -344,18 +373,158 @@ def format_play_text(play, player1, player2=None):
             play.text = (
                 f"{player1.first} {player1.last} ran for {play.yardsGained} yards"
             )
-
     elif play.playType == "pass":
         if play.result == "sack":
             play.text = f"{player1.first} {player1.last} was sacked for a loss of {play.yardsGained} yards"
         elif play.result == "touchdown":
-            play.text = f"{player1.first} {player1.last} completed a pass to {player2.first} {player2.last} for {play.yardsGained} yards resulting in a touchdown"
+            play.text = f"{player1.first} {player1.last} pass complete to {player2.first} {player2.last} {play.yardsGained} yards for a touchdown"
         elif play.result == "pass":
-            play.text = f"{player1.first} {player1.last} completed a pass to {player2.first} {player2.last} for {play.yardsGained} yards"
+            play.text = f"{player1.first} {player1.last} pass complete to {player2.first} {player2.last} for {play.yardsGained} yards"
         elif play.result == "interception":
             play.text = f"{player1.first} {player1.last}'s pass was intercepted"
         elif play.result == "incomplete pass":
             play.text = f"{player1.first} {player1.last}'s pass was incomplete"
+    elif play.playType == "field goal":
+        if play.result == "made field goal":
+            play.text = f"{player1.first} {player1.last}'s {100 - play.startingFP + 17} field goal is good"
+        elif play.result == "missed field goal":
+            play.text = f"{player1.first} {player1.last}'s {100 - play.startingFP + 17} field goal is no good"
+
+
+def make_game_logs(info, plays):
+    desired_positions = {"qb", "rb", "wr", "k"}
+    game_log_dict = {}
+
+    all_starters = info.players.filter(
+        starter=True, pos__in=desired_positions
+    ).select_related("team")
+
+    # Group them by position and team
+    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
+    for player in all_starters:
+        starters_by_team_pos[(player.team, player.pos)].append(player)
+
+    # Get all unique games being simmed
+    simmed_games = {play.game for play in plays}
+
+    # Create a set to store (player, game) combinations for GameLog objects
+    player_game_combinations = set()
+
+    for game in simmed_games:
+        for team in [game.teamA, game.teamB]:
+            for pos in desired_positions:
+                starters = starters_by_team_pos.get((team, pos))
+                for starter in starters:
+                    player_game_combinations.add((starter, game))
+
+    # Create the in-memory GameLog objects
+    game_logs_to_process = [
+        GameLog(info=info, player=player, game=game)
+        for player, game in player_game_combinations
+    ]
+
+    for game_log in game_logs_to_process:
+        game_log_dict[(game_log.player, game_log.game)] = game_log
+
+    # Main logic for processing the plays
+    for play in plays:
+        set_play_header(play)
+
+        game = play.game
+        offense_team = play.offense
+
+        rb_starters = starters_by_team_pos.get((offense_team, "rb"))
+        qb_starter = starters_by_team_pos.get((offense_team, "qb"))[0]
+        wr_starters = starters_by_team_pos.get((offense_team, "wr"))
+        k_starter = starters_by_team_pos.get((offense_team, "k"))[0]
+
+        if play.playType == "run":
+            runner = random.choice(rb_starters)
+            game_log = game_log_dict[(runner, game)]
+            update_game_log_for_run(play, game_log)
+            format_play_text(play, runner)
+        elif play.playType == "pass":
+            receiver = random.choice(wr_starters)
+            qb_game_log = game_log_dict[(qb_starter, game)]
+            receiver_game_log = game_log_dict[(receiver, game)]
+            update_game_log_for_pass(play, qb_game_log, receiver_game_log)
+            format_play_text(play, qb_starter, receiver)
+        elif play.playType == "field goal":
+            game_log = game_log_dict[(k_starter, game)]
+            update_game_log_for_kick(play, game_log)
+            format_play_text(play, k_starter)
+
+    GameLog.objects.bulk_create(game_logs_to_process)
+
+
+def game_stats(game):
+    team_yards = opp_yards = 0
+    team_passing_yards = team_rushing_yards = opp_passing_yards = opp_rushing_yards = 0
+    team_first_downs = opp_first_downs = 0
+    team_third_down_a = team_third_down_c = opp_third_down_a = opp_third_down_c = 0
+    team_fourth_down_a = team_fourth_down_c = opp_fourth_down_a = opp_fourth_down_c = 0
+    team_turnovers = opp_turnovers = 0
+    for play in game.plays.all():
+        if play.offense == game.teamA:
+            if play.playType == "pass":
+                team_passing_yards += play.yardsGained
+            elif play.playType == "run":
+                team_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                team_first_downs += 1
+            if play.result == "interception" or play.result == "fumble":
+                team_turnovers += 1
+            elif play.down == 3:
+                team_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    team_third_down_c += 1
+            elif play.down == 4:
+                if play.playType != "punt" and play.playType != "field goal attempt":
+                    team_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        team_fourth_down_c += 1
+        elif play.offense == game.teamB:
+            if play.playType == "pass":
+                opp_passing_yards += play.yardsGained
+            elif play.playType == "run":
+                opp_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                opp_first_downs += 1
+            if play.result == "interception" or play.result == "fumble":
+                opp_turnovers += 1
+            elif play.down == 3:
+                opp_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    opp_third_down_c += 1
+            elif play.down == 4:
+                if play.playType != "punt" and play.playType != "field goal attempt":
+                    opp_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        opp_fourth_down_c += 1
+
+    team_yards = team_passing_yards + team_rushing_yards
+    opp_yards = opp_passing_yards + opp_rushing_yards
+
+    return {
+        "total yards": {"team": team_yards, "opponent": opp_yards},
+        "passing yards": {"team": team_passing_yards, "opponent": opp_passing_yards},
+        "rushing yards": {"team": team_rushing_yards, "opponent": opp_rushing_yards},
+        "1st downs": {"team": team_first_downs, "opponent": opp_first_downs},
+        "3rd down conversions": {
+            "team": team_third_down_c,
+            "opponent": opp_third_down_c,
+        },
+        "3rd down attempts": {"team": team_third_down_a, "opponent": opp_third_down_a},
+        "4th down conversions": {
+            "team": team_fourth_down_c,
+            "opponent": opp_fourth_down_c,
+        },
+        "4th down attempts": {
+            "team": team_fourth_down_a,
+            "opponent": opp_fourth_down_a,
+        },
+        "turnovers": {"team": team_turnovers, "opponent": opp_turnovers},
+    }
 
 
 def get_recruiting_points(prestige):

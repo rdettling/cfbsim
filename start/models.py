@@ -42,7 +42,6 @@ class Teams(models.Model):
     totalLosses = models.IntegerField(default=0)
     resume_total = models.FloatField(default=0)
     resume = models.FloatField(default=0)
-    expectedWins = models.FloatField(default=0)
     ranking = models.IntegerField(null=True)
     last_rank = models.IntegerField(null=True)
     offers = models.IntegerField()

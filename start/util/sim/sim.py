@@ -188,7 +188,7 @@ def simDrive(
                 decision = fourthDown(fieldPosition, yardsLeft)
 
                 if decision == "field goal":
-                    play.playType = "field goal attempt"
+                    play.playType = "field goal"
                     play.yardsGained = 0
 
                     if fieldGoal(100 - fieldPosition):
@@ -393,7 +393,6 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
             game.teamA.resume_total += game.teamB.rating**lossFactor
 
     if info:
-        game.save()
         game.teamA.save()
         game.teamB.save()
 

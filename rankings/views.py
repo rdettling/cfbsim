@@ -43,11 +43,11 @@ def get_next_game(info, team):
         next_game = schedule[-1]
         if next_game.teamA == team:
             next_game.opponent = next_game.teamB
-            next_game.rank = next_game.rankBTOG
+            next_game.rank = next_game.teamB.ranking
             next_game.spread = next_game.spreadA
         else:
             next_game.opponent = next_game.teamA
-            next_game.rank = next_game.rankATOG
+            next_game.rank = next_game.teamA.ranking
             next_game.spread = next_game.spreadB
 
         return next_game
@@ -85,32 +85,34 @@ def rankings(request):
 def standings(request, conference_name):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
-    conferences = Conferences.objects.filter(info=info).order_by("confName")
-    team = info.team
 
     if conference_name != "independent":
-        conference = Conferences.objects.get(info=info, confName=conference_name)
-        teams = conference.teams.all().order_by("-confWins", "-resume", "-totalWins")
+        conference = info.conferences.get(confName=conference_name)
+        teams = list(conference.teams.all())
+
+        for team in teams:
+            if team.confWins + team.confLosses > 0:
+                team.pct = team.confWins / (team.confWins + team.confLosses)
+            else:
+                team.pct = 0
+
+        teams.sort(key=lambda o: (-o.pct, -o.confWins, o.confLosses, o.ranking))
 
         context = {
             "conference": conference,
-            "conferences": conferences,
+            "conferences": info.conferences.order_by("confName"),
             "teams": teams,
             "info": info,
-            "team": team,
             "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         }
 
         return render(request, "standings.html", context)
     else:
-        teams = Teams.objects.filter(info=info, conference=None).order_by(
-            "-totalWins", "-resume"
-        )
+        teams = info.teams.filter(conference=None).order_by("-totalWins", "-resume")
 
         context = {
             "teams": teams,
-            "team": team,
-            "conferences": conferences,
+            "conferences": info.conferences.order_by("confName"),
             "info": info,
             "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         }

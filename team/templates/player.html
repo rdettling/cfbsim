@@ -69,12 +69,29 @@
         </tr>
     </tbody>
 </table>
+{% endif %} {% if player.pos == "k" %}
+<h2>Kicking</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">FGM</th>
+            <th scope="col">FGA</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ cumulative_stats.field_goals_made }}</td>
+            <td>{{ cumulative_stats.field_goals_attempted }}</td>
+        </tr>
+    </tbody>
+</table>
 {% endif %}
 
 <h2>Game Logs</h2>
 <table class="table">
     <thead>
         <tr>
+            <th scope="col">Week</th>
             <th scope="col">Opponent</th>
             <th scope="col">Label</th>
             <th scope="col">Result</th>
@@ -96,8 +113,10 @@
     <tbody>
         {% for game_log in game_logs %}
         <tr>
+            <td>{{game_log.game.weekPlayed}}</td>
             <td scope="row">
                 <img src="{% static game_log.opponent %}.png" class="boxlogo" />
+                <a href="/teams/{{game_log.opponent}}/schedule">#{{game_log.rank}} {{game_log.opponent}}</a>
             </td>
             <td>{{game_log.label}}</td>
             <td>

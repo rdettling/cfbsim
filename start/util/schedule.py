@@ -1,5 +1,6 @@
 import random
-from ..models import *
+import time
+from start.models import *
 
 
 def setPlayoffR1(info):
@@ -90,8 +91,6 @@ def setPlayoffSemi(info):
             playoff.right_quarter_1.winner, playoff.right_quarter_2.winner, 16
         )
 
-    print(playoff.left_semi.teamA.name)
-
     Games.objects.bulk_create(games_to_create)
     playoff.save()
 
@@ -103,8 +102,12 @@ def scheduleGame(
     games_to_create,
     weekPlayed=None,
     gameName=None,
+    odds_list=None,
 ):
-    odds = Odds.objects.get(info=info, diff=abs(team.rating - opponent.rating))
+    if not odds_list:
+        odds = info.odds.get(diff=abs(team.rating - opponent.rating))
+    else:
+        odds = odds_list.get(diff=abs(team.rating - opponent.rating))
 
     if gameName:
         labelA = labelB = gameName
@@ -216,9 +219,6 @@ def setNatty(info):
     games_to_create = []
     week_mapping = {4: 15, 12: 17}
 
-    print(playoff.left_semi.teamA.name)
-    print(playoff.left_semi.scoreA)
-
     playoff.natty = scheduleGame(
         info,
         playoff.left_semi.winner,
@@ -265,6 +265,7 @@ def setConferenceChampionships(info):
 
 
 def uniqueGames(info, data):
+    odds = info.odds.all()
     games_to_create = []
     games = data["rivalries"]
     teams = info.teams.all()
@@ -309,6 +310,7 @@ def uniqueGames(info, data):
                             games_to_create,
                             game_week,
                             game[3],
+                            odds,
                         )
 
     Teams.objects.bulk_update(teams, ["confGames", "nonConfGames"])
@@ -316,9 +318,12 @@ def uniqueGames(info, data):
 
 
 def fillSchedules(info):
+    start = time.time()
     teams = list(info.teams.all())
     conferences = list(info.conferences.all())
     games = info.games.all()
+    odds_list = info.odds.all()
+
     random.shuffle(teams)
     random.shuffle(conferences)
 
@@ -329,86 +334,47 @@ def fillSchedules(info):
         scheduled_games[game.teamA.name].add(game.teamB.name)
         scheduled_games[game.teamB.name].add(game.teamA.name)
 
-    for team in teams:
-        if not team.conference and team.name != "FCS":
-            while team.nonConfGames < team.nonConfLimit:
-
-                def potential_opponents(team):
-                    return [
-                        opponent
-                        for opponent in teams
-                        if opponent.nonConfGames < opponent.nonConfLimit
-                        and opponent.name not in scheduled_games[team.name]
-                        and opponent.conference
-                    ]
-
-                valid_opponents = potential_opponents(team)
-
-                constraints = {
-                    opponent: {
-                        "potential": len(potential_opponents(opponent)),
-                        "needed": opponent.nonConfLimit - opponent.nonConfGames,
-                    }
-                    for opponent in valid_opponents
-                }
-
-                valid_opponents.sort(
-                    key=lambda o: constraints[o]["potential"] - constraints[o]["needed"]
+    def potential_opponents(team):
+        return [
+            opponent
+            for opponent in teams
+            if opponent.nonConfGames < opponent.nonConfLimit
+            and opponent.name not in scheduled_games[team.name]
+            and (
+                opponent.conference != team.conference
+                or (
+                    team.conference is None
+                    and opponent.conference is None
+                    and team is not opponent
                 )
+            )
+        ]
 
-                opponent = valid_opponents[0]
-                team, opponent, game = scheduleGame(
-                    info,
-                    team,
-                    opponent,
-                    games_to_create,
-                )
-                scheduled_games[team.name].add(opponent.name)
-                scheduled_games[opponent.name].add(team.name)
+    print(f"First part {time.time() - start} seconds")
+    start = time.time()
+    teamsList = teams[:]
+    while teamsList:
+        for team in teamsList:
+            team.potential = potential_opponents(team)
+            team.buffer = len(team.potential) - (team.nonConfLimit - team.nonConfGames)
 
+        teamsList.sort(key=lambda team: (team.buffer, team.nonConfGames))
+        team = teamsList.pop(0)
+        team.potential.sort(key=lambda o: (o.buffer, o.nonConfGames))
+
+        while team.nonConfGames < team.nonConfLimit:
+            opponent = team.potential.pop(0)
+            team, opponent, game = scheduleGame(
+                info, team, opponent, games_to_create, odds_list=odds_list
+            )
+            scheduled_games[team.name].add(opponent.name)
+            scheduled_games[opponent.name].add(team.name)
+
+    print(f"Noncon {time.time() - start} seconds")
+
+    start = time.time()
     for conference in conferences:
         confTeams = [team for team in teams if team.conference == conference]
-
-        def potential_opponents(team):
-            return [
-                opponent
-                for opponent in teams
-                if opponent.nonConfGames < opponent.nonConfLimit
-                and opponent.name not in scheduled_games[team.name]
-                and opponent.conference != team.conference
-                and opponent.name != "FCS"
-            ]
-
-        for team in confTeams:
-            while team.nonConfGames < team.nonConfLimit:
-                valid_opponents = potential_opponents(team)
-
-                constraints = {
-                    opponent: {
-                        "potential": len(potential_opponents(opponent)),
-                        "needed": opponent.nonConfLimit - opponent.nonConfGames,
-                    }
-                    for opponent in valid_opponents
-                }
-
-                valid_opponents.sort(
-                    key=lambda o: constraints[o]["potential"] - constraints[o]["needed"]
-                )
-
-                try:
-                    opponent = valid_opponents[0]
-                    team, opponent, game = scheduleGame(
-                        info,
-                        team,
-                        opponent,
-                        games_to_create,
-                    )
-                    scheduled_games[team.name].add(opponent.name)
-                    scheduled_games[opponent.name].add(team.name)
-                except:
-                    fcs = next((team for team in teams if team.name == "FCS"))
-                    team, fcs, game = scheduleGame(info, team, fcs, games_to_create)
-
         confTeamsList = confTeams[:]
 
         def potential_opponents(team):
@@ -421,40 +387,31 @@ def fillSchedules(info):
             ]
 
         while confTeams:
-            confTeams.sort(key=lambda team: team.confGames)
             for team in confTeams:
-                print(f"{team.name}: {team.confGames}")
+                team.potential = potential_opponents(team)
+                team.buffer = len(team.potential) - (team.confLimit - team.confGames)
+
+            confTeams.sort(key=lambda team: (team.buffer, team.confGames))
             team = confTeams.pop(0)
+            team.potential.sort(key=lambda o: (o.buffer, o.confGames))
 
             while team.confGames < team.confLimit:
-                valid_opponents = potential_opponents(team)
-
-                constraints = {
-                    opponent: {
-                        "potential": len(potential_opponents(opponent)),
-                        "needed": opponent.confLimit - opponent.confGames,
-                    }
-                    for opponent in valid_opponents
-                }
-
-                valid_opponents.sort(
-                    key=lambda o: constraints[o]["potential"] - constraints[o]["needed"]
-                )
-
-                opponent = valid_opponents[0]
+                opponent = team.potential.pop(0)
                 team, opponent, game = scheduleGame(
-                    info,
-                    team,
-                    opponent,
-                    games_to_create,
+                    info, team, opponent, games_to_create, odds_list=odds_list
                 )
                 scheduled_games[team.name].add(opponent.name)
                 scheduled_games[opponent.name].add(team.name)
 
+    print(f"Conf {time.time() - start} seconds")
+
+    start = time.time()
     teams = sorted(teams, key=lambda team: team.prestige, reverse=True)
 
+    all_games = info.games.all()
+
     for currentWeek in range(1, 13):
-        already_scheduled = Games.objects.filter(info=info, weekPlayed=currentWeek)
+        already_scheduled = all_games.filter(weekPlayed=currentWeek)
 
         for game in already_scheduled:
             for team in teams:
@@ -466,11 +423,10 @@ def fillSchedules(info):
                 filtered_games = [
                     game
                     for game in games_to_create
-                    if game.teamA == team or game.teamB == team
+                    if (game.teamA == team or game.teamB == team)
+                    and game.weekPlayed == 0
                 ]
-                filtered_games = [
-                    game for game in filtered_games if game.weekPlayed == 0
-                ]
+
                 for game in filtered_games:
                     if team.gamesPlayed >= currentWeek:
                         break
@@ -491,6 +447,10 @@ def fillSchedules(info):
                                 game.weekPlayed = currentWeek
                                 team.gamesPlayed += 1
                                 opponent.gamesPlayed += 1
+    print(f"Assign weeks {time.time() - start} seconds")
 
+    start = time.time()
     Games.objects.bulk_create(games_to_create)
     Teams.objects.bulk_update(teams, ["confGames", "nonConfGames"])
+
+    print(f"End {time.time() - start} seconds")

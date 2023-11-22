@@ -8,70 +8,6 @@ from .util.sim.sim import simGame
 import os
 
 
-def make_game_logs(info, plays):
-    desired_positions = {"qb", "rb", "wr"}
-    game_log_dict = {}
-
-    # Get all starters outside of the play loop
-    all_starters = Players.objects.filter(
-        info=info, starter=True, pos__in=desired_positions
-    ).select_related("team")
-
-    # Group them by position and team
-    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
-    for player in all_starters:
-        starters_by_team_pos[(player.team, player.pos)].append(player)
-
-    # Get all unique games being simmed
-    simmed_games = {play.game for play in plays}
-
-    # Create a set to store (player, game) combinations for GameLog objects
-    player_game_combinations = set()
-
-    for game in simmed_games:
-        for team in [game.teamA, game.teamB]:
-            for pos in desired_positions:
-                starters = starters_by_team_pos.get((team, pos), [])
-                for starter in starters:
-                    player_game_combinations.add((starter, game))
-
-    # Create the in-memory GameLog objects
-    game_logs_to_process = [
-        GameLog(info=info, player=player, game=game)
-        for player, game in player_game_combinations
-    ]
-
-    for game_log in game_logs_to_process:
-        game_log_dict[(game_log.player, game_log.game)] = game_log
-
-    # Main logic for processing the plays
-    for play in plays:
-        game = play.game
-        offense_team = play.offense
-
-        rb_starters = starters_by_team_pos.get((offense_team, "rb"), [])
-        qb_starters = starters_by_team_pos.get((offense_team, "qb"), [])
-        wr_starters = starters_by_team_pos.get((offense_team, "wr"), [])
-
-        if play.playType == "run":
-            runner = random.choice(rb_starters) if rb_starters else None
-            if runner:
-                game_log = game_log_dict[(runner, game)]
-                update_game_log_for_run(play, game_log)
-                format_play_text(play, runner)
-
-        elif play.playType == "pass":
-            qb_starter = qb_starters[0] if qb_starters else None
-            receiver = random.choice(wr_starters) if wr_starters else None
-            if qb_starter and receiver:
-                qb_game_log = game_log_dict[(qb_starter, game)]
-                receiver_game_log = game_log_dict[(receiver, game)]
-                update_game_log_for_pass(play, qb_game_log, receiver_game_log)
-                format_play_text(play, qb_starter, receiver)
-
-    GameLog.objects.bulk_create(game_logs_to_process)
-
-
 def simWeek(request, weeks):
     start = time.time()
     user_id = request.session.session_key
@@ -98,6 +34,10 @@ def simWeek(request, weeks):
                 teamGames.append(game)
 
             simGame(game, info, drives_to_create, plays_to_create)
+
+        Games.objects.bulk_update(
+            toBeSimmed, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
+        )
 
         update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
         no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
@@ -199,7 +139,7 @@ def game(request, id):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
-    game = Games.objects.get(id=id)
+    game = info.games.get(id=id)
 
     if game.winner:
         return game_result(request, info, game)
@@ -214,7 +154,7 @@ def noncon(request):
     if not info.stage == "schedule non conference":
         id = request.GET.get("id")
         if id:
-            team = Teams.objects.get(id=id)
+            team = info.teams.get(id=id)
             info.team = team
         else:
             current_year = info.currentYear + 1
@@ -281,39 +221,34 @@ def fetch_teams(request):
 
     week = int(request.GET.get("week"))
 
-    scheduled_teams_as_teamA = Games.objects.filter(
-        info=info, weekPlayed=week
-    ).values_list("teamA", flat=True)
+    scheduled_teams_as_teamA = info.games.filter(weekPlayed=week).values_list(
+        "teamA", flat=True
+    )
 
-    scheduled_teams_as_teamB = Games.objects.filter(
-        info=info, weekPlayed=week
-    ).values_list("teamB", flat=True)
-
-    scheduled_teams = scheduled_teams_as_teamA.union(scheduled_teams_as_teamB)
-
-    opponents_as_teamA = Games.objects.filter(info=info, teamA=info.team).values_list(
+    scheduled_teams_as_teamB = info.games.filter(weekPlayed=week).values_list(
         "teamB", flat=True
     )
-    opponents_as_teamB = Games.objects.filter(info=info, teamB=info.team).values_list(
+    scheduled_teams = scheduled_teams_as_teamA.union(scheduled_teams_as_teamB)
+
+    opponents_as_teamA = info.games.filter(teamA=info.team).values_list(
+        "teamB", flat=True
+    )
+    opponents_as_teamB = info.games.filter(teamB=info.team).values_list(
         "teamA", flat=True
     )
     all_opponents = opponents_as_teamA.union(opponents_as_teamB)
 
-    eligible_teams = (
-        Teams.objects.filter(info=info, nonConfGames__lt=F("nonConfLimit"))
+    teams = (
+        info.teams.filter(nonConfGames__lt=F("nonConfLimit"))
         .exclude(id__in=scheduled_teams)
-        .exclude(
-            id__in=all_opponents
-        )  # Exclude all teams that info.team has played against
+        .exclude(id__in=all_opponents)
         .exclude(id=info.team.id)
         .exclude(conference=info.team.conference)
         .order_by("name")
         .values_list("name", flat=True)
     )
 
-    teams = list(eligible_teams)
-
-    return JsonResponse(teams, safe=False)
+    return JsonResponse(list(teams), safe=False)
 
 
 def schedulenc(request):
@@ -324,7 +259,7 @@ def schedulenc(request):
     week = int(request.POST.get("week"))
 
     team = info.team
-    opponent = Teams.objects.get(info=info, name=opponent_name)
+    opponent = info.teams.get(name=opponent_name)
 
     team.schedule = opponent.schedule = set()
 
@@ -372,10 +307,16 @@ def dashboard(request):
             week.spread = week.spreadB
             week.moneyline = week.moneylineB
 
-    teams = Teams.objects.filter(info=info).order_by("ranking")
-    confTeams = Teams.objects.filter(info=info, conference=team.conference).order_by(
-        "-confWins", "-resume"
-    )
+    teams = info.teams.order_by("ranking")
+    confTeams = list(team.conference.teams.all())
+
+    for team in confTeams:
+        if team.confWins + team.confLosses > 0:
+            team.pct = team.confWins / (team.confWins + team.confLosses)
+        else:
+            team.pct = 0
+
+    confTeams.sort(key=lambda o: (-o.pct, -o.confWins, o.confLosses, o.ranking))
 
     context = {
         "team": team,
@@ -401,24 +342,25 @@ def game_preview(request, info, game):
 
 
 def game_result(request, info, game):
-    conferences = info.conferences.all().order_by("confName")
     team = info.team
     drives = game.drives.all()
     game_logs = game.game_logs.all()
 
-    # Initialize an empty dictionary to store categorized game log strings
-    categorized_game_log_strings = {"Passing": [], "Rushing": [], "Receiving": []}
+    categorized_game_log_strings = {
+        "Passing": [],
+        "Rushing": [],
+        "Receiving": [],
+        "Kicking": [],
+    }
 
     for game_log in game_logs:
         player = game_log.player
-        position = player.pos  # Assuming 'position' is a field on your 'Players' model
-        team_name = (
-            player.team.name
-        )  # Assuming 'team' is a field on your 'Players' model
+        position = player.pos
+        team_name = player.team.name
 
         if "qb" in position.lower():
             qb_game_log_dict = {
-                "player_id": player.id,  # Assuming 'id' is a field on your 'Players' model
+                "player_id": player.id,
                 "team_name": team_name,
                 "game_log_string": f"{player.first} {player.last} ({team_name} - QB): {game_log.pass_completions}/{game_log.pass_attempts} for {game_log.pass_yards} yards, {game_log.pass_touchdowns} TDs, {game_log.pass_interceptions} INTs",
             }
@@ -426,7 +368,7 @@ def game_result(request, info, game):
 
         if "rb" in position.lower() or (
             "qb" in position.lower() and game_log.rush_attempts > 0
-        ):  # Include QBs with rushing attempts
+        ):
             rush_game_log_dict = {
                 "player_id": player.id,
                 "team_name": team_name,
@@ -436,22 +378,20 @@ def game_result(request, info, game):
 
         if "wr" in position.lower() or (
             "rb" in position.lower() and game_log.receiving_catches > 0
-        ):  # Include RBs with receptions
+        ):
             recv_game_log_dict = {
                 "player_id": player.id,
                 "team_name": team_name,
                 "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.receiving_catches} catches, {game_log.receiving_yards} yards, {game_log.receiving_touchdowns} TDs",
             }
             categorized_game_log_strings["Receiving"].append(recv_game_log_dict)
-
-    # if game.teamA == team:
-    #     game.opponent = game.teamB
-    #     game.team.score = game.scoreA
-    #     game.opponent.score = game.scoreB
-    # else:
-    #     game.opponent = game.teamA
-    #     game.team.score = game.scoreB
-    #     game.opponent.score = game.scoreA
+        if "k" in position.lower():
+            qb_game_log_dict = {
+                "player_id": player.id,
+                "team_name": team_name,
+                "game_log_string": f"{player.first} {player.last} ({team_name} - K): {game_log.field_goals_made}/{game_log.field_goals_made} FG",
+            }
+            categorized_game_log_strings["Kicking"].append(qb_game_log_dict)
 
     scoreA = scoreB = 0
     for drive in drives:
@@ -468,110 +408,14 @@ def game_result(request, info, game):
         drive.teamAfter = scoreA
         drive.oppAfter = scoreB
 
-    team_yards = opp_yards = 0
-    team_passing_yards = team_rushing_yards = opp_passing_yards = opp_rushing_yards = 0
-    team_first_downs = opp_first_downs = 0
-    team_third_down_a = team_third_down_c = opp_third_down_a = opp_third_down_c = 0
-    team_fourth_down_a = team_fourth_down_c = opp_fourth_down_a = opp_fourth_down_c = 0
-    team_turnovers = opp_turnovers = 0
-    for play in game.plays.all():
-        if play.startingFP < 50:
-            location = f"{play.offense.abbreviation} {play.startingFP}"
-        elif play.startingFP > 50:
-            location = f"{play.defense.abbreviation} {100 - play.startingFP}"
-        else:
-            location = f"{play.startingFP}"
-
-        if play.startingFP + play.yardsLeft >= 100:
-            if play.down == 1:
-                play.header = f"{play.down}st and goal at {location}"
-            elif play.down == 2:
-                play.header = f"{play.down}nd and goal at {location}"
-            elif play.down == 3:
-                play.header = f"{play.down}rd and goal at {location}"
-            elif play.down == 4:
-                play.header = f"{play.down}th and goal at {location}"
-        else:
-            if play.down == 1:
-                play.header = f"{play.down}st and {play.yardsLeft} at {location}"
-            elif play.down == 2:
-                play.header = f"{play.down}nd and {play.yardsLeft} at {location}"
-            elif play.down == 3:
-                play.header = f"{play.down}rd and {play.yardsLeft} at {location}"
-            elif play.down == 4:
-                play.header = f"{play.down}th and {play.yardsLeft} at {location}"
-
-        play.save()
-
-        if play.offense == game.teamA:
-            if play.playType == "pass":
-                team_passing_yards += play.yardsGained
-            elif play.playType == "run":
-                team_rushing_yards += play.yardsGained
-            if play.yardsGained >= play.yardsLeft:
-                team_first_downs += 1
-            if play.result == "interception" or play.result == "fumble":
-                team_turnovers += 1
-            elif play.down == 3:
-                team_third_down_a += 1
-                if play.yardsGained >= play.yardsLeft:
-                    team_third_down_c += 1
-            elif play.down == 4:
-                if play.playType != "punt" and play.playType != "field goal attempt":
-                    team_fourth_down_a += 1
-                    if play.yardsGained >= play.yardsLeft:
-                        team_fourth_down_c += 1
-        elif play.offense == game.teamB:
-            if play.playType == "pass":
-                opp_passing_yards += play.yardsGained
-            elif play.playType == "run":
-                opp_rushing_yards += play.yardsGained
-            if play.yardsGained >= play.yardsLeft:
-                opp_first_downs += 1
-            if play.result == "interception" or play.result == "fumble":
-                opp_turnovers += 1
-            elif play.down == 3:
-                opp_third_down_a += 1
-                if play.yardsGained >= play.yardsLeft:
-                    opp_third_down_c += 1
-            elif play.down == 4:
-                if play.playType != "punt" and play.playType != "field goal attempt":
-                    opp_fourth_down_a += 1
-                    if play.yardsGained >= play.yardsLeft:
-                        opp_fourth_down_c += 1
-
-    team_yards = team_passing_yards + team_rushing_yards
-    opp_yards = opp_passing_yards + opp_rushing_yards
-
-    stats = {
-        "total yards": {"team": team_yards, "opponent": opp_yards},
-        "passing yards": {"team": team_passing_yards, "opponent": opp_passing_yards},
-        "rushing yards": {"team": team_rushing_yards, "opponent": opp_rushing_yards},
-        "1st downs": {"team": team_first_downs, "opponent": opp_first_downs},
-        "3rd down conversions": {
-            "team": team_third_down_c,
-            "opponent": opp_third_down_c,
-        },
-        "3rd down attempts": {"team": team_third_down_a, "opponent": opp_third_down_a},
-        "4th down conversions": {
-            "team": team_fourth_down_c,
-            "opponent": opp_fourth_down_c,
-        },
-        "4th down attempts": {
-            "team": team_fourth_down_a,
-            "opponent": opp_fourth_down_a,
-        },
-        "turnovers": {"team": team_turnovers, "opponent": opp_turnovers},
-    }
-
     context = {
         "team": team,
         "game": game,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         "info": info,
-        "conferences": conferences,
+        "conferences": info.conferences.all().order_by("confName"),
         "drives": drives,
-        "stats": stats,
+        "stats": game_stats(game),
         "categorized_game_log_strings": categorized_game_log_strings,
     }
 
