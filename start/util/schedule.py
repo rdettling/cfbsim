@@ -136,6 +136,7 @@ def scheduleGame(
     game = Games(
         info=info,
         teamA=team,
+        year=info.currentYear,
         teamB=opponent,
         labelA=labelA,
         labelB=labelB,
@@ -178,9 +179,34 @@ def scheduleGame(
     return team, opponent, game
 
 
-def refresh_teams_and_games(info):
-    info.games.all().delete()
+def update_history(info):
     teams = info.teams.all()
+
+    years = []
+
+    for team in teams:
+        years.append(
+            Years(
+                info=info,
+                team=team,
+                year=info.currentYear,
+                wins=team.totalWins,
+                losses=team.totalLosses,
+                prestige=team.prestige,
+                rating=team.rating,
+                rank=team.ranking,
+                conference=team.conference.confName
+                if team.conference
+                else "Independent",
+            )
+        )
+
+    Years.objects.bulk_create(years)
+
+
+def refresh_teams_and_games(info):
+    teams = info.teams.all()
+    info.plays.all().delete()
 
     for team in teams:
         team.confGames = 0
@@ -217,22 +243,35 @@ def setNatty(info):
     playoff = info.playoff
     playoff.refresh_from_db()
     games_to_create = []
-    week_mapping = {4: 15, 12: 17}
+    week_mapping = {2: 14, 4: 15, 12: 17}
 
-    playoff.natty = scheduleGame(
-        info,
-        playoff.left_semi.winner,
-        playoff.right_semi.winner,
-        games_to_create,
-        week_mapping.get(playoff.teams),
-        "National Championship",
-    )[2]
+    if playoff.teams == 2:
+        teams = info.teams.order_by("ranking")
+
+        playoff.natty = scheduleGame(
+            info,
+            teams[0],
+            teams[1],
+            games_to_create,
+            week_mapping.get(playoff.teams),
+            "National Championship",
+        )[2]
+    else:
+        playoff.natty = scheduleGame(
+            info,
+            playoff.left_semi.winner,
+            playoff.right_semi.winner,
+            games_to_create,
+            week_mapping.get(playoff.teams),
+            "National Championship",
+        )[2]
 
     Games.objects.bulk_create(games_to_create)
     playoff.save()
 
 
 def end_season(info):
+    update_history(info)
     info.stage = "end of season"
 
 
@@ -259,9 +298,7 @@ def setConferenceChampionships(info):
         conference.championship = game
 
     Games.objects.bulk_create(games_to_create)
-
-    for conference in conferences:
-        conference.save()
+    Conferences.objects.bulk_update(conferences, ["championship"])
 
 
 def uniqueGames(info, data):
@@ -321,7 +358,7 @@ def fillSchedules(info):
     start = time.time()
     teams = list(info.teams.all())
     conferences = list(info.conferences.all())
-    games = info.games.all()
+    games = info.games.filter(year=info.currentYear)
     odds_list = info.odds.all()
 
     random.shuffle(teams)
@@ -408,7 +445,7 @@ def fillSchedules(info):
     start = time.time()
     teams = sorted(teams, key=lambda team: team.prestige, reverse=True)
 
-    all_games = info.games.all()
+    all_games = info.games.filter(year=info.currentYear)
 
     for currentWeek in range(1, 13):
         already_scheduled = all_games.filter(weekPlayed=currentWeek)

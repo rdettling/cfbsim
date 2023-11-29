@@ -7,8 +7,8 @@ def schedule(request, week_num):
     info = Info.objects.get(user_id=user_id)
 
     team = info.team
-    conferences = Conferences.objects.filter(info=info).order_by("confName")
-    games = list(Games.objects.filter(info=info, weekPlayed=week_num))
+    conferences = info.conferences.order_by("confName")
+    games = list(info.games.filter(year=info.currentYear, weekPlayed=week_num))
 
     if games:
         for game in games:

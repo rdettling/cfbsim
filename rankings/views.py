@@ -3,8 +3,12 @@ from start.models import *
 
 
 def get_last_game(info, team):
-    games_as_teamA = team.games_as_teamA.filter(weekPlayed=info.currentWeek - 1)
-    games_as_teamB = team.games_as_teamB.filter(weekPlayed=info.currentWeek - 1)
+    games_as_teamA = team.games_as_teamA.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek - 1
+    )
+    games_as_teamB = team.games_as_teamB.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek - 1
+    )
     schedule = list(games_as_teamA | games_as_teamB)
     if schedule:
         last_game = schedule[-1]
@@ -36,8 +40,12 @@ def get_last_game(info, team):
 
 
 def get_next_game(info, team):
-    games_as_teamA = team.games_as_teamA.filter(weekPlayed=info.currentWeek)
-    games_as_teamB = team.games_as_teamB.filter(weekPlayed=info.currentWeek)
+    games_as_teamA = team.games_as_teamA.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek
+    )
+    games_as_teamB = team.games_as_teamB.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek
+    )
     schedule = list(games_as_teamA | games_as_teamB)
     if schedule:
         next_game = schedule[-1]

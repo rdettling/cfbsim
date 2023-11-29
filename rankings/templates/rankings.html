@@ -3,10 +3,12 @@
 {% endblock %} {% block content %}
 <div class="text-center mb-3">
     <h1 class="display-5">AP Top 25</h1>
-    {% if info.currentWeek > info.playoff.lastWeek %}
-    <h2 class="lead">End of season</h2>
-    {% else%}
+    {% if info.stage == 'season' %}
     <h2 class="lead">Week {{info.currentWeek}}</h2>
+    {% elif info.stage == 'schedule non conference'%}
+    <h2 class="lead">Preseason</h2>
+    {% else%}
+    <h2 class="lead">End of season</h2>
     {%endif%}
 </div>
 

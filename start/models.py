@@ -6,6 +6,7 @@ class Info(models.Model):
     user_id = models.CharField(max_length=255, primary_key=True)
     currentWeek = models.IntegerField(null=True)
     currentYear = models.IntegerField()
+    startYear = models.IntegerField()
     team = models.ForeignKey(
         "Teams", on_delete=models.SET_NULL, null=True, related_name="infos"
     )
@@ -56,8 +57,23 @@ class Players(models.Model):
     year = models.CharField(max_length=2)
     pos = models.CharField(max_length=2)
     rating = models.IntegerField()
+    rating_fr = models.IntegerField()
+    rating_so = models.IntegerField()
+    rating_jr = models.IntegerField()
+    rating_sr = models.IntegerField()
     starter = models.BooleanField()
-    rating_increase = models.IntegerField(null=True)
+
+
+class Years(models.Model):
+    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="years")
+    team = models.ForeignKey(Teams, on_delete=models.CASCADE, related_name="years")
+    year = models.IntegerField()
+    prestige = models.IntegerField()
+    rating = models.IntegerField()
+    wins = models.IntegerField()
+    losses = models.IntegerField()
+    rank = models.IntegerField()
+    conference = models.CharField(max_length=50)
 
 
 class GameLog(models.Model):
@@ -120,6 +136,7 @@ class Games(models.Model):
     winProbA = models.FloatField()
     winProbB = models.FloatField()
     weekPlayed = models.IntegerField()
+    year = models.IntegerField()
     rankATOG = models.IntegerField()
     rankBTOG = models.IntegerField()
     resultA = models.CharField(max_length=1, null=True)

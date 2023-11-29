@@ -9,8 +9,15 @@ def schedule(request, team_name):
 
     team = info.teams.get(name=team_name)
 
-    games_as_teamA = team.games_as_teamA.all()
-    games_as_teamB = team.games_as_teamB.all()
+    year = request.GET.get("year")
+
+    if year:
+        games_as_teamA = team.games_as_teamA.filter(year=year)
+        games_as_teamB = team.games_as_teamB.filter(year=year)
+    else:
+        games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
+        games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
+
     schedule = list(games_as_teamA | games_as_teamB)
     schedule = sorted(schedule, key=lambda game: game.weekPlayed)
 
@@ -46,7 +53,12 @@ def schedule(request, team_name):
         week.ranking = opponent.ranking
         week.opponentRecord = f"{opponent.totalWins} - {opponent.totalLosses} ({opponent.confWins} - {opponent.confLosses})"
 
+    years = []
+    for i in range(info.currentYear, info.startYear - 1, -1):
+        years.append(i)
+
     context = {
+        "years": years,
         "team": team,
         "teams": info.teams.order_by("name"),
         "schedule": schedule,
@@ -56,6 +68,27 @@ def schedule(request, team_name):
     }
 
     return render(request, "schedule.html", context)
+
+
+def history(request, team_name):
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
+
+    teams = info.teams.all()
+    team = teams.get(name=team_name)
+
+    years = team.years.order_by("-year")
+
+    context = {
+        "years": years,
+        "team": team,
+        "teams": teams.order_by("name"),
+        "info": info,
+        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+        "conferences": info.conferences.order_by("confName"),
+    }
+
+    return render(request, "history.html", context)
 
 
 def roster(request, team_name):
@@ -90,7 +123,11 @@ def player(request, team_name, id):
     player = Players.objects.get(id=id)
     team = player.team
 
-    game_logs = player.game_logs.all()  # Query for the game logs
+    year = request.GET.get("year")
+    if year:
+        game_logs = player.game_logs.filter(game__year=year)
+    else:
+        game_logs = player.game_logs.filter(game__year=info.currentYear)
 
     cumulative_stats = {
         "pass_yards": 0,
@@ -190,7 +227,23 @@ def player(request, team_name, id):
     else:
         cumulative_stats["yards_per_reception"] = 0
 
+    years = []
+    current_year = info.currentYear
+    if player.year == "fr":
+        years.append(current_year)
+    elif player.year == "so":
+        years.extend([current_year, current_year - 1])
+    elif player.year == "jr":
+        years.extend([current_year, current_year - 1, current_year - 2])
+    elif player.year == "sr":
+        years.extend(
+            [current_year, current_year - 1, current_year - 2, current_year - 3]
+        )
+
+    years = [year for year in years if info.startYear <= year <= current_year]
+
     context = {
+        "years": years,
         "team": team,
         "player": player,
         "info": info,

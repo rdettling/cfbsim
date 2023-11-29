@@ -87,6 +87,19 @@
 </table>
 {% endif %}
 
+<div class="row mb-3">
+    <div class="col-md-3 text-center">
+        <div class="form-group">
+            <label for="yearFilter">Year</label>
+            <select class="form-control" id="yearFilter">
+                {% for year in years %}
+                <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
 <h2>Game Logs</h2>
 <table class="table">
     <thead>
@@ -139,4 +152,40 @@
         {% endfor %}
     </tbody>
 </table>
+{% endblock %} {% block additional_scripts %}
+
+<script>
+    $(document).ready(function () {
+        const player_id = window.location.href.split('/').slice(-1)[0];
+        let year = getQueryParam('year');
+
+        // Check if the year is null, and set it to info.currentYear if necessary
+        if (year === null) {
+            year = {{info.currentYear}}; // Assuming info.currentYear is defined elsewhere
+        }
+
+        // Handle the year dropdown
+        $('#yearFilter')
+            .val(year)
+            .change(function () {
+                const selectedYear = $(this).val();
+                navigateToPlayerGameLogs(player_id, selectedYear);
+            });
+    });
+
+    // Function to extract query parameters from the URL
+    function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    // Function to navigate to the player's game logs page with year filter
+    function navigateToPlayerGameLogs(player_id, selectedYear) {
+        const url = `/teams/{{team.name}}/roster/{{player.id}}`;
+        const queryParams = new URLSearchParams(window.location.search);
+        queryParams.set('year', selectedYear);
+        window.location.href = `${url}?${queryParams.toString()}`;
+    }
+</script>
+
 {% endblock %}

@@ -12,7 +12,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for player in leaving_seniors %}
+            {% for player in leaving %}
             <tr>
                 <td>{{ player.first }} {{ player.last }}</td>
                 <td>{{ player.pos }}</td>
@@ -33,7 +33,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for player in progressed_players %}
+            {% for player in progressed %}
             <tr>
                 <td>
                     <a href="{% url 'player' player.team.name player.id %}">{{ player.first }} {{ player.last }}</a>
@@ -42,7 +42,7 @@
                 <td>{{ player.pos }}</td>
                 <td>
                     {{ player.rating }}
-                    <span style="color: green">(+{{ player.rating_increase}})</span>
+                    <span style="color: green">(+{{ player.change}})</span>
                 </td>
             </tr>
             {% endfor %}

@@ -43,10 +43,15 @@ def getProgression():
     return random.randint(1, 5)
 
 
-def getStartRating(prestige):
+def getRatings(prestige):
     variance = 15
 
-    return prestige - random.randint(0, variance) - 5
+    fr = prestige - random.randint(0, variance) - 5
+    so = fr + getProgression()
+    jr = so + getProgression()
+    sr = jr + getProgression()
+
+    return (fr, so, jr, sr)
 
 
 def update_rosters(info):
@@ -59,21 +64,19 @@ def update_rosters(info):
     rating_increases = {}
 
     for player in players:
-        increase = getProgression()
-        player.rating += increase
-        player.rating_increase = increase
-
         if player.year == "fr":
             player.year = "so"
+            player.rating = player.rating_so
         elif player.year == "so":
             player.year = "jr"
+            player.rating = player.rating_jr
         elif player.year == "jr":
             player.year = "sr"
+            player.rating = player.rating_sr
 
         to_update.append(player)
-        rating_increases[player.id] = increase
 
-    Players.objects.bulk_update(to_update, ["rating", "rating_increase", "year"])
+    Players.objects.bulk_update(to_update, ["rating", "year"])
 
     leaving_seniors_of_team = [
         player for player in leaving_seniors if player.team == team
@@ -81,9 +84,8 @@ def update_rosters(info):
     progressed_players_of_team = [player for player in players if player.team == team]
 
     return {
-        "leaving_seniors": leaving_seniors_of_team,
-        "progressed_players": progressed_players_of_team,
-        "rating_increases": rating_increases,
+        "leaving": leaving_seniors_of_team,
+        "progressed": progressed_players_of_team,
     }
 
 
@@ -238,6 +240,8 @@ def fill_roster(team, loaded_names, players_to_create):
         for _ in range(needed):
             first, last = generateName(position, loaded_names)
 
+            fr, so, jr, sr = getRatings(team.prestige)
+
             player = Players(
                 info=team.info,
                 team=team,
@@ -245,7 +249,11 @@ def fill_roster(team, loaded_names, players_to_create):
                 last=last,
                 year="fr",
                 pos=position,
-                rating=getStartRating(team.prestige),
+                rating=fr,
+                rating_fr=fr,
+                rating_so=so,
+                rating_jr=jr,
+                rating_sr=sr,
                 starter=False,
             )
             players_to_create.append(player)
@@ -259,9 +267,16 @@ def init_roster(team, loaded_names, players_to_create):
             first, last = generateName(position, loaded_names)
             year = random.choice(years)
 
-            rating = getStartRating(team.prestige)
-            for _ in range(years.index(year)):
-                rating += getProgression()
+            fr, so, jr, sr = getRatings(team.prestige)
+
+            if year == "fr":
+                rating = fr
+            elif year == "so":
+                rating = so
+            elif year == "jr":
+                rating = jr
+            elif year == "sr":
+                rating = sr
 
             player = Players(
                 info=team.info,
@@ -271,6 +286,10 @@ def init_roster(team, loaded_names, players_to_create):
                 year=year,
                 pos=position,
                 rating=rating,
+                rating_fr=fr,
+                rating_so=so,
+                rating_jr=jr,
+                rating_sr=sr,
                 starter=False,
             )
             players_to_create.append(player)

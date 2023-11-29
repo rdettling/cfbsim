@@ -43,7 +43,6 @@ def start_season(info):
     # aiRecruitOffers(info)
 
     info.currentWeek = 1
-    info.currentYear += 1
     info.stage = "season"
     info.save()
 
@@ -52,11 +51,13 @@ def realignment(info, data):
     info.playoff.teams = data["playoff"]["teams"]
     info.playoff.autobids = data["playoff"]["autobids"]
     info.playoff.lastWeek = data["playoff"]["lastWeek"]
-
     info.playoff.save()
 
+    teams = info.teams.all()
+    conferences = info.conferences.all()
+
     for conference in data["conferences"]:
-        if not info.conferences.filter(confName=conference["confName"]).exists():
+        if not conferences.filter(confName=conference["confName"]).exists():
             Conferences.objects.create(
                 info=info,
                 confName=conference["confName"],
@@ -66,8 +67,8 @@ def realignment(info, data):
 
         for team in conference["teams"]:
             try:
-                Team = info.teams.get(name=team["name"])
-                Team.conference = info.conferences.get(confName=conference["confName"])
+                Team = teams.get(name=team["name"])
+                Team.conference = conferences.get(confName=conference["confName"])
                 Team.confLimit = conference["confGames"]
                 Team.nonConfLimit = 12 - conference["confGames"]
                 Team.save()
@@ -89,7 +90,7 @@ def realignment(info, data):
 
     for team in data["independents"]:
         try:
-            Team = info.teams.get(name=team["name"])
+            Team = teams.get(name=team["name"])
             Team.conference = None
             Team.save()
         except Teams.DoesNotExist:
@@ -109,7 +110,7 @@ def realignment(info, data):
             )
 
     with transaction.atomic():
-        for conference in info.conferences.all():
+        for conference in conferences:
             if conference.teams.count() == 0:
                 conference.delete()
 
@@ -129,7 +130,10 @@ def init(data, user_id, year):
 
     Info.objects.filter(user_id=user_id).delete()
     info = Info.objects.create(
-        user_id=user_id, currentWeek=1, currentYear=int(year) - 1
+        user_id=user_id,
+        currentWeek=1,
+        currentYear=year,
+        startYear=year,
     )
 
     playoff = Playoff.objects.create(
@@ -266,7 +270,7 @@ def update_rankings(info):
     win_factor = 172
     loss_factor = 157
 
-    total_weeks = 12
+    total_weeks = 13
     weeks_left = max(0, (total_weeks - info.currentWeek))
     inertia_scale = weeks_left / total_weeks
 

@@ -12,7 +12,7 @@ def simWeek(request, weeks):
     start = time.time()
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
-    all_games = info.games.all()
+    all_games = info.games.filter(year=info.currentYear)
 
     team = info.team
 
@@ -46,6 +46,11 @@ def simWeek(request, weeks):
             update_rankings(info)
 
         all_actions = {
+            2: {
+                12: setConferenceChampionships,
+                13: setNatty,
+                14: end_season,
+            },
             4: {
                 12: setConferenceChampionships,
                 13: setPlayoffSemi,
@@ -157,8 +162,9 @@ def noncon(request):
             team = info.teams.get(id=id)
             info.team = team
         else:
-            current_year = info.currentYear + 1
-            while current_year >= 2022:
+            info.currentYear += 1
+            current_year = info.currentYear
+            while current_year >= info.startYear:
                 file_path = f"static/years/{current_year}.json"
                 if os.path.exists(file_path):
                     with open(file_path, "r") as metadataFile:
@@ -177,8 +183,8 @@ def noncon(request):
 
     team = info.team
 
-    games_as_teamA = team.games_as_teamA.all()
-    games_as_teamB = team.games_as_teamB.all()
+    games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
+    games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
     schedule = list(games_as_teamA | games_as_teamB)
     schedule = sorted(schedule, key=lambda game: game.weekPlayed)
 
@@ -218,24 +224,20 @@ def noncon(request):
 def fetch_teams(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
-
     week = int(request.GET.get("week"))
 
-    scheduled_teams_as_teamA = info.games.filter(weekPlayed=week).values_list(
+    games = info.games.filter(year=info.currentYear)
+
+    scheduled_teams_as_teamA = games.filter(weekPlayed=week).values_list(
         "teamA", flat=True
     )
-
-    scheduled_teams_as_teamB = info.games.filter(weekPlayed=week).values_list(
+    scheduled_teams_as_teamB = games.filter(weekPlayed=week).values_list(
         "teamB", flat=True
     )
     scheduled_teams = scheduled_teams_as_teamA.union(scheduled_teams_as_teamB)
 
-    opponents_as_teamA = info.games.filter(teamA=info.team).values_list(
-        "teamB", flat=True
-    )
-    opponents_as_teamB = info.games.filter(teamB=info.team).values_list(
-        "teamA", flat=True
-    )
+    opponents_as_teamA = games.filter(teamA=info.team).values_list("teamB", flat=True)
+    opponents_as_teamB = games.filter(teamB=info.team).values_list("teamA", flat=True)
     all_opponents = opponents_as_teamA.union(opponents_as_teamB)
 
     teams = (
@@ -289,8 +291,8 @@ def dashboard(request):
     if not info.stage == "season":
         start_season(info)
 
-    games_as_teamA = team.games_as_teamA.all()
-    games_as_teamB = team.games_as_teamB.all()
+    games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
+    games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
     schedule = list(games_as_teamA | games_as_teamB)
     for week in schedule:
         week.team = team
@@ -442,7 +444,8 @@ def roster_progression(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
-    if not info.stage == "roster progression":
+    # Update rosters and info if not in "roster progression" stage
+    if info.stage != "roster progression":
         start = time.time()
         rosters_update = update_rosters(info)
         print(f"Roster update {time.time() - start} seconds")
@@ -450,14 +453,21 @@ def roster_progression(request):
         info.stage = "roster progression"
         info.save()
 
-        context = {
-            "info": info,
-            "leaving_seniors": rosters_update["leaving_seniors"],
-            "progressed_players": rosters_update["progressed_players"],
-        }
-    else:
-        context = {
-            "info": info,
-        }
+    # Retrieve progressed players after potential roster update
+    progressed = info.team.players.all()
+    for player in progressed:
+        if player.year == "so":
+            player.change = player.rating - player.rating_fr
+        elif player.year == "jr":
+            player.change = player.rating - player.rating_so
+        elif player.year == "sr":
+            player.change = player.rating - player.rating_jr
+
+    # Prepare context
+    context = {"info": info, "progressed": progressed}
+
+    # Add 'leaving' key only if rosters were updated
+    if info.stage == "roster progression" and "rosters_update" in locals():
+        context["leaving"] = rosters_update["leaving"]
 
     return render(request, "roster_progression.html", context)
