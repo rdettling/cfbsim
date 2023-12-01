@@ -178,6 +178,9 @@ class Drives(models.Model):
     startingFP = models.IntegerField()
     result = models.CharField(max_length=50)
     points = models.IntegerField()
+    points_needed = models.IntegerField()
+    scoreAAfter = models.IntegerField()
+    scoreBAfter = models.IntegerField()
 
 
 class Plays(models.Model):
@@ -203,6 +206,7 @@ class Plays(models.Model):
     result = models.CharField(max_length=50)
     text = models.CharField(max_length=100, null=True)
     header = models.CharField(max_length=100, null=True)
+    # agression = models.FloatField()
 
 
 class Playoff(models.Model):

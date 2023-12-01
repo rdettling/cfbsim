@@ -83,7 +83,7 @@ def getWinProb(teamARating, teamBRating):
 
 
 def testGame(teamA, teamB):
-    tests = 500
+    tests = 100
     scoreA = scoreB = 0
     winA = winB = 0
 
@@ -182,3 +182,9 @@ def getSpread(gap, tax_factor=0.05):
         }
 
     return odds
+
+
+a = Team(90)
+b = Team(90)
+
+# print(testGame(a, b))

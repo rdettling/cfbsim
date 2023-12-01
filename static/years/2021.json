@@ -66,7 +66,7 @@
                     "name": "Georgia",
                     "mascot": "Bulldogs",
                     "abbreviation": "UGA",
-                    "prestige": 94,
+                    "prestige": 93,
                     "colorPrimary": "#BA0C2F",
                     "colorSecondary": "#000000"
                 },
@@ -74,7 +74,7 @@
                     "name": "LSU",
                     "mascot": "Tigers",
                     "abbreviation": "LSU",
-                    "prestige": 86,
+                    "prestige": 85,
                     "colorPrimary": "#461D7C",
                     "colorSecondary": "#FDD023"
                 },
@@ -82,7 +82,7 @@
                     "name": "Texas A&M",
                     "mascot": "Aggies",
                     "abbreviation": "TAMU",
-                    "prestige": 84,
+                    "prestige": 83,
                     "colorPrimary": "#500000",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -90,7 +90,7 @@
                     "name": "Florida",
                     "mascot": "Gators",
                     "abbreviation": "UF",
-                    "prestige": 84,
+                    "prestige": 83,
                     "colorPrimary": "#0021A5",
                     "colorSecondary": "#FA4616"
                 },
@@ -98,7 +98,7 @@
                     "name": "Kentucky",
                     "mascot": "Wildcats",
                     "abbreviation": "UK",
-                    "prestige": 81,
+                    "prestige": 79,
                     "colorPrimary": "#0033A0",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -106,7 +106,7 @@
                     "name": "Tennessee",
                     "mascot": "Volunteers",
                     "abbreviation": "TEN",
-                    "prestige": 80,
+                    "prestige": 75,
                     "colorPrimary": "#FF8200",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -114,7 +114,7 @@
                     "name": "Auburn",
                     "mascot": "Tigers",
                     "abbreviation": "AUB",
-                    "prestige": 83,
+                    "prestige": 84,
                     "colorPrimary": "#0C2340",
                     "colorSecondary": "#E87722"
                 },
@@ -122,7 +122,7 @@
                     "name": "Arkansas",
                     "mascot": "Razorbacks",
                     "abbreviation": "ARK",
-                    "prestige": 76,
+                    "prestige": 73,
                     "colorPrimary": "#9D2235",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -130,7 +130,7 @@
                     "name": "Mississippi State",
                     "mascot": "Bulldogs",
                     "abbreviation": "MSST",
-                    "prestige": 81,
+                    "prestige": 80,
                     "colorPrimary": "#660000",
                     "colorSecondary": "#CCCCCC"
                 },
@@ -138,7 +138,7 @@
                     "name": "Vanderbilt",
                     "mascot": "Commodores",
                     "abbreviation": "VAN",
-                    "prestige": 69,
+                    "prestige": 67,
                     "colorPrimary": "#866D4B",
                     "colorSecondary": "#000000"
                 },
@@ -146,7 +146,7 @@
                     "name": "South Carolina",
                     "mascot": "Gamecocks",
                     "abbreviation": "SCAR",
-                    "prestige": 77,
+                    "prestige": 76,
                     "colorPrimary": "#73000A",
                     "colorSecondary": "#000000"
                 },
@@ -154,7 +154,7 @@
                     "name": "Ole Miss",
                     "mascot": "Rebels",
                     "abbreviation": "MISS",
-                    "prestige": 80,
+                    "prestige": 78,
                     "colorPrimary": "#CE1126",
                     "colorSecondary": "#006BA6"
                 },
@@ -162,7 +162,7 @@
                     "name": "Missouri",
                     "mascot": "Tigers",
                     "abbreviation": "MIZZ",
-                    "prestige": 78,
+                    "prestige": 77,
                     "colorPrimary": "#000000",
                     "colorSecondary": "#F1B82D"
                 }
@@ -193,7 +193,7 @@
                     "name": "Illinois",
                     "mascot": "Fighting Illini",
                     "abbreviation": "ILL",
-                    "prestige": 75,
+                    "prestige": 70,
                     "colorPrimary": "#13294B",
                     "colorSecondary": "#E84A27"
                 },
@@ -201,7 +201,7 @@
                     "name": "Michigan",
                     "mascot": "Wolverines",
                     "abbreviation": "MICH",
-                    "prestige": 87,
+                    "prestige": 85,
                     "colorPrimary": "#00274C",
                     "colorSecondary": "#FFCB05"
                 },
@@ -217,7 +217,7 @@
                     "name": "Michigan State",
                     "mascot": "Spartans",
                     "abbreviation": "MSU",
-                    "prestige": 79,
+                    "prestige": 80,
                     "colorPrimary": "#18453B",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -225,7 +225,7 @@
                     "name": "Wisconsin",
                     "mascot": "Badgers",
                     "abbreviation": "WISC",
-                    "prestige": 84,
+                    "prestige": 86,
                     "colorPrimary": "#C5050C",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -241,7 +241,7 @@
                     "name": "Maryland",
                     "mascot": "Terrapins",
                     "abbreviation": "UMD",
-                    "prestige": 76,
+                    "prestige": 74,
                     "colorPrimary": "#E03A3E",
                     "colorSecondary": "#FFD520"
                 },
@@ -249,7 +249,7 @@
                     "name": "Northwestern",
                     "mascot": "Wildcats",
                     "abbreviation": "NU",
-                    "prestige": 75,
+                    "prestige": 77,
                     "colorPrimary": "#4E2A84",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -257,7 +257,7 @@
                     "name": "Rutgers",
                     "mascot": "Scarlet Knights",
                     "abbreviation": "RUT",
-                    "prestige": 69,
+                    "prestige": 68,
                     "colorPrimary": "#CC0033",
                     "colorSecondary": "#5F6A72"
                 },
@@ -273,7 +273,7 @@
                     "name": "Minnesota",
                     "mascot": "Golden Gophers",
                     "abbreviation": "MINN",
-                    "prestige": 80,
+                    "prestige": 78,
                     "colorPrimary": "#7A0019",
                     "colorSecondary": "#FFCC33"
                 },
@@ -296,7 +296,7 @@
                     "name": "Clemson",
                     "mascot": "Tigers",
                     "abbreviation": "CLEM",
-                    "prestige": 90,
+                    "prestige": 91,
                     "colorPrimary": "#F56600",
                     "colorSecondary": "#522D80"
                 },
@@ -312,7 +312,7 @@
                     "name": "Miami",
                     "mascot": "Hurricanes",
                     "abbreviation": "MIA",
-                    "prestige": 77,
+                    "prestige": 80,
                     "colorPrimary": "#F47321",
                     "colorSecondary": "#005030"
                 },
@@ -320,7 +320,7 @@
                     "name": "Virginia Tech",
                     "mascot": "Hokies",
                     "abbreviation": "VT",
-                    "prestige": 74,
+                    "prestige": 76,
                     "colorPrimary": "#630031",
                     "colorSecondary": "#CF4420"
                 },
@@ -336,7 +336,7 @@
                     "name": "North Carolina",
                     "mascot": "Tar Heels",
                     "abbreviation": "UNC",
-                    "prestige": 77,
+                    "prestige": 75,
                     "colorPrimary": "#7BAFD4",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -344,7 +344,7 @@
                     "name": "Pittsburgh",
                     "mascot": "Panthers",
                     "abbreviation": "PITT",
-                    "prestige": 79,
+                    "prestige": 77,
                     "colorPrimary": "#003594",
                     "colorSecondary": "#FFB81C"
                 },
@@ -368,7 +368,7 @@
                     "name": "Wake Forest",
                     "mascot": "Demon Deacons",
                     "abbreviation": "WAKE",
-                    "prestige": 79,
+                    "prestige": 78,
                     "colorPrimary": "#9E7E38",
                     "colorSecondary": "#000000"
                 },
@@ -376,7 +376,7 @@
                     "name": "Syracuse",
                     "mascot": "Orange",
                     "abbreviation": "CUSE",
-                    "prestige": 75,
+                    "prestige": 73,
                     "colorPrimary": "#F76900",
                     "colorSecondary": "#000E54"
                 },
@@ -384,7 +384,7 @@
                     "name": "Louisville",
                     "mascot": "Cardinals",
                     "abbreviation": "LOU",
-                    "prestige": 75,
+                    "prestige": 74,
                     "colorPrimary": "#AD0000",
                     "colorSecondary": "#000000"
                 },
@@ -392,7 +392,7 @@
                     "name": "Duke",
                     "mascot": "Blue Devils",
                     "abbreviation": "DUKE",
-                    "prestige": 72,
+                    "prestige": 71,
                     "colorPrimary": "#003087",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -400,7 +400,7 @@
                     "name": "Boston College",
                     "mascot": "Eagles",
                     "abbreviation": "BC",
-                    "prestige": 74,
+                    "prestige": 75,
                     "colorPrimary": "#98002E",
                     "colorSecondary": "#BC9B6A"
                 }
@@ -415,7 +415,7 @@
                     "name": "Kansas",
                     "mascot": "Jayhawks",
                     "abbreviation": "KU",
-                    "prestige": 69,
+                    "prestige": 64,
                     "colorPrimary": "#0051BA",
                     "colorSecondary": "#E8000D"
                 },
@@ -423,7 +423,7 @@
                     "name": "Baylor",
                     "mascot": "Bears",
                     "abbreviation": "BAY",
-                    "prestige": 81,
+                    "prestige": 77,
                     "colorPrimary": "#154734",
                     "colorSecondary": "#FFB81C"
                 },
@@ -431,7 +431,7 @@
                     "name": "Texas Tech",
                     "mascot": "Red Raiders",
                     "abbreviation": "TTU",
-                    "prestige": 77,
+                    "prestige": 75,
                     "colorPrimary": "#CC0000",
                     "colorSecondary": "#000000"
                 },
@@ -439,7 +439,7 @@
                     "name": "Texas",
                     "mascot": "Longhorns",
                     "abbreviation": "TEX",
-                    "prestige": 84,
+                    "prestige": 82,
                     "colorPrimary": "#BF5700",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -447,7 +447,7 @@
                     "name": "Oklahoma",
                     "mascot": "Sooners",
                     "abbreviation": "OU",
-                    "prestige": 87,
+                    "prestige": 88,
                     "colorPrimary": "#841617",
                     "colorSecondary": "#FDF9D8"
                 },
@@ -455,7 +455,7 @@
                     "name": "Texas Christian",
                     "mascot": "Horned Frogs",
                     "abbreviation": "TCU",
-                    "prestige": 80,
+                    "prestige": 79,
                     "colorPrimary": "#4D1979",
                     "colorSecondary": "#A3A9AC"
                 },
@@ -463,7 +463,7 @@
                     "name": "Oklahoma State",
                     "mascot": "Cowboys",
                     "abbreviation": "OKST",
-                    "prestige": 82,
+                    "prestige": 83,
                     "colorPrimary": "#FF7300",
                     "colorSecondary": "#000000"
                 },
@@ -479,7 +479,7 @@
                     "name": "Kansas State",
                     "mascot": "Wildcats",
                     "abbreviation": "KSU",
-                    "prestige": 80,
+                    "prestige": 77,
                     "colorPrimary": "#512888",
                     "colorSecondary": "#D1D1D1"
                 },
@@ -487,7 +487,7 @@
                     "name": "West Virginia",
                     "mascot": "Mountaineers",
                     "abbreviation": "WVU",
-                    "prestige": 78,
+                    "prestige": 77,
                     "colorPrimary": "#002855",
                     "colorSecondary": "#EAAA00"
                 }
@@ -510,7 +510,7 @@
                     "name": "UCLA",
                     "mascot": "Bruins",
                     "abbreviation": "UCLA",
-                    "prestige": 77,
+                    "prestige": 74,
                     "colorPrimary": "#2D68C4",
                     "colorSecondary": "#F2A900"
                 },
@@ -526,7 +526,7 @@
                     "name": "USC",
                     "mascot": "Trojans",
                     "abbreviation": "USC",
-                    "prestige": 79,
+                    "prestige": 78,
                     "colorPrimary": "#990000",
                     "colorSecondary": "#FFC72C"
                 },
@@ -534,7 +534,7 @@
                     "name": "Oregon",
                     "mascot": "Ducks",
                     "abbreviation": "ORE",
-                    "prestige": 82,
+                    "prestige": 80,
                     "colorPrimary": "#154733",
                     "colorSecondary": "#FEE123"
                 },
@@ -542,7 +542,7 @@
                     "name": "Colorado",
                     "mascot": "Buffaloes",
                     "abbreviation": "CU",
-                    "prestige": 70,
+                    "prestige": 71,
                     "colorPrimary": "#CFB87C",
                     "colorSecondary": "#000000"
                 },
@@ -558,7 +558,7 @@
                     "name": "Stanford",
                     "mascot": "Cardinal",
                     "abbreviation": "STAN",
-                    "prestige": 73,
+                    "prestige": 74,
                     "colorPrimary": "#8C1515",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -566,7 +566,7 @@
                     "name": "Utah",
                     "mascot": "Utes",
                     "abbreviation": "UTAH",
-                    "prestige": 84,
+                    "prestige": 81,
                     "colorPrimary": "#CC0000",
                     "colorSecondary": "#000000"
                 },
@@ -582,7 +582,7 @@
                     "name": "California",
                     "mascot": "Golden Bears",
                     "abbreviation": "CAL",
-                    "prestige": 73,
+                    "prestige": 72,
                     "colorPrimary": "#003262",
                     "colorSecondary": "#FDB515"
                 },
@@ -590,7 +590,7 @@
                     "name": "Oregon State",
                     "mascot": "Beavers",
                     "abbreviation": "ORST",
-                    "prestige": 74,
+                    "prestige": 68,
                     "colorPrimary": "#DC4405",
                     "colorSecondary": "#000000"
                 }
@@ -605,7 +605,7 @@
                     "name": "Central Florida",
                     "mascot": "Knights",
                     "abbreviation": "UCF",
-                    "prestige": 81,
+                    "prestige": 83,
                     "colorPrimary": "#BA9B37",
                     "colorSecondary": "#000000"
                 },
@@ -613,7 +613,7 @@
                     "name": "Cincinnati",
                     "mascot": "Bearcats",
                     "abbreviation": "CINC",
-                    "prestige": 84,
+                    "prestige": 80,
                     "colorPrimary": "#E00122",
                     "colorSecondary": "#000000"
                 },
@@ -621,7 +621,7 @@
                     "name": "East Carolina",
                     "mascot": "Pirates",
                     "abbreviation": "ECU",
-                    "prestige": 70,
+                    "prestige": 66,
                     "colorPrimary": "#592A8A",
                     "colorSecondary": "#FDC82F"
                 },
@@ -629,7 +629,7 @@
                     "name": "Houston",
                     "mascot": "Cougars",
                     "abbreviation": "HOU",
-                    "prestige": 76,
+                    "prestige": 75,
                     "colorPrimary": "#C8102E",
                     "colorSecondary": "#B2B4B2"
                 },
@@ -653,7 +653,7 @@
                     "name": "Southern Methodist",
                     "mascot": "Mustangs",
                     "abbreviation": "SMU",
-                    "prestige": 77,
+                    "prestige": 75,
                     "colorPrimary": "#0033A0",
                     "colorSecondary": "#C8102E"
                 },
@@ -661,7 +661,7 @@
                     "name": "South Florida",
                     "mascot": "Bulls",
                     "abbreviation": "USF",
-                    "prestige": 66,
+                    "prestige": 68,
                     "colorPrimary": "#006747",
                     "colorSecondary": "#CFC493"
                 },
@@ -677,7 +677,7 @@
                     "name": "Tulane",
                     "mascot": "Green Wave",
                     "abbreviation": "TULN",
-                    "prestige": 76,
+                    "prestige": 72,
                     "colorPrimary": "#006747",
                     "colorSecondary": "#418FDE"
                 },
@@ -685,7 +685,7 @@
                     "name": "Tulsa",
                     "mascot": "Golden Hurricane",
                     "abbreviation": "TLSA",
-                    "prestige": 73,
+                    "prestige": 71,
                     "colorPrimary": "#002D72",
                     "colorSecondary": "#C8102E"
                 }
@@ -708,7 +708,7 @@
                     "name": "Fresno State",
                     "mascot": "Bulldogs",
                     "abbreviation": "FRES",
-                    "prestige": 76,
+                    "prestige": 75,
                     "colorPrimary": "#DB0032",
                     "colorSecondary": "#002E6D"
                 },
@@ -724,7 +724,7 @@
                     "name": "San Diego State",
                     "mascot": "Aztecs",
                     "abbreviation": "SDSU",
-                    "prestige": 74,
+                    "prestige": 75,
                     "colorPrimary": "#A6192E",
                     "colorSecondary": "#000000"
                 },
@@ -732,7 +732,7 @@
                     "name": "UNLV",
                     "mascot": "Rebels",
                     "abbreviation": "UNLV",
-                    "prestige": 64,
+                    "prestige": 62,
                     "colorPrimary": "#CF0A2C",
                     "colorSecondary": "#CAC8C8"
                 },
@@ -748,7 +748,7 @@
                     "name": "Air Force",
                     "mascot": "Falcons",
                     "abbreviation": "AFA",
-                    "prestige": 78,
+                    "prestige": 76,
                     "colorPrimary": "#003087",
                     "colorSecondary": "#8A8D8F"
                 },
@@ -756,7 +756,7 @@
                     "name": "Colorado State",
                     "mascot": "Rams",
                     "abbreviation": "CSU",
-                    "prestige": 64,
+                    "prestige": 65,
                     "colorPrimary": "#1E4D2B",
                     "colorSecondary": "#C8C372"
                 },
@@ -764,7 +764,7 @@
                     "name": "Hawaii",
                     "mascot": "Rainbow Warriors",
                     "abbreviation": "HAW",
-                    "prestige": 69,
+                    "prestige": 67,
                     "colorPrimary": "#024731",
                     "colorSecondary": "#C8C8C8"
                 },
@@ -780,7 +780,7 @@
                     "name": "San Jose State",
                     "mascot": "Spartans",
                     "abbreviation": "SJSU",
-                    "prestige": 70,
+                    "prestige": 66,
                     "colorPrimary": "#0055A2",
                     "colorSecondary": "#E5A823"
                 },
@@ -803,7 +803,7 @@
                     "name": "Appalachian State",
                     "mascot": "Mountaineers",
                     "abbreviation": "APP",
-                    "prestige": 80,
+                    "prestige": 79,
                     "colorPrimary": "#222222",
                     "colorSecondary": "#FFCC00"
                 },
@@ -811,7 +811,7 @@
                     "name": "Coastal Carolina",
                     "mascot": "Chanticleers",
                     "abbreviation": "CCU",
-                    "prestige": 73,
+                    "prestige": 70,
                     "colorPrimary": "#006F71",
                     "colorSecondary": "#A27752"
                 },
@@ -819,7 +819,7 @@
                     "name": "Georgia Southern",
                     "mascot": "Eagles",
                     "abbreviation": "GASO",
-                    "prestige": 72,
+                    "prestige": 68,
                     "colorPrimary": "#011E41",
                     "colorSecondary": "#A3AAAE"
                 },
@@ -827,33 +827,9 @@
                     "name": "Georgia State",
                     "mascot": "Panthers",
                     "abbreviation": "GST",
-                    "prestige": 69,
+                    "prestige": 67,
                     "colorPrimary": "#0039A6",
                     "colorSecondary": "#C60C30"
-                },
-                {
-                    "name": "James Madison",
-                    "mascot": "Dukes",
-                    "abbreviation": "JMU",
-                    "prestige": 79,
-                    "colorPrimary": "#450084",
-                    "colorSecondary": "#CBB677"
-                },
-                {
-                    "name": "Marshall",
-                    "mascot": "Thundering Herd",
-                    "abbreviation": "MAR",
-                    "prestige": 76,
-                    "colorPrimary": "#00B140",
-                    "colorSecondary": "#A2AAAD"
-                },
-                {
-                    "name": "Old Dominion",
-                    "mascot": "Monarchs",
-                    "abbreviation": "ODU",
-                    "prestige": 66,
-                    "colorPrimary": "#003087",
-                    "colorSecondary": "#7C878E"
                 },
                 {
                     "name": "Arkansas State",
@@ -867,7 +843,7 @@
                     "name": "Louisiana",
                     "mascot": "Ragin' Cajuns",
                     "abbreviation": "ULL",
-                    "prestige": 78,
+                    "prestige": 74,
                     "colorPrimary": "#CE181E",
                     "colorSecondary": "#0A0203"
                 },
@@ -875,7 +851,7 @@
                     "name": "Louisiana Monroe",
                     "mascot": "Warhawks",
                     "abbreviation": "ULM",
-                    "prestige": 65,
+                    "prestige": 63,
                     "colorPrimary": "#840029",
                     "colorSecondary": "#FDB913"
                 },
@@ -883,23 +859,15 @@
                     "name": "South Alabama",
                     "mascot": "Jaguars",
                     "abbreviation": "USA",
-                    "prestige": 67,
+                    "prestige": 63,
                     "colorPrimary": "#00205B",
                     "colorSecondary": "#BF0D3E"
-                },
-                {
-                    "name": "Southern Miss",
-                    "mascot": "Golden Eagles",
-                    "abbreviation": "SMIS",
-                    "prestige": 67,
-                    "colorPrimary": "#000000",
-                    "colorSecondary": "#FFAB00"
                 },
                 {
                     "name": "Texas State",
                     "mascot": "Bobcats",
                     "abbreviation": "TST",
-                    "prestige": 64,
+                    "prestige": 60,
                     "colorPrimary": "#501214",
                     "colorSecondary": "#8D734A"
                 },
@@ -907,7 +875,7 @@
                     "name": "Troy",
                     "mascot": "Trojans",
                     "abbreviation": "TROY",
-                    "prestige": 73,
+                    "prestige": 71,
                     "colorPrimary": "#8A2432",
                     "colorSecondary": "#B3B5B8"
                 }
@@ -930,7 +898,7 @@
                     "name": "Ohio",
                     "mascot": "Bobcats",
                     "abbreviation": "OHIO",
-                    "prestige": 73,
+                    "prestige": 72,
                     "colorPrimary": "#00694E",
                     "colorSecondary": "#CDA077"
                 },
@@ -938,7 +906,7 @@
                     "name": "Bowling Green",
                     "mascot": "Falcons",
                     "abbreviation": "BGSU",
-                    "prestige": 61,
+                    "prestige": 59,
                     "colorPrimary": "#FE5000",
                     "colorSecondary": "#4F2C1D"
                 },
@@ -946,7 +914,7 @@
                     "name": "Kent State",
                     "mascot": "Golden Flashes",
                     "abbreviation": "KENT",
-                    "prestige": 70,
+                    "prestige": 66,
                     "colorPrimary": "#002664",
                     "colorSecondary": "#EAAB00"
                 },
@@ -954,7 +922,7 @@
                     "name": "Miami Ohio",
                     "mascot": "RedHawks",
                     "abbreviation": "MIOH",
-                    "prestige": 74,
+                    "prestige": 73,
                     "colorPrimary": "#B61E2E",
                     "colorSecondary": "#000000"
                 },
@@ -970,7 +938,7 @@
                     "name": "Toledo",
                     "mascot": "Rockets",
                     "abbreviation": "TOL",
-                    "prestige": 75,
+                    "prestige": 74,
                     "colorPrimary": "#15397F",
                     "colorSecondary": "#FFDA00"
                 },
@@ -978,7 +946,7 @@
                     "name": "Ball State",
                     "mascot": "Cardinals",
                     "abbreviation": "BALL",
-                    "prestige": 73,
+                    "prestige": 69,
                     "colorPrimary": "#BA0C2F",
                     "colorSecondary": "#000000"
                 },
@@ -994,7 +962,7 @@
                     "name": "Eastern Michigan",
                     "mascot": "Eagles",
                     "abbreviation": "EMU",
-                    "prestige": 72,
+                    "prestige": 71,
                     "colorPrimary": "#006633",
                     "colorSecondary": "#FFFFFF"
                 },
@@ -1002,7 +970,7 @@
                     "name": "Central Michigan",
                     "mascot": "Chippewas",
                     "abbreviation": "CMU",
-                    "prestige": 71,
+                    "prestige": 70,
                     "colorPrimary": "#6A0032",
                     "colorSecondary": "#FFC82E"
                 },
@@ -1010,7 +978,7 @@
                     "name": "Northern Illinois",
                     "mascot": "Huskies",
                     "abbreviation": "NIU",
-                    "prestige": 69,
+                    "prestige": 70,
                     "colorPrimary": "#BA0C2F",
                     "colorSecondary": "#8A8D8F"
                 }
@@ -1025,15 +993,39 @@
                     "name": "Western Kentucky",
                     "mascot": "Hilltoppers",
                     "abbreviation": "WKU",
-                    "prestige": 71,
+                    "prestige": 68,
                     "colorPrimary": "#C60C30",
                     "colorSecondary": "#1E1E1E"
+                },
+                {
+                    "name": "Old Dominion",
+                    "mascot": "Monarchs",
+                    "abbreviation": "ODU",
+                    "prestige": 64,
+                    "colorPrimary": "#003087",
+                    "colorSecondary": "#7C878E"
+                },
+                {
+                    "name": "Southern Miss",
+                    "mascot": "Golden Eagles",
+                    "abbreviation": "SMIS",
+                    "prestige": 66,
+                    "colorPrimary": "#000000",
+                    "colorSecondary": "#FFAB00"
+                },
+                {
+                    "name": "Marshall",
+                    "mascot": "Thundering Herd",
+                    "abbreviation": "MAR",
+                    "prestige": 74,
+                    "colorPrimary": "#00B140",
+                    "colorSecondary": "#A2AAAD"
                 },
                 {
                     "name": "Florida Atlantic",
                     "mascot": "Owls",
                     "abbreviation": "FAU",
-                    "prestige": 72,
+                    "prestige": 73,
                     "colorPrimary": "#003366",
                     "colorSecondary": "#CC0000"
                 },
@@ -1049,7 +1041,7 @@
                     "name": "Middle Tennessee State",
                     "mascot": "Blue Raiders",
                     "abbreviation": "MTSU",
-                    "prestige": 69,
+                    "prestige": 67,
                     "colorPrimary": "#0066CC",
                     "colorSecondary": "#000000"
                 },
@@ -1057,7 +1049,7 @@
                     "name": "Texas San Antonio",
                     "mascot": "Roadrunners",
                     "abbreviation": "UTSA",
-                    "prestige": 70,
+                    "prestige": 67,
                     "colorPrimary": "#F15A22",
                     "colorSecondary": "#0C2340"
                 },
@@ -1065,7 +1057,7 @@
                     "name": "Charlotte",
                     "mascot": "49ers",
                     "abbreviation": "CHA",
-                    "prestige": 64,
+                    "prestige": 62,
                     "colorPrimary": "#046A38",
                     "colorSecondary": "#B9975B"
                 },
@@ -1073,7 +1065,7 @@
                     "name": "Alabama Birmingham",
                     "mascot": "Blazers",
                     "abbreviation": "UAB",
-                    "prestige": 74,
+                    "prestige": 72,
                     "colorPrimary": "#006341",
                     "colorSecondary": "#CC8A00"
                 },
@@ -1081,7 +1073,7 @@
                     "name": "North Texas",
                     "mascot": "Mean Green",
                     "abbreviation": "UNT",
-                    "prestige": 69,
+                    "prestige": 67,
                     "colorPrimary": "#00853E",
                     "colorSecondary": "#000000"
                 },
@@ -1089,7 +1081,7 @@
                     "name": "Rice",
                     "mascot": "Owls",
                     "abbreviation": "RICE",
-                    "prestige": 65,
+                    "prestige": 61,
                     "colorPrimary": "#00205B",
                     "colorSecondary": "#C1C6C8"
                 },
@@ -1097,7 +1089,7 @@
                     "name": "Texas El Paso",
                     "mascot": "Miners",
                     "abbreviation": "UTEP",
-                    "prestige": 60,
+                    "prestige": 56,
                     "colorPrimary": "#041E42",
                     "colorSecondary": "#FF8200"
                 },
@@ -1117,7 +1109,7 @@
             "name": "Notre Dame",
             "mascot": "Fighting Irish",
             "abbreviation": "ND",
-            "prestige": 87,
+            "prestige": 88,
             "colorPrimary": "#0C2340",
             "colorSecondary": "#AE9142"
         },
@@ -1125,7 +1117,7 @@
             "name": "BYU",
             "mascot": "Cougars",
             "abbreviation": "BYU",
-            "prestige": 79,
+            "prestige": 76,
             "colorPrimary": "#002E5D",
             "colorSecondary": "#FFFFFF"
         },
@@ -1133,7 +1125,7 @@
             "name": "Liberty",
             "mascot": "Flames",
             "abbreviation": "LIB",
-            "prestige": 72,
+            "prestige": 71,
             "colorPrimary": "#002D62",
             "colorSecondary": "#C41230"
         },
@@ -1141,7 +1133,7 @@
             "name": "Connecticut",
             "mascot": "Huskies",
             "abbreviation": "CONN",
-            "prestige": 64,
+            "prestige": 61,
             "colorPrimary": "#000E2F",
             "colorSecondary": "#E4002B"
         },
@@ -1149,7 +1141,7 @@
             "name": "New Mexico State",
             "mascot": "Aggies",
             "abbreviation": "NMSU",
-            "prestige": 59,
+            "prestige": 57,
             "colorPrimary": "#861F41",
             "colorSecondary": "#97999B"
         },

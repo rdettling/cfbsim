@@ -5,6 +5,12 @@ try:
 except ModuleNotFoundError:
     pass
 
+winFactor = 1.5
+lossFactor = 1.08
+drivesPerTeam = 11
+passFreq = 0.5
+ot_start = 75
+
 
 class Team:
     def __init__(self, rating):
@@ -24,13 +30,17 @@ class Game:
 
 
 class Drive:
-    def __init__(self, game, offense, defense, fieldPosition):
+    def __init__(self, game, offense, defense, fieldPosition, i, needed):
         self.game = game
         self.offense = offense
         self.defense = defense
         self.startingFP = fieldPosition
+        self.driveNum = i
         self.result = None
         self.points = 0
+        self.points_needed = needed
+        self.scoreAAfter = game.scoreA
+        self.scoreBAfter = game.scoreB
 
 
 class Play:
@@ -132,13 +142,32 @@ def runYards(offense, defense, base_mean=2.8, std_dev=5.5, advantage_factor=0.08
 def simDrive(
     game,
     fieldPosition,
+    lead,
     offense,
     defense,
-    info=None,
-    driveNum=None,
-    plays_to_create=None,
+    driveNum,
+    info,
+    plays_to_create,
 ):
-    passFreq = 0.5
+    if driveNum % 2 == 0:
+        num = int((driveNum / 2))
+    else:
+        num = int((driveNum - 1) / 2)
+
+    needed = points_needed(lead, num)
+
+    # if driveNum % 2 == 0:
+    #     num = int((driveNum / 2))
+    #     lead = game.scoreA - game.scoreB
+    #     print(
+    #         f"Team lead/deficit: {lead}   Drives left: {drivesPerTeam - num}   Points needed this drive: {needed}"
+    #     )
+    # else:
+    #     num = int((driveNum - 1) / 2)
+    #     lead = game.scoreB - game.scoreA
+    #     print(
+    #         f"Team lead/deficit: {lead}   Drives left: {drivesPerTeam - num}   Points needed this drive: {needed}"
+    #     )
 
     if info:
         drive = Drives(
@@ -150,9 +179,12 @@ def simDrive(
             startingFP=fieldPosition,
             result=None,
             points=0,
+            points_needed=needed,
+            scoreAAfter=game.scoreA,
+            scoreBAfter=game.scoreB,
         )
     else:
-        drive = Drive(game, offense, defense, fieldPosition)
+        drive = Drive(game, offense, defense, fieldPosition, driveNum, needed)
 
     while not drive.result:
         for down in range(1, 5):
@@ -185,7 +217,7 @@ def simDrive(
             play.yardsLeft = yardsLeft
 
             if down == 4:  # 4th down logic
-                decision = fourthDown(fieldPosition, yardsLeft)
+                decision = fourthDown(fieldPosition, yardsLeft, needed)
 
                 if decision == "field goal":
                     play.playType = "field goal"
@@ -198,6 +230,7 @@ def simDrive(
 
                         drive.result = "field goal"
                         drive.points = 3
+                        update_score_after(game, drive)
 
                         return drive, 20
                     else:
@@ -263,6 +296,7 @@ def simDrive(
             if result["outcome"] == "touchdown":  # adjust if touchdown
                 drive.result = "touchdown"
                 drive.points = 7
+                update_score_after(game, drive)
 
                 return drive, 20
             elif down == 4 and yardsLeft > 0:
@@ -273,6 +307,7 @@ def simDrive(
             elif fieldPosition < 1:
                 drive.result = "safety"
                 drive.points = 0
+                update_score_after(game, drive)
 
                 return drive, 20
 
@@ -280,10 +315,26 @@ def simDrive(
                 break
 
 
-def fourthDown(fieldPosition, yardsLeft):
+def fourthDown(fieldPosition, yardsLeft, needed):
+    field_goal_limit = 60
+
+    # Always go for it if needed points are more than 3
+    if needed in [6, 7, 8]:
+        return "go"
+
+    # Decisions when needed points are 3
+    if needed == 3:
+        if fieldPosition < field_goal_limit:
+            # If not in field goal range, go for it
+            return "go"
+        else:
+            # In field goal range, attempt a field goal
+            return "field goal"
+
+    # Standard decisions based on field position and yards left
     if fieldPosition < 40:
         return "punt"
-    elif fieldPosition < 60:
+    elif fieldPosition < field_goal_limit:
         if yardsLeft < 5:
             return "go"
         else:
@@ -301,69 +352,47 @@ def fourthDown(fieldPosition, yardsLeft):
 
 
 def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
-    winFactor = 1.5
-    lossFactor = 1.15
-    drivesPerTeam = 11
-    fieldPosition = None
-    game.scoreA = 0
-    game.scoreB = 0
+    game.scoreA = game.scoreB = 0
 
     for i in range(drivesPerTeam * 2):
+        if i % 2 == 0:
+            offense = game.teamA
+            defense = game.teamB
+            lead = game.scoreA - game.scoreB
+        else:
+            offense = game.teamB
+            defense = game.teamA
+            lead = game.scoreB - game.scoreA
         if i == 0 or i == drivesPerTeam:
             fieldPosition = 20
-        if i % 2 == 0:
-            if info:
-                drive, fieldPosition = simDrive(
-                    game,
-                    fieldPosition,
-                    game.teamA,
-                    game.teamB,
-                    info,
-                    i,
-                    plays_to_create,
-                )
-            else:
-                drive, fieldPosition = simDrive(
-                    game, fieldPosition, game.teamA, game.teamB
-                )
 
-            if not drive.result == "safety":
-                game.scoreA += drive.points
-            else:
-                game.scoreB += 2
+        drive, fieldPosition = simDrive(
+            game,
+            fieldPosition,
+            lead,
+            offense,
+            defense,
+            i,
+            info,
+            plays_to_create,
+        )
 
-        else:
-            if info:
-                drive, fieldPosition = simDrive(
-                    game,
-                    fieldPosition,
-                    game.teamB,
-                    game.teamA,
-                    info,
-                    i,
-                    plays_to_create,
-                )
-            else:
-                drive, fieldPosition = simDrive(
-                    game, fieldPosition, game.teamB, game.teamA
-                )
-
-            if not drive.result == "safety":
-                game.scoreB += drive.points
-            else:
-                game.scoreA += 2
+        game.scoreA = drive.scoreAAfter
+        game.scoreB = drive.scoreBAfter
 
         if info:
             drives_to_create.append(drive)
 
     if game.scoreA == game.scoreB:
-        game = overtime(game, drivesPerTeam, info, drives_to_create, plays_to_create)
+        overtime(game, info, drives_to_create, plays_to_create)
 
     if game.scoreA > game.scoreB:
         game.winner = game.teamA
 
         if info:
-            if game.teamA.conference == game.teamB.conference:
+            if game.teamA.conference and (
+                game.teamA.conference == game.teamB.conference
+            ):
                 game.teamA.confWins += 1
                 game.teamB.confLosses += 1
             else:
@@ -379,7 +408,9 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
         game.winner = game.teamB
 
         if info:
-            if game.teamA.conference == game.teamB.conference:
+            if game.teamA.conference and (
+                game.teamA.conference == game.teamB.conference
+            ):
                 game.teamA.confLosses += 1
                 game.teamB.confWins += 1
             else:
@@ -393,67 +424,59 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
             game.teamA.resume_total += game.teamB.rating**lossFactor
 
     if info:
-        Teams.objects.bulk_update(
-            [game.teamA, game.teamB],
-            [
-                "totalWins",
-                "totalLosses",
-                "confWins",
-                "confLosses",
-                "nonConfWins",
-                "nonConfLosses",
-                "resume_total",
-            ],
-        )
+        game.teamA.save()
+        game.teamB.save()
 
 
-def overtime(
-    game, drivesPerTeam, info=None, drives_to_create=None, plays_to_create=None
-):
+def overtime(game, info=None, drives_to_create=None, plays_to_create=None):
     i = (drivesPerTeam * 2) + 1
 
     while game.scoreA == game.scoreB:
         game.overtime += 1
 
+        offense = game.teamA
+        defense = game.teamB
+        lead = game.scoreA - game.scoreB
         i += 1
-        if info:
-            drive, fieldPosition = simDrive(
-                game,
-                50,
-                game.teamA,
-                game.teamB,
-                info,
-                i,
-                plays_to_create,
-            )
-            drives_to_create.append(drive)
-        else:
-            drive, fieldPosition = simDrive(game, 50, game.teamA, game.teamB)
-        if not drive.result == "safety":
-            game.scoreA += drive.points
-        else:
-            game.scoreB += 2
 
+        drive, fieldPosition = simDrive(
+            game,
+            ot_start,
+            lead,
+            offense,
+            defense,
+            i,
+            info,
+            plays_to_create,
+        )
+
+        game.scoreA = drive.scoreAAfter
+        game.scoreB = drive.scoreBAfter
+
+        if info:
+            drives_to_create.append(drive)
+
+        offense = game.teamB
+        defense = game.teamA
+        lead = game.scoreB - game.scoreA
         i += 1
-        if info:
-            drive, fieldPosition = simDrive(
-                game,
-                50,
-                game.teamB,
-                game.teamA,
-                info,
-                i,
-                plays_to_create,
-            )
-            drives_to_create.append(drive)
-        else:
-            drive, fieldPosition = simDrive(game, 50, game.teamB, game.teamA)
-        if not drive.result == "safety":
-            game.scoreB += drive.points
-        else:
-            game.scoreA += 2
 
-    return game
+        drive, fieldPosition = simDrive(
+            game,
+            ot_start,
+            lead,
+            offense,
+            defense,
+            i,
+            info,
+            plays_to_create,
+        )
+
+        game.scoreA = drive.scoreAAfter
+        game.scoreB = drive.scoreBAfter
+
+        if info:
+            drives_to_create.append(drive)
 
 
 def fieldGoal(yard_line):
@@ -472,3 +495,47 @@ def fieldGoal(yard_line):
         return success_rate > random.random()
     else:
         return False
+
+
+def points_needed(lead, driveNum):
+    if lead >= 0:
+        # No points needed if the team is leading or the game is tied
+        return 0
+
+    drivesLeft = max(1, (drivesPerTeam - driveNum))
+    deficit = abs(lead)
+
+    possible_scores = [3, 6, 7, 8]
+    max_score_in_one_drive = max(possible_scores)
+
+    # If the team can tie or win the game without scoring on the current drive
+    if deficit <= (drivesLeft - 1) * max_score_in_one_drive:
+        return 0
+
+    # Adjust the logic for when only one drive is left
+    if drivesLeft == 1:
+        # If only one drive is left, return the minimum score that would surpass the deficit
+        for points in possible_scores:
+            if points >= deficit:
+                return points
+
+    # For more than one drive left, find the minimum points needed on this drive
+    for points in possible_scores:
+        if deficit - points <= (drivesLeft - 1) * max_score_in_one_drive:
+            return points
+
+    # If it's impossible to tie or win with the scores in 'possible_scores'
+    return 9  # Indicates the game is out of reach
+
+
+def update_score_after(game, drive):
+    if not drive.result == "safety":
+        if drive.offense == game.teamA:
+            drive.scoreAAfter += drive.points
+        else:
+            drive.scoreBAfter += drive.points
+    else:
+        if drive.offense == game.teamA:
+            drive.scoreBAfter += 2
+        else:
+            drive.scoreAAfter += 2

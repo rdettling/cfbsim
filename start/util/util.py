@@ -270,7 +270,7 @@ def update_rankings(info):
     win_factor = 172
     loss_factor = 157
 
-    total_weeks = 13
+    total_weeks = 12
     weeks_left = max(0, (total_weeks - info.currentWeek))
     inertia_scale = weeks_left / total_weeks
 
@@ -485,14 +485,14 @@ def game_stats(game):
                 team_rushing_yards += play.yardsGained
             if play.yardsGained >= play.yardsLeft:
                 team_first_downs += 1
-            if play.result == "interception" or play.result == "fumble":
+            if play.result in ["interception", "fumble"]:
                 team_turnovers += 1
             elif play.down == 3:
                 team_third_down_a += 1
                 if play.yardsGained >= play.yardsLeft:
                     team_third_down_c += 1
             elif play.down == 4:
-                if play.playType != "punt" and play.playType != "field goal attempt":
+                if play.playType not in ["punt", "field goal attempt"]:
                     team_fourth_down_a += 1
                     if play.yardsGained >= play.yardsLeft:
                         team_fourth_down_c += 1
@@ -503,14 +503,14 @@ def game_stats(game):
                 opp_rushing_yards += play.yardsGained
             if play.yardsGained >= play.yardsLeft:
                 opp_first_downs += 1
-            if play.result == "interception" or play.result == "fumble":
+            if play.result in ["interception", "fumble"]:
                 opp_turnovers += 1
             elif play.down == 3:
                 opp_third_down_a += 1
                 if play.yardsGained >= play.yardsLeft:
                     opp_third_down_c += 1
             elif play.down == 4:
-                if play.playType != "punt" and play.playType != "field goal attempt":
+                if play.playType not in ["punt", "field goal attempt"]:
                     opp_fourth_down_a += 1
                     if play.yardsGained >= play.yardsLeft:
                         opp_fourth_down_c += 1

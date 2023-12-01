@@ -6,13 +6,14 @@ from django.db.models import F
 from .util.util import *
 from .util.sim.sim import simGame
 import os
+from django.conf import settings
 
 
-def simWeek(request, weeks):
+def simWeek(request):
     start = time.time()
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
-    all_games = info.games.filter(year=info.currentYear)
+    games = info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek)
 
     team = info.team
 
@@ -20,58 +21,53 @@ def simWeek(request, weeks):
     plays_to_create = []
     teamGames = []
 
-    desired_week = info.currentWeek + weeks
+    for game in games:
+        if game.teamA == team:
+            game.label = game.labelA
+            teamGames.append(game)
+        elif game.teamB == team:
+            game.label = game.labelB
+            teamGames.append(game)
 
-    while info.currentWeek < desired_week:
-        toBeSimmed = all_games.filter(weekPlayed=info.currentWeek)
+        simGame(game, info, drives_to_create, plays_to_create)
 
-        for game in toBeSimmed:
-            if game.teamA == team:
-                game.label = game.labelA
-                teamGames.append(game)
-            elif game.teamB == team:
-                game.label = game.labelB
-                teamGames.append(game)
+    Games.objects.bulk_update(
+        games, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
+    )
 
-            simGame(game, info, drives_to_create, plays_to_create)
+    update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
+    no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
 
-        Games.objects.bulk_update(
-            toBeSimmed, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
-        )
+    if info.currentWeek not in no_update_weeks:
+        update_rankings(info)
 
-        update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
-        no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
+    all_actions = {
+        2: {
+            12: setConferenceChampionships,
+            13: setNatty,
+            14: end_season,
+        },
+        4: {
+            12: setConferenceChampionships,
+            13: setPlayoffSemi,
+            14: setNatty,
+            15: end_season,
+        },
+        12: {
+            12: setConferenceChampionships,
+            13: setPlayoffR1,
+            14: setPlayoffQuarter,
+            15: setPlayoffSemi,
+            16: setNatty,
+            17: end_season,
+        },
+    }
 
-        if info.currentWeek not in no_update_weeks:
-            update_rankings(info)
+    action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
+    if action:
+        action(info)
 
-        all_actions = {
-            2: {
-                12: setConferenceChampionships,
-                13: setNatty,
-                14: end_season,
-            },
-            4: {
-                12: setConferenceChampionships,
-                13: setPlayoffSemi,
-                14: setNatty,
-                15: end_season,
-            },
-            12: {
-                12: setConferenceChampionships,
-                13: setPlayoffR1,
-                14: setPlayoffQuarter,
-                15: setPlayoffSemi,
-                16: setNatty,
-                17: end_season,
-            },
-        }
-
-        action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
-        if action:
-            action(info)
-
-        info.currentWeek += 1
+    info.currentWeek += 1
 
     make_game_logs(info, plays_to_create)
     Drives.objects.bulk_create(drives_to_create)
@@ -100,7 +96,14 @@ def home(request):
     except:
         info = None
 
-    context = {"info": info}
+    # Path to the 'years' directory
+    years_dir = os.path.join(settings.BASE_DIR, "static", "years")
+
+    # List all JSON files and extract the year part from their names
+    years = [f.split(".")[0] for f in os.listdir(years_dir) if f.endswith(".json")]
+    years.sort(reverse=True)  # Sort years in descending order
+
+    context = {"info": info, "years": years}  # Add the years to the context
 
     return render(request, "launch.html", context)
 
@@ -116,6 +119,10 @@ def preview(request):
             conf["teams"] = sorted(
                 conf["teams"], key=lambda team: team["prestige"], reverse=True
             )
+
+        data["independents"] = sorted(
+            data["independents"], key=lambda team: team["prestige"], reverse=True
+        )
 
         info = init(data, user_id, year)
 
@@ -397,21 +404,6 @@ def game_result(request, info, game):
             }
             categorized_game_log_strings["Kicking"].append(qb_game_log_dict)
 
-    scoreA = scoreB = 0
-    for drive in drives:
-        if drive.offense == game.teamA:
-            if drive.points:
-                scoreA += drive.points
-            elif drive.result == "safety":
-                scoreB += 2
-        elif drive.offense == game.teamB:
-            if drive.points:
-                scoreB += drive.points
-            elif drive.result == "safety":
-                scoreA += 2
-        drive.teamAfter = scoreA
-        drive.oppAfter = scoreB
-
     context = {
         "game": game,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
@@ -428,7 +420,6 @@ def game_result(request, info, game):
 def season_summary(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
-    info.stage = "season summary"
     info.save()
 
     context = {

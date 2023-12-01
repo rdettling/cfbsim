@@ -72,7 +72,7 @@
                     <a class="nav-link">{{info.currentYear}} (Week {{info.currentWeek}})</a>
                 </li>
                 <li class="nav-item">
-                    <a class="btn btn-primary" href="/sim/1">Sim to next week</a>
+                    <a class="btn btn-primary" href="/sim">Sim to next week</a>
                 </li>
                 {% elif info.stage == 'schedule non conference' %}
                 <li class="nav-item">
@@ -83,10 +83,6 @@
                     <a class="nav-link">{{info.currentYear}} (Offseason)</a>
                 </li>
                 {% endif %} {% if info.stage == 'end of season' %}
-                <li class="nav-item">
-                    <a class="btn btn-primary" href="/season_summary">Season summary</a>
-                </li>
-                {% elif info.stage == 'season summary' %}
                 <li class="nav-item">
                     <a class="btn btn-primary" href="/season_summary">Season summary</a>
                 </li>
