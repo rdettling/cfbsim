@@ -206,7 +206,9 @@ class Plays(models.Model):
     result = models.CharField(max_length=50)
     text = models.CharField(max_length=100, null=True)
     header = models.CharField(max_length=100, null=True)
-    # agression = models.FloatField()
+    scoreA = models.IntegerField()
+    scoreB = models.IntegerField()
+    next_play_id = models.IntegerField(null=True)
 
 
 class Playoff(models.Model):

@@ -129,6 +129,9 @@ def init(data, user_id, year):
     overall_start = time.time()
 
     Info.objects.filter(user_id=user_id).delete()
+    # # delete_plays(info)
+    # info.delete()
+
     info = Info.objects.create(
         user_id=user_id,
         currentWeek=1,
@@ -227,6 +230,7 @@ def init(data, user_id, year):
     odds_list = getSpread(
         teams.order_by("-rating").first().rating
         - teams.order_by("rating").first().rating
+        + 10
     )
     for diff, odds_data in odds_list.items():
         odds_instance = Odds(
@@ -377,35 +381,42 @@ def set_play_header(play):
 
 
 def format_play_text(play, player1, player2=None):
+    player1 = f"{player1.first} {player1.last}"
+    if player2:
+        player2 = f"{player2.first} {player2.last}"
     if play.playType == "run":
         if play.result == "fumble":
-            play.text = f"{player1.first} {player1.last} fumbled"
+            play.text = f"{player1} fumbled"
         elif play.result == "touchdown":
-            play.text = f"{player1.first} {player1.last} ran {play.yardsGained} yards for a touchdown"
+            play.text = f"{player1} ran {play.yardsGained} yards for a touchdown"
         else:
-            play.text = (
-                f"{player1.first} {player1.last} ran for {play.yardsGained} yards"
-            )
+            play.text = f"{player1} ran for {play.yardsGained} yards"
     elif play.playType == "pass":
         if play.result == "sack":
-            play.text = f"{player1.first} {player1.last} was sacked for a loss of {play.yardsGained} yards"
+            play.text = f"{player1} was sacked for a loss of {play.yardsGained} yards"
         elif play.result == "touchdown":
-            play.text = f"{player1.first} {player1.last} pass complete to {player2.first} {player2.last} {play.yardsGained} yards for a touchdown"
+            play.text = f"{player1} pass complete to {player2} {play.yardsGained} yards for a touchdown"
         elif play.result == "pass":
-            play.text = f"{player1.first} {player1.last} pass complete to {player2.first} {player2.last} for {play.yardsGained} yards"
+            play.text = (
+                f"{player1} pass complete to {player2} for {play.yardsGained} yards"
+            )
         elif play.result == "interception":
-            play.text = f"{player1.first} {player1.last}'s pass was intercepted"
+            play.text = f"{player1}'s pass was intercepted"
         elif play.result == "incomplete pass":
-            play.text = f"{player1.first} {player1.last}'s pass was incomplete"
+            play.text = f"{player1}'s pass was incomplete"
     elif play.playType == "field goal":
         if play.result == "made field goal":
-            play.text = f"{player1.first} {player1.last}'s {100 - play.startingFP + 17} field goal is good"
+            play.text = f"{player1}'s {100 - play.startingFP + 17} field goal is good"
         elif play.result == "missed field goal":
-            play.text = f"{player1.first} {player1.last}'s {100 - play.startingFP + 17} field goal is no good"
+            play.text = (
+                f"{player1}'s {100 - play.startingFP + 17} field goal is no good"
+            )
+    elif play.playType == "punt":
+        play.text = f"{player1} punted"
 
 
 def make_game_logs(info, plays):
-    desired_positions = {"qb", "rb", "wr", "k"}
+    desired_positions = {"qb", "rb", "wr", "k", "p"}
     game_log_dict = {}
 
     all_starters = info.players.filter(
@@ -450,6 +461,7 @@ def make_game_logs(info, plays):
         qb_starter = starters_by_team_pos.get((offense_team, "qb"))[0]
         wr_starters = starters_by_team_pos.get((offense_team, "wr"))
         k_starter = starters_by_team_pos.get((offense_team, "k"))[0]
+        p_starter = starters_by_team_pos.get((offense_team, "p"))[0]
 
         if play.playType == "run":
             runner = random.choice(rb_starters)
@@ -466,6 +478,8 @@ def make_game_logs(info, plays):
             game_log = game_log_dict[(k_starter, game)]
             update_game_log_for_kick(play, game_log)
             format_play_text(play, k_starter)
+        elif play.playType == "punt":
+            format_play_text(play, p_starter)
 
     GameLog.objects.bulk_create(game_logs_to_process)
 
@@ -492,7 +506,7 @@ def game_stats(game):
                 if play.yardsGained >= play.yardsLeft:
                     team_third_down_c += 1
             elif play.down == 4:
-                if play.playType not in ["punt", "field goal attempt"]:
+                if play.playType not in ["punt", "field goal"]:
                     team_fourth_down_a += 1
                     if play.yardsGained >= play.yardsLeft:
                         team_fourth_down_c += 1
@@ -510,7 +524,7 @@ def game_stats(game):
                 if play.yardsGained >= play.yardsLeft:
                     opp_third_down_c += 1
             elif play.down == 4:
-                if play.playType not in ["punt", "field goal attempt"]:
+                if play.playType not in ["punt", "field goal"]:
                     opp_fourth_down_a += 1
                     if play.yardsGained >= play.yardsLeft:
                         opp_fourth_down_c += 1

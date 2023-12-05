@@ -1,0 +1,223 @@
+{% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block title %}Sim{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'sim_live.css' %}" />
+{% endblock %} {% block content %}
+<div id="play-container" data-game-id="{{ game.id }}">
+    <!-- Initially empty, will be filled with plays -->
+</div>
+
+<div id="football-field">
+    <!-- Playing Field -->
+    <div id="playing-field">
+        <!-- Yard Lines -->
+        <div class="yard-line line" style="left: 10%"></div>
+        <div class="yard-line line" style="left: 20%"></div>
+        <div class="yard-line line" style="left: 30%"></div>
+        <div class="yard-line line" style="left: 40%"></div>
+        <div class="yard-line line" style="left: 50%"></div>
+        <div class="yard-line line" style="left: 60%"></div>
+        <div class="yard-line line" style="left: 70%"></div>
+        <div class="yard-line line" style="left: 80%"></div>
+        <div class="yard-line line" style="left: 90%"></div>
+
+        <!-- Line of Scrimmage -->
+        <div class="line" id="line-of-scrimmage"></div>
+        <!-- First Down Line -->
+        <div class="line" id="first-down-line"></div>
+        <!-- Ball -->
+        <img id="ball" src="{% static 'football.png' %}" class="football-icon" />
+
+        <div id="yard-arrow"></div>
+    </div>
+
+    <!-- White Lines on the Edge of the Playing Field -->
+    <div class="line" id="left-field-line"></div>
+    <div class="line" id="right-field-line"></div>
+
+    <!-- End Zone Team A -->
+    <div class="end-zone" id="end-zone-a">
+        <span id="team-a-name"></span>
+    </div>
+    <!-- End Zone Team B -->
+    <div class="end-zone" id="end-zone-b">
+        <span id="team-b-name"></span>
+    </div>
+</div>
+
+<button id="fetch-play-btn" class="btn btn-primary"></button>
+
+{% endblock %} {% block additional_scripts %}
+<script>
+    $(document).ready(function () {
+        if (!$('#play-container').data('current-play-id')) {
+            // Set the text of the button to 'Start Game'
+            $('#fetch-play-btn').text('Start Game');
+
+            // Hide the football field div
+            $('#football-field').hide();
+        }
+
+        $('#fetch-play-btn').click(function () {
+            var currentPlayId = $('#play-container').data('current-play-id') || '';
+            var gameId = $('#play-container').data('game-id');
+
+            $.ajax({
+                url: '{% url "fetch_play" %}',
+                type: 'GET',
+                data: {
+                    current_play_id: currentPlayId,
+                    game_id: gameId,
+                },
+                success: function (response) {
+                    console.log(response);
+
+                    // Check if the game has finished
+                    if (response.status === 'finished') {
+                        $('#fetch-play-btn').hide();
+                        $('#football-field').hide();
+
+                        // Construct table content
+                        var content =
+                            '<table class="score-table">' +
+                            '<tr>' +
+                            '<td class="bold-text"><img src="{% static "" %}' +
+                            response.teamA +
+                            '.png" class="team-logo" />' +
+                            response.teamA +
+                            '</td>' +
+                            '<td>Score: ' +
+                            response.scoreA +
+                            '</td>' +
+                            '</tr>' +
+                            '<tr>' +
+                            '<td class="bold-text"><img src="{% static "" %}' +
+                            response.teamB +
+                            '.png" class="team-logo" />' +
+                            response.teamB +
+                            '</td>' +
+                            '<td>Score: ' +
+                            response.scoreB +
+                            '</td>' +
+                            '</tr>' +
+                            '</table>';
+
+                        // Access the game ID from the data attribute
+                        var gameId = $('#play-container').data('game-id');
+                        var gameSummaryLink = '<a href="/games/' + gameId + '/">Game Summary</a>';
+
+                        if (response.ot === 0) {
+                            content += '<div class="center-text bold-text">Final</div>';
+                        } else if (response.ot === 1) {
+                            content += '<div class="center-text bold-text">Final (OT)</div>';
+                        } else {
+                            content += '<div class="center-text bold-text">Final (' + response.ot + 'OT)</div>';
+                        }
+                        content += '<div class="center-text">' + gameSummaryLink + '</div>';
+
+                        content += '<div class="center-text">Last Play: ' + (response.last_play_text || 'None') + '</div>';
+                        $('#play-container').html(content);
+                        return;
+                    }
+
+                    // Show the football field when the game starts
+                    $('#football-field').show();
+                    $('#fetch-play-btn').text('Next Play');
+
+                    var offenseIndicatorA = response.offense === response.teamA ? '<img src="{% static "football.png" %}" class="football-icon" />' : '';
+                    var offenseIndicatorB = response.offense === response.teamB ? '<img src="{% static "football.png" %}" class="football-icon" />' : '';
+
+                    // Construct table content
+                    var content =
+                        '<table class="score-table">' +
+                        '<tr>' +
+                        '<td class="bold-text"><img src="{% static "" %}' +
+                        response.teamA +
+                        '.png" class="team-logo" />' +
+                        response.teamA +
+                        '</td>' +
+                        '<td>' +
+                        offenseIndicatorA +
+                        '</td>' +
+                        '<td>Score: ' +
+                        response.scoreA +
+                        '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                        '<td class="bold-text"><img src="{% static "" %}' +
+                        response.teamB +
+                        '.png" class="team-logo" />' +
+                        response.teamB +
+                        '</td>' +
+                        '<td>' +
+                        offenseIndicatorB +
+                        '</td>' +
+                        '<td>Score: ' +
+                        response.scoreB +
+                        '</td>' +
+                        '</tr>' +
+                        '</table>';
+                    content += '<div class="center-text bold-text">' + response.current_play_header + '</div>';
+                    content += '<div class="center-text">Last Play: ' + (response.last_play_text || 'None') + '</div>';
+
+                    $('#play-container').html(content);
+
+                    // Update the current play ID for the next request
+                    $('#play-container').data('current-play-id', response.current_play_id);
+
+                    updateFootballField(response);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching play: ', status, error);
+                },
+            });
+        });
+        function updateFootballField(data) {
+            var ballPosition = data.ballPosition;
+            var lineOfScrimmage = data.lineOfScrimmage;
+            var firstDownLine = data.firstDownLine;
+            var lastPlayYards = data.lastPlayYards;
+
+            // Convert yard lines to pixel positions within the playing field
+            var playingFieldWidth = $('#playing-field').width();
+            var pixelsPerYard = playingFieldWidth / 100; // Assuming 100 yards for playing field
+
+            // Update positions within the playing field directly
+            $('#ball').css('left', ballPosition * pixelsPerYard + 'px');
+            $('#line-of-scrimmage').css('left', lineOfScrimmage * pixelsPerYard + 'px');
+            $('#first-down-line').css('left', firstDownLine * pixelsPerYard + 'px');
+
+            // Set team names
+            $('#team-a-name').text(data.teamA);
+            $('#team-b-name').text(data.teamB);
+
+            // Set end zone colors based on team primary colors
+            $('#end-zone-a').css('background-color', data.colorAPrimary);
+            $('#end-zone-b').css('background-color', data.colorBPrimary);
+
+            // Set end zone text colors based on team secondary colors
+            $('#team-a-name').css('color', data.colorASecondary);
+            $('#team-b-name').css('color', data.colorBSecondary);
+
+            // Calculate arrow position and length based on lastPlayYards
+            var arrowLength = Math.abs(lastPlayYards) * pixelsPerYard;
+            var arrowPosition = lineOfScrimmage; // Always start at the line of scrimmage
+
+            if (data.offense === data.teamA) {
+                if (lastPlayYards < 0) {
+                    arrowPosition -= lastPlayYards;
+                }
+            } else {
+                if (data.lastPlayYards > 0) {
+                    arrowPosition += lastPlayYards;
+                }
+            }
+
+            var playingFieldHeight = $('#playing-field').height();
+
+            // Update the position and length of the single yard-arrow element
+            $('#yard-arrow').css('left', arrowPosition * pixelsPerYard + 'px');
+            $('#yard-arrow').css('width', arrowLength + 'px');
+            $('#yard-arrow').css('top', playingFieldHeight / 4 + 'px');
+        }
+    });
+</script>
+{% endblock %}

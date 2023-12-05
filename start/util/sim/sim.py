@@ -197,6 +197,8 @@ def simDrive(
                     defense=defense,
                     startingFP=fieldPosition,
                     down=down,
+                    scoreA=game.scoreA,
+                    scoreB=game.scoreB,
                 )
             else:
                 play = Play(

@@ -17,7 +17,7 @@
 .game {
     margin-top: 30px;
     border: 2px solid black;
-    padding: 10px; 
+    padding: 10px;
 }
 
 p {
@@ -27,4 +27,8 @@ p {
 .row {
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+.teamlogo {
+    height: 30px;
 }

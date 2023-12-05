@@ -72,7 +72,10 @@
                     <a class="nav-link">{{info.currentYear}} (Week {{info.currentWeek}})</a>
                 </li>
                 <li class="nav-item">
-                    <a class="btn btn-primary" href="/sim">Sim to next week</a>
+                    <a class="btn btn-primary" href="/sim?live=true">Sim (Live)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-primary ml-1" href="/sim">Sim</a>
                 </li>
                 {% elif info.stage == 'schedule non conference' %}
                 <li class="nav-item">

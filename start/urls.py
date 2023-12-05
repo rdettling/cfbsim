@@ -7,6 +7,7 @@ urlpatterns = [
     path("pickteam/", views.pickteam, name="pickteam"),
     path("noncon/", views.noncon, name="noncon"),
     path("fetchteams/", views.fetch_teams, name="fetch_teams"),
+    path("fetch_play/", views.fetch_play, name="fetch_play"),
     path("schedulenc/", views.schedulenc, name="schedulenc"),
     path("games/<int:id>/", views.game, name="game"),
     path("sim/", views.simWeek),

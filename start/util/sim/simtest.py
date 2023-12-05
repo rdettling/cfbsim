@@ -83,7 +83,7 @@ def getWinProb(teamARating, teamBRating):
 
 
 def testGame(teamA, teamB):
-    tests = 100
+    tests = 200
     scoreA = scoreB = 0
     winA = winB = 0
 

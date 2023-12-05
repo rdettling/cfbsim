@@ -14,19 +14,23 @@ def simWeek(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
     games = info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek)
+    live = request.GET.get("live")
 
     team = info.team
 
     drives_to_create = []
     plays_to_create = []
     teamGames = []
+    teamGame = None
 
     for game in games:
         if game.teamA == team:
             game.label = game.labelA
+            teamGame = game
             teamGames.append(game)
         elif game.teamB == team:
             game.label = game.labelB
+            teamGame = game
             teamGames.append(game)
 
         simGame(game, info, drives_to_create, plays_to_create)
@@ -71,18 +75,32 @@ def simWeek(request):
 
     make_game_logs(info, plays_to_create)
     Drives.objects.bulk_create(drives_to_create)
+
     Plays.objects.bulk_create(plays_to_create)
     info.save()
 
     context = {
         "conferences": info.conferences.all().order_by("confName"),
         "teamGames": teamGames,
+        "game": teamGame,
         "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
     }
 
     print(f"Sim games {time.time() - start} seconds")
-    return render(request, "sim.html", context)
+
+    if live and teamGame:
+        plays = list(teamGame.plays.all())
+        for i in range(len(plays) - 1):  # Stop one element before the last
+            play = plays[i]
+            next_play = plays[i + 1]
+            if play.game == next_play.game:
+                play.next_play_id = next_play.id
+        Plays.objects.bulk_update(plays, ["next_play_id"])
+
+        return render(request, "sim_live.html", context)
+    else:
+        return render(request, "sim.html", context)
 
 
 def home(request):
@@ -289,6 +307,81 @@ def schedulenc(request):
     return JsonResponse({"status": "success"})
 
 
+def fetch_play(request):
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
+
+    last_play_id = request.GET.get("current_play_id")
+    last_play_text = last_play_yards = None
+
+    if last_play_id:
+        last_play = info.plays.get(id=last_play_id)
+        current_play = info.plays.filter(id=last_play.next_play_id).first()
+        last_play_text = f"{last_play.header}: {last_play.text}"
+        if last_play.result != "touchdown":
+            last_play_yards = last_play.yardsGained
+
+    else:
+        game_id = request.GET.get("game_id")
+        game = info.games.get(id=game_id)
+        current_play = game.plays.first()
+
+    if not current_play:
+        game_id = request.GET.get("game_id")
+        game = info.games.get(id=game_id)
+        teamA = game.teamA.name
+        teamB = game.teamB.name
+
+        return JsonResponse(
+            {
+                "status": "finished",
+                "teamA": teamA,
+                "teamB": teamB,
+                "scoreA": game.scoreA,
+                "scoreB": game.scoreB,
+                "last_play_text": last_play_text,
+                "ot": game.overtime,
+            }
+        )
+
+    offense = current_play.offense.name
+    teamA = current_play.game.teamA.name
+    teamB = current_play.game.teamB.name
+    colorAPrimary = current_play.game.teamA.colorPrimary
+    colorASecondary = current_play.game.teamA.colorSecondary
+    colorBPrimary = current_play.game.teamB.colorPrimary
+    colorBSecondary = current_play.game.teamB.colorSecondary
+
+    if offense == teamA:
+        ballPosition = lineOfScrimmage = current_play.startingFP
+        firstDownLine = current_play.yardsLeft + current_play.startingFP
+    else:
+        ballPosition = lineOfScrimmage = 100 - current_play.startingFP
+        firstDownLine = 100 - (current_play.yardsLeft + current_play.startingFP)
+
+    return JsonResponse(
+        {
+            "status": "success",
+            "offense": offense,
+            "teamA": teamA,
+            "teamB": teamB,
+            "colorAPrimary": colorAPrimary,
+            "colorBPrimary": colorBPrimary,
+            "colorASecondary": colorASecondary,
+            "colorBSecondary": colorBSecondary,
+            "ballPosition": ballPosition,
+            "lineOfScrimmage": lineOfScrimmage,
+            "firstDownLine": firstDownLine,
+            "lastPlayYards": last_play_yards,
+            "scoreA": current_play.scoreA,
+            "scoreB": current_play.scoreB,
+            "current_play_header": current_play.header,
+            "last_play_text": last_play_text,
+            "current_play_id": current_play.id,
+        }
+    )
+
+
 def dashboard(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
@@ -397,12 +490,12 @@ def game_result(request, info, game):
             }
             categorized_game_log_strings["Receiving"].append(recv_game_log_dict)
         if "k" in position.lower():
-            qb_game_log_dict = {
+            k_game_log_dict = {
                 "player_id": player.id,
                 "team_name": team_name,
-                "game_log_string": f"{player.first} {player.last} ({team_name} - K): {game_log.field_goals_made}/{game_log.field_goals_made} FG",
+                "game_log_string": f"{player.first} {player.last} ({team_name} - K): {game_log.field_goals_made}/{game_log.field_goals_attempted} FG",
             }
-            categorized_game_log_strings["Kicking"].append(qb_game_log_dict)
+            categorized_game_log_strings["Kicking"].append(k_game_log_dict)
 
     context = {
         "game": game,
