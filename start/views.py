@@ -65,7 +65,7 @@ def simWeek(request):
             14: setPlayoffQuarter,
             15: setPlayoffSemi,
             16: setNatty,
-            1: end_season,
+            17: end_season,
         },
     }
 
