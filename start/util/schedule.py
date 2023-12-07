@@ -1,5 +1,4 @@
 import random
-import time
 from start.models import *
 from django.db import transaction
 

@@ -2,7 +2,6 @@ from .schedule import *
 from .players import *
 from .sim.simtest import getSpread
 from django.db import transaction
-import time
 
 
 def update_teams_and_rosters(info, data):
@@ -216,10 +215,6 @@ def init(data, user_id, year):
     print(f"Create players {time.time() - start} seconds")
 
     start = time.time()
-    set_starters(info)
-    print(f"Set starters {time.time() - start} seconds")
-
-    start = time.time()
     get_ratings(info)
     print(f"Get ratings {time.time() - start} seconds")
 
@@ -227,6 +222,7 @@ def init(data, user_id, year):
     initialize_rankings(info)
     print(f"Init rankings {time.time() - start} seconds")
 
+    start = time.time()
     odds_list = getSpread(
         teams.order_by("-rating").first().rating
         - teams.order_by("rating").first().rating
@@ -244,8 +240,8 @@ def init(data, user_id, year):
             udMoneyline=odds_data["udMoneyline"],
         )
         odds_to_create.append(odds_instance)
-
     Odds.objects.bulk_create(odds_to_create)
+    print(f"Odds {time.time() - start} seconds")
 
     start = time.time()
     uniqueGames(info, data)

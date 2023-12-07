@@ -23,6 +23,7 @@ def simWeek(request):
     teamGames = []
     teamGame = None
 
+    start = overall_start = time.time()
     for game in games:
         if game.teamA == team:
             game.label = game.labelA
@@ -38,6 +39,7 @@ def simWeek(request):
     Games.objects.bulk_update(
         games, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
     )
+    print(f"Sim {time.time() - start} seconds")
 
     update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
     no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
@@ -63,7 +65,7 @@ def simWeek(request):
             14: setPlayoffQuarter,
             15: setPlayoffSemi,
             16: setNatty,
-            17: end_season,
+            1: end_season,
         },
     }
 
@@ -73,11 +75,12 @@ def simWeek(request):
 
     info.currentWeek += 1
 
+    start = time.time()
     make_game_logs(info, plays_to_create)
     Drives.objects.bulk_create(drives_to_create)
-
     Plays.objects.bulk_create(plays_to_create)
     info.save()
+    print(f"Game logs {time.time() - start} seconds")
 
     context = {
         "conferences": info.conferences.all().order_by("confName"),
@@ -87,7 +90,7 @@ def simWeek(request):
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
     }
 
-    print(f"Sim games {time.time() - start} seconds")
+    print(f"Total {time.time() - overall_start} seconds")
 
     if live and teamGame:
         plays = list(teamGame.plays.all())
@@ -536,6 +539,8 @@ def roster_progression(request):
 
         info.stage = "roster progression"
         info.save()
+    else:
+        rosters_update = None
 
     # Retrieve progressed players after potential roster update
     progressed = info.team.players.all()
@@ -551,7 +556,7 @@ def roster_progression(request):
     context = {"info": info, "progressed": progressed}
 
     # Add 'leaving' key only if rosters were updated
-    if info.stage == "roster progression" and "rosters_update" in locals():
+    if rosters_update:
         context["leaving"] = rosters_update["leaving"]
 
     return render(request, "roster_progression.html", context)
