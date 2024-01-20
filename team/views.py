@@ -125,9 +125,11 @@ def player(request, team_name, id):
 
     year = request.GET.get("year")
     if year:
-        game_logs = player.game_logs.filter(game__year=year)
+        game_logs = player.game_logs.filter(game__year=year).order_by("weekPlayed")
     else:
-        game_logs = player.game_logs.filter(game__year=info.currentYear)
+        game_logs = player.game_logs.filter(game__year=info.currentYear).order_by(
+            "weekPlayed"
+        )
 
     cumulative_stats = {
         "pass_yards": 0,

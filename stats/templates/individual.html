@@ -1,11 +1,12 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}{{team.name}}individual stats{% endblock %}
-
-{% block css %}
-    <link rel="stylesheet" href="{% static 'individual.css' %}">
-{% endblock %}
-
-{% block content %}
-    
+{% extends 'base.html' %} {% load static %} {% block title %}Individual Stats{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'individual.css' %}" />
+{% endblock %} {% block content %}
+<div class="container">
+    <h2>Choose a Stat Category:</h2>
+    <div class="btn-group">
+        <a href="{% url 'individual' category='passing' %}" class="btn btn-primary">Passing</a>
+        <a href="{% url 'individual' category='rushing' %}" class="btn btn-primary">Rushing</a>
+        <!-- Add more buttons for other categories as needed -->
+    </div>
+</div>
 {% endblock %}

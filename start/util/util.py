@@ -255,9 +255,11 @@ def init(data, user_id, year):
 
 def update_rankings(info):
     teams = info.teams.all()
-    games = info.games.filter(winner=None)
+    games = info.games.filter(year=info.currentYear, winner=None)
 
-    current_week_games = info.games.filter(weekPlayed=info.currentWeek)
+    current_week_games = info.games.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek
+    )
 
     games_by_teamA = {team.id: [] for team in teams}
     games_by_teamB = {team.id: [] for team in teams}

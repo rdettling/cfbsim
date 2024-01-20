@@ -1,0 +1,34 @@
+{% extends 'base.html' %} {% load static %} {% block title %}{{ team.name }} Passing Stats{% endblock %} {% block css %}
+<link rel="stylesheet" href="{% static 'individual.css' %}" />
+{% endblock %} {% block content %}
+<div class="container mt-4">
+    <p>still need to make this page</p>
+    {% comment %}
+    <h2>Rushing Stats</h2>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">Player</th>
+                <th scope="col">Attempts</th>
+                <th scope="col">Completions</th>
+                <th scope="col">Yards</th>
+                <th scope="col">Touchdowns</th>
+                <th scope="col">Interceptions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player, player_stats in stats.items %}
+            <tr>
+                <td>{{ player.name }}</td>
+                <td>{{ player_stats.att }}</td>
+                <td>{{ player_stats.cmp }}</td>
+                <td>{{ player_stats.yards }}</td>
+                <td>{{ player_stats.td }}</td>
+                <td>{{ player_stats.int }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endcomment %}
+</div>
+{% endblock %}
