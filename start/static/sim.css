@@ -1,13 +1,3 @@
-.centered {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.boxlogo {
-    height: 40px;
-}
-
 .gametext {
     font-size: 20px;
     line-height: 1;
@@ -18,17 +8,4 @@
     margin-top: 30px;
     border: 2px solid black;
     padding: 10px;
-}
-
-p {
-    margin: 0px;
-}
-
-.row {
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-.teamlogo {
-    height: 30px;
 }

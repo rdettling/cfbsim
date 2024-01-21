@@ -1,6 +1,4 @@
-{% extends 'base.html' %} {% load static %} {% block title %}Top 25{% endblock %} {% block css %}
-<link rel="stylesheet" href="{% static 'rankings.css' %}" />
-{% endblock %} {% block content %}
+{% extends 'base.html' %} {% load static %} {% block title %}Top 25{% endblock %} {% block content %}
 <div class="text-center mb-3">
     <h1 class="display-5">AP Top 25</h1>
     {% if info.stage == 'season' %}
@@ -31,7 +29,7 @@
                 <span style="color: {% if team.diff > 0 %}green{% elif team.diff < 0 %}red{% else %}black{% endif %};"> ({{ team.diff }}) </span>
             </td>
             <td>
-                <img src="{% static team.name %}.png" class="teamlogo mr-3" />
+                <img src="{% static team.name %}.png" class="logo-medium mr-3" />
                 <a href="/teams/{{team.name}}/schedule">{{ team.name }}</a>
             </td>
             <td>{{ team.totalWins }}-{{ team.totalLosses }}</td>
@@ -40,13 +38,13 @@
                 {% if team.last_game %}
                 <a href="/games/{{team.last_game.id}}">{{team.last_game.result}} ({{team.last_game.score}})</a>
                 <span>vs</span>
-                <img src="{% static team.last_game.opponent.name %}.png" class="minilogo m-2" />
+                <img src="{% static team.last_game.opponent.name %}.png" class="logo-small m-2" />
                 <a href="/teams/{{team.last_game.opponent.name}}/schedule">#{{team.last_game.rank}} {{ team.last_game.opponent.abbreviation }}</a>
                 {% else%} No game {%endif%}
             </td>
             <td>
                 {% if team.next_game %}
-                <img src="{% static team.next_game.opponent.name %}.png" class="minilogo mr-2" />
+                <img src="{% static team.next_game.opponent.name %}.png" class="logo-small mr-2" />
                 <a href="/teams/{{team.next_game.opponent.name}}/schedule">#{{team.next_game.rank}} {{ team.next_game.opponent.abbreviation }}</a>
                 <span>({{team.next_game.spread}})</span>
                 <a href="/games/{{team.next_game.id}}">Preview</a>

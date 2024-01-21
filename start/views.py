@@ -3,8 +3,8 @@ from django.shortcuts import render
 import json
 from .models import *
 from django.db.models import F
-from .util.util import *
-from .util.sim.sim import simGame
+from util.util import *
+from util.sim.sim import simGame
 import os
 from django.conf import settings
 

@@ -1,6 +1,4 @@
-{% extends 'base.html' %} {% load static %} {% block title %}{{conference.confName}} standings{% endblock %} {% block css %}
-<link rel="stylesheet" href="{% static 'standings.css' %}" />
-{% endblock %} {% block content %}
+{% extends 'base.html' %} {% load static %} {% block title %}{{conference.confName}} standings{% endblock %} {% block content %}
 <div class="d-flex flex-column align-items-center text-center mb-3">
     <img class="conflogo" src="{% static conference.confName %}.png" />
     <h1>{{conference.confFullName}} standings</h1>
@@ -24,7 +22,7 @@
             <td>{{team.ranking}}</td>
             <td>{{team.rating}}</td>
             <td>
-                <img src="{% static team.name %}.png" class="teamlogo mr-3" />
+                <img src="{% static team.name %}.png" class="logo-medium mr-3" />
                 <a href="/teams/{{team.name}}/schedule">{{team.name}}</a>
             </td>
             <td>{{team.confWins}}-{{team.confLosses}}</td>

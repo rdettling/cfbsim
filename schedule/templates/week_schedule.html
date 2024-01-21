@@ -1,59 +1,57 @@
-{% extends 'base.html' %} {% load static %} {% block title %}Week {{week_num}} schedule{% endblock %} {% block css %}
-<link rel="stylesheet" href="{% static 'week_schedule.css' %}" />
-{% endblock %} {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        {% for game in games %}
-        <div class="col-3">
-            <div class="card mb-3">
-                <div class="card-header p-2 d-flex justify-content-between align-items-center">
-                    <strong>{{ game.label }}</strong>
-                    {% if game.game_of_week %}
-                    <span class="badge badge-info">Game of the week</span>
-                    {% endif %}
-                </div>
-                <div class="card-body pb-2">
-                    <!-- First row: Team A Name and Score -->
-                    <div class="row mb-2">
-                        <div class="col-2 p-0 mx-1 d-flex justify-content-center">
-                            <img class="teamlogo" src="{% static game.teamA.name %}.png" />
-                        </div>
-                        <div class="col p-0">
-                            {% if game.rankATOG < 26 %}
-                            <a href="/teams/{{game.teamA.name}}/schedule">#{{game.rankATOG}} {{game.teamA.name}}</a>
-                            {% else %}
-                            <a href="/teams/{{game.teamA.name}}/schedule">{{game.teamA.name}}</a>
-                            {% endif %}
-                        </div>
-                        <div class="col-2 p-0 d-flex justify-content-center">{% if game.winner %} {{ game.scoreA }} {% else %} {{ game.spreadA }} {% endif %}</div>
+{% extends 'base.html' %} {% load static %} {% block title %}Week {{week_num}} schedule{% endblock %} { {% block content %}
+
+<div class="row">
+    {% for game in games %}
+    <div class="col-3">
+        <div class="card mb-3">
+            <div class="card-header p-2 d-flex justify-content-between align-items-center">
+                <strong>{{ game.label }}</strong>
+                {% if game.game_of_week %}
+                <span class="badge badge-info">Game of the week</span>
+                {% endif %}
+            </div>
+            <div class="card-body pb-2">
+                <!-- First row: Team A Name and Score -->
+                <div class="row mb-2">
+                    <div class="col-2 p-0 mx-1 center">
+                        <img class="logo-small" src="{% static game.teamA.name %}.png" />
                     </div>
-                    <!-- Second row: Team B Name and Score -->
-                    <div class="row mb-2">
-                        <div class="col-2 p-0 mx-1 d-flex justify-content-center">
-                            <img class="teamlogo" src="{% static game.teamB.name %}.png" />
-                        </div>
-                        <div class="col p-0">
-                            {% if game.rankBTOG < 26 %}
-                            <a href="/teams/{{game.teamB.name}}/schedule">#{{game.rankBTOG}} {{game.teamB.name}}</a>
-                            {% else %}
-                            <a href="/teams/{{game.teamB.name}}/schedule">{{game.teamB.name}}</a>
-                            {% endif %}
-                        </div>
-                        <div class="col-2 p-0 d-flex justify-content-center">{% if game.winner %} {{ game.scoreB }} {% else %} {{ game.spreadB }} {% endif %}</div>
-                    </div>
-                    <!-- Third row: Game Over text -->
-                    <div class="row d-flex justify-content-center">
-                        {% if game.winner %}
-                        <a href="/games/{{game.id}}">Summary</a>
+                    <div class="col p-0 center">
+                        {% if game.rankATOG < 26 %}
+                        <a href="/teams/{{game.teamA.name}}/schedule">#{{game.rankATOG}} {{game.teamA.name}}</a>
                         {% else %}
-                        <a href="/games/{{game.id}}">Preview</a>
+                        <a href="/teams/{{game.teamA.name}}/schedule">{{game.teamA.name}}</a>
                         {% endif %}
                     </div>
+                    <div class="col-2 p-0 center">{% if game.winner %} {{ game.scoreA }} {% else %} {{ game.spreadA }} {% endif %}</div>
+                </div>
+                <!-- Second row: Team B Name and Score -->
+                <div class="row mb-2">
+                    <div class="col-2 p-0 mx-1 center">
+                        <img class="logo-small" src="{% static game.teamB.name %}.png" />
+                    </div>
+                    <div class="col p-0 center">
+                        {% if game.rankBTOG < 26 %}
+                        <a href="/teams/{{game.teamB.name}}/schedule">#{{game.rankBTOG}} {{game.teamB.name}}</a>
+                        {% else %}
+                        <a href="/teams/{{game.teamB.name}}/schedule">{{game.teamB.name}}</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-2 p-0 center">{% if game.winner %} {{ game.scoreB }} {% else %} {{ game.spreadB }} {% endif %}</div>
+                </div>
+                <!-- Third row: Game Over text -->
+                <div class="row center">
+                    {% if game.winner %}
+                    <a href="/games/{{game.id}}">Summary</a>
+                    {% else %}
+                    <a href="/games/{{game.id}}">Preview</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        {% if forloop.counter|divisibleby:4 %}
     </div>
-    <div class="row">{% endif %} {% endfor %}</div>
+    {% if forloop.counter|divisibleby:4 %}
 </div>
+<div class="row">{% endif %} {% endfor %}</div>
+
 {% endblock %}

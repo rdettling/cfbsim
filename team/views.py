@@ -1,6 +1,7 @@
 from start.models import *
-from start.util.players import ROSTER
+from util.players import ROSTER
 from django.shortcuts import render
+from util.stats import *
 
 
 def schedule(request, team_name):
@@ -124,11 +125,13 @@ def player(request, team_name, id):
     team = player.team
 
     year = request.GET.get("year")
-    if year:
-        game_logs = player.game_logs.filter(game__year=year).order_by("weekPlayed")
-    else:
+    if not year:
         game_logs = player.game_logs.filter(game__year=info.currentYear).order_by(
-            "weekPlayed"
+            "game__weekPlayed"
+        )
+    else:
+        game_logs = player.game_logs.filter(game__year=year).order_by(
+            "game__weekPlayed"
         )
 
     cumulative_stats = {
@@ -179,41 +182,24 @@ def player(request, team_name, id):
         for key in cumulative_stats.keys():
             cumulative_stats[key] += getattr(game_log, key, 0)
 
-    # Calculate derived statistics
-    if cumulative_stats["pass_attempts"] > 0:
-        cumulative_stats["completion_percentage"] = round(
-            (cumulative_stats["pass_completions"] / cumulative_stats["pass_attempts"])
-            * 100,
-            1,
-        )
-        cumulative_stats["adjusted_pass_yards_per_attempt"] = round(
-            (
-                cumulative_stats["pass_yards"]
-                + (20 * cumulative_stats["pass_touchdowns"])
-                - (45 * cumulative_stats["pass_interceptions"])
-            )
-            / cumulative_stats["pass_attempts"],
-            1,
-        )
-
-        # Calculate Passer rating
-        a = ((cumulative_stats["completion_percentage"] / 100) - 0.3) * 5
-        b = (
-            (cumulative_stats["pass_yards"] / cumulative_stats["pass_attempts"]) - 3
-        ) * 0.25
-        c = (
-            cumulative_stats["pass_touchdowns"] / cumulative_stats["pass_attempts"]
-        ) * 20
-        d = 2.375 - (
-            (cumulative_stats["pass_interceptions"] / cumulative_stats["pass_attempts"])
-            * 25
-        )
-
-        cumulative_stats["passer_rating"] = round(((a + b + c + d) / 6) * 100, 1)
-    else:
-        cumulative_stats["completion_percentage"] = 0
-        cumulative_stats["adjusted_pass_yards_per_attempt"] = 0
-        cumulative_stats["passer_rating"] = 0
+    cumulative_stats["completion_percentage"] = completion_percentage(
+        cumulative_stats["pass_completions"], cumulative_stats["pass_attempts"]
+    )
+    cumulative_stats[
+        "adjusted_pass_yards_per_attempt"
+    ] = adjusted_pass_yards_per_attempt(
+        cumulative_stats["pass_yards"],
+        cumulative_stats["pass_touchdowns"],
+        cumulative_stats["pass_interceptions"],
+        cumulative_stats["pass_attempts"],
+    )
+    cumulative_stats["passer_rating"] = passer_rating(
+        cumulative_stats["pass_completions"],
+        cumulative_stats["pass_attempts"],
+        cumulative_stats["pass_yards"],
+        cumulative_stats["pass_touchdowns"],
+        cumulative_stats["pass_interceptions"],
+    )
 
     if cumulative_stats["rush_attempts"] > 0:
         cumulative_stats["rush_yards_per_attempt"] = round(

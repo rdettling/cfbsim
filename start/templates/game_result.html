@@ -1,19 +1,19 @@
 {% extends 'base.html' %} {% load static %} {% load mathfilters %} {% block title %}{{game.teamA.abbreviation}} vs {{game.teamB.abbreviation}}{% endblock %} {% block css %}
-<link rel="stylesheet" href="{% static 'game.css' %}" />
+<link rel="stylesheet" href="{% static 'game_result.css' %}" />
 {% endblock %} {% block content %}
 <div class="row">
-    <div class="col-md-6 centered">
+    <div class="col-md-6 center">
         <a class="summarytext" href="/teams/{{game.teamA.name}}/schedule">{{game.teamA.name}}</a>
-        <img class="logo" src="{% static game.teamA.name %}.png" />
+        <img class="logo-big" src="{% static game.teamA.name %}.png" />
         <span class="summarytext">{{game.scoreA}}</span>
     </div>
-    <div class="col-md-6 centered">
+    <div class="col-md-6 center">
         <span class="summarytext">{{game.scoreB}}</span>
-        <img class="logo" src="{% static game.teamB.name %}.png" />
+        <img class="logo-big" src="{% static game.teamB.name %}.png" />
         <a class="summarytext" href="/teams/{{game.teamB.name}}/schedule">{{game.teamB.name}}</a>
     </div>
 </div>
-<div class="row centered">
+<div class="row center">
     <ul class="nav nav-tabs" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="drive-summary-tab" data-toggle="tab" href="#drive-summary" role="tab" aria-controls="drive-summary" aria-selected="true">Drive Summary</a>
@@ -23,7 +23,7 @@
         </li>
     </ul>
 </div>
-<div class="row centered">
+<div class="row center">
     <div class="tab-content">
         <div class="tab-pane show active" id="drive-summary" role="tabpanel" aria-labelledby="drive-summary-tab">
             <ul class="nav nav-tabs" id="driveSummaryTab" role="tablist">
@@ -42,7 +42,7 @@
                         <div class="card">
                             <div class="card-header" id="heading{{ drive.id }}">
                                 <h2 class="mb-0">
-                                    <img class="boxlogo" src="{% static drive.offense.name %}.png" />
+                                    <img class="logo-small" src="{% static drive.offense.name %}.png" />
                                     <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ drive.id }}" aria-expanded="true" aria-controls="collapse{{ drive.id }}">
                                         {{ drive.result }} {{ drive.scoreAAfter }} - {{ drive.scoreBAfter }}
                                     </button>
@@ -72,7 +72,7 @@
                         <div class="card">
                             <div class="card-header" id="heading{{ drive.id }}">
                                 <h2 class="mb-0">
-                                    <img class="boxlogo" src="{% static drive.offense.name %}.png" />
+                                    <img class="logo-small" src="{% static drive.offense.name %}.png" />
                                     <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ drive.id }}" aria-expanded="true" aria-controls="collapse{{ drive.id }}">
                                         {{ drive.result }} {{ drive.scoreAAfter }} - {{ drive.scoreBAfter }}
                                     </button>
@@ -113,10 +113,10 @@
                             <tr>
                                 <th></th>
                                 <th>
-                                    <img class="boxlogo" src="{% static game.teamA.name %}.png" />
+                                    <img class="logo-small" src="{% static game.teamA.name %}.png" />
                                 </th>
                                 <th>
-                                    <img class="boxlogo" src="{% static game.teamB.name %}.png" />
+                                    <img class="logo-small" src="{% static game.teamB.name %}.png" />
                                 </th>
                             </tr>
                         </thead>
@@ -140,7 +140,7 @@
                         <ul class="list-group mb-4">
                             {% for player_game_log in player_game_logs %}
                             <li class="list-group-item d-flex align-items-center">
-                                <img src="{% static player_game_log.team_name|add:".png" %}" alt="{{ player_game_log.team_name }} logo" class="boxlogo">
+                                <img src="{% static player_game_log.team_name|add:".png" %}" class="logo-small">
                                 <a href="{% url 'player' team_name=player_game_log.team_name id=player_game_log.player_id %}" class="ml-2"> {{ player_game_log.game_log_string }} </a>
                             </li>
                             {% endfor %}

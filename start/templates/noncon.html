@@ -1,6 +1,4 @@
-{% extends 'base.html' %} {% load static %} {% block title %}Nonconference scheduling{% endblock %} {% block css %}
-<link rel="stylesheet" href="{% static 'noncon.css' %}" />
-{% endblock %} {% block content %}
+{% extends 'base.html' %} {% load static %} {% block title %}Nonconference scheduling{% endblock %} {% block content %}
 <div class="container mt-5">
     <!-- Display the team name, nonConfGames, and nonConfLimit -->
     <div class="d-flex justify-content-between align-items-center">
@@ -36,7 +34,7 @@
             <tr>
                 <td>Week {{week.weekPlayed}}</td>
                 <td>
-                    <img src="{% static week.opponent %}.png" class="teamlogo" />
+                    <img src="{% static week.opponent %}.png" class="logo-small" />
                     <p>{{week.opponent}}</p>
                 </td>
                 <td>{{week.label}}</td>

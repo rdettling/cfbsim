@@ -1,6 +1,4 @@
-{% extends 'base.html' %} {% load static %} {% block title %}{{ player.first }} {{ player.last }}{% endblock %} {% block css %}
-<link rel="stylesheet" href="{% static 'player.css' %}" />
-{% endblock %} {% block content %}
+{% extends 'base.html' %} {% load static %} {% block title %}{{ player.first }} {{ player.last }}{% endblock %} {% block content %}
 <p>{{ player.first }} {{ player.last }}</p>
 
 {% if player.pos == "qb" %}
@@ -128,7 +126,7 @@
         <tr>
             <td>{{game_log.game.weekPlayed}}</td>
             <td scope="row">
-                <img src="{% static game_log.opponent %}.png" class="boxlogo" />
+                <img src="{% static game_log.opponent %}.png" class="logo-small" />
                 <a href="/teams/{{game_log.opponent}}/schedule">#{{game_log.rank}} {{game_log.opponent}}</a>
             </td>
             <td>{{game_log.label}}</td>

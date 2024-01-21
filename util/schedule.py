@@ -1,21 +1,5 @@
 import random
 from start.models import *
-from django.db import transaction
-
-
-def delete_plays(info):
-    with transaction.atomic():
-        while True:
-            # Find plays that are not referenced as next_play by other plays
-            terminal_plays = info.plays.filter(next_play__isnull=True)
-
-            # If there are no such plays, break the loop
-            if not terminal_plays.exists():
-                break
-
-            # Delete these plays and repeat the process
-            for play in terminal_plays:
-                play.delete()
 
 
 def setPlayoffR1(info):
@@ -221,8 +205,6 @@ def update_history(info):
 
 def refresh_teams_and_games(info):
     teams = info.teams.all()
-    # delete_plays(info)
-
     info.plays.all().delete()
 
     for team in teams:

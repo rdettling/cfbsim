@@ -1,34 +1,55 @@
-{% extends 'base.html' %} {% load static %} {% block title %}{{ team.name }} Passing Stats{% endblock %} {% block css %}
-<link rel="stylesheet" href="{% static 'individual.css' %}" />
+{% extends 'base.html' %} {% load static %} {% block title %}Rushing Stats{% endblock %} {% block css %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css" />
 {% endblock %} {% block content %}
-<div class="container mt-4">
-    <p>still need to make this page</p>
-    {% comment %}
-    <h2>Rushing Stats</h2>
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th scope="col">Player</th>
-                <th scope="col">Attempts</th>
-                <th scope="col">Completions</th>
-                <th scope="col">Yards</th>
-                <th scope="col">Touchdowns</th>
-                <th scope="col">Interceptions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for player, player_stats in stats.items %}
-            <tr>
-                <td>{{ player.name }}</td>
-                <td>{{ player_stats.att }}</td>
-                <td>{{ player_stats.cmp }}</td>
-                <td>{{ player_stats.yards }}</td>
-                <td>{{ player_stats.td }}</td>
-                <td>{{ player_stats.int }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endcomment %}
-</div>
+<h2>Rushing Stats</h2>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th scope="col">Player</th>
+            <th scope="col">Team</th>
+            <th scope="col">Pos</th>
+            <th scope="col">Rating</th>
+            <th scope="col">G</th>
+            <th scope="col">ATT</th>
+            <th scope="col">Yards</th>
+            <th scope="col">TD</th>
+            <th scope="col">Fum</th>
+            <th scope="col">Y/A</th>
+            <th scope="col">Y/G</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for player, player_stats in stats.items %}
+        <tr>
+            <td>
+                <a href="{% url 'player' team_name=player.team.name id=player.id %}" class="ml-2"> {{ player.first }} {{ player.last }}</a>
+            </td>
+            <td>
+                <img src="{% static player.team.name %}.png" class="logo-small mr-2" />
+                <a href="{% url 'schedule' team_name=player.team.name %}" class="ml-2"> {{ player.team.name }}</a>
+            </td>
+            <td>{{ player.pos }}</td>
+            <td>{{ player.rating }}</td>
+            <td>{{ player.team.gamesPlayed }}</td>
+            <td>{{ player_stats.att }}</td>
+            <td>{{ player_stats.yards }}</td>
+            <td>{{ player_stats.td }}</td>
+            <td>{{ player_stats.fumbles }}</td>
+            <td>{{ player_stats.yards_per_rush }}</td>
+            <td>{{ player_stats.yards_per_game }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %} {% block additional_scripts %}
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.table').DataTable({
+            searching: false,
+            paging: false,
+            order: [[2, 'desc']],
+        });
+    });
+</script>
 {% endblock %}

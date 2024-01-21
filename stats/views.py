@@ -1,10 +1,10 @@
 from django.shortcuts import render
 from start.models import *
-from django.db.models import Sum, Q
-from django.db.models.functions import Coalesce
+from django.db.models import Q
+from util.stats import *
 
 
-def team(request):
+def team_stats(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
 
@@ -49,7 +49,7 @@ def stat_categories(request):
     return render(request, "individual.html", context)
 
 
-def individual(request, category):
+def individual_stats(request, category):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
     team = info.team
@@ -57,7 +57,7 @@ def individual(request, category):
     context = {
         "team": team,
         "info": info,
-        "stats": individual_stats(info, category),
+        "stats": accumulate_individual_stats(info, category),
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
     }
 
@@ -69,7 +69,7 @@ def individual(request, category):
         return render(request, "rushing.html", context)
 
 
-def individual_stats(info, category):
+def accumulate_individual_stats(info, category):
     stats = {}
     all_game_logs = info.game_logs.filter(game__year=info.currentYear)
 
@@ -79,6 +79,18 @@ def individual_stats(info, category):
             game_logs = all_game_logs.filter(player=player)
 
             stats[player] = accumulate_passing_stats(game_logs)
+    elif category == "rushing":
+        players = info.players.filter(Q(pos="qb") | Q(pos="rb"), starter=True)
+        temp_stats = {}
+
+        for player in players:
+            game_logs = all_game_logs.filter(player=player)
+            player_stats = accumulate_rushing_stats(game_logs)
+
+            if player_stats["yards"] >= 100:
+                temp_stats[player] = player_stats
+
+        stats = temp_stats
 
     return stats
 
@@ -92,6 +104,31 @@ def accumulate_passing_stats(game_logs):
         stats["yards"] += game_log.pass_yards
         stats["td"] += game_log.pass_touchdowns
         stats["int"] += game_log.pass_interceptions
+
+    stats["pct"] = completion_percentage(stats["cmp"], stats["att"])
+    stats["passer_rating"] = passer_rating(
+        stats["cmp"], stats["att"], stats["yards"], stats["td"], stats["int"]
+    )
+    stats["adjusted_pass_yards_per_attempt"] = adjusted_pass_yards_per_attempt(
+        stats["yards"], stats["td"], stats["int"], stats["att"]
+    )
+
+    return stats
+
+
+def accumulate_rushing_stats(game_logs):
+    stats = {"att": 0, "yards": 0, "td": 0, "fumbles": 0}
+
+    for game_log in game_logs:
+        stats["att"] += game_log.rush_attempts
+        stats["yards"] += game_log.rush_yards
+        stats["td"] += game_log.rush_touchdowns
+        stats["fumbles"] += game_log.fumbles
+
+    stats["yards_per_rush"] = yards_per_rush(stats["yards"], stats["att"])
+    stats["yards_per_game"] = rush_yards_per_game(
+        stats["yards"], game_log.player.team.gamesPlayed
+    )
 
     return stats
 
@@ -153,6 +190,7 @@ def accumulate_team_stats(team, games, plays):
         stats["playspg"] = round(play_count / gamesPlayed, 1)
         stats["yardspg"] = round(stats["pass_ypg"] + stats["rush_ypg"], 1)
         stats["ypp"] = round(stats["yardspg"] / stats["playspg"], 1)
+        stats["comp_percent"] = completion_percentage(comp, att)
     else:
         stats["ppg"] = 0
         stats["pass_cpg"] = 0
@@ -166,10 +204,6 @@ def accumulate_team_stats(team, games, plays):
         stats["playspg"] = 0
         stats["yardspg"] = 0
         stats["ypp"] = 0
-
-    if att:
-        stats["comp_percent"] = round(comp / att * 100, 1)
-    else:
         stats["comp_percent"] = 0
 
     return stats

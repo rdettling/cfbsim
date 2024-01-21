@@ -49,7 +49,7 @@
                     {% for team_name, stats in offense.items %}
                     <tr>
                         <td>
-                            <img src="{% static team_name %}.png" class="boxlogo mr-2" />
+                            <img src="{% static team_name %}.png" class="logo-small mr-2" />
                             <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
                         </td>
                         <td>{{ stats.games }}</td>
@@ -104,7 +104,7 @@
                     {% for team_name, stats in defense.items %}
                     <tr>
                         <td>
-                            <img src="{% static team_name %}.png" class="boxlogo mr-2" />
+                            <img src="{% static team_name %}.png" class="logo-small mr-2" />
                             <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
                         </td>
                         <td>{{ stats.games }}</td>

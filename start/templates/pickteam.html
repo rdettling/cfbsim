@@ -18,8 +18,8 @@
         {% for team in teams %}
         <tr>
             <td>
-                <img src="{% static team.name %}.png" class="teamlogo mr-2" />
-                <a href="{% url 'noncon' %}?id={{team.id}}" class="teamlink">{{team.name}} {{team.mascot}}</a>
+                <img src="{% static team.name %}.png" class="logo-small mr-2" />
+                <a href="{% url 'noncon' %}?id={{team.id}}">{{team.name}} {{team.mascot}}</a>
             </td>
             <td>{{team.prestige}}</td>
             {% if team.conference %}
