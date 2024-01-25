@@ -42,7 +42,7 @@ def passer_rating(completions, attempts, yards, touchdowns, interceptions):
     return round(passer_rating, 1)
 
 
-def completion_percentage(completions, attempts):
+def percentage(completions, attempts):
     """
     Calculate the completion percentage and round it to one decimal place.
 
@@ -57,31 +57,8 @@ def completion_percentage(completions, attempts):
     return round(completion_percentage, 1)
 
 
-def yards_per_rush(rushing_yards, rushing_attempts):
-    """
-    Calculate the yards per rush and round to one decimal place.
-
-    :param rushing_yards: Total rushing yards
-    :param rushing_attempts: Number of rushing attempts
-    :return: Yards per rush
-    """
-    if rushing_attempts == 0:
+def average(total, attempts, decimals=1):
+    if attempts == 0:
         return 0.0  # To avoid division by zero
 
-    ypr = rushing_yards / rushing_attempts
-    return round(ypr, 1)
-
-
-def rush_yards_per_game(total_yards, games_played):
-    """
-    Calculate the yards per game and round to one decimal place.
-
-    :param total_yards: Total yards (rushing or receiving)
-    :param games_played: Number of games played
-    :return: Yards per game
-    """
-    if games_played == 0:
-        return 0.0  # To avoid division by zero
-
-    ypg = total_yards / games_played
-    return round(ypg, 1)
+    return round(total / attempts, decimals)

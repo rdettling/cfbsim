@@ -2,130 +2,156 @@
 <link rel="stylesheet" href="{% static 'team.css' %}" />
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap4.min.css" />
 {% endblock %} {% block content %}
-<div class="container mt-4">
-    <h1>Team Stats</h1>
+<h1>Team Stats</h1>
 
-    <!-- Tabs -->
-    <ul class="nav nav-tabs mt-5" id="statsTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a class="nav-link active" id="offense-tab" data-toggle="tab" href="#offense" role="tab">Offense</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="defense-tab" data-toggle="tab" href="#defense" role="tab">Defense</a>
-        </li>
-    </ul>
+<!-- Tabs -->
+<ul class="nav nav-tabs mt-5" id="statsTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="offense-tab" data-toggle="tab" href="#offense" role="tab">Offense</a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="defense-tab" data-toggle="tab" href="#defense" role="tab">Defense</a>
+    </li>
+</ul>
 
-    <!-- Tab Contents -->
-    <div class="tab-content">
-        <!-- Offense -->
-        <div class="tab-pane fade show active" id="offense" role="tabpanel">
-            <table class="table table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th colspan="3">General</th>
-                        <th colspan="5">Passing</th>
-                        <th colspan="4">Rushing</th>
-                        <th colspan="3">Total Offense</th>
-                    </tr>
-                    <tr>
-                        <th>Team</th>
-                        <th>Games</th>
-                        <th>PPG</th>
-                        <th>CMP</th>
-                        <th>ATT</th>
-                        <th>PCT</th>
-                        <th>YDS</th>
-                        <th>TD</th>
-                        <th>ATT</th>
-                        <th>YDS</th>
-                        <th>AVG</th>
-                        <th>TD</th>
-                        <th>Plays</th>
-                        <th>YDS</th>
-                        <th>AVG</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for team_name, stats in offense.items %}
-                    <tr>
-                        <td>
-                            <img src="{% static team_name %}.png" class="logo-small mr-2" />
-                            <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
-                        </td>
-                        <td>{{ stats.games }}</td>
-                        <td>{{ stats.ppg }}</td>
-                        <td>{{ stats.pass_cpg }}</td>
-                        <td>{{ stats.pass_apg }}</td>
-                        <td>{{ stats.comp_percent }}</td>
-                        <td>{{ stats.pass_ypg }}</td>
-                        <td>{{ stats.pass_tdpg }}</td>
-                        <td>{{ stats.rush_apg }}</td>
-                        <td>{{ stats.rush_ypg }}</td>
-                        <td>{{ stats.rush_ypc }}</td>
-                        <td>{{ stats.rush_tdpg }}</td>
-                        <td>{{ stats.playspg }}</td>
-                        <td>{{ stats.yardspg }}</td>
-                        <td>{{ stats.ypp }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<!-- Tab Contents -->
+<div class="tab-content">
+    <!-- Offense -->
+    <div class="tab-pane fade show active" id="offense" role="tabpanel">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th colspan="3">General</th>
+                    <th colspan="5">Passing</th>
+                    <th colspan="4">Rushing</th>
+                    <th colspan="3">Total Offense</th>
+                    <th colspan="3">First Downs</th>
+                    <th colspan="3">Turnovers</th>
+                </tr>
+                <tr>
+                    <th>Team</th>
+                    <th>Games</th>
+                    <th>PPG</th>
+                    <th>CMP</th>
+                    <th>ATT</th>
+                    <th>PCT</th>
+                    <th>YDS</th>
+                    <th>TD</th>
+                    <th>ATT</th>
+                    <th>YDS</th>
+                    <th>AVG</th>
+                    <th>TD</th>
+                    <th>Plays</th>
+                    <th>YDS</th>
+                    <th>AVG</th>
+                    <th>Pass</th>
+                    <th>Rush</th>
+                    <th>Tot</th>
+                    <th>Fum</th>
+                    <th>Int</th>
+                    <th>TO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team_name, stats in offense.items %}
+                <tr>
+                    <td>
+                        <img src="{% static team_name %}.png" class="logo-small mr-2" />
+                        <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
+                    </td>
+                    <td>{{ stats.games }}</td>
+                    <td>{{ stats.ppg }}</td>
+                    <td>{{ stats.pass_cpg }}</td>
+                    <td>{{ stats.pass_apg }}</td>
+                    <td>{{ stats.comp_percent }}</td>
+                    <td>{{ stats.pass_ypg }}</td>
+                    <td>{{ stats.pass_tdpg }}</td>
+                    <td>{{ stats.rush_apg }}</td>
+                    <td>{{ stats.rush_ypg }}</td>
+                    <td>{{ stats.rush_ypc }}</td>
+                    <td>{{ stats.rush_tdpg }}</td>
+                    <td>{{ stats.playspg }}</td>
+                    <td>{{ stats.yardspg }}</td>
+                    <td>{{ stats.ypp }}</td>
+                    <td>{{ stats.first_downs_pass }}</td>
+                    <td>{{ stats.first_downs_rush }}</td>
+                    <td>{{ stats.first_downs_total }}</td>
+                    <td>{{ stats.fumbles }}</td>
+                    <td>{{ stats.interceptions }}</td>
+                    <td>{{ stats.turnovers }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-        <!-- Defense -->
-        <div class="tab-pane fade" id="defense" role="tabpanel">
-            <table class="table table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th colspan="3">General</th>
-                        <th colspan="5">Passing</th>
-                        <th colspan="4">Rushing</th>
-                        <th colspan="3">Total Offense</th>
-                    </tr>
-                    <tr>
-                        <th>Team</th>
-                        <th>Games</th>
-                        <th>PPG</th>
-                        <th>CMP</th>
-                        <th>ATT</th>
-                        <th>PCT</th>
-                        <th>YDS</th>
-                        <th>TD</th>
-                        <th>ATT</th>
-                        <th>YDS</th>
-                        <th>AVG</th>
-                        <th>TD</th>
-                        <th>Plays</th>
-                        <th>YDS</th>
-                        <th>AVG</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for team_name, stats in defense.items %}
-                    <tr>
-                        <td>
-                            <img src="{% static team_name %}.png" class="logo-small mr-2" />
-                            <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
-                        </td>
-                        <td>{{ stats.games }}</td>
-                        <td>{{ stats.ppg }}</td>
-                        <td>{{ stats.pass_cpg }}</td>
-                        <td>{{ stats.pass_apg }}</td>
-                        <td>{{ stats.comp_percent }}</td>
-                        <td>{{ stats.pass_ypg }}</td>
-                        <td>{{ stats.pass_tdpg }}</td>
-                        <td>{{ stats.rush_apg }}</td>
-                        <td>{{ stats.rush_ypg }}</td>
-                        <td>{{ stats.rush_ypc }}</td>
-                        <td>{{ stats.rush_tdpg }}</td>
-                        <td>{{ stats.playspg }}</td>
-                        <td>{{ stats.yardspg }}</td>
-                        <td>{{ stats.ypp }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <!-- Defense -->
+    <div class="tab-pane fade" id="defense" role="tabpanel">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th colspan="3">General</th>
+                    <th colspan="5">Passing</th>
+                    <th colspan="4">Rushing</th>
+                    <th colspan="3">Total Offense</th>
+                    <th colspan="3">First Downs</th>
+                    <th colspan="3">Turnovers</th>
+                </tr>
+                <tr>
+                    <th>Team</th>
+                    <th>Games</th>
+                    <th>PPG</th>
+                    <th>CMP</th>
+                    <th>ATT</th>
+                    <th>PCT</th>
+                    <th>YDS</th>
+                    <th>TD</th>
+                    <th>ATT</th>
+                    <th>YDS</th>
+                    <th>AVG</th>
+                    <th>TD</th>
+                    <th>Plays</th>
+                    <th>YDS</th>
+                    <th>AVG</th>
+                    <th>Pass</th>
+                    <th>Rush</th>
+                    <th>Tot</th>
+                    <th>Fum</th>
+                    <th>Int</th>
+                    <th>TO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team_name, stats in defense.items %}
+                <tr>
+                    <td>
+                        <img src="{% static team_name %}.png" class="logo-small mr-2" />
+                        <a href="/teams/{{team_name}}/stats">{{team_name}}</a>
+                    </td>
+                    <td>{{ stats.games }}</td>
+                    <td>{{ stats.ppg }}</td>
+                    <td>{{ stats.pass_cpg }}</td>
+                    <td>{{ stats.pass_apg }}</td>
+                    <td>{{ stats.comp_percent }}</td>
+                    <td>{{ stats.pass_ypg }}</td>
+                    <td>{{ stats.pass_tdpg }}</td>
+                    <td>{{ stats.rush_apg }}</td>
+                    <td>{{ stats.rush_ypg }}</td>
+                    <td>{{ stats.rush_ypc }}</td>
+                    <td>{{ stats.rush_tdpg }}</td>
+                    <td>{{ stats.playspg }}</td>
+                    <td>{{ stats.yardspg }}</td>
+                    <td>{{ stats.ypp }}</td>
+                    <td>{{ stats.first_downs_pass }}</td>
+                    <td>{{ stats.first_downs_rush }}</td>
+                    <td>{{ stats.first_downs_total }}</td>
+                    <td>{{ stats.fumbles }}</td>
+                    <td>{{ stats.interceptions }}</td>
+                    <td>{{ stats.turnovers }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %} {% block additional_scripts %}

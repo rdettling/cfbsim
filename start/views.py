@@ -522,6 +522,7 @@ def season_summary(request):
         "info": info,
         "natty": info.playoff.natty,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+        "realignment": realignment_summary(info),
     }
 
     return render(request, "season_summary.html", context)

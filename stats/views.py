@@ -3,6 +3,8 @@ from start.models import *
 from django.db.models import Q
 from util.stats import *
 
+MIN_YARDS = 100
+
 
 def team_stats(request):
     user_id = request.session.session_key
@@ -61,12 +63,12 @@ def individual_stats(request, category):
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
     }
 
-    print(context["stats"])
-
     if category == "passing":
         return render(request, "passing.html", context)
     elif category == "rushing":
         return render(request, "rushing.html", context)
+    elif category == "receiving":
+        return render(request, "receiving.html", context)
 
 
 def accumulate_individual_stats(info, category):
@@ -87,7 +89,22 @@ def accumulate_individual_stats(info, category):
             game_logs = all_game_logs.filter(player=player)
             player_stats = accumulate_rushing_stats(game_logs)
 
-            if player_stats["yards"] >= 100:
+            if player_stats["yards"] >= MIN_YARDS:
+                temp_stats[player] = player_stats
+
+        stats = temp_stats
+    elif category == "receiving":
+        players = info.players.filter(
+            Q(pos="rb") | Q(pos="wr") | Q(pos="te"), starter=True
+        )
+
+        temp_stats = {}
+
+        for player in players:
+            game_logs = all_game_logs.filter(player=player)
+            player_stats = accumulate_receiving_stats(game_logs)
+
+            if player_stats["yards"] >= MIN_YARDS:
                 temp_stats[player] = player_stats
 
         stats = temp_stats
@@ -105,13 +122,14 @@ def accumulate_passing_stats(game_logs):
         stats["td"] += game_log.pass_touchdowns
         stats["int"] += game_log.pass_interceptions
 
-    stats["pct"] = completion_percentage(stats["cmp"], stats["att"])
+    stats["pct"] = percentage(stats["cmp"], stats["att"])
     stats["passer_rating"] = passer_rating(
         stats["cmp"], stats["att"], stats["yards"], stats["td"], stats["int"]
     )
     stats["adjusted_pass_yards_per_attempt"] = adjusted_pass_yards_per_attempt(
         stats["yards"], stats["td"], stats["int"], stats["att"]
     )
+    stats["yards_per_game"] = average(stats["yards"], game_log.player.team.gamesPlayed)
 
     return stats
 
@@ -125,21 +143,39 @@ def accumulate_rushing_stats(game_logs):
         stats["td"] += game_log.rush_touchdowns
         stats["fumbles"] += game_log.fumbles
 
-    stats["yards_per_rush"] = yards_per_rush(stats["yards"], stats["att"])
-    stats["yards_per_game"] = rush_yards_per_game(
-        stats["yards"], game_log.player.team.gamesPlayed
-    )
+    stats["yards_per_rush"] = average(stats["yards"], stats["att"])
+    stats["yards_per_game"] = average(stats["yards"], game_log.player.team.gamesPlayed)
+
+    return stats
+
+
+def accumulate_receiving_stats(game_logs):
+    stats = {"rec": 0, "yards": 0, "td": 0}
+
+    if game_logs:
+        for game_log in game_logs:
+            stats["rec"] += game_log.receiving_catches
+            stats["yards"] += game_log.receiving_yards
+            stats["td"] += game_log.receiving_touchdowns
+
+        stats["yards_per_rec"] = average(stats["yards"], stats["rec"])
+        stats["yards_per_game"] = average(
+            stats["yards"], game_log.player.team.gamesPlayed
+        )
 
     return stats
 
 
 def accumulate_team_stats(team, games, plays):
     stats = {}
-    pass_yards, rush_yards = 0, 0
-    comp, att, rush_att = 0, 0, 0
-    pass_td, rush_td = 0, 0
-    int, fumble = 0, 0
-    points = play_count = 0
+    pass_yards = rush_yards = 0
+    comp = att = rush_att = 0
+    pass_td = rush_td = 0
+    fumbles = interceptions = 0
+    points = 0
+    play_count = 0
+    first_downs_pass = first_downs_rush = first_downs_total = 0
+
     gamesPlayed = team.gamesPlayed
     stats["games"] = gamesPlayed
 
@@ -164,7 +200,10 @@ def accumulate_team_stats(team, games, plays):
                 att += 1
             elif play.result == "interception":
                 att += 1
-                int += 1
+                interceptions += 1
+
+            if play.yardsGained >= play.yardsLeft:
+                first_downs_pass += 1
 
         elif play.playType == "run":
             play_count += 1
@@ -175,35 +214,33 @@ def accumulate_team_stats(team, games, plays):
                 rush_att += 1
                 rush_td += 1
             elif play.result == "fumble":
-                fumble += 1
+                fumbles += 1
 
-    if gamesPlayed:
-        stats["ppg"] = round(points / gamesPlayed, 1)
-        stats["pass_cpg"] = round(comp / gamesPlayed, 1)
-        stats["pass_apg"] = round(att / gamesPlayed, 1)
-        stats["pass_ypg"] = round(pass_yards / gamesPlayed, 1)
-        stats["pass_tdpg"] = round(pass_td / gamesPlayed, 1)
-        stats["rush_apg"] = round(rush_att / gamesPlayed, 1)
-        stats["rush_ypg"] = round(rush_yards / gamesPlayed, 1)
-        stats["rush_ypc"] = round(rush_yards / rush_att, 1)
-        stats["rush_tdpg"] = round(rush_td / gamesPlayed, 1)
-        stats["playspg"] = round(play_count / gamesPlayed, 1)
-        stats["yardspg"] = round(stats["pass_ypg"] + stats["rush_ypg"], 1)
-        stats["ypp"] = round(stats["yardspg"] / stats["playspg"], 1)
-        stats["comp_percent"] = completion_percentage(comp, att)
-    else:
-        stats["ppg"] = 0
-        stats["pass_cpg"] = 0
-        stats["pass_apg"] = 0
-        stats["pass_ypg"] = 0
-        stats["pass_tdpg"] = 0
-        stats["rush_apg"] = 0
-        stats["rush_ypg"] = 0
-        stats["rush_ypc"] = 0
-        stats["rush_tdpg"] = 0
-        stats["playspg"] = 0
-        stats["yardspg"] = 0
-        stats["ypp"] = 0
-        stats["comp_percent"] = 0
+            if play.yardsGained >= play.yardsLeft:
+                first_downs_rush += 1
+
+    total_yards = pass_yards + rush_yards
+    first_downs_total = first_downs_pass + first_downs_rush
+    turnovers = fumbles + interceptions
+
+    stats["ppg"] = average(points, gamesPlayed)
+    stats["pass_cpg"] = average(comp, gamesPlayed)
+    stats["pass_apg"] = average(att, gamesPlayed)
+    stats["pass_ypg"] = average(pass_yards, gamesPlayed)
+    stats["pass_tdpg"] = average(pass_td, gamesPlayed)
+    stats["rush_apg"] = average(rush_att, gamesPlayed)
+    stats["rush_ypg"] = average(rush_yards, gamesPlayed)
+    stats["rush_ypc"] = average(rush_yards, rush_att)
+    stats["rush_tdpg"] = average(rush_td, gamesPlayed)
+    stats["playspg"] = average(play_count, gamesPlayed)
+    stats["yardspg"] = average(total_yards, gamesPlayed)
+    stats["ypp"] = average(total_yards, play_count)
+    stats["comp_percent"] = percentage(comp, att)
+    stats["first_downs_pass"] = average(first_downs_pass, gamesPlayed)
+    stats["first_downs_rush"] = average(first_downs_rush, gamesPlayed)
+    stats["first_downs_total"] = average(first_downs_total, gamesPlayed)
+    stats["fumbles"] = average(fumbles, gamesPlayed)
+    stats["interceptions"] = average(interceptions, gamesPlayed)
+    stats["turnovers"] = average(turnovers, gamesPlayed)
 
     return stats

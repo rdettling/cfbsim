@@ -5,11 +5,16 @@ try:
 except ModuleNotFoundError:
     pass
 
-winFactor = 1.5
-lossFactor = 1.08
-drivesPerTeam = 11
-passFreq = 0.5
-ot_start = 75
+WIN_FACTOR = 1.5
+LOSS_FACTOR = 1.08
+DRIVES_PER_TEAM = 13
+BASE_PASS_FREQ = 0.5
+OT_START_YARD_LINE = 75
+BASE_COMP_PERCENT = 0.62
+BASE_SACK_RATE = 0.07
+BASE_INT_RATE = 0.07
+BASE_FUMBLE_RATE = 0.02
+FIELD_GOAL_RANGE = 60
 
 
 class Team:
@@ -54,19 +59,15 @@ class Play:
 
 
 def simPass(fieldPosition, offense, defense):
-    comp = 0.62
-    sack = 0.07
-    int = 0.07
-
     result = {
         "outcome": None,
         "yards": None,
     }
 
-    if random.random() < sack:  # sack
+    if random.random() < BASE_SACK_RATE:  # sack
         result["outcome"] = "sack"
         result["yards"] = sackYards(offense, defense)
-    elif random.random() < comp:  # completed pass
+    elif random.random() < BASE_COMP_PERCENT:  # completed pass
         result["yards"] = passYards(offense, defense)
 
         if result["yards"] + fieldPosition >= 100:
@@ -75,7 +76,7 @@ def simPass(fieldPosition, offense, defense):
         else:
             result["outcome"] = "pass"
 
-    elif random.random() < int:  # interception
+    elif random.random() < BASE_INT_RATE:  # interception
         result["outcome"] = "interception"
         result["yards"] = 0
 
@@ -87,11 +88,9 @@ def simPass(fieldPosition, offense, defense):
 
 
 def simRun(fieldPosition, offense, defense):
-    fumble_chance = 0.02
-
     result = {"outcome": None, "yards": None}
 
-    if random.random() < fumble_chance:  # fumble
+    if random.random() < BASE_FUMBLE_RATE:  # fumble
         result["outcome"] = "fumble"
         result["yards"] = 0
     else:
@@ -160,13 +159,13 @@ def simDrive(
     #     num = int((driveNum / 2))
     #     lead = game.scoreA - game.scoreB
     #     print(
-    #         f"Team lead/deficit: {lead}   Drives left: {drivesPerTeam - num}   Points needed this drive: {needed}"
+    #         f"Team lead/deficit: {lead}   Drives left: {DRIVES_PER_TEAM - num}   Points needed this drive: {needed}"
     #     )
     # else:
     #     num = int((driveNum - 1) / 2)
     #     lead = game.scoreB - game.scoreA
     #     print(
-    #         f"Team lead/deficit: {lead}   Drives left: {drivesPerTeam - num}   Points needed this drive: {needed}"
+    #         f"Team lead/deficit: {lead}   Drives left: {DRIVES_PER_TEAM - num}   Points needed this drive: {needed}"
     #     )
 
     if info:
@@ -257,7 +256,7 @@ def simDrive(
 
                     return drive, 100 - (fieldPosition + 40)
 
-            if random.random() < passFreq:
+            if random.random() < BASE_PASS_FREQ:
                 result = simPass(fieldPosition, offense, defense)
                 play.playType = "pass"
 
@@ -318,15 +317,13 @@ def simDrive(
 
 
 def fourthDown(fieldPosition, yardsLeft, needed):
-    field_goal_limit = 60
-
     # Always go for it if needed points are more than 3
     if needed in [6, 7, 8]:
         return "go"
 
     # Decisions when needed points are 3
     if needed == 3:
-        if fieldPosition < field_goal_limit:
+        if fieldPosition < FIELD_GOAL_RANGE:
             # If not in field goal range, go for it
             return "go"
         else:
@@ -336,7 +333,7 @@ def fourthDown(fieldPosition, yardsLeft, needed):
     # Standard decisions based on field position and yards left
     if fieldPosition < 40:
         return "punt"
-    elif fieldPosition < field_goal_limit:
+    elif fieldPosition < FIELD_GOAL_RANGE:
         if yardsLeft < 5:
             return "go"
         else:
@@ -356,7 +353,7 @@ def fourthDown(fieldPosition, yardsLeft, needed):
 def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
     game.scoreA = game.scoreB = 0
 
-    for i in range(drivesPerTeam * 2):
+    for i in range(DRIVES_PER_TEAM * 2):
         if i % 2 == 0:
             offense = game.teamA
             defense = game.teamB
@@ -365,7 +362,7 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
             offense = game.teamB
             defense = game.teamA
             lead = game.scoreB - game.scoreA
-        if i == 0 or i == drivesPerTeam:
+        if i == 0 or i == DRIVES_PER_TEAM:
             fieldPosition = 20
 
         drive, fieldPosition = simDrive(
@@ -404,8 +401,8 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
             game.resultB = "L"
             game.teamA.totalWins += 1
             game.teamB.totalLosses += 1
-            game.teamA.resume_total += game.teamB.rating**winFactor
-            game.teamB.resume_total += game.teamA.rating**lossFactor
+            game.teamA.resume_total += game.teamB.rating**WIN_FACTOR
+            game.teamB.resume_total += game.teamA.rating**LOSS_FACTOR
     elif game.scoreA < game.scoreB:
         game.winner = game.teamB
 
@@ -422,8 +419,8 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
             game.resultB = "W"
             game.teamA.totalLosses += 1
             game.teamB.totalWins += 1
-            game.teamB.resume_total += game.teamA.rating**winFactor
-            game.teamA.resume_total += game.teamB.rating**lossFactor
+            game.teamB.resume_total += game.teamA.rating**WIN_FACTOR
+            game.teamA.resume_total += game.teamB.rating**LOSS_FACTOR
 
     if info:
         game.teamA.gamesPlayed += 1
@@ -433,7 +430,7 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
 
 
 def overtime(game, info=None, drives_to_create=None, plays_to_create=None):
-    i = (drivesPerTeam * 2) + 1
+    i = (DRIVES_PER_TEAM * 2) + 1
 
     while game.scoreA == game.scoreB:
         game.overtime += 1
@@ -445,7 +442,7 @@ def overtime(game, info=None, drives_to_create=None, plays_to_create=None):
 
         drive, fieldPosition = simDrive(
             game,
-            ot_start,
+            OT_START_YARD_LINE,
             lead,
             offense,
             defense,
@@ -467,7 +464,7 @@ def overtime(game, info=None, drives_to_create=None, plays_to_create=None):
 
         drive, fieldPosition = simDrive(
             game,
-            ot_start,
+            OT_START_YARD_LINE,
             lead,
             offense,
             defense,
@@ -506,7 +503,7 @@ def points_needed(lead, driveNum):
         # No points needed if the team is leading or the game is tied
         return 0
 
-    drivesLeft = max(1, (drivesPerTeam - driveNum))
+    drivesLeft = max(1, (DRIVES_PER_TEAM - driveNum))
     deficit = abs(lead)
 
     possible_scores = [3, 6, 7, 8]
@@ -543,3 +540,30 @@ def update_score_after(game, drive):
             drive.scoreBAfter += 2
         else:
             drive.scoreAAfter += 2
+
+
+def choose_receiver(candidates, rating_exponent=4):
+    total_chance = 0
+    pos_bias = {"wr": 1.4, "te": 1.0, "rb": 0.6}  # Bias multipliers for each position
+
+    # Calculate weighted chance for each candidate
+    for candidate in candidates:
+        weighted_rating = candidate.rating**rating_exponent
+        candidate.chance = weighted_rating * pos_bias[candidate.pos.lower()]
+        total_chance += candidate.chance
+
+    # Normalize chances to sum up to 1 (probability)
+    for candidate in candidates:
+        candidate.chance /= total_chance
+
+    # Randomly select a receiver based on weighted chances
+    chosen_receiver = random.choices(
+        candidates, weights=[c.chance for c in candidates], k=1
+    )[0]
+
+    # For testing, print chances and chosen receiver
+    for candidate in candidates:
+        print(candidate.rating, candidate.pos, candidate.chance)
+    print(f"Chosen Receiver: {chosen_receiver.rating} {chosen_receiver.pos}")
+
+    return chosen_receiver

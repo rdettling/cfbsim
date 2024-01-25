@@ -13,10 +13,10 @@
             <div class="card-body pb-2">
                 <!-- First row: Team A Name and Score -->
                 <div class="row mb-2">
-                    <div class="col-2 p-0 mx-1 center">
+                    <div class="col-2 p-0 center ml-2 mr-3">
                         <img class="logo-small" src="{% static game.teamA.name %}.png" />
                     </div>
-                    <div class="col p-0 center">
+                    <div class="col p-0">
                         {% if game.rankATOG < 26 %}
                         <a href="/teams/{{game.teamA.name}}/schedule">#{{game.rankATOG}} {{game.teamA.name}}</a>
                         {% else %}
@@ -27,10 +27,10 @@
                 </div>
                 <!-- Second row: Team B Name and Score -->
                 <div class="row mb-2">
-                    <div class="col-2 p-0 mx-1 center">
+                    <div class="col-2 p-0 center ml-2 mr-3">
                         <img class="logo-small" src="{% static game.teamB.name %}.png" />
                     </div>
-                    <div class="col p-0 center">
+                    <div class="col p-0">
                         {% if game.rankBTOG < 26 %}
                         <a href="/teams/{{game.teamB.name}}/schedule">#{{game.rankBTOG}} {{game.teamB.name}}</a>
                         {% else %}

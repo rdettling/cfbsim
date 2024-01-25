@@ -1,89 +1,85 @@
 {% extends 'base.html' %} {% load static %} {% block title %}{{ player.first }} {{ player.last }}{% endblock %} {% block content %}
 <p>{{ player.first }} {{ player.last }}</p>
 
-{% if player.pos == "qb" %}
-<h2>Passing</h2>
-<table class="table">
+<h2>Career stats</h2>
+<table class="table table-bordered table-hover">
     <thead>
+        <th colspan="4">General</th>
+        {% if player.pos == "qb" %}
+        <th colspan="8">Passing</th>
+        {% endif %} {% if player.pos == "rb" or player.pos == "qb" %}
+        <th colspan="4">Rushing</th>
+        {% endif %} {% if player.pos == "wr" or player.pos == "rb" or player.pos == "te" %}
+        <th colspan="4">Receiving</th>
+        {% endif %} {% if player.pos == "k" %}
+        <th colspan="3">Kicking</th>
+        {% endif %}
         <tr>
-            <th scope="col">Completions</th>
-            <th scope="col">Attempts</th>
-            <th scope="col">%</th>
-            <th scope="col">Passing Yards</th>
-            <th scope="col">Passing TDs</th>
-            <th scope="col">Interceptions</th>
-            <th scope="col">Passer Rating</th>
-            <th scope="col">Adjusted net yards/att</th>
+            <th>Year</th>
+            <th>Class</th>
+            <th>Ovr</th>
+            <th>G</th>
+            {% if player.pos == "qb" %}
+            <th>Cmp</th>
+            <th>Att</th>
+            <th>%</th>
+            <th>Yards</th>
+            <th>TD</th>
+            <th>Int</th>
+            <th>Rating</th>
+            <th>AY/A</th>
+            {% endif %} {% if player.pos == "rb" or player.pos == "qb" %}
+            <th>Att</th>
+            <th>Yards</th>
+            <th>AVG</th>
+            <th>TD</th>
+            {% endif %} {% if player.pos == "wr" or player.pos == "rb" or player.pos == "te" %}
+            <th>Rec</th>
+            <th>Yards</th>
+            <th>AVG</th>
+            <th>TD</th>
+            {% endif %} {% if player.pos == "k" %}
+            <th>FGM</th>
+            <th>FGA</th>
+            <th>%</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
+        {% for year, stats in yearly_cumulative_stats.items %}
         <tr>
-            <td>{{ cumulative_stats.pass_completions }}</td>
-            <td>{{ cumulative_stats.pass_attempts }}</td>
-            <td>{{ cumulative_stats.completion_percentage }}</td>
-            <td>{{ cumulative_stats.pass_yards }}</td>
-            <td>{{ cumulative_stats.pass_touchdowns }}</td>
-            <td>{{ cumulative_stats.pass_interceptions }}</td>
-            <td>{{ cumulative_stats.passer_rating }}</td>
-            <td>{{ cumulative_stats.adjusted_pass_yards_per_attempt }}</td>
+            <td>{{ year }}</td>
+            <td>{{ stats.class }}</td>
+            <td>{{ stats.rating }}</td>
+            <td>{{ stats.games }}</td>
+            {% if player.pos == "qb" %}
+            <td>{{ stats.pass_completions }}</td>
+            <td>{{ stats.pass_attempts }}</td>
+            <td>{{ stats.completion_percentage }}</td>
+            <td>{{ stats.pass_yards }}</td>
+            <td>{{ stats.pass_touchdowns }}</td>
+            <td>{{ stats.pass_interceptions }}</td>
+            <td>{{ stats.passer_rating }}</td>
+            <td>{{ stats.adjusted_pass_yards_per_attempt }}</td>
+            {% endif %} {% if player.pos == "rb" or player.pos == "qb" %}
+            <td>{{ stats.rush_attempts }}</td>
+            <td>{{ stats.rush_yards }}</td>
+            <td>{{ stats.yards_per_rush }}</td>
+            <td>{{ stats.rush_touchdowns }}</td>
+            {% endif %} {% if player.pos == "wr" or player.pos == "rb" or player.pos == "te" %}
+            <td>{{ stats.receiving_catches }}</td>
+            <td>{{ stats.receiving_yards }}</td>
+            <td>{{ stats.yards_per_rec }}</td>
+            <td>{{ stats.receiving_touchdowns }}</td>
+            {% endif %} {% if player.pos == "k" %}
+            <td>{{ stats.field_goals_made }}</td>
+            <td>{{ stats.field_goals_attempted }}</td>
+            <td>{{ stats.field_goal_percent }}</td>
+            {% endif %}
         </tr>
+        {% endfor %}
     </tbody>
 </table>
-{% endif %} {% if player.pos == "qb" or player.pos == "rb" %}
-<h2>Rushing</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th scope="col">Rush att</th>
-            <th scope="col">Rush yards</th>
-            <th scope="col">yards/att</th>
-            <th scope="col">Rush TD</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>{{ cumulative_stats.rush_attempts }}</td>
-            <td>{{ cumulative_stats.rush_yards }}</td>
-            <td>{{ cumulative_stats.rush_yards_per_attempt }}</td>
-            <td>{{ cumulative_stats.rush_touchdowns }}</td>
-        </tr>
-    </tbody>
-</table>
-{% endif %} {% if player.pos == "wr" or player.pos == "rb" %}
-<h2>Receiving</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th scope="col">Rec</th>
-            <th scope="col">Rec yards</th>
-            <th scope="col">Rec TDs</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>{{ cumulative_stats.receiving_catches }}</td>
-            <td>{{ cumulative_stats.receiving_yards }}</td>
-            <td>{{ cumulative_stats.receiving_touchdowns }}</td>
-        </tr>
-    </tbody>
-</table>
-{% endif %} {% if player.pos == "k" %}
-<h2>Kicking</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th scope="col">FGM</th>
-            <th scope="col">FGA</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>{{ cumulative_stats.field_goals_made }}</td>
-            <td>{{ cumulative_stats.field_goals_attempted }}</td>
-        </tr>
-    </tbody>
-</table>
-{% endif %}
 
 <div class="row mb-3">
     <div class="col-md-3 text-center">
@@ -99,26 +95,48 @@
 </div>
 
 <h2>Game Logs</h2>
-<table class="table">
+<table class="table table-bordered table-hover">
     <thead>
         <tr>
-            <th scope="col">Week</th>
-            <th scope="col">Opponent</th>
-            <th scope="col">Label</th>
-            <th scope="col">Result</th>
+            <th colspan="4">General</th>
             {% if player.pos == "qb" %}
-            <th scope="col">Pass yards</th>
-            <th scope="col">Pass TD</th>
-            <th scope="col">Int</th>
+            <th colspan="7">Passing</th>
             {% endif %} {% if player.pos == "rb" or player.pos == "qb" %}
-            <th scope="col">Rush yards</th>
-            <th scope="col">Rush TD</th>
-            {% endif %} {% if player.pos == "wr" or player.pos == "rb" %}
-            <th scope="col">Rec</th>
-            <th scope="col">Rec yards</th>
-            <th scope="col">Rec TD</th>
+            <th colspan="4">Rushing</th>
+            {% endif %} {% if player.pos == "wr" or player.pos == "rb" or player.pos == "te" %}
+            <th colspan="4">Receiving</th>
+            {% endif %} {% if player.pos == "k" %}
+            <th colspan="3">Kicking</th>
             {% endif %}
-            <!-- Add more stat columns for other positions here -->
+        </tr>
+        <tr>
+            <th>Week</th>
+            <th>Opponent</th>
+            <th>Label</th>
+            <th>Result</th>
+            {% if player.pos == "qb" %}
+            <th>Cmp</th>
+            <th>Att</th>
+            <th>%</th>
+            <th>Yards</th>
+            <th>TD</th>
+            <th>Int</th>
+            <th>Rating</th>
+            {% endif %}{% if player.pos == "rb" or player.pos == "qb" %}
+            <th>Att</th>
+            <th>Yards</th>
+            <th>AVG</th>
+            <th>TD</th>
+            {% endif %} {% if player.pos == "wr" or player.pos == "rb" or player.pos == "te" %}
+            <th>Rec</th>
+            <th>Yards</th>
+            <th>AVG</th>
+            <th>TD</th>
+            {% endif %} {% if player.pos == "k" %}
+            <th>FGM</th>
+            <th>FGA</th>
+            <th>%</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
@@ -134,18 +152,28 @@
                 <a href="{% url 'game' id=game_log.game.id %}">{{ game_log.result }}</a>
             </td>
             {% if player.pos == "qb" %}
+            <td>{{ game_log.pass_completions }}</td>
+            <td>{{ game_log.pass_attempts }}</td>
+            <td>{{ game_log.completion_percent }}</td>
             <td>{{ game_log.pass_yards }}</td>
             <td>{{ game_log.pass_touchdowns }}</td>
             <td>{{ game_log.pass_interceptions }}</td>
+            <td>{{ game_log.passer_rating }}</td>
             {% endif %} {% if player.pos == "rb" or player.pos == "qb" %}
+            <td>{{ game_log.rush_attempts }}</td>
             <td>{{ game_log.rush_yards }}</td>
+            <td>{{ game_log.yards_per_rush }}</td>
             <td>{{ game_log.rush_touchdowns }}</td>
-            {% endif %} {% if player.pos == "wr" or player.pos == "rb" %}
+            {% endif %} {% if player.pos == "wr" or player.pos == "rb" or player.pos == "te" %}
             <td>{{ game_log.receiving_catches }}</td>
             <td>{{ game_log.receiving_yards }}</td>
+            <td>{{ game_log.yards_per_rec }}</td>
             <td>{{ game_log.receiving_touchdowns }}</td>
+            {% endif %} {% if player.pos == "k" %}
+            <td>{{ game_log.field_goals_made }}</td>
+            <td>{{ game_log.field_goals_attempted }}</td>
+            <td>{{ game_log.field_goal_percent }}</td>
             {% endif %}
-            <!-- Add more stat cells for other positions here -->
         </tr>
         {% endfor %}
     </tbody>

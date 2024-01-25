@@ -1,22 +1,19 @@
-{% extends 'base.html' %} {% load static %} {% block title %} Passing Stats{% endblock %} {% block css %}
+{% extends 'base.html' %} {% load static %} {% block title %}Receiving Stats{% endblock %} {% block css %}
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css" />
 {% endblock %} {% block content %}
-<h2>Passing Stats</h2>
+<h2>Receiving Stats</h2>
 <table class="table table-hover table-bordered">
     <thead>
         <tr>
             <th>Player</th>
             <th>Team</th>
+            <th>Pos</th>
             <th>Rating</th>
             <th>G</th>
-            <th>CMP</th>
-            <th>ATT</th>
-            <th>Pct</th>
+            <th>REC</th>
             <th>Yards</th>
             <th>TD</th>
-            <th>Int</th>
-            <th>Passer rating</th>
-            <th>AY/A</th>
+            <th>Y/R</th>
             <th>Y/G</th>
         </tr>
     </thead>
@@ -30,22 +27,18 @@
                 <img src="{% static player.team.name %}.png" class="logo-small mr-2" />
                 <a href="{% url 'schedule' team_name=player.team.name %}" class="ml-2"> {{ player.team.name }}</a>
             </td>
+            <td>{{ player.pos }}</td>
             <td>{{ player.rating }}</td>
             <td>{{ player.team.gamesPlayed }}</td>
-            <td>{{ player_stats.cmp }}</td>
-            <td>{{ player_stats.att }}</td>
-            <td>{{ player_stats.pct }}</td>
+            <td>{{ player_stats.rec }}</td>
             <td>{{ player_stats.yards }}</td>
             <td>{{ player_stats.td }}</td>
-            <td>{{ player_stats.int }}</td>
-            <td>{{ player_stats.passer_rating }}</td>
-            <td>{{ player_stats.adjusted_pass_yards_per_attempt }}</td>
+            <td>{{ player_stats.yards_per_rec }}</td>
             <td>{{ player_stats.yards_per_game }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-
 {% endblock %} {% block additional_scripts %}
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
 <script>
@@ -53,7 +46,7 @@
         $('.table').DataTable({
             searching: false,
             paging: false,
-            order: [[11, 'desc']],
+            order: [[6, 'desc']],
         });
     });
 </script>

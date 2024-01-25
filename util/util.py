@@ -2,6 +2,8 @@ from .schedule import *
 from .players import *
 from .sim.simtest import getSpread
 from django.db import transaction
+import os
+from .sim.sim import *
 
 
 def update_teams_and_rosters(info, data):
@@ -44,6 +46,47 @@ def start_season(info):
     info.currentWeek = 1
     info.stage = "season"
     info.save()
+
+
+def realignment_summary(info):
+    next_year = info.currentYear + 1
+    file_path = f"static/years/{next_year}.json"
+
+    team_dict = {}
+    if os.path.exists(file_path):
+        with open(file_path, "r") as metadataFile:
+            data = json.load(metadataFile)
+
+        teams = info.teams.all().select_related("conference")
+        for team in teams:
+            team_dict[team.name] = {
+                "old": team.conference.confName if team.conference else "Independent"
+            }
+
+        for conf in data["conferences"]:
+            for team in conf["teams"]:
+                if team["name"] in team_dict:
+                    team_dict[team["name"]]["new"] = conf["confName"]
+                else:
+                    team_dict[team["name"]] = {"old": "FCS", "new": conf["confName"]}
+
+        for team in data["independents"]:
+            if team["name"] in team_dict:
+                team_dict[team["name"]]["new"] = "Independent"
+            else:
+                team_dict[team["name"]] = {"old": "FCS", "new": "Independent"}
+
+        for team_name in team_dict:
+            if "new" not in team_dict[team_name]:
+                team_dict[team_name]["new"] = "FCS"
+
+        team_dict = {
+            name: confs
+            for name, confs in team_dict.items()
+            if confs["old"] != confs["new"]
+        }
+
+    return team_dict
 
 
 def realignment(info, data):
@@ -414,7 +457,7 @@ def format_play_text(play, player1, player2=None):
 
 
 def make_game_logs(info, plays):
-    desired_positions = {"qb", "rb", "wr", "k", "p"}
+    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
     game_log_dict = {}
 
     all_starters = info.players.filter(
@@ -458,6 +501,7 @@ def make_game_logs(info, plays):
         rb_starters = starters_by_team_pos.get((offense_team, "rb"))
         qb_starter = starters_by_team_pos.get((offense_team, "qb"))[0]
         wr_starters = starters_by_team_pos.get((offense_team, "wr"))
+        te_starters = starters_by_team_pos.get((offense_team, "te"))
         k_starter = starters_by_team_pos.get((offense_team, "k"))[0]
         p_starter = starters_by_team_pos.get((offense_team, "p"))[0]
 
@@ -467,7 +511,8 @@ def make_game_logs(info, plays):
             update_game_log_for_run(play, game_log)
             format_play_text(play, runner)
         elif play.playType == "pass":
-            receiver = random.choice(wr_starters)
+            candidates = wr_starters + te_starters + rb_starters
+            receiver = choose_receiver(candidates)
             qb_game_log = game_log_dict[(qb_starter, game)]
             receiver_game_log = game_log_dict[(receiver, game)]
             update_game_log_for_pass(play, qb_game_log, receiver_game_log)
