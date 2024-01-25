@@ -155,9 +155,9 @@ def player(request, team_name, id):
             if player.year == "so":
                 return "fr", player.rating_fr
         elif year_diff == 2:
-            if player.year == "jr":
+            if player.year == "sr":
                 return "so", player.rating_so
-            if player.year == "so":
+            if player.year == "jr":
                 return "fr", player.rating_fr
         elif year_diff == 3:
             return "fr", player.rating_fr

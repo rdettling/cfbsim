@@ -561,9 +561,9 @@ def choose_receiver(candidates, rating_exponent=4):
         candidates, weights=[c.chance for c in candidates], k=1
     )[0]
 
-    # For testing, print chances and chosen receiver
-    for candidate in candidates:
-        print(candidate.rating, candidate.pos, candidate.chance)
-    print(f"Chosen Receiver: {chosen_receiver.rating} {chosen_receiver.pos}")
+    # # For testing, print chances and chosen receiver
+    # for candidate in candidates:
+    #     print(candidate.rating, candidate.pos, candidate.chance)
+    # print(f"Chosen Receiver: {chosen_receiver.rating} {chosen_receiver.pos}")
 
     return chosen_receiver

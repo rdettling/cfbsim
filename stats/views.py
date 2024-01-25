@@ -115,21 +115,24 @@ def accumulate_individual_stats(info, category):
 def accumulate_passing_stats(game_logs):
     stats = {"att": 0, "cmp": 0, "yards": 0, "td": 0, "int": 0}
 
-    for game_log in game_logs:
-        stats["att"] += game_log.pass_attempts
-        stats["cmp"] += game_log.pass_completions
-        stats["yards"] += game_log.pass_yards
-        stats["td"] += game_log.pass_touchdowns
-        stats["int"] += game_log.pass_interceptions
+    if game_logs:
+        for game_log in game_logs:
+            stats["att"] += game_log.pass_attempts
+            stats["cmp"] += game_log.pass_completions
+            stats["yards"] += game_log.pass_yards
+            stats["td"] += game_log.pass_touchdowns
+            stats["int"] += game_log.pass_interceptions
 
-    stats["pct"] = percentage(stats["cmp"], stats["att"])
-    stats["passer_rating"] = passer_rating(
-        stats["cmp"], stats["att"], stats["yards"], stats["td"], stats["int"]
-    )
-    stats["adjusted_pass_yards_per_attempt"] = adjusted_pass_yards_per_attempt(
-        stats["yards"], stats["td"], stats["int"], stats["att"]
-    )
-    stats["yards_per_game"] = average(stats["yards"], game_log.player.team.gamesPlayed)
+        stats["pct"] = percentage(stats["cmp"], stats["att"])
+        stats["passer_rating"] = passer_rating(
+            stats["cmp"], stats["att"], stats["yards"], stats["td"], stats["int"]
+        )
+        stats["adjusted_pass_yards_per_attempt"] = adjusted_pass_yards_per_attempt(
+            stats["yards"], stats["td"], stats["int"], stats["att"]
+        )
+        stats["yards_per_game"] = average(
+            stats["yards"], game_log.player.team.gamesPlayed
+        )
 
     return stats
 
@@ -137,14 +140,17 @@ def accumulate_passing_stats(game_logs):
 def accumulate_rushing_stats(game_logs):
     stats = {"att": 0, "yards": 0, "td": 0, "fumbles": 0}
 
-    for game_log in game_logs:
-        stats["att"] += game_log.rush_attempts
-        stats["yards"] += game_log.rush_yards
-        stats["td"] += game_log.rush_touchdowns
-        stats["fumbles"] += game_log.fumbles
+    if game_logs:
+        for game_log in game_logs:
+            stats["att"] += game_log.rush_attempts
+            stats["yards"] += game_log.rush_yards
+            stats["td"] += game_log.rush_touchdowns
+            stats["fumbles"] += game_log.fumbles
 
-    stats["yards_per_rush"] = average(stats["yards"], stats["att"])
-    stats["yards_per_game"] = average(stats["yards"], game_log.player.team.gamesPlayed)
+        stats["yards_per_rush"] = average(stats["yards"], stats["att"])
+        stats["yards_per_game"] = average(
+            stats["yards"], game_log.player.team.gamesPlayed
+        )
 
     return stats
 
