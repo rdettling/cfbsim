@@ -45,161 +45,151 @@
 
 <button id="fetch-play-btn" class="btn btn-primary"></button>
 
-{% endblock %} {% block additional_scripts %}
-<script>
-    $(document).ready(function () {
-        if (!$('#play-container').data('current-play-id')) {
-            // Set the text of the button to 'Start Game'
-            $('#fetch-play-btn').text('Start Game');
+<div id="drive-summary">
+    <h3>Drive Summary</h3>
+    <div id="drive-list"></div>
+</div>
 
-            // Hide the football field div
-            $('#football-field').hide();
+{% endblock %} {% block additional_scripts %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const playContainer = document.getElementById('play-container');
+        const fetchPlayBtn = document.getElementById('fetch-play-btn');
+        const footballField = document.getElementById('football-field');
+
+        if (!playContainer.dataset.currentPlayId) {
+            fetchPlayBtn.textContent = 'Start Game';
+            footballField.style.display = 'none';
         }
 
-        $('#fetch-play-btn').click(function () {
-            var currentPlayId = $('#play-container').data('current-play-id') || '';
-            var gameId = $('#play-container').data('game-id');
+        fetchPlayBtn.addEventListener('click', function () {
+            const currentPlayId = playContainer.dataset.currentPlayId || '';
+            const gameId = playContainer.dataset.gameId;
 
-            $.ajax({
-                url: '{% url "fetch_play" %}',
-                type: 'GET',
-                data: {
-                    current_play_id: currentPlayId,
-                    game_id: gameId,
-                },
-                success: function (response) {
+            fetch(`{% url "fetch_play" %}?current_play_id=${currentPlayId}&game_id=${gameId}`)
+                .then((response) => response.json())
+                .then((response) => {
                     console.log(response);
 
-                    // Check if the game has finished
                     if (response.status === 'finished') {
-                        $('#fetch-play-btn').hide();
-                        $('#football-field').hide();
+                        fetchPlayBtn.style.display = 'none';
+                        footballField.style.display = 'none';
 
-                        // Construct table content
-                        var content =
-                            '<table class="score-table">' +
-                            '<tr>' +
-                            '<td class="bold-text"><img src="{% static "" %}' +
-                            response.teamA +
-                            '.png" class="logo-medium" />' +
-                            response.teamA +
-                            '</td>' +
-                            '<td>Score: ' +
-                            response.scoreA +
-                            '</td>' +
-                            '</tr>' +
-                            '<tr>' +
-                            '<td class="bold-text"><img src="{% static "" %}' +
-                            response.teamB +
-                            '.png" class="logo-medium" />' +
-                            response.teamB +
-                            '</td>' +
-                            '<td>Score: ' +
-                            response.scoreB +
-                            '</td>' +
-                            '</tr>' +
-                            '</table>';
+                        let content = `<table class="score-table">
+                        <tr>
+                            <td class="bold-text"><img src="{% static "" %}${response.teamA}.png" class="logo-medium" />${response.teamA}</td>
+                            <td>Score: ${response.scoreA}</td>
+                        </tr>
+                        <tr>
+                            <td class="bold-text"><img src="{% static "" %}${response.teamB}.png" class="logo-medium" />${response.teamB}</td>
+                            <td>Score: ${response.scoreB}</td>
+                        </tr>
+                    </table>`;
 
-                        // Access the game ID from the data attribute
-                        var gameId = $('#play-container').data('game-id');
-                        var gameSummaryLink = '<a href="/games/' + gameId + '/">Game Summary</a>';
+                        const gameId = playContainer.dataset.gameId;
+                        const gameSummaryLink = `<a href="/games/${gameId}/">Game Summary</a>`;
 
                         if (response.ot === 0) {
                             content += '<div class="center-text bold-text">Final</div>';
                         } else if (response.ot === 1) {
                             content += '<div class="center-text bold-text">Final (OT)</div>';
                         } else {
-                            content += '<div class="center-text bold-text">Final (' + response.ot + 'OT)</div>';
+                            content += `<div class="center-text bold-text">Final (${response.ot}OT)</div>`;
                         }
-                        content += '<div class="center-text">' + gameSummaryLink + '</div>';
-
-                        content += '<div class="center-text">Last Play: ' + (response.last_play_text || 'None') + '</div>';
-                        $('#play-container').html(content);
+                        content += `<div class="center-text">${gameSummaryLink}</div>`;
+                        content += `<div class="center-text">Last Play: ${response.last_play_text || 'None'}</div>`;
+                        playContainer.innerHTML = content;
                         return;
                     }
 
-                    // Show the football field when the game starts
-                    $('#football-field').show();
-                    $('#fetch-play-btn').text('Next Play');
+                    footballField.style.display = 'block';
+                    fetchPlayBtn.textContent = 'Next Play';
 
-                    var offenseIndicatorA = response.offense === response.teamA ? '<img src="{% static "football.png" %}" class="football-icon" />' : '';
-                    var offenseIndicatorB = response.offense === response.teamB ? '<img src="{% static "football.png" %}" class="football-icon" />' : '';
+                    const offenseIndicatorA = response.offense === response.teamA ? '<img src="{% static "football.png" %}" class="football-icon" />' : '';
+                    const offenseIndicatorB = response.offense === response.teamB ? '<img src="{% static "football.png" %}" class="football-icon" />' : '';
 
-                    // Construct table content
-                    var content =
-                        '<table class="score-table">' +
-                        '<tr>' +
-                        '<td class="bold-text"><img src="{% static "" %}' +
-                        response.teamA +
-                        '.png" class="logo-medium" />' +
-                        response.teamA +
-                        '</td>' +
-                        '<td>' +
-                        offenseIndicatorA +
-                        '</td>' +
-                        '<td>Score: ' +
-                        response.scoreA +
-                        '</td>' +
-                        '</tr>' +
-                        '<tr>' +
-                        '<td class="bold-text"><img src="{% static "" %}' +
-                        response.teamB +
-                        '.png" class="logo-medium" />' +
-                        response.teamB +
-                        '</td>' +
-                        '<td>' +
-                        offenseIndicatorB +
-                        '</td>' +
-                        '<td>Score: ' +
-                        response.scoreB +
-                        '</td>' +
-                        '</tr>' +
-                        '</table>';
-                    content += '<div class="center-text bold-text">' + response.current_play_header + '</div>';
-                    content += '<div class="center-text">Last Play: ' + (response.last_play_text || 'None') + '</div>';
+                    let content = `<table class="score-table">
+                    <tr>
+                        <td class="bold-text"><img src="{% static "" %}${response.teamA}.png" class="logo-medium" />${response.teamA}</td>
+                        <td>${offenseIndicatorA}</td>
+                        <td>Score: ${response.scoreA}</td>
+                    </tr>
+                    <tr>
+                        <td class="bold-text"><img src="{% static "" %}${response.teamB}.png" class="logo-medium" />${response.teamB}</td>
+                        <td>${offenseIndicatorB}</td>
+                        <td>Score: ${response.scoreB}</td>
+                    </tr>
+                </table>`;
+                    content += `<div class="center-text bold-text">${response.current_play_header}</div>`;
+                    content += `<div class="center-text">Last Play: ${response.last_play_text || 'None'}</div>`;
 
-                    $('#play-container').html(content);
-
-                    // Update the current play ID for the next request
-                    $('#play-container').data('current-play-id', response.current_play_id);
+                    playContainer.innerHTML = content;
+                    playContainer.dataset.currentPlayId = response.current_play_id;
 
                     updateFootballField(response);
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error fetching play: ', status, error);
-                },
-            });
+                    updateDriveSummary(response);
+                    updatePlayInfo(response);
+                })
+                .catch((error) => {
+                    console.error('Error fetching play: ', error);
+                });
         });
+
+        function updatePlayInfo(data) {
+            const content = playContainer.innerHTML;
+            playContainer.innerHTML = `<div class="center-text bold-text">${data.drive_fraction} - ${data.current_play_header}</div>${content}`;
+        }
+
+        function updateDriveSummary(data) {
+            const driveList = document.getElementById('drive-list');
+            driveList.innerHTML = ''; // Clear existing drives
+
+            data.completed_drives.forEach(function (drive) {
+                const driveItem = document.createElement('div');
+                driveItem.classList.add('drive-item');
+
+                if (drive.points > 0) {
+                    driveItem.classList.add('scoring-drive');
+                    driveItem.style.backgroundColor = drive.offense_color;
+                    driveItem.style.color = drive.offense_secondary_color;
+                }
+
+                const logoImg = document.createElement('img');
+                logoImg.src = `{% static "" %}${drive.offense}.png`;
+                driveItem.appendChild(logoImg);
+
+                driveItem.appendChild(document.createTextNode(`Drive ${drive.driveNum}: ${drive.offense} - ${Math.abs(drive.yards)} yards, ${drive.result}, Score: ${drive.scoreA}-${drive.scoreB}`));
+
+                driveList.appendChild(driveItem);
+            });
+        }
+
         function updateFootballField(data) {
-            var ballPosition = data.ballPosition;
-            var lineOfScrimmage = data.lineOfScrimmage;
-            var firstDownLine = data.firstDownLine;
-            var lastPlayYards = data.lastPlayYards;
+            const ballPosition = data.ballPosition;
+            const lineOfScrimmage = data.lineOfScrimmage;
+            const firstDownLine = data.firstDownLine;
+            const lastPlayYards = data.lastPlayYards;
 
-            // Convert yard lines to pixel positions within the playing field
-            var playingFieldWidth = $('#playing-field').width();
-            var pixelsPerYard = playingFieldWidth / 100; // Assuming 100 yards for playing field
+            const playingField = document.getElementById('playing-field');
+            const playingFieldWidth = playingField.offsetWidth;
+            const pixelsPerYard = playingFieldWidth / 100;
 
-            // Update positions within the playing field directly
-            $('#ball').css('left', ballPosition * pixelsPerYard + 'px');
-            $('#line-of-scrimmage').css('left', lineOfScrimmage * pixelsPerYard + 'px');
-            $('#first-down-line').css('left', firstDownLine * pixelsPerYard + 'px');
+            document.getElementById('ball').style.left = `${ballPosition * pixelsPerYard}px`;
+            document.getElementById('line-of-scrimmage').style.left = `${lineOfScrimmage * pixelsPerYard}px`;
+            document.getElementById('first-down-line').style.left = `${firstDownLine * pixelsPerYard}px`;
 
-            // Set team names
-            $('#team-a-name').text(data.teamA);
-            $('#team-b-name').text(data.teamB);
+            document.getElementById('team-a-name').textContent = data.teamA;
+            document.getElementById('team-b-name').textContent = data.teamB;
 
-            // Set end zone colors based on team primary colors
-            $('#end-zone-a').css('background-color', data.colorAPrimary);
-            $('#end-zone-b').css('background-color', data.colorBPrimary);
+            document.getElementById('end-zone-a').style.backgroundColor = data.colorAPrimary;
+            document.getElementById('end-zone-b').style.backgroundColor = data.colorBPrimary;
 
-            // Set end zone text colors based on team secondary colors
-            $('#team-a-name').css('color', data.colorASecondary);
-            $('#team-b-name').css('color', data.colorBSecondary);
+            document.getElementById('team-a-name').style.color = data.colorASecondary;
+            document.getElementById('team-b-name').style.color = data.colorBSecondary;
 
-            // Calculate arrow position and length based on lastPlayYards
-            var arrowLength = Math.abs(lastPlayYards) * pixelsPerYard;
-            var arrowPosition = lineOfScrimmage; // Always start at the line of scrimmage
+            const arrowLength = Math.abs(lastPlayYards) * pixelsPerYard;
+            let arrowPosition = lineOfScrimmage;
 
             if (data.offense === data.teamA) {
                 if (lastPlayYards < 0) {
@@ -211,12 +201,11 @@
                 }
             }
 
-            var playingFieldHeight = $('#playing-field').height();
-
-            // Update the position and length of the single yard-arrow element
-            $('#yard-arrow').css('left', arrowPosition * pixelsPerYard + 'px');
-            $('#yard-arrow').css('width', arrowLength + 'px');
-            $('#yard-arrow').css('top', playingFieldHeight / 4 + 'px');
+            const playingFieldHeight = playingField.offsetHeight;
+            const yardArrow = document.getElementById('yard-arrow');
+            yardArrow.style.left = `${arrowPosition * pixelsPerYard}px`;
+            yardArrow.style.width = `${arrowLength}px`;
+            yardArrow.style.top = `${playingFieldHeight / 4}px`;
         }
     });
 </script>

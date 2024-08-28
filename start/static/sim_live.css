@@ -9,7 +9,7 @@
     max-width: 1200px;
     height: 540px;
     background-color: green;
-    margin: 0 auto;
+    margin: 0 auto 20px; /* Add bottom margin */
 }
 #playing-field {
     position: absolute;
@@ -89,4 +89,41 @@
 }
 #end-zone-b {
     right: 0;
+}
+
+#fetch-play-btn {
+    display: block;
+    margin: 0 auto 20px; /* Center the button and add bottom margin */
+}
+
+#drive-summary {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #f0f0f0;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+#drive-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.drive-item {
+    margin-bottom: 10px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    color: #000; /* Ensure black text for non-scoring drives */
+}
+
+.drive-item img {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.scoring-drive {
+    font-weight: bold;
 }

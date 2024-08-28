@@ -7,6 +7,7 @@ from util.util import *
 from util.sim.sim import simGame
 import os
 from django.conf import settings
+from util.sim.sim import DRIVES_PER_TEAM
 
 
 def simWeek(request):
@@ -362,6 +363,39 @@ def fetch_play(request):
         ballPosition = lineOfScrimmage = 100 - current_play.startingFP
         firstDownLine = 100 - (current_play.yardsLeft + current_play.startingFP)
 
+    completed_drives = []
+    if current_play:
+        drive_num = (
+            current_play.drive.driveNum // 2
+        ) + 1  # Adjust to start from 1 and have two drives per number
+        drive_fraction = f"{drive_num}/{DRIVES_PER_TEAM}"
+        if drive_num > DRIVES_PER_TEAM:
+            drive_fraction = "OT"
+
+        for drive in current_play.game.drives.exclude(result__isnull=True):
+            if drive.id < current_play.drive.id:
+                # Calculate yards gained using the drive's own data
+                if drive.offense == current_play.game.teamA:
+                    yards_gained = drive.startingFP - drive.plays.last().startingFP
+                else:
+                    yards_gained = drive.plays.last().startingFP - drive.startingFP
+
+                adjusted_drive_num = (drive.driveNum // 2) + 1  # Adjust drive number
+
+                completed_drives.append(
+                    {
+                        "offense": drive.offense.name,
+                        "offense_color": drive.offense.colorPrimary,
+                        "offense_secondary_color": drive.offense.colorSecondary,
+                        "yards": yards_gained,
+                        "result": drive.result,
+                        "points": drive.points,
+                        "scoreA": drive.scoreAAfter,
+                        "scoreB": drive.scoreBAfter,
+                        "driveNum": adjusted_drive_num,
+                    }
+                )
+
     return JsonResponse(
         {
             "status": "success",
@@ -381,6 +415,8 @@ def fetch_play(request):
             "current_play_header": current_play.header,
             "last_play_text": last_play_text,
             "current_play_id": current_play.id,
+            "completed_drives": completed_drives,
+            "drive_fraction": drive_fraction,
         }
     )
 
