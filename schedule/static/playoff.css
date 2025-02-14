@@ -1,0 +1,10 @@
+.match {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.team {
+    padding: 5px;
+    background-color: #f8f9fa;
+    margin-bottom: 5px;
+}

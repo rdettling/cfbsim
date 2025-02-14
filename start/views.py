@@ -475,11 +475,35 @@ def dashboard(request):
 
 
 def game_preview(request, info, game):
+    if game.labelA == game.labelB:
+        game.label = game.labelA
+    else:
+        game.label = (
+            f"NC ({game.teamA.conference.confName} vs {game.teamB.conference.confName})"
+        )
+
+    # Fetch top 5 starters for each team
+    top_players_a = list(
+        game.teamA.players.filter(starter=True).order_by("-rating")[:5]
+    )
+    top_players_b = list(
+        game.teamB.players.filter(starter=True).order_by("-rating")[:5]
+    )
+
+    # Pad the shorter list with None values if necessary
+    max_players = max(len(top_players_a), len(top_players_b))
+    top_players_a += [None] * (max_players - len(top_players_a))
+    top_players_b += [None] * (max_players - len(top_players_b))
+
+    # Zip the two lists together
+    top_players = list(zip(top_players_a, top_players_b))
+
     context = {
         "info": info,
         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
         "conferences": info.conferences.all().order_by("confName"),
         "game": game,
+        "top_players": top_players,
     }
 
     return render(request, "game_preview.html", context)

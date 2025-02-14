@@ -1,6 +1,5 @@
 __pycache__/
 /venv/
 *.sqlite3
-*.env
-*.log
+.env
 .DS_Store
