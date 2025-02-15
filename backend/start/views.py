@@ -8,6 +8,8 @@ from util.sim.sim import simGame
 import os
 from django.conf import settings
 from util.sim.sim import DRIVES_PER_TEAM
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 
 def simWeek(request):
@@ -107,7 +109,9 @@ def simWeek(request):
         return render(request, "sim.html", context)
 
 
+@api_view(['GET'])
 def home(request):
+    """API endpoint for the launch page data"""
     if not request.session.session_key:
         request.session.create()
 
@@ -115,26 +119,30 @@ def home(request):
 
     try:
         info = Info.objects.get(user_id=user_id)
-    except:
-        info = None
-
-    # Path to the 'years' directory
-    years_dir = os.path.join(settings.BASE_DIR, "static", "years")
+        info_data = {
+            'currentYear': info.currentYear,
+            'team': {
+                'name': info.team.name if info.team else None
+            } if info.team else None
+        }
+    except Info.DoesNotExist:
+        info_data = None
 
     # List all JSON files and extract the year part from their names
-    years = [f.split(".")[0] for f in os.listdir(years_dir) if f.endswith(".json")]
-    years.sort(reverse=True)  # Sort years in descending order
+    years = [f.split(".")[0] for f in os.listdir(settings.YEARS_DATA_DIR) if f.endswith(".json")]
+    years.sort(reverse=True)
 
-    context = {"info": info, "years": years}  # Add the years to the context
-
-    return render(request, "launch.html", context)
+    return Response({
+        'info': info_data,
+        'years': years
+    })
 
 
 def preview(request):
     user_id = request.session.session_key
     year = request.GET.get("year")
 
-    with open(f"static/years/{year}.json", "r") as metadataFile:
+    with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
         data = json.load(metadataFile)
 
         for conf in data["conferences"]:

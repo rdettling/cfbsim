@@ -2,6 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # API endpoints
+    path("api/launch/", views.home, name="api_home"),
+    
+    # Keep existing URLs for now as we transition
     path("", views.home, name="home"),
     path("preview/", views.preview, name="preview"),
     path("pickteam/", views.pickteam, name="pickteam"),

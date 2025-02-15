@@ -52,9 +52,12 @@ INSTALLED_APPS = [
     "stats",
     "schedule",
     "recruit",
+    'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -93,20 +96,28 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = "/static/"
+# Static files configuration
+STATIC_URL = '/django-static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-    os.path.join(BASE_DIR, "static", "logos"),
-    os.path.join(BASE_DIR, "static", "logos", "teams"),
-    os.path.join(BASE_DIR, "static", "logos", "conferences"),
-]
+# Add this new setting for the years data directory
+YEARS_DATA_DIR = BASE_DIR / 'data' / 'initial' / 'years'
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+# Remove STATICFILES_DIRS entirely if you don't have any custom static files for Django admin
 
 STATICFILES_FINDERS = [
-    "django.contrib.staticfiles.finders.FileSystemFinder",
-    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# During development
+CORS_ALLOW_ALL_ORIGINS = True
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ]
+}
