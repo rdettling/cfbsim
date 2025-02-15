@@ -10,6 +10,7 @@ from django.conf import settings
 from util.sim.sim import DRIVES_PER_TEAM
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from .serializers import InfoSerializer
 
 
 def simWeek(request):
@@ -119,16 +120,10 @@ def home(request):
 
     try:
         info = Info.objects.get(user_id=user_id)
-        info_data = {
-            'currentYear': info.currentYear,
-            'team': {
-                'name': info.team.name if info.team else None
-            } if info.team else None
-        }
+        info_data = InfoSerializer(info).data
     except Info.DoesNotExist:
         info_data = None
 
-    # List all JSON files and extract the year part from their names
     years = [f.split(".")[0] for f in os.listdir(settings.YEARS_DATA_DIR) if f.endswith(".json")]
     years.sort(reverse=True)
 
