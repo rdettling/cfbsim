@@ -117,6 +117,7 @@ def home(request):
         request.session.create()
 
     user_id = request.session.session_key
+    year = request.GET.get("year")
 
     try:
         info = Info.objects.get(user_id=user_id)
@@ -127,37 +128,25 @@ def home(request):
     years = [f.split(".")[0] for f in os.listdir(settings.YEARS_DATA_DIR) if f.endswith(".json")]
     years.sort(reverse=True)
 
+    # Get preview data for the selected year
+    preview_data = None
+    if year:
+        with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
+            preview_data = json.load(metadataFile)
+            
+            # Sort teams by prestige within each conference
+            for conf in preview_data["conferences"]:
+                conf["teams"] = sorted(
+                    conf["teams"], 
+                    key=lambda team: team["prestige"], 
+                    reverse=True
+                )
+
     return Response({
         'info': info_data,
-        'years': years
+        'years': years,
+        'preview': preview_data
     })
-
-
-def preview(request):
-    user_id = request.session.session_key
-    year = request.GET.get("year")
-
-    with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
-        data = json.load(metadataFile)
-
-        for conf in data["conferences"]:
-            conf["teams"] = sorted(
-                conf["teams"], key=lambda team: team["prestige"], reverse=True
-            )
-
-        data["independents"] = sorted(
-            data["independents"], key=lambda team: team["prestige"], reverse=True
-        )
-
-        info = init(data, user_id, year)
-
-    context = {
-        "info": info,
-        "year": year,
-        "data": data,
-    }
-
-    return render(request, "preview.html", context)
 
 
 def pickteam(request):
