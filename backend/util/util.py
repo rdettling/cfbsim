@@ -4,6 +4,8 @@ from .sim.simtest import getSpread
 from django.db import transaction
 import os
 from .sim.sim import *
+from django.conf import settings
+
 
 
 def update_teams_and_rosters(info, data):
@@ -167,18 +169,20 @@ def initialize_rankings(info):
     Teams.objects.bulk_update(teams, ["ranking", "last_rank"])
 
 
-def init(data, user_id, year):
+def init(user_id, team_name, year):
+    with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
+        data = json.load(metadataFile)
+
     overall_start = time.time()
 
     Info.objects.filter(user_id=user_id).delete()
-    # # delete_plays(info)
-    # info.delete()
 
     info = Info.objects.create(
         user_id=user_id,
         currentWeek=1,
         currentYear=year,
         startYear=year,
+        stage="schedule non conference",
     )
 
     playoff = Playoff.objects.create(
@@ -188,7 +192,6 @@ def init(data, user_id, year):
         lastWeek=data["playoff"]["lastWeek"],
     )
     info.playoff = playoff
-    info.save()
 
     conferences_to_create = []
     teams_to_create = []
@@ -221,6 +224,8 @@ def init(data, user_id, year):
                 recruiting_points=get_recruiting_points(team["prestige"]),
             )
             teams_to_create.append(Team)
+            if team["name"] == team_name:
+                info.team = Team
 
     for team in data["independents"]:
         Team = Teams(
@@ -238,16 +243,18 @@ def init(data, user_id, year):
             recruiting_points=get_recruiting_points(team["prestige"]),
         )
         teams_to_create.append(Team)
+        if team["name"] == team_name:
+            info.team = Team
 
     start = time.time()
     Conferences.objects.bulk_create(conferences_to_create)
     Teams.objects.bulk_create(teams_to_create)
     print(f"Create teams, conferences {time.time() - start} seconds")
 
+    info.save()
     teams = info.teams.all()
-
+    
     start = time.time()
-
     loaded_names = load_names()
     for team in teams:
         init_roster(team, loaded_names, players_to_create)
@@ -294,6 +301,7 @@ def init(data, user_id, year):
 
     # generate_recruits(info, recruits_to_create)
     # Recruits.objects.bulk_create(recruits_to_create)
+
 
 
 def update_rankings(info):

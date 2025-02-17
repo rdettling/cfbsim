@@ -3,10 +3,13 @@ from . import views
 
 urlpatterns = [
     path("api/home/", views.home),  
-    path("noncon/", views.noncon, name="noncon"),
-    path("fetchteams/", views.fetch_teams, name="fetch_teams"),
+    path('api/noncon/', views.noncon),
+    path('api/fetchteams/', views.fetch_teams, name='fetch_teams'),
+    path('api/schedulenc/', views.schedule_nc, name='schedule_nc'),
+    # path("noncon/", views.noncon, name="noncon"),
+    # path("fetchteams/", views.fetch_teams, name="fetch_teams"),
     path("fetch_play/", views.fetch_play, name="fetch_play"),
-    path("schedulenc/", views.schedulenc, name="schedulenc"),
+    # path("schedulenc/", views.schedulenc, name="schedulenc"),
     path("games/<int:id>/", views.game, name="game"),
     path("sim/", views.simWeek),
     path("dashboard/", views.dashboard, name="dashboard"),

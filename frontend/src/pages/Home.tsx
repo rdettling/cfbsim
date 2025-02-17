@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import { 
-  Container, 
-  Typography, 
-  Tabs, 
-  Tab, 
-  Box, 
-  Select, 
-  MenuItem, 
+import {
+  Container,
+  Typography,
+  Tabs,
+  Tab,
+  Box,
+  Select,
+  MenuItem,
   Button,
   Table,
   TableBody,
@@ -86,7 +86,7 @@ const Launch = () => {
         const response = await axios.get(`http://127.0.0.1:8000/api/home/?year=${selectedYear}`);
         console.log('API Response:', response.data);
         setData(response.data);
-        
+
         if (!selectedYear && response.data.years.length > 0) {
           setSelectedYear(response.data.years[0]);
         }
@@ -113,7 +113,7 @@ const Launch = () => {
   const getLoadGameLink = (info: InfoType) => {
     console.log('Info received:', info);
     console.log('Stage:', info.stage);
-    
+
     if (info.stage === 'season') {
       return '/dashboard';
     } else if (info.stage === 'end of season') {
@@ -130,11 +130,11 @@ const Launch = () => {
     <Container maxWidth="xl" sx={{ my: 5, position: 'relative' }}>
       {(() => {
         const colSpacing = 20;  // Spacing in pixels between columns
-        
+
         return (
           <Stack direction="row" spacing={3}>
             {/* Left Column */}
-            <Box sx={{ 
+            <Box sx={{
               width: '33%',
               position: 'fixed',
               left: colSpacing,
@@ -168,7 +168,7 @@ const Launch = () => {
                         </MenuItem>
                       ))}
                     </Select>
-                    
+
                   </Box>
                 )}
               </Box>
@@ -196,8 +196,8 @@ const Launch = () => {
                               <TableRow>
                                 <TableCell>{data.info.currentYear}</TableCell>
                                 <TableCell>
-                                  {data.info.stage === 'season' 
-                                    ? data.info.currentWeek 
+                                  {data.info.stage === 'season'
+                                    ? data.info.currentWeek
                                     : `Offseason (${data.info.stage})`}
                                 </TableCell>
                                 <TableCell>{data.info.team}</TableCell>
@@ -205,7 +205,7 @@ const Launch = () => {
                             </TableBody>
                           </Table>
                         </Paper>
-                        <Button 
+                        <Button
                           variant="contained"
                           href={data.info ? getLoadGameLink(data.info) : undefined}
                           onClick={() => data.info && console.log('Button clicked, link:', getLoadGameLink(data.info))}
@@ -224,16 +224,16 @@ const Launch = () => {
             </Box>
 
             {/* Middle Column */}
-            <Box sx={{ 
+            <Box sx={{
               width: `calc(33% - ${colSpacing * 2}px)`,  // Adjust width for spacing
               position: 'fixed',
               left: '33%',
               transform: `translateX(${colSpacing}px)`,
               top: '40px'
             }}>
-              <Paper sx={{ 
-                p: 3, 
-                height: '80vh', 
+              <Paper sx={{
+                p: 3,
+                height: '80vh',
                 overflow: 'auto',
                 width: '100%'
               }}>
@@ -241,8 +241,8 @@ const Launch = () => {
                   Team Rankings
                 </Typography>
                 <Stack direction="column" spacing={1} sx={{ width: '100%' }}>
-                  {data.preview && [...data.preview.conferences.flatMap(conf => conf.teams), 
-                    ...data.preview.independents]
+                  {data.preview && [...data.preview.conferences.flatMap(conf => conf.teams),
+                  ...data.preview.independents]
                     .sort((a, b) => b.prestige - a.prestige)
                     .map((team, index) => (
                       <Card key={team.name} sx={{ py: 1, width: '100%' }}>
@@ -252,11 +252,11 @@ const Launch = () => {
                               #{index + 1}
                             </Typography>
                             <Box sx={{ width: 40, height: 40 }}>
-                              <img 
+                              <img
                                 src={`/assets/logos/teams/${team.name}.png`}
                                 alt={`${team.name} logo`}
-                                style={{ 
-                                  width: '100%', 
+                                style={{
+                                  width: '100%',
                                   height: '100%',
                                   objectFit: 'contain'
                                 }}
@@ -266,10 +266,10 @@ const Launch = () => {
                               <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
                               <Typography variant="body2">Prestige: {team.prestige}</Typography>
                             </Box>
-                            <Button 
-                              variant="contained" 
+                            <Button
+                              variant="contained"
                               size="small"
-                              href={`api/noncon?team=${team.name}`}
+                              href={`noncon?team=${team.name}&year=${selectedYear}`}
                             >
                               Select
                             </Button>
@@ -282,14 +282,14 @@ const Launch = () => {
             </Box>
 
             {/* Right Column */}
-            <Box sx={{ 
-              width: '33%', 
+            <Box sx={{
+              width: '33%',
               position: 'fixed',
               right: colSpacing,
               top: '40px'
             }}>
-              <Paper sx={{ 
-                p: 3, 
+              <Paper sx={{
+                p: 3,
                 height: '80vh',
                 display: 'flex',
                 flexDirection: 'column'
@@ -304,10 +304,10 @@ const Launch = () => {
                   <Tab value="playoff" label="Playoff" />
                 </Tabs>
 
-                <Box sx={{ 
+                <Box sx={{
                   flex: 1,
                   overflow: 'auto',  // Enable scrolling
-                  mt: 2 
+                  mt: 2
                 }}>
                   {/* Preview content tabs */}
                   {previewTab === 'teams' && data.preview && (
@@ -318,11 +318,11 @@ const Launch = () => {
                           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                             <Stack direction="row" spacing={2} alignItems="center">
                               <Box sx={{ width: 40, height: 40 }}>
-                                <img 
+                                <img
                                   src={`/assets/logos/conferences/${conf.confName}.png`}
                                   alt={`${conf.confName} logo`}
-                                  style={{ 
-                                    width: '100%', 
+                                  style={{
+                                    width: '100%',
                                     height: '100%',
                                     objectFit: 'contain'
                                   }}
@@ -339,11 +339,11 @@ const Launch = () => {
                                     <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
                                       <Stack direction="row" spacing={2} alignItems="center">
                                         <Box sx={{ width: 40, height: 40 }}>
-                                          <img 
+                                          <img
                                             src={`/assets/logos/teams/${team.name}.png`}
                                             alt={`${team.name} logo`}
-                                            style={{ 
-                                              width: '100%', 
+                                            style={{
+                                              width: '100%',
                                               height: '100%',
                                               objectFit: 'contain'
                                             }}
@@ -376,11 +376,11 @@ const Launch = () => {
                                   <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
                                     <Stack direction="row" spacing={2} alignItems="center">
                                       <Box sx={{ width: 40, height: 40 }}>
-                                        <img 
+                                        <img
                                           src={`/assets/logos/teams/${team.name}.png`}
                                           alt={`${team.name} logo`}
-                                          style={{ 
-                                            width: '100%', 
+                                          style={{
+                                            width: '100%',
                                             height: '100%',
                                             objectFit: 'contain'
                                           }}
@@ -422,11 +422,11 @@ const Launch = () => {
                                 <TableCell>
                                   <Stack direction="row" spacing={1} alignItems="center">
                                     <Box sx={{ width: 30, height: 30 }}>
-                                      <img 
+                                      <img
                                         src={`/assets/logos/teams/${rivalry[0]}.png`}
                                         alt={`${rivalry[0]} logo`}
-                                        style={{ 
-                                          width: '100%', 
+                                        style={{
+                                          width: '100%',
                                           height: '100%',
                                           objectFit: 'contain'
                                         }}
@@ -438,11 +438,11 @@ const Launch = () => {
                                 <TableCell>
                                   <Stack direction="row" spacing={1} alignItems="center">
                                     <Box sx={{ width: 30, height: 30 }}>
-                                      <img 
+                                      <img
                                         src={`/assets/logos/teams/${rivalry[1]}.png`}
                                         alt={`${rivalry[1]} logo`}
-                                        style={{ 
-                                          width: '100%', 
+                                        style={{
+                                          width: '100%',
                                           height: '100%',
                                           objectFit: 'contain'
                                         }}
