@@ -11,111 +11,13 @@ from util.sim.sim import DRIVES_PER_TEAM
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import *
-
-
-def simWeek(request):
-    start = time.time()
-    user_id = request.session.session_key
-    info = Info.objects.get(user_id=user_id)
-    games = info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek)
-    live = request.GET.get("live")
-
-    team = info.team
-
-    drives_to_create = []
-    plays_to_create = []
-    teamGames = []
-    teamGame = None
-
-    start = overall_start = time.time()
-    for game in games:
-        if game.teamA == team:
-            game.label = game.labelA
-            teamGame = game
-            teamGames.append(game)
-        elif game.teamB == team:
-            game.label = game.labelB
-            teamGame = game
-            teamGames.append(game)
-
-        simGame(game, info, drives_to_create, plays_to_create)
-
-    Games.objects.bulk_update(
-        games, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
-    )
-    print(f"Sim {time.time() - start} seconds")
-
-    update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
-    no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
-
-    if info.currentWeek not in no_update_weeks:
-        update_rankings(info)
-
-    all_actions = {
-        2: {
-            12: setConferenceChampionships,
-            13: setNatty,
-            14: end_season,
-        },
-        4: {
-            12: setConferenceChampionships,
-            13: setPlayoffSemi,
-            14: setNatty,
-            15: end_season,
-        },
-        12: {
-            12: setConferenceChampionships,
-            13: setPlayoffR1,
-            14: setPlayoffQuarter,
-            15: setPlayoffSemi,
-            16: setNatty,
-            17: end_season,
-        },
-    }
-
-    action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
-    if action:
-        action(info)
-
-    info.currentWeek += 1
-
-    start = time.time()
-    make_game_logs(info, plays_to_create)
-    Drives.objects.bulk_create(drives_to_create)
-    Plays.objects.bulk_create(plays_to_create)
-    info.save()
-    print(f"Game logs {time.time() - start} seconds")
-
-    context = {
-        "conferences": info.conferences.all().order_by("confName"),
-        "teamGames": teamGames,
-        "game": teamGame,
-        "info": info,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-    }
-
-    print(f"Total {time.time() - overall_start} seconds")
-
-    if live and teamGame:
-        plays = list(teamGame.plays.all())
-        for i in range(len(plays) - 1):  # Stop one element before the last
-            play = plays[i]
-            next_play = plays[i + 1]
-            if play.game == next_play.game:
-                play.next_play_id = next_play.id
-        Plays.objects.bulk_update(plays, ["next_play_id"])
-
-        return render(request, "sim_live.html", context)
-    else:
-        return render(request, "sim.html", context)
+import uuid
 
 
 @api_view(['GET'])
 def home(request):
     """API endpoint for the launch page data"""
-    
-
-    user_id = request.session.session_key
+    user_id = request.headers.get('X-Client-ID')    
     year = request.GET.get("year")
 
     try:
@@ -123,7 +25,7 @@ def home(request):
         info_data = InfoSerializer(info).data
     except Info.DoesNotExist:
         info_data = None
-
+        
     years = [f.split(".")[0] for f in os.listdir(settings.YEARS_DATA_DIR) if f.endswith(".json")]
     years.sort(reverse=True)
 
@@ -149,6 +51,128 @@ def home(request):
 
 
 
+
+
+@api_view(['GET'])
+def noncon(request):
+    """API endpoint for non-conference scheduling page"""
+    user_id = request.headers.get('X-Client-ID')    
+    team = request.GET.get('team')
+    year = request.GET.get('year')
+    new_game = request.GET.get('new_game')
+
+    print("Full query params:", dict(request.GET))  # Debug print
+
+
+    print(user_id, new_game, team, year)
+    
+    if not user_id or new_game == "true":
+        print("new user")
+        user_id = str(uuid.uuid4())
+        init(user_id, team, year)
+
+    info = Info.objects.get(user_id=user_id)
+    team = info.team
+    info_data = InfoSerializer(info).data
+    team_data = TeamsSerializer(team).data
+
+    games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
+    games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
+    schedule = list(games_as_teamA | games_as_teamB)
+    serialized_schedule = GamesSerializer(schedule, many=True).data
+    
+    full_schedule = []
+    game_weeks = {game['weekPlayed']: game for game in serialized_schedule}
+    
+    for week in range(1, 13):
+        if week in game_weeks:
+            full_schedule.append(game_weeks[week])
+        else:
+            full_schedule.append({
+                'id': None,
+                'weekPlayed': week,
+                'teamA': None,
+                'teamB': None,
+                'labelA': 'No Game',
+                'labelB': 'No Game',
+                'info': info.user_id
+            })
+
+    return Response({
+        'info': info_data,
+        'team': team_data,
+        'schedule': full_schedule,
+        'client_id': user_id
+    })
+
+@api_view(['GET'])
+def fetch_teams(request):
+    """API endpoint to fetch available teams for a given week"""
+    week = request.GET.get('week')
+    if not week:
+        return Response({'error': 'Week is required'}, status=400)
+    
+    user_id = request.headers.get('X-Client-ID')
+    info = Info.objects.get(user_id=user_id)
+    games = info.games.filter(year=info.currentYear)
+
+    scheduled_teams_as_teamA = games.filter(weekPlayed=week).values_list(
+        "teamA", flat=True
+    )
+    scheduled_teams_as_teamB = games.filter(weekPlayed=week).values_list(
+        "teamB", flat=True
+    )
+    scheduled_teams = scheduled_teams_as_teamA.union(scheduled_teams_as_teamB)
+
+    opponents_as_teamA = games.filter(teamA=info.team).values_list("teamB", flat=True)
+    opponents_as_teamB = games.filter(teamB=info.team).values_list("teamA", flat=True)
+    all_opponents = opponents_as_teamA.union(opponents_as_teamB)
+
+    teams = (
+        info.teams.filter(nonConfGames__lt=F("nonConfLimit"))
+        .exclude(id__in=scheduled_teams)
+        .exclude(id__in=all_opponents)
+        .exclude(id=info.team.id)
+        .exclude(conference=info.team.conference)
+        .order_by("name")
+        .values_list("name", flat=True)
+    )
+
+    return JsonResponse(list(teams), safe=False)
+
+    # return JsonResponse(user_id, safe=False)
+
+@api_view(['POST'])
+def schedule_nc(request):
+    """API endpoint to schedule a non-conference game"""
+    user_id = request.headers.get('X-Client-ID')
+    info = Info.objects.get(user_id=user_id)
+    opponent = request.data.get('opponent')
+    week = request.data.get('week')
+    
+    if not opponent or not week:
+        return Response({'error': 'Opponent and week are required'}, status=400)
+    
+    team = info.team
+    opponent = info.teams.get(name=opponent)
+
+    games_to_create = []
+
+    scheduleGame(
+        info,
+        team,
+        opponent,
+        games_to_create,
+        week,
+    )
+
+    team.save()
+    opponent.save()
+    games_to_create[0].save()
+
+    return Response({'status': 'success'})
+
+
 def game(request, id):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
@@ -159,264 +183,7 @@ def game(request, id):
         return game_result(request, info, game)
     else:
         return game_preview(request, info, game)
-
-
-# def noncon(request):
-#     user_id = request.session.session_key
-#     info = Info.objects.get(user_id=user_id)
-
-#     if not info.stage == "schedule non conference":
-#         id = request.GET.get("id")
-#         if id:
-#             team = info.teams.get(id=id)
-#             info.team = team
-#         else:
-#             info.currentYear += 1
-#             current_year = info.currentYear
-#             while current_year >= info.startYear:
-#                 file_path = f"static/years/{current_year}.json"
-#                 if os.path.exists(file_path):
-#                     with open(file_path, "r") as metadataFile:
-#                         data = json.load(metadataFile)
-
-#                     break
-#                 else:
-#                     current_year -= 1
-
-#             update_teams_and_rosters(info, data)
-#             refresh_teams_and_games(info)
-#             uniqueGames(info, data)
-
-#         info.stage = "schedule non conference"
-#         info.save()
-
-#     team = info.team
-
-#     games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
-#     games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
-#     schedule = list(games_as_teamA | games_as_teamB)
-#     schedule = sorted(schedule, key=lambda game: game.weekPlayed)
-
-#     class EmptyGame:
-#         pass
-
-#     full_schedule = [None] * 12
-
-#     for game in schedule:
-#         full_schedule[game.weekPlayed - 1] = game
-
-#     for index, week in enumerate(full_schedule):
-#         if week is not None:
-#             if week.teamA == team:
-#                 week.opponent = week.teamB.name
-#                 week.label = week.labelA
-#             else:
-#                 week.opponent = week.teamA.name
-#                 week.label = week.labelB
-#         else:
-#             empty_game = EmptyGame()
-#             empty_game.weekPlayed = index + 1
-#             empty_game.opponent = None
-#             empty_game.label = "No Game"
-#             full_schedule[index] = empty_game
-
-#     context = {
-#         "info": info,
-#         "schedule": full_schedule,
-#         "team": team,
-#         "conferences": info.conferences.all().order_by("confName"),
-#     }
-
-#     return render(request, "noncon.html", context)
-
-
-# def fetch_teams(request):
-#     user_id = request.session.session_key
-#     info = Info.objects.get(user_id=user_id)
-#     week = int(request.GET.get("week"))
-
-#     games = info.games.filter(year=info.currentYear)
-
-#     scheduled_teams_as_teamA = games.filter(weekPlayed=week).values_list(
-#         "teamA", flat=True
-#     )
-#     scheduled_teams_as_teamB = games.filter(weekPlayed=week).values_list(
-#         "teamB", flat=True
-#     )
-#     scheduled_teams = scheduled_teams_as_teamA.union(scheduled_teams_as_teamB)
-
-#     opponents_as_teamA = games.filter(teamA=info.team).values_list("teamB", flat=True)
-#     opponents_as_teamB = games.filter(teamB=info.team).values_list("teamA", flat=True)
-#     all_opponents = opponents_as_teamA.union(opponents_as_teamB)
-
-#     teams = (
-#         info.teams.filter(nonConfGames__lt=F("nonConfLimit"))
-#         .exclude(id__in=scheduled_teams)
-#         .exclude(id__in=all_opponents)
-#         .exclude(id=info.team.id)
-#         .exclude(conference=info.team.conference)
-#         .order_by("name")
-#         .values_list("name", flat=True)
-#     )
-
-#     return JsonResponse(list(teams), safe=False)
-
-
-# def schedulenc(request):
-#     user_id = request.session.session_key
-#     info = Info.objects.get(user_id=user_id)
-
-#     opponent_name = request.POST.get("opponent")
-#     week = int(request.POST.get("week"))
-
-#     team = info.team
-#     opponent = info.teams.get(name=opponent_name)
-
-#     team.schedule = opponent.schedule = set()
-
-#     games_to_create = []
-
-#     scheduleGame(
-#         info,
-#         team,
-#         opponent,
-#         games_to_create,
-#         week,
-#     )
-
-#     team.save()
-#     opponent.save()
-#     games_to_create[0].save()
-
-#     return JsonResponse({"status": "success"})
-
-@api_view(['GET'])
-def noncon(request):
-    """API endpoint for non-conference scheduling page"""
-    user_id = request.session.session_key
-    team = request.GET.get('team')
-    year = request.GET.get('year')
-
-    try:
-        info = Info.objects.get(user_id=user_id)
-    except Info.DoesNotExist:
-        request.session.create()
-        user_id = request.session.session_key
-        init(user_id, team, year)
-        info = Info.objects.get(user_id=user_id)
     
-    team = info.team
-    info_data = InfoSerializer(info).data
-    team_data = TeamsSerializer(team).data
-
-    games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
-    games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
-    schedule = list(games_as_teamA | games_as_teamB)
-    schedule = sorted(schedule, key=lambda game: game.weekPlayed)
-
-    class EmptyGame:
-        def __init__(self, week_num):
-            self.id = None
-            self.info = info  # Use the current info instance
-            self.teamA = None
-            self.teamB = None
-            self.winner = None
-            self.labelA = "No Game"
-            self.labelB = "No Game"
-            self.spreadA = "0"
-            self.spreadB = "0"
-            self.moneylineA = "0"
-            self.moneylineB = "0"
-            self.winProbA = 0.0
-            self.winProbB = 0.0
-            self.weekPlayed = week_num
-            self.year = info.currentYear
-            self.rankATOG = 0
-            self.rankBTOG = 0
-            self.resultA = None
-            self.resultB = None
-            self.overtime = 0
-            self.scoreA = None
-            self.scoreB = None
-            # Additional properties for frontend
-            self.opponent = None
-            self.label = "No Game"
-
-    full_schedule = [EmptyGame(i + 1) for i in range(12)]
-
-    for game in schedule:
-        full_schedule[game.weekPlayed - 1] = game
-
-    return Response({
-        'info': info_data,
-        'team': team_data,
-        'schedule': GamesSerializer(full_schedule, many=True).data
-    })
-
-@api_view(['GET'])
-def fetch_teams(request):
-    """API endpoint to fetch available teams for a given week"""
-    week = request.GET.get('week')
-    if not week:
-        return Response({'error': 'Week is required'}, status=400)
-
-    # Get all teams that don't have a game scheduled for this week
-    scheduled_teams = Schedule.objects.filter(
-        year=info.currentYear,
-        weekPlayed=week
-    ).values_list('team', 'opponent')
-
-    # Flatten the list of scheduled teams
-    busy_teams = set()
-    for team, opponent in scheduled_teams:
-        busy_teams.add(team)
-        if opponent:
-            busy_teams.add(opponent)
-
-    # Get all teams from the current year's data
-    with open(f"{settings.YEARS_DATA_DIR}/{info.currentYear}.json", "r") as f:
-        data = json.load(f)
-        all_teams = [t['name'] for conf in data['conferences'] for t in conf['teams']]
-        all_teams.extend(t['name'] for t in data['independents'])
-
-    # Return teams that aren't scheduled
-    available_teams = [team for team in all_teams if team not in busy_teams]
-    return Response(available_teams)
-
-@api_view(['POST'])
-def schedule_nc(request):
-    """API endpoint to schedule a non-conference game"""
-    opponent = request.data.get('opponent')
-    week = request.data.get('week')
-    
-    if not opponent or not week:
-        return Response({'error': 'Opponent and week are required'}, status=400)
-
-    try:
-        # Update both teams' schedules
-        team_schedule = Schedule.objects.get(
-            year=info.currentYear,
-            team=team_name,
-            weekPlayed=week
-        )
-        team_schedule.opponent = opponent
-        team_schedule.label = 'Non-Conference'
-        team_schedule.save()
-
-        opponent_schedule = Schedule.objects.get(
-            year=info.currentYear,
-            team=opponent,
-            weekPlayed=week
-        )
-        opponent_schedule.opponent = team_name
-        opponent_schedule.label = 'Non-Conference'
-        opponent_schedule.save()
-
-        return Response({'status': 'success'})
-    except Exception as e:
-        return Response({'error': str(e)}, status=400)
-
-
 def fetch_play(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
@@ -578,6 +345,102 @@ def dashboard(request):
     }
 
     return render(request, "dashboard.html", context)
+
+def simWeek(request):
+    start = time.time()
+    user_id = request.session.session_key
+    info = Info.objects.get(user_id=user_id)
+    games = info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek)
+    live = request.GET.get("live")
+
+    team = info.team
+
+    drives_to_create = []
+    plays_to_create = []
+    teamGames = []
+    teamGame = None
+
+    start = overall_start = time.time()
+    for game in games:
+        if game.teamA == team:
+            game.label = game.labelA
+            teamGame = game
+            teamGames.append(game)
+        elif game.teamB == team:
+            game.label = game.labelB
+            teamGame = game
+            teamGames.append(game)
+
+        simGame(game, info, drives_to_create, plays_to_create)
+
+    Games.objects.bulk_update(
+        games, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
+    )
+    print(f"Sim {time.time() - start} seconds")
+
+    update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
+    no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
+
+    if info.currentWeek not in no_update_weeks:
+        update_rankings(info)
+
+    all_actions = {
+        2: {
+            12: setConferenceChampionships,
+            13: setNatty,
+            14: end_season,
+        },
+        4: {
+            12: setConferenceChampionships,
+            13: setPlayoffSemi,
+            14: setNatty,
+            15: end_season,
+        },
+        12: {
+            12: setConferenceChampionships,
+            13: setPlayoffR1,
+            14: setPlayoffQuarter,
+            15: setPlayoffSemi,
+            16: setNatty,
+            17: end_season,
+        },
+    }
+
+    action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
+    if action:
+        action(info)
+
+    info.currentWeek += 1
+
+    start = time.time()
+    make_game_logs(info, plays_to_create)
+    Drives.objects.bulk_create(drives_to_create)
+    Plays.objects.bulk_create(plays_to_create)
+    info.save()
+    print(f"Game logs {time.time() - start} seconds")
+
+    context = {
+        "conferences": info.conferences.all().order_by("confName"),
+        "teamGames": teamGames,
+        "game": teamGame,
+        "info": info,
+        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+    }
+
+    print(f"Total {time.time() - overall_start} seconds")
+
+    if live and teamGame:
+        plays = list(teamGame.plays.all())
+        for i in range(len(plays) - 1):  # Stop one element before the last
+            play = plays[i]
+            next_play = plays[i + 1]
+            if play.game == next_play.game:
+                play.next_play_id = next_play.id
+        Plays.objects.bulk_update(plays, ["next_play_id"])
+
+        return render(request, "sim_live.html", context)
+    else:
+        return render(request, "sim.html", context)
 
 
 def game_preview(request, info, game):

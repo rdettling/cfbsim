@@ -6,15 +6,15 @@ import time
 class Info(models.Model):
     user_id = models.CharField(max_length=255, primary_key=True)
     currentWeek = models.IntegerField(null=True)
-    currentYear = models.IntegerField()
-    startYear = models.IntegerField()
+    currentYear = models.IntegerField(null=True)
+    startYear = models.IntegerField(null=True)
     team = models.ForeignKey(
         "Teams", on_delete=models.SET_NULL, null=True, related_name="infos"
     )
     playoff = models.ForeignKey(
         "Playoff", on_delete=models.SET_NULL, related_name="infos", null=True
     )
-    stage = models.CharField(max_length=50)
+    stage = models.CharField(null=True, max_length=50)
 
 
 class Teams(models.Model):

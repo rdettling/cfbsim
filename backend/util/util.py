@@ -176,13 +176,12 @@ def init(user_id, team_name, year):
     overall_start = time.time()
 
     Info.objects.filter(user_id=user_id).delete()
-
     info = Info.objects.create(
         user_id=user_id,
         currentWeek=1,
         currentYear=year,
         startYear=year,
-        stage="schedule non conference",
+        stage="noncon"
     )
 
     playoff = Playoff.objects.create(
@@ -249,11 +248,10 @@ def init(user_id, team_name, year):
     start = time.time()
     Conferences.objects.bulk_create(conferences_to_create)
     Teams.objects.bulk_create(teams_to_create)
-    print(f"Create teams, conferences {time.time() - start} seconds")
-
     info.save()
     teams = info.teams.all()
-    
+    print(f"Create teams, conferences {time.time() - start} seconds")
+
     start = time.time()
     loaded_names = load_names()
     for team in teams:

@@ -21,7 +21,15 @@ class PlayersSerializer(serializers.ModelSerializer):
         model = Players
         fields = '__all__'
 
+class TeamBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teams
+        fields = ['id', 'name']
+
 class GamesSerializer(serializers.ModelSerializer):
+    teamA = TeamBasicSerializer()
+    teamB = TeamBasicSerializer()
+
     class Meta:
         model = Games
         fields = '__all__'
@@ -62,20 +70,8 @@ class OddsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InfoSerializer(serializers.ModelSerializer):
-    # team = TeamsSerializer()
-    # playoff = PlayoffSerializer()
-    # teams = TeamsSerializer(many=True, read_only=True)
-    # conferences = ConferencesSerializer(many=True, read_only=True)
-    # games = GamesSerializer(many=True, read_only=True)
-    # plays = PlaysSerializer(many=True, read_only=True)
-    # players = PlayersSerializer(many=True, read_only=True)
-    # years = YearsSerializer(many=True, read_only=True)
-    # recruits = RecruitsSerializer(many=True, read_only=True)
-    # offers = OffersSerializer(many=True, read_only=True)
-    # odds = OddsSerializer(many=True, read_only=True)
-    # drives = DrivesSerializer(many=True, read_only=True)
-    # game_logs = GameLogSerializer(many=True, read_only=True)
-
+    team = TeamBasicSerializer(read_only=True)
+    
     class Meta:
         model = Info
-        fields = '__all__'
+        fields = ['user_id', 'currentYear', 'currentWeek', 'stage', 'team']
