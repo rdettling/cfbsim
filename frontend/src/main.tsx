@@ -7,13 +7,13 @@ axios.defaults.withCredentials = true;  // Add this line
 
 // Add client ID to all requests
 axios.interceptors.request.use(config => {
-    let clientId = localStorage.getItem('clientId');
+    let userId = localStorage.getItem('user_id');
     
-    if (!clientId) {
+    if (!userId) {
         // Will be set by first response
-        config.headers['X-Client-ID'] = '';
+        config.headers['X-User-ID'] = '';
     } else {
-        config.headers['X-Client-ID'] = clientId;
+        config.headers['X-User-ID'] = userId;
     }
     
     return config;
@@ -21,8 +21,8 @@ axios.interceptors.request.use(config => {
 
 // Store client ID from response if present
 axios.interceptors.response.use(response => {
-    if (response.data.client_id) {
-        localStorage.setItem('clientId', response.data.client_id);
+    if (response.data.replace) {
+        localStorage.setItem('user_id', response.data.user_id);
     }
     return response;
 });

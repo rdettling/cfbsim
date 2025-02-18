@@ -14,10 +14,10 @@ from .serializers import *
 import uuid
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def home(request):
     """API endpoint for the launch page data"""
-    user_id = request.headers.get('X-Client-ID')    
+    user_id = request.headers.get("X-User-ID")
     year = request.GET.get("year")
 
     try:
@@ -25,8 +25,12 @@ def home(request):
         info_data = InfoSerializer(info).data
     except Info.DoesNotExist:
         info_data = None
-        
-    years = [f.split(".")[0] for f in os.listdir(settings.YEARS_DATA_DIR) if f.endswith(".json")]
+
+    years = [
+        f.split(".")[0]
+        for f in os.listdir(settings.YEARS_DATA_DIR)
+        if f.endswith(".json")
+    ]
     years.sort(reverse=True)
 
     # Get preview data for the selected year
@@ -34,86 +38,93 @@ def home(request):
     if year:
         with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
             preview_data = json.load(metadataFile)
-            
+
             # Sort teams by prestige within each conference
             for conf in preview_data["conferences"]:
                 conf["teams"] = sorted(
-                    conf["teams"], 
-                    key=lambda team: team["prestige"], 
-                    reverse=True
+                    conf["teams"], key=lambda team: team["prestige"], reverse=True
                 )
 
-    return Response({
-        'info': info_data,
-        'years': years,
-        'preview': preview_data
-    })
+    return Response({"info": info_data, "years": years, "preview": preview_data})
 
 
-
-
-
-@api_view(['GET'])
+@api_view(["GET"])
 def noncon(request):
     """API endpoint for non-conference scheduling page"""
-    user_id = request.headers.get('X-Client-ID')    
-    team = request.GET.get('team')
-    year = request.GET.get('year')
-    new_game = request.GET.get('new_game')
+    user_id = request.headers.get("X-User-ID")
+    team = request.GET.get("team")
+    year = request.GET.get("year")
+    new_game = request.GET.get("new_game")
+    replace = False
 
-    print("Full query params:", dict(request.GET))  # Debug print
-
-
-    print(user_id, new_game, team, year)
-    
-    if not user_id or new_game == "true":
-        print("new user")
+    if new_game == "true":
         user_id = str(uuid.uuid4())
+        replace = True
         init(user_id, team, year)
 
     info = Info.objects.get(user_id=user_id)
     team = info.team
-    info_data = InfoSerializer(info).data
-    team_data = TeamsSerializer(team).data
 
+    # Get and process schedule
     games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
     games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
     schedule = list(games_as_teamA | games_as_teamB)
-    serialized_schedule = GamesSerializer(schedule, many=True).data
-    
+
+    # Process each game to include only the fields we want
+    processed_schedule = []
+    for game in schedule:
+        # Determine if user's team is teamA or teamB and create appropriate game data
+        if game.teamA == team:
+            game_data = {
+                "weekPlayed": game.weekPlayed,
+                "opponent": game.teamB.name,
+                "label": game.labelA,
+            }
+        else:
+            game_data = {
+                "weekPlayed": game.weekPlayed,
+                "opponent": game.teamA.name,
+                "label": game.labelB,
+            }
+        processed_schedule.append(game_data)
+
+    # Create schedule mapping
+    game_weeks = {game["weekPlayed"]: game for game in processed_schedule}
+
+    # Build full schedule
     full_schedule = []
-    game_weeks = {game['weekPlayed']: game for game in serialized_schedule}
-    
     for week in range(1, 13):
         if week in game_weeks:
             full_schedule.append(game_weeks[week])
         else:
-            full_schedule.append({
-                'id': None,
-                'weekPlayed': week,
-                'teamA': None,
-                'teamB': None,
-                'labelA': 'No Game',
-                'labelB': 'No Game',
-                'info': info.user_id
-            })
+            full_schedule.append(
+                {
+                    "weekPlayed": week,
+                    "opponent": None,
+                }
+            )
 
-    return Response({
-        'info': info_data,
-        'team': team_data,
-        'schedule': full_schedule,
-        'client_id': user_id
-    })
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(team).data,
+            "schedule": full_schedule,
+            "user_id": user_id,
+            "replace": replace,
+            "conferences": ConferencesSerializer(
+                info.conferences.all(), many=True
+            ).data,
+        }
+    )
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def fetch_teams(request):
     """API endpoint to fetch available teams for a given week"""
-    week = request.GET.get('week')
-    if not week:
-        return Response({'error': 'Week is required'}, status=400)
-    
-    user_id = request.headers.get('X-Client-ID')
+    user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
+    week = request.GET.get("week")
+
     games = info.games.filter(year=info.currentYear)
 
     scheduled_teams_as_teamA = games.filter(weekPlayed=week).values_list(
@@ -140,21 +151,15 @@ def fetch_teams(request):
 
     return JsonResponse(list(teams), safe=False)
 
-    # return JsonResponse(user_id, safe=False)
 
-@api_view(['POST'])
+@api_view(["POST"])
 def schedule_nc(request):
     """API endpoint to schedule a non-conference game"""
-    user_id = request.headers.get('X-Client-ID')
+    user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
-    opponent = request.data.get('opponent')
-    week = request.data.get('week')
-    
-    if not opponent or not week:
-        return Response({'error': 'Opponent and week are required'}, status=400)
-    
+    week = request.data.get("week")
     team = info.team
-    opponent = info.teams.get(name=opponent)
+    opponent = info.teams.get(name=request.data.get("opponent"))
 
     games_to_create = []
 
@@ -170,7 +175,172 @@ def schedule_nc(request):
     opponent.save()
     games_to_create[0].save()
 
-    return Response({'status': 'success'})
+    return Response({"status": "success"})
+
+
+@api_view(["GET"])
+def dashboard(request):
+    def process_game_data(game, team):
+        """Helper function to process game data for a team"""
+        if not game:
+            return None
+
+        is_team_a = game.teamA == team
+        opponent = game.teamB if is_team_a else game.teamA
+
+        data = {
+            "weekPlayed": game.weekPlayed,
+            "opponent": {
+                "name": opponent.name,
+                "ranking": opponent.ranking,
+            },
+        }
+
+        # Add result/score for previous game or spread/moneyline for current game
+        if game.winner:
+            data.update(
+                {
+                    "result": game.resultA if is_team_a else game.resultB,
+                    "score": (
+                        f"{game.scoreA} - {game.scoreB}"
+                        if is_team_a
+                        else f"{game.scoreB} - {game.scoreA}"
+                    ),
+                }
+            )
+        else:
+            data.update(
+                {
+                    "spread": game.spreadA if is_team_a else game.spreadB,
+                    "moneyline": game.moneylineA if is_team_a else game.moneylineB,
+                }
+            )
+
+        return data
+
+    """API endpoint for dashboard data"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+    team = info.team
+
+    if not info.stage == "season":
+        start_season(info)
+
+    # Get and process games
+    prev_week_game = (
+        team.games_as_teamA.filter(
+            year=info.currentYear, weekPlayed=info.currentWeek - 1
+        )
+        | team.games_as_teamB.filter(
+            year=info.currentYear, weekPlayed=info.currentWeek - 1
+        )
+    ).first()
+
+    current_week_game = (
+        team.games_as_teamA.filter(year=info.currentYear, weekPlayed=info.currentWeek)
+        | team.games_as_teamB.filter(year=info.currentYear, weekPlayed=info.currentWeek)
+    ).first()
+
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "prev_game": process_game_data(prev_week_game, team),
+            "curr_game": process_game_data(current_week_game, team),
+            "team": TeamsSerializer(team).data,
+            "confTeams": TeamsSerializer(team.conference.teams.all(), many=True).data,
+            "top_10": TeamsSerializer(
+                info.teams.order_by("ranking")[:10], many=True
+            ).data,
+            "conferences": ConferencesSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
+
+
+@api_view(["GET"])
+def team_info(request):
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+    team = info.teams.get(name=request.GET.get("team_name"))
+
+    return Response(
+        {
+            "team": TeamsSerializer(team).data,
+        }
+    )
+
+@api_view(["GET"])
+def schedule(request, team_name):
+    """API endpoint for team schedule data"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+    team = info.teams.get(name=team_name)
+    year = request.GET.get("year")
+
+    if year and int(year) != info.currentYear:
+        games_as_teamA = team.games_as_teamA.filter(year=year)
+        games_as_teamB = team.games_as_teamB.filter(year=year)
+        
+        historical = info.years.filter(year=year, team=team).first()
+        if historical:
+            team.rating = historical.rating
+            team.ranking = historical.rank
+            team.totalWins = historical.wins
+            team.totalLosses = historical.losses
+    else:
+        games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
+        games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
+
+    schedule = sorted(
+        list(games_as_teamA | games_as_teamB),
+        key=lambda game: game.weekPlayed
+    )
+
+    processed_schedule = []
+    for game in schedule:
+        is_team_a = game.teamA == team
+        opponent = game.teamB if is_team_a else game.teamA
+        
+        game_data = {
+            "id": game.id,
+            "weekPlayed": game.weekPlayed,
+            "opponent": {
+                "name": opponent.name,
+                "rating": opponent.rating,
+                "ranking": opponent.ranking,
+                "record": f"{opponent.totalWins}-{opponent.totalLosses} ({opponent.confWins}-{opponent.confLosses})"
+            },
+            "label": game.labelA if is_team_a else game.labelB,
+            "moneyline": game.moneylineA if is_team_a else game.moneylineB,
+            "spread": game.spreadA if is_team_a else game.spreadB,
+            "result": game.resultA if is_team_a else game.resultB,
+        }
+
+        # Handle score and overtime
+        score_a = game.scoreA if is_team_a else game.scoreB
+        score_b = game.scoreB if is_team_a else game.scoreA
+        
+        if game.overtime:
+            ot_text = "OT" if game.overtime == 1 else f"{game.overtime}OT"
+            game_data["score"] = f"{score_a}-{score_b} {ot_text}"
+        else:
+            game_data["score"] = f"{score_a}-{score_b}"
+            
+        processed_schedule.append(game_data)
+
+    years = list(range(info.currentYear, info.startYear - 1, -1))
+
+    return Response({
+        "info": InfoSerializer(info).data,
+        "team": TeamsSerializer(team).data,
+        "games": processed_schedule,
+        "years": years,
+        "conferences": ConferencesSerializer(
+            info.conferences.all().order_by("confName"), many=True
+        ).data,
+        "teams": TeamsSerializer(info.teams.all(), many=True).data,
+    })
 
 
 def game(request, id):
@@ -183,7 +353,8 @@ def game(request, id):
         return game_result(request, info, game)
     else:
         return game_preview(request, info, game)
-    
+
+
 def fetch_play(request):
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
@@ -294,57 +465,58 @@ def fetch_play(request):
     )
 
 
-def dashboard(request):
-    user_id = request.session.session_key
-    info = Info.objects.get(user_id=user_id)
+# def dashboard(request):
+#     user_id = request.session.session_key
+#     info = Info.objects.get(user_id=user_id)
 
-    team = info.team
+#     team = info.team
 
-    if not info.stage == "season":
-        start_season(info)
+#     if not info.stage == "season":
+#         start_season(info)
 
-    games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
-    games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
-    schedule = list(games_as_teamA | games_as_teamB)
-    for week in schedule:
-        week.team = team
-        if week.teamA == team:
-            week.opponent = week.teamB
-            week.result = week.resultA
-            week.score = f"{week.scoreA} - {week.scoreB}"
-            week.spread = week.spreadA
-            week.moneyline = week.moneylineA
-        else:
-            week.opponent = week.teamA
-            week.result = week.resultB
-            week.score = f"{week.scoreB} - {week.scoreA}"
-            week.spread = week.spreadB
-            week.moneyline = week.moneylineB
+#     games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
+#     games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
+#     schedule = list(games_as_teamA | games_as_teamB)
+#     for week in schedule:
+#         week.team = team
+#         if week.teamA == team:
+#             week.opponent = week.teamB
+#             week.result = week.resultA
+#             week.score = f"{week.scoreA} - {week.scoreB}"
+#             week.spread = week.spreadA
+#             week.moneyline = week.moneylineA
+#         else:
+#             week.opponent = week.teamA
+#             week.result = week.resultB
+#             week.score = f"{week.scoreB} - {week.scoreA}"
+#             week.spread = week.spreadB
+#             week.moneyline = week.moneylineB
 
-    teams = info.teams.order_by("ranking")
+#     teams = info.teams.order_by("ranking")
 
-    if team.conference:
-        confTeams = list(team.conference.teams.all())
-        for team in confTeams:
-            if team.confWins + team.confLosses > 0:
-                team.pct = team.confWins / (team.confWins + team.confLosses)
-            else:
-                team.pct = 0
+#     if team.conference:
+#         confTeams = list(team.conference.teams.all())
+#         for team in confTeams:
+#             if team.confWins + team.confLosses > 0:
+#                 team.pct = team.confWins / (team.confWins + team.confLosses)
+#             else:
+#                 team.pct = 0
 
-        confTeams.sort(key=lambda o: (-o.pct, -o.confWins, o.confLosses, o.ranking))
-    else:
-        confTeams = teams.filter(conference=None)
+#         confTeams.sort(key=lambda o: (-o.pct, -o.confWins, o.confLosses, o.ranking))
+#     else:
+#         confTeams = teams.filter(conference=None)
 
-    context = {
-        "teams": teams,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-        "confTeams": confTeams,
-        "conferences": info.conferences.all().order_by("confName"),
-        "info": info,
-        "schedule": schedule,
-    }
+#     context = {
+#         "teams": teams,
+#         "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+#         "confTeams": confTeams,
+#         "conferences": info.conferences.all().order_by("confName"),
+#         "info": info,
+#         "schedule": schedule,
+#     }
 
-    return render(request, "dashboard.html", context)
+#     return render(request, "dashboard.html", context)
+
 
 def simWeek(request):
     start = time.time()

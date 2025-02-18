@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from "../config";
+import { Conference, Team, Info, Game } from "../interfaces";
 import axios from "axios";
 import {
     Container,
@@ -19,65 +20,51 @@ import {
     Stack,
     Box,
 } from "@mui/material";
-import OffseasonNavBar from '../components/OffseasonNavBar';
-
-interface Team {
-    id: number;
-    name: string;
-    nonConfGames: number;
-    nonConfLimit: number;
-}
-
-interface Game {
-    id: number | null;
-    weekPlayed: number;
-    teamA: number | null;
-    teamB: number | null;
-    labelA: string;
-    labelB: string;
-}
-
-interface NonConProps {
-    info: {
-        currentWeek: number;
-        currentYear: number;
-        stage: string;
-    };
-    team: Team;
-    schedule: Game[];
-}
+import Navbar from "../components/Navbar";
 
 export const NonCon = () => {
     const [searchParams] = useSearchParams();
-    const [data, setData] = useState<NonConProps | null>(null);
-    const [openModal, setOpenModal] = useState(false);
+    const [data, setData] = useState<{
+        info: Info;
+        team: Team;
+        schedule: Game[];
+        conferences: Conference[];
+    } | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
     const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
     const [availableTeams, setAvailableTeams] = useState<string[]>([]);
-    const [selectedOpponent, setSelectedOpponent] = useState<string>("");
+    const [selectedOpponent, setSelectedOpponent] = useState("");
+
+    const fetchData = async () => {
+        try {
+            const team = searchParams.get("team");
+            const year = searchParams.get("year");
+            const new_game = searchParams.get("new_game");
+
+            const response = await axios.get(
+                `${API_BASE_URL}/api/noncon/?team=${team}&year=${year}&new_game=${new_game}`
+            );
+            setData(response.data);
+        } catch (error) {
+            console.error("Error fetching noncon data:", error);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const team = searchParams.get("team");
-                const year = searchParams.get("year");
-                const new_game = searchParams.get("new_game");
-                
-                const response = await axios.get(
-                    `${API_BASE_URL}/api/noncon/?team=${team}&year=${year}&new_game=${new_game}`
-                );
-                setData(response.data);
-            } catch (error) {
-                // Simplified error handling
-            }
-        };
-
         fetchData();
     }, [searchParams]);
 
-    const handleCloseModal = () => {
-        setOpenModal(false);
-        setSelectedOpponent("");
-        setSelectedWeek(null);
+    const handleScheduleGame = async () => {
+        try {
+            await axios.post(`${API_BASE_URL}/api/schedulenc/`, {
+                opponent: selectedOpponent,
+                week: selectedWeek,
+            });
+            handleCloseModal();
+            fetchData(); // Refresh data after scheduling
+        } catch (error) {
+            console.error("Error scheduling game:", error);
+        }
     };
 
     const handleOpenModal = async (week: number) => {
@@ -87,44 +74,33 @@ export const NonCon = () => {
             );
             setAvailableTeams(response.data);
             setSelectedWeek(week);
-            setOpenModal(true);
+            setModalOpen(true);
         } catch (error) {
-            // Simplified error handling
+            console.error("Error fetching available teams:", error);
         }
     };
 
-    const handleScheduleGame = async () => {
-        try {
-            const year = searchParams.get("year");
-            const team = searchParams.get("team");
-            
-            await axios.post(`${API_BASE_URL}/api/schedulenc/`, {
-                opponent: selectedOpponent,
-                week: selectedWeek,
-            });
-            
-            setOpenModal(false);
-            
-            // Refresh data 
-            const response = await axios.get(
-                `${API_BASE_URL}/api/noncon/?team=${team}&year=${year}`
-            );
-            setData(response.data);
-        } catch (error) {
-            // Simplified error handling
-        }
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedOpponent("");
+        setSelectedWeek(null);
     };
 
     if (!data) return <Typography>Loading...</Typography>;
 
     return (
         <>
-            <OffseasonNavBar 
+            <Navbar
                 team={{
                     id: data.team.id,
-                    name: data.team.name
+                    name: data.team.name,
                 }}
                 currentStage={data.info.stage}
+                info={{
+                    currentYear: data.info.currentYear,
+                    currentWeek: data.info.currentWeek,
+                }}
+                conferences={data.conferences}
             />
             <Container maxWidth="lg" sx={{ mt: 5 }}>
                 <Stack
@@ -155,59 +131,42 @@ export const NonCon = () => {
                             <TableRow key={game.weekPlayed}>
                                 <TableCell>Week {game.weekPlayed}</TableCell>
                                 <TableCell>
-                                    {(game.teamA || game.teamB) && (
+                                    {game.opponent && (
                                         <Stack direction="row" spacing={2} alignItems="center">
                                             <Box sx={{ width: 40, height: 40 }}>
-                                                {game.teamA?.id === data.team.id ? (
-                                                    <img
-                                                        src={`/assets/logos/teams/${game.teamB?.name}.png`}
-                                                        alt={`${game.teamB?.name} logo`}
-                                                        style={{
-                                                            width: "100%",
-                                                            height: "100%",
-                                                            objectFit: "contain",
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <img
-                                                        src={`/assets/logos/teams/${game.teamA?.name}.png`}
-                                                        alt={`${game.teamA?.name} logo`}
-                                                        style={{
-                                                            width: "100%",
-                                                            height: "100%",
-                                                            objectFit: "contain",
-                                                        }}
-                                                    />
-                                                )}
+                                                <img
+                                                    src={`/logos/teams/${game.opponent}.png`}
+                                                    alt={`${game.opponent} logo`}
+                                                    style={{
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        objectFit: "contain",
+                                                    }}
+                                                />
                                             </Box>
-                                            <Stack>
-                                                <Typography>
-                                                    {game.teamA?.id === data.team.id ? game.teamB?.name : game.teamA?.name}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {game.teamA?.id === data.team.id ? game.labelA : game.labelB}
-                                                </Typography>
-                                            </Stack>
+                                            <Typography>{game.opponent}</Typography>
                                         </Stack>
-                                    ) || "No Game"}
+                                    )}
                                 </TableCell>
                                 <TableCell>
-                                    {!game.teamA && !game.teamB &&
-                                        data.team.nonConfGames < data.team.nonConfLimit && (
-                                            <Button
-                                                variant="contained"
-                                                onClick={() => handleOpenModal(game.weekPlayed)}
-                                            >
-                                                Schedule Game
-                                            </Button>
-                                        )}
+                                    {game.opponent === null &&
+                                        data.team.nonConfGames < data.team.nonConfLimit ? (
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => handleOpenModal(game.weekPlayed)}
+                                        >
+                                            Schedule Game
+                                        </Button>
+                                    ) : (
+                                        game.label
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
 
-                <Dialog open={openModal} onClose={handleCloseModal}>
+                <Dialog open={modalOpen} onClose={handleCloseModal}>
                     <DialogTitle>Schedule Non-Conference Game</DialogTitle>
                     <DialogContent>
                         <Select

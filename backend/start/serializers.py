@@ -2,9 +2,18 @@ from rest_framework import serializers
 from .models import *
 
 class TeamsSerializer(serializers.ModelSerializer):
+    conference = serializers.SerializerMethodField()
+
     class Meta:
         model = Teams
         fields = '__all__'
+
+    def get_conference(self, obj):
+        if obj.conference:
+            return {
+                'confName': obj.conference.confName
+            }
+        return None
 
 class PlayoffSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,7 +33,7 @@ class PlayersSerializer(serializers.ModelSerializer):
 class TeamBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teams
-        fields = ['id', 'name']
+        fields = ['name']
 
 class GamesSerializer(serializers.ModelSerializer):
     teamA = TeamBasicSerializer()

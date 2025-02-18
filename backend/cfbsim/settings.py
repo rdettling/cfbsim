@@ -5,10 +5,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Core Settings
 DEV = True
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+SECRET_KEY = os.environ.get("SECRET_KEY")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost 127.0.0.1").split(" ")
 
+# Debug and Database Settings
 if DEV:
     DEBUG = True
     SECURE_SSL_REDIRECT = False
@@ -28,16 +31,12 @@ else:
         )
     }
 
+# Security Settings
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-
 SESSION_COOKIE_AGE = 1209600  # 2 weeks, in seconds
 
-SECRET_KEY = os.environ.get("SECRET_KEY")
-
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost 127.0.0.1").split(" ")
-
+# Application Definition
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -68,11 +67,13 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# URL Configuration
 ROOT_URLCONF = "cfbsim.urls"
 
+# CORS Settings
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Your frontend URL
+    "http://localhost:5173",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -85,9 +86,12 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
-    'x-client-id',
+    'x-user-id',
 ]
 
+CORS_ALLOWED_HEADERS = CORS_ALLOW_HEADERS  # Both settings are needed for some versions
+
+# Templates
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -104,36 +108,29 @@ TEMPLATES = [
     },
 ]
 
+# WSGI Application
 WSGI_APPLICATION = "cfbsim.wsgi.application"
 
+# Internationalization
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
-# Static files configuration
+# Static Files
 STATIC_URL = '/django-static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Add this new setting for the years data directory
-YEARS_DATA_DIR = BASE_DIR / 'data' / 'initial' / 'years'
-
-# Remove STATICFILES_DIRS entirely if you don't have any custom static files for Django admin
+YEARS_DATA_DIR = BASE_DIR / 'data' / 'years'
 
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
 
+# Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# During development
-CORS_ALLOW_ALL_ORIGINS = True
-
-# REST Framework settings
+# REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',

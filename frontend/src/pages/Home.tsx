@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { API_BASE_URL } from '../config';
-
+import { Team, Conference, Info } from '../interfaces';
 import {
   Container,
   Typography,
@@ -28,32 +28,6 @@ import {
   TableContainer
 } from '@mui/material';
 
-interface InfoType {
-  user_id: string;
-  currentWeek: number;
-  currentYear: number;
-  startYear: number;
-  stage: string;
-  team: {
-    id: number;
-    name: string;
-  };
-  playoff: number;
-}
-
-interface Team {
-  name: string;
-  mascot: string;
-  prestige: number;
-}
-
-interface Conference {
-  confName: string;
-  confFullName: string;
-  confGames: number;
-  teams: Team[];
-}
-
 interface Rivalry {
   0: string;  // Team 1
   1: string;  // Team 2
@@ -73,39 +47,50 @@ interface PreviewData {
 
 interface LaunchProps {
   years: string[];
-  info: InfoType | null;
+  info: Info | null;
   preview: PreviewData | null;
 }
 
-const Launch = () => {
+// 1. Create constants for repeated values
+const PREVIEW_TABS = {
+    TEAMS: 'teams',
+    RIVALRIES: 'rivalries',
+    PLAYOFF: 'playoff'
+} as const;
+
+// 2. Create a type for the preview tab values
+type PreviewTabType = typeof PREVIEW_TABS[keyof typeof PREVIEW_TABS];
+
+const Home = () => {
   const [data, setData] = useState<LaunchProps>({ years: [], info: null, preview: null });
   const [activeTab, setActiveTab] = useState(0);
   const [selectedYear, setSelectedYear] = useState<string>('');
-  const [previewTab, setPreviewTab] = useState('teams');
+  const [previewTab, setPreviewTab] = useState<PreviewTabType>(PREVIEW_TABS.TEAMS);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/home/?year=${selectedYear}`,
-          { withCredentials: true }
-        );
-        console.log('API Response:', response.data);
-        setData(response.data);
+  // 3. Extract API call to separate function
+  const fetchHomeData = async (year: string) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/home/?year=${year}`,
+        { withCredentials: true }
+      );
+      console.log('API Response:', response.data);
+      setData(response.data);
 
-        if (!selectedYear && response.data.years.length > 0) {
-          setSelectedYear(response.data.years[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      if (!selectedYear && response.data.years.length > 0) {
+        setSelectedYear(response.data.years[0]);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    fetchHomeData(selectedYear);
   }, [selectedYear]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -113,24 +98,15 @@ const Launch = () => {
     setSelectedYear(event.target.value);
   };
 
-  const handleBegin = () => {
-    navigate(`/preview?year=${selectedYear}`);
-  };
-
-  const getLoadGameLink = (info: InfoType) => {
-    console.log('Info received:', info);
-    console.log('Stage:', info.stage);
-
-    if (info.stage === 'season') {
-      return '/dashboard';
-    } else if (info.stage === 'end of season') {
-      return '/season_summary';
-    } else if (info.stage === 'roster progression') {
-      return '/roster_progression';
-    } else if (info.stage === 'schedule non conference') {
-      return '/noncon';
-    }
-    return '/';
+  // 4. Extract helper function
+  const getLoadGameLink = (info: Info): string => {
+    const STAGE_ROUTES = {
+      'season': '/dashboard',
+      'end of season': '/season_summary',
+      'roster progression': '/roster_progression',
+      'schedule non conference': '/noncon'
+    };
+    return STAGE_ROUTES[info.stage as keyof typeof STAGE_ROUTES] || '/';
   };
 
   return (
@@ -263,7 +239,7 @@ const Launch = () => {
                                 </Typography>
                                 <Box sx={{ width: 40, height: 40 }}>
                                   <img
-                                    src={`/assets/logos/teams/${team.name}.png`}
+                                    src={`/logos/teams/${team.name}.png`}
                                     alt={`${team.name} logo`}
                                     style={{
                                       width: '100%',
@@ -315,7 +291,7 @@ const Launch = () => {
                       Preview for {selectedYear}
                     </Typography>
 
-                    <Tabs value={previewTab} onChange={(e, newValue) => setPreviewTab(newValue)}>
+                    <Tabs value={previewTab} onChange={(_, newValue) => setPreviewTab(newValue)}>
                       <Tab value="teams" label="Teams" />
                       <Tab value="rivalries" label="Rivalries" />
                       <Tab value="playoff" label="Playoff" />
@@ -327,7 +303,7 @@ const Launch = () => {
                       mt: 2
                     }}>
                       {/* Preview content tabs */}
-                      {previewTab === 'teams' && data.preview && (
+                      {previewTab === "teams" && data.preview && (
                         <Box>
                           {/* Conferences */}
                           {data.preview.conferences.map((conf) => (
@@ -336,7 +312,7 @@ const Launch = () => {
                                 <Stack direction="row" spacing={2} alignItems="center">
                                   <Box sx={{ width: 40, height: 40 }}>
                                     <img
-                                      src={`/assets/logos/conferences/${conf.confName}.png`}
+                                      src={`/logos/conferences/${conf.confName}.png`}
                                       alt={`${conf.confName} logo`}
                                       style={{
                                         width: '100%',
@@ -357,7 +333,8 @@ const Launch = () => {
                                           <Stack direction="row" spacing={2} alignItems="center">
                                             <Box sx={{ width: 40, height: 40 }}>
                                               <img
-                                                src={`/assets/logos/teams/${team.name}.png`}
+                                                src={`
+                                                  /logos/teams/${team.name}.png`}
                                                 alt={`${team.name} logo`}
                                                 style={{
                                                   width: '100%',
@@ -394,7 +371,8 @@ const Launch = () => {
                                         <Stack direction="row" spacing={2} alignItems="center">
                                           <Box sx={{ width: 40, height: 40 }}>
                                             <img
-                                              src={`/assets/logos/teams/${team.name}.png`}
+                                              src={`
+                                                /logos/teams/${team.name}.png`}
                                               alt={`${team.name} logo`}
                                               style={{
                                                 width: '100%',
@@ -418,7 +396,7 @@ const Launch = () => {
                         </Box>
                       )}
 
-                      {previewTab === 'rivalries' && data.preview && (
+                      {previewTab === "rivalries" && data.preview && (
                         <Box>
                           <Typography sx={{ mb: 2 }} variant="subtitle1">
                             Rivalry games are guaranteed to happen every year
@@ -440,7 +418,7 @@ const Launch = () => {
                                       <Stack direction="row" spacing={1} alignItems="center">
                                         <Box sx={{ width: 30, height: 30 }}>
                                           <img
-                                            src={`/assets/logos/teams/${rivalry[0]}.png`}
+                                            src={`/logos/teams/${rivalry[0]}.png`}
                                             alt={`${rivalry[0]} logo`}
                                             style={{
                                               width: '100%',
@@ -456,7 +434,7 @@ const Launch = () => {
                                       <Stack direction="row" spacing={1} alignItems="center">
                                         <Box sx={{ width: 30, height: 30 }}>
                                           <img
-                                            src={`/assets/logos/teams/${rivalry[1]}.png`}
+                                            src={`/logos/teams/${rivalry[1]}.png`}
                                             alt={`${rivalry[1]} logo`}
                                             style={{
                                               width: '100%',
@@ -480,7 +458,7 @@ const Launch = () => {
                         </Box>
                       )}
 
-                      {previewTab === 'playoff' && data.preview && (
+                      {previewTab === "playoff" && data.preview && (
                         <Box>
                           <Typography>Total Teams in Playoff: {data.preview.playoff.teams}</Typography>
                           <Typography>Autobids: {data.preview.playoff.autobids}</Typography>
@@ -498,4 +476,4 @@ const Launch = () => {
   );
 };
 
-export default Launch;
+export default Home;
