@@ -1,7 +1,7 @@
 from start.models import *
-from util.players import ROSTER
+from logic.players import ROSTER
 from django.shortcuts import render
-from util.stats import *
+from logic.stats import *
 
 
 def schedule(request, team_name):

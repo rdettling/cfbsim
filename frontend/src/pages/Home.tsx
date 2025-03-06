@@ -61,6 +61,9 @@ const PREVIEW_TABS = {
 // 2. Create a type for the preview tab values
 type PreviewTabType = typeof PREVIEW_TABS[keyof typeof PREVIEW_TABS];
 
+// API URL constants
+const HOME_URL = (year: string) => `${API_BASE_URL}/api/home/?year=${year}`;
+
 const Home = () => {
   const [data, setData] = useState<LaunchProps>({ years: [], info: null, preview: null });
   const [activeTab, setActiveTab] = useState(0);
@@ -68,11 +71,10 @@ const Home = () => {
   const [previewTab, setPreviewTab] = useState<PreviewTabType>(PREVIEW_TABS.TEAMS);
   const navigate = useNavigate();
 
-  // 3. Extract API call to separate function
   const fetchHomeData = async (year: string) => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/api/home/?year=${year}`,
+        HOME_URL(year),
         { withCredentials: true }
       );
       console.log('API Response:', response.data);

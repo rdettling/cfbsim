@@ -4,10 +4,10 @@ import { Team } from '../interfaces';
 interface TeamHeaderProps {
     team: Team;
     teams: Team[];
-    years: string[];
+    years?: string[];
     onTeamChange: (team: string) => void;
-    onYearChange: (year: string) => void;
-    selectedYear: string;
+    onYearChange?: (year: string) => void;
+    selectedYear?: string;
 }
 
 const TeamHeader = ({ team, teams, years, onTeamChange, onYearChange, selectedYear }: TeamHeaderProps) => {
@@ -90,20 +90,22 @@ const TeamHeader = ({ team, teams, years, onTeamChange, onYearChange, selectedYe
                         </Select>
                     </FormControl>
 
-                    <FormControl fullWidth>
-                        <InputLabel>Year</InputLabel>
-                        <Select
-                            value={selectedYear}
-                            onChange={(e) => onYearChange(e.target.value)}
-                            label="Year"
-                        >
-                            {years.map(year => (
-                                <MenuItem key={year} value={year}>
-                                    {year}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    {years && onYearChange && selectedYear && (
+                        <FormControl fullWidth>
+                            <InputLabel>Year</InputLabel>
+                            <Select
+                                value={selectedYear}
+                                onChange={(e) => onYearChange(e.target.value)}
+                                label="Year"
+                            >
+                                {years.map(year => (
+                                    <MenuItem key={year} value={year}>
+                                        {year}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
                 </Box>
             </Box>
         </Box>

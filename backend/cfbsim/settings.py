@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "start",
     "team",
-    "rankings",
     "mathfilters",
     "stats",
     "schedule",

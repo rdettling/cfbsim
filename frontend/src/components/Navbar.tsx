@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { Conference, Team, Info } from '../interfaces';
 
 interface NavbarProps {
-    team: Team;
+    team: Pick<Team, 'id' | 'name'>;
     currentStage: string;
-    info: Info;
+    info: Pick<Info, 'currentYear' | 'currentWeek'>;
     conferences: Conference[];
 }
 
@@ -122,7 +122,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     >
                         {conferences.map((conf) => (
                             <MenuItem 
-                                key={conf.id}
+                                key={`conf-${conf.id}`}
                                 onClick={() => {
                                     navigate(`/standings/${conf.confName}`);
                                     setConfAnchorEl(null);
@@ -132,6 +132,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                             </MenuItem>
                         ))}
                         <MenuItem 
+                            key="conf-independent"
                             onClick={() => {
                                 navigate('/standings/independent');
                                 setConfAnchorEl(null);

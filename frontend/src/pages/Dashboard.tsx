@@ -32,6 +32,9 @@ interface DashboardData {
     conferences: Conference[];
 }
 
+// API URL constants
+const DASHBOARD_URL = `${API_BASE_URL}/api/dashboard`;
+
 const Dashboard = () => {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -43,7 +46,7 @@ const Dashboard = () => {
         const fetchDashboard = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${API_BASE_URL}/api/dashboard`);
+                const response = await axios.get(DASHBOARD_URL);
                 setData(response.data);
             } catch (error) {
                 setError('Failed to load dashboard data');

@@ -84,3 +84,8 @@ class InfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Info
         fields = ['user_id', 'currentYear', 'currentWeek', 'stage', 'team']
+
+class ConferenceNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Conferences
+        fields = ['id', 'confName']
