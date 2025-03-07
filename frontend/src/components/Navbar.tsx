@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { Conference, Team, Info } from '../interfaces';
 
 interface NavbarProps {
-    team: Pick<Team, 'id' | 'name'>;
+    team: Team;
     currentStage: string;
-    info: Pick<Info, 'currentYear' | 'currentWeek'>;
+    info: Info;
     conferences: Conference[];
 }
 

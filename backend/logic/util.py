@@ -7,7 +7,6 @@ from .sim.sim import *
 from django.conf import settings
 
 
-
 def update_teams_and_rosters(info, data):
     start = time.time()
     realignment(info, data)
@@ -177,11 +176,7 @@ def init(user_id, team_name, year):
 
     Info.objects.filter(user_id=user_id).delete()
     info = Info.objects.create(
-        user_id=user_id,
-        currentWeek=1,
-        currentYear=year,
-        startYear=year,
-        stage="noncon"
+        user_id=user_id, currentWeek=1, currentYear=year, startYear=year, stage="noncon"
     )
 
     playoff = Playoff.objects.create(
@@ -299,7 +294,6 @@ def init(user_id, team_name, year):
 
     # generate_recruits(info, recruits_to_create)
     # Recruits.objects.bulk_create(recruits_to_create)
-
 
 
 def update_rankings(info):

@@ -20,14 +20,13 @@ export interface Team {
     defense: number;
     colorPrimary: string;
     colorSecondary: string;
-    conference?: {
-        confName: string;
-    };
+    conference: string;
     confWins: number;
     confLosses: number;
     rating: number;
     totalWins: number;
     totalLosses: number;
+    record: string;
 }
 
 export interface Info {
@@ -37,7 +36,7 @@ export interface Info {
     team: Team;
 }
 
-export interface Game {
+export interface ScheduleGame {
     weekPlayed: number;
     opponent: {
         name: string;

@@ -1,91 +1,123 @@
 from rest_framework import serializers
 from .models import *
+from util.util import format_record
+
 
 class TeamsSerializer(serializers.ModelSerializer):
     conference = serializers.SerializerMethodField()
+    record = serializers.SerializerMethodField()
 
     class Meta:
         model = Teams
-        fields = '__all__'
+        fields = [
+            "name",
+            "abbreviation",
+            "conference",
+            "ranking",
+            "prestige",
+            "rating",
+            "record",
+            "nonConfGames",
+            "nonConfLimit",
+            "confWins",
+            "confLosses",
+            "totalWins",
+            "totalLosses",
+            "offense",
+            "defense",
+        ]
 
     def get_conference(self, obj):
-        if obj.conference:
-            return {
-                'confName': obj.conference.confName
-            }
-        return None
+        return obj.conference.confName if obj.conference else "Independent"
+
+    def get_record(self, obj):
+        return format_record(obj)
+
 
 class PlayoffSerializer(serializers.ModelSerializer):
     class Meta:
         model = Playoff
-        fields = '__all__'
+        fields = "__all__"
+
 
 class ConferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conferences
-        fields = '__all__'
+        fields = "__all__"
+
 
 class PlayersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Players
-        fields = '__all__'
+        fields = "__all__"
 
-class TeamBasicSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Teams
-        fields = ['name']
 
 class GamesSerializer(serializers.ModelSerializer):
-    teamA = TeamBasicSerializer()
-    teamB = TeamBasicSerializer()
+    teamA = TeamsSerializer()
+    teamB = TeamsSerializer()
 
     class Meta:
         model = Games
-        fields = '__all__'
+        fields = "__all__"
+
 
 class DrivesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Drives
-        fields = '__all__'
+        fields = "__all__"
+
 
 class PlaysSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plays
-        fields = '__all__'
+        fields = "__all__"
+
 
 class GameLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameLog
-        fields = '__all__'
+        fields = "__all__"
+
 
 class YearsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Years
-        fields = '__all__'
+        fields = "__all__"
+
 
 class RecruitsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recruits
-        fields = '__all__'
+        fields = "__all__"
+
 
 class OffersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offers
-        fields = '__all__'
+        fields = "__all__"
+
 
 class OddsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Odds
-        fields = '__all__'
+        fields = "__all__"
+
 
 class InfoSerializer(serializers.ModelSerializer):
-    team = TeamBasicSerializer(read_only=True)
-    
+    team = TeamsSerializer(read_only=True)
+
     class Meta:
         model = Info
-        fields = ['user_id', 'currentYear', 'currentWeek', 'stage', 'team']
+        fields = ["user_id", "currentYear", "currentWeek", "stage", "team"]
+
 
 class ConferenceNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conferences
-        fields = ['id', 'confName']
+        fields = ["id", "confName"]
+
+
+class TeamNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teams
+        fields = ["name"]

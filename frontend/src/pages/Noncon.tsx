@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { API_BASE_URL } from "../config";
-import { Conference, Team, Info, Game } from "../interfaces";
+import { Conference, Team, Info, ScheduleGame } from "../interfaces";
 import axios from "axios";
 import {
     Container,
@@ -22,12 +22,20 @@ import {
 } from "@mui/material";
 import Navbar from "../components/Navbar";
 
+// API endpoints
+const NONCON_URL = `${API_BASE_URL}/api/noncon/`;
+const SCHEDULE_NC_URL = `${API_BASE_URL}/api/schedulenc/`;
+const FETCH_TEAMS_URL = `${API_BASE_URL}/api/fetchteams/`;
+
+// Asset URLs
+const TEAM_LOGO_URL = "/logos/teams/";
+
 export const NonCon = () => {
     const [searchParams] = useSearchParams();
     const [data, setData] = useState<{
         info: Info;
         team: Team;
-        schedule: Game[];
+        schedule: ScheduleGame[];
         conferences: Conference[];
     } | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
@@ -42,7 +50,7 @@ export const NonCon = () => {
             const new_game = searchParams.get("new_game");
 
             const response = await axios.get(
-                `${API_BASE_URL}/api/noncon/?team=${team}&year=${year}&new_game=${new_game}`
+                `${NONCON_URL}?team=${team}&year=${year}&new_game=${new_game}`
             );
             setData(response.data);
         } catch (error) {
@@ -56,7 +64,7 @@ export const NonCon = () => {
 
     const handleScheduleGame = async () => {
         try {
-            await axios.post(`${API_BASE_URL}/api/schedulenc/`, {
+            await axios.post(SCHEDULE_NC_URL, {
                 opponent: selectedOpponent,
                 week: selectedWeek,
             });
@@ -70,7 +78,7 @@ export const NonCon = () => {
     const handleOpenModal = async (week: number) => {
         try {
             const response = await axios.get<string[]>(
-                `${API_BASE_URL}/api/fetchteams/?week=${week}`
+                `${FETCH_TEAMS_URL}?week=${week}`
             );
             setAvailableTeams(response.data);
             setSelectedWeek(week);
@@ -91,15 +99,9 @@ export const NonCon = () => {
     return (
         <>
             <Navbar
-                team={{
-                    id: data.team.id,
-                    name: data.team.name,
-                }}
+                team={data.team}
                 currentStage={data.info.stage}
-                info={{
-                    currentYear: data.info.currentYear,
-                    currentWeek: data.info.currentWeek,
-                }}
+                info={data.info}
                 conferences={data.conferences}
             />
             <Container maxWidth="lg" sx={{ mt: 5 }}>
@@ -133,10 +135,13 @@ export const NonCon = () => {
                                 <TableCell>
                                     {game.opponent && (
                                         <Stack direction="row" spacing={2} alignItems="center">
+                                            {game.opponent.ranking && (
+                                                <Typography>#{game.opponent.ranking}</Typography>
+                                            )}
                                             <Box sx={{ width: 40, height: 40 }}>
                                                 <img
-                                                    src={`/logos/teams/${game.opponent}.png`}
-                                                    alt={`${game.opponent} logo`}
+                                                    src={`${TEAM_LOGO_URL}${game.opponent.name}.png`}
+                                                    alt={`${game.opponent.name} logo`}
                                                     style={{
                                                         width: "100%",
                                                         height: "100%",
@@ -144,12 +149,12 @@ export const NonCon = () => {
                                                     }}
                                                 />
                                             </Box>
-                                            <Typography>{game.opponent}</Typography>
+                                            <Typography>{game.opponent.name}</Typography>
                                         </Stack>
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    {game.opponent === null &&
+                                    {!game.opponent &&
                                         data.team.nonConfGames < data.team.nonConfLimit ? (
                                         <Button
                                             variant="contained"

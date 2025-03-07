@@ -67,10 +67,9 @@ const TeamHeader = ({ team, teams, years, onTeamChange, onYearChange, selectedYe
                         </Box>
                     </Box>
 
-                    <Typography variant="h6">{team.conference?.confName}</Typography>
+                    <Typography variant="h6">{team.conference}</Typography>
                     <Typography variant="h6" sx={{ mt: 3 }}>
-                        {team.totalWins} - {team.totalLosses}
-                        ({team.confWins} - {team.confLosses})
+                        {team.record}
                     </Typography>
                 </Box>
 

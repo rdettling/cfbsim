@@ -46,14 +46,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "start",
     "stats",
-    "schedule",
     "recruit",
-    'rest_framework',
-    'corsheaders',
+    "rest_framework",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -74,16 +73,16 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-    'x-user-id',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "x-user-id",
 ]
 
 CORS_ALLOWED_HEADERS = CORS_ALLOW_HEADERS  # Both settings are needed for some versions
@@ -115,13 +114,13 @@ USE_I18N = True
 USE_TZ = True
 
 # Static Files
-STATIC_URL = '/django-static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-YEARS_DATA_DIR = BASE_DIR / 'data' / 'years'
+STATIC_URL = "/django-static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+YEARS_DATA_DIR = BASE_DIR / "data" / "years"
 
 STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
 # Default Primary Key Field Type
@@ -129,7 +128,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # REST Framework Settings
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
     ]
 }

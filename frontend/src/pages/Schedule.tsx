@@ -2,7 +2,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { Team, Game, Info, Conference } from '../interfaces';
+import { Team, ScheduleGame, Info, Conference } from '../interfaces';
 import {
     Container,
     Table,
@@ -26,7 +26,7 @@ import TeamHeader from '../components/TeamHeader';
 interface ScheduleData {
     info: Info;
     team: Team;
-    games: Game[];
+    games: ScheduleGame[];
     conferences: Conference[];
     teams: Team[];
     years: string[];
@@ -172,7 +172,7 @@ const Schedule = () => {
                                     <TableCell>
                                         <Link
                                             component="button"
-                                            onClick={() => navigate(`/games/${game.id}`)}
+                                            onClick={() => navigate(`/game/${game.id}`)}
                                             sx={{ cursor: 'pointer' }}
                                         >
                                             {game.result ? `${game.result} (${game.score})` : 'Preview'}

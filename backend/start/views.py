@@ -15,7 +15,83 @@ import uuid
 from util.util import *
 from django.db.models import Q, F, ExpressionWrapper, FloatField
 from operator import attrgetter
+from stats.views import *
 
+
+def get_schedule_game(team, game):
+    is_team_a = game.teamA == team
+    opponent = game.teamB if is_team_a else game.teamA
+
+    # Construct the label
+    if game.name:
+        label = game.name
+    else:
+        conf_match = (
+            team.conference == opponent.conference
+            if team.conference and opponent.conference
+            else False
+        )
+        label = (
+            f"C ({team.conference.confName})"
+            if conf_match
+            else (
+                f"NC ({opponent.conference.confName})"
+                if opponent.conference
+                else "NC (Ind)"
+            )
+
+    )
+
+    return {
+            "opponent": {
+                "name": opponent.name,
+                "ranking": opponent.ranking,
+                "rating": opponent.rating,
+                "record": format_record(opponent),
+            },
+            "label": label,
+            "result": game.resultA if is_team_a else game.resultB,
+            "spread": game.spreadA if is_team_a else game.spreadB,
+            "moneyline": game.moneylineA if is_team_a else game.moneylineB,
+            "score": (
+                (
+                    f"{game.scoreA}-{game.scoreB}"
+                    if is_team_a
+                    else f"{game.scoreB}-{game.scoreA}"
+                )
+                if game.winner
+                else None
+            ),
+        }
+
+
+
+def get_last_game(info, team):
+    games_as_teamA = team.games_as_teamA.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek - 1
+    )
+    games_as_teamB = team.games_as_teamB.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek - 1
+    )
+    schedule = list(games_as_teamA | games_as_teamB)
+    if schedule:
+        return get_schedule_game(team, schedule[-1])
+    else:
+        return None
+
+
+def get_next_game(info, team):
+    games_as_teamA = team.games_as_teamA.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek
+    )
+    games_as_teamB = team.games_as_teamB.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek
+    )
+    schedule = list(games_as_teamA | games_as_teamB)
+    if schedule:
+        return get_schedule_game(team, schedule[0])
+    else:
+        return None
 
 
 @api_view(["GET"])
@@ -69,39 +145,23 @@ def noncon(request):
     info = Info.objects.get(user_id=user_id)
     team = info.team
 
-    # Get and process schedule
-    games_as_teamA = team.games_as_teamA.filter(year=info.currentYear)
-    games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
-    schedule = list(games_as_teamA | games_as_teamB)
+    # Get team's games
+    games = (
+        team.games_as_teamA.filter(year=info.currentYear)
+        | team.games_as_teamB.filter(year=info.currentYear)
+    ).order_by("weekPlayed")
 
-    # Process each game to include only the fields we want
-    processed_schedule = []
-    for game in schedule:
-        # Determine if user's team is teamA or teamB and create appropriate game data
-        if game.teamA == team:
-            game_data = {
-                "weekPlayed": game.weekPlayed,
-                "opponent": game.teamB.name,
-                "label": game.labelA,
-            }
-        else:
-            game_data = {
-                "weekPlayed": game.weekPlayed,
-                "opponent": game.teamA.name,
-                "label": game.labelB,
-            }
-        processed_schedule.append(game_data)
+    # Process games into schedule format
+    schedule = []
+    games_by_week = {game.weekPlayed: game for game in games}
 
-    # Create schedule mapping
-    game_weeks = {game["weekPlayed"]: game for game in processed_schedule}
-
-    # Build full schedule
-    full_schedule = []
+    # Build full schedule with empty weeks where no game is scheduled
     for week in range(1, 13):
-        if week in game_weeks:
-            full_schedule.append(game_weeks[week])
+        if week in games_by_week:
+            game = games_by_week[week]
+            schedule.append(get_schedule_game(team, game))
         else:
-            full_schedule.append(
+            schedule.append(
                 {
                     "weekPlayed": week,
                     "opponent": None,
@@ -112,11 +172,11 @@ def noncon(request):
         {
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(team).data,
-            "schedule": full_schedule,
+            "schedule": schedule,
             "user_id": user_id,
             "replace": replace,
             "conferences": ConferencesSerializer(
-                info.conferences.all(), many=True
+                info.conferences.all().order_by("confName"), many=True
             ).data,
         }
     )
@@ -167,6 +227,8 @@ def schedule_nc(request):
 
     games_to_create = []
 
+    print("opp   onent is ", opponent)
+
     scheduleGame(
         info,
         team,
@@ -184,78 +246,30 @@ def schedule_nc(request):
 
 @api_view(["GET"])
 def dashboard(request):
-    def process_game_data(game, team):
-        """Helper function to process game data for a team"""
-        if not game:
-            return None
-
-        is_team_a = game.teamA == team
-        opponent = game.teamB if is_team_a else game.teamA
-
-        data = {
-            "weekPlayed": game.weekPlayed,
-            "opponent": {
-                "name": opponent.name,
-                "ranking": opponent.ranking,
-            },
-        }
-
-        # Add result/score for previous game or spread/moneyline for current game
-        if game.winner:
-            data.update(
-                {
-                    "result": game.resultA if is_team_a else game.resultB,
-                    "score": (
-                        f"{game.scoreA} - {game.scoreB}"
-                        if is_team_a
-                        else f"{game.scoreB} - {game.scoreA}"
-                    ),
-                }
-            )
-        else:
-            data.update(
-                {
-                    "spread": game.spreadA if is_team_a else game.spreadB,
-                    "moneyline": game.moneylineA if is_team_a else game.moneylineB,
-                }
-            )
-
-        return data
-
     """API endpoint for dashboard data"""
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
     team = info.team
 
+    print("info is ", info)
+
     if not info.stage == "season":
         start_season(info)
 
-    # Get and process games
-    prev_week_game = (
-        team.games_as_teamA.filter(
-            year=info.currentYear, weekPlayed=info.currentWeek - 1
-        )
-        | team.games_as_teamB.filter(
-            year=info.currentYear, weekPlayed=info.currentWeek - 1
-        )
-    ).first()
-
-    current_week_game = (
-        team.games_as_teamA.filter(year=info.currentYear, weekPlayed=info.currentWeek)
-        | team.games_as_teamB.filter(year=info.currentYear, weekPlayed=info.currentWeek)
-    ).first()
+    last_game = get_last_game(info, team)
+    next_game = get_next_game(info, team)
 
     return Response(
         {
             "info": InfoSerializer(info).data,
-            "prev_game": process_game_data(prev_week_game, team),
-            "curr_game": process_game_data(current_week_game, team),
+            "prev_game": last_game,
+            "curr_game": next_game,
             "team": TeamsSerializer(team).data,
             "confTeams": TeamsSerializer(team.conference.teams.all(), many=True).data,
             "top_10": TeamsSerializer(
                 info.teams.order_by("ranking")[:10], many=True
             ).data,
-            "conferences": ConferencesSerializer(
+            "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -274,6 +288,7 @@ def team_info(request):
         }
     )
 
+
 @api_view(["GET"])
 def schedule(request, team_name):
     """API endpoint for team schedule data"""
@@ -285,7 +300,7 @@ def schedule(request, team_name):
     if year and int(year) != info.currentYear:
         games_as_teamA = team.games_as_teamA.filter(year=year)
         games_as_teamB = team.games_as_teamB.filter(year=year)
-        
+
         historical = info.years.filter(year=year, team=team).first()
         if historical:
             team.rating = historical.rating
@@ -297,57 +312,27 @@ def schedule(request, team_name):
         games_as_teamB = team.games_as_teamB.filter(year=info.currentYear)
 
     schedule = sorted(
-        list(games_as_teamA | games_as_teamB),
-        key=lambda game: game.weekPlayed
+        list(games_as_teamA | games_as_teamB), key=lambda game: game.weekPlayed
     )
 
-    processed_schedule = []
-    for game in schedule:
-        is_team_a = game.teamA == team
-        opponent = game.teamB if is_team_a else game.teamA
-        
-        game_data = {
-            "id": game.id,
-            "weekPlayed": game.weekPlayed,
-            "opponent": {
-                "name": opponent.name,
-                "rating": opponent.rating,
-                "ranking": opponent.ranking,
-                "record": format_record(opponent)
-            },
-            "label": game.labelA if is_team_a else game.labelB,
-            "moneyline": game.moneylineA if is_team_a else game.moneylineB,
-            "spread": game.spreadA if is_team_a else game.spreadB,
-            "result": game.resultA if is_team_a else game.resultB,
-        }
-
-        # Handle score and overtime
-        score_a = game.scoreA if is_team_a else game.scoreB
-        score_b = game.scoreB if is_team_a else game.scoreA
-        
-        if game.overtime:
-            ot_text = "OT" if game.overtime == 1 else f"{game.overtime}OT"
-            game_data["score"] = f"{score_a}-{score_b} {ot_text}"
-        else:
-            game_data["score"] = f"{score_a}-{score_b}"
-            
-        processed_schedule.append(game_data)
+    processed_schedule = [get_schedule_game(team, game) for game in schedule]
 
     years = list(range(info.currentYear, info.startYear - 1, -1))
 
-    return Response({
-        "info": InfoSerializer(info).data,
-        "team": TeamsSerializer(team).data,
-        "games": processed_schedule,
-        "years": years,
-        "conferences": ConferenceNameSerializer(
-            info.conferences.all().order_by("confName"), many=True
-        ).data,
-        "teams": TeamBasicSerializer(info.teams.all().order_by('name'), many=True).data,
-    })
-
-
-
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(team).data,
+            "games": processed_schedule,
+            "years": years,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+            "teams": TeamNameSerializer(
+                info.teams.all().order_by("name"), many=True
+            ).data,
+        }
+    )
 
 
 @api_view(["GET"])
@@ -356,64 +341,53 @@ def rankings(request):
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
     teams = Teams.objects.filter(info=info).order_by("ranking")
-    
+
     # Process team data with last/next game info
     rankings_data = []
     for t in teams:
         last_game = get_last_game(info, t)
         next_game = get_next_game(info, t)
-        
+
         team_data = {
-            'name': t.name,
-            'ranking': t.ranking,
-            'record': format_record(t),
-            'movement': t.last_rank - t.ranking if t.last_rank else 0
+            "name": t.name,
+            "ranking": t.ranking,
+            "record": format_record(t),
+            "movement": t.last_rank - t.ranking if t.last_rank else 0,
         }
-            
+
         # Add last game info if exists
         if last_game:
-            team_data['last_game'] = {
-                'opponent': {
-                    'name': last_game.opponent.name,
-                    'ranking': last_game.rank
+            team_data["last_game"] = {
+                "opponent": {
+                    "name": last_game.opponent.name,
+                    "ranking": last_game.rank,
                 },
-                'result': last_game.result,
-                'score': last_game.score
+                "result": last_game.result,
+                "score": last_game.score,
             }
-            
+
         # Add next game info if exists
         if next_game:
-            team_data['next_game'] = {
-                'opponent': {
-                    'name': next_game.opponent.name,
-                    'ranking': next_game.rank
+            team_data["next_game"] = {
+                "opponent": {
+                    "name": next_game.opponent.name,
+                    "ranking": next_game.rank,
                 },
-                'spread': next_game.spread
+                "spread": next_game.spread,
             }
-            
+
         rankings_data.append(team_data)
 
-    return Response({
-        'info': InfoSerializer(info).data,
-        'rankings': rankings_data,
-        'team': TeamBasicSerializer(info.team).data,
-        'conferences': ConferenceNameSerializer(
-            info.conferences.all().order_by("confName"), 
-            many=True
-        ).data,
-    })
-
-
-def game(request, id):
-    user_id = request.session.session_key
-    info = Info.objects.get(user_id=user_id)
-
-    game = info.games.get(id=id)
-
-    if game.winner:
-        return game_result(request, info, game)
-    else:
-        return game_preview(request, info, game)
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "rankings": rankings_data,
+            "team": TeamsSerializer(info.team).data,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
 
 
 def fetch_play(request):
@@ -528,10 +502,6 @@ def fetch_play(request):
 
 def simWeek(request):
 
-
-
-
-    
     start = time.time()
     user_id = request.session.session_key
     info = Info.objects.get(user_id=user_id)
@@ -628,11 +598,26 @@ def simWeek(request):
         return render(request, "sim.html", context)
 
 
-def game_preview(request, info, game):
-    if game.labelA == game.labelB:
-        game.label = game.labelA
+@api_view(["GET"])
+def game(request, id):
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+
+    game = info.games.get(id=id)
+
+    if game.winner:
+        return game_result(request, info, game)
     else:
-        game.label = (
+        return game_preview(info, game)
+
+
+def game_preview(info, game):
+    """API endpoint for game preview data"""
+    # Set game label
+    if game.labelA == game.labelB:
+        game_label = game.labelA
+    else:
+        game_label = (
             f"NC ({game.teamA.conference.confName} vs {game.teamB.conference.confName})"
         )
 
@@ -649,24 +634,50 @@ def game_preview(request, info, game):
     top_players_a += [None] * (max_players - len(top_players_a))
     top_players_b += [None] * (max_players - len(top_players_b))
 
-    # Zip the two lists together
-    top_players = list(zip(top_players_a, top_players_b))
+    # Process player data
+    top_players = [[], []]  # Two arrays: one for teamA, one for teamB
+    for player_a in top_players_a:
+        if player_a:
+            top_players[0].append(
+                {
+                    "id": player_a.id,
+                    "first": player_a.first,
+                    "last": player_a.last,
+                    "pos": player_a.pos,
+                    "rating": player_a.rating,
+                }
+            )
 
-    context = {
-        "info": info,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-        "conferences": info.conferences.all().order_by("confName"),
-        "game": game,
-        "top_players": top_players,
-    }
+    for player_b in top_players_b:
+        if player_b:
+            top_players[1].append(
+                {
+                    "id": player_b.id,
+                    "first": player_b.first,
+                    "last": player_b.last,
+                    "pos": player_b.pos,
+                    "rating": player_b.rating,
+                }
+            )
 
-    return render(request, "game_preview.html", context)
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "game": GamesSerializer(game).data,
+            "top_players": top_players,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
 
 
-def game_result(request, info, game):
+def game_result(info, game):
+    """API endpoint for game result data"""
     drives = game.drives.all()
     game_logs = game.game_logs.all()
 
+    # Process game logs by category
     categorized_game_log_strings = {
         "Passing": [],
         "Rushing": [],
@@ -714,17 +725,56 @@ def game_result(request, info, game):
             }
             categorized_game_log_strings["Kicking"].append(k_game_log_dict)
 
-    context = {
-        "game": game,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-        "info": info,
-        "conferences": info.conferences.all().order_by("confName"),
-        "drives": drives,
-        "stats": game_stats(game),
-        "categorized_game_log_strings": categorized_game_log_strings,
-    }
+    # Process drives data
+    drives_data = []
+    for drive in drives:
+        drives_data.append(
+            {
+                "offense": drive.offense.name,
+                "result": drive.result,
+                "points": drive.points,
+                "scoreAAfter": drive.scoreAAfter,
+                "scoreBAfter": drive.scoreBAfter,
+            }
+        )
 
-    return render(request, "game_result.html", context)
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "game": {
+                "id": game.id,
+                "label": game.labelA,
+                "weekPlayed": game.weekPlayed,
+                "year": game.year,
+                "teamA": {
+                    "name": game.teamA.name,
+                    "abbreviation": game.teamA.abbreviation,
+                    "conference": game.teamA.conference.confName,
+                    "ranking": game.teamA.ranking,
+                    "rankTOG": game.rankATOG,
+                    "score": game.scoreA,
+                },
+                "teamB": {
+                    "name": game.teamB.name,
+                    "abbreviation": game.teamB.abbreviation,
+                    "conference": game.teamB.conference.confName,
+                    "ranking": game.teamB.ranking,
+                    "rankTOG": game.rankBTOG,
+                    "score": game.scoreB,
+                },
+                "overtime": game.overtime,
+                "winner": game.winner.name if game.winner else None,
+                "resultA": game.resultA,
+                "resultB": game.resultB,
+            },
+            "drives": drives_data,
+            "stats": game_stats(game),
+            "game_logs": categorized_game_log_strings,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
 
 
 def season_summary(request):
@@ -777,7 +827,6 @@ def roster_progression(request):
     return render(request, "roster_progression.html", context)
 
 
-
 @api_view(["GET"])
 def standings(request, conference_name):
     """API endpoint for conference standings data"""
@@ -794,109 +843,116 @@ def standings(request, conference_name):
         for team in teams:
             conf_games = team.confWins + team.confLosses
             pct = team.confWins / conf_games if conf_games > 0 else 0
-            
+
             # Get last and next game info
             last_game = get_last_game(info, team)
             next_game = get_next_game(info, team)
-            
+
             team_data = {
-                'name': team.name,
-                'ranking': team.ranking,
-                'confWins': team.confWins,
-                'confLosses': team.confLosses,
-                'totalWins': team.totalWins,
-                'totalLosses': team.totalLosses,
-                'pct': round(pct, 3),
-                'rating': team.rating
+                "name": team.name,
+                "ranking": team.ranking,
+                "confWins": team.confWins,
+                "confLosses": team.confLosses,
+                "totalWins": team.totalWins,
+                "totalLosses": team.totalLosses,
+                "pct": round(pct, 3),
+                "rating": team.rating,
             }
-            
+
             # Add last game info if exists
             if last_game:
-                team_data['last_game'] = {
-                    'opponent': {
-                        'name': last_game.opponent.name,
-                        'ranking': last_game.rank
+                team_data["last_game"] = {
+                    "opponent": {
+                        "name": last_game.opponent.name,
+                        "ranking": last_game.rank,
                     },
-                    'result': last_game.result,
-                    'score': last_game.score
+                    "result": last_game.result,
+                    "score": last_game.score,
                 }
-                
+
             # Add next game info if exists
             if next_game:
-                team_data['next_game'] = {
-                    'opponent': {
-                        'name': next_game.opponent.name,
-                        'ranking': next_game.rank
+                team_data["next_game"] = {
+                    "opponent": {
+                        "name": next_game.opponent.name,
+                        "ranking": next_game.rank,
                     },
-                    'spread': next_game.spread
+                    "spread": next_game.spread,
                 }
-            
+
             teams_data.append(team_data)
 
         # Sort by conference winning percentage, then wins, then losses, then ranking
-        teams_data.sort(key=lambda x: (-x['pct'], -x['confWins'], x['confLosses'], x['ranking']))
+        teams_data.sort(
+            key=lambda x: (-x["pct"], -x["confWins"], x["confLosses"], x["ranking"])
+        )
 
-        return Response({
-            'info': InfoSerializer(info).data,
-            'team': TeamsSerializer(info.team).data,
-            'conference': conference.confName,
-            'teams': teams_data,
-            'conferences': ConferenceNameSerializer(
-                info.conferences.all().order_by("confName"),
-                many=True
-            ).data,
-        })
+        return Response(
+            {
+                "info": InfoSerializer(info).data,
+                "team": TeamsSerializer(info.team).data,
+                "conference": conference.confName,
+                "teams": teams_data,
+                "conferences": ConferenceNameSerializer(
+                    info.conferences.all().order_by("confName"), many=True
+                ).data,
+            }
+        )
     else:
         # Get independent teams standings
-        independent_teams = info.teams.filter(conference=None).order_by('-totalWins', '-resume', 'ranking')
-        
+        independent_teams = info.teams.filter(conference=None).order_by(
+            "-totalWins", "-resume", "ranking"
+        )
+
         teams_data = []
         for team in independent_teams:
             # Get last and next game info
             last_game = get_last_game(info, team)
             next_game = get_next_game(info, team)
-            
+
             team_data = {
-                'name': team.name,
-                'ranking': team.ranking,
-                'totalWins': team.totalWins,
-                'totalLosses': team.totalLosses,
-                'rating': team.rating
+                "name": team.name,
+                "ranking": team.ranking,
+                "totalWins": team.totalWins,
+                "totalLosses": team.totalLosses,
+                "rating": team.rating,
             }
-            
+
             # Add last game info if exists
             if last_game:
-                team_data['last_game'] = {
-                    'opponent': {
-                        'name': last_game.opponent.name,
-                        'ranking': last_game.rank
+                team_data["last_game"] = {
+                    "opponent": {
+                        "name": last_game.opponent.name,
+                        "ranking": last_game.rank,
                     },
-                    'result': last_game.result,
-                    'score': last_game.score
+                    "result": last_game.result,
+                    "score": last_game.score,
                 }
-                
+
             # Add next game info if exists
             if next_game:
-                team_data['next_game'] = {
-                    'opponent': {
-                        'name': next_game.opponent.name,
-                        'ranking': next_game.rank
+                team_data["next_game"] = {
+                    "opponent": {
+                        "name": next_game.opponent.name,
+                        "ranking": next_game.rank,
                     },
-                    'spread': next_game.spread
+                    "spread": next_game.spread,
                 }
-            
+
             teams_data.append(team_data)
 
-        return Response({
-            'info': InfoSerializer(info).data,
-            'team': TeamsSerializer(info.team).data,
-            'teams': teams_data,
-            'conferences': ConferenceNameSerializer(
-                info.conferences.all().order_by("confName"),
-                many=True
-            ).data,
-        })
-    
+        return Response(
+            {
+                "info": InfoSerializer(info).data,
+                "team": TeamsSerializer(info.team).data,
+                "teams": teams_data,
+                "conferences": ConferenceNameSerializer(
+                    info.conferences.all().order_by("confName"), many=True
+                ).data,
+            }
+        )
+
+
 @api_view(["GET"])
 def roster(request, team_name):
     """API endpoint for team roster data"""
@@ -911,30 +967,31 @@ def roster(request, team_name):
         players = team.players.filter(pos=position).order_by("-starter", "-rating")
         for player in players:
             player_data = {
-                'id': player.id,
-                'first': player.first,
-                'last': player.last,
-                'pos': player.pos,
-                'year': player.year,
-                'rating': player.rating,
-                'starter': player.starter
+                "id": player.id,
+                "first": player.first,
+                "last": player.last,
+                "pos": player.pos,
+                "year": player.year,
+                "rating": player.rating,
+                "starter": player.starter,
             }
             roster_data.append(player_data)
 
-    return Response({
-        'info': InfoSerializer(info).data,
-        'team': TeamsSerializer(team).data,
-        'roster': roster_data,
-        'positions': positions,
-        'conferences': ConferenceNameSerializer(
-            info.conferences.all().order_by("confName"),
-            many=True
-        ).data,
-        'teams': TeamBasicSerializer(
-            info.teams.all().order_by('name'),
-            many=True
-        ).data,
-    })
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(team).data,
+            "roster": roster_data,
+            "positions": positions,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+            "teams": TeamNameSerializer(
+                info.teams.all().order_by("name"), many=True
+            ).data,
+        }
+    )
+
 
 @api_view(["GET"])
 def history(request, team_name):
@@ -946,29 +1003,32 @@ def history(request, team_name):
     # Get years data and process it
     years_data = []
     for year in team.years.order_by("-year"):
-        years_data.append({
-            'year': year.year,
-            'prestige': year.prestige,
-            'rating': year.rating,
-            'conference': year.conference,
-            'wins': year.wins,
-            'losses': year.losses,
-            'rank': year.rank
-        })
+        years_data.append(
+            {
+                "year": year.year,
+                "prestige": year.prestige,
+                "rating": year.rating,
+                "conference": year.conference,
+                "wins": year.wins,
+                "losses": year.losses,
+                "rank": year.rank,
+            }
+        )
 
-    return Response({
-        'info': InfoSerializer(info).data,
-        'team': TeamsSerializer(team).data,
-        'years': years_data,
-        'conferences': ConferenceNameSerializer(
-            info.conferences.all().order_by("confName"),
-            many=True
-        ).data,
-        'teams': TeamBasicSerializer(
-            info.teams.all().order_by('name'),
-            many=True
-        ).data,
-    })
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(team).data,
+            "years": years_data,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+            "teams": TeamNameSerializer(
+                info.teams.all().order_by("name"), many=True
+            ).data,
+        }
+    )
+
 
 @api_view(["GET"])
 def player(request, id):
@@ -990,45 +1050,65 @@ def player(request, id):
         years = [current_year, current_year - 1, current_year - 2, current_year - 3]
     years = [year for year in years if info.startYear <= year <= current_year]
 
-    
-
     # Get yearly cumulative stats
     yearly_cumulative_stats = {}
     for year in years:
         year_game_logs = player.game_logs.filter(game__year=year)
-        
+
         year_stats = {
             "games": len(year_game_logs),
             "pass_yards": sum(gl.pass_yards or 0 for gl in year_game_logs),
             "pass_attempts": sum(gl.pass_attempts or 0 for gl in year_game_logs),
             "pass_completions": sum(gl.pass_completions or 0 for gl in year_game_logs),
             "pass_touchdowns": sum(gl.pass_touchdowns or 0 for gl in year_game_logs),
-            "pass_interceptions": sum(gl.pass_interceptions or 0 for gl in year_game_logs),
+            "pass_interceptions": sum(
+                gl.pass_interceptions or 0 for gl in year_game_logs
+            ),
             "rush_yards": sum(gl.rush_yards or 0 for gl in year_game_logs),
             "rush_attempts": sum(gl.rush_attempts or 0 for gl in year_game_logs),
             "rush_touchdowns": sum(gl.rush_touchdowns or 0 for gl in year_game_logs),
             "receiving_yards": sum(gl.receiving_yards or 0 for gl in year_game_logs),
-            "receiving_catches": sum(gl.receiving_catches or 0 for gl in year_game_logs),
-            "receiving_touchdowns": sum(gl.receiving_touchdowns or 0 for gl in year_game_logs),
+            "receiving_catches": sum(
+                gl.receiving_catches or 0 for gl in year_game_logs
+            ),
+            "receiving_touchdowns": sum(
+                gl.receiving_touchdowns or 0 for gl in year_game_logs
+            ),
             "field_goals_made": sum(gl.field_goals_made or 0 for gl in year_game_logs),
-            "field_goals_attempted": sum(gl.field_goals_attempted or 0 for gl in year_game_logs),
+            "field_goals_attempted": sum(
+                gl.field_goals_attempted or 0 for gl in year_game_logs
+            ),
         }
 
         # Add derived stats
-        year_stats["class"], year_stats["rating"] = get_player_info(player, current_year, year)
-        year_stats["completion_percentage"] = percentage(year_stats["pass_completions"], year_stats["pass_attempts"])
+        year_stats["class"], year_stats["rating"] = get_player_info(
+            player, current_year, year
+        )
+        year_stats["completion_percentage"] = percentage(
+            year_stats["pass_completions"], year_stats["pass_attempts"]
+        )
         year_stats["adjusted_pass_yards_per_attempt"] = adjusted_pass_yards_per_attempt(
-            year_stats["pass_yards"], year_stats["pass_touchdowns"],
-            year_stats["pass_interceptions"], year_stats["pass_attempts"]
+            year_stats["pass_yards"],
+            year_stats["pass_touchdowns"],
+            year_stats["pass_interceptions"],
+            year_stats["pass_attempts"],
         )
         year_stats["passer_rating"] = passer_rating(
-            year_stats["pass_completions"], year_stats["pass_attempts"],
-            year_stats["pass_yards"], year_stats["pass_touchdowns"],
-            year_stats["pass_interceptions"]
+            year_stats["pass_completions"],
+            year_stats["pass_attempts"],
+            year_stats["pass_yards"],
+            year_stats["pass_touchdowns"],
+            year_stats["pass_interceptions"],
         )
-        year_stats["yards_per_rush"] = average(year_stats["rush_yards"], year_stats["rush_attempts"])
-        year_stats["yards_per_rec"] = average(year_stats["receiving_yards"], year_stats["receiving_catches"])
-        year_stats["field_goal_percent"] = percentage(year_stats["field_goals_made"], year_stats["field_goals_attempted"])
+        year_stats["yards_per_rush"] = average(
+            year_stats["rush_yards"], year_stats["rush_attempts"]
+        )
+        year_stats["yards_per_rec"] = average(
+            year_stats["receiving_yards"], year_stats["receiving_catches"]
+        )
+        year_stats["field_goal_percent"] = percentage(
+            year_stats["field_goals_made"], year_stats["field_goals_attempted"]
+        )
 
         # Filter stats based on position
         yearly_cumulative_stats[year] = get_position_stats(player.pos, year_stats)
@@ -1040,37 +1120,38 @@ def player(request, id):
         game = gl.game
         is_team_a = game.teamA == player.team
         opponent = game.teamB if is_team_a else game.teamA
-        
+
         # Filter game log stats based on position
-        filtered_game_log = get_position_game_log(player.pos, {
-            "game": {
-                "id": game.id,
-                "weekPlayed": game.weekPlayed
+        filtered_game_log = get_position_game_log(
+            player.pos,
+            {
+                "game": {"id": game.id, "weekPlayed": game.weekPlayed},
+                "opponent": opponent.name,
+                "rank": game.rankBTOG if is_team_a else game.rankATOG,
+                "label": game.labelA if is_team_a else game.labelB,
+                "result": game.resultA if is_team_a else game.resultB,
             },
-            "opponent": opponent.name,
-            "rank": game.rankBTOG if is_team_a else game.rankATOG,
-            "label": game.labelA if is_team_a else game.labelB,
-            "result": game.resultA if is_team_a else game.resultB,
-        })
+        )
         game_logs.append(filtered_game_log)
 
-    return Response({
-        'info': InfoSerializer(info).data,
-        'player': {
-            'id': player.id,
-            'first': player.first,
-            'last': player.last,
-            'pos': player.pos,
-        },
-        'years': years,
-        'team': TeamsSerializer(team).data,
-        'yearly_cumulative_stats': yearly_cumulative_stats,
-        'game_logs': game_logs,
-        'conferences': ConferenceNameSerializer(
-            info.conferences.all().order_by("confName"),
-            many=True
-        ).data,
-    })
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "player": {
+                "id": player.id,
+                "first": player.first,
+                "last": player.last,
+                "pos": player.pos,
+            },
+            "years": years,
+            "team": TeamsSerializer(team).data,
+            "yearly_cumulative_stats": yearly_cumulative_stats,
+            "game_logs": game_logs,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
 
 
 @api_view(["GET"])
@@ -1078,73 +1159,29 @@ def week_schedule(request, week_num):
     """API endpoint for week schedule data"""
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
-    
+
     # Get games for the specified week
-    games = list(info.games.filter(
-        year=info.currentYear,
-        weekPlayed=week_num
-    ))
-    
+    games = info.games.filter(year=info.currentYear, weekPlayed=week_num).order_by(
+        (F("teamA__ranking") + F("teamB__ranking")) / 2
+    )
+
     # Process games data
-    games_data = []
-    for game in games:
-        # Set the game label based on conference matchup (similar to schedule/views.py)
-        if game.labelA != game.labelB and week_num < 13:
-            if game.teamA.conference and game.teamB.conference:
-                label = f"NC ({game.teamA.conference.confName} vs {game.teamB.conference.confName})"
-            elif not game.teamA.conference:
-                label = f"NC (Ind vs {game.teamB.conference.confName})"
-            elif not game.teamB.conference:
-                label = f"NC ({game.teamA.conference.confName} vs Ind)"
-        else:
-            label = game.labelA
+    games_data = GamesSerializer(games, many=True).data
 
-        game_data = {
-            'id': game.id,
-            'label': label,
-            'game_of_week': False,  # Will be set for top game below
-            'teamA': {
-                'name': game.teamA.name,
-                'ranking': game.teamA.ranking,
-            },
-            'teamB': {
-                'name': game.teamB.name,
-                'ranking': game.teamB.ranking,
-            },
-            'rankATOG': game.rankATOG,
-            'rankBTOG': game.rankBTOG,
-            'winner': bool(game.winner),
-        }
-        
-        if game.winner:
-            game_data.update({
-                'scoreA': game.scoreA,
-                'scoreB': game.scoreB,
-                'overtime': game.overtime,
-            })
-        else:
-            game_data.update({
-                'spreadA': game.spreadA,
-                'spreadB': game.spreadB,
-            })
-            
-        games_data.append(game_data)
-
-    # Sort games by average ranking and set game of the week (similar to schedule/views.py)
-    games_data.sort(key=lambda game: (game['rankATOG'] + game['rankBTOG']) / 2)
+    # Add game of week flag to first game
     if games_data:
-        games_data[0]['game_of_week'] = True
+        games_data[0]["game_of_week"] = True
 
-    return Response({
-        'info': InfoSerializer(info).data,
-        'team': TeamBasicSerializer(info.team).data,
-        'games': games_data,
-        'conferences': ConferenceNameSerializer(
-            info.conferences.all().order_by("confName"),
-            many=True
-        ).data,
-    })
-
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(info.team).data,
+            "games": games_data,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
 
 
 @api_view(["GET"])
@@ -1152,7 +1189,7 @@ def playoff(request):
     """API endpoint for playoff projection data"""
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
-    
+
     # Get the number of autobids
     autobids = info.playoff.autobids
 
@@ -1164,15 +1201,15 @@ def playoff(request):
         else:
             conf_teams = conference.teams.annotate(
                 win_percentage=ExpressionWrapper(
-                    F('confWins') * 1.0 / (F('confWins') + F('confLosses')),
-                    output_field=FloatField()
+                    F("confWins") * 1.0 / (F("confWins") + F("confLosses")),
+                    output_field=FloatField(),
                 )
-            ).order_by('-win_percentage', '-confWins', 'ranking', '-totalWins')
+            ).order_by("-win_percentage", "-confWins", "ranking", "-totalWins")
             if conf_teams.exists():
                 conference_champions.append(conf_teams.first())
 
     # Sort conference champions by ranking
-    conference_champions.sort(key=attrgetter('ranking'))
+    conference_champions.sort(key=attrgetter("ranking"))
 
     # Get the top 4 seeds (conference champions from different conferences)
     top_4_seeds = []
@@ -1185,59 +1222,156 @@ def playoff(request):
             break
 
     # Get the remaining autobid teams
-    remaining_autobids = conference_champions[len(top_4_seeds):autobids]
+    remaining_autobids = conference_champions[len(top_4_seeds) : autobids]
 
     # Get all other teams (excluding all autobid teams)
-    other_teams = Teams.objects.filter(info=info).exclude(
-        id__in=[team.id for team in top_4_seeds + remaining_autobids]
-    ).order_by('ranking')
+    other_teams = (
+        Teams.objects.filter(info=info)
+        .exclude(id__in=[team.id for team in top_4_seeds + remaining_autobids])
+        .order_by("ranking")
+    )
 
     # Select the remaining at-large teams
-    at_large_teams = list(other_teams)[:8 - len(remaining_autobids)]
+    at_large_teams = list(other_teams)[: 8 - len(remaining_autobids)]
 
     # Get the bubble teams (5 highest ranked at-large teams that didn't make it)
-    bubble_teams = list(other_teams)[len(at_large_teams):len(at_large_teams)+5]
+    bubble_teams = list(other_teams)[len(at_large_teams) : len(at_large_teams) + 5]
 
     # Combine all teams and sort by ranking (except top 4)
-    playoff_teams = top_4_seeds + sorted(remaining_autobids + at_large_teams, key=attrgetter('ranking'))
+    playoff_teams = top_4_seeds + sorted(
+        remaining_autobids + at_large_teams, key=attrgetter("ranking")
+    )
 
     # Process playoff teams data
-    playoff_data = [{
-        'name': team.name,
-        'seed': i + 1,
-        'ranking': team.ranking,
-        'conference': team.conference.confName if team.conference else None,
-        'record': format_record(team),
-        'is_autobid': team in (top_4_seeds + remaining_autobids)
-    } for i, team in enumerate(playoff_teams)]
+    playoff_data = [
+        {
+            "name": team.name,
+            "seed": i + 1,
+            "ranking": team.ranking,
+            "conference": team.conference.confName if team.conference else None,
+            "record": format_record(team),
+            "is_autobid": team in (top_4_seeds + remaining_autobids),
+        }
+        for i, team in enumerate(playoff_teams)
+    ]
 
     # Process bubble teams data
-    bubble_data = [{
-        'name': team.name,
-        'ranking': team.ranking,
-        'conference': team.conference.confName if team.conference else 'Independent',
-        'record': format_record(team)
-    } for team in bubble_teams]
+    bubble_data = [
+        {
+            "name": team.name,
+            "ranking": team.ranking,
+            "conference": (
+                team.conference.confName if team.conference else "Independent"
+            ),
+            "record": format_record(team),
+        }
+        for team in bubble_teams
+    ]
 
     # Process conference champions data
-    champion_data = [{
-        'name': team.name,
-        'ranking': team.ranking,
-        'conference': team.conference.confName,
-        'record': format_record(team),
-        'seed': next((pt['seed'] for pt in playoff_data if pt['name'] == team.name), None)
-    } for team in sorted(conference_champions, key=attrgetter('ranking'))]
+    champion_data = [
+        {
+            "name": team.name,
+            "ranking": team.ranking,
+            "conference": team.conference.confName,
+            "record": format_record(team),
+            "seed": next(
+                (pt["seed"] for pt in playoff_data if pt["name"] == team.name), None
+            ),
+        }
+        for team in sorted(conference_champions, key=attrgetter("ranking"))
+    ]
 
-    return Response({
-        'info': InfoSerializer(info).data,
-        'team': TeamBasicSerializer(info.team).data,
-        'playoff_teams': playoff_data,
-        'bubble_teams': bubble_data,
-        'conference_champions': champion_data,
-        'conferences': ConferenceNameSerializer(
-            info.conferences.all().order_by("confName"), 
-            many=True
-        ).data,
-    })
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(info.team).data,
+            "playoff_teams": playoff_data,
+            "bubble_teams": bubble_data,
+            "conference_champions": champion_data,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
 
 
+@api_view(["GET"])
+def team_stats(request):
+    """API endpoint for team stats data"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+
+    all_games = info.games.filter(year=info.currentYear, winner__isnull=False)
+    plays = info.plays.all()
+
+    offense = {}
+    defense = {}
+
+    for team in info.teams.all():
+        games = all_games.filter(Q(teamA=team) | Q(teamB=team))
+
+        offense[team.name] = accumulate_team_stats(
+            team, games, plays.filter(offense=team)
+        )
+        defense[team.name] = accumulate_team_stats(
+            team, games, plays.filter(defense=team)
+        )
+
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(info.team).data,
+            "offense": offense,
+            "defense": defense,
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
+
+
+@api_view(["GET"])
+def individual_stats(request):
+    """API endpoint for individual stats data"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+
+    # Process each category's stats
+    def process_stats(stats_dict):
+        processed_stats = {}
+        for player, stats in stats_dict.items():
+            processed_stats[str(player.id)] = {
+                "id": player.id,
+                "first": player.first,
+                "last": player.last,
+                "pos": player.pos,
+                "team": {
+                    "name": player.team.name,
+                    "gamesPlayed": player.team.gamesPlayed,
+                },
+                "stats": stats,
+            }
+        return processed_stats
+
+    # Get stats for all categories using existing function
+    passing_stats = process_stats(accumulate_individual_stats(info, "passing"))
+    rushing_stats = process_stats(accumulate_individual_stats(info, "rushing"))
+    receiving_stats = process_stats(accumulate_individual_stats(info, "receiving"))
+
+    print(passing_stats)
+
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(info.team).data,
+            "stats": {
+                "passing": passing_stats,
+                "rushing": rushing_stats,
+                "receiving": receiving_stats,
+            },
+            "conferences": ConferenceNameSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )

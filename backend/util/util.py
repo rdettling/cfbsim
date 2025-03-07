@@ -63,66 +63,7 @@ def average(total, attempts, decimals=1):
 
     return round(total / attempts, decimals)
 
-def get_last_game(info, team):
-    games_as_teamA = team.games_as_teamA.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek - 1
-    )
-    games_as_teamB = team.games_as_teamB.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek - 1
-    )
-    schedule = list(games_as_teamA | games_as_teamB)
-    if schedule:
-        last_game = schedule[-1]
-        if last_game.teamA == team:
-            last_game.opponent = last_game.teamB
-            last_game.result = last_game.resultA
-            last_game.rank = last_game.rankBTOG
-            if not last_game.overtime:
-                last_game.score = f"{last_game.scoreA} - {last_game.scoreB}"
-            else:
-                if last_game.overtime == 1:
-                    last_game.score = f"{last_game.scoreA} - {last_game.scoreB} OT"
-                else:
-                    last_game.score = f"{last_game.scoreA} - {last_game.scoreB} {last_game.overtime}OT"
-        else:
-            last_game.opponent = last_game.teamA
-            last_game.result = last_game.resultB
-            last_game.rank = last_game.rankATOG
-            if not last_game.overtime:
-                last_game.score = f"{last_game.scoreB} - {last_game.scoreA}"
-            else:
-                if last_game.overtime == 1:
-                    last_game.score = f"{last_game.scoreB} - {last_game.scoreA} OT"
-                else:
-                    last_game.score = f"{last_game.scoreB} - {last_game.scoreA} {last_game.overtime}OT"
-        return last_game
-    else:
-        return None
 
-
-def get_next_game(info, team):
-    games_as_teamA = team.games_as_teamA.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek
-    )
-    games_as_teamB = team.games_as_teamB.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek
-    )
-    schedule = list(games_as_teamA | games_as_teamB)
-    if schedule:
-        next_game = schedule[-1]
-        if next_game.teamA == team:
-            next_game.opponent = next_game.teamB
-            next_game.rank = next_game.teamB.ranking
-            next_game.spread = next_game.spreadA
-        else:
-            next_game.opponent = next_game.teamA
-            next_game.rank = next_game.teamA.ranking
-            next_game.spread = next_game.spreadB
-
-        return next_game
-    else:
-        return None
-    
 def get_position_game_log(pos, game_log):
     """Return relevant game log stats based on player position"""
     base_log = {
@@ -132,7 +73,7 @@ def get_position_game_log(pos, game_log):
         "label": game_log["label"],
         "result": game_log["result"],
     }
-    
+
     if pos == "qb":
         return {
             **base_log,
@@ -163,34 +104,36 @@ def get_position_game_log(pos, game_log):
 
 
 def get_player_info(player, current_year, year):
-        year_diff = current_year - year
-        if year_diff == 0:
-            return player.year, player.rating
-        elif year_diff == 1:
-            if player.year == "sr":
-                return "jr", player.rating_jr
-            if player.year == "jr":
-                return "so", player.rating_so
-            if player.year == "so":
-                return "fr", player.rating_fr
-        elif year_diff == 2:
-            if player.year == "sr":
-                return "so", player.rating_so
-            if player.year == "jr":
-                return "fr", player.rating_fr
-        elif year_diff == 3:
+    year_diff = current_year - year
+    if year_diff == 0:
+        return player.year, player.rating
+    elif year_diff == 1:
+        if player.year == "sr":
+            return "jr", player.rating_jr
+        if player.year == "jr":
+            return "so", player.rating_so
+        if player.year == "so":
             return "fr", player.rating_fr
+    elif year_diff == 2:
+        if player.year == "sr":
+            return "so", player.rating_so
+        if player.year == "jr":
+            return "fr", player.rating_fr
+    elif year_diff == 3:
+        return "fr", player.rating_fr
+
 
 def get_position_stats(pos, stats):
     """Return relevant stats based on player position"""
     base_stats = {
         "class": stats["class"],
         "rating": stats["rating"],
-        "games": stats["games"]
+        "games": stats["games"],
     }
-    
+
     if pos == "qb":
-        return {**base_stats,
+        return {
+            **base_stats,
             "pass_completions": stats["pass_completions"],
             "pass_attempts": stats["pass_attempts"],
             "completion_percentage": stats["completion_percentage"],
@@ -198,21 +141,25 @@ def get_position_stats(pos, stats):
             "pass_touchdowns": stats["pass_touchdowns"],
             "pass_interceptions": stats["pass_interceptions"],
             "passer_rating": stats["passer_rating"],
-            "adjusted_pass_yards_per_attempt": stats["adjusted_pass_yards_per_attempt"]
+            "adjusted_pass_yards_per_attempt": stats["adjusted_pass_yards_per_attempt"],
         }
     elif pos in ["rb", "wr", "te"]:
-        return {**base_stats,
+        return {
+            **base_stats,
             "receiving_catches": stats["receiving_catches"],
             "receiving_yards": stats["receiving_yards"],
             "yards_per_rec": stats["yards_per_rec"],
-            "receiving_touchdowns": stats["receiving_touchdowns"]
+            "receiving_touchdowns": stats["receiving_touchdowns"],
         }
     elif pos == "k":
-        return {**base_stats,
+        return {
+            **base_stats,
             "field_goals_made": stats["field_goals_made"],
             "field_goals_attempted": stats["field_goals_attempted"],
-            "field_goal_percent": stats["field_goal_percent"]
+            "field_goal_percent": stats["field_goal_percent"],
         }
     return stats
+
+
 def format_record(team):
     return f"{team.totalWins}-{team.totalLosses} ({team.confWins}-{team.confLosses})"

@@ -128,8 +128,8 @@ class Games(models.Model):
     winner = models.ForeignKey(
         Teams, on_delete=models.CASCADE, null=True, related_name="games_as_winner"
     )
-    labelA = models.CharField(max_length=50)
-    labelB = models.CharField(max_length=50)
+    base_label = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, null=True)
     spreadA = models.CharField(max_length=10)
     spreadB = models.CharField(max_length=10)
     moneylineA = models.CharField(max_length=10)

@@ -106,7 +106,7 @@ const Home = () => {
       'season': '/dashboard',
       'end of season': '/season_summary',
       'roster progression': '/roster_progression',
-      'schedule non conference': '/noncon'
+      'noncon': '/noncon'
     };
     return STAGE_ROUTES[info.stage as keyof typeof STAGE_ROUTES] || '/';
   };

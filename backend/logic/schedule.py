@@ -109,23 +109,21 @@ def scheduleGame(
         odds = odds_list.get(diff=abs(team.rating - opponent.rating))
 
     if gameName:
-        labelA = labelB = gameName
+        base_label = gameName
     else:
         if team.conference and opponent.conference:
             if team.conference == opponent.conference:
-                labelA = labelB = f"C ({team.conference.confName})"
+                base_label = f"Conference: {team.conference.confName}"
             else:
-                labelA = f"NC ({opponent.conference.confName})"
-                labelB = f"NC ({team.conference.confName})"
+                base_label = f"Non-Conference: {team.conference.confName} vs {opponent.conference.confName}"
         elif not team.conference and opponent.conference:
-            labelA = f"NC ({opponent.conference.confName})"
-            labelB = "NC (Ind)"
+            base_label = (
+                f"Non-Conference: Independent vs {opponent.conference.confName}"
+            )
         elif not opponent.conference and team.conference:
-            labelA = "NC (Ind)"
-            labelB = f"NC ({team.conference.confName})"
+            base_label = f"Non-Conference: {team.conference.confName} vs Independent"
         else:
-            labelA = "NC (Ind)"
-            labelB = "NC (Ind)"
+            base_label = "Non-Conference: Independent vs Independent"
 
     is_teamA_favorite = True  # Default to true
 
@@ -137,26 +135,38 @@ def scheduleGame(
         teamA=team,
         year=info.currentYear,
         teamB=opponent,
-        labelA=labelA,
-        labelB=labelB,
-        spreadA=odds.favSpread
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.udSpread,
-        spreadB=odds.udSpread
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.favSpread,
-        moneylineA=odds.favMoneyline
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.udMoneyline,
-        moneylineB=odds.udMoneyline
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.favMoneyline,
-        winProbA=odds.favWinProb
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.udWinProb,
-        winProbB=odds.udWinProb
-        if is_teamA_favorite or team.rating == opponent.rating
-        else odds.favWinProb,
+        base_label=base_label,
+        name=gameName,
+        spreadA=(
+            odds.favSpread
+            if is_teamA_favorite or team.rating == opponent.rating
+            else odds.udSpread
+        ),
+        spreadB=(
+            odds.udSpread
+            if is_teamA_favorite or team.rating == opponent.rating
+            else odds.favSpread
+        ),
+        moneylineA=(
+            odds.favMoneyline
+            if is_teamA_favorite or team.rating == opponent.rating
+            else odds.udMoneyline
+        ),
+        moneylineB=(
+            odds.udMoneyline
+            if is_teamA_favorite or team.rating == opponent.rating
+            else odds.favMoneyline
+        ),
+        winProbA=(
+            odds.favWinProb
+            if is_teamA_favorite or team.rating == opponent.rating
+            else odds.udWinProb
+        ),
+        winProbB=(
+            odds.udWinProb
+            if is_teamA_favorite or team.rating == opponent.rating
+            else odds.favWinProb
+        ),
         weekPlayed=weekPlayed if weekPlayed else 0,
         rankATOG=team.ranking,
         rankBTOG=opponent.ranking,
@@ -194,9 +204,9 @@ def update_history(info):
                 prestige=team.prestige,
                 rating=team.rating,
                 rank=team.ranking,
-                conference=team.conference.confName
-                if team.conference
-                else "Independent",
+                conference=(
+                    team.conference.confName if team.conference else "Independent"
+                ),
             )
         )
 

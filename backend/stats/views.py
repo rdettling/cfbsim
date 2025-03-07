@@ -80,6 +80,8 @@ def accumulate_individual_stats(info, category):
         for player in players:
             game_logs = all_game_logs.filter(player=player)
 
+            print(len(game_logs))
+
             stats[player] = accumulate_passing_stats(game_logs)
     elif category == "rushing":
         players = info.players.filter(Q(pos="qb") | Q(pos="rb"), starter=True)
@@ -87,6 +89,9 @@ def accumulate_individual_stats(info, category):
 
         for player in players:
             game_logs = all_game_logs.filter(player=player)
+
+            # print(len(game_logs))
+
             player_stats = accumulate_rushing_stats(game_logs)
 
             if player_stats["yards"] >= MIN_YARDS:
@@ -113,7 +118,17 @@ def accumulate_individual_stats(info, category):
 
 
 def accumulate_passing_stats(game_logs):
-    stats = {"att": 0, "cmp": 0, "yards": 0, "td": 0, "int": 0}
+    stats = {
+        "att": 0,
+        "cmp": 0,
+        "yards": 0,
+        "td": 0,
+        "int": 0,
+        "pct": 0,
+        "passer_rating": 0,
+        "adjusted_pass_yards_per_attempt": 0,
+        "yards_per_game": 0,
+    }
 
     if game_logs:
         for game_log in game_logs:
