@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from start.models import *
 from django.db.models import Q
-from logic.stats import *
+from util.util import *
 
 MIN_YARDS = 100
 

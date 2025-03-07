@@ -19,6 +19,26 @@ import TeamInfoModal from '../components/TeamInfoModal';
 
 interface PlayoffTeam extends Team {
     seed?: number;
+    ranking: number;
+    record: string;
+    is_autobid: boolean;
+}
+
+interface BubbleTeam extends Team {
+    ranking: number;
+    record: string;
+    team: {
+        conference: string;
+    };
+}
+
+interface ConferenceChampion extends Team {
+    ranking: number;
+    record: string;
+    seed?: number;
+    team: {
+        conference: string;
+    };
 }
 
 interface PlayoffData {
@@ -26,10 +46,8 @@ interface PlayoffData {
     team: Team;
     conferences: Conference[];
     playoff_teams: PlayoffTeam[];
-    bubble_teams: Team[];
-    conference_champions: (Team & {
-        conference: { confName: string };
-    })[];
+    bubble_teams: BubbleTeam[];
+    conference_champions: ConferenceChampion[];
 }
 
 const PLAYOFF_URL = `${API_BASE_URL}/api/playoff`;
@@ -91,10 +109,10 @@ const Playoff = () => {
                                 <Paper key={`first-${idx}`} sx={{ p: 2 }}>
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            #{higher + 1} {data.playoff_teams[higher]?.name || 'TBD'}
+                                            #{higher + 1} {data.playoff_teams[higher]?.name}
                                         </Box>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            #{lower + 1} {data.playoff_teams[lower]?.name || 'TBD'}
+                                            #{lower + 1} {data.playoff_teams[lower]?.name}
                                         </Box>
                                     </Box>
                                 </Paper>
@@ -110,7 +128,7 @@ const Playoff = () => {
                                 <Paper key={`quarter-${idx}`} sx={{ p: 2 }}>
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            #{seed + 1} {data.playoff_teams[seed]?.name || 'TBD'}
+                                            #{seed + 1} {data.playoff_teams[seed]?.name}
                                         </Box>
                                         <Box>Winner of Previous</Box>
                                     </Box>
@@ -155,8 +173,8 @@ const Playoff = () => {
                             <List>
                                 {data.bubble_teams.map((team) => (
                                     <ListItem key={team.name}>
-                                        {team.name} ({team.conference?.confName || 'Independent'}) 
-                                        - Ranking: {team.ranking}
+                                        #{team.ranking} {team.name} ({team.conference}) 
+                                        - {team.record}
                                     </ListItem>
                                 ))}
                             </List>
@@ -170,15 +188,15 @@ const Playoff = () => {
                             <List>
                                 {data.conference_champions.map((team) => (
                                     <ListItem key={team.name}>
-                                        {team.name} ({team.conference.confName}) 
-                                        - Ranking: {team.ranking}
-                                        {data.playoff_teams.some(pt => pt.name === team.name) && (
+                                        #{team.ranking} {team.name} ({team.conference}) 
+                                        - {team.record}
+                                        {team.seed && (
                                             <Chip 
-                                                label={team.seed && team.seed <= 4 
+                                                label={team.seed <= 4 
                                                     ? `Playoff Seed #${team.seed}` 
                                                     : 'Playoff Team'
                                                 }
-                                                color={team.seed && team.seed <= 4 ? 'primary' : 'success'}
+                                                color={team.seed <= 4 ? 'primary' : 'success'}
                                                 size="small"
                                                 sx={{ ml: 1 }}
                                             />

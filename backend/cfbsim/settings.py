@@ -45,8 +45,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.messages",
     "start",
-    "team",
-    "mathfilters",
     "stats",
     "schedule",
     "recruit",

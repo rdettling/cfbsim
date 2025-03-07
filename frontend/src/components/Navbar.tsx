@@ -198,7 +198,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     {/* Playoff Link */}
                     <Button 
                         color="inherit"
-                        onClick={() => navigate('/schedule/playoff')}
+                        onClick={() => navigate('/playoff')}
                     >
                         Playoff
                     </Button>
