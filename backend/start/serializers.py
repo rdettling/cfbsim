@@ -52,15 +52,6 @@ class PlayersSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class GamesSerializer(serializers.ModelSerializer):
-    teamA = TeamsSerializer()
-    teamB = TeamsSerializer()
-
-    class Meta:
-        model = Games
-        fields = "__all__"
-
-
 class DrivesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Drives
@@ -121,3 +112,12 @@ class TeamNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teams
         fields = ["name"]
+
+
+class GamesSerializer(serializers.ModelSerializer):
+    teamA = TeamNameSerializer()
+    teamB = TeamNameSerializer()
+
+    class Meta:
+        model = Games
+        fields = "__all__"

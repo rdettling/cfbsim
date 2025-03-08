@@ -16,6 +16,8 @@ import WeekSchedule from "./pages/WeekSchedule";
 import Game from "./pages/Game";
 import TeamStats from "./pages/TeamStats";
 import IndividualStats from "./pages/IndividualStats";
+import SeasonSummary from "./pages/SeasonSummary";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -42,6 +44,7 @@ const App = () => {
             <Route path="/game/:id" element={<Game />} />
             <Route path="stats/team" element={<TeamStats />} />
             <Route path="stats/individual" element={<IndividualStats />} />
+            <Route path="/summary" element={<SeasonSummary />} />
           </Routes>
         </Box>
         <Footer />
