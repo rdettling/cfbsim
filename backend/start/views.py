@@ -15,7 +15,7 @@ import uuid
 from util.util import *
 from django.db.models import Q, F, ExpressionWrapper, FloatField
 from operator import attrgetter
-from stats.views import *
+from logic.stats import *
 
 
 def get_schedule_game(team, game):
@@ -136,17 +136,10 @@ def noncon(request):
     year = request.GET.get("year")
     replace = False
 
-    print("team is ", team)
-    print("year is ", year)
-
     if team and year:
-        print("team is not null")
         user_id = str(uuid.uuid4())
         replace = True
         init(user_id, team, year)
-    else:
-        print("team is null")
-        print("year is null")
 
     info = Info.objects.get(user_id=user_id)
     team = info.team
@@ -1185,10 +1178,8 @@ def individual_stats(request):
                 "first": player.first,
                 "last": player.last,
                 "pos": player.pos,
-                "team": {
-                    "name": player.team.name,
-                    "gamesPlayed": player.team.gamesPlayed,
-                },
+                "team": player.team.name,
+                "gamesPlayed": player.team.gamesPlayed,
                 "stats": stats,
             }
         return processed_stats
@@ -1197,8 +1188,6 @@ def individual_stats(request):
     passing_stats = process_stats(accumulate_individual_stats(info, "passing"))
     rushing_stats = process_stats(accumulate_individual_stats(info, "rushing"))
     receiving_stats = process_stats(accumulate_individual_stats(info, "receiving"))
-
-    print(passing_stats)
 
     return Response(
         {

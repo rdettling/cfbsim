@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from start.models import *
 from django.db.models import Q
 from util.util import *
@@ -6,69 +5,6 @@ from util.util import *
 MIN_YARDS = 100
 
 
-def team_stats(request):
-    user_id = request.session.session_key
-    info = Info.objects.get(user_id=user_id)
-
-    all_games = info.games.filter(year=info.currentYear, winner__isnull=False)
-    plays = info.plays.all()
-
-    offense = {}
-    defense = {}
-
-    for team in info.teams.all():
-        games = all_games.filter(Q(teamA=team) | Q(teamB=team))
-
-        offense[team.name] = accumulate_team_stats(
-            team, games, plays.filter(offense=team)
-        )
-        defense[team.name] = accumulate_team_stats(
-            team, games, plays.filter(defense=team)
-        )
-
-    context = {
-        "info": info,
-        "conferences": info.conferences.all(),
-        "offense": offense,
-        "defense": defense,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-    }
-
-    return render(request, "team.html", context)
-
-
-def stat_categories(request):
-    user_id = request.session.session_key
-    info = Info.objects.get(user_id=user_id)
-    team = info.team
-
-    context = {
-        "team": team,
-        "info": info,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-    }
-
-    return render(request, "individual.html", context)
-
-
-def individual_stats(request, category):
-    user_id = request.session.session_key
-    info = Info.objects.get(user_id=user_id)
-    team = info.team
-
-    context = {
-        "team": team,
-        "info": info,
-        "stats": accumulate_individual_stats(info, category),
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-    }
-
-    if category == "passing":
-        return render(request, "passing.html", context)
-    elif category == "rushing":
-        return render(request, "rushing.html", context)
-    elif category == "receiving":
-        return render(request, "receiving.html", context)
 
 
 def accumulate_individual_stats(info, category):

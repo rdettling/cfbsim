@@ -111,7 +111,7 @@ export interface YearStats {
 export interface PlayerStats {
     player: PlayerInfo;
     years: number[];
-    yearly_cumulative_stats: Record<number, YearStats>;
+    stats: Record<number, YearStats>;
     game_logs: GameLog[];
     info: Info;
     team: Team;

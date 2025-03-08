@@ -21,7 +21,7 @@ ROSTER = {
 
 
 def load_names():
-    with open("start/static/names.json") as f:
+    with open("data/names.json") as f:
         names_data = json.load(f)
 
     processed_names = {

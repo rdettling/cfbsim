@@ -51,7 +51,7 @@ def start_season(info):
 
 def realignment_summary(info):
     next_year = info.currentYear + 1
-    file_path = f"static/years/{next_year}.json"
+    file_path = f"data/years/{next_year}.json"
 
     team_dict = {}
     if os.path.exists(file_path):
