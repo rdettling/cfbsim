@@ -2,6 +2,8 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+import { usePageRefresh } from '../interfaces'; 
+
 import { Team, ScheduleGame, Info, Conference } from '../interfaces';
 import {
     Container,
@@ -32,7 +34,7 @@ interface ScheduleData {
     years: string[];
 }
 
-const Schedule = () => {
+const TeamSchedule = () => {
     const { teamName } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
     const [data, setData] = useState<ScheduleData | null>(null);
@@ -59,6 +61,8 @@ const Schedule = () => {
             setLoading(false);
         }
     };
+
+    usePageRefresh<ScheduleData>(setData);
 
     useEffect(() => {
         setModalOpen(false); // Close modal on navigation
@@ -194,4 +198,4 @@ const Schedule = () => {
     );
 };
 
-export default Schedule;
+export default TeamSchedule;

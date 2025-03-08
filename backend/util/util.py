@@ -64,41 +64,37 @@ def average(total, attempts, decimals=1):
     return round(total / attempts, decimals)
 
 
-def get_position_game_log(pos, game_log):
+def get_position_game_log(pos, game_log, game):
     """Return relevant game log stats based on player position"""
     base_log = {
-        "game": game_log["game"],
-        "opponent": game_log["opponent"],
-        "rank": game_log["rank"],
-        "label": game_log["label"],
-        "result": game_log["result"],
+        "game": game,
     }
 
     if pos == "qb":
         return {
             **base_log,
-            "pass_completions": game_log["pass_completions"],
-            "pass_attempts": game_log["pass_attempts"],
-            "completion_percent": game_log["completion_percent"],
-            "pass_yards": game_log["pass_yards"],
-            "pass_touchdowns": game_log["pass_touchdowns"],
-            "pass_interceptions": game_log["pass_interceptions"],
-            "passer_rating": game_log["passer_rating"],
+            "pass_completions": game_log.pass_completions,
+            "pass_attempts": game_log.pass_attempts,
+            "completion_percent": percentage(game_log.pass_completions, game_log.pass_attempts),
+            "pass_yards": game_log.pass_yards,
+            "pass_touchdowns": game_log.pass_touchdowns,
+            "pass_interceptions": game_log.pass_interceptions,
+            "passer_rating": passer_rating(game_log.pass_completions, game_log.pass_attempts, game_log.pass_yards, game_log.pass_touchdowns, game_log.pass_interceptions),
         }
     elif pos in ["rb", "wr", "te"]:
         return {
             **base_log,
-            "receiving_catches": game_log["receiving_catches"],
-            "receiving_yards": game_log["receiving_yards"],
-            "yards_per_rec": game_log["yards_per_rec"],
-            "receiving_touchdowns": game_log["receiving_touchdowns"],
+            "receiving_catches": game_log.receiving_catches,
+            "receiving_yards": game_log.receiving_yards,
+            "yards_per_rec": average(game_log.receiving_yards, game_log.receiving_catches),
+            "receiving_touchdowns": game_log.receiving_touchdowns,
         }
     elif pos == "k":
         return {
             **base_log,
-            "field_goals_made": game_log["field_goals_made"],
-            "field_goals_attempted": game_log["field_goals_attempted"],
-            "field_goal_percent": game_log["field_goal_percent"],
+            "field_goals_made": game_log.field_goals_made,
+            "field_goals_attempted": game_log.field_goals_attempted,
+            "field_goal_percent": percentage(game_log.field_goals_made, game_log.field_goals_attempted),
         }
     return game_log  # Return all stats for unknown positions
 

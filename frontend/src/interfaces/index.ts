@@ -33,6 +33,9 @@ export interface Team {
     totalWins: number;
     totalLosses: number;
     record: string;
+    movement: number;
+    last_game: ScheduleGame;
+    next_game: ScheduleGame;
 }
 
 export interface Info {
@@ -128,27 +131,34 @@ export function usePageRefresh<T>(setData: (data: T) => void) {
 
     const refreshCurrentPage = async () => {
         const path = location.pathname;
+        const pathParts = path.split('/').filter(Boolean); // Remove empty strings
         let response;
 
         try {
             if (path === '/dashboard') {
                 response = await axios.get(`${API_BASE_URL}/api/dashboard`);
             } else if (path.includes('/standings/')) {
-                const conference = path.split('/').pop();
+                const conference = pathParts[1];
                 response = await axios.get(`${API_BASE_URL}/api/standings/${conference}`);
-            } else if (path.includes('/schedule/')) {
-                const week = path.split('/').pop();
+            } else if (pathParts[0] === 'schedule') {
+                const week = pathParts[1];
                 response = await axios.get(`${API_BASE_URL}/api/week_schedule/${week}`);
             } else if (path === '/rankings') {
                 response = await axios.get(`${API_BASE_URL}/api/rankings`);
             } else if (path === '/playoff') {
                 response = await axios.get(`${API_BASE_URL}/api/playoff`);
             } else if (path.includes('/game/')) {
-                const gameId = path.split('/').pop();
+                const gameId = pathParts[1];
                 response = await axios.get(`${API_BASE_URL}/api/game/${gameId}`);
-            } else if (path.includes('/roster')) {
-                const teamName = path.split('/')[1];
+            } else if (pathParts[1] === 'roster') {
+                const teamName = pathParts[0];
                 response = await axios.get(`${API_BASE_URL}/api/${teamName}/roster`);
+            } else if (pathParts[1] === 'schedule') {
+                const teamName = pathParts[0];
+                response = await axios.get(`${API_BASE_URL}/api/${teamName}/schedule`);
+            } else if (pathParts[1] === 'history') {
+                const teamName = pathParts[0];
+                response = await axios.get(`${API_BASE_URL}/api/${teamName}/history`);
             }
 
             if (response) {

@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import Home from "./pages/Home";
 import { NonCon } from "./pages/Noncon";
 import Dashboard from "./pages/Dashboard";
-import Schedule from "./pages/Schedule";
+import TeamSchedule from "./pages/TeamSchedule";
 import Rankings from "./pages/Rankings";
 import Playoff from "./pages/Playoff";
 import Standings from "./pages/Standings";
@@ -32,7 +32,7 @@ const App = () => {
             <Route path="/noncon" element={<NonCon />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/rankings" element={<Rankings />} />
-            <Route path="/:teamName/schedule" element={<Schedule />} />
+            <Route path="/:teamName/schedule" element={<TeamSchedule />} />
             <Route path="/:teamName/roster" element={<Roster />} />
             <Route path="/:teamName/history" element={<TeamHistory />} />
             <Route path="/playoff" element={<Playoff />} />

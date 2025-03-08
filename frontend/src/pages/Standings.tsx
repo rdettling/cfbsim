@@ -4,20 +4,11 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { usePageRefresh } from '../interfaces';
 import { Team, Info, Conference } from '../interfaces';
+import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
-    Container,
-    Typography,
-    TableContainer,
-    Table,
-    TableHead,
-    TableBody,
-    TableRow,
-    TableCell,
-    Paper,
-    Box,
-    Link as MuiLink,
-    CircularProgress,
-    Alert
+    Container, Typography, TableContainer, Table,
+    TableHead, TableBody, TableRow, TableCell,
+    Paper, Box, CircularProgress, Alert
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import TeamInfoModal from '../components/TeamInfoModal';
@@ -26,31 +17,66 @@ interface StandingsData {
     info: Info;
     team: Team;
     conference?: string;
-    teams: {
-        name: string;
-        ranking: number;
-        confWins?: number;
-        confLosses?: number;
-        totalWins: number;
-        totalLosses: number;
-        last_game?: {
-            opponent: {
-                name: string;
-                ranking: number;
-            };
-            result: string;
-            score: string;
-        };
-        next_game?: {
-            opponent: {
-                name: string;
-                ranking: number;
-            };
-            spread: number;
-        };
-    }[];
+    teams: Team[];
     conferences: Conference[];
 }
+
+const GameCell = ({ game, type, onTeamClick }: {
+    game: NonNullable<StandingsData['teams'][0]['last_game' | 'next_game']>,
+    type: 'last' | 'next',
+    onTeamClick: (name: string) => void
+}) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {type === 'last' && `${game.result} (${game.score}) vs`}
+        <TeamLogo name={game.opponent.name} size={20} />
+        <TeamLink name={game.opponent.name} onTeamClick={onTeamClick} />
+        {type === 'next' && `(${game.spread})`}
+    </Box>
+);
+
+const StandingsTable = ({ data, conference_name, onTeamClick }: {
+    data: StandingsData,
+    conference_name: string | undefined,
+    onTeamClick: (name: string) => void
+}) => (
+    <TableContainer component={Paper}>
+        <Table>
+            <TableHead>
+                <TableRow>
+                    <TableCell>Rank</TableCell>
+                    <TableCell>Team</TableCell>
+                    {conference_name !== 'independent' && <TableCell>Conf</TableCell>}
+                    <TableCell>Overall</TableCell>
+                    <TableCell>Last Week</TableCell>
+                    <TableCell>This Week</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {data.teams.map((team, index) => (
+                    <TableRow key={team.name}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <TeamLogo name={team.name} size={30} />
+                                <TeamLink name={team.name} onTeamClick={onTeamClick} />
+                            </Box>
+                        </TableCell>
+                        {conference_name !== 'independent' && (
+                            <TableCell>{team.confWins}-{team.confLosses}</TableCell>
+                        )}
+                        <TableCell>{team.totalWins}-{team.totalLosses}</TableCell>
+                        <TableCell>
+                            {team.last_game && <GameCell game={team.last_game} type="last" onTeamClick={onTeamClick} />}
+                        </TableCell>
+                        <TableCell>
+                            {team.next_game && <GameCell game={team.next_game} type="next" onTeamClick={onTeamClick} />}
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    </TableContainer>
+);
 
 const Standings = () => {
     const { conference_name } = useParams();
@@ -61,7 +87,6 @@ const Standings = () => {
     const [selectedTeam, setSelectedTeam] = useState('');
 
     usePageRefresh<StandingsData>(setData);
-
 
     useEffect(() => {
         const fetchStandings = async () => {
@@ -75,15 +100,8 @@ const Standings = () => {
             }
         };
 
-        if (conference_name) {
-            fetchStandings();
-        }
+        if (conference_name) fetchStandings();
     }, [conference_name]);
-
-    const handleTeamClick = (teamName: string) => {
-        setSelectedTeam(teamName);
-        setModalOpen(true);
-    };
 
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;
@@ -91,114 +109,24 @@ const Standings = () => {
 
     return (
         <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
+            <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
             <Container>
                 <Box sx={{ textAlign: 'center', mb: 3 }}>
                     {conference_name !== 'independent' && (
-                        <Box
-                            component="img"
-                            src={`/logos/conferences/${data.conference}.png`}
-                            sx={{ height: 100, mb: 2 }}
-                            alt={data.conference}
-                        />
+                        <Box component="img" src={`/logos/conferences/${data.conference}.png`}
+                            sx={{ height: 100, mb: 2 }} alt={data.conference} />
                     )}
                     <Typography variant="h2">
                         {conference_name === 'independent' ? 'Independent Teams' : `${data.conference} Standings`}
                     </Typography>
                 </Box>
-
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Rank</TableCell>
-                                <TableCell>Team</TableCell>
-                                {conference_name !== 'independent' && <TableCell>Conf</TableCell>}
-                                <TableCell>Overall</TableCell>
-                                <TableCell>Last Week</TableCell>
-                                <TableCell>Next Week</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {data.teams.map((team, index) => (
-                                <TableRow key={team.name}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Box
-                                                component="img"
-                                                src={`/logos/teams/${team.name}.png`}
-                                                sx={{ width: 30, height: 30 }}
-                                                alt={team.name}
-                                            />
-                                            <MuiLink
-                                                component="button"
-                                                onClick={() => handleTeamClick(team.name)}
-                                                sx={{ cursor: 'pointer' }}
-                                            >
-                                                #{team.ranking} {team.name}
-                                            </MuiLink>
-                                        </Box>
-                                    </TableCell>
-                                    {conference_name !== 'independent' && (
-                                        <TableCell>{team.confWins}-{team.confLosses}</TableCell>
-                                    )}
-                                    <TableCell>{team.totalWins}-{team.totalLosses}</TableCell>
-                                    <TableCell>
-                                        {team.last_game && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                {team.last_game.result} ({team.last_game.score}) vs
-                                                <Box
-                                                    component="img"
-                                                    src={`/logos/teams/${team.last_game.opponent.name}.png`}
-                                                    sx={{ width: 20, height: 20 }}
-                                                />
-                                                <MuiLink
-                                                    component="button"
-                                                    onClick={() => handleTeamClick(team.last_game!.opponent.name)}
-                                                    sx={{ cursor: 'pointer' }}
-                                                >
-                                                    #{team.last_game.opponent.ranking} {team.last_game.opponent.name}
-                                                </MuiLink>
-                                            </Box>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {team.next_game && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Box
-                                                    component="img"
-                                                    src={`/logos/teams/${team.next_game.opponent.name}.png`}
-                                                    sx={{ width: 20, height: 20 }}
-                                                />
-                                                <MuiLink
-                                                    component="button"
-                                                    onClick={() => handleTeamClick(team.next_game!.opponent.name)}
-                                                    sx={{ cursor: 'pointer' }}
-                                                >
-                                                    #{team.next_game.opponent.ranking} {team.next_game.opponent.name}
-                                                </MuiLink>
-                                                ({team.next_game.spread})
-                                            </Box>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                <StandingsTable
+                    data={data}
+                    conference_name={conference_name}
+                    onTeamClick={(name) => { setSelectedTeam(name); setModalOpen(true); }}
+                />
             </Container>
-
-            <TeamInfoModal
-                teamName={selectedTeam}
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-            />
+            <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
         </>
     );
 };

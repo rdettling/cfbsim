@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
+import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import axios from "axios";
 import {
     Container,
@@ -21,17 +22,17 @@ import {
     Box,
 } from "@mui/material";
 import Navbar from "../components/Navbar";
+import TeamInfoModal from "../components/TeamInfoModal";
 
 // API endpoints
 const NONCON_URL = `${API_BASE_URL}/api/noncon/`;
 const SCHEDULE_NC_URL = `${API_BASE_URL}/api/schedulenc/`;
 const FETCH_TEAMS_URL = `${API_BASE_URL}/api/fetchteams/`;
 
-// Asset URLs
-const TEAM_LOGO_URL = "/logos/teams/";
-
 export const NonCon = () => {
-    const [searchParams] = useSearchParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [data, setData] = useState<{
         info: Info;
         team: Team;
@@ -42,17 +43,29 @@ export const NonCon = () => {
     const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
     const [availableTeams, setAvailableTeams] = useState<string[]>([]);
     const [selectedOpponent, setSelectedOpponent] = useState("");
+    const [teamInfoModalOpen, setTeamInfoModalOpen] = useState(false);
+    const [selectedTeam, setSelectedTeam] = useState("");
+
+    // Check if we came from home page
+    const isFromHome = location.state?.fromHome === true;
 
     const fetchData = async () => {
         try {
-            const team = searchParams.get("team");
-            const year = searchParams.get("year");
-            const new_game = searchParams.get("new_game");
+            const params = new URLSearchParams();
+            if (isFromHome && isFirstLoad) {
+                params.append('team', location.state?.team);
+                params.append('year', location.state?.year);
+            }
 
             const response = await axios.get(
-                `${NONCON_URL}?team=${team}&year=${year}&new_game=${new_game}`
+                `${NONCON_URL}${params.toString() ? `?${params.toString()}` : ''}`
             );
             setData(response.data);
+            
+            if (isFirstLoad) {
+                setIsFirstLoad(false);
+                navigate('/noncon', { state: {} });
+            }
         } catch (error) {
             console.error("Error fetching noncon data:", error);
         }
@@ -60,7 +73,7 @@ export const NonCon = () => {
 
     useEffect(() => {
         fetchData();
-    }, [searchParams]);
+    }, []);
 
     const handleScheduleGame = async () => {
         try {
@@ -69,7 +82,7 @@ export const NonCon = () => {
                 week: selectedWeek,
             });
             handleCloseModal();
-            fetchData(); // Refresh data after scheduling
+            fetchData();
         } catch (error) {
             console.error("Error scheduling game:", error);
         }
@@ -92,6 +105,11 @@ export const NonCon = () => {
         setModalOpen(false);
         setSelectedOpponent("");
         setSelectedWeek(null);
+    };
+
+    const handleTeamClick = (name: string) => {
+        setSelectedTeam(name);
+        setTeamInfoModalOpen(true);
     };
 
     if (!data) return <Typography>Loading...</Typography>;
@@ -138,18 +156,11 @@ export const NonCon = () => {
                                             {game.opponent.ranking && (
                                                 <Typography>#{game.opponent.ranking}</Typography>
                                             )}
-                                            <Box sx={{ width: 40, height: 40 }}>
-                                                <img
-                                                    src={`${TEAM_LOGO_URL}${game.opponent.name}.png`}
-                                                    alt={`${game.opponent.name} logo`}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                    }}
-                                                />
-                                            </Box>
-                                            <Typography>{game.opponent.name}</Typography>
+                                            <TeamLogo name={game.opponent.name} size={40} />
+                                            <TeamLink 
+                                                name={game.opponent.name} 
+                                                onTeamClick={handleTeamClick}
+                                            />
                                         </Stack>
                                     )}
                                 </TableCell>
@@ -195,6 +206,12 @@ export const NonCon = () => {
                         </Button>
                     </DialogContent>
                 </Dialog>
+
+                <TeamInfoModal 
+                    teamName={selectedTeam} 
+                    open={teamInfoModalOpen} 
+                    onClose={() => setTeamInfoModalOpen(false)} 
+                />
             </Container>
         </>
     );

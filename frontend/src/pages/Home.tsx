@@ -258,12 +258,13 @@ const Home = () => {
                                   variant="contained"
                                   size="small"
                                   onClick={() => {
-                                    const params = new URLSearchParams({
-                                      team: team.name,
-                                      year: selectedYear,
-                                      new_game: 'true'
+                                    navigate('/noncon', {
+                                      state: { 
+                                        fromHome: true,
+                                        team: team.name,
+                                        year: selectedYear
+                                      }
                                     });
-                                    navigate(`/noncon?${params.toString()}`);
                                   }}
                                 >
                                   Select
