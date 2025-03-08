@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { Team, Info, Conference } from '../interfaces';
+import { Team, Info, Conference, usePageRefresh, PlayerInfo } from '../interfaces';
 import {
     Container,
     Table,
@@ -11,7 +11,6 @@ import {
     TableHead,
     TableRow,
     Box,
-    Stack,
     TableContainer,
     Paper,
     Link,
@@ -28,19 +27,11 @@ import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import TeamHeader from '../components/TeamHeader';
 
-interface Player {
-    id: string;
-    first: string;
-    last: string;
-    pos: string;
-    rating: number;
-    starter: boolean;
-}
 
 interface RosterData {
     info: Info;
     team: Team;
-    roster: Player[];
+    roster: PlayerInfo[];
     positions: string[];
     conferences: Conference[];
     teams: Team[];
@@ -53,6 +44,9 @@ const Roster = () => {
     const [error, setError] = useState<string | null>(null);
     const [positionFilter, setPositionFilter] = useState('');
     const navigate = useNavigate();
+
+    usePageRefresh<RosterData>(setData);
+
 
     useEffect(() => {
         const fetchRoster = async () => {
@@ -84,7 +78,7 @@ const Roster = () => {
                 conferences={data.conferences}
             />
             <Container>
-                <TeamHeader 
+                <TeamHeader
                     team={data.team}
                     teams={data.teams}
                     onTeamChange={(newTeam) => navigate(`/${newTeam}/roster`)}
@@ -94,12 +88,12 @@ const Roster = () => {
                     <Typography variant="h4" align="center" gutterBottom>
                         #{data.team.ranking} {data.team.name} {data.team.mascot}
                     </Typography>
-                    
-                    <LinearProgress 
-                        variant="determinate" 
+
+                    <LinearProgress
+                        variant="determinate"
                         value={data.team.rating}
-                        sx={{ 
-                            mb: 3, 
+                        sx={{
+                            mb: 3,
                             height: 10,
                             '& .MuiLinearProgress-bar': {
                                 backgroundColor: data.team.colorPrimary
@@ -110,8 +104,8 @@ const Roster = () => {
                     <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="h6">Offense: {data.team.offense}</Typography>
-                            <LinearProgress 
-                                variant="determinate" 
+                            <LinearProgress
+                                variant="determinate"
                                 value={data.team.offense}
                                 sx={{
                                     height: 8,
@@ -123,8 +117,8 @@ const Roster = () => {
                         </Box>
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="h6">Defense: {data.team.defense}</Typography>
-                            <LinearProgress 
-                                variant="determinate" 
+                            <LinearProgress
+                                variant="determinate"
                                 value={data.team.defense}
                                 sx={{
                                     height: 8,

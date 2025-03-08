@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+import { usePageRefresh } from '../interfaces';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Container,
@@ -28,12 +29,10 @@ interface StandingsData {
     teams: {
         name: string;
         ranking: number;
-        rating: number;
         confWins?: number;
         confLosses?: number;
         totalWins: number;
         totalLosses: number;
-        pct?: number;
         last_game?: {
             opponent: {
                 name: string;
@@ -60,6 +59,9 @@ const Standings = () => {
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
+
+    usePageRefresh<StandingsData>(setData);
+
 
     useEffect(() => {
         const fetchStandings = async () => {

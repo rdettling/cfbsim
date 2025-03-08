@@ -13,7 +13,7 @@ import Roster from "./pages/Roster";
 import TeamHistory from "./pages/TeamHistory";
 import Player from "./pages/Player";
 import WeekSchedule from "./pages/WeekSchedule";
-import GamePreview from "./pages/GamePreview";
+import Game from "./pages/Game";
 import TeamStats from "./pages/TeamStats";
 import IndividualStats from "./pages/IndividualStats";
 const App = () => {
@@ -39,7 +39,7 @@ const App = () => {
             <Route path="/standings/:conference_name" element={<Standings />} />
             <Route path="/players/:playerId" element={<Player />} />
             <Route path="/schedule/:week" element={<WeekSchedule />} />
-            <Route path="/game/:id" element={<GamePreview />} />
+            <Route path="/game/:id" element={<Game />} />
             <Route path="stats/team" element={<TeamStats />} />
             <Route path="stats/individual" element={<IndividualStats />} />
           </Routes>

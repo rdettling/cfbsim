@@ -8,6 +8,7 @@ class Info(models.Model):
     currentWeek = models.IntegerField(null=True)
     currentYear = models.IntegerField(null=True)
     startYear = models.IntegerField(null=True)
+    lastWeek = models.IntegerField(null=True)
     team = models.ForeignKey(
         "Teams", on_delete=models.SET_NULL, null=True, related_name="infos"
     )
@@ -218,7 +219,6 @@ class Playoff(models.Model):
     )
     teams = models.IntegerField()
     autobids = models.IntegerField()
-    lastWeek = models.IntegerField()
 
     seed_1 = models.ForeignKey(
         Teams, on_delete=models.SET_NULL, null=True, related_name="seed_1"

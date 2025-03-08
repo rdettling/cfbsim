@@ -176,14 +176,16 @@ def init(user_id, team_name, year):
 
     Info.objects.filter(user_id=user_id).delete()
     info = Info.objects.create(
-        user_id=user_id, currentWeek=1, currentYear=year, startYear=year, stage="noncon"
+        user_id=user_id,
+        currentWeek=1,
+        currentYear=year,
+        startYear=year,
+        stage="noncon",
+        lastWeek=data["playoff"]["lastWeek"],
     )
 
     playoff = Playoff.objects.create(
-        info=info,
-        teams=data["playoff"]["teams"],
-        autobids=data["playoff"]["autobids"],
-        lastWeek=data["playoff"]["lastWeek"],
+        info=info, teams=data["playoff"]["teams"], autobids=data["playoff"]["autobids"]
     )
     info.playoff = playoff
 

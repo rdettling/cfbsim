@@ -19,6 +19,7 @@ urlpatterns = [
     path("api/game/<int:id>/", views.game),
     path("api/team_stats/", views.team_stats),
     path("api/individual_stats/", views.individual_stats),
+    path("api/sim/", views.simWeek),
     # path("fetch_play/", views.fetch_play, name="fetch_play"),
     # path("games/<int:id>/", views.game, name="game"),
     # path("sim/", views.simWeek),

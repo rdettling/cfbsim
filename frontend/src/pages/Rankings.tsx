@@ -48,21 +48,34 @@ const Rankings = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
 
-    useEffect(() => {
-        const fetchRankings = async () => {
-            try {
-                const response = await axios.get(`${API_BASE_URL}/api/rankings`);
-                setData(response.data);
-            } catch (error) {
-                setError('Failed to load rankings data');
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchRankings = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/api/rankings`);
+            setData(response.data);
+        } catch (error) {
+            setError('Failed to load rankings data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchRankings();
         document.title = 'AP Rankings';
         return () => { document.title = 'College Football'; };
+    }, []);
+
+    // Add event listener for page refresh
+    useEffect(() => {
+        const handlePageRefresh = (event: CustomEvent) => {
+            setData(event.detail);
+        };
+
+        window.addEventListener('pageDataRefresh', handlePageRefresh as EventListener);
+
+        return () => {
+            window.removeEventListener('pageDataRefresh', handlePageRefresh as EventListener);
+        };
     }, []);
 
     if (loading) return <CircularProgress />;

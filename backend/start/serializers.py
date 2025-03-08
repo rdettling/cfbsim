@@ -108,7 +108,7 @@ class InfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Info
-        fields = ["user_id", "currentYear", "currentWeek", "stage", "team"]
+        fields = "__all__"
 
 
 class ConferenceNameSerializer(serializers.ModelSerializer):

@@ -18,54 +18,12 @@ import {
   Container,
 } from "@mui/material";
 import Navbar from "../components/Navbar";
+import { PlayerData } from "../interfaces";
 
 const PLAYER_URL = (playerId: string, year: string | null = null) => {
   const id = playerId.split("/").pop();
   return `${API_BASE_URL}/api/player/${id}${year ? `?year=${year}` : ""}`;
 };
-
-interface GameLog {
-  game: {
-    id: number;
-    weekPlayed: number;
-  };
-  opponent: string;
-  rank: number;
-  label: string;
-  result: string;
-  [key: string]: any; // For dynamic stats
-}
-
-interface YearStats {
-  class: string;
-  rating: number;
-  games: number;
-  [key: string]: any; // For dynamic stats
-}
-
-interface PlayerData {
-  player: {
-    id: number;
-    first: string;
-    last: string;
-    pos: string;
-  };
-  years: number[];
-  yearly_cumulative_stats: Record<number, YearStats>;
-  game_logs: GameLog[];
-  info: {
-    currentYear: number;
-    currentWeek: number;
-    stage: string;
-  };
-  team: {
-    id: number;
-    name: string;
-    mascot: string;
-    ranking: number;
-  };
-  conferences: any[]; // Update this with proper Conference type
-}
 
 export default function Player() {
   const { playerId } = useParams();

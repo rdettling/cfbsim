@@ -39,31 +39,31 @@ def get_schedule_game(team, game):
                 if opponent.conference
                 else "NC (Ind)"
             )
-
-    )
+        )
 
     return {
-            "opponent": {
-                "name": opponent.name,
-                "ranking": opponent.ranking,
-                "rating": opponent.rating,
-                "record": format_record(opponent),
-            },
-            "label": label,
-            "result": game.resultA if is_team_a else game.resultB,
-            "spread": game.spreadA if is_team_a else game.spreadB,
-            "moneyline": game.moneylineA if is_team_a else game.moneylineB,
-            "score": (
-                (
-                    f"{game.scoreA}-{game.scoreB}"
-                    if is_team_a
-                    else f"{game.scoreB}-{game.scoreA}"
-                )
-                if game.winner
-                else None
-            ),
-        }
-
+        "id": game.id,
+        "weekPlayed": game.weekPlayed,
+        "opponent": {
+            "name": opponent.name,
+            "ranking": opponent.ranking,
+            "rating": opponent.rating,
+            "record": format_record(opponent),
+        },
+        "label": label,
+        "result": game.resultA if is_team_a else game.resultB,
+        "spread": game.spreadA if is_team_a else game.spreadB,
+        "moneyline": game.moneylineA if is_team_a else game.moneylineB,
+        "score": (
+            (
+                f"{game.scoreA}-{game.scoreB}"
+                if is_team_a
+                else f"{game.scoreB}-{game.scoreA}"
+            )
+            if game.winner
+            else None
+        ),
+    }
 
 
 def get_last_game(info, team):
@@ -353,28 +353,9 @@ def rankings(request):
             "ranking": t.ranking,
             "record": format_record(t),
             "movement": t.last_rank - t.ranking if t.last_rank else 0,
+            "last_game": last_game,
+            "next_game": next_game,
         }
-
-        # Add last game info if exists
-        if last_game:
-            team_data["last_game"] = {
-                "opponent": {
-                    "name": last_game.opponent.name,
-                    "ranking": last_game.rank,
-                },
-                "result": last_game.result,
-                "score": last_game.score,
-            }
-
-        # Add next game info if exists
-        if next_game:
-            team_data["next_game"] = {
-                "opponent": {
-                    "name": next_game.opponent.name,
-                    "ranking": next_game.rank,
-                },
-                "spread": next_game.spread,
-            }
 
         rankings_data.append(team_data)
 
@@ -500,14 +481,12 @@ def fetch_play(request):
     )
 
 
+@api_view(["GET"])
 def simWeek(request):
-
-    start = time.time()
-    user_id = request.session.session_key
+    """API endpoint for simulating a week of games"""
+    user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
     games = info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek)
-    live = request.GET.get("live")
-
     team = info.team
 
     drives_to_create = []
@@ -515,30 +494,27 @@ def simWeek(request):
     teamGames = []
     teamGame = None
 
-    start = overall_start = time.time()
+    # Simulate all games for the week
     for game in games:
-        if game.teamA == team:
-            game.label = game.labelA
-            teamGame = game
-            teamGames.append(game)
-        elif game.teamB == team:
-            game.label = game.labelB
+        if (game.teamA == team or game.teamB == team):
             teamGame = game
             teamGames.append(game)
 
         simGame(game, info, drives_to_create, plays_to_create)
 
+    # Bulk update game results
     Games.objects.bulk_update(
         games, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
     )
-    print(f"Sim {time.time() - start} seconds")
 
+    # Update rankings if needed
     update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
     no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
 
     if info.currentWeek not in no_update_weeks:
         update_rankings(info)
 
+    # Handle special weeks (conference championships, playoffs, etc.)
     all_actions = {
         2: {
             12: setConferenceChampionships,
@@ -565,37 +541,23 @@ def simWeek(request):
     if action:
         action(info)
 
+    # Increment week and save data
     info.currentWeek += 1
-
-    start = time.time()
     make_game_logs(info, plays_to_create)
     Drives.objects.bulk_create(drives_to_create)
     Plays.objects.bulk_create(plays_to_create)
     info.save()
-    print(f"Game logs {time.time() - start} seconds")
 
-    context = {
-        "conferences": info.conferences.all().order_by("confName"),
-        "teamGames": teamGames,
-        "game": teamGame,
-        "info": info,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
-    }
-
-    print(f"Total {time.time() - overall_start} seconds")
-
-    if live and teamGame:
-        plays = list(teamGame.plays.all())
-        for i in range(len(plays) - 1):  # Stop one element before the last
-            play = plays[i]
-            next_play = plays[i + 1]
-            if play.game == next_play.game:
-                play.next_play_id = next_play.id
-        Plays.objects.bulk_update(plays, ["next_play_id"])
-
-        return render(request, "sim_live.html", context)
-    else:
-        return render(request, "sim.html", context)
+    # Return updated data
+    return Response({
+        "status": "success",
+        "info": InfoSerializer(info).data,
+        "team": TeamsSerializer(team).data,
+        "teamGame": GamesSerializer(teamGame).data if teamGame else None,
+        "conferences": ConferenceNameSerializer(
+            info.conferences.all().order_by("confName"), many=True
+        ).data,
+    })
 
 
 @api_view(["GET"])
@@ -606,21 +568,13 @@ def game(request, id):
     game = info.games.get(id=id)
 
     if game.winner:
-        return game_result(request, info, game)
+        return game_result(info, game)
     else:
         return game_preview(info, game)
 
 
 def game_preview(info, game):
     """API endpoint for game preview data"""
-    # Set game label
-    if game.labelA == game.labelB:
-        game_label = game.labelA
-    else:
-        game_label = (
-            f"NC ({game.teamA.conference.confName} vs {game.teamB.conference.confName})"
-        )
-
     # Fetch top 5 starters for each team
     top_players_a = list(
         game.teamA.players.filter(starter=True).order_by("-rating")[:5]
@@ -741,32 +695,7 @@ def game_result(info, game):
     return Response(
         {
             "info": InfoSerializer(info).data,
-            "game": {
-                "id": game.id,
-                "label": game.labelA,
-                "weekPlayed": game.weekPlayed,
-                "year": game.year,
-                "teamA": {
-                    "name": game.teamA.name,
-                    "abbreviation": game.teamA.abbreviation,
-                    "conference": game.teamA.conference.confName,
-                    "ranking": game.teamA.ranking,
-                    "rankTOG": game.rankATOG,
-                    "score": game.scoreA,
-                },
-                "teamB": {
-                    "name": game.teamB.name,
-                    "abbreviation": game.teamB.abbreviation,
-                    "conference": game.teamB.conference.confName,
-                    "ranking": game.teamB.ranking,
-                    "rankTOG": game.rankBTOG,
-                    "score": game.scoreB,
-                },
-                "overtime": game.overtime,
-                "winner": game.winner.name if game.winner else None,
-                "resultA": game.resultA,
-                "resultB": game.resultB,
-            },
+            "game": GamesSerializer(game).data,
             "drives": drives_data,
             "stats": game_stats(game),
             "game_logs": categorized_game_log_strings,
@@ -844,10 +773,6 @@ def standings(request, conference_name):
             conf_games = team.confWins + team.confLosses
             pct = team.confWins / conf_games if conf_games > 0 else 0
 
-            # Get last and next game info
-            last_game = get_last_game(info, team)
-            next_game = get_next_game(info, team)
-
             team_data = {
                 "name": team.name,
                 "ranking": team.ranking,
@@ -857,28 +782,9 @@ def standings(request, conference_name):
                 "totalLosses": team.totalLosses,
                 "pct": round(pct, 3),
                 "rating": team.rating,
+                "last_game": get_last_game(info, team),
+                "next_game": get_next_game(info, team),
             }
-
-            # Add last game info if exists
-            if last_game:
-                team_data["last_game"] = {
-                    "opponent": {
-                        "name": last_game.opponent.name,
-                        "ranking": last_game.rank,
-                    },
-                    "result": last_game.result,
-                    "score": last_game.score,
-                }
-
-            # Add next game info if exists
-            if next_game:
-                team_data["next_game"] = {
-                    "opponent": {
-                        "name": next_game.opponent.name,
-                        "ranking": next_game.rank,
-                    },
-                    "spread": next_game.spread,
-                }
 
             teams_data.append(team_data)
 
@@ -1137,16 +1043,11 @@ def player(request, id):
     return Response(
         {
             "info": InfoSerializer(info).data,
-            "player": {
-                "id": player.id,
-                "first": player.first,
-                "last": player.last,
-                "pos": player.pos,
-            },
+            "player": PlayersSerializer(player).data,
             "years": years,
             "team": TeamsSerializer(team).data,
             "yearly_cumulative_stats": yearly_cumulative_stats,
-            "game_logs": game_logs,
+            "game_logs": GameLogSerializer(game_logs, many=True).data,
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

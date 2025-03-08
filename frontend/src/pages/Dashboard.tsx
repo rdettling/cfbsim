@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { Team, Info, Game, Conference } from '../interfaces';
+import { usePageRefresh } from '../interfaces'; 
+import { Team, Info, ScheduleGame, Conference } from '../interfaces';
 import {
     Container,
     Typography,
@@ -24,8 +25,8 @@ import TeamInfoModal from '../components/TeamInfoModal';
 
 interface DashboardData {
     info: Info;
-    prev_game: Game | null;
-    curr_game: Game | null;
+    prev_game: ScheduleGame | null;
+    curr_game: ScheduleGame | null;
     team: Team;
     confTeams: Team[];
     top_10: Team[];
@@ -42,22 +43,24 @@ const Dashboard = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
-    useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                setLoading(true);
-                const response = await axios.get(DASHBOARD_URL);
-                setData(response.data);
-            } catch (error) {
-                setError('Failed to load dashboard data');
-                console.error('Error fetching dashboard:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchDashboard = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(DASHBOARD_URL);
+            setData(response.data);
+        } catch (error) {
+            setError('Failed to load dashboard data');
+            console.error('Error fetching dashboard:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchDashboard();
     }, []);
+
+    usePageRefresh<DashboardData>(setData);
 
     useEffect(() => {
         if (data?.team.name) {
