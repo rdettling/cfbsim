@@ -22,7 +22,7 @@ interface OffseasonBannerProps {
     };
 }
 
-const OffseasonBanner = ({ info, currentStage, nextStage }: OffseasonBannerProps) => {
+const OffseasonBanner = ({ currentStage, nextStage }: OffseasonBannerProps) => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 

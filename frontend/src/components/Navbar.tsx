@@ -15,10 +15,10 @@ interface NavbarProps {
 }
 
 const STAGES = [
-    { id: 'roster_progression', label: 'Roster Progression', path: '/roster_progression', next: 'noncon', offseason: true },
-    { id: 'noncon', label: 'Non-Conference Scheduling', path: '/noncon', next: 'season', offseason: true },
-    { id: 'season', label: 'Season', path: '/dashboard', next: 'summary', offseason: false },
-    { id: 'summary', label: 'Season Summary', path: '/summary', next: 'roster_progression', offseason: false }
+    { id: 'roster_progression', label: 'Roster Progression', path: '/roster_progression', next: 'noncon', offseason: true , header: 'Offseason'},
+    { id: 'noncon', label: 'Non-Conference Scheduling', path: '/noncon', next: 'season', offseason: true , header: 'Preseason'},
+    { id: 'season', label: 'Season', path: '/dashboard', next: 'summary', offseason: false , header: 'Season'},
+    { id: 'summary', label: 'Season Summary', path: '/summary', next: 'roster_progression', offseason: false , header: 'Offseason'}
 ] as const;
 
 interface MenuState {
@@ -128,7 +128,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
 
                 <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Typography variant="h6">
-                        {`${info.currentYear} ${currentStage === 'season' ? 'Season' : 'Offseason'}`}
+                        {`${info.currentYear} ${currentStageInfo?.header}`}
                     </Typography>
 
                     {currentStage === 'season' ? (

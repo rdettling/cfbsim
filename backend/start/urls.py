@@ -19,7 +19,7 @@ urlpatterns = [
     path("api/game/<int:id>/", views.game),
     path("api/team_stats/", views.team_stats),
     path("api/individual_stats/", views.individual_stats),
-    path("api/sim/", views.simWeek),
+    path("api/sim/<int:dest_week>", views.sim),
     # path("fetch_play/", views.fetch_play, name="fetch_play"),
     # path("roster_progression/", views.roster_progression, name="roster progression"),
     path("api/summary/", views.season_summary),

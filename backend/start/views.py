@@ -17,6 +17,7 @@ from django.db.models import Q, F, ExpressionWrapper, FloatField
 from operator import attrgetter
 from logic.stats import *
 from util.util import *
+import time
 
 
 @api_view(["GET"])
@@ -179,13 +180,35 @@ def dashboard(request):
     last_game = get_last_game(info, team)
     next_game = get_next_game(info, team)
 
+    # Get conference teams or independent teams based on team's status
+    if team.conference:
+        conf_teams = list(team.conference.teams.all())
+        # Sort by conference win percentage, then ranking
+        conf_teams.sort(
+            key=lambda t: (
+                (-t.confWins / (t.confWins + t.confLosses)
+                if (t.confWins + t.confLosses) > 0
+                else 0),
+                t.ranking
+            )
+        )
+        related_teams = TeamsSerializer(conf_teams, many=True).data
+    else:
+        # For independent teams, get other independents sorted by ranking
+        related_teams = TeamsSerializer(
+            info.teams.filter(conference=None)
+            .exclude(id=team.id)
+            .order_by("ranking"),
+            many=True
+        ).data
+
     return Response(
         {
             "info": InfoSerializer(info).data,
             "prev_game": last_game,
             "curr_game": next_game,
             "team": TeamsSerializer(team).data,
-            "confTeams": TeamsSerializer(team.conference.teams.all(), many=True).data,
+            "confTeams": related_teams,
             "top_10": TeamsSerializer(
                 info.teams.order_by("ranking")[:10], many=True
             ).data,
@@ -235,16 +258,12 @@ def schedule(request, team_name):
         list(games_as_teamA | games_as_teamB), key=lambda game: game.weekPlayed
     )
 
-    processed_schedule = [get_schedule_game(team, game) for game in schedule]
-
-    years = list(range(info.currentYear, info.startYear - 1, -1))
-
     return Response(
         {
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(team).data,
-            "games": processed_schedule,
-            "years": years,
+            "games": [get_schedule_game(team, game) for game in schedule],
+            "years": list(range(info.currentYear, info.startYear - 1, -1)),
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
@@ -292,71 +311,118 @@ def rankings(request):
 
 
 @api_view(["GET"])
-def simWeek(request):
-    """API endpoint for simulating a week of games"""
+def sim(request, dest_week):
+    """API endpoint for simulating games up to a destination week"""
+    start_time = time.time()
+    
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
-    games = info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek)
     team = info.team
+    dest_week = int(dest_week)
 
+    print(f"\nStarting simulation from week {info.currentWeek} to week {dest_week}")
+    print(f"Initial setup: {time.time() - start_time:.2f} seconds\n")
+    
     drives_to_create = []
     plays_to_create = []
-    teamGames = []
-    teamGame = None
 
-    # Simulate all games for the week
-    for game in games:
-        if game.teamA == team or game.teamB == team:
-            teamGame = game
-            teamGames.append(game)
+    while info.currentWeek < dest_week:
+        week_start = time.time()
+        print(f"\n{'='*50}")
+        print(f"Processing week {info.currentWeek}")
+        print(f"Current stage: {info.stage}")
+        print(f"Playoff format: {info.playoff.teams} teams")
+        
+        games = info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek)
+        print(f"Found {games.count()} games to simulate")
+        print(f"Week {info.currentWeek} query: {time.time() - week_start:.2f} seconds")
 
-        simGame(game, info, drives_to_create, plays_to_create)
+        # Simulate all games for the current week
+        sim_start = time.time()
+        for game in games:
+            #print(f"  Simulating: {game.teamA.name} vs {game.teamB.name}")
+            simGame(game, info, drives_to_create, plays_to_create)
 
-    # Bulk update game results
-    Games.objects.bulk_update(
-        games, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
-    )
+        print(f"All games simulation for week {info.currentWeek}: {time.time() - sim_start:.2f} seconds")
 
-    # Update rankings if needed
-    update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
-    no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
+        # Bulk update game results
+        bulk_start = time.time()
+        Games.objects.bulk_update(
+            games, ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"]
+        )
+        print(f"Bulk update for week {info.currentWeek}: {time.time() - bulk_start:.2f} seconds")
 
-    if info.currentWeek not in no_update_weeks:
-        update_rankings(info)
+        # Update rankings if needed
+        rank_start = time.time()
+        update_rankings_exceptions = {4: [14], 12: [14, 15, 16]}
+        no_update_weeks = update_rankings_exceptions.get(info.playoff.teams, [])
+        print(f"Rankings exceptions for {info.playoff.teams} team playoff: {no_update_weeks}")
 
-    # Handle special weeks (conference championships, playoffs, etc.)
-    all_actions = {
-        2: {
-            12: setConferenceChampionships,
-            13: setNatty,
-        },
-        4: {
-            12: setConferenceChampionships,
-            13: setPlayoffSemi,
-            14: setNatty,
-        },
-        12: {
-            12: setConferenceChampionships,
-            13: setPlayoffR1,
-            14: setPlayoffQuarter,
-            15: setPlayoffSemi,
-            16: setNatty,
-        },
-    }
+        if info.currentWeek not in no_update_weeks:
+            print(f"Updating rankings for week {info.currentWeek}")
+            update_rankings(info)
+            print(f"Rankings update for week {info.currentWeek}: {time.time() - rank_start:.2f} seconds")
+        else:
+            print(f"Skipping rankings update for week {info.currentWeek}")
 
-    action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
-    if action:
-        action(info)
+        # Handle special weeks (conference championships, playoffs, etc.)
+        special_start = time.time()
+        all_actions = {
+            2: {
+                12: setConferenceChampionships,
+                13: setNatty,
+            },
+            4: {
+                12: setConferenceChampionships,
+                13: setPlayoffSemi,
+                14: setNatty,
+            },
+            12: {
+                12: setConferenceChampionships,
+                13: setPlayoffR1,
+                14: setPlayoffQuarter,
+                15: setPlayoffSemi,
+                16: setNatty,
+            },
+        }
 
-    # if info.currentWeek == info.lastWeek:
-    #     end_season(info)
+        action = all_actions.get(info.playoff.teams, {}).get(info.currentWeek)
+        if action:
+            print(f"Executing special action for week {info.currentWeek}: {action.__name__}")
+            action(info)
+            print(f"Special action completed: {time.time() - special_start:.2f} seconds")
+        else:
+            print(f"No special action for week {info.currentWeek}")
 
-    # Increment week and save data
-    info.currentWeek += 1
+        # Increment week
+        old_week = info.currentWeek
+        info.currentWeek += 1
+        print(f"Week incremented: {old_week} -> {info.currentWeek}")
+        print(f"Total time for week {old_week}: {time.time() - week_start:.2f} seconds")
+        print(f"{'='*50}\n")
+
+    # Save all accumulated data
+    final_start = time.time()
+    print(f"Simulation complete. Saving final data...")
+    print(f"Number of drives to create: {len(drives_to_create)}")
+    print(f"Number of plays to create: {len(plays_to_create)}")
+    
+    logs_start = time.time()
     make_game_logs(info, plays_to_create)
+    print(f"Make game logs: {time.time() - logs_start:.2f} seconds")
+    
+    drives_start = time.time()
     Drives.objects.bulk_create(drives_to_create)
+    print(f"Bulk create drives: {time.time() - drives_start:.2f} seconds")
+    
+    plays_start = time.time()
     Plays.objects.bulk_create(plays_to_create)
+    print(f"Bulk create plays: {time.time() - plays_start:.2f} seconds")
+    
     info.save()
+    print(f"Final data saves: {time.time() - final_start:.2f} seconds")
+
+    print(f"\nTotal simulation time: {time.time() - start_time:.2f} seconds")
 
     # Return updated data
     return Response(
@@ -364,7 +430,6 @@ def simWeek(request):
             "status": "success",
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(team).data,
-            "teamGame": GamesSerializer(teamGame).data if teamGame else None,
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

@@ -61,6 +61,9 @@ def setPlayoffQuarter(info):
         ("right_quarter_2", playoff.seed_3, playoff.right_r1_2.winner),
     ]
 
+    for matchup in matchups:
+        print(f"Matchup: {matchup[0]} - {matchup[1]} vs {matchup[2]}")
+
     for attr, team1, team2 in matchups:
         setattr(playoff, attr, schedule_playoff_game(team1, team2))
 
@@ -285,7 +288,6 @@ def end_season(info):
 
 
 def setConferenceChampionships(info):
-    info.refresh_from_db()
     games_to_create = []
     conferences = info.conferences.all()
 

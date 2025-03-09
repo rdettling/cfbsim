@@ -61,7 +61,7 @@ export const NonCon = () => {
                 `${NONCON_URL}${params.toString() ? `?${params.toString()}` : ''}`
             );
             setData(response.data);
-            
+
             if (isFirstLoad) {
                 setIsFirstLoad(false);
                 navigate('/noncon', { state: {} });
@@ -135,6 +135,10 @@ export const NonCon = () => {
                             Non-Conference Games Scheduled: {data.team.nonConfGames} /{" "}
                             {data.team.nonConfLimit}
                         </Typography>
+                        <Typography>
+                            Here is where you can schedule non-conference games. If you advance to season, the remaining non-conference games will be scheduled automatically. 
+                            Your team's rivalry games are already scheduled. These games are guaranteed to happen every year.
+                        </Typography>
                     </Box>
                 </Stack>
 
@@ -157,8 +161,8 @@ export const NonCon = () => {
                                                 <Typography>#{game.opponent.ranking}</Typography>
                                             )}
                                             <TeamLogo name={game.opponent.name} size={40} />
-                                            <TeamLink 
-                                                name={game.opponent.name} 
+                                            <TeamLink
+                                                name={game.opponent.name}
                                                 onTeamClick={handleTeamClick}
                                             />
                                         </Stack>
@@ -207,10 +211,10 @@ export const NonCon = () => {
                     </DialogContent>
                 </Dialog>
 
-                <TeamInfoModal 
-                    teamName={selectedTeam} 
-                    open={teamInfoModalOpen} 
-                    onClose={() => setTeamInfoModalOpen(false)} 
+                <TeamInfoModal
+                    teamName={selectedTeam}
+                    open={teamInfoModalOpen}
+                    onClose={() => setTeamInfoModalOpen(false)}
                 />
             </Container>
         </>
