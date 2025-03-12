@@ -36,7 +36,9 @@ else:
     }
     # For production (after building the React app)
     STATICFILES_DIRS = [
-        os.path.join(BASE_DIR.parent, "frontend/dist/assets"),  # Built assets
+        os.path.join(
+            BASE_DIR, "..", "frontend", "dist"
+        )  # Point to the entire dist folder
     ]
 
 
