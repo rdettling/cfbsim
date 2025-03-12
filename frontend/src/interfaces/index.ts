@@ -87,6 +87,7 @@ export interface PlayerInfo {
     pos: string;
     rating: number;
     starter: boolean;
+    year: string;
 }
 
 export interface GameLog {

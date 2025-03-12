@@ -17,7 +17,7 @@ import Game from "./pages/Game";
 import TeamStats from "./pages/TeamStats";
 import IndividualStats from "./pages/IndividualStats";
 import SeasonSummary from "./pages/SeasonSummary";
-
+import RosterProgression from "./pages/RosterProgression";
 const App = () => {
   return (
     <BrowserRouter>
@@ -45,6 +45,7 @@ const App = () => {
             <Route path="stats/team" element={<TeamStats />} />
             <Route path="stats/individual" element={<IndividualStats />} />
             <Route path="/summary" element={<SeasonSummary />} />
+            <Route path="/roster_progression" element={<RosterProgression />} />
           </Routes>
         </Box>
         <Footer />

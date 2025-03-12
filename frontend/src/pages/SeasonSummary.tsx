@@ -94,7 +94,7 @@ const SeasonSummary = () => {
                     )}
                 </Box>
 
-                <Typography variant="h5" gutterBottom>Conference Realignment Summary</Typography>
+                <Typography variant="h5" gutterBottom>Conference Realignment Summary for next season</Typography>
                 <TableContainer component={Paper}>
                     <Table>
                         <TableHead>

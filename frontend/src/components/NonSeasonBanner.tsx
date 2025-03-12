@@ -1,28 +1,26 @@
 import { Stack, Typography, Button } from '@mui/material';
-import { Info } from '../interfaces';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import LoadingDialog from './LoadingDialog';
 
-interface OffseasonBannerProps {
-    info: Info;
+interface NonSeasonBannerProps {
     currentStage: {
         id: string;
         label: string;
         path: string;
         next: string;
-        offseason: boolean;
+        season: boolean;
     };
     nextStage: {
         id: string;
         label: string;
         path: string;
         next: string;
-        offseason: boolean;
+        season: boolean;
     };
 }
 
-const OffseasonBanner = ({ currentStage, nextStage }: OffseasonBannerProps) => {
+const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -34,6 +32,7 @@ const OffseasonBanner = ({ currentStage, nextStage }: OffseasonBannerProps) => {
             setIsLoading(false);
         }, 500);
     };
+
 
     return (
         <>
@@ -68,4 +67,4 @@ const OffseasonBanner = ({ currentStage, nextStage }: OffseasonBannerProps) => {
     );
 };
 
-export default OffseasonBanner;
+export default NonSeasonBanner;

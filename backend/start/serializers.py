@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-from util.util import format_record
+from logic.util import format_record
 
 
 class TeamsSerializer(serializers.ModelSerializer):

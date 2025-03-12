@@ -21,6 +21,6 @@ urlpatterns = [
     path("api/individual_stats/", views.individual_stats),
     path("api/sim/<int:dest_week>", views.sim),
     # path("fetch_play/", views.fetch_play, name="fetch_play"),
-    # path("roster_progression/", views.roster_progression, name="roster progression"),
+    path("api/roster_progression/", views.roster_progression),
     path("api/summary/", views.season_summary),
 ]

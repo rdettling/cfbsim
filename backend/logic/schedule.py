@@ -219,6 +219,7 @@ def update_history(info):
 def refresh_teams_and_games(info):
     teams = info.teams.all()
     info.plays.all().delete()
+    info.drives.all().delete()
 
     for team in teams:
         team.confGames = 0
@@ -280,11 +281,6 @@ def setNatty(info):
 
     Games.objects.bulk_create(games_to_create)
     playoff.save()
-
-
-def end_season(info):
-    update_history(info)
-    info.stage = "end of season"
 
 
 def setConferenceChampionships(info):

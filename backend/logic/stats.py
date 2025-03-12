@@ -264,3 +264,73 @@ def average(total, attempts, decimals=1):
         return 0.0  # To avoid division by zero
 
     return round(total / attempts, decimals)
+
+
+def game_stats(game):
+    team_yards = opp_yards = 0
+    team_passing_yards = team_rushing_yards = opp_passing_yards = opp_rushing_yards = 0
+    team_first_downs = opp_first_downs = 0
+    team_third_down_a = team_third_down_c = opp_third_down_a = opp_third_down_c = 0
+    team_fourth_down_a = team_fourth_down_c = opp_fourth_down_a = opp_fourth_down_c = 0
+    team_turnovers = opp_turnovers = 0
+    for play in game.plays.all():
+        if play.offense == game.teamA:
+            if play.playType == "pass":
+                team_passing_yards += play.yardsGained
+            elif play.playType == "run":
+                team_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                team_first_downs += 1
+            if play.result in ["interception", "fumble"]:
+                team_turnovers += 1
+            elif play.down == 3:
+                team_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    team_third_down_c += 1
+            elif play.down == 4:
+                if play.playType not in ["punt", "field goal"]:
+                    team_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        team_fourth_down_c += 1
+        elif play.offense == game.teamB:
+            if play.playType == "pass":
+                opp_passing_yards += play.yardsGained
+            elif play.playType == "run":
+                opp_rushing_yards += play.yardsGained
+            if play.yardsGained >= play.yardsLeft:
+                opp_first_downs += 1
+            if play.result in ["interception", "fumble"]:
+                opp_turnovers += 1
+            elif play.down == 3:
+                opp_third_down_a += 1
+                if play.yardsGained >= play.yardsLeft:
+                    opp_third_down_c += 1
+            elif play.down == 4:
+                if play.playType not in ["punt", "field goal"]:
+                    opp_fourth_down_a += 1
+                    if play.yardsGained >= play.yardsLeft:
+                        opp_fourth_down_c += 1
+
+    team_yards = team_passing_yards + team_rushing_yards
+    opp_yards = opp_passing_yards + opp_rushing_yards
+
+    return {
+        "total yards": {"team": team_yards, "opponent": opp_yards},
+        "passing yards": {"team": team_passing_yards, "opponent": opp_passing_yards},
+        "rushing yards": {"team": team_rushing_yards, "opponent": opp_rushing_yards},
+        "1st downs": {"team": team_first_downs, "opponent": opp_first_downs},
+        "3rd down conversions": {
+            "team": team_third_down_c,
+            "opponent": opp_third_down_c,
+        },
+        "3rd down attempts": {"team": team_third_down_a, "opponent": opp_third_down_a},
+        "4th down conversions": {
+            "team": team_fourth_down_c,
+            "opponent": opp_fourth_down_c,
+        },
+        "4th down attempts": {
+            "team": team_fourth_down_a,
+            "opponent": opp_fourth_down_a,
+        },
+        "turnovers": {"team": team_turnovers, "opponent": opp_turnovers},
+    }

@@ -4,7 +4,6 @@ from start.models import *
 from django.db.models import Count, Sum, Case, When, F
 from collections import Counter
 
-
 ROSTER = {
     "qb": 1,
     "rb": 1,
@@ -54,37 +53,36 @@ def getRatings(prestige):
     return (fr, so, jr, sr)
 
 
-def update_rosters(info):
-    start = time.time()
+def remove_seniors(info):
     players = info.players.all()
     team = info.team
     leaving_seniors = players.filter(year="sr", team=team)
     leaving_seniors_list = list(leaving_seniors)
     leaving_seniors.delete()
-    print(f"Queries {time.time() - start} seconds")
+    print(f"Removed seniors: {len(leaving_seniors_list)} players")
 
-    start = time.time()
+
+def progress_players(info, first_time=False):
+    players = info.players.all()
     to_update = []
-    for player in players.exclude(year="sr"):
-        if player.year == "fr":
-            player.year = "so"
-            player.rating = player.rating_so
-        elif player.year == "so":
-            player.year = "jr"
-            player.rating = player.rating_jr
-        elif player.year == "jr":
-            player.year = "sr"
-            player.rating = player.rating_sr
 
-        to_update.append(player)
+    if first_time:
+        for player in players.exclude(year="sr"):
+            if player.year == "fr":
+                player.year = "so"
+                player.rating = player.rating_so
+            elif player.year == "so":
+                player.year = "jr"
+                player.rating = player.rating_jr
+            elif player.year == "jr":
+                player.year = "sr"
+                player.rating = player.rating_sr
 
-    Players.objects.bulk_update(to_update, ["rating", "year"])
-    print(f"Update {time.time() - start} seconds")
+            to_update.append(player)
 
-    return {
-        "leaving": leaving_seniors_list,
-        "progressed": list(players.filter(team=team)),
-    }
+        Players.objects.bulk_update(to_update, ["rating", "year"])
+
+    return players.filter(team=info.team).exclude(year="sr")
 
 
 def aiRecruitOffers(info):

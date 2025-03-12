@@ -540,30 +540,3 @@ def update_score_after(game, drive):
             drive.scoreBAfter += 2
         else:
             drive.scoreAAfter += 2
-
-
-def choose_receiver(candidates, rating_exponent=4):
-    total_chance = 0
-    pos_bias = {"wr": 1.4, "te": 1.0, "rb": 0.6}  # Bias multipliers for each position
-
-    # Calculate weighted chance for each candidate
-    for candidate in candidates:
-        weighted_rating = candidate.rating**rating_exponent
-        candidate.chance = weighted_rating * pos_bias[candidate.pos.lower()]
-        total_chance += candidate.chance
-
-    # Normalize chances to sum up to 1 (probability)
-    for candidate in candidates:
-        candidate.chance /= total_chance
-
-    # Randomly select a receiver based on weighted chances
-    chosen_receiver = random.choices(
-        candidates, weights=[c.chance for c in candidates], k=1
-    )[0]
-
-    # # For testing, print chances and chosen receiver
-    # for candidate in candidates:
-    #     print(candidate.rating, candidate.pos, candidate.chance)
-    # print(f"Chosen Receiver: {chosen_receiver.rating} {chosen_receiver.pos}")
-
-    return chosen_receiver

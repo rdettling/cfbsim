@@ -146,6 +146,7 @@ class Games(models.Model):
     overtime = models.IntegerField(default=0)
     scoreA = models.IntegerField(null=True)
     scoreB = models.IntegerField(null=True)
+    headline = models.CharField(max_length=255, null=True)
 
 
 class Conferences(models.Model):

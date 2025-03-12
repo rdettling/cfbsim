@@ -5,7 +5,9 @@ import { useState } from 'react';
 import { Conference, Team, Info } from '../interfaces';
 import { TeamLogo } from './TeamComponents';
 import SeasonBanner from './SeasonBanner';
-import OffseasonBanner from './OffseasonBanner';
+import NonSeasonBanner from './NonSeasonBanner';
+import { STAGES } from '../constants/stages'; // Adjust the path as necessary
+
 
 interface NavbarProps {
     team: Team;
@@ -13,13 +15,6 @@ interface NavbarProps {
     info: Info & { lastWeek: number };
     conferences: Conference[];
 }
-
-const STAGES = [
-    { id: 'roster_progression', label: 'Roster Progression', path: '/roster_progression', next: 'noncon', offseason: true , header: 'Offseason'},
-    { id: 'noncon', label: 'Non-Conference Scheduling', path: '/noncon', next: 'season', offseason: true , header: 'Preseason'},
-    { id: 'season', label: 'Season', path: '/dashboard', next: 'summary', offseason: false , header: 'Season'},
-    { id: 'summary', label: 'Season Summary', path: '/summary', next: 'roster_progression', offseason: false , header: 'Offseason'}
-] as const;
 
 interface MenuState {
     [key: string]: HTMLElement | null;
@@ -128,14 +123,16 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
 
                 <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Typography variant="h6">
-                        {`${info.currentYear} ${currentStageInfo?.header}`}
+                        {`${info.currentYear} ${currentStageInfo?.banner_label}`}
                     </Typography>
 
-                    {currentStage === 'season' ? (
-                        <SeasonBanner info={info} />
-                    ) : (
-                        currentStageInfo && nextStageInfo && (
-                            <OffseasonBanner info={info} currentStage={currentStageInfo} nextStage={nextStageInfo} />
+                    {currentStageInfo && (
+                        currentStageInfo.season ? (
+                            <SeasonBanner info={info} />
+                        ) : (
+                            nextStageInfo && (
+                                <NonSeasonBanner currentStage={currentStageInfo} nextStage={nextStageInfo} />
+                            )
                         )
                     )}
 
