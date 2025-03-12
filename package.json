@@ -5,7 +5,7 @@
         "npm": "10.x"
     },
     "scripts": {
-        "postinstall": "cd frontend && npm install --production=false && npm run build",
+        "postinstall": "cd frontend && npm install && npm run build && mkdir -p ../backend/templates && cp dist/index.html ../backend/templates/",
         "start": "cd backend && python manage.py runserver"
     }
 }

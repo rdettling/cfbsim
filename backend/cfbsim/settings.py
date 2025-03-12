@@ -101,8 +101,8 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            os.path.join(BASE_DIR, "templates"),
-            os.path.join(BASE_DIR.parent, "frontend/dist"),  # Add this for Vite build output
+            os.path.join(BASE_DIR, "templates"),  # For copied index.html
+            os.path.join(BASE_DIR.parent, "frontend/dist"),  # For direct access to dist
         ],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -126,8 +126,8 @@ USE_I18N = True
 USE_TZ = True
 
 # Static Files
-STATIC_URL = "/django-static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 YEARS_DATA_DIR = BASE_DIR / "data" / "years"
 
 STATICFILES_FINDERS = [
