@@ -324,7 +324,8 @@ def sim(request, dest_week):
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
-    print(f"Starting simulation from week {info.currentWeek} to week {dest_week}")
+    start_week = info.currentWeek
+    print(f"Starting simulation from week {start_week} to week {dest_week}")
 
     drives_to_create = []
     plays_to_create = []
@@ -357,15 +358,14 @@ def sim(request, dest_week):
 
     total_time = time.time() - total_start_time
     print(
-        f"\nTotal simulation time from week {info.currentWeek - (dest_week - info.currentWeek) - 1} to {info.currentWeek}: {total_time:.4f} seconds"
+        f"\nTotal simulation time from week {start_week} to {info.currentWeek}: {total_time:.4f} seconds"
     )
 
     return Response(
         {
             "status": "success",
             "execution_time": total_time,
-            "weeks_simulated": dest_week
-            - (info.currentWeek - (dest_week - info.currentWeek)),
+            "weeks_simulated": dest_week - start_week,
         }
     )
 

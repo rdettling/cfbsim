@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Core Settings
-DEV = True
+DEV = False
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost 127.0.0.1").split(" ")
@@ -21,8 +21,12 @@ if DEV:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+    # For development (if you want Django to serve these files)
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR.parent, "frontend/public"),  # Development static files
+    ]
 else:
-    DEBUG = True
+    DEBUG = False
     SECURE_SSL_REDIRECT = True
     DATABASES = {
         "default": dj_database_url.config(
@@ -30,6 +34,11 @@ else:
             ssl_require=os.environ.get("SSL_REQUIRE"),
         )
     }
+    # For production (after building the React app)
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR.parent, "frontend/dist/assets"),  # Built assets
+    ]
+
 
 # Security Settings
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -69,6 +78,7 @@ ROOT_URLCONF = "cfbsim.urls"
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://cfbsim.net",  # Add your Heroku domain
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -90,7 +100,10 @@ CORS_ALLOWED_HEADERS = CORS_ALLOW_HEADERS  # Both settings are needed for some v
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "templates")],
+        "DIRS": [
+            os.path.join(BASE_DIR, "templates"),
+            os.path.join(BASE_DIR.parent, "frontend/dist"),  # Add this for Vite build output
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

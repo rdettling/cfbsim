@@ -13,18 +13,74 @@ import random
 
 
 def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
-    """Fetch games for the current week and simulate them"""
+    """Fetch games for the current week and simulate them with batch team updates"""
     query_start = time.time()
-    games = list(info.games.filter(year=info.currentYear, weekPlayed=info.currentWeek))
+
+    # Initialize teams_to_update if it doesn't exist
+    if not hasattr(info, "teams_to_update"):
+        info.teams_to_update = []
+
+    # Use select_related to reduce database queries
+    games = list(
+        info.games.filter(
+            year=info.currentYear, weekPlayed=info.currentWeek
+        ).select_related("teamA", "teamB")
+    )
+
     query_time = time.time() - query_start
     print(f"  Query games: {query_time:.4f} seconds, {len(games)} games found")
 
+    # Track games played by each team in this week
+    games_played_counter = {}
+
     # Simulate all games for the current week
     sim_start = time.time()
+
     for game in games:
+        # Track that these teams will play a game
+        games_played_counter[game.teamA.id] = (
+            games_played_counter.get(game.teamA.id, 0) + 1
+        )
+        games_played_counter[game.teamB.id] = (
+            games_played_counter.get(game.teamB.id, 0) + 1
+        )
+
+        # Simulate the game
         simGame(game, info, drives_to_create, plays_to_create)
+
     sim_time = time.time() - sim_start
     print(f"  Total simulation time: {sim_time:.4f} seconds")
+
+    # Perform bulk update of teams after all games are simulated
+    if info.teams_to_update:
+        # Create a dictionary of teams by ID for quick lookup
+        teams_dict = {team.id: team for team in info.teams_to_update}
+
+        # Update gamesPlayed for each team based on the counter
+        for team_id, games_count in games_played_counter.items():
+            if team_id in teams_dict:
+                teams_dict[team_id].gamesPlayed += games_count
+
+        team_update_start = time.time()
+        Teams.objects.bulk_update(
+            info.teams_to_update,
+            [
+                "totalWins",
+                "totalLosses",
+                "confWins",
+                "confLosses",
+                "nonConfWins",
+                "nonConfLosses",
+                "resume_total",
+                "gamesPlayed",
+            ],
+        )
+        print(
+            f"  Team stats bulk update: {time.time() - team_update_start:.4f} seconds"
+        )
+
+        # Clear the list for the next batch
+        info.teams_to_update = []
 
     return games
 
@@ -359,27 +415,27 @@ def choose_receiver(candidates, rating_exponent=4):
     """Choose a receiver with improved performance."""
     if not candidates:
         return None
-        
+
     # Use pre-computed position bias values
     pos_bias = {"wr": 1.4, "te": 1.0, "rb": 0.6}
-    
+
     # Calculate weighted chances directly
     chances = []
     total_chance = 0
-    
+
     for candidate in candidates:
         # Use faster power calculation
         weighted_rating = candidate.rating**rating_exponent
         chance = weighted_rating * pos_bias.get(candidate.pos.lower(), 1.0)
         chances.append(chance)
         total_chance += chance
-    
+
     # Avoid division by zero
     if total_chance == 0:
         return random.choice(candidates)
-    
+
     # Normalize chances
     normalized_chances = [chance / total_chance for chance in chances]
-    
+
     # Use random.choices for weighted selection
     return random.choices(candidates, weights=normalized_chances, k=1)[0]

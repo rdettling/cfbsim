@@ -50,5 +50,13 @@
         "<player>'s <stat_value> <stat_type> proves too much for <loser>",
         "Record day: <player> notches <stat_value> <stat_type> in <winner> win",
         "<player> steals the show with <stat_value> <stat_type> against <loser>"
+    ],
+    "overtime": [
+        "<winner> wins in overtime <score>",
+        "<winner> prevails in thrilling overtime <score>",
+        "<winner> outlasts <loser> in <score> overtime",
+        "<winner> secures victory in sudden-death overtime <score>",
+        "<winner> wins in double-overtime <score>"
     ]
+    
 }
