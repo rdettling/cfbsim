@@ -57,7 +57,7 @@ const Playoff = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedTeam, setSelectedTeam] = useState<string>('');
+    const [selectedTeam] = useState<string>('');
 
     useEffect(() => {
         const fetchPlayoff = async () => {
@@ -76,10 +76,6 @@ const Playoff = () => {
         fetchPlayoff();
     }, []);
 
-    const handleTeamClick = (teamName: string) => {
-        setSelectedTeam(teamName);
-        setModalOpen(true);
-    };
 
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;

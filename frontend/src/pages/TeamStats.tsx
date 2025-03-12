@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { Team, Info, Conference } from '../interfaces';
+import type { Team, Info, Conference, TeamStats as TeamStatsType } from '../interfaces';
+import { usePageRefresh } from '../interfaces';
 import {
     Container,
     Typography,
@@ -22,38 +23,13 @@ import {
 import Navbar from '../components/Navbar';
 import TeamInfoModal from '../components/TeamInfoModal';
 
-interface TeamStats {
-    games: number;
-    ppg: number;
-    pass_cpg: number;
-    pass_apg: number;
-    comp_percent: number;
-    pass_ypg: number;
-    pass_tdpg: number;
-    rush_apg: number;
-    rush_ypg: number;
-    rush_ypc: number;
-    rush_tdpg: number;
-    playspg: number;
-    yardspg: number;
-    ypp: number;
-    first_downs_pass: number;
-    first_downs_rush: number;
-    first_downs_total: number;
-    fumbles: number;
-    interceptions: number;
-    turnovers: number;
-}
-
 interface TeamStatsData {
     info: Info;
-    offense: Record<string, TeamStats>;
-    defense: Record<string, TeamStats>;
+    offense: Record<string, TeamStatsType>;
+    defense: Record<string, TeamStatsType>;
     team: Team;
     conferences: Conference[];
 }
-
-const TEAM_STATS_URL = `${API_BASE_URL}/api/team_stats`;
 
 const TeamStats = () => {
     const [data, setData] = useState<TeamStatsData | null>(null);
@@ -63,11 +39,13 @@ const TeamStats = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
+    usePageRefresh<TeamStatsData>(setData);
+
     useEffect(() => {
         const fetchStats = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(TEAM_STATS_URL);
+                const response = await axios.get(`${API_BASE_URL}/api/team_stats`);
                 setData(response.data);
             } catch (error) {
                 setError('Failed to load team stats');
@@ -87,10 +65,6 @@ const TeamStats = () => {
         };
     }, []);
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setTabValue(newValue);
-    };
-
     const handleTeamClick = (teamName: string) => {
         setSelectedTeam(teamName);
         setModalOpen(true);
@@ -100,7 +74,7 @@ const TeamStats = () => {
     if (error) return <Alert severity="error">{error}</Alert>;
     if (!data) return <Alert severity="warning">No data available</Alert>;
 
-    const renderStatsTable = (stats: Record<string, TeamStats>, type: 'offense' | 'defense') => (
+    const renderStatsTable = (stats: Record<string, TeamStatsType>, type: 'offense' | 'defense') => (
         <TableContainer component={Paper}>
             <Table size="small">
                 <TableHead>
@@ -197,7 +171,7 @@ const TeamStats = () => {
                 </Typography>
 
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                    <Tabs value={tabValue} onChange={handleTabChange} centered>
+                    <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} centered>
                         <Tab label="Offense" />
                         <Tab label="Defense" />
                     </Tabs>

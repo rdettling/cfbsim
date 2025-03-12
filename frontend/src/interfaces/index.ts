@@ -80,7 +80,7 @@ export interface Game {
     winner: Team;
 }
 
-export interface PlayerInfo {
+export interface Player {
     id: number;
     first: string;
     last: string;
@@ -88,43 +88,56 @@ export interface PlayerInfo {
     rating: number;
     starter: boolean;
     year: string;
+    team: string;
 }
 
 export interface GameLog {
     game: {
         id: number;
         weekPlayed: number;
+        opponent: {
+            name: string;
+            rating: number;
+            ranking: number;
+            record: string;
+        };
+        label: string;
+        result: string;
+        score: string;
     };
-    opponent: string;
-    rank: number;
-    label: string;
-    result: string;
     [key: string]: any;
-}
-
-export interface YearStats {
-    class: string;
-    rating: number;
-    games: number;
-    [key: string]: any;
-}
-
-export interface PlayerStats {
-    player: PlayerInfo;
-    years: number[];
-    stats: Record<number, YearStats>;
-    game_logs: GameLog[];
-    info: Info;
-    team: Team;
-    conferences: Conference[];
 }
 
 export interface GamePreviewData {
     info: Info;
     game: Game;
     conferences: Conference[];
-    top_players: PlayerInfo[][];
+    top_players: Player[][];
 }
+
+export interface TeamStats {
+    games: number;
+    ppg: number;
+    pass_cpg: number;
+    pass_apg: number;
+    comp_percent: number;
+    pass_ypg: number;
+    pass_tdpg: number;
+    rush_apg: number;
+    rush_ypg: number;
+    rush_ypc: number;
+    rush_tdpg: number;
+    playspg: number;
+    yardspg: number;
+    ypp: number;
+    first_downs_pass: number;
+    first_downs_rush: number;
+    first_downs_total: number;
+    fumbles: number;
+    interceptions: number;
+    turnovers: number;
+}
+
 
 // Custom hooks
 export function usePageRefresh<T>(setData: (data: T) => void) {
@@ -133,35 +146,76 @@ export function usePageRefresh<T>(setData: (data: T) => void) {
     const refreshCurrentPage = async () => {
         const path = location.pathname;
         const pathParts = path.split('/').filter(Boolean); // Remove empty strings
+        const searchParams = new URLSearchParams(location.search);
         let response;
 
         try {
-            if (path === '/dashboard') {
-                response = await axios.get(`${API_BASE_URL}/api/dashboard`);
-            } else if (path.includes('/standings/')) {
-                const conference = pathParts[1];
-                response = await axios.get(`${API_BASE_URL}/api/standings/${conference}`);
-            } else if (pathParts[0] === 'schedule') {
-                const week = pathParts[1];
-                response = await axios.get(`${API_BASE_URL}/api/week_schedule/${week}`);
-            } else if (path === '/rankings') {
-                response = await axios.get(`${API_BASE_URL}/api/rankings`);
-            } else if (path === '/playoff') {
-                response = await axios.get(`${API_BASE_URL}/api/playoff`);
-            } else if (path.includes('/game/')) {
-                const gameId = pathParts[1];
-                response = await axios.get(`${API_BASE_URL}/api/game/${gameId}`);
-            } else if (pathParts[1] === 'roster') {
-                const teamName = pathParts[0];
-                response = await axios.get(`${API_BASE_URL}/api/${teamName}/roster`);
-            } else if (pathParts[1] === 'schedule') {
-                const teamName = pathParts[0];
-                response = await axios.get(`${API_BASE_URL}/api/${teamName}/schedule`);
-            } else if (pathParts[1] === 'history') {
-                const teamName = pathParts[0];
-                response = await axios.get(`${API_BASE_URL}/api/${teamName}/history`);
+            // Define API endpoints based on route patterns
+            const apiEndpoints: Record<string, string> = {
+                // Static routes
+                '/dashboard': `${API_BASE_URL}/api/dashboard`,
+                '/rankings': `${API_BASE_URL}/api/rankings`,
+                '/playoff': `${API_BASE_URL}/api/playoff`,
+                '/stats/team': `${API_BASE_URL}/api/team_stats`,
+                '/stats/individual': `${API_BASE_URL}/api/individual_stats`,
+            };
+
+            // Check for static routes first
+            if (path in apiEndpoints) {
+                response = await axios.get(apiEndpoints[path]);
+            }
+            // Handle dynamic routes
+            else if (pathParts.length >= 1) {
+                const firstPart = pathParts[0];
+                const secondPart = pathParts.length > 1 ? pathParts[1] : '';
+                
+                // Conference standings: /standings/:conference
+                if (path.includes('/standings/')) {
+                    const conference = secondPart;
+                    response = await axios.get(`${API_BASE_URL}/api/standings/${conference}`);
+                }
+                // Week schedule: /schedule/:week
+                else if (firstPart === 'schedule') {
+                    const week = secondPart;
+                    response = await axios.get(`${API_BASE_URL}/api/week/${week}`);
+                }
+                // Game details: /game/:id
+                else if (firstPart === 'game') {
+                    const gameId = secondPart;
+                    response = await axios.get(`${API_BASE_URL}/api/game/${gameId}`);
+                }
+                // Player details: /players/:id
+                else if (firstPart === 'players') {
+                    const playerId = secondPart;
+                    const year = searchParams.get('year');
+                    response = await axios.get(
+                        `${API_BASE_URL}/api/player/${playerId}${year ? `?year=${year}` : ''}`
+                    );
+                }
+                // Team pages with second path part
+                else if (secondPart) {
+                    const teamName = firstPart;
+                    const section = secondPart;
+                    
+                    // Team roster: /:team/roster
+                    if (section === 'roster') {
+                        response = await axios.get(`${API_BASE_URL}/api/${teamName}/roster`);
+                    }
+                    // Team schedule: /:team/schedule
+                    else if (section === 'schedule') {
+                        const year = searchParams.get('year');
+                        response = await axios.get(
+                            `${API_BASE_URL}/api/${teamName}/schedule${year ? `?year=${year}` : ''}`
+                        );
+                    }
+                    // Team history: /:team/history
+                    else if (section === 'history') {
+                        response = await axios.get(`${API_BASE_URL}/api/${teamName}/history`);
+                    }
+                }
             }
 
+            // Update data if response was received
             if (response) {
                 setData(response.data);
             }

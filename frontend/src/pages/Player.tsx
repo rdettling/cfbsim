@@ -18,27 +18,53 @@ import {
   Container,
 } from "@mui/material";
 import Navbar from "../components/Navbar";
-import { PlayerData } from "../interfaces";
+import { TeamLogo, TeamLink } from "../components/TeamComponents";
+import TeamInfoModal from "../components/TeamInfoModal";
+import { Team, Info, Conference, Player, GameLog, usePageRefresh } from "../interfaces";
 
-const PLAYER_URL = (playerId: string, year: string | null = null) => {
-  const id = playerId.split("/").pop();
-  return `${API_BASE_URL}/api/player/${id}${year ? `?year=${year}` : ""}`;
-};
+// Simple PlayerData interface that builds on existing interfaces
+interface PlayerData {
+  player: Player;
+  team: Team;
+  info: Info;
+  conferences: Conference[];
+  years: number[];
+  yearly_cumulative_stats: Record<string, {
+    class: string;
+    rating: number;
+    games: number;
+    [key: string]: string | number;
+  }>;
+  game_logs: GameLog[];
+}
 
-export default function Player() {
+export default function PlayerPage() {
   const { playerId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [data, setData] = useState<PlayerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<string>('');
+
+  // Format column title from snake_case to Title Case
+  const formatColumnTitle = (key: string) => {
+    return key.split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  usePageRefresh<PlayerData>(setData);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const year = searchParams.get("year");
-        const response = await axios.get(PLAYER_URL(playerId!, year));
+        const id = playerId?.split("/").pop();
+        const url = `${API_BASE_URL}/api/player/${id}${year ? `?year=${year}` : ""}`;
+        const response = await axios.get(url);
         setData(response.data);
       } catch (error) {
         console.error("Error fetching player data:", error);
@@ -54,8 +80,15 @@ export default function Player() {
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!data) return <Alert severity="warning">No data available</Alert>;
 
-  const handleYearChange = (event: any) => {
-    setSearchParams({ year: event.target.value });
+  // Get stats columns excluding certain fields
+  const getStatsColumns = (stats: Record<string, any>) => {
+    return Object.keys(stats).filter(key => !["class", "rating", "games"].includes(key));
+  };
+
+  // Handle team click to open the team info modal
+  const handleTeamClick = (name: string) => {
+    setSelectedTeam(name);
+    setModalOpen(true);
   };
 
   return (
@@ -70,9 +103,7 @@ export default function Player() {
       )}
       <Container>
         <Box>
-          <h1>
-            {data.player.first} {data.player.last}
-          </h1>
+          <h1>{data.player.first} {data.player.last}</h1>
 
           <h2>Career Stats</h2>
           <Table>
@@ -82,35 +113,24 @@ export default function Player() {
                 <TableCell>Class</TableCell>
                 <TableCell>Ovr</TableCell>
                 <TableCell>G</TableCell>
-                {Object.keys(
-                  Object.values(data.yearly_cumulative_stats)[0] || {}
-                )
-                  .filter((key) => !["class", "rating", "games"].includes(key))
-                  .map((key) => (
-                    <TableCell key={key}>
-                      {key.replace(/_/g, " ").toUpperCase()}
-                    </TableCell>
+                {getStatsColumns(Object.values(data.yearly_cumulative_stats)[0] || {})
+                  .map(key => (
+                    <TableCell key={key}>{formatColumnTitle(key)}</TableCell>
                   ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {Object.entries(data.yearly_cumulative_stats).map(
-                ([year, stats]) => (
-                  <TableRow key={year}>
-                    <TableCell>{year}</TableCell>
-                    <TableCell>{stats.class}</TableCell>
-                    <TableCell>{stats.rating}</TableCell>
-                    <TableCell>{stats.games}</TableCell>
-                    {Object.entries(stats)
-                      .filter(
-                        ([key]) => !["class", "rating", "games"].includes(key)
-                      )
-                      .map(([key, value]) => (
-                        <TableCell key={key}>{value}</TableCell>
-                      ))}
-                  </TableRow>
-                )
-              )}
+              {Object.entries(data.yearly_cumulative_stats).map(([year, stats]) => (
+                <TableRow key={year}>
+                  <TableCell>{year}</TableCell>
+                  <TableCell>{stats.class}</TableCell>
+                  <TableCell>{stats.rating}</TableCell>
+                  <TableCell>{stats.games}</TableCell>
+                  {getStatsColumns(stats).map(key => (
+                    <TableCell key={key}>{stats[key]}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
 
@@ -119,13 +139,11 @@ export default function Player() {
               <InputLabel>Year</InputLabel>
               <Select
                 value={searchParams.get("year") || data.info.currentYear}
-                onChange={handleYearChange}
+                onChange={(e: any) => setSearchParams({ year: e.target.value })}
                 label="Year"
               >
-                {data.years.map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
+                {data.years.map(year => (
+                  <MenuItem key={year} value={year}>{year}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -139,59 +157,45 @@ export default function Player() {
                 <TableCell>Opponent</TableCell>
                 <TableCell>Label</TableCell>
                 <TableCell>Result</TableCell>
-                {Object.keys(data.game_logs[0] || {})
-                  .filter(
-                    (key) =>
-                      !["game", "opponent", "rank", "label", "result"].includes(
-                        key
-                      )
-                  )
-                  .map((key) => (
-                    <TableCell key={key}>
-                      {key.replace(/_/g, " ").toUpperCase()}
-                    </TableCell>
+                {data.game_logs[0] && Object.keys(data.game_logs[0])
+                  .filter(key => key !== "game")
+                  .map(key => (
+                    <TableCell key={key}>{formatColumnTitle(key)}</TableCell>
                   ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.game_logs.map((game) => (
-                <TableRow key={game.game.id}>
-                  <TableCell>{game.game.weekPlayed}</TableCell>
+              {data.game_logs.map(gameLog => (
+                <TableRow key={gameLog.game.id}>
+                  <TableCell>{gameLog.game.weekPlayed}</TableCell>
                   <TableCell>
-                    <img
-                      src={`/django-static/${game.opponent}.png`}
-                      alt={game.opponent}
-                      style={{ height: "20px", marginRight: "8px" }}
-                    />
-                    <span
-                      onClick={() =>
-                        navigate(`/teams/${game.opponent}/schedule`)
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      #{game.rank} {game.opponent}
-                    </span>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TeamLogo name={gameLog.game.opponent.name} size={20} />
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        #{gameLog.game.opponent.ranking}{' '}
+                        <TeamLink 
+                          name={gameLog.game.opponent.name} 
+                          onTeamClick={handleTeamClick} 
+                        />
+                      </Box>
+                    </Box>
                   </TableCell>
-                  <TableCell>{game.label}</TableCell>
+                  <TableCell>{gameLog.game.label}</TableCell>
                   <TableCell>
-                    <span
-                      onClick={() => navigate(`/game/${game.game.id}`)}
-                      style={{ cursor: "pointer" }}
+                    <Box
+                      component="span"
+                      onClick={() => navigate(`/game/${gameLog.game.id}`)}
+                      sx={{ 
+                        cursor: "pointer", 
+                        color: "#1976d2", 
+                        textDecoration: "underline" 
+                      }}
                     >
-                      {game.result}
-                    </span>
+                      {gameLog.game.result} {gameLog.game.score}
+                    </Box>
                   </TableCell>
-                  {Object.entries(game)
-                    .filter(
-                      ([key]) =>
-                        ![
-                          "game",
-                          "opponent",
-                          "rank",
-                          "label",
-                          "result",
-                        ].includes(key)
-                    )
+                  {Object.entries(gameLog)
+                    .filter(([key]) => key !== "game")
                     .map(([key, value]) => (
                       <TableCell key={key}>{value}</TableCell>
                     ))}
@@ -201,6 +205,13 @@ export default function Player() {
           </Table>
         </Box>
       </Container>
+
+      {/* Team Info Modal */}
+      <TeamInfoModal 
+        teamName={selectedTeam} 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+      />
     </>
   );
 }

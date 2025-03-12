@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { usePageRefresh } from '../interfaces';
-import { Team, Info, Conference, PlayerInfo } from '../interfaces';
+import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Container, Typography, Box, CircularProgress, Alert,
     Table, TableBody, TableCell, TableContainer, TableHead,
@@ -12,21 +12,16 @@ import Navbar from '../components/Navbar';
 // import { TeamLink } from '../components/TeamComponents';
 import TeamInfoModal from '../components/TeamInfoModal';
 
-interface LeavingPlayer {
-    first: string;
-    last: string;
-    pos: string;
-    rating: number;
-}
 
-interface ProgressedPlayer extends PlayerInfo {
+
+interface ProgressedPlayer extends Player {
     change: number;
 }
 
 interface RosterProgressionData {
     info: Info & { lastWeek: number };
     team: Team;
-    leaving: LeavingPlayer[];
+    leaving: Player[];
     progressed: ProgressedPlayer[];
     conferences: Conference[];
 }
@@ -36,12 +31,12 @@ const RosterProgression = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedTeam, setSelectedTeam] = useState<string>('');
+    const [selectedTeam] = useState<string>('');
 
-    const handleTeamClick = (name: string) => {
-        setSelectedTeam(name);
-        setModalOpen(true);
-    };
+    // const handleTeamClick = (name: string) => {
+    //     setSelectedTeam(name);
+    //     setModalOpen(true);
+    // };
 
     useEffect(() => {
         const fetchRosterProgression = async () => {
