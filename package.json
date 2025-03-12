@@ -1,0 +1,11 @@
+{
+    "name": "cfbsim",
+    "engines": {
+        "node": "20.x",
+        "npm": "10.x"
+    },
+    "scripts": {
+        "postinstall": "cd frontend && npm install && npm run build",
+        "start": "cd backend && python manage.py runserver"
+    }
+}

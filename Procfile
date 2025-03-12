@@ -1,1 +1,1 @@
-web: gunicorn cfbsim.wsgi:application
+web: cd backend && gunicorn cfbsim.wsgi:application
