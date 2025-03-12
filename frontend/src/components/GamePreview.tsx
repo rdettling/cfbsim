@@ -1,4 +1,4 @@
-import { Game, PlayerInfo } from '../interfaces';
+import { Game, Player } from '../interfaces';
 import {
     Container,
     Typography,
@@ -16,7 +16,7 @@ import {
 
 interface GamePreviewProps {
     game: Game;
-    top_players: PlayerInfo[][];
+    top_players: Player[][];
 }
 
 const GamePreview = ({ game, top_players }: GamePreviewProps) => {

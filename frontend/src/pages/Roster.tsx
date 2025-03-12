@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { Team, Info, Conference, usePageRefresh, PlayerInfo } from '../interfaces';
+import { Team, Info, Conference, usePageRefresh, Player } from '../interfaces';
 import {
     Container,
     Table,
@@ -31,7 +31,7 @@ import TeamHeader from '../components/TeamHeader';
 interface RosterData {
     info: Info;
     team: Team;
-    roster: PlayerInfo[];
+    roster: Player[];
     positions: string[];
     conferences: Conference[];
     teams: Team[];
