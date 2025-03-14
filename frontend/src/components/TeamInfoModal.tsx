@@ -1,7 +1,7 @@
 import { Modal, Box, Typography, Link } from '@mui/material';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '../services/api';
 import { Link as RouterLink } from 'react-router-dom';
 
 interface TeamInfo {

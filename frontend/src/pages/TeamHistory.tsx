@@ -1,7 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Container,
@@ -45,12 +44,17 @@ const TeamHistory = () => {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
+    // Add usePageRefresh for automatic data updates
+    usePageRefresh<HistoryData>(setData);
+
     useEffect(() => {
         const fetchHistory = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${API_BASE_URL}/api/${teamName}/history`);
-                setData(response.data);
+                if (teamName) {
+                    const responseData = await apiService.getTeamHistory<HistoryData>(teamName);
+                    setData(responseData);
+                }
             } catch (error) {
                 setError('Failed to load team history');
             } finally {

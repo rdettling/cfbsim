@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
-import { usePageRefresh } from '../interfaces'; 
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, ScheduleGame, Conference } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
@@ -87,17 +85,18 @@ const Dashboard = () => {
         setModalOpen(true);
     };
 
+    const fetchDashboard = async () => {
+        try {
+            const responseData = await apiService.getDashboard<DashboardData>();
+            setData(responseData);
+        } catch (error) {
+            setError('Failed to load dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                const response = await axios.get(API_BASE_URL + '/api/dashboard');
-                setData(response.data);
-            } catch (error) {
-                setError('Failed to load dashboard data');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchDashboard();
     }, []);
 

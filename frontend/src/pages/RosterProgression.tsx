@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
-import { usePageRefresh } from '../interfaces';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Container, Typography, Box, CircularProgress, Alert,
@@ -41,8 +39,8 @@ const RosterProgression = () => {
     useEffect(() => {
         const fetchRosterProgression = async () => {
             try {
-                const response = await axios.get(API_BASE_URL + '/api/roster_progression');
-                setData(response.data);
+                const responseData = await apiService.getRosterProgression<RosterProgressionData>();
+                setData(responseData);
             } catch (error) {
                 setError('Failed to load roster progression data');
             } finally {
@@ -52,6 +50,7 @@ const RosterProgression = () => {
         fetchRosterProgression();
     }, []);
 
+    // Use the new usePageRefresh from api.ts
     usePageRefresh<RosterProgressionData>(setData);
 
     useEffect(() => {

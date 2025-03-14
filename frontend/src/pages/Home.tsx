@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { API_BASE_URL } from '../config';
+import { apiService } from '../services/api';
 import { Team, Conference, Info } from '../interfaces';
 import { STAGES } from '../constants/stages';
 import {
@@ -53,9 +52,6 @@ interface LaunchProps {
   preview: PreviewData | null;
 }
 
-// API URL constants
-const HOME_URL = (year: string) => `${API_BASE_URL}/api/home/?year=${year}`;
-
 const Home = () => {
   const [data, setData] = useState<LaunchProps>({ years: [], info: null, preview: null });
   const [activeTab, setActiveTab] = useState(0);
@@ -65,10 +61,10 @@ const Home = () => {
 
   const fetchHomeData = async (year: string) => {
     try {
-      const response = await axios.get(HOME_URL(year), { withCredentials: true });
-      setData(response.data);
-      if (!selectedYear && response.data.years.length > 0) {
-        setSelectedYear(response.data.years[0]);
+      const responseData = await apiService.getHome<LaunchProps>(year);
+      setData(responseData);
+      if (!selectedYear && responseData.years.length > 0) {
+        setSelectedYear(responseData.years[0]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);

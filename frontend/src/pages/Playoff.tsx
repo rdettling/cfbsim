@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Container,
@@ -50,8 +49,6 @@ interface PlayoffData {
     conference_champions: ConferenceChampion[];
 }
 
-const PLAYOFF_URL = `${API_BASE_URL}/api/playoff`;
-
 const Playoff = () => {
     const [data, setData] = useState<PlayoffData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -63,8 +60,8 @@ const Playoff = () => {
         const fetchPlayoff = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(PLAYOFF_URL);
-                setData(response.data);
+                const responseData = await apiService.getPlayoff<PlayoffData>();
+                setData(responseData);
             } catch (error) {
                 setError('Failed to load playoff data');
                 console.error('Error fetching playoff:', error);
@@ -76,6 +73,8 @@ const Playoff = () => {
         fetchPlayoff();
     }, []);
 
+    // Add usePageRefresh for automatic data updates
+    usePageRefresh<PlayoffData>(setData);
 
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;

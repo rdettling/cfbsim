@@ -1,8 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
-import { Team, Info, Conference, usePageRefresh, Player } from '../interfaces';
+import { apiService, usePageRefresh } from '../services/api';
+import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Container,
     Table,
@@ -47,12 +46,13 @@ const Roster = () => {
 
     usePageRefresh<RosterData>(setData);
 
-
     useEffect(() => {
         const fetchRoster = async () => {
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/${teamName}/roster`);
-                setData(response.data);
+                if (teamName) {
+                    const responseData = await apiService.getTeamRoster<RosterData>(teamName);
+                    setData(responseData);
+                }
             } catch (error) {
                 setError('Failed to load roster');
             } finally {

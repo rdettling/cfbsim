@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference, Game } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
@@ -45,8 +44,8 @@ const SeasonSummary = () => {
     useEffect(() => {
         const fetchSummary = async () => {
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/summary`);
-                setData(response.data);
+                const responseData = await apiService.getSeasonSummary<SummaryData>();
+                setData(responseData);
             } catch (error) {
                 setError('Failed to load season summary');
             } finally {
@@ -56,6 +55,9 @@ const SeasonSummary = () => {
 
         fetchSummary();
     }, []);
+
+    // Add usePageRefresh for automatic data updates
+    usePageRefresh<SummaryData>(setData);
 
     const handleTeamClick = (teamName: string) => {
         setSelectedTeam(teamName);

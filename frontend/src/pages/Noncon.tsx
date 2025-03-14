@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { API_BASE_URL } from "../config";
+import { apiService, usePageRefresh } from "../services/api";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
-import axios from "axios";
 import {
     Container,
     Typography,
@@ -24,21 +23,18 @@ import {
 import Navbar from "../components/Navbar";
 import TeamInfoModal from "../components/TeamInfoModal";
 
-// API endpoints
-const NONCON_URL = `${API_BASE_URL}/api/noncon/`;
-const SCHEDULE_NC_URL = `${API_BASE_URL}/api/schedulenc/`;
-const FETCH_TEAMS_URL = `${API_BASE_URL}/api/fetchteams/`;
+interface NonConData {
+    info: Info;
+    team: Team;
+    schedule: ScheduleGame[];
+    conferences: Conference[];
+}
 
 export const NonCon = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isFirstLoad, setIsFirstLoad] = useState(true);
-    const [data, setData] = useState<{
-        info: Info;
-        team: Team;
-        schedule: ScheduleGame[];
-        conferences: Conference[];
-    } | null>(null);
+    const [data, setData] = useState<NonConData | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
     const [availableTeams, setAvailableTeams] = useState<string[]>([]);
@@ -48,23 +44,29 @@ export const NonCon = () => {
 
     // Check if we came from home page
     const isFromHome = location.state?.fromHome === true;
+    const teamFromHome = location.state?.team;
+    const yearFromHome = location.state?.year;
 
     const fetchData = async () => {
         try {
-            const params = new URLSearchParams();
-            if (isFromHome && isFirstLoad) {
-                params.append('team', location.state?.team);
-                params.append('year', location.state?.year);
+            // Only pass team and year parameters on first load from home page
+            if (isFirstLoad && isFromHome && teamFromHome && yearFromHome) {
+                console.log("Fetching with team and year:", teamFromHome, yearFromHome);
+                const responseData = await apiService.get<NonConData>('/api/noncon', {
+                    team: teamFromHome,
+                    year: yearFromHome
+                });
+                setData(responseData);
+            } else {
+                // Regular fetch without parameters
+                const responseData = await apiService.getNonCon<NonConData>();
+                setData(responseData);
             }
 
-            const response = await axios.get(
-                `${NONCON_URL}${params.toString() ? `?${params.toString()}` : ''}`
-            );
-            setData(response.data);
-
+            // Clear location state after first load to prevent reusing parameters on refresh
             if (isFirstLoad) {
                 setIsFirstLoad(false);
-                navigate('/noncon', { state: {} });
+                navigate('/noncon', { state: {}, replace: true });
             }
         } catch (error) {
             console.error("Error fetching noncon data:", error);
@@ -75,9 +77,12 @@ export const NonCon = () => {
         fetchData();
     }, []);
 
+    // Add usePageRefresh for automatic data updates
+    usePageRefresh<NonConData>(setData);
+
     const handleScheduleGame = async () => {
         try {
-            await axios.post(SCHEDULE_NC_URL, {
+            await apiService.post('/api/schedulenc/', {
                 opponent: selectedOpponent,
                 week: selectedWeek,
             });
@@ -90,10 +95,8 @@ export const NonCon = () => {
 
     const handleOpenModal = async (week: number) => {
         try {
-            const response = await axios.get<string[]>(
-                `${FETCH_TEAMS_URL}?week=${week}`
-            );
-            setAvailableTeams(response.data);
+            const teams = await apiService.get<string[]>(`/api/fetchteams/`, { week });
+            setAvailableTeams(teams);
             setSelectedWeek(week);
             setModalOpen(true);
         } catch (error) {

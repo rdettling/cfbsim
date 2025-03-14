@@ -56,23 +56,52 @@ def home(request):
 def noncon(request):
     """API endpoint for non-conference scheduling page"""
     user_id = request.headers.get("X-User-ID")
-    try:
-        info = Info.objects.get(user_id=user_id)
-    except Info.DoesNotExist:
-        info = None
-
     team = request.GET.get("team")
     year = request.GET.get("year")
+    
     replace = False
-
+    
+    # Case 1: New game from home page (has team and year)
     if team and year:
+        # Generate a new user_id for this session
         user_id = str(uuid.uuid4())
         replace = True
+        # Initialize a new game with the selected team and year
         info = init(user_id, team, year)
-    elif info and info.stage == "progression":
-        next_season(info)
-        info.stage = "preseason"
-        info.save()
+        print('new game initialized with team:', team, 'year:', year)
+    
+    # Case 2: Existing game (has user_id)
+    elif user_id:
+        try:
+            info = Info.objects.get(user_id=user_id)
+            
+            # If we're in progression stage, move to preseason
+            if info.stage == "progression":
+                next_season(info)
+                info.stage = "preseason"
+                info.save()
+                
+        except Info.DoesNotExist:
+            # If user_id is invalid or expired, create a new one
+            print('info not found for user_id:', user_id)
+            return Response(
+                {
+                    "error": "Your session has expired. Please return to the home page to start a new game.",
+                    "redirect": "/"
+                },
+                status=400
+            )
+    
+    # Case 3: No identifiers provided (neither team/year nor user_id)
+    else:
+        # No way to identify the session - redirect to home page
+        return Response(
+            {
+                "error": "No session information found. Please start a new game from the home page.",
+                "redirect": "/"
+            },
+            status=400
+        )
 
     team = info.team
 
@@ -105,7 +134,7 @@ def noncon(request):
             "team": TeamsSerializer(team).data,
             "schedule": schedule,
             "user_id": user_id,
-            "replace": replace,
+            "replace": replace,  # This flag tells the frontend whether to replace the stored user_id
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

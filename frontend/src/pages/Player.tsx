@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL } from "../config";
+import { apiService, usePageRefresh } from "../services/api";
 import {
   Box,
   Table,
@@ -20,7 +19,7 @@ import {
 import Navbar from "../components/Navbar";
 import { TeamLogo, TeamLink } from "../components/TeamComponents";
 import TeamInfoModal from "../components/TeamInfoModal";
-import { Team, Info, Conference, Player, GameLog, usePageRefresh } from "../interfaces";
+import { Team, Info, Conference, Player, GameLog } from "../interfaces";
 
 // Simple PlayerData interface that builds on existing interfaces
 interface PlayerData {
@@ -55,6 +54,7 @@ export default function PlayerPage() {
       .join(' ');
   };
 
+  // Use the new usePageRefresh from api.ts
   usePageRefresh<PlayerData>(setData);
 
   useEffect(() => {
@@ -63,9 +63,11 @@ export default function PlayerPage() {
         setLoading(true);
         const year = searchParams.get("year");
         const id = playerId?.split("/").pop();
-        const url = `${API_BASE_URL}/api/player/${id}${year ? `?year=${year}` : ""}`;
-        const response = await axios.get(url);
-        setData(response.data);
+        
+        if (id) {
+          const responseData = await apiService.getPlayer<PlayerData>(id, year || undefined);
+          setData(responseData);
+        }
       } catch (error) {
         console.error("Error fetching player data:", error);
         setError("Failed to load player data");

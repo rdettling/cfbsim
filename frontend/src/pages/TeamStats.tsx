@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService, usePageRefresh } from '../services/api';
 import type { Team, Info, Conference, TeamStats as TeamStatsType } from '../interfaces';
-import { usePageRefresh } from '../interfaces';
 import {
     Container,
     Typography,
@@ -45,8 +43,8 @@ const TeamStats = () => {
         const fetchStats = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${API_BASE_URL}/api/team_stats`);
-                setData(response.data);
+                const responseData = await apiService.getTeamStatsList<TeamStatsData>();
+                setData(responseData);
             } catch (error) {
                 setError('Failed to load team stats');
                 console.error('Error fetching team stats:', error);

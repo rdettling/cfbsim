@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
-import { usePageRefresh } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 
 import {
@@ -38,8 +36,8 @@ const Rankings = () => {
 
     const fetchRankings = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/rankings`);
-            setData(response.data);
+            const responseData = await apiService.getRankings<RankingsData>();
+            setData(responseData);
         } catch (error) {
             setError('Failed to load rankings data');
         } finally {
@@ -47,6 +45,7 @@ const Rankings = () => {
         }
     };
 
+    // Use the new usePageRefresh from api.ts
     usePageRefresh<RankingsData>(setData);
 
     useEffect(() => {

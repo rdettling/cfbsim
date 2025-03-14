@@ -1,9 +1,6 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
-import { usePageRefresh } from '../interfaces'; 
-
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, ScheduleGame, Info, Conference } from '../interfaces';
 import {
     Container,
@@ -50,10 +47,13 @@ const TeamSchedule = () => {
     const fetchSchedule = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(
-                `${API_BASE_URL}/api/${teamName}/schedule${year ? `?year=${year}` : ''}`
-            );
-            setData(response.data);
+            if (teamName) {
+                const responseData = await apiService.getTeamSchedule<ScheduleData>(
+                    teamName, 
+                    year || undefined
+                );
+                setData(responseData);
+            }
         } catch (err) {
             setError('Failed to load schedule');
             console.error('Error fetching schedule:', err);
@@ -62,6 +62,7 @@ const TeamSchedule = () => {
         }
     };
 
+    // Use the new usePageRefresh from api.ts
     usePageRefresh<ScheduleData>(setData);
 
     useEffect(() => {

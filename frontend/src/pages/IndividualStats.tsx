@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import { Link as RouterLink } from 'react-router-dom';
@@ -11,8 +10,6 @@ import {
 import Navbar from '../components/Navbar';
 import TeamInfoModal from '../components/TeamInfoModal';
 
-const INDIVIDUAL_STATS_URL = `${API_BASE_URL}/api/individual_stats`;
-
 interface PlayerData {
     id: number;
     first: string;
@@ -21,6 +18,13 @@ interface PlayerData {
     team: string;
     gamesPlayed: number;
     stats: Record<string, number>;
+}
+
+interface StatsData {
+    info: Info;
+    team: Team;
+    conferences: Conference[];
+    stats: Record<string, Record<string, PlayerData>>;
 }
 
 const StatsTable = ({ stats, sortBy }: { stats: Record<string, PlayerData>, sortBy: string }) => {
@@ -71,12 +75,7 @@ const StatsTable = ({ stats, sortBy }: { stats: Record<string, PlayerData>, sort
 };
 
 const IndividualStats = () => {
-    const [data, setData] = useState<{
-        info: Info;
-        team: Team;
-        conferences: Conference[];
-        stats: Record<string, Record<string, PlayerData>>;
-    } | null>(null);
+    const [data, setData] = useState<StatsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [tabValue, setTabValue] = useState(0);
@@ -85,8 +84,8 @@ const IndividualStats = () => {
         const fetchStats = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(INDIVIDUAL_STATS_URL);
-                setData(response.data);
+                const responseData = await apiService.getIndividualStatsList<StatsData>();
+                setData(responseData);
             } catch (error) {
                 setError('Failed to load individual stats');
             } finally {
@@ -95,6 +94,9 @@ const IndividualStats = () => {
         };
         fetchStats();
     }, []);
+
+    // Add usePageRefresh for automatic data updates
+    usePageRefresh<StatsData>(setData);
 
     useEffect(() => {
         document.title = 'Individual Stats';

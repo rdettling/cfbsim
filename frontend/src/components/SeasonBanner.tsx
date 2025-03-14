@@ -2,7 +2,7 @@ import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { Info } from '../interfaces';
 import axios from 'axios';
 import { useState } from 'react';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '../services/api';
 import LoadingDialog from './LoadingDialog';
 import { useNavigate } from 'react-router-dom';
 

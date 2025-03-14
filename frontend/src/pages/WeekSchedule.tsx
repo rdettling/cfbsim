@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Container,
@@ -49,6 +48,9 @@ export default function WeekSchedule() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
+    // Add usePageRefresh for automatic data updates
+    usePageRefresh<WeekScheduleData>(setData);
+
     useEffect(() => {
         const fetchSchedule = async () => {
             if (!week) {
@@ -65,8 +67,8 @@ export default function WeekSchedule() {
             }
 
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/week/${weekNum}`);
-                setData(response.data);
+                const responseData = await apiService.getWeekSchedule<WeekScheduleData>(weekNum);
+                setData(responseData);
             } catch (error) {
                 console.error('Error fetching week schedule:', error);
                 setError('Failed to load week schedule data');

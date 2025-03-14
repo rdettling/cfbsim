@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { apiService } from '../services/api';
 import { GamePreviewData } from '../interfaces';
 import {
     Button,
@@ -11,8 +10,6 @@ import {
 import Navbar from '../components/Navbar';
 import GamePreview from '../components/GamePreview';
 import { useParams, useNavigate } from 'react-router-dom';
-
-const GAME_URL = (id: string) => `${API_BASE_URL}/api/game/${id}`;
 
 const Game = () => {
     const { id } = useParams<{ id: string }>();
@@ -25,8 +22,8 @@ const Game = () => {
         const fetchGame = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(GAME_URL(id!));
-                setData(response.data);
+                const responseData = await apiService.getGame<GamePreviewData>(id!);
+                setData(responseData);
             } catch (error) {
                 setError('Failed to load game data');
                 console.error('Error fetching game:', error);

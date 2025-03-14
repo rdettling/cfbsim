@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
-import { usePageRefresh } from '../interfaces';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
@@ -91,8 +89,10 @@ const Standings = () => {
     useEffect(() => {
         const fetchStandings = async () => {
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/standings/${conference_name}`);
-                setData(response.data);
+                if (conference_name) {
+                    const responseData = await apiService.getConferenceStandings<StandingsData>(conference_name);
+                    setData(responseData);
+                }
             } catch (error) {
                 setError('Failed to load standings data');
             } finally {
