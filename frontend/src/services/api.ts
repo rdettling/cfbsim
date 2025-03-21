@@ -23,12 +23,19 @@ const api = axios.create({
 api.interceptors.request.use(config => {
     let userId = localStorage.getItem('user_id');
     
+    // console.log('Interceptor - User ID from localStorage:', userId);
+    
     if (!userId) {
         // Will be set by first response
         config.headers['X-User-ID'] = '';
+        // console.log('No user ID found, setting empty header');
     } else {
         config.headers['X-User-ID'] = userId;
+        // console.log('Setting X-User-ID header:', userId);
     }
+    
+    // Log all headers being sent
+    // console.log('Request headers:', config.headers);
     
     return config;
 });
@@ -108,16 +115,14 @@ export const apiService = {
         request<T>('get', '/api/rankings', week ? { params: { week } } : undefined),
     
     // Team related endpoints
-    getTeam: <T>(teamName: string) => 
-        request<T>('get', `/api/team/${teamName}`),
     getTeamSchedule: <T>(teamName: string, year?: string) => 
-        request<T>('get', `/api/team/${teamName}/schedule`, year ? { params: { year } } : undefined),
+        request<T>('get', `/api/${teamName}/schedule`, year ? { params: { year } } : undefined),
     getTeamRoster: <T>(teamName: string) => 
-        request<T>('get', `/api/team/${teamName}/roster`),
+        request<T>('get', `/api/${teamName}/roster`),
     getTeamHistory: <T>(teamName: string) => 
-        request<T>('get', `/api/team/${teamName}/history`),
+        request<T>('get', `/api/${teamName}/history`),
     getTeamStats: <T>(teamName: string) => 
-        request<T>('get', `/api/team/${teamName}/stats`),
+        request<T>('get', `/api/${teamName}/stats`),
     
     // Playoff
     getPlayoff: <T>() => 

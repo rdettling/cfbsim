@@ -1,10 +1,9 @@
 import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { Info } from '../interfaces';
-import axios from 'axios';
 import { useState } from 'react';
-import { API_BASE_URL } from '../services/api';
 import LoadingDialog from './LoadingDialog';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '../services/api';
 
 interface SeasonBannerProps {
     info: Info & { lastWeek: number };
@@ -40,7 +39,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
         setAnchorEl(null);
         setIsSimulating(true);
         try {
-            await axios.get(`${API_BASE_URL}/api/sim/${destWeek}`);
+            await apiService.get(`/api/sim/${destWeek}`);
             window.dispatchEvent(new Event('pageDataRefresh'));
         } catch (error) {
             console.error('Error simulating weeks:', error);
