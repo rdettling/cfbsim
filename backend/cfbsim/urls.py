@@ -18,6 +18,7 @@ urlpatterns = [
 
 # Only add the catch-all route in production
 if not DEV:
-    urlpatterns.append(
+    # Make this its own separate pattern list to ensure proper ordering
+    urlpatterns += [
         re_path(r"^.*$", TemplateView.as_view(template_name="index.html"))
-    )
+    ]

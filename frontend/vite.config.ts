@@ -14,5 +14,13 @@ export default defineConfig(({ mode }) => {
     },
     // This ensures files in the public directory are copied to dist
     publicDir: 'public',
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+      },
+    },
   }
 })

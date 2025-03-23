@@ -91,8 +91,10 @@ const request = async <T>(
 export const apiService = {
     // Home page
     getHome: <T>(year?: string) => {
-        console.log(`Making request to /api/home${year ? `?year=${year}` : ''}`);
-        return request<T>('get', '/api/home', year ? { params: { year } } : undefined);
+        const url = '/api/home/';
+        console.log(`Making request to ${url}${year ? `?year=${year}` : ''}`);
+        console.log('Full URL with base:', `${API_BASE_URL}${url}`);
+        return request<T>('get', url, year ? { params: { year } } : undefined);
     },
     
     // Non-conference
