@@ -197,9 +197,39 @@ const Home = () => {
                             <Button
                               variant="contained"
                               size="small"
-                              onClick={() => navigate('/noncon', {
-                                state: { fromHome: true, team: team.name, year: selectedYear }
-                              })}
+                              onClick={() => {
+                                // Set up a loading state
+                                const buttonElement = document.activeElement as HTMLButtonElement;
+                                if (buttonElement) {
+                                  buttonElement.disabled = true;
+                                  buttonElement.innerHTML = 'Loading...';
+                                }
+                                
+                                console.log(`Starting new game with: ${team.name} - ${selectedYear}`);
+                                
+                                // Call the API directly with the query parameters
+                                apiService.get(`/api/noncon/`, {
+                                  team: team.name,
+                                  year: selectedYear
+                                })
+                                  .then(response => {
+                                    // The user_id is automatically stored in localStorage via the interceptor
+                                    navigate('/noncon', {
+                                      state: { 
+                                        fromHome: true,
+                                        initialData: response 
+                                      }
+                                    });
+                                  })
+                                  .catch(error => {
+                                    console.error('Error starting new game:', error);
+                                    // Reset button state on error
+                                    if (buttonElement) {
+                                      buttonElement.disabled = false;
+                                      buttonElement.innerHTML = 'Select';
+                                    }
+                                  });
+                              }}
                             >
                               Select
                             </Button>
