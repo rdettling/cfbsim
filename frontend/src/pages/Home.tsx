@@ -67,8 +67,10 @@ const Home = () => {
       if (pendingFetch.current) return;
       pendingFetch.current = true;
       
+      console.log("Attempting to fetch initial data from /api/home");
       try {
         const responseData = await apiService.getHome<LaunchProps>('');
+        console.log("Response received:", responseData);
         setData(responseData);
         
         if (responseData.selected_year) {
@@ -136,7 +138,7 @@ const Home = () => {
                 onChange={handleYearChange} 
                 sx={{ minWidth: 120, mb: 2 }}
               >
-                {data.years.map((year) => (
+                {data?.years?.map((year) => (
                   <MenuItem key={year} value={year}>{year}</MenuItem>
                 ))}
               </Select>

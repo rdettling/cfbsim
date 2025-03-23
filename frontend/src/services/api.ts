@@ -90,8 +90,10 @@ const request = async <T>(
 // API endpoint functions
 export const apiService = {
     // Home page
-    getHome: <T>(year?: string) => 
-        request<T>('get', '/api/home', year ? { params: { year } } : undefined),
+    getHome: <T>(year?: string) => {
+        console.log(`Making request to /api/home${year ? `?year=${year}` : ''}`);
+        return request<T>('get', '/api/home', year ? { params: { year } } : undefined);
+    },
     
     // Non-conference
     getNonCon: <T>() => 
