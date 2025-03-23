@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { apiService } from '../services/api';
@@ -50,6 +50,7 @@ interface LaunchProps {
   years: string[];
   info: Info | null;
   preview: PreviewData | null;
+  selected_year?: string;
 }
 
 const Home = () => {
@@ -58,29 +59,54 @@ const Home = () => {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [previewTab, setPreviewTab] = useState('teams');
   const navigate = useNavigate();
+  const pendingFetch = useRef(false);
 
-  const fetchHomeData = async (year: string) => {
-    try {
-      const responseData = await apiService.getHome<LaunchProps>(year);
-      setData(responseData);
-      if (!selectedYear && responseData.years.length > 0) {
-        setSelectedYear(responseData.years[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-
+  // Load initial data when component mounts
   useEffect(() => {
-    fetchHomeData(selectedYear);
-  }, [selectedYear]);
+    const fetchInitialData = async () => {
+      if (pendingFetch.current) return;
+      pendingFetch.current = true;
+      
+      try {
+        const responseData = await apiService.getHome<LaunchProps>('');
+        setData(responseData);
+        
+        if (responseData.selected_year) {
+          setSelectedYear(responseData.selected_year);
+        }
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+      } finally {
+        pendingFetch.current = false;
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Handle year selection change
+  const handleYearChange = (event: any) => {
+    const newYear = event.target.value;
+    setSelectedYear(newYear);
+    
+    // Fetch preview data for the selected year
+    (async () => {
+      if (pendingFetch.current) return;
+      pendingFetch.current = true;
+      
+      try {
+        const responseData = await apiService.getHome<LaunchProps>(newYear);
+        setData(prevData => ({ ...prevData, preview: responseData.preview }));
+      } catch (error) {
+        console.error('Error fetching year data:', error);
+      } finally {
+        pendingFetch.current = false;
+      }
+    })();
+  };
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-  };
-
-  const handleYearChange = (event: any) => {
-    setSelectedYear(event.target.value);
   };
 
   const getLoadGameLink = (info: Info): string => {
@@ -105,7 +131,11 @@ const Home = () => {
           {activeTab === 0 && (
             <Box>
               <Typography variant="h6" gutterBottom>Start year:</Typography>
-              <Select value={selectedYear} onChange={handleYearChange} sx={{ minWidth: 120, mb: 2 }}>
+              <Select 
+                value={selectedYear} 
+                onChange={handleYearChange} 
+                sx={{ minWidth: 120, mb: 2 }}
+              >
                 {data.years.map((year) => (
                   <MenuItem key={year} value={year}>{year}</MenuItem>
                 ))}
@@ -145,14 +175,14 @@ const Home = () => {
         </Box>
 
         {/* Middle and Right Columns - Only show if activeTab is 0 (New Game) */}
-        {activeTab === 0 && (
+        {activeTab === 0 && data.preview && (
           <>
-            {/* Middle Column */}
+            {/* Middle Column - Team Rankings */}
             <Box sx={{ width: `calc(33% - 40px)`, position: 'fixed', left: '33%', top: '40px' }}>
               <Paper sx={{ p: 3, height: '80vh', overflow: 'auto', width: '100%' }}>
                 <Typography variant="h4" gutterBottom align="center">Team Rankings</Typography>
                 <Stack direction="column" spacing={1} sx={{ width: '100%' }}>
-                  {data.preview && [...data.preview.conferences.flatMap(conf => conf.teams), ...data.preview.independents]
+                  {[...data.preview.conferences.flatMap(conf => conf.teams), ...data.preview.independents]
                     .sort((a, b) => b.prestige - a.prestige)
                     .map((team, index) => (
                       <Card key={team.name} sx={{ py: 1, width: '100%' }}>
@@ -167,15 +197,9 @@ const Home = () => {
                             <Button
                               variant="contained"
                               size="small"
-                              onClick={() => {
-                                navigate('/noncon', {
-                                  state: { 
-                                    fromHome: true,
-                                    team: team.name,
-                                    year: selectedYear
-                                  }
-                                });
-                              }}
+                              onClick={() => navigate('/noncon', {
+                                state: { fromHome: true, team: team.name, year: selectedYear }
+                              })}
                             >
                               Select
                             </Button>
@@ -187,7 +211,7 @@ const Home = () => {
               </Paper>
             </Box>
 
-            {/* Right Column */}
+            {/* Right Column - Year Preview */}
             <Box sx={{ width: '33%', position: 'fixed', right: 20, top: '40px' }}>
               <Paper sx={{ p: 3, height: '80vh', display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h4" gutterBottom>Preview for {selectedYear}</Typography>
@@ -198,8 +222,8 @@ const Home = () => {
                 </Tabs>
 
                 <Box sx={{ flex: 1, overflow: 'auto', mt: 2 }}>
-                  {/* Preview content tabs */}
-                  {previewTab === "teams" && data.preview && (
+                  {/* Teams tab */}
+                  {previewTab === "teams" && (
                     <Box>
                       {data.preview.conferences.map((conf) => (
                         <Accordion key={conf.confName}>
@@ -212,17 +236,15 @@ const Home = () => {
                           <AccordionDetails>
                             <Stack direction="column" spacing={1}>
                               {conf.teams.map(team => (
-                                <Box key={team.name}>
-                                  <Card sx={{ py: 1 }}>
-                                    <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
-                                      <Stack direction="row" spacing={2} alignItems="center">
-                                        <TeamLogo name={team.name} size={40} />
-                                        <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
-                                        <Typography variant="body2">Prestige: {team.prestige}</Typography>
-                                      </Stack>
-                                    </CardContent>
-                                  </Card>
-                                </Box>
+                                <Card key={team.name} sx={{ py: 1 }}>
+                                  <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
+                                    <Stack direction="row" spacing={2} alignItems="center">
+                                      <TeamLogo name={team.name} size={40} />
+                                      <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
+                                      <Typography variant="body2">Prestige: {team.prestige}</Typography>
+                                    </Stack>
+                                  </CardContent>
+                                </Card>
                               ))}
                             </Stack>
                           </AccordionDetails>
@@ -236,17 +258,15 @@ const Home = () => {
                         <AccordionDetails>
                           <Stack direction="column" spacing={1}>
                             {data.preview.independents.map(team => (
-                              <Box key={team.name}>
-                                <Card sx={{ py: 1 }}>
-                                  <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
-                                    <Stack direction="row" spacing={2} alignItems="center">
-                                      <TeamLogo name={team.name} size={40} />
-                                      <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
-                                      <Typography variant="body2">Prestige: {team.prestige}</Typography>
-                                    </Stack>
-                                  </CardContent>
-                                </Card>
-                              </Box>
+                              <Card key={team.name} sx={{ py: 1 }}>
+                                <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
+                                  <Stack direction="row" spacing={2} alignItems="center">
+                                    <TeamLogo name={team.name} size={40} />
+                                    <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
+                                    <Typography variant="body2">Prestige: {team.prestige}</Typography>
+                                  </Stack>
+                                </CardContent>
+                              </Card>
                             ))}
                           </Stack>
                         </AccordionDetails>
@@ -254,7 +274,8 @@ const Home = () => {
                     </Box>
                   )}
 
-                  {previewTab === "rivalries" && data.preview && (
+                  {/* Rivalries tab */}
+                  {previewTab === "rivalries" && (
                     <Box>
                       <Typography sx={{ mb: 2 }} variant="subtitle1">
                         Rivalry games are guaranteed to happen every year
@@ -290,7 +311,8 @@ const Home = () => {
                     </Box>
                   )}
 
-                  {previewTab === "playoff" && data.preview && (
+                  {/* Playoff tab */}
+                  {previewTab === "playoff" && (
                     <Box>
                       <Typography>Total Teams in Playoff: {data.preview.playoff.teams}</Typography>
                       <Typography>Autobids: {data.preview.playoff.autobids}</Typography>

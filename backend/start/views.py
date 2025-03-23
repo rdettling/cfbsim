@@ -24,12 +24,16 @@ def home(request):
     user_id = request.headers.get("X-User-ID")
     year = request.GET.get("year")
 
+    # Get user info if it exists
+    info_data = None
     try:
-        info = Info.objects.get(user_id=user_id)
-        info_data = InfoSerializer(info).data
+        if user_id:
+            info = Info.objects.get(user_id=user_id)
+            info_data = InfoSerializer(info).data
     except Info.DoesNotExist:
-        info_data = None
+        pass
 
+    # Get available years - only once, regardless of 'year' parameter
     years = [
         f.split(".")[0]
         for f in os.listdir(settings.YEARS_DATA_DIR)
@@ -37,19 +41,29 @@ def home(request):
     ]
     years.sort(reverse=True)
 
-    # Get preview data for the selected year
+    # Get preview data for the selected year or first year if none provided
     preview_data = None
-    if year:
-        with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
-            preview_data = json.load(metadataFile)
+    preview_year = year or (years[0] if years else None)
+    
+    if preview_year:
+        try:
+            with open(f"{settings.YEARS_DATA_DIR}/{preview_year}.json", "r") as metadataFile:
+                preview_data = json.load(metadataFile)
 
-            # Sort teams by prestige within each conference
-            for conf in preview_data["conferences"]:
-                conf["teams"] = sorted(
-                    conf["teams"], key=lambda team: team["prestige"], reverse=True
-                )
+                # Sort teams by prestige within each conference
+                for conf in preview_data["conferences"]:
+                    conf["teams"] = sorted(
+                        conf["teams"], key=lambda team: team["prestige"], reverse=True
+                    )
+        except (FileNotFoundError, IOError) as e:
+            print(f"Error loading preview data for year {preview_year}: {e}")
 
-    return Response({"info": info_data, "years": years, "preview": preview_data})
+    return Response({
+        "info": info_data, 
+        "years": years, 
+        "preview": preview_data,
+        "selected_year": preview_year  # Return the year that was actually used
+    })
 
 
 @api_view(["GET"])
