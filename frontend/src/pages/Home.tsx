@@ -67,10 +67,8 @@ const Home = () => {
       if (pendingFetch.current) return;
       pendingFetch.current = true;
       
-      console.log("Attempting to fetch initial data from /api/home");
       try {
         const responseData = await apiService.getHome<LaunchProps>('');
-        console.log("Response received:", responseData);
         setData(responseData);
         
         if (responseData.selected_year) {

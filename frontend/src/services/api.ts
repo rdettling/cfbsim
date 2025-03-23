@@ -61,11 +61,27 @@ const request = async <T>(
     options?: { params?: Record<string, any>; data?: any }
 ): Promise<T> => {
     try {
-        let response: AxiosResponse<T>;
+        // Add debug logging for all API calls
+        const fullUrl = `${API_BASE_URL}${url}`;
+        const queryParams = options?.params 
+            ? `?${new URLSearchParams(options.params as Record<string, string>).toString()}`
+            : '';
+        
+        console.log(`Making ${method.toUpperCase()} request to: ${url}${queryParams}`);
+        console.log(`Full URL with base: ${fullUrl}${queryParams}`);
+        
+        if (options?.data) {
+            console.log('Request payload:', options.data);
+        }
+        
+        // Create the config object
         const config = {
             params: options?.params
         };
 
+        // Make the API request
+        let response: AxiosResponse<T>;
+        
         switch (method) {
             case 'get':
                 response = await api.get<T>(url, config);
@@ -81,8 +97,12 @@ const request = async <T>(
                 break;
         }
 
+        // Log the complete response data
+        console.log(`Response from ${url}:`, response.data);
+        
         return response.data;
     } catch (error) {
+        console.error(`Error in ${method.toUpperCase()} request to ${url}:`, error);
         return handleError(error as AxiosError);
     }
 };
@@ -90,12 +110,8 @@ const request = async <T>(
 // API endpoint functions
 export const apiService = {
     // Home page
-    getHome: <T>(year?: string) => {
-        const url = '/api/home/';
-        console.log(`Making request to ${url}${year ? `?year=${year}` : ''}`);
-        console.log('Full URL with base:', `${API_BASE_URL}${url}`);
-        return request<T>('get', url, year ? { params: { year } } : undefined);
-    },
+    getHome: <T>(year?: string) => 
+        request<T>('get', '/api/home/', year ? { params: { year } } : undefined),
     
     // Non-conference
     getNonCon: <T>() => 
