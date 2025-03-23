@@ -21,21 +21,11 @@ const api = axios.create({
 
 // Add client ID to all requests
 api.interceptors.request.use(config => {
-    let userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('user_id');
     
-    // console.log('Interceptor - User ID from localStorage:', userId);
-    
-    if (!userId) {
-        // Will be set by first response
-        config.headers['X-User-ID'] = '';
-        console.log('No user ID found, setting empty header');
-    } else {
+    if (userId) {
         config.headers['X-User-ID'] = userId;
-        console.log('Setting X-User-ID header:', userId);
     }
-    
-    // Log all headers being sent
-    // console.log('Request headers:', config.headers);
     
     return config;
 });
@@ -43,7 +33,8 @@ api.interceptors.request.use(config => {
 // Store client ID from response if present
 api.interceptors.response.use(
     response => {
-        if (response.data.replace) {
+        // Only store user_id if explicitly provided in response
+        if (response.data.user_id) {
             localStorage.setItem('user_id', response.data.user_id);
         }
         return response;

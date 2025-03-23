@@ -59,87 +59,49 @@ def noncon(request):
     team = request.GET.get("team")
     year = request.GET.get("year")
     
-    replace = False
-    
-    # Case 1: New game from home page (has team and year)
+    # Handle new game creation
     if team and year:
-        # Generate a new user_id for this session
         user_id = str(uuid.uuid4())
-        replace = True
-        # Initialize a new game with the selected team and year
         info = init(user_id, team, year)
         print('new game initialized with team:', team, 'year:', year)
-    
-    # Case 2: Existing game (has user_id)
-    elif user_id:
+    else:
         try:
             info = Info.objects.get(user_id=user_id)
-            
-            # If we're in progression stage, move to preseason
             if info.stage == "progression":
                 next_season(info)
                 info.stage = "preseason"
                 info.save()
-                
         except Info.DoesNotExist:
-            # If user_id is invalid or expired, create a new one
-            print('info not found for user_id:', user_id)
             return Response(
-                {
-                    "error": "Your session has expired. Please return to the home page to start a new game.",
-                    "redirect": "/"
-                },
+                {"error": "Session expired. Please start a new game.", "redirect": "/"},
                 status=400
             )
+
+    # Get team's schedule
+    games = (info.team.games_as_teamA.filter(year=info.currentYear) | 
+            info.team.games_as_teamB.filter(year=info.currentYear)).order_by("weekPlayed")
     
-    # Case 3: No identifiers provided (neither team/year nor user_id)
-    else:
-        # No way to identify the session - redirect to home page
-        return Response(
-            {
-                "error": "No session information found. Please start a new game from the home page.",
-                "redirect": "/"
-            },
-            status=400
-        )
+    # Build schedule with empty weeks where no game is scheduled
+    schedule = [
+        get_schedule_game(info.team, games_by_week[week]) if week in games_by_week else {"weekPlayed": week, "opponent": None}
+        for week in range(1, 13)
+        for games_by_week in [{game.weekPlayed: game for game in games}]
+    ]
 
-    team = info.team
+    response_data = {
+        "info": InfoSerializer(info).data,
+        "team": TeamsSerializer(info.team).data,
+        "schedule": schedule,
+        "conferences": ConferencesSerializer(
+            info.conferences.all().order_by("confName"), many=True
+        ).data,
+    }
 
-    # Get team's games
-    games = (
-        team.games_as_teamA.filter(year=info.currentYear)
-        | team.games_as_teamB.filter(year=info.currentYear)
-    ).order_by("weekPlayed")
+    # Add user_id to response only for new games
+    if team and year:
+        response_data["user_id"] = user_id
 
-    # Process games into schedule format
-    schedule = []
-    games_by_week = {game.weekPlayed: game for game in games}
-
-    # Build full schedule with empty weeks where no game is scheduled
-    for week in range(1, 13):
-        if week in games_by_week:
-            game = games_by_week[week]
-            schedule.append(get_schedule_game(team, game))
-        else:
-            schedule.append(
-                {
-                    "weekPlayed": week,
-                    "opponent": None,
-                }
-            )
-
-    return Response(
-        {
-            "info": InfoSerializer(info).data,
-            "team": TeamsSerializer(team).data,
-            "schedule": schedule,
-            "user_id": user_id,
-            "replace": replace,  # This flag tells the frontend whether to replace the stored user_id
-            "conferences": ConferencesSerializer(
-                info.conferences.all().order_by("confName"), many=True
-            ).data,
-        }
-    )
+    return Response(response_data)
 
 
 @api_view(["GET"])
