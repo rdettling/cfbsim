@@ -28,10 +28,10 @@ api.interceptors.request.use(config => {
     if (!userId) {
         // Will be set by first response
         config.headers['X-User-ID'] = '';
-        // console.log('No user ID found, setting empty header');
+        console.log('No user ID found, setting empty header');
     } else {
         config.headers['X-User-ID'] = userId;
-        // console.log('Setting X-User-ID header:', userId);
+        console.log('Setting X-User-ID header:', userId);
     }
     
     // Log all headers being sent
@@ -138,7 +138,7 @@ export const apiService = {
     
     // Schedule
     getWeekSchedule: <T>(week: number) => 
-        request<T>('get', `/api/schedule/${week}`),
+        request<T>('get', `/api/week/${week}`),
     
     // Game related endpoints
     getGame: <T>(gameId: string) => 

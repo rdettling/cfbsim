@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Core Settings
-DEV = False
+# Use environment variable with a default value
+DEV = os.environ.get("DJANGO_ENV", "development") == "development"
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost 127.0.0.1").split(" ")

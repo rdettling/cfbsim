@@ -1,7 +1,6 @@
 import { Modal, Box, Typography, Link } from '@mui/material';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../services/api';
+import { apiService } from '../services/api';
 import { Link as RouterLink } from 'react-router-dom';
 
 interface TeamInfo {
@@ -24,6 +23,10 @@ interface TeamInfo {
     } | null;
 }
 
+interface TeamInfoResponse {
+    team: TeamInfo;
+}
+
 interface TeamInfoModalProps {
     teamName: string;
     open: boolean;
@@ -37,9 +40,14 @@ export default function TeamInfoModal({ teamName, open, onClose }: TeamInfoModal
     useEffect(() => {
         const fetchTeamInfo = async () => {
             try {
-                const encodedTeamName = encodeURIComponent(teamName);
-                const response = await axios.get(`${API_BASE_URL}/api/team_info?team_name=${encodedTeamName}`);
-                setTeamInfo(response.data.team);
+                if (!teamName) return;
+                
+                // Use apiService instead of direct axios call
+                const response = await apiService.get<TeamInfoResponse>('/api/team_info', { 
+                    team_name: teamName 
+                });
+                
+                setTeamInfo(response.team);
             } catch (error) {
                 console.error('Error fetching team info:', error);
             } finally {
@@ -48,6 +56,7 @@ export default function TeamInfoModal({ teamName, open, onClose }: TeamInfoModal
         };
 
         if (open) {
+            setLoading(true);
             fetchTeamInfo();
         }
     }, [teamName, open]);
