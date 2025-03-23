@@ -115,59 +115,59 @@ export const apiService = {
     
     // Non-conference
     getNonCon: <T>() => 
-        request<T>('get', '/api/noncon'),
+        request<T>('get', '/api/noncon/'),
     
     // Dashboard
     getDashboard: <T>() => 
-        request<T>('get', '/api/dashboard'),
+        request<T>('get', '/api/dashboard/'),
     
     // Rankings
     getRankings: <T>(week?: number) => 
-        request<T>('get', '/api/rankings', week ? { params: { week } } : undefined),
+        request<T>('get', '/api/rankings/', week ? { params: { week } } : undefined),
     
     // Team related endpoints
     getTeamSchedule: <T>(teamName: string, year?: string) => 
-        request<T>('get', `/api/${teamName}/schedule`, year ? { params: { year } } : undefined),
+        request<T>('get', `/api/${teamName}/schedule/`, year ? { params: { year } } : undefined),
     getTeamRoster: <T>(teamName: string) => 
-        request<T>('get', `/api/${teamName}/roster`),
+        request<T>('get', `/api/${teamName}/roster/`),
     getTeamHistory: <T>(teamName: string) => 
-        request<T>('get', `/api/${teamName}/history`),
+        request<T>('get', `/api/${teamName}/history/`),
     getTeamStats: <T>(teamName: string) => 
-        request<T>('get', `/api/${teamName}/stats`),
+        request<T>('get', `/api/${teamName}/stats/`),
     
     // Playoff
     getPlayoff: <T>() => 
-        request<T>('get', '/api/playoff'),
+        request<T>('get', '/api/playoff/'),
     
     // Conference standings
     getConferenceStandings: <T>(conferenceName: string) => 
-        request<T>('get', `/api/standings/${conferenceName}`),
+        request<T>('get', `/api/standings/${conferenceName}/`),
     
     // Player related endpoints
     getPlayer: <T>(playerId: string, year?: string) => 
-        request<T>('get', `/api/player/${playerId}`, year ? { params: { year } } : undefined),
+        request<T>('get', `/api/player/${playerId}/`, year ? { params: { year } } : undefined),
     
     // Schedule
     getWeekSchedule: <T>(week: number) => 
-        request<T>('get', `/api/week/${week}`),
+        request<T>('get', `/api/week/${week}/`),
     
     // Game related endpoints
     getGame: <T>(gameId: string) => 
-        request<T>('get', `/api/game/${gameId}`),
+        request<T>('get', `/api/game/${gameId}/`),
     
     // Stats
     getTeamStatsList: <T>(filters?: Record<string, any>) => 
-        request<T>('get', '/api/stats/team', { params: filters }),
+        request<T>('get', '/api/stats/team/', { params: filters }),
     getIndividualStatsList: <T>(filters?: Record<string, any>) => 
-        request<T>('get', '/api/stats/individual', { params: filters }),
+        request<T>('get', '/api/stats/individual/', { params: filters }),
     
     // Season summary
     getSeasonSummary: <T>() => 
-        request<T>('get', '/api/summary'),
+        request<T>('get', '/api/summary/'),
     
     // Roster progression
     getRosterProgression: <T>() => 
-        request<T>('get', '/api/roster_progression'),
+        request<T>('get', '/api/roster_progression/'),
     
     // Generic request function for custom endpoints
     get: <T>(endpoint: string, params?: Record<string, any>) => 
