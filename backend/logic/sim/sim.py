@@ -417,53 +417,13 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
     if game.scoreA == game.scoreB:
         overtime(game, info, drives_to_create, plays_to_create)
 
-    # Process game result
-    updateGameResult(game, info)
-
-
-def updateGameResult(game, info=None):
-    """
-    Update game result and team statistics based on the final score.
-
-    Args:
-        game: The completed game
-        info: Optional info object for database operations
-    """
+    # Set the winner without updating team records
     if game.scoreA > game.scoreB:
         game.winner = game.teamA
-        winner, loser = game.teamA, game.teamB
         game.resultA, game.resultB = "W", "L"
     else:
         game.winner = game.teamB
-        winner, loser = game.teamB, game.teamA
         game.resultA, game.resultB = "L", "W"
-
-    if info:
-        # Update team statistics
-        is_conference_game = winner.conference and (
-            winner.conference == loser.conference
-        )
-
-        if is_conference_game:
-            winner.confWins += 1
-            loser.confLosses += 1
-        else:
-            winner.nonConfWins += 1
-            loser.nonConfLosses += 1
-
-        winner.totalWins += 1
-        loser.totalLosses += 1
-
-        # Update resume scores
-        winner.resume_total += loser.rating**WIN_FACTOR
-        loser.resume_total += winner.rating**LOSS_FACTOR
-
-        # Add teams to the teams_to_update list for bulk update
-        if hasattr(info, "teams_to_update") and isinstance(info.teams_to_update, list):
-            if game.teamA not in info.teams_to_update:
-                info.teams_to_update.append(game.teamA)
-            if game.teamB not in info.teams_to_update:
-                info.teams_to_update.append(game.teamB)
 
 
 def overtime(game, info=None, drives_to_create=None, plays_to_create=None):

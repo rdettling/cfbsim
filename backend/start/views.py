@@ -44,10 +44,12 @@ def home(request):
     # Get preview data for the selected year or first year if none provided
     preview_data = None
     preview_year = year or (years[0] if years else None)
-    
+
     if preview_year:
         try:
-            with open(f"{settings.YEARS_DATA_DIR}/{preview_year}.json", "r") as metadataFile:
+            with open(
+                f"{settings.YEARS_DATA_DIR}/{preview_year}.json", "r"
+            ) as metadataFile:
                 preview_data = json.load(metadataFile)
 
                 # Sort teams by prestige within each conference
@@ -58,12 +60,19 @@ def home(request):
         except (FileNotFoundError, IOError) as e:
             print(f"Error loading preview data for year {preview_year}: {e}")
 
-    return Response({
-        "info": info_data, 
-        "years": years, 
-        "preview": preview_data,
-        "selected_year": preview_year  # Return the year that was actually used
-    })
+    print("\npreview_data")
+    print(preview_data)
+    print("\ninfo_data")
+    print(info_data)
+
+    return Response(
+        {
+            "info": info_data,
+            "years": years,
+            "preview": preview_data,
+            "selected_year": preview_year,  # Return the year that was actually used
+        }
+    )
 
 
 @api_view(["GET"])
@@ -72,12 +81,12 @@ def noncon(request):
     user_id = request.headers.get("X-User-ID")
     team = request.GET.get("team")
     year = request.GET.get("year")
-    
+
     # Handle new game creation
     if team and year:
         user_id = str(uuid.uuid4())
         info = init(user_id, team, year)
-        print('new game initialized with team:', team, 'year:', year)
+        print("new game initialized with team:", team, "year:", year)
     else:
         try:
             info = Info.objects.get(user_id=user_id)
@@ -88,16 +97,22 @@ def noncon(request):
         except Info.DoesNotExist:
             return Response(
                 {"error": "Session expired. Please start a new game.", "redirect": "/"},
-                status=400
+                status=400,
             )
 
     # Get team's schedule
-    games = (info.team.games_as_teamA.filter(year=info.currentYear) | 
-            info.team.games_as_teamB.filter(year=info.currentYear)).order_by("weekPlayed")
-    
+    games = (
+        info.team.games_as_teamA.filter(year=info.currentYear)
+        | info.team.games_as_teamB.filter(year=info.currentYear)
+    ).order_by("weekPlayed")
+
     # Build schedule with empty weeks where no game is scheduled
     schedule = [
-        get_schedule_game(info.team, games_by_week[week]) if week in games_by_week else {"weekPlayed": week, "opponent": None}
+        (
+            get_schedule_game(info.team, games_by_week[week])
+            if week in games_by_week
+            else {"weekPlayed": week, "opponent": None}
+        )
         for week in range(1, 13)
         for games_by_week in [{game.weekPlayed: game for game in games}]
     ]

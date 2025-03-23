@@ -10,15 +10,12 @@ from logic.headlines import generate_headlines
 import time
 from start.models import *
 import random
+from logic.sim.sim import WIN_FACTOR, LOSS_FACTOR
 
 
 def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     """Fetch games for the current week and simulate them with batch team updates"""
     query_start = time.time()
-
-    # Initialize teams_to_update if it doesn't exist
-    if not hasattr(info, "teams_to_update"):
-        info.teams_to_update = []
 
     # Use select_related to reduce database queries
     games = list(
@@ -30,57 +27,105 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     query_time = time.time() - query_start
     print(f"  Query games: {query_time:.4f} seconds, {len(games)} games found")
 
-    # Track games played by each team in this week
-    games_played_counter = {}
+    # Create a team dictionary to track all updates
+    team_updates = {}
+    for game in games:
+        if game.teamA_id not in team_updates:
+            team_updates[game.teamA_id] = {
+                "team": game.teamA,
+                "confWins": 0,
+                "confLosses": 0,
+                "nonConfWins": 0,
+                "nonConfLosses": 0,
+                "totalWins": 0,
+                "totalLosses": 0,
+                "resume_total": 0,
+                "gamesPlayed": 0,
+            }
+        if game.teamB_id not in team_updates:
+            team_updates[game.teamB_id] = {
+                "team": game.teamB,
+                "confWins": 0,
+                "confLosses": 0,
+                "nonConfWins": 0,
+                "nonConfLosses": 0,
+                "totalWins": 0,
+                "totalLosses": 0,
+                "resume_total": 0,
+                "gamesPlayed": 0,
+            }
 
     # Simulate all games for the current week
     sim_start = time.time()
 
     for game in games:
         # Track that these teams will play a game
-        games_played_counter[game.teamA.id] = (
-            games_played_counter.get(game.teamA.id, 0) + 1
-        )
-        games_played_counter[game.teamB.id] = (
-            games_played_counter.get(game.teamB.id, 0) + 1
-        )
+        team_updates[game.teamA_id]["gamesPlayed"] += 1
+        team_updates[game.teamB_id]["gamesPlayed"] += 1
 
         # Simulate the game
         simGame(game, info, drives_to_create, plays_to_create)
 
+        # Instead of letting simGame update the team objects directly,
+        # we'll capture the results here and apply them in batch
+        if game.winner == game.teamA:
+            winner_id, loser_id = game.teamA_id, game.teamB_id
+        else:
+            winner_id, loser_id = game.teamB_id, game.teamA_id
+
+        # Track conference/non-conference results
+        is_conference_game = (
+            game.teamA.conference
+            and game.teamB.conference
+            and game.teamA.conference == game.teamB.conference
+        )
+
+        if is_conference_game:
+            team_updates[winner_id]["confWins"] += 1
+            team_updates[loser_id]["confLosses"] += 1
+        else:
+            team_updates[winner_id]["nonConfWins"] += 1
+            team_updates[loser_id]["nonConfLosses"] += 1
+
+        # Track total wins/losses
+        team_updates[winner_id]["totalWins"] += 1
+        team_updates[loser_id]["totalLosses"] += 1
+
+        # Update resume scores
+        team_updates[winner_id]["resume_total"] += game.teamB.rating**WIN_FACTOR
+        team_updates[loser_id]["resume_total"] += game.teamA.rating**LOSS_FACTOR
+
+    # Apply all team updates at once after all games are simulated
+    teams_to_update = []
+    for team_id, update in team_updates.items():
+        team = update["team"]
+        team.confWins += update["confWins"]
+        team.confLosses += update["confLosses"]
+        team.nonConfWins += update["nonConfWins"]
+        team.nonConfLosses += update["nonConfLosses"]
+        team.totalWins += update["totalWins"]
+        team.totalLosses += update["totalLosses"]
+        team.resume_total += update["resume_total"]
+        team.gamesPlayed += update["gamesPlayed"]
+        teams_to_update.append(team)
+
+    # Bulk update teams
+    Teams.objects.bulk_update(
+        teams_to_update,
+        [
+            "confWins",
+            "confLosses",
+            "nonConfWins",
+            "nonConfLosses",
+            "totalWins",
+            "totalLosses",
+            "resume_total",
+            "gamesPlayed",
+        ],
+    )
+
     sim_time = time.time() - sim_start
     print(f"  Total simulation time: {sim_time:.4f} seconds")
-
-    # Perform bulk update of teams after all games are simulated
-    if info.teams_to_update:
-        # Create a dictionary of teams by ID for quick lookup
-        teams_dict = {team.id: team for team in info.teams_to_update}
-
-        # Update gamesPlayed for each team based on the counter
-        for team_id, games_count in games_played_counter.items():
-            if team_id in teams_dict:
-                teams_dict[team_id].gamesPlayed += games_count
-
-        team_update_start = time.time()
-        Teams.objects.bulk_update(
-            info.teams_to_update,
-            [
-                "totalWins",
-                "totalLosses",
-                "confWins",
-                "confLosses",
-                "nonConfWins",
-                "nonConfLosses",
-                "resume_total",
-                "gamesPlayed",
-            ],
-        )
-        print(
-            f"  Team stats bulk update: {time.time() - team_update_start:.4f} seconds"
-        )
-
-        # Clear the list for the next batch
-        info.teams_to_update = []
 
     return games
 
