@@ -60,10 +60,6 @@ def home(request):
         except (FileNotFoundError, IOError) as e:
             print(f"Error loading preview data for year {preview_year}: {e}")
 
-    print("\npreview_data")
-    print(preview_data)
-    print("\ninfo_data")
-    print(info_data)
 
     return Response(
         {
@@ -81,56 +77,98 @@ def noncon(request):
     user_id = request.headers.get("X-User-ID")
     team = request.GET.get("team")
     year = request.GET.get("year")
-
+    
+    print(f"[DEBUG] noncon API called with: user_id={user_id}, team={team}, year={year}")
+    
     # Handle new game creation
     if team and year:
-        user_id = str(uuid.uuid4())
-        info = init(user_id, team, year)
-        print("new game initialized with team:", team, "year:", year)
+        try:
+            print(f"[DEBUG] Creating new game for team: {team}, year: {year}")
+            user_id = str(uuid.uuid4())
+            print(f"[DEBUG] Generated new user_id: {user_id}")
+            info = init(user_id, team, year)
+            print(f"[DEBUG] Game initialized successfully, team: {team}, year: {year}")
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize game: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            return Response(
+                {"error": f"Failed to initialize game: {str(e)}", "details": traceback.format_exc()},
+                status=500
+            )
     else:
         try:
+            print(f"[DEBUG] Loading existing game for user_id: {user_id}")
             info = Info.objects.get(user_id=user_id)
+            print(f"[DEBUG] Found info for user_id: {user_id}, team: {info.team.name}")
+            
             if info.stage == "progression":
+                print(f"[DEBUG] Stage is progression, running next_season()")
                 next_season(info)
                 info.stage = "preseason"
                 info.save()
+                print(f"[DEBUG] Updated stage to preseason")
         except Info.DoesNotExist:
+            print(f"[ERROR] Info not found for user_id: {user_id}")
             return Response(
                 {"error": "Session expired. Please start a new game.", "redirect": "/"},
                 status=400,
             )
+        except Exception as e:
+            print(f"[ERROR] Error loading existing game: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            return Response(
+                {"error": f"Error loading existing game: {str(e)}", "details": traceback.format_exc()},
+                status=500
+            )
 
-    # Get team's schedule
-    games = (
-        info.team.games_as_teamA.filter(year=info.currentYear)
-        | info.team.games_as_teamB.filter(year=info.currentYear)
-    ).order_by("weekPlayed")
+    try:
+        # Get team's schedule
+        print(f"[DEBUG] Getting schedule for team: {info.team.name}")
+        games = (
+            info.team.games_as_teamA.filter(year=info.currentYear)
+            | info.team.games_as_teamB.filter(year=info.currentYear)
+        ).order_by("weekPlayed")
+        
+        print(f"[DEBUG] Found {games.count()} games for team: {info.team.name}")
 
-    # Build schedule with empty weeks where no game is scheduled
-    schedule = [
-        (
-            get_schedule_game(info.team, games_by_week[week])
-            if week in games_by_week
-            else {"weekPlayed": week, "opponent": None}
+        # Build schedule with empty weeks where no game is scheduled
+        schedule = [
+            (
+                get_schedule_game(info.team, games_by_week[week])
+                if week in games_by_week
+                else {"weekPlayed": week, "opponent": None}
+            )
+            for week in range(1, 13)
+            for games_by_week in [{game.weekPlayed: game for game in games}]
+        ]
+
+        response_data = {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(info.team).data,
+            "schedule": schedule,
+            "conferences": ConferencesSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+
+        # Add user_id to response only for new games
+        if team and year:
+            response_data["user_id"] = user_id
+            print(f"[DEBUG] Added user_id to response for new game: {user_id}")
+
+        print(f"[DEBUG] Successfully prepared response data")
+        return Response(response_data)
+    
+    except Exception as e:
+        print(f"[ERROR] Error building response: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        return Response(
+            {"error": f"Error building response: {str(e)}", "details": traceback.format_exc()},
+            status=500
         )
-        for week in range(1, 13)
-        for games_by_week in [{game.weekPlayed: game for game in games}]
-    ]
-
-    response_data = {
-        "info": InfoSerializer(info).data,
-        "team": TeamsSerializer(info.team).data,
-        "schedule": schedule,
-        "conferences": ConferencesSerializer(
-            info.conferences.all().order_by("confName"), many=True
-        ).data,
-    }
-
-    # Add user_id to response only for new games
-    if team and year:
-        response_data["user_id"] = user_id
-
-    return Response(response_data)
 
 
 @api_view(["GET"])
