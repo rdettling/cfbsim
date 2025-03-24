@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
-import { TeamLink, TeamLogo } from '../components/TeamComponents';
+import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { Link as RouterLink } from 'react-router-dom';
 import {
     Container, Typography, Box, Tabs, Tab, CircularProgress, Alert,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Link as MuiLink
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-import TeamInfoModal from '../components/TeamInfoModal';
 
 interface PlayerData {
     id: number;

@@ -19,7 +19,7 @@ import {
     Tab
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-import TeamInfoModal from '../components/TeamInfoModal';
+import { TeamInfoModal } from '../components/TeamComponents';
 
 interface TeamStatsData {
     info: Info;

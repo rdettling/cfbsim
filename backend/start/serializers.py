@@ -25,6 +25,8 @@ class TeamsSerializer(serializers.ModelSerializer):
             "totalLosses",
             "offense",
             "defense",
+            "colorPrimary",
+            "colorSecondary",
         ]
 
     def get_conference(self, obj):

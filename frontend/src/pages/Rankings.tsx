@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
-import { TeamLink, TeamLogo } from '../components/TeamComponents';
+import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 
 import {
     Container,
@@ -18,7 +18,6 @@ import {
     Alert
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-import TeamInfoModal from '../components/TeamInfoModal';
 
 interface RankingsData {
     info: Info;

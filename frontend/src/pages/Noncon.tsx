@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiService, usePageRefresh } from "../services/api";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
-import { TeamLink, TeamLogo } from '../components/TeamComponents';
+import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import {
     Container,
     Typography,
@@ -21,7 +21,6 @@ import {
     Box,
 } from "@mui/material";
 import Navbar from "../components/Navbar";
-import TeamInfoModal from "../components/TeamInfoModal";
 
 interface NonConData {
     info: Info;
@@ -164,10 +163,7 @@ export const NonCon = () => {
                                                 <Typography>#{game.opponent.ranking}</Typography>
                                             )}
                                             <TeamLogo name={game.opponent.name} size={40} />
-                                            <TeamLink
-                                                name={game.opponent.name}
-                                                onTeamClick={handleTeamClick}
-                                            />
+                                            <TeamLink name={game.opponent.name} onTeamClick={handleTeamClick} />
                                         </Stack>
                                     )}
                                 </TableCell>

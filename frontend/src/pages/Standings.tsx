@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
-import { TeamLink, TeamLogo } from '../components/TeamComponents';
+import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import {
     Container, Typography, TableContainer, Table,
     TableHead, TableBody, TableRow, TableCell,
     Paper, Box, CircularProgress, Alert
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-import TeamInfoModal from '../components/TeamInfoModal';
 
 interface StandingsData {
     info: Info;

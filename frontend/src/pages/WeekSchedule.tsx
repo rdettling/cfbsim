@@ -15,8 +15,7 @@ import {
     Chip
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-import TeamInfoModal from '../components/TeamInfoModal';
-import { TeamLogo } from '../components/TeamComponents';
+import { TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 
 interface Game {
     id: number;

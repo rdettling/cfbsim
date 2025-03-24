@@ -17,8 +17,7 @@ import {
   Container,
 } from "@mui/material";
 import Navbar from "../components/Navbar";
-import { TeamLogo, TeamLink } from "../components/TeamComponents";
-import TeamInfoModal from "../components/TeamInfoModal";
+import { TeamLogo, TeamLink, TeamInfoModal } from "../components/TeamComponents";
 import { Team, Info, Conference, Player, GameLog } from "../interfaces";
 
 // Simple PlayerData interface that builds on existing interfaces

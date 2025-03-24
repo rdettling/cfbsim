@@ -7,8 +7,7 @@ import {
     TableRow, Paper
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-// import { TeamLink } from '../components/TeamComponents';
-import TeamInfoModal from '../components/TeamInfoModal';
+import { TeamInfoModal } from '../components/TeamComponents';
 
 
 

@@ -186,114 +186,31 @@ def get_next_game(info, team):
         return None
 
 
-# def fetch_play(request):
-#     user_id = request.session.session_key
-#     info = Info.objects.get(user_id=user_id)
-
-#     last_play_id = request.GET.get("current_play_id")
-#     last_play_text = last_play_yards = None
-
-#     if last_play_id:
-#         last_play = info.plays.get(id=last_play_id)
-#         current_play = info.plays.filter(id=last_play.next_play_id).first()
-#         last_play_text = f"{last_play.header}: {last_play.text}"
-#         if last_play.result != "touchdown":
-#             last_play_yards = last_play.yardsGained
-
-#     else:
-#         game_id = request.GET.get("game_id")
-#         game = info.games.get(id=game_id)
-#         current_play = game.plays.first()
-
-#     if not current_play:
-#         game_id = request.GET.get("game_id")
-#         game = info.games.get(id=game_id)
-#         teamA = game.teamA.name
-#         teamB = game.teamB.name
-
-#         return JsonResponse(
-#             {
-#                 "status": "finished",
-#                 "teamA": teamA,
-#                 "teamB": teamB,
-#                 "scoreA": game.scoreA,
-#                 "scoreB": game.scoreB,
-#                 "last_play_text": last_play_text,
-#                 "ot": game.overtime,
-#             }
-#         )
-
-#     offense = current_play.offense.name
-#     teamA = current_play.game.teamA.name
-#     teamB = current_play.game.teamB.name
-#     colorAPrimary = current_play.game.teamA.colorPrimary
-#     colorASecondary = current_play.game.teamA.colorSecondary
-#     colorBPrimary = current_play.game.teamB.colorPrimary
-#     colorBSecondary = current_play.game.teamB.colorSecondary
-
-#     if offense == teamA:
-#         ballPosition = lineOfScrimmage = current_play.startingFP
-#         firstDownLine = current_play.yardsLeft + current_play.startingFP
-#     else:
-#         ballPosition = lineOfScrimmage = 100 - current_play.startingFP
-#         firstDownLine = 100 - (current_play.yardsLeft + current_play.startingFP)
-
-#     completed_drives = []
-#     if current_play:
-#         drive_num = (
-#             current_play.drive.driveNum // 2
-#         ) + 1  # Adjust to start from 1 and have two drives per number
-#         drive_fraction = f"{drive_num}/{DRIVES_PER_TEAM}"
-#         if drive_num > DRIVES_PER_TEAM:
-#             drive_fraction = "OT"
-
-#         for drive in current_play.game.drives.exclude(result__isnull=True):
-#             if drive.id < current_play.drive.id:
-#                 # Calculate yards gained using the drive's own data
-#                 if drive.offense == current_play.game.teamA:
-#                     yards_gained = drive.startingFP - drive.plays.last().startingFP
-#                 else:
-#                     yards_gained = drive.plays.last().startingFP - drive.startingFP
-
-#                 adjusted_drive_num = (drive.driveNum // 2) + 1  # Adjust drive number
-
-#                 completed_drives.append(
-#                     {
-#                         "offense": drive.offense.name,
-#                         "offense_color": drive.offense.colorPrimary,
-#                         "offense_secondary_color": drive.offense.colorSecondary,
-#                         "yards": yards_gained,
-#                         "result": drive.result,
-#                         "points": drive.points,
-#                         "scoreA": drive.scoreAAfter,
-#                         "scoreB": drive.scoreBAfter,
-#                         "driveNum": adjusted_drive_num,
-#                     }
-#                 )
-
-#     return JsonResponse(
-#         {
-#             "status": "success",
-#             "offense": offense,
-#             "teamA": teamA,
-#             "teamB": teamB,
-#             "colorAPrimary": colorAPrimary,
-#             "colorBPrimary": colorBPrimary,
-#             "colorASecondary": colorASecondary,
-#             "colorBSecondary": colorBSecondary,
-#             "ballPosition": ballPosition,
-#             "lineOfScrimmage": lineOfScrimmage,
-#             "firstDownLine": firstDownLine,
-#             "lastPlayYards": last_play_yards,
-#             "scoreA": current_play.scoreA,
-#             "scoreB": current_play.scoreB,
-#             "current_play_header": current_play.header,
-#             "last_play_text": last_play_text,
-#             "current_play_id": current_play.id,
-#             "completed_drives": completed_drives,
-#             "drive_fraction": drive_fraction,
-#         }
-#     )
+def sort_standings(teams):
+    """
+    Sort teams for standings display based on conference record, wins, losses, and ranking.
+    Works for both conference teams and independent teams.
+    
+    Args:
+        teams: List of team objects to sort
+        
+    Returns:
+        Sorted list of teams
+    """
+    # Sort by conference win percentage, wins, losses, then ranking
+    return sorted(
+        teams,
+        key=lambda t: (
+            (
+                -t.confWins / (t.confWins + t.confLosses)
+                if (t.confWins + t.confLosses) > 0
+                else 0
+            ),
+            -t.confWins,
+            t.confLosses,
+            t.ranking,
+        )
+    )
 
 
 def get_recruiting_points(prestige):

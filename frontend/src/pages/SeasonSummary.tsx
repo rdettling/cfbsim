@@ -17,8 +17,7 @@ import {
     Alert
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-import TeamInfoModal from '../components/TeamInfoModal';
-
+import { TeamInfoModal } from '../components/TeamComponents';
 interface RealignmentData {
     [team: string]: {
         old: string;

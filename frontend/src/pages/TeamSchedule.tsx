@@ -19,9 +19,8 @@ import {
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
-import TeamInfoModal from '../components/TeamInfoModal';
 import TeamHeader from '../components/TeamHeader';
-
+import { TeamInfoModal } from '../components/TeamComponents';
 interface ScheduleData {
     info: Info;
     team: Team;

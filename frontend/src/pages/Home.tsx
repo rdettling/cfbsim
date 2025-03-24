@@ -27,7 +27,7 @@ import {
   CardContent,
   TableContainer
 } from '@mui/material';
-import { TeamLogo } from '../components/TeamComponents';
+import { TeamLogo, ConfLogo } from '../components/TeamComponents';
 
 interface Rivalry {
   0: string;  // Team 1
@@ -259,7 +259,7 @@ const Home = () => {
                         <Accordion key={conf.confName}>
                           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                             <Stack direction="row" spacing={2} alignItems="center">
-                              <TeamLogo name={conf.confName} size={40} />
+                              <ConfLogo name={conf.confName} size={40} />
                               <Typography>{conf.confFullName} ({conf.confName})</Typography>
                             </Stack>
                           </AccordionSummary>

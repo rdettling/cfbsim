@@ -246,25 +246,15 @@ def dashboard(request):
 
     # Get conference teams or independent teams based on team's status
     if team.conference:
+        # Get teams and use the sort_standings function for consistent sorting
         conf_teams = list(team.conference.teams.all())
-        # Sort by conference win percentage, then ranking
-        conf_teams.sort(
-            key=lambda t: (
-                (
-                    -t.confWins / (t.confWins + t.confLosses)
-                    if (t.confWins + t.confLosses) > 0
-                    else 0
-                ),
-                t.ranking,
-            )
-        )
+        conf_teams = sort_standings(conf_teams)
         related_teams = TeamsSerializer(conf_teams, many=True).data
     else:
-        # For independent teams, get other independents sorted by ranking
-        related_teams = TeamsSerializer(
-            info.teams.filter(conference=None).exclude(id=team.id).order_by("ranking"),
-            many=True,
-        ).data
+        # For independent teams, get other independents and sort them too
+        independent_teams = list(info.teams.filter(conference=None).exclude(id=team.id))
+        independent_teams = sort_standings(independent_teams)
+        related_teams = TeamsSerializer(independent_teams, many=True).data
 
     return Response(
         {
@@ -637,6 +627,9 @@ def roster_progression(request):
     )
 
 
+
+
+
 @api_view(["GET"])
 def standings(request, conference_name):
     """API endpoint for conference standings data"""
@@ -659,41 +652,33 @@ def standings(request, conference_name):
     if conference_name != "independent":
         conference = info.conferences.get(confName=conference_name)
         teams = list(conference.teams.all())
-
-        # Sort by conference win percentage, wins, losses, then ranking
-        teams.sort(
-            key=lambda t: (
-                (
-                    -t.confWins / (t.confWins + t.confLosses)
-                    if (t.confWins + t.confLosses) > 0
-                    else 0
-                ),
-                -t.confWins,
-                t.confLosses,
-                t.ranking,
-            )
-        )
+        
+        # Use the new sorting function
+        sorted_teams = sort_standings(teams)
 
         return Response(
             {
                 "info": InfoSerializer(info).data,
                 "team": TeamsSerializer(info.team).data,
                 "conference": conference.confName,
-                "teams": [process_team(team) for team in teams],
+                "teams": [process_team(team) for team in sorted_teams],
                 "conferences": ConferenceNameSerializer(
                     info.conferences.all().order_by("confName"), many=True
                 ).data,
             }
         )
     else:
-        independent_teams = info.teams.filter(conference=None).order_by(
-            "-totalWins", "-resume", "ranking"
-        )
+        independent_teams = list(info.teams.filter(conference=None))
+        
+        # For independents, we still want to sort them, but they're primarily ordered by total wins
+        # You can either modify sort_standings to handle this case or use a different approach
+        sorted_independents = sort_standings(independent_teams)
+        
         return Response(
             {
                 "info": InfoSerializer(info).data,
                 "team": TeamsSerializer(info.team).data,
-                "teams": [process_team(team) for team in independent_teams],
+                "teams": [process_team(team) for team in sorted_independents],
                 "conferences": ConferenceNameSerializer(
                     info.conferences.all().order_by("confName"), many=True
                 ).data,
