@@ -6,8 +6,8 @@ import { Conference, Team, Info } from '../interfaces';
 import { TeamLogo } from './TeamComponents';
 import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';
-import { STAGES } from '../constants/stages'; // Adjust the path as necessary
-
+import { STAGES } from '../constants/stages';
+import { apiService } from '../services/api';
 
 interface NavbarProps {
     team: Team;
@@ -16,17 +16,13 @@ interface NavbarProps {
     conferences: Conference[];
 }
 
-interface MenuState {
-    [key: string]: HTMLElement | null;
-}
-
 const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
     const navigate = useNavigate();
     const currentStageInfo = STAGES.find(stage => stage.id === currentStage);
     const nextStageInfo = STAGES.find(stage => stage.id === currentStageInfo?.next);
+    const [menuAnchors, setMenuAnchors] = useState<Record<string, HTMLElement | null>>({});
 
-    const [menuAnchors, setMenuAnchors] = useState<MenuState>({});
-
+    // Menu handling functions
     const handleMenuOpen = (menu: string) => (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchors({ ...menuAnchors, [menu]: event.currentTarget });
     };
@@ -40,6 +36,14 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         handleMenuClose(menu)();
     };
 
+    // API-based navigation
+    const navigateWithApi = (path: string, apiCall: () => Promise<any>) => () => {
+        apiCall()
+            .then(() => navigate(path))
+            .catch(err => console.error(`Error navigating to ${path}:`, err));
+    };
+
+    // Dropdown menu configurations
     const dropdownMenus = [
         {
             id: 'team',
@@ -86,7 +90,10 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
 
                 <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
                     {currentStage === 'season' && (
-                        <Button color="inherit" onClick={() => navigate('/dashboard')}>
+                        <Button 
+                            color="inherit" 
+                            onClick={navigateWithApi('/dashboard', apiService.getDashboard)}
+                        >
                             Dashboard
                         </Button>
                     )}
@@ -113,10 +120,16 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                         </div>
                     ))}
 
-                    <Button color="inherit" onClick={() => navigate('/rankings')}>
+                    <Button 
+                        color="inherit" 
+                        onClick={navigateWithApi('/rankings', apiService.getRankings)}
+                    >
                         Rankings
                     </Button>
-                    <Button color="inherit" onClick={() => navigate('/playoff')}>
+                    <Button 
+                        color="inherit" 
+                        onClick={navigateWithApi('/playoff', apiService.getPlayoff)}
+                    >
                         Playoff
                     </Button>
                 </Stack>
@@ -136,7 +149,11 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                         )
                     )}
 
-                    <Button color="inherit" onClick={() => navigate('/')} startIcon={<HomeIcon />}>
+                    <Button 
+                        color="inherit" 
+                        onClick={navigateWithApi('/', () => apiService.getHome())}
+                        startIcon={<HomeIcon />}
+                    >
                         Home
                     </Button>
                 </Box>

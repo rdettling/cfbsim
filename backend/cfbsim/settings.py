@@ -22,7 +22,7 @@ if DEV:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-    # For development (if you want Django to serve these files)
+
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR.parent, "frontend/public"),  # Development static files
     ]
@@ -35,11 +35,9 @@ else:
             ssl_require=os.environ.get("SSL_REQUIRE"),
         )
     }
-    # For production (after building the React app)
+
     STATICFILES_DIRS = [
-        os.path.join(
-            BASE_DIR, "..", "frontend", "dist"
-        )  # Point to the entire dist folder
+        os.path.join(BASE_DIR.parent, "frontend/dist"),
     ]
 
 
@@ -129,8 +127,8 @@ USE_I18N = True
 USE_TZ = True
 
 # Static Files
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 YEARS_DATA_DIR = BASE_DIR / "data" / "years"
 
 STATICFILES_FINDERS = [
@@ -147,3 +145,6 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.AllowAny",
     ]
 }
+
+# Use a simpler storage backend to avoid potential issues
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'

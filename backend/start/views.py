@@ -422,8 +422,9 @@ def sim(request, dest_week):
     return Response(
         {
             "status": "success",
-            "execution_time": total_time,
+            "execution_time": round(total_time, 2),
             "weeks_simulated": dest_week - start_week,
+            'time_per_week': round(total_time / (dest_week - start_week), 2)
         }
     )
 
