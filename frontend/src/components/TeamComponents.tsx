@@ -107,7 +107,7 @@ export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) =
         if (!open || !teamName) return;
 
         setLoading(true);
-        apiService.get<TeamInfoResponse>('/api/team_info', { team_name: teamName })
+        apiService.get<TeamInfoResponse>('/api/team_info/', { team_name: teamName })
             .then(response => setTeamInfo(response.team))
             .catch(error => console.error('Error fetching team info:', error))
             .finally(() => setLoading(false));

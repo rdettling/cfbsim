@@ -20,16 +20,19 @@ interface DashboardData {
     conferences: Conference[];
 }
 
-const GameCard = ({ game, type, onTeamClick }: { game: ScheduleGame, type: 'prev' | 'curr', onTeamClick: (name: string) => void }) => (
+// Game card with clickable team name
+const GameCard = ({ game, type, onTeamClick }: { 
+    game: ScheduleGame, 
+    type: 'prev' | 'curr', 
+    onTeamClick: (name: string) => void 
+}) => (
     <Card elevation={3} sx={{ 
         mb: 2, 
         borderLeft: type === 'prev' ? 
             `5px solid ${game.result?.includes('W') ? 'green' : game.result?.includes('L') ? 'red' : 'grey'}` : 
             '5px solid #1976d2', 
+        '&:hover': { transform: 'translateY(-3px)' },
         transition: 'transform 0.2s',
-        '&:hover': {
-            transform: 'translateY(-3px)'
-        }
     }}>
         <CardContent>
             <Typography variant="subtitle1" fontWeight="bold" color="text.secondary" gutterBottom>
@@ -40,9 +43,13 @@ const GameCard = ({ game, type, onTeamClick }: { game: ScheduleGame, type: 'prev
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TeamLogo name={game.opponent.name} size={40} />
                     <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        <MuiLink
+                            component="button"
+                            onClick={() => onTeamClick(game.opponent.name)}
+                            sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' }}
+                        >
                             {game.opponent.ranking > 0 ? `#${game.opponent.ranking} ` : ''}{game.opponent.name}
-                        </Typography>
+                        </MuiLink>
                         <Typography variant="body2" color="text.secondary">
                             {game.opponent.record}
                         </Typography>
@@ -52,7 +59,7 @@ const GameCard = ({ game, type, onTeamClick }: { game: ScheduleGame, type: 'prev
                 {type === 'prev' && (
                     <Chip 
                         label={game.result} 
-                        color={game.result?.includes('W') ? 'success' : game.result?.includes('L') ? 'error' : 'default'} 
+                        color={game.result?.includes('W') ? 'success' : 'error'} 
                         size="medium"
                         sx={{ fontWeight: 'bold' }}
                     />
@@ -66,7 +73,7 @@ const GameCard = ({ game, type, onTeamClick }: { game: ScheduleGame, type: 'prev
             )}
             
             {type === 'curr' && (
-                <Box sx={{ mb: 2, px: 1, py: 0.5, bgcolor: 'rgba(0,0,0,0.04)', borderRadius: 1 }}>
+                <Box sx={{ mb: 2, p: 1, bgcolor: 'rgba(0,0,0,0.04)', borderRadius: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2">Spread: <strong>{game.spread}</strong></Typography>
                         <Typography variant="body2">Moneyline: <strong>{game.moneyline}</strong></Typography>
@@ -74,11 +81,7 @@ const GameCard = ({ game, type, onTeamClick }: { game: ScheduleGame, type: 'prev
                 </Box>
             )}
             
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Button size="small" onClick={() => onTeamClick(game.opponent.name)}>
-                    Team Info
-                </Button>
-                
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <MuiLink href={`/game/${game.id}`} sx={{ textDecoration: 'none' }}>
                     <Button size="small" variant="outlined">
                         {type === 'prev' ? 'Game Summary' : 'Game Preview'}
@@ -89,6 +92,7 @@ const GameCard = ({ game, type, onTeamClick }: { game: ScheduleGame, type: 'prev
     </Card>
 );
 
+// Team row with clickable team name
 const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClick }: { 
     team: Team, 
     showRating?: boolean, 
@@ -98,27 +102,21 @@ const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClic
 }) => (
     <TableRow 
         sx={{
-            backgroundColor: highlight ? 'rgba(25, 118, 210, 0.08)' : 'inherit',
-            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
+            bgcolor: highlight ? 'rgba(25, 118, 210, 0.08)' : 'inherit',
+            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
         }}
     >
-        {rank !== undefined && (
-            <TableCell sx={{ fontWeight: 'bold', width: '40px' }}>
-                {rank}
-            </TableCell>
-        )}
+        {rank !== undefined && <TableCell sx={{ fontWeight: 'bold', width: '40px' }}>{rank}</TableCell>}
         <TableCell>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TeamLogo name={team.name} size={30} />
-                <Box>
-                    <MuiLink
-                        component="button"
-                        onClick={() => onTeamClick(team.name)}
-                        sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: team.ranking <= 25 ? 'bold' : 'normal' }}
-                    >
-                        {team.ranking <= 25 && `#${team.ranking} `}{team.name}
-                    </MuiLink>
-                </Box>
+                <MuiLink
+                    component="button"
+                    onClick={() => onTeamClick(team.name)}
+                    sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: team.ranking <= 25 ? 'bold' : 'normal' }}
+                >
+                    {team.ranking <= 25 && `#${team.ranking} `}{team.name}
+                </MuiLink>
             </Box>
         </TableCell>
         {showRating && <TableCell align="center">{team.rating}</TableCell>}
@@ -140,32 +138,34 @@ const Dashboard = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
+    usePageRefresh<DashboardData>(setData);
+
+    useEffect(() => {
+        const fetchDashboard = async () => {
+            try {
+                const responseData = await apiService.getDashboard<DashboardData>();
+                setData(responseData);
+            } catch (error) {
+                setError('Failed to load dashboard data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboard();
+        return () => { document.title = 'College Football'; };
+    }, []);
+
+    useEffect(() => {
+        if (data?.team.name) {
+            document.title = `${data.team.name} Dashboard`;
+        }
+    }, [data?.team.name]);
+
     const handleTeamClick = (name: string) => {
         setSelectedTeam(name);
         setModalOpen(true);
     };
-
-    const fetchDashboard = async () => {
-        try {
-            const responseData = await apiService.getDashboard<DashboardData>();
-            setData(responseData);
-        } catch (error) {
-            setError('Failed to load dashboard data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchDashboard();
-    }, []);
-
-    usePageRefresh<DashboardData>(setData);
-
-    useEffect(() => {
-        document.title = data?.team.name ? `${data.team.name} Dashboard` : 'College Football';
-        return () => { document.title = 'College Football'; };
-    }, [data?.team.name]);
 
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;
@@ -178,15 +178,7 @@ const Dashboard = () => {
             <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
             <Container>
                 {/* Team Header with Conference Logo */}
-                <Paper 
-                    elevation={2} 
-                    sx={{ 
-                        mb: 4, 
-                        p: 3, 
-                        borderRadius: 2,
-                        background: `linear-gradient(to right, rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url(${data.team.colorPrimary})`
-                    }}
-                >
+                <Paper elevation={2} sx={{ mb: 4, p: 3, borderRadius: 2 }}>
                     <Grid container spacing={2} alignItems="center">
                         <Grid item xs={12} md={1}>
                             <TeamLogo name={data.team.name} size={80} />
@@ -195,24 +187,20 @@ const Dashboard = () => {
                             <Typography variant="h3" fontWeight="bold" gutterBottom>
                                 {data.team.ranking > 0 && `#${data.team.ranking} `}{data.team.name} {data.team.mascot}
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                                <Typography variant="h6">
-                                    Record: <strong>{data.team.totalWins}-{data.team.totalLosses}</strong>
-                                    {data.team.conference && (
-                                        <> (<strong>{data.team.confWins}-{data.team.confLosses}</strong> in conference)</>
-                                    )}
-                                </Typography>
-                                <Typography variant="h6">Rating: <strong>{data.team.rating}</strong></Typography>
-                            </Box>
+                            <Typography variant="h6">
+                                Record: <strong>{data.team.totalWins}-{data.team.totalLosses}</strong>
+                                {data.team.conference && <> (<strong>{data.team.confWins}-{data.team.confLosses}</strong> in conference)</>}
+                                &nbsp;&nbsp;•&nbsp;&nbsp;Rating: <strong>{data.team.rating}</strong>
+                            </Typography>
                         </Grid>
-                        <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                            {confName && (
+                        {confName && (
+                            <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <Box sx={{ textAlign: 'center' }}>
                                     <ConfLogo name={confName} size={60} />
                                     <Typography variant="subtitle1" sx={{ mt: 1 }}>{confName}</Typography>
                                 </Box>
-                            )}
-                        </Grid>
+                            </Grid>
+                        )}
                     </Grid>
                 </Paper>
 
@@ -288,7 +276,11 @@ const Dashboard = () => {
                 </Box>
             </Container>
             
-            <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
+            <TeamInfoModal 
+                teamName={selectedTeam} 
+                open={modalOpen} 
+                onClose={() => setModalOpen(false)} 
+            />
         </>
     );
 };

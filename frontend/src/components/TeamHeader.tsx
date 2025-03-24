@@ -29,6 +29,7 @@ const RatingBar = ({ value, height = 8, color }: { value: number, height?: numbe
 const TeamHeader = ({ team, teams, years, onTeamChange, onYearChange, selectedYear }: TeamHeaderProps) => {
     const primaryColor = team.colorPrimary || '#1976d2';
     const secondaryColor = team.colorSecondary || '#90caf9';
+    const isIndependent = team.conference === 'Independent';
 
     return (
         <Paper elevation={2} sx={{ mb: 4, p: 3, borderRadius: 2 }}>
@@ -38,8 +39,26 @@ const TeamHeader = ({ team, teams, years, onTeamChange, onYearChange, selectedYe
                     <TeamLogo name={team.name} size={160} />
                     {team.conference && (
                         <>
-                            <ConfLogo name={team.conference} size={60} />
-                            <Typography variant="subtitle1">{team.conference}</Typography>
+                            {isIndependent ? (
+                                <Typography 
+                                    variant="subtitle1" 
+                                    sx={{ 
+                                        mt: 1, 
+                                        fontWeight: 'bold',
+                                        border: '1px solid rgba(0,0,0,0.2)',
+                                        borderRadius: 1,
+                                        px: 2,
+                                        py: 1
+                                    }}
+                                >
+                                    Independent
+                                </Typography>
+                            ) : (
+                                <>
+                                    <ConfLogo name={team.conference} size={60} />
+                                    <Typography variant="subtitle1">{team.conference}</Typography>
+                                </>
+                            )}
                         </>
                     )}
                 </Stack>

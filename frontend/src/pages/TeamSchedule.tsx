@@ -16,11 +16,15 @@ import {
     Link,
     CircularProgress,
     Alert,
+    Chip,
+    Typography,
+    Button
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import TeamHeader from '../components/TeamHeader';
-import { TeamInfoModal } from '../components/TeamComponents';
+import { TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+
 interface ScheduleData {
     info: Info;
     team: Team;
@@ -41,7 +45,7 @@ const TeamSchedule = () => {
     const [selectedTeam, setSelectedTeam] = useState('');
 
     // Get year from URL or default to current year
-    const year = searchParams.get('year') || data?.info.currentYear.toString();
+    const year = searchParams.get('year') || data?.info.currentYear?.toString();
 
     const fetchSchedule = async () => {
         try {
@@ -52,6 +56,7 @@ const TeamSchedule = () => {
                     year || undefined
                 );
                 setData(responseData);
+                document.title = `${responseData.team.name} Schedule`;
             }
         } catch (err) {
             setError('Failed to load schedule');
@@ -93,14 +98,16 @@ const TeamSchedule = () => {
         });
     };
 
-    const handleTeamClick = (teamName: string) => {
-        setSelectedTeam(teamName);
-        setModalOpen(true);
-    };
-
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;
     if (!data) return <Alert severity="warning">No schedule data available</Alert>;
+
+    // Result styling colors - slightly darker
+    const resultStyles = {
+        win: 'rgba(46, 125, 50, 0.15)',
+        loss: 'rgba(211, 47, 47, 0.15)',
+        neutral: 'inherit'
+    };
 
     const navbarProps = {
         team: data.team,
@@ -119,23 +126,35 @@ const TeamSchedule = () => {
                     years={data.years}
                     onTeamChange={handleTeamChange}
                     onYearChange={handleYearChange}
-                    selectedYear={year || data.info.currentYear.toString()}
+                    selectedYear={year || data.info.currentYear?.toString() || ''}
                 />
                 
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="h5" sx={{ 
+                        mb: 2, 
+                        pb: 1, 
+                        borderBottom: '2px solid', 
+                        borderColor: data.team.colorPrimary || 'primary.main' 
+                    }}>
+                        Season Schedule
+                    </Typography>
+                </Box>
+                
                 {/* Schedule Table */}
-                <TableContainer component={Paper}>
-                    <Table>
+                <TableContainer component={Paper} elevation={3} sx={{ mb: 4 }}>
+                    <Table size="small">
                         <TableHead>
-                            <TableRow>
+                            <TableRow sx={{ 
+                                bgcolor: data.team.colorPrimary || 'primary.main',
+                                '& th': { color: 'white', fontWeight: 'bold' }
+                            }}>
                                 <TableCell>Week</TableCell>
-                                <TableCell>Opponent Rating</TableCell>
-                                <TableCell>Opponent Rank</TableCell>
-                                <TableCell>Opponent Record</TableCell>
                                 <TableCell>Opponent</TableCell>
-                                <TableCell>Spread</TableCell>
-                                <TableCell>Moneyline</TableCell>
-                                <TableCell>Result</TableCell>
-                                <TableCell>Label</TableCell>
+                                <TableCell align="center">Rating</TableCell>
+                                <TableCell align="center">Record</TableCell>
+                                <TableCell align="center">Spread</TableCell>
+                                <TableCell align="center">Result</TableCell>
+                                <TableCell>Notes</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -143,46 +162,68 @@ const TeamSchedule = () => {
                                 <TableRow
                                     key={game.weekPlayed}
                                     sx={{
-                                        backgroundColor: game.result === 'W'
-                                            ? '#d4edda'
-                                            : game.result === 'L'
-                                                ? '#f8d7da'
-                                                : 'inherit'
+                                        backgroundColor: game.result === 'W' 
+                                            ? resultStyles.win 
+                                            : game.result === 'L' 
+                                                ? resultStyles.loss 
+                                                : resultStyles.neutral,
+                                        '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.07)' }
                                     }}
                                 >
-                                    <TableCell>Week {game.weekPlayed}</TableCell>
-                                    <TableCell>{game.opponent.rating}</TableCell>
-                                    <TableCell>{game.opponent.ranking}</TableCell>
-                                    <TableCell>{game.opponent.record}</TableCell>
+                                    <TableCell>{game.weekPlayed}</TableCell>
                                     <TableCell>
                                         <Stack direction="row" spacing={1} alignItems="center">
-                                            <Box
-                                                component="img"
-                                                src={`/logos/teams/${game.opponent.name}.png`}
-                                                sx={{ width: 30, height: 30 }}
-                                                alt={game.opponent.name}
-                                            />
+                                            <TeamLogo name={game.opponent.name} size={30} />
                                             <Link
                                                 component="button"
-                                                onClick={() => handleTeamClick(game.opponent.name)}
-                                                sx={{ cursor: 'pointer' }}
+                                                onClick={() => {
+                                                    setSelectedTeam(game.opponent.name);
+                                                    setModalOpen(true);
+                                                }}
+                                                sx={{ 
+                                                    cursor: 'pointer', 
+                                                    textDecoration: 'none',
+                                                    fontWeight: game.opponent.ranking <= 25 ? 'bold' : 'normal'
+                                                }}
                                             >
+                                                {game.opponent.ranking <= 25 && `#${game.opponent.ranking} `}
                                                 {game.opponent.name}
                                             </Link>
                                         </Stack>
                                     </TableCell>
-                                    <TableCell>{game.spread}</TableCell>
-                                    <TableCell>{game.moneyline}</TableCell>
-                                    <TableCell>
-                                        <Link
-                                            component="button"
-                                            onClick={() => navigate(`/game/${game.id}`)}
-                                            sx={{ cursor: 'pointer' }}
-                                        >
-                                            {game.result ? `${game.result} (${game.score})` : 'Preview'}
-                                        </Link>
+                                    <TableCell align="center">{game.opponent.rating}</TableCell>
+                                    <TableCell align="center">{game.opponent.record}</TableCell>
+                                    <TableCell align="center">{game.spread || '-'}</TableCell>
+                                    <TableCell align="center">
+                                        {game.result ? (
+                                            <Chip
+                                                label={`${game.result}: ${game.score}`}
+                                                color={game.result === 'W' ? 'success' : 'error'}
+                                                variant="outlined"
+                                                size="small"
+                                                sx={{ fontWeight: 'bold' }}
+                                                onClick={() => navigate(`/game/${game.id}`)}
+                                            />
+                                        ) : (
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => navigate(`/game/${game.id}`)}
+                                            >
+                                                Preview
+                                            </Button>
+                                        )}
                                     </TableCell>
-                                    <TableCell>{game.label}</TableCell>
+                                    <TableCell>
+                                        {game.label && (
+                                            <Chip 
+                                                label={game.label} 
+                                                size="small" 
+                                                color="primary"
+                                                variant="outlined" 
+                                            />
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
