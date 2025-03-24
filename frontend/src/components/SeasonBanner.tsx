@@ -39,7 +39,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
         setAnchorEl(null);
         setIsSimulating(true);
         try {
-            await apiService.get(`/api/sim/${destWeek}`);
+            await apiService.get(`/api/sim/${destWeek}/`);
             window.dispatchEvent(new Event('pageDataRefresh'));
         } catch (error) {
             console.error('Error simulating weeks:', error);

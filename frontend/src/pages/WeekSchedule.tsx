@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import TeamInfoModal from '../components/TeamInfoModal';
+import { TeamLogo } from '../components/TeamComponents';
 
 interface Game {
     id: number;
@@ -85,30 +86,36 @@ export default function WeekSchedule() {
         return () => { document.title = 'College Football'; };
     }, [week]);
 
+    const handleTeamClick = (name: string) => {
+        setSelectedTeam(name);
+        setModalOpen(true);
+    };
+
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;
     if (!data) return <Alert severity="warning">No data available</Alert>;
 
-    const TeamRow = ({ team, rank, score }: { team: Team, rank: number, score?: number | string }) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Box
-                component="img"
-                src={`/logos/teams/${team.name}.png`}
-                sx={{ width: 30, height: 30, mr: 1 }}
-                alt={team.name}
-            />
-            <Box sx={{ flexGrow: 1 }}>
-                <MuiLink
-                    component="button"
-                    onClick={() => { setSelectedTeam(team.name); setModalOpen(true); }}
-                    sx={{ cursor: 'pointer' }}
-                >
-                    {rank < 26 && `#${rank} `}{team.name}
-                </MuiLink>
+    const TeamRow = ({ team, rank, score }: { team: Team, rank: number, score?: number | string }) => {
+        // Create a formatted display name for the UI
+        const displayName = rank < 26 ? `#${rank} ${team.name}` : team.name;
+        
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <TeamLogo name={team.name} size={30} />
+                <Box sx={{ flexGrow: 1, ml: 1 }}>
+                    {/* Pass just team.name to onTeamClick, but display the formatted name */}
+                    <MuiLink
+                        component="button"
+                        onClick={() => handleTeamClick(team.name)}
+                        sx={{ cursor: 'pointer' }}
+                    >
+                        {displayName}
+                    </MuiLink>
+                </Box>
+                <Typography>{score}</Typography>
             </Box>
-            <Typography>{score}</Typography>
-        </Box>
-    );
+        );
+    };
 
     return (
         <>
