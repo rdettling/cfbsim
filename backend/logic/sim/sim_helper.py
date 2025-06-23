@@ -8,7 +8,7 @@ from logic.schedule import (
 )
 from logic.headlines import generate_headlines
 import time
-from start.models import *
+from api.models import *
 import random
 from logic.sim.sim import WIN_FACTOR, LOSS_FACTOR
 
