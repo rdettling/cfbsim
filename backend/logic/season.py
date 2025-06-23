@@ -1,6 +1,6 @@
 from .schedule import *
 from .players import *
-from .sim.simtest import getSpread
+from .sim.sim_helper import getSpread
 from django.db import transaction
 import os
 from .sim.sim import *
@@ -22,7 +22,7 @@ def next_season(info):
 
     update_teams_and_rosters(info, data)
     refresh_teams_and_games(info)
-    uniqueGames(info, data)
+    set_rivalries(info, data)
 
 
 def update_teams_and_rosters(info, data):
@@ -189,6 +189,9 @@ def init(user_id, team_name, year):
     with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
         data = json.load(metadataFile)
 
+    with open(f"data/rivalries.json", "r") as metadataFile:
+        rivalries = json.load(metadataFile)
+
     overall_start = time.time()
 
     Info.objects.filter(user_id=user_id).delete()
@@ -198,11 +201,11 @@ def init(user_id, team_name, year):
         currentYear=year,
         startYear=year,
         stage="preseason",
-        lastWeek=data["playoff"]["lastWeek"],
+        lastWeek=data["season"]["lastWeek"],
     )
 
     playoff = Playoff.objects.create(
-        info=info, teams=data["playoff"]["teams"], autobids=data["playoff"]["autobids"]
+        info=info, teams=data["season"]["playoff"]["teams"], autobids=data["season"]["playoff"]["autobids"]
     )
     info.playoff = playoff
 
@@ -306,7 +309,7 @@ def init(user_id, team_name, year):
     print(f"Odds {time.time() - start} seconds")
 
     start = time.time()
-    uniqueGames(info, data)
+    set_rivalries(info, rivalries)
     print(f"unique games {time.time() - start} seconds")
 
     print(f"Total execution Time: {time.time() - overall_start} seconds")

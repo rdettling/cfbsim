@@ -308,10 +308,9 @@ def setConferenceChampionships(info):
     Conferences.objects.bulk_update(conferences, ["championship"])
 
 
-def uniqueGames(info, data):
+def set_rivalries(info, rivalries):
     odds = info.odds.all()
     games_to_create = []
-    games = data["rivalries"]
     teams = info.teams.all()
 
     for team in teams:
@@ -319,7 +318,7 @@ def uniqueGames(info, data):
 
     scheduled_games = {}
 
-    for game in games:
+    for game in rivalries:
         for team_name in [game[0], game[1]]:
             if team_name not in scheduled_games:
                 scheduled_games[team_name] = set()
@@ -328,7 +327,7 @@ def uniqueGames(info, data):
             scheduled_games[game[0]].add(game[2])
             scheduled_games[game[1]].add(game[2])
 
-    for game in games:
+    for game in rivalries:
         for team in teams:
             if team.name == game[0]:
                 for opponent in teams:

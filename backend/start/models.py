@@ -63,6 +63,8 @@ class Players(models.Model):
     rating_so = models.IntegerField()
     rating_jr = models.IntegerField()
     rating_sr = models.IntegerField()
+    stars = models.IntegerField()
+    development_trait = models.IntegerField()
     starter = models.BooleanField()
 
 

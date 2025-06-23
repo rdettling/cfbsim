@@ -3,7 +3,9 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 
-load_dotenv()
+# Get the project root directory (two levels up from settings.py)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(os.path.join(PROJECT_ROOT, '.env'))
 
 # Core Settings
 # Use environment variable with a default value

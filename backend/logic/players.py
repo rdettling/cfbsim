@@ -3,20 +3,7 @@ import random
 from start.models import *
 from django.db.models import Count, Sum, Case, When, F
 from collections import Counter
-
-ROSTER = {
-    "qb": 1,
-    "rb": 1,
-    "wr": 3,
-    "te": 1,
-    "ol": 5,
-    "dl": 4,
-    "lb": 3,
-    "cb": 2,
-    "s": 2,
-    "k": 1,
-    "p": 1,
-}
+from .constants.player_constants import *
 
 
 def load_names():
@@ -38,19 +25,47 @@ def load_names():
     return processed_names
 
 
-def getProgression():
-    return random.randint(1, 5)
-
-
 def getRatings(prestige):
-    variance = 15
-
-    fr = prestige - random.randint(0, variance) - 5
-    so = fr + getProgression()
-    jr = so + getProgression()
-    sr = jr + getProgression()
-
-    return (fr, so, jr, sr)
+    """
+    Generate player ratings for all years using the new star-based system.
+    Returns: (fr, so, jr, sr) ratings
+    """
+    # Determine player's star rating based on prestige tier
+    star_distribution = STARS_PRESTIGE[prestige]
+    star_rating = random.choices(
+        list(star_distribution.keys()), 
+        weights=list(star_distribution.values())
+    )[0]
+    
+    # Get base rating for this star level
+    base_rating = STARS_BASE[star_rating]
+    
+    # Add base variance
+    variance = random.uniform(-BASE_VARIANCE, BASE_VARIANCE)
+    fr_rating = base_rating + variance
+    
+    # Randomly assign development trait (1-5, equal chance)
+    development_trait = random.randint(1, 5)
+    
+    # Calculate progression for each year independently
+    so_rating = fr_rating
+    jr_rating = fr_rating
+    sr_rating = fr_rating
+    
+    # Sophomore year progression
+    min_prog, max_prog = DEVELOPMENT_RANGES[development_trait]
+    so_progression = random.uniform(min_prog, max_prog)
+    so_rating += so_progression
+    
+    # Junior year progression
+    jr_progression = random.uniform(min_prog, max_prog)
+    jr_rating = so_rating + jr_progression
+    
+    # Senior year progression
+    sr_progression = random.uniform(min_prog, max_prog)
+    sr_rating = jr_rating + sr_progression
+    
+    return (round(fr_rating), round(so_rating), round(jr_rating), round(sr_rating), star_rating, development_trait)
 
 
 def remove_seniors(info):
@@ -246,7 +261,7 @@ def fill_roster(team, loaded_names, players_to_create):
         for _ in range(needed):
             first, last = generateName(position, loaded_names)
 
-            fr, so, jr, sr = getRatings(team.prestige)
+            fr, so, jr, sr, star_rating, development_trait = getRatings(team.prestige)
 
             player = Players(
                 info=team.info,
@@ -260,6 +275,8 @@ def fill_roster(team, loaded_names, players_to_create):
                 rating_so=so,
                 rating_jr=jr,
                 rating_sr=sr,
+                stars=star_rating,
+                development_trait=development_trait,
                 starter=False,
             )
             players_to_create.append(player)
@@ -274,7 +291,7 @@ def init_roster(team, loaded_names, players_to_create):
             first, last = generateName(position, loaded_names)
             year = random.choice(years)
 
-            fr, so, jr, sr = getRatings(team.prestige)
+            fr, so, jr, sr, star_rating, development_trait = getRatings(team.prestige)
 
             if year == "fr":
                 rating = fr
@@ -297,6 +314,8 @@ def init_roster(team, loaded_names, players_to_create):
                 rating_so=so,
                 rating_jr=jr,
                 rating_sr=sr,
+                stars=star_rating,
+                development_trait=development_trait,
                 starter=False,
             )
             team_players.append(player)
