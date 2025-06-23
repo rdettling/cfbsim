@@ -21,6 +21,7 @@ urlpatterns = [
     path("stats/individual/", views.individual_stats),
     path("sim/<int:dest_week>/", views.sim),
     # path("fetch_play/", views.fetch_play, name="fetch_play"),
+    
     path("roster_progression/", views.roster_progression),
     path("summary/", views.season_summary),
 ]

@@ -1,37 +1,7 @@
 import random
+from start.models import *
+from ..constants.sim_constants import *
 
-try:
-    from start.models import *
-except ModuleNotFoundError:
-    pass
-
-WIN_FACTOR = 1.5
-LOSS_FACTOR = 1.08
-DRIVES_PER_TEAM = 12
-BASE_PASS_FREQ = 0.5
-OT_START_YARD_LINE = 75
-BASE_COMP_PERCENT = 0.62
-BASE_SACK_RATE = 0.07
-BASE_INT_RATE = 0.07
-BASE_FUMBLE_RATE = 0.02
-FIELD_GOAL_RANGE = 60
-
-
-class Team:
-    def __init__(self, rating):
-        self.rating = rating
-        self.offense = rating
-        self.defense = rating
-
-
-class Game:
-    def __init__(self, teamA, teamB):
-        self.teamA = teamA
-        self.teamB = teamB
-        self.scoreA = 0
-        self.scoreB = 0
-        self.overtime = 0
-        self.winner = None
 
 
 class Drive:
