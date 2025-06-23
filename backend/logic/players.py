@@ -1,6 +1,6 @@
 import json
 import random
-from start.models import *
+from api.models import *
 from django.db.models import Count, Sum, Case, When, F
 from collections import Counter
 from .constants.player_constants import *

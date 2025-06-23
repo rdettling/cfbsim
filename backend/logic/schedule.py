@@ -1,5 +1,5 @@
 import random
-from start.models import *
+from api.models import *
 
 
 def setPlayoffR1(info):

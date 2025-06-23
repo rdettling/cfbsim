@@ -1,4 +1,4 @@
-from start.models import *
+from api.models import *
 from django.db.models import Q
 
 MIN_YARDS = 100

@@ -64,7 +64,7 @@ def debug_static_files(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include("start.urls")),
+    path("api/", include("api.urls")),
     path("health/", health_check),
     path("debug/static/", debug_static_files),  # New debug endpoint
     # path("recruit/", include("recruit.urls")),
