@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { apiService } from '../services/api';
 import { Team, Conference, Info } from '../interfaces';
 import { STAGES } from '../constants/stages';
@@ -20,30 +19,21 @@ import {
   TableRow,
   Paper,
   Stack,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Card,
   CardContent,
-  TableContainer
+  Divider,
+  Chip
 } from '@mui/material';
 import { TeamLogo, ConfLogo } from '../components/TeamComponents';
-
-interface Rivalry {
-  0: string;  // Team 1
-  1: string;  // Team 2
-  2: string;  // Week
-  3: string;  // Name
-}
 
 interface PreviewData {
   conferences: Conference[];
   independents: Team[];
-  rivalries: Rivalry[];
-  playoff: {
-    teams: number;
-    autobids: number;
-  };
+}
+
+interface ConferenceListItem {
+  confName: string;
+  confFullName: string;
 }
 
 interface LaunchProps {
@@ -51,15 +41,20 @@ interface LaunchProps {
   info: Info | null;
   preview: PreviewData | null;
   selected_year?: string;
+  conference_list?: ConferenceListItem[];
 }
 
 const Home = () => {
   const [data, setData] = useState<LaunchProps>({ years: [], info: null, preview: null });
   const [activeTab, setActiveTab] = useState(0);
   const [selectedYear, setSelectedYear] = useState<string>('');
-  const [previewTab, setPreviewTab] = useState('teams');
+  const [selectedConference, setSelectedConference] = useState<string>('ALL');
   const navigate = useNavigate();
   const pendingFetch = useRef(false);
+
+  // Padding variables for easy adjustment
+  const edgePadding = '10%'; // Adjust this value to change spacing from screen edges
+  const bottomPadding = '100px'; // Adjust this value to prevent overlap with footer
 
   // Load initial data when component mounts
   useEffect(() => {
@@ -96,7 +91,8 @@ const Home = () => {
       
       try {
         const responseData = await apiService.getHome<LaunchProps>(newYear);
-        setData(prevData => ({ ...prevData, preview: responseData.preview }));
+        setData(prevData => ({ ...prevData, preview: responseData.preview, conference_list: responseData.conference_list }));
+        setSelectedConference('ALL'); // Reset filter on year change
       } catch (error) {
         console.error('Error fetching year data:', error);
       } finally {
@@ -114,106 +110,316 @@ const Home = () => {
     return currentStage ? currentStage.path : '/';
   };
 
-  return (
-    <Container maxWidth="xl" sx={{ my: 5, position: 'relative' }}>
-      <Stack direction="row" spacing={3}>
-        {/* Left Column */}
-        <Box sx={{ width: activeTab === 0 ? '33%' : '100%', position: 'fixed', left: 20, top: '40px' }}>
-          <Typography variant="h3" component="h1" gutterBottom>Welcome to CFB Sim</Typography>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-            <Tabs value={activeTab} onChange={handleTabChange}>
-              <Tab label="New Game" />
-              <Tab label="Load Game" />
-            </Tabs>
-          </Box>
+  // Filter teams by selected conference
+  let filteredTeams: Team[] = [];
+  if (data.preview) {
+    if (selectedConference === 'ALL') {
+      filteredTeams = [
+        ...data.preview.conferences.flatMap(conf => conf.teams),
+        ...data.preview.independents
+      ];
+    } else if (selectedConference === 'INDEPENDENTS') {
+      filteredTeams = data.preview.independents;
+    } else {
+      const conf = data.preview.conferences.find(c => c.confName === selectedConference);
+      filteredTeams = conf ? conf.teams : [];
+    }
+  }
 
-          {/* New Game Tab */}
-          {activeTab === 0 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>Start year:</Typography>
+  return (
+    <Container maxWidth="md" sx={{ py: 6, minHeight: '100vh' }}>
+      {/* Header */}
+      <Box sx={{ textAlign: 'center', mb: 6 }}>
+        <Typography 
+          variant="h2" 
+          component="h1" 
+          sx={{ 
+            fontWeight: 700, 
+            mb: 2,
+            background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}
+        >
+          Welcome to CFB Sim
+        </Typography>
+      
+      </Box>
+
+      {/* Main Content */}
+      <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+        {/* Tabs */}
+        <Paper elevation={2} sx={{ mb: 4, borderRadius: 3, overflow: 'hidden' }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={handleTabChange}
+            sx={{ 
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: 1.5
+              }
+            }}
+          >
+            <Tab 
+              label="New Game" 
+              sx={{ 
+                textTransform: 'none',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                flex: 1
+              }}
+            />
+            <Tab 
+              label="Load Game" 
+              sx={{ 
+                textTransform: 'none',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                flex: 1
+              }}
+            />
+          </Tabs>
+        </Paper>
+
+        {/* New Game Flow */}
+        {activeTab === 0 && (
+          <Stack spacing={4}>
+            {/* Step 1: Year Selection */}
+            <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+              <Typography variant="h4" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                Step 1: Choose Your Season
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Select the year you want to start your coaching career
+              </Typography>
+              
               <Select 
                 value={selectedYear} 
                 onChange={handleYearChange} 
-                sx={{ minWidth: 120, mb: 2 }}
+                sx={{ 
+                  minWidth: 200,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2
+                  }
+                }}
+                size="medium"
               >
                 {data?.years?.map((year) => (
-                  <MenuItem key={year} value={year}>{year}</MenuItem>
+                  <MenuItem key={year} value={year}>
+                    <Typography variant="h6">{year} Season</Typography>
+                  </MenuItem>
                 ))}
               </Select>
-            </Box>
-          )}
+            </Paper>
 
-          {/* Load Game Tab */}
-          {activeTab === 1 && data.info && (
-            <Box>
-              <Typography variant="h6" gutterBottom>Current save</Typography>
-              <Paper sx={{ mb: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Year</TableCell>
-                      <TableCell>Stage</TableCell>
-                      <TableCell>Team</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>{data.info.currentYear}</TableCell>
-                      <TableCell>
-                        {data.info.stage === 'season'
-                          ? `Season (Week ${data.info.currentWeek})`
-                          : data.info.stage}
-                      </TableCell>
-                      <TableCell>{data.info.team.name}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+            {/* Step 2: Conference Filter (only show if year is selected) */}
+            {selectedYear && data.preview && (
+              <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+                <Typography variant="h4" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                  Step 2: Filter by Conference
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                  Choose a conference to narrow down your options, or view all teams
+                </Typography>
+                
+                <Select
+                  value={selectedConference}
+                  onChange={e => setSelectedConference(e.target.value)}
+                  sx={{ 
+                    minWidth: 300,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                  size="medium"
+                >
+                  <MenuItem value="ALL">
+                    <Typography variant="h6">All Conferences</Typography>
+                  </MenuItem>
+                  {data.conference_list?.sort((a, b) => a.confName.localeCompare(b.confName)).map(conf => (
+                    <MenuItem key={conf.confName} value={conf.confName}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <ConfLogo name={conf.confName} size={24} />
+                        <Typography variant="h6">{conf.confName}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                  <MenuItem value="INDEPENDENTS">
+                    <Typography variant="h6">Independents</Typography>
+                  </MenuItem>
+                </Select>
               </Paper>
-              <Button variant="contained" href={getLoadGameLink(data.info)}>Load Game</Button>
-            </Box>
-          )}
-        </Box>
+            )}
 
-        {/* Middle and Right Columns - Only show if activeTab is 0 (New Game) */}
-        {activeTab === 0 && data.preview && (
-          <>
-            {/* Middle Column - Team Rankings */}
-            <Box sx={{ width: `calc(33% - 40px)`, position: 'fixed', left: '33%', top: '40px' }}>
-              <Paper sx={{ p: 3, height: '80vh', overflow: 'auto', width: '100%' }}>
-                <Typography variant="h4" gutterBottom align="center">Team Rankings</Typography>
-                <Stack direction="column" spacing={1} sx={{ width: '100%' }}>
-                  {[...data.preview.conferences.flatMap(conf => conf.teams), ...data.preview.independents]
-                    .sort((a, b) => b.prestige - a.prestige)
-                    .map((team, index) => (
-                      <Card key={team.name} sx={{ py: 1, width: '100%' }}>
-                        <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
-                          <Stack direction="row" spacing={2} alignItems="center">
-                            <Typography variant="body2" sx={{ width: 30 }}>#{index + 1}</Typography>
-                            <TeamLogo name={team.name} size={40} />
+            {/* Step 3: Team Selection (only show if conference is selected) */}
+            {selectedYear && data.preview && (
+              <Paper elevation={3} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+                <Box sx={{ 
+                  p: 4, 
+                  backgroundColor: 'primary.main',
+                  color: 'white'
+                }}>
+                  <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                    Step 3: Select Your Team
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                    Choose the team you want to coach - ranked by current prestige
+                  </Typography>
+                </Box>
+
+                <Box sx={{ 
+                  maxHeight: '60vh', 
+                  overflow: 'auto',
+                  '&::-webkit-scrollbar': {
+                    width: '8px'
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    backgroundColor: '#f1f1f1'
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: '#c1c1c1',
+                    borderRadius: '4px'
+                  }
+                }}>
+                  {filteredTeams.length === 0 ? (
+                    <Box sx={{ p: 4, textAlign: 'center' }}>
+                      <Typography variant="h6" color="text.secondary">
+                        No teams available for the selected filters
+                      </Typography>
+                    </Box>
+                  ) : (
+                    filteredTeams
+                      .sort((a, b) => b.prestige - a.prestige)
+                      .map((team, index) => (
+                        <Box key={team.name}>
+                          <Box sx={{ 
+                            p: 3,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                              transform: 'translateX(4px)'
+                            }
+                          }}>
+                            <Typography 
+                              variant="h5" 
+                              sx={{ 
+                                minWidth: 50,
+                                fontWeight: 700,
+                                color: 'primary.main'
+                              }}
+                            >
+                              #{index + 1}
+                            </Typography>
+                            
+                            <TeamLogo name={team.name} size={56} />
+                            
                             <Box sx={{ flex: 1 }}>
-                              <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
-                              <Typography variant="body2">Prestige: {team.prestige}</Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                                  {team.name} {team.mascot}
+                                </Typography>
+                                {/* Conference Logo - smaller and positioned after team name */}
+                                {team.confName && (
+                                  <ConfLogo name={team.confName} size={24} />
+                                )}
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                {/* Current Prestige - Blue dots */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', minWidth: 60 }}>
+                                    Current:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 0.3 }}>
+                                    {Array.from({ length: 7 }, (_, i) => (
+                                      <Box
+                                        key={i}
+                                        sx={{
+                                          width: 8,
+                                          height: 8,
+                                          borderRadius: '50%',
+                                          backgroundColor: i < team.prestige ? 'primary.main' : 'grey.300',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+
+                                {/* Ceiling - Green dots */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', minWidth: 50 }}>
+                                    Ceiling:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 0.3 }}>
+                                    {Array.from({ length: 7 }, (_, i) => (
+                                      <Box
+                                        key={i}
+                                        sx={{
+                                          width: 8,
+                                          height: 8,
+                                          borderRadius: '50%',
+                                          backgroundColor: i < team.ceiling ? 'success.main' : 'grey.300',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+
+                                {/* Floor - Orange dots */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.main', minWidth: 35 }}>
+                                    Floor:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 0.3 }}>
+                                    {Array.from({ length: 7 }, (_, i) => (
+                                      <Box
+                                        key={i}
+                                        sx={{
+                                          width: 8,
+                                          height: 8,
+                                          borderRadius: '50%',
+                                          backgroundColor: i < team.floor ? 'warning.main' : 'grey.300',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              </Box>
                             </Box>
+                            
                             <Button
                               variant="contained"
-                              size="small"
+                              size="large"
+                              sx={{ 
+                                minWidth: 120,
+                                height: 48,
+                                borderRadius: 3,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                fontSize: '1.1rem',
+                                boxShadow: 3,
+                                '&:hover': {
+                                  boxShadow: 6
+                                }
+                              }}
                               onClick={() => {
-                                // Set up a loading state
                                 const buttonElement = document.activeElement as HTMLButtonElement;
                                 if (buttonElement) {
                                   buttonElement.disabled = true;
-                                  buttonElement.innerHTML = 'Loading...';
+                                  buttonElement.innerHTML = 'Starting...';
                                 }
                                 
-                                console.log(`Starting new game with: ${team.name} - ${selectedYear}`);
-                                
-                                // Call the API directly with the query parameters
                                 apiService.get(`/api/noncon/`, {
                                   team: team.name,
                                   year: selectedYear
                                 })
                                   .then(response => {
-                                    // The user_id is automatically stored in localStorage via the interceptor
                                     navigate('/noncon', {
                                       state: { 
                                         fromHome: true,
@@ -223,137 +429,91 @@ const Home = () => {
                                   })
                                   .catch(error => {
                                     console.error('Error starting new game:', error);
-                                    // Reset button state on error
                                     if (buttonElement) {
                                       buttonElement.disabled = false;
-                                      buttonElement.innerHTML = 'Select';
+                                      buttonElement.innerHTML = 'Select Team';
                                     }
                                   });
                               }}
                             >
-                              Select
+                              Select Team
                             </Button>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </Stack>
-              </Paper>
-            </Box>
-
-            {/* Right Column - Year Preview */}
-            <Box sx={{ width: '33%', position: 'fixed', right: 20, top: '40px' }}>
-              <Paper sx={{ p: 3, height: '80vh', display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h4" gutterBottom>Preview for {selectedYear}</Typography>
-                <Tabs value={previewTab} onChange={(_, newValue) => setPreviewTab(newValue)}>
-                  <Tab value="teams" label="Teams" />
-                  <Tab value="rivalries" label="Rivalries" />
-                  <Tab value="playoff" label="Playoff" />
-                </Tabs>
-
-                <Box sx={{ flex: 1, overflow: 'auto', mt: 2 }}>
-                  {/* Teams tab */}
-                  {previewTab === "teams" && (
-                    <Box>
-                      {data.preview.conferences.map((conf) => (
-                        <Accordion key={conf.confName}>
-                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Stack direction="row" spacing={2} alignItems="center">
-                              <ConfLogo name={conf.confName} size={40} />
-                              <Typography>{conf.confFullName} ({conf.confName})</Typography>
-                            </Stack>
-                          </AccordionSummary>
-                          <AccordionDetails>
-                            <Stack direction="column" spacing={1}>
-                              {conf.teams.map(team => (
-                                <Card key={team.name} sx={{ py: 1 }}>
-                                  <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
-                                    <Stack direction="row" spacing={2} alignItems="center">
-                                      <TeamLogo name={team.name} size={40} />
-                                      <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
-                                      <Typography variant="body2">Prestige: {team.prestige}</Typography>
-                                    </Stack>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                            </Stack>
-                          </AccordionDetails>
-                        </Accordion>
-                      ))}
-                      {/* Independents */}
-                      <Accordion>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                          <Typography>Independents</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                          <Stack direction="column" spacing={1}>
-                            {data.preview.independents.map(team => (
-                              <Card key={team.name} sx={{ py: 1 }}>
-                                <CardContent sx={{ py: 0, '&:last-child': { pb: 0 } }}>
-                                  <Stack direction="row" spacing={2} alignItems="center">
-                                    <TeamLogo name={team.name} size={40} />
-                                    <Typography variant="subtitle1">{team.name} {team.mascot}</Typography>
-                                    <Typography variant="body2">Prestige: {team.prestige}</Typography>
-                                  </Stack>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </Stack>
-                        </AccordionDetails>
-                      </Accordion>
-                    </Box>
-                  )}
-
-                  {/* Rivalries tab */}
-                  {previewTab === "rivalries" && (
-                    <Box>
-                      <Typography sx={{ mb: 2 }} variant="subtitle1">
-                        Rivalry games are guaranteed to happen every year
-                      </Typography>
-                      <TableContainer component={Paper}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Team 1</TableCell>
-                              <TableCell>Team 2</TableCell>
-                              <TableCell>Week</TableCell>
-                              <TableCell>Name</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {data.preview.rivalries.map((rivalry, index) => (
-                              <TableRow key={index}>
-                                <TableCell>
-                                  <TeamLogo name={rivalry[0]} size={30} />
-                                  <Typography>{rivalry[0]}</Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <TeamLogo name={rivalry[1]} size={30} />
-                                  <Typography>{rivalry[1]}</Typography>
-                                </TableCell>
-                                <TableCell>{rivalry[2] === null ? 'Any' : rivalry[2]}</TableCell>
-                                <TableCell>{rivalry[3]}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Box>
-                  )}
-
-                  {/* Playoff tab */}
-                  {previewTab === "playoff" && (
-                    <Box>
-                      <Typography>Total Teams in Playoff: {data.preview.playoff.teams}</Typography>
-                      <Typography>Autobids: {data.preview.playoff.autobids}</Typography>
-                    </Box>
+                          </Box>
+                          {index < filteredTeams.length - 1 && <Divider />}
+                        </Box>
+                      ))
                   )}
                 </Box>
               </Paper>
-            </Box>
-          </>
+            )}
+          </Stack>
         )}
-      </Stack>
+
+        {/* Load Game Tab */}
+        {activeTab === 1 && data.info && (
+          <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+            <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, color: 'primary.main' }}>
+              Continue Your Journey
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+              Resume your saved game and continue building your dynasty
+            </Typography>
+            
+            <Paper elevation={1} sx={{ mb: 4, overflow: 'hidden' }}>
+              <Table>
+                <TableHead sx={{ backgroundColor: 'rgba(0, 0, 0, 0.04)' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '1.1rem' }}>Year</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '1.1rem' }}>Stage</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '1.1rem' }}>Team</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell sx={{ fontSize: '1.1rem' }}>{data.info.currentYear}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={data.info.stage === 'season'
+                          ? `Season (Week ${data.info.currentWeek})`
+                          : data.info.stage}
+                        size="medium"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <TeamLogo name={data.info.team.name} size={32} />
+                        <Typography variant="h6">{data.info.team.name}</Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Paper>
+            
+            <Button 
+              variant="contained" 
+              size="large"
+              href={getLoadGameLink(data.info)}
+              sx={{ 
+                borderRadius: 3,
+                textTransform: 'none',
+                fontSize: '1.2rem',
+                fontWeight: 600,
+                px: 6,
+                py: 2,
+                boxShadow: 3,
+                '&:hover': {
+                  boxShadow: 6
+                }
+              }}
+            >
+              Continue Game
+            </Button>
+          </Paper>
+        )}
+      </Box>
     </Container>
   );
 };
