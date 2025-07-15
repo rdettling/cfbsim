@@ -57,15 +57,32 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
     return (
         <>
             <Stack direction="row" spacing={1} alignItems="center">
-                <Typography>
+                <Typography 
+                    variant="body2" 
+                    sx={{ 
+                        fontWeight: 500,
+                        color: 'text.secondary',
+                        fontSize: '0.85rem'
+                    }}
+                >
                     {isEndOfSeason ? 'End of Season' : `Week ${info.currentWeek}`}
                 </Typography>
                 <Button 
                     variant="contained" 
                     color="primary" 
+                    size="small"
                     onClick={handleClick}
                     aria-controls="week-menu"
                     aria-haspopup="true"
+                    sx={{
+                        px: 2,
+                        py: 0.5,
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        borderRadius: 2,
+                        minWidth: 'auto'
+                    }}
                 >
                     {isEndOfSeason ? 'Season Summary' : 'Advance'}
                 </Button>
@@ -74,11 +91,27 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
                     onClose={handleClose}
+                    PaperProps={{
+                        elevation: 3,
+                        sx: {
+                            mt: 1,
+                            borderRadius: 2,
+                            minWidth: 180
+                        }
+                    }}
                 >
                     {availableWeeks.map((week) => (
                         <MenuItem 
                             key={week} 
                             onClick={() => handleAdvance(week)}
+                            sx={{
+                                py: 1,
+                                px: 2,
+                                fontSize: '0.9rem',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                }
+                            }}
                         >
                             Simulate to Week {week}
                         </MenuItem>
@@ -86,7 +119,15 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
                     {/* Add End of Season option */}
                     <MenuItem 
                         onClick={() => handleAdvance(info.lastWeek + 1)}
-                        sx={{ borderTop: '1px solid rgba(0, 0, 0, 0.12)' }}
+                        sx={{ 
+                            borderTop: '1px solid rgba(0, 0, 0, 0.12)',
+                            py: 1,
+                            px: 2,
+                            fontSize: '0.9rem',
+                            '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                            }
+                        }}
                     >
                         End of Season
                     </MenuItem>

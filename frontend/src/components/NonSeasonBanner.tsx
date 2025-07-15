@@ -36,28 +36,59 @@ const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
 
     return (
         <>
-            <Stack direction="row" spacing={4} alignItems="center">
-                <Stack alignItems="center">
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleStageChange(currentStage.path)}
-                    >
-                        {currentStage.label}
-                    </Button>
-                    <Typography variant="caption">Current Stage</Typography>
-                </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+                <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    onClick={() => handleStageChange(currentStage.path)}
+                    sx={{
+                        px: 1.5,
+                        py: 0.3,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        borderRadius: 1.5,
+                        minWidth: 'auto',
+                        position: 'relative'
+                    }}
+                >
+                    {currentStage.label}
+                </Button>
 
-                <Stack alignItems="center">
-                    <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={() => handleStageChange(nextStage.path)}
-                    >
-                        {nextStage.label}
-                    </Button>
-                    <Typography variant="caption">Next Stage</Typography>
-                </Stack>
+                <Typography 
+                    variant="caption" 
+                    sx={{ 
+                        color: 'text.secondary',
+                        fontSize: '0.7rem',
+                        mx: 0.5
+                    }}
+                >
+                    →
+                </Typography>
+
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    onClick={() => handleStageChange(nextStage.path)}
+                    sx={{
+                        px: 1.5,
+                        py: 0.3,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        borderRadius: 1.5,
+                        minWidth: 'auto',
+                        borderWidth: '1px',
+                        '&:hover': {
+                            backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                            borderWidth: '1px'
+                        }
+                    }}
+                >
+                    {nextStage.label}
+                </Button>
             </Stack>
             <LoadingDialog 
                 open={isLoading} 
