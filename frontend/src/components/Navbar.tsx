@@ -70,7 +70,8 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
             label: 'Stats',
             items: [
                 { label: 'Team', path: '/stats/team' },
-                { label: 'Individual', path: '/stats/individual' }
+                { label: 'Individual', path: '/stats/individual' },
+                { label: 'Ratings', path: '/stats/ratings' }
             ]
         },
         {

@@ -1,5 +1,6 @@
 import random
 from api.models import *
+import json
 
 
 def setPlayoffR1(info):
@@ -308,17 +309,21 @@ def setConferenceChampionships(info):
     Conferences.objects.bulk_update(conferences, ["championship"])
 
 
-def set_rivalries(info, rivalries):
+def set_rivalries(info):
     odds = info.odds.all()
     games_to_create = []
     teams = info.teams.all()
+
+    with open(f"data/rivalries.json", "r") as metadataFile:
+        rivalries = json.load(metadataFile)
+
 
     for team in teams:
         team.schedule = set()
 
     scheduled_games = {}
 
-    for game in rivalries:
+    for game in rivalries["rivalries"]:
         for team_name in [game[0], game[1]]:
             if team_name not in scheduled_games:
                 scheduled_games[team_name] = set()
@@ -327,7 +332,7 @@ def set_rivalries(info, rivalries):
             scheduled_games[game[0]].add(game[2])
             scheduled_games[game[1]].add(game[2])
 
-    for game in rivalries:
+    for game in rivalries["rivalries"]:
         for team in teams:
             if team.name == game[0]:
                 for opponent in teams:

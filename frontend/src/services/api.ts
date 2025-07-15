@@ -160,6 +160,8 @@ export const apiService = {
         request<T>('get', '/api/stats/team/', { params: filters }),
     getIndividualStatsList: <T>(filters?: Record<string, any>) => 
         request<T>('get', '/api/stats/individual/', { params: filters }),
+    getRatingsStats: <T>() => 
+        request<T>('get', '/api/stats/ratings/'),
     
     // Season summary
     getSeasonSummary: <T>() => 
@@ -188,6 +190,7 @@ const routeToApiMapping: Record<string, (params: any) => Promise<any>> = {
     '/playoff': () => apiService.getPlayoff(),
     '/stats/team': () => apiService.getTeamStatsList(),
     '/stats/individual': () => apiService.getIndividualStatsList(),
+    '/stats/ratings': () => apiService.getRatingsStats(),
     '/summary': () => apiService.getSeasonSummary(),
     '/roster_progression': () => apiService.getRosterProgression(),
     '/noncon': () => apiService.getNonCon(),

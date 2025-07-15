@@ -132,3 +132,27 @@ export interface TeamStats {
     interceptions: number;
     turnovers: number;
 }
+
+export interface RatingsStatsData {
+    info: Info;
+    team: Team;
+    prestige_stars_table: PrestigeStarsRow[];
+    total_star_counts: {
+        counts: Record<number, number>;
+        avg_ratings: Record<number, number>;
+    };
+    team_counts_by_prestige: TeamCountRow[];
+    conferences: Conference[];
+}
+
+export interface PrestigeStarsRow {
+    prestige: number;
+    avg_rating: number;
+    avg_stars: number;
+    star_percentages: Record<number, number>;
+}
+
+export interface TeamCountRow {
+    prestige: number;
+    team_count: number;
+}

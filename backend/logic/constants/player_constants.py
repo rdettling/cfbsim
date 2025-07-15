@@ -1,11 +1,11 @@
 # === Rating System Constants ===
 
 STARS_BASE = {
-    1: 30,
-    2: 40,
+    1: 15,
+    2: 30,
     3: 50,
-    4: 60,
-    5: 70
+    4: 68,
+    5: 80
 }
 
 STARS_PRESTIGE = {
@@ -40,35 +40,36 @@ STARS_PRESTIGE = {
     5: {
         1: 0,
         2: 0,
-        3: 60,
+        3: 67,
         4: 30,
-        5: 10,
+        5: 3,
     },
     6: {
         1: 0,
         2: 0,
         3: 40,
-        4: 50,
-        5: 10,
+        4: 53,
+        5: 7,
     },
     7: {
         1: 0,
         2: 0,
-        3: 10,
+        3: 15,
         4: 70,
-        5: 20,
+        5: 15,
     },
 }
 
-DEVELOPMENT_RANGES = {
-    1: (1, 2),    # Slow developer: 1-2 progression per year
-    2: (2, 3),    # Below average: 2-3 progression per year  
-    3: (2, 4),    # Normal: 2-4 progression per year
-    4: (3, 5),    # Above average: 3-5 progression per year
-    5: (3, 7)     # Fast developer: 3-7 progression per year
+DEVELOPMENT_AVERAGES = {
+    1: 1,
+    2: 2,
+    3: 3,   
+    4: 4,    
+    5: 5     
 }
 
-BASE_VARIANCE = 10
+RATING_STD_DEV = 12  
+DEVELOPMENT_STD_DEV = 5
 RANDOM_VARIANCE_RANGE = (-3, 3)  # applied once to final team rating
 
 ROSTER = {

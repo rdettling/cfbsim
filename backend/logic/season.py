@@ -189,8 +189,6 @@ def init(user_id, team_name, year):
     with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
         data = json.load(metadataFile)
 
-    with open(f"data/rivalries.json", "r") as metadataFile:
-        rivalries = json.load(metadataFile)
 
     overall_start = time.time()
 
@@ -309,8 +307,8 @@ def init(user_id, team_name, year):
     print(f"Odds {time.time() - start} seconds")
 
     start = time.time()
-    set_rivalries(info, rivalries)
-    print(f"unique games {time.time() - start} seconds")
+    set_rivalries(info)
+    print(f"rivalries {time.time() - start} seconds")
 
     print(f"Total execution Time: {time.time() - overall_start} seconds")
 
