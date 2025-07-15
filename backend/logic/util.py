@@ -45,7 +45,9 @@ def get_position_game_log(pos, game_log, game):
                 game_log.field_goals_made, game_log.field_goals_attempted
             ),
         }
-    return game_log  # Return all stats for unknown positions
+    
+    # Return only base stats for positions not explicitly handled (like "ol")
+    return base_log
 
 
 def get_player_info(player, current_year, year):
@@ -103,7 +105,9 @@ def get_position_stats(pos, stats):
             "field_goals_attempted": stats["field_goals_attempted"],
             "field_goal_percent": stats["field_goal_percent"],
         }
-    return stats
+    
+    # Return only base stats for positions not explicitly handled (like "ol")
+    return base_stats
 
 
 def format_record(team):

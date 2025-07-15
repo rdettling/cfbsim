@@ -15,12 +15,15 @@ import {
   CircularProgress,
   Alert,
   Container,
+  Typography,
+  Paper,
+  Divider,
+  Stack,
 } from "@mui/material";
 import Navbar from "../components/Navbar";
 import { TeamLogo, TeamLink, TeamInfoModal } from "../components/TeamComponents";
 import { Team, Info, Conference, Player, GameLog } from "../interfaces";
 
-// Simple PlayerData interface that builds on existing interfaces
 interface PlayerData {
   player: Player;
   team: Team;
@@ -36,6 +39,277 @@ interface PlayerData {
   game_logs: GameLog[];
 }
 
+// Star Rating Component
+const StarRating = ({ count, maxStars = 5 }: { count: number; maxStars?: number }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+    {Array.from({ length: maxStars }, (_, i) => (
+      <img
+        key={i}
+        src="/logos/star.png"
+        alt="star"
+        style={{
+          width: 18,
+          height: 18,
+          opacity: i < count ? 1 : 0.25,
+        }}
+      />
+    ))}
+  </Box>
+);
+
+// Stat Item Component
+const StatItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <Box sx={{ textAlign: 'center' }}>
+    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+      {label}
+    </Typography>
+    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+      {value}
+    </Typography>
+  </Box>
+);
+
+// Player Header Component
+const PlayerHeader = ({ 
+  player, 
+  team, 
+  onTeamClick 
+}: { 
+  player: Player; 
+  team: Team; 
+  onTeamClick: (name: string) => void; 
+}) => (
+  <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+      <Box>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+          {player.first} {player.last}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <TeamLogo name={team.name} size={32} />
+          <Typography variant="h6" color="text.secondary">
+            <TeamLink name={team.name} onTeamClick={onTeamClick} />
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              Position
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {player.pos.toUpperCase()}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              Class
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {player.year.toUpperCase()}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+          Overall Rating
+        </Typography>
+        <Typography variant="h1" sx={{ fontWeight: 700, color: 'primary.main' }}>
+          {player.rating}
+        </Typography>
+      </Box>
+    </Box>
+    
+    <Divider sx={{ my: 2 }} />
+    
+    <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: 600, mx: 'auto' }}>
+      <StatItem 
+        label="Starter" 
+        value={
+          <Typography variant="h6" sx={{ fontSize: '1.5rem' }}>
+            {player.starter ? "✅" : "❌"}
+          </Typography>
+        } 
+      />
+      <StatItem label="Stars" value={<StarRating count={player.stars} />} />
+      <StatItem label="Development" value={<StarRating count={player.development_trait} />} />
+    </Box>
+  </Paper>
+);
+
+// Career Stats Table Component
+const CareerStatsTable = ({ yearlyStats }: { yearlyStats: PlayerData['yearly_cumulative_stats'] }) => {
+  const formatColumnTitle = (key: string) => {
+    return key.split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const getStatsColumns = (stats: Record<string, any>) => {
+    return Object.keys(stats).filter(key => !["class", "rating", "games"].includes(key));
+  };
+
+  const statsEntries = Object.entries(yearlyStats);
+  const columns = statsEntries.length > 0 ? getStatsColumns(statsEntries[0][1]) : [];
+
+  return (
+    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+      <Typography variant="h4" component="h2" sx={{ fontWeight: 600, mb: 2 }}>
+        Career Statistics
+      </Typography>
+      <Box sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 650 }}>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'grey.50' }}>
+              <TableCell sx={{ fontWeight: 600 }}>Year</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Class</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Ovr</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>G</TableCell>
+              {columns.map(key => (
+                <TableCell key={key} sx={{ fontWeight: 600 }}>
+                  {formatColumnTitle(key)}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {statsEntries.map(([year, stats]) => (
+              <TableRow key={year} hover>
+                <TableCell sx={{ fontWeight: 600 }}>{year}</TableCell>
+                <TableCell>{stats.class}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{stats.rating}</TableCell>
+                <TableCell>{stats.games}</TableCell>
+                {columns.map(key => (
+                  <TableCell key={key}>{stats[key]}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+    </Paper>
+  );
+};
+
+// Game Logs Table Component
+const GameLogsTable = ({ 
+  gameLogs, 
+  years, 
+  currentYear, 
+  selectedYear, 
+  onYearChange, 
+  onTeamClick, 
+  onGameClick 
+}: {
+  gameLogs: GameLog[];
+  years: number[];
+  currentYear: number;
+  selectedYear: string;
+  onYearChange: (year: string) => void;
+  onTeamClick: (name: string) => void;
+  onGameClick: (gameId: number) => void;
+}) => {
+  const formatColumnTitle = (key: string) => {
+    return key.split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const statColumns = gameLogs.length > 0 
+    ? Object.keys(gameLogs[0]).filter(key => key !== "game")
+    : [];
+
+  return (
+    <Paper elevation={2} sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" component="h2" sx={{ fontWeight: 600 }}>
+          Game Logs
+        </Typography>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>Year</InputLabel>
+          <Select
+            value={selectedYear}
+            onChange={(e) => onYearChange(e.target.value)}
+            label="Year"
+          >
+            {years.map(year => (
+              <MenuItem key={year} value={year}>{year}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+      
+      <Box sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 800 }}>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'grey.50' }}>
+              <TableCell sx={{ fontWeight: 600 }}>Week</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Opponent</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Label</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Result</TableCell>
+              {statColumns.map(key => (
+                <TableCell key={key} sx={{ fontWeight: 600 }}>
+                  {formatColumnTitle(key)}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {gameLogs.map(gameLog => (
+              <TableRow key={gameLog.game.id} hover>
+                <TableCell sx={{ fontWeight: 600 }}>{gameLog.game.weekPlayed}</TableCell>
+                <TableCell sx={{ minWidth: 200 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <TeamLogo name={gameLog.game.opponent.name} size={28} />
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          #{gameLog.game.opponent.ranking}
+                        </Typography>
+                        <TeamLink 
+                          name={gameLog.game.opponent.name} 
+                          onTeamClick={onTeamClick} 
+                        />
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                        {gameLog.game.opponent.record}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {gameLog.game.label}
+                  </Typography>
+                </TableCell>
+                <TableCell sx={{ minWidth: 60 }}>
+                  <Box
+                    component="span"
+                    onClick={() => onGameClick(gameLog.game.id)}
+                    sx={{ 
+                      cursor: "pointer", 
+                      color: "primary.main", 
+                      textDecoration: "underline",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {gameLog.game.result} {gameLog.game.score}
+                  </Box>
+                </TableCell>
+                {statColumns.map(key => (
+                  <TableCell key={key}>{gameLog[key as keyof GameLog]}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+    </Paper>
+  );
+};
+
+// Main Player Component
 export default function PlayerPage() {
   const { playerId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,14 +320,6 @@ export default function PlayerPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
 
-  // Format column title from snake_case to Title Case
-  const formatColumnTitle = (key: string) => {
-    return key.split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  // Use the new usePageRefresh from api.ts
   usePageRefresh<PlayerData>(setData);
 
   useEffect(() => {
@@ -77,137 +343,54 @@ export default function PlayerPage() {
     fetchData();
   }, [playerId, searchParams]);
 
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
-  if (!data) return <Alert severity="warning">No data available</Alert>;
-
-  // Get stats columns excluding certain fields
-  const getStatsColumns = (stats: Record<string, any>) => {
-    return Object.keys(stats).filter(key => !["class", "rating", "games"].includes(key));
-  };
-
-  // Handle team click to open the team info modal
   const handleTeamClick = (name: string) => {
     setSelectedTeam(name);
     setModalOpen(true);
   };
 
+  const handleYearChange = (year: string) => {
+    setSearchParams({ year });
+  };
+
+  const handleGameClick = (gameId: number) => {
+    navigate(`/game/${gameId}`);
+  };
+
+  if (loading) return <CircularProgress />;
+  if (error) return <Alert severity="error">{error}</Alert>;
+  if (!data) return <Alert severity="warning">No data available</Alert>;
+
+  const selectedYear = searchParams.get("year") || data.info.currentYear.toString();
+
   return (
     <>
-      {data && (
-        <Navbar
-          team={data.team}
-          currentStage={data.info.stage}
-          info={data.info}
-          conferences={data.conferences}
+      <Navbar
+        team={data.team}
+        currentStage={data.info.stage}
+        info={data.info}
+        conferences={data.conferences}
+      />
+      
+      <Container maxWidth="lg" sx={{ py: 3 }}>
+        <PlayerHeader 
+          player={data.player} 
+          team={data.team} 
+          onTeamClick={handleTeamClick} 
         />
-      )}
-      <Container>
-        <Box>
-          <h1>{data.player.first} {data.player.last}</h1>
-
-          <h2>Career Stats</h2>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Year</TableCell>
-                <TableCell>Class</TableCell>
-                <TableCell>Ovr</TableCell>
-                <TableCell>G</TableCell>
-                {getStatsColumns(Object.values(data.yearly_cumulative_stats)[0] || {})
-                  .map(key => (
-                    <TableCell key={key}>{formatColumnTitle(key)}</TableCell>
-                  ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {Object.entries(data.yearly_cumulative_stats).map(([year, stats]) => (
-                <TableRow key={year}>
-                  <TableCell>{year}</TableCell>
-                  <TableCell>{stats.class}</TableCell>
-                  <TableCell>{stats.rating}</TableCell>
-                  <TableCell>{stats.games}</TableCell>
-                  {getStatsColumns(stats).map(key => (
-                    <TableCell key={key}>{stats[key]}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <Box sx={{ my: 3 }}>
-            <FormControl>
-              <InputLabel>Year</InputLabel>
-              <Select
-                value={searchParams.get("year") || data.info.currentYear}
-                onChange={(e: any) => setSearchParams({ year: e.target.value })}
-                label="Year"
-              >
-                {data.years.map(year => (
-                  <MenuItem key={year} value={year}>{year}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          <h2>Game Logs</h2>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Week</TableCell>
-                <TableCell>Opponent</TableCell>
-                <TableCell>Label</TableCell>
-                <TableCell>Result</TableCell>
-                {data.game_logs[0] && Object.keys(data.game_logs[0])
-                  .filter(key => key !== "game")
-                  .map(key => (
-                    <TableCell key={key}>{formatColumnTitle(key)}</TableCell>
-                  ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.game_logs.map(gameLog => (
-                <TableRow key={gameLog.game.id}>
-                  <TableCell>{gameLog.game.weekPlayed}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TeamLogo name={gameLog.game.opponent.name} size={20} />
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        #{gameLog.game.opponent.ranking}{' '}
-                        <TeamLink 
-                          name={gameLog.game.opponent.name} 
-                          onTeamClick={handleTeamClick} 
-                        />
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{gameLog.game.label}</TableCell>
-                  <TableCell>
-                    <Box
-                      component="span"
-                      onClick={() => navigate(`/game/${gameLog.game.id}`)}
-                      sx={{ 
-                        cursor: "pointer", 
-                        color: "#1976d2", 
-                        textDecoration: "underline" 
-                      }}
-                    >
-                      {gameLog.game.result} {gameLog.game.score}
-                    </Box>
-                  </TableCell>
-                  {Object.entries(gameLog)
-                    .filter(([key]) => key !== "game")
-                    .map(([key, value]) => (
-                      <TableCell key={key}>{value}</TableCell>
-                    ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
+        
+        <CareerStatsTable yearlyStats={data.yearly_cumulative_stats} />
+        
+        <GameLogsTable
+          gameLogs={data.game_logs}
+          years={data.years}
+          currentYear={data.info.currentYear}
+          selectedYear={selectedYear}
+          onYearChange={handleYearChange}
+          onTeamClick={handleTeamClick}
+          onGameClick={handleGameClick}
+        />
       </Container>
 
-      {/* Team Info Modal */}
       <TeamInfoModal 
         teamName={selectedTeam} 
         open={modalOpen} 

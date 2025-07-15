@@ -99,6 +99,12 @@ export interface Player {
     last: string;
     pos: string;
     rating: number;
+    rating_fr: number;
+    rating_so: number;
+    rating_jr: number;
+    rating_sr: number;
+    stars: number;
+    development_trait: number;
     starter: boolean;
     year: string;
     team: string;

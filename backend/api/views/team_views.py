@@ -101,6 +101,71 @@ def roster(request, team_name):
         }
     )
 
+def _calculate_yearly_stats(player, year_game_logs, current_year, year):
+    """Helper function to calculate yearly stats for a player"""
+    # Calculate raw stats from game logs
+    year_stats = {
+        "games": len(year_game_logs),
+        "pass_yards": sum(gl.pass_yards or 0 for gl in year_game_logs),
+        "pass_attempts": sum(gl.pass_attempts or 0 for gl in year_game_logs),
+        "pass_completions": sum(gl.pass_completions or 0 for gl in year_game_logs),
+        "pass_touchdowns": sum(gl.pass_touchdowns or 0 for gl in year_game_logs),
+        "pass_interceptions": sum(gl.pass_interceptions or 0 for gl in year_game_logs),
+        "rush_yards": sum(gl.rush_yards or 0 for gl in year_game_logs),
+        "rush_attempts": sum(gl.rush_attempts or 0 for gl in year_game_logs),
+        "rush_touchdowns": sum(gl.rush_touchdowns or 0 for gl in year_game_logs),
+        "receiving_yards": sum(gl.receiving_yards or 0 for gl in year_game_logs),
+        "receiving_catches": sum(gl.receiving_catches or 0 for gl in year_game_logs),
+        "receiving_touchdowns": sum(gl.receiving_touchdowns or 0 for gl in year_game_logs),
+        "field_goals_made": sum(gl.field_goals_made or 0 for gl in year_game_logs),
+        "field_goals_attempted": sum(gl.field_goals_attempted or 0 for gl in year_game_logs),
+    }
+
+    # Add player info and derived stats
+    year_stats["class"], year_stats["rating"] = get_player_info(player, current_year, year)
+    year_stats["completion_percentage"] = percentage(
+        year_stats["pass_completions"], year_stats["pass_attempts"]
+    )
+    year_stats["adjusted_pass_yards_per_attempt"] = adjusted_pass_yards_per_attempt(
+        year_stats["pass_yards"],
+        year_stats["pass_touchdowns"],
+        year_stats["pass_interceptions"],
+        year_stats["pass_attempts"],
+    )
+    year_stats["passer_rating"] = passer_rating(
+        year_stats["pass_completions"],
+        year_stats["pass_attempts"],
+        year_stats["pass_yards"],
+        year_stats["pass_touchdowns"],
+        year_stats["pass_interceptions"],
+    )
+    year_stats["yards_per_rush"] = average(
+        year_stats["rush_yards"], year_stats["rush_attempts"]
+    )
+    year_stats["yards_per_rec"] = average(
+        year_stats["receiving_yards"], year_stats["receiving_catches"]
+    )
+    year_stats["field_goal_percent"] = percentage(
+        year_stats["field_goals_made"], year_stats["field_goals_attempted"]
+    )
+
+    return year_stats
+
+
+def _get_player_years(player, info):
+    """Helper function to get available years for a player based on their class"""
+    current_year = info.currentYear
+    year_mapping = {
+        "fr": [current_year],
+        "so": [current_year, current_year - 1],
+        "jr": [current_year, current_year - 1, current_year - 2],
+        "sr": [current_year, current_year - 1, current_year - 2, current_year - 3],
+    }
+    
+    years = year_mapping.get(player.year, [current_year])
+    return [year for year in years if info.startYear <= year <= current_year]
+
+
 @api_view(["GET"])
 def player(request, id):
     """API endpoint for player data"""
@@ -109,78 +174,15 @@ def player(request, id):
     player = Players.objects.get(id=id)
     team = player.team
 
-    # Determine available years based on player's year
-    current_year = info.currentYear
-    if player.year == "fr":
-        years = [current_year]
-    elif player.year == "so":
-        years = [current_year, current_year - 1]
-    elif player.year == "jr":
-        years = [current_year, current_year - 1, current_year - 2]
-    elif player.year == "sr":
-        years = [current_year, current_year - 1, current_year - 2, current_year - 3]
-    years = [year for year in years if info.startYear <= year <= current_year]
+    # Get available years for this player
+    years = _get_player_years(player, info)
 
-    # Get yearly cumulative stats
+    # Calculate yearly cumulative stats
     yearly_cumulative_stats = {}
     for year in years:
         year_game_logs = player.game_logs.filter(game__year=year)
-
-        year_stats = {
-            "games": len(year_game_logs),
-            "pass_yards": sum(gl.pass_yards or 0 for gl in year_game_logs),
-            "pass_attempts": sum(gl.pass_attempts or 0 for gl in year_game_logs),
-            "pass_completions": sum(gl.pass_completions or 0 for gl in year_game_logs),
-            "pass_touchdowns": sum(gl.pass_touchdowns or 0 for gl in year_game_logs),
-            "pass_interceptions": sum(
-                gl.pass_interceptions or 0 for gl in year_game_logs
-            ),
-            "rush_yards": sum(gl.rush_yards or 0 for gl in year_game_logs),
-            "rush_attempts": sum(gl.rush_attempts or 0 for gl in year_game_logs),
-            "rush_touchdowns": sum(gl.rush_touchdowns or 0 for gl in year_game_logs),
-            "receiving_yards": sum(gl.receiving_yards or 0 for gl in year_game_logs),
-            "receiving_catches": sum(
-                gl.receiving_catches or 0 for gl in year_game_logs
-            ),
-            "receiving_touchdowns": sum(
-                gl.receiving_touchdowns or 0 for gl in year_game_logs
-            ),
-            "field_goals_made": sum(gl.field_goals_made or 0 for gl in year_game_logs),
-            "field_goals_attempted": sum(
-                gl.field_goals_attempted or 0 for gl in year_game_logs
-            ),
-        }
-
-        # Add derived stats
-        year_stats["class"], year_stats["rating"] = get_player_info(
-            player, current_year, year
-        )
-        year_stats["completion_percentage"] = percentage(
-            year_stats["pass_completions"], year_stats["pass_attempts"]
-        )
-        year_stats["adjusted_pass_yards_per_attempt"] = adjusted_pass_yards_per_attempt(
-            year_stats["pass_yards"],
-            year_stats["pass_touchdowns"],
-            year_stats["pass_interceptions"],
-            year_stats["pass_attempts"],
-        )
-        year_stats["passer_rating"] = passer_rating(
-            year_stats["pass_completions"],
-            year_stats["pass_attempts"],
-            year_stats["pass_yards"],
-            year_stats["pass_touchdowns"],
-            year_stats["pass_interceptions"],
-        )
-        year_stats["yards_per_rush"] = average(
-            year_stats["rush_yards"], year_stats["rush_attempts"]
-        )
-        year_stats["yards_per_rec"] = average(
-            year_stats["receiving_yards"], year_stats["receiving_catches"]
-        )
-        year_stats["field_goal_percent"] = percentage(
-            year_stats["field_goals_made"], year_stats["field_goals_attempted"]
-        )
-
+        year_stats = _calculate_yearly_stats(player, year_game_logs, info.currentYear, year)
+        
         # Filter stats based on position
         yearly_cumulative_stats[year] = get_position_stats(player.pos, year_stats)
 
