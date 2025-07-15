@@ -40,30 +40,41 @@ def getRatings(prestige):
     # Get base rating for this star level
     base_rating = STARS_BASE[star_rating]
     
-    # Add base variance
-    variance = random.uniform(-BASE_VARIANCE, BASE_VARIANCE)
+    # Add variance using normal distribution with standard deviation
+    variance = random.gauss(0, RATING_STD_DEV)
     fr_rating = base_rating + variance
+    
+    # Ensure freshman rating doesn't go below 1
+    fr_rating = max(1, fr_rating)
     
     # Randomly assign development trait (1-5, equal chance)
     development_trait = random.randint(1, 5)
     
-    # Calculate progression for each year independently
+    # Calculate progression for each year independently using normal distribution
     so_rating = fr_rating
     jr_rating = fr_rating
     sr_rating = fr_rating
     
+    # Get base progression for this development trait
+    base_progression = DEVELOPMENT_AVERAGES[development_trait]
+    
     # Sophomore year progression
-    min_prog, max_prog = DEVELOPMENT_RANGES[development_trait]
-    so_progression = random.uniform(min_prog, max_prog)
+    so_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
     so_rating += so_progression
     
     # Junior year progression
-    jr_progression = random.uniform(min_prog, max_prog)
+    jr_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
     jr_rating = so_rating + jr_progression
     
     # Senior year progression
-    sr_progression = random.uniform(min_prog, max_prog)
+    sr_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
     sr_rating = jr_rating + sr_progression
+    
+    # Cap all ratings at 99
+    fr_rating = min(fr_rating, 99)
+    so_rating = min(so_rating, 99)
+    jr_rating = min(jr_rating, 99)
+    sr_rating = min(sr_rating, 99)
     
     return (round(fr_rating), round(so_rating), round(jr_rating), round(sr_rating), star_rating, development_trait)
 
