@@ -91,6 +91,15 @@ export interface Game {
     winProbA: number;
     winProbB: number;
     winner: Team;
+    // Additional properties for game results
+    name?: string;
+    base_label?: string;
+    scoreA?: number;
+    scoreB?: number;
+    resultA?: string;
+    resultB?: string;
+    overtime?: number;
+    headline?: string;
 }
 
 export interface Player {
@@ -132,6 +141,23 @@ export interface GamePreviewData {
     game: Game;
     conferences: Conference[];
     top_players: Player[][];
+    // Additional properties for game results
+    drives?: Array<{
+        offense: string;
+        result: string;
+        points: number;
+        scoreAAfter: number;
+        scoreBAfter: number;
+    }>;
+    stats?: Record<string, {
+        teamA: number;
+        teamB: number;
+    }>;
+    game_logs?: Record<string, Array<{
+        player_id: number;
+        team_name: string;
+        game_log_string: string;
+    }>>;
 }
 
 export interface TeamStats {
