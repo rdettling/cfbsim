@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Button, Stack, Typography, Box, Menu, MenuItem } from '@mui/material';
+import { AppBar, Toolbar, Button, Stack, Typography, Box, Menu, MenuItem, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import { useState } from 'react';
@@ -47,7 +47,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
     const dropdownMenus = [
         {
             id: 'team',
-            label: 'Team',
+            label: 'TEAM',
             items: [
                 { label: 'Schedule', path: `/${team.name}/schedule` },
                 { label: 'Roster', path: `/${team.name}/roster` },
@@ -56,7 +56,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         },
         {
             id: 'conferences',
-            label: 'Conference Standings',
+            label: 'CONFERENCE STANDINGS',
             items: [
                 ...conferences.map(conf => ({
                     label: conf.confName,
@@ -67,7 +67,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         },
         {
             id: 'stats',
-            label: 'Stats',
+            label: 'STATS',
             items: [
                 { label: 'Team', path: '/stats/team' },
                 { label: 'Individual', path: '/stats/individual' },
@@ -76,7 +76,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         },
         {
             id: 'schedule',
-            label: 'Schedule',
+            label: 'SCHEDULE',
             items: Array.from({ length: info.lastWeek }, (_, i) => ({
                 label: `Week ${i + 1}`,
                 path: `/schedule/${i + 1}`
@@ -85,34 +85,89 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
     ];
 
     return (
-        <AppBar position="static" color="default" sx={{ mb: 3 }}>
-            <Toolbar>
-                <TeamLogo name={info.team.name} size={40} />
+        <AppBar 
+            position="static" 
+            color="default" 
+            elevation={2}
+            sx={{ 
+                mb: 3,
+                backgroundColor: 'white',
+                borderBottom: '1px solid',
+                borderColor: 'divider'
+            }}
+        >
+            <Toolbar sx={{ py: 1, minHeight: '64px !important' }}>
+                {/* Left Section - Team Logo */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
+                    <TeamLogo name={info.team.name} size={40} />
+                </Box>
 
-                <Stack direction="row" spacing={2} sx={{ ml: 2 }}>
+                {/* Center Section - Navigation */}
+                <Stack direction="row" spacing={0} sx={{ flex: 1 }}>
                     {currentStage === 'season' && (
                         <Button 
                             color="inherit" 
                             onClick={navigateWithApi('/dashboard', apiService.getDashboard)}
+                            sx={{
+                                px: 2,
+                                py: 1,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                fontSize: '0.95rem',
+                                color: 'text.primary',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                }
+                            }}
                         >
-                            Dashboard
+                            DASHBOARD
                         </Button>
                     )}
 
                     {dropdownMenus.map(menu => (
                         <div key={menu.id}>
-                            <Button color="inherit" onClick={handleMenuOpen(menu.id)}>
+                            <Button 
+                                color="inherit" 
+                                onClick={handleMenuOpen(menu.id)}
+                                sx={{
+                                    px: 2,
+                                    py: 1,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    fontSize: '0.95rem',
+                                    color: 'text.primary',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                    }
+                                }}
+                            >
                                 {menu.label}
                             </Button>
                             <Menu
                                 anchorEl={menuAnchors[menu.id]}
                                 open={Boolean(menuAnchors[menu.id])}
                                 onClose={handleMenuClose(menu.id)}
+                                PaperProps={{
+                                    elevation: 3,
+                                    sx: {
+                                        mt: 1,
+                                        borderRadius: 2,
+                                        minWidth: 160
+                                    }
+                                }}
                             >
                                 {menu.items.map((item, index) => (
                                     <MenuItem
                                         key={`${menu.id}-${index}`}
                                         onClick={handleMenuClick(item.path, menu.id)}
+                                        sx={{
+                                            py: 1.5,
+                                            px: 2,
+                                            fontSize: '0.95rem',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                            }
+                                        }}
                                     >
                                         {item.label}
                                     </MenuItem>
@@ -124,38 +179,112 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     <Button 
                         color="inherit" 
                         onClick={navigateWithApi('/rankings', apiService.getRankings)}
+                        sx={{
+                            px: 2,
+                            py: 1,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
+                            color: 'text.primary',
+                            '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                            }
+                        }}
                     >
-                        Rankings
+                        RANKINGS
                     </Button>
+                    
                     <Button 
                         color="inherit" 
                         onClick={navigateWithApi('/playoff', apiService.getPlayoff)}
+                        sx={{
+                            px: 2,
+                            py: 1,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
+                            color: 'text.primary',
+                            '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                            }
+                        }}
                     >
-                        Playoff
+                        PLAYOFF
                     </Button>
                 </Stack>
 
-                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h6">
-                        {`${info.currentYear} ${currentStageInfo?.banner_label}`}
-                    </Typography>
+                {/* Right Section - Season Info and Home */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    {/* Season Info Card */}
+                    <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 2,
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        px: 2,
+                        py: 1,
+                        borderRadius: 2,
+                        border: '1px solid rgba(0, 0, 0, 0.08)'
+                    }}>
+                        <Typography 
+                            variant="h6" 
+                            sx={{ 
+                                fontWeight: 600,
+                                color: 'text.primary',
+                                fontSize: '1rem'
+                            }}
+                        >
+                            {info.currentYear}
+                        </Typography>
 
-                    {currentStageInfo && (
-                        currentStageInfo.season ? (
-                            <SeasonBanner info={info} />
-                        ) : (
-                            nextStageInfo && (
-                                <NonSeasonBanner currentStage={currentStageInfo} nextStage={nextStageInfo} />
-                            )
-                        )
-                    )}
+                        <Divider orientation="vertical" flexItem sx={{ height: 20 }} />
 
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                    fontWeight: 500,
+                                    color: 'text.secondary',
+                                    fontSize: '0.8rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                }}
+                            >
+                                {currentStageInfo?.banner_label}
+                            </Typography>
+                            
+                            {/* Banner */}
+                            {currentStageInfo && (
+                                currentStageInfo.season ? (
+                                    <SeasonBanner info={info} />
+                                ) : (
+                                    nextStageInfo && (
+                                        <NonSeasonBanner currentStage={currentStageInfo} nextStage={nextStageInfo} />
+                                    )
+                                )
+                            )}
+                        </Box>
+                    </Box>
+
+                    {/* Home Button */}
                     <Button 
                         color="inherit" 
                         onClick={navigateWithApi('/', () => apiService.getHome())}
                         startIcon={<HomeIcon />}
+                        sx={{
+                            px: 2,
+                            py: 1,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
+                            color: 'text.primary',
+                            borderRadius: 2,
+                            '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                            }
+                        }}
                     >
-                        Home
+                        HOME
                     </Button>
                 </Box>
             </Toolbar>
