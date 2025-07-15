@@ -15,6 +15,8 @@ export interface Team {
     nonConfGames: number;
     nonConfLimit: number;
     prestige: number;
+    ceiling: number;
+    floor: number;
     mascot: string;
     ranking: number;
     offense: number;
@@ -22,6 +24,7 @@ export interface Team {
     colorPrimary: string;
     colorSecondary: string;
     conference: string;
+    confName?: string;
     confWins: number;
     confLosses: number;
     rating: number;

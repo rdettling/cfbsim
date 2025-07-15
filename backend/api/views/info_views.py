@@ -36,6 +36,7 @@ def home(request):
     # Get preview data for the selected year or first year if none provided
     preview_data = None
     preview_year = year or (years[0] if years else None)
+    conference_list = []
 
     if preview_year:
         try:
@@ -49,6 +50,18 @@ def home(request):
                     conf["teams"] = sorted(
                         conf["teams"], key=lambda team: team["prestige"], reverse=True
                     )
+                    # Add conference name to each team for logo display
+                    for team in conf["teams"]:
+                        team["confName"] = conf["confName"]
+                        
+                # Add confName to independents (they don't have a conference logo)
+                for team in preview_data["independents"]:
+                    team["confName"] = None
+                # Build conference list for dropdown
+                conference_list = [
+                    {"confName": conf["confName"], "confFullName": conf["confFullName"]}
+                    for conf in preview_data["conferences"]
+                ]
         except (FileNotFoundError, IOError) as e:
             print(f"Error loading preview data for year {preview_year}: {e}")
 
@@ -58,8 +71,9 @@ def home(request):
             "years": years,
             "preview": preview_data,
             "selected_year": preview_year,  # Return the year that was actually used
+            "conference_list": conference_list,
         }
-    ) 
+    )
 
 @api_view(["GET"])
 def dashboard(request):
