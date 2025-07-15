@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import GamePreview from '../components/GamePreview';
+import GameResult from '../components/GameResult';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const Game = () => {
@@ -60,7 +61,7 @@ const Game = () => {
             />
             
             {data.game.winner ? (
-                <div>Game Result Component Goes Here</div>
+                <GameResult data={data} />
             ) : (
                 <GamePreview game={data.game} top_players={data.top_players} />
             )}

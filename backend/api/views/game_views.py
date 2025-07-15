@@ -185,16 +185,20 @@ def game_result(info, game):
                 "player_id": player.id,
                 "team_name": team_name,
                 "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.rush_attempts} carries, {game_log.rush_yards} yards, {game_log.rush_touchdowns} TDs",
+                "yards": game_log.rush_yards,
             }
             categorized_game_log_strings["Rushing"].append(rush_game_log_dict)
 
         if "wr" in position.lower() or (
             "rb" in position.lower() and game_log.receiving_catches > 0
+        ) or (
+            "te" in position.lower() and game_log.receiving_catches > 0
         ):
             recv_game_log_dict = {
                 "player_id": player.id,
                 "team_name": team_name,
                 "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.receiving_catches} catches, {game_log.receiving_yards} yards, {game_log.receiving_touchdowns} TDs",
+                "yards": game_log.receiving_yards,
             }
             categorized_game_log_strings["Receiving"].append(recv_game_log_dict)
         if "k" in position.lower():
@@ -217,6 +221,10 @@ def game_result(info, game):
                 "scoreBAfter": drive.scoreBAfter,
             }
         )
+
+    # Sort rushing and receiving game logs by yards (descending)
+    categorized_game_log_strings["Rushing"].sort(key=lambda x: x["yards"], reverse=True)
+    categorized_game_log_strings["Receiving"].sort(key=lambda x: x["yards"], reverse=True)
 
     return Response(
         {

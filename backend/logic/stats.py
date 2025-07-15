@@ -315,22 +315,22 @@ def game_stats(game):
     opp_yards = opp_passing_yards + opp_rushing_yards
 
     return {
-        "total yards": {"team": team_yards, "opponent": opp_yards},
-        "passing yards": {"team": team_passing_yards, "opponent": opp_passing_yards},
-        "rushing yards": {"team": team_rushing_yards, "opponent": opp_rushing_yards},
-        "1st downs": {"team": team_first_downs, "opponent": opp_first_downs},
+        "total yards": {"teamA": team_yards, "teamB": opp_yards},
+        "passing yards": {"teamA": team_passing_yards, "teamB": opp_passing_yards},
+        "rushing yards": {"teamA": team_rushing_yards, "teamB": opp_rushing_yards},
+        "1st downs": {"teamA": team_first_downs, "teamB": opp_first_downs},
         "3rd down conversions": {
-            "team": team_third_down_c,
-            "opponent": opp_third_down_c,
+            "teamA": team_third_down_c,
+            "teamB": opp_third_down_c,
         },
-        "3rd down attempts": {"team": team_third_down_a, "opponent": opp_third_down_a},
+        "3rd down attempts": {"teamA": team_third_down_a, "teamB": opp_third_down_a},
         "4th down conversions": {
-            "team": team_fourth_down_c,
-            "opponent": opp_fourth_down_c,
+            "teamA": team_fourth_down_c,
+            "teamB": opp_fourth_down_c,
         },
         "4th down attempts": {
-            "team": team_fourth_down_a,
-            "opponent": opp_fourth_down_a,
+            "teamA": team_fourth_down_a,
+            "teamB": opp_fourth_down_a,
         },
-        "turnovers": {"team": team_turnovers, "opponent": opp_turnovers},
+        "turnovers": {"teamA": team_turnovers, "teamB": opp_turnovers},
     }
