@@ -34,6 +34,21 @@ export interface Team {
     movement: number;
     last_game: ScheduleGame;
     next_game: ScheduleGame;
+    // Game preview stats (optional - only present in game preview)
+    stats?: {
+        offensive_ypg: {
+            value: number;
+            rank: number;
+        };
+        defensive_ypg: {
+            value: number;
+            rank: number;
+        };
+        points_per_game: {
+            value: number;
+            rank: number;
+        };
+    };
 }
 
 export interface Info {

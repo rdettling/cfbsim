@@ -64,15 +64,6 @@ const Game = () => {
             ) : (
                 <GamePreview game={data.game} top_players={data.top_players} />
             )}
-
-            <Box sx={{ mt: 4, textAlign: 'center' }}>
-                <Button
-                    variant="contained"
-                    onClick={() => navigate('/dashboard')}
-                >
-                    Back to Dashboard
-                </Button>
-            </Box>
         </>
     );
 };
