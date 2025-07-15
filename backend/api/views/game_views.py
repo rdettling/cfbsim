@@ -2,7 +2,8 @@ from ..models import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
-from logic.stats import game_stats
+from logic.stats import game_stats, accumulate_team_stats
+from django.db.models import Q
 
 @api_view(["GET"])
 def game(request, id):
@@ -58,16 +59,97 @@ def game_preview(info, game):
                 }
             )
 
+    # Calculate team stats and rankings
+    team_stats_data = calculate_team_stats_with_rankings(info, game.teamA, game.teamB)
+    
+    # Get game data and add stats to team objects
+    game_data = GamesSerializer(game).data
+    game_data["teamA"].update(team_stats_data["team_a"])
+    game_data["teamB"].update(team_stats_data["team_b"])
+
     return Response(
         {
             "info": InfoSerializer(info).data,
-            "game": GamesSerializer(game).data,
+            "game": game_data,
             "top_players": top_players,
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
     )
+
+
+def calculate_team_stats_with_rankings(info, team_a, team_b):
+    """Calculate team stats and rankings for offensive/defensive yards per game and points per game"""
+    all_games = info.games.filter(year=info.currentYear, winner__isnull=False)
+    plays = info.plays.all()
+    
+    # Calculate stats for all teams
+    all_team_stats = {}
+    for team in info.teams.all():
+        games = all_games.filter(Q(teamA=team) | Q(teamB=team))
+        
+        offense_stats = accumulate_team_stats(team, games, plays.filter(offense=team))
+        defense_stats = accumulate_team_stats(team, games, plays.filter(defense=team))
+        
+        all_team_stats[team.id] = {
+            'team': team,
+            'offensive_ypg': offense_stats.get('yardspg', 0),
+            'defensive_ypg': defense_stats.get('yardspg', 0),
+            'points_per_game': offense_stats.get('ppg', 0)
+        }
+    
+    # Sort teams by each stat to determine rankings
+    # Offensive yards per game (higher is better)
+    offensive_rankings = sorted(all_team_stats.values(), key=lambda x: x['offensive_ypg'], reverse=True)
+    offensive_rank_map = {team_stat['team'].id: idx + 1 for idx, team_stat in enumerate(offensive_rankings)}
+    
+    # Defensive yards per game (lower is better)
+    defensive_rankings = sorted(all_team_stats.values(), key=lambda x: x['defensive_ypg'])
+    defensive_rank_map = {team_stat['team'].id: idx + 1 for idx, team_stat in enumerate(defensive_rankings)}
+    
+    # Points per game (higher is better)
+    points_rankings = sorted(all_team_stats.values(), key=lambda x: x['points_per_game'], reverse=True)
+    points_rank_map = {team_stat['team'].id: idx + 1 for idx, team_stat in enumerate(points_rankings)}
+    
+    # Get stats for both teams in the game
+    team_a_stats = all_team_stats[team_a.id]
+    team_b_stats = all_team_stats[team_b.id]
+    
+    return {
+        'team_a': {
+            'stats': {
+                'offensive_ypg': {
+                    'value': round(team_a_stats['offensive_ypg'], 1),
+                    'rank': offensive_rank_map[team_a.id]
+                },
+                'defensive_ypg': {
+                    'value': round(team_a_stats['defensive_ypg'], 1),
+                    'rank': defensive_rank_map[team_a.id]
+                },
+                'points_per_game': {
+                    'value': round(team_a_stats['points_per_game'], 1),
+                    'rank': points_rank_map[team_a.id]
+                }
+            }
+        },
+        'team_b': {
+            'stats': {
+                'offensive_ypg': {
+                    'value': round(team_b_stats['offensive_ypg'], 1),
+                    'rank': offensive_rank_map[team_b.id]
+                },
+                'defensive_ypg': {
+                    'value': round(team_b_stats['defensive_ypg'], 1),
+                    'rank': defensive_rank_map[team_b.id]
+                },
+                'points_per_game': {
+                    'value': round(team_b_stats['points_per_game'], 1),
+                    'rank': points_rank_map[team_b.id]
+                }
+            }
+        }
+    }
 
 
 def game_result(info, game):
