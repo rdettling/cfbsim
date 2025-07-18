@@ -1,5 +1,8 @@
 from logic.stats import *
 from api.models import *
+import json
+import os
+from django.conf import settings
 
 
 def get_position_game_log(pos, game_log, game):
@@ -236,3 +239,58 @@ def get_last_week(playoff_teams):
         )  # Weeks 14-17 (First Round + Quarters + Semis + Championship)
     else:
         raise ValueError(f"Unsupported playoff format: {playoff_teams}")
+
+
+def load_and_merge_year_data(year):
+    """Load and merge year-specific data with static data"""
+    # Load year-specific data
+    year_file_path = os.path.join(settings.YEARS_DATA_DIR, f"{year}.json")
+    with open(year_file_path, "r") as metadataFile:
+        year_data = json.load(metadataFile)
+
+    # Load static data
+    teams_path = os.path.join(settings.BASE_DIR, "data", "teams.json")
+    with open(teams_path, "r") as f:
+        teams_data = json.load(f)["teams"]
+
+    conferences_path = os.path.join(settings.BASE_DIR, "data", "conferences.json")
+    with open(conferences_path, "r") as f:
+        conferences_data = json.load(f)["conferences"]
+
+    # Merge data to create the full structure
+    data = {"playoff": year_data["playoff"], "conferences": [], "independents": []}
+
+    # Helper function to merge team data
+    def merge_team(team, team_metadata):
+        return {
+            "name": team["name"],
+            "mascot": team_metadata["mascot"],
+            "abbreviation": team_metadata["abbreviation"],
+            "prestige": team["prestige"],
+            "ceiling": team_metadata["ceiling"],
+            "floor": team_metadata["floor"],
+            "colorPrimary": team_metadata["colorPrimary"],
+            "colorSecondary": team_metadata["colorSecondary"],
+        }
+
+    # Merge conference data
+    for conf in year_data["conferences"]:
+        conf_name = conf["confName"]
+        conf_metadata = conferences_data[conf_name]
+
+        merged_conf = {
+            "confName": conf_name,
+            "confFullName": conf_metadata["confFullName"],
+            "confGames": conf["confGames"],
+            "teams": [
+                merge_team(team, teams_data[team["name"]]) for team in conf["teams"]
+            ],
+        }
+        data["conferences"].append(merged_conf)
+
+    # Merge independent teams
+    data["independents"] = [
+        merge_team(team, teams_data[team["name"]]) for team in year_data["independents"]
+    ]
+
+    return data

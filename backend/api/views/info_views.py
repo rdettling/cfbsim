@@ -6,7 +6,12 @@ from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
-from logic.util import get_last_game, get_next_game, sort_standings
+from logic.util import (
+    get_last_game,
+    get_next_game,
+    sort_standings,
+    load_and_merge_year_data,
+)
 
 
 @api_view(["GET"])
@@ -35,32 +40,17 @@ def home(request):
     # Get preview data for the selected year or first year if none provided
     preview_data = None
     preview_year = year or (years[0] if years else None)
-    conference_list = []
 
     if preview_year:
         try:
-            with open(
-                f"{settings.YEARS_DATA_DIR}/{preview_year}.json", "r"
-            ) as metadataFile:
-                preview_data = json.load(metadataFile)
+            # Load and merge data using utility function
+            preview_data = load_and_merge_year_data(preview_year)
 
-                # Sort teams by prestige within each conference
-                for conf in preview_data["conferences"]:
-                    conf["teams"] = sorted(
-                        conf["teams"], key=lambda team: team["prestige"], reverse=True
-                    )
-                    # Add conference name to each team for logo display
-                    for team in conf["teams"]:
-                        team["confName"] = conf["confName"]
-
-                # Add confName to independents (they don't have a conference logo)
-                for team in preview_data["independents"]:
-                    team["confName"] = None
-                # Build conference list for dropdown
-                conference_list = [
-                    {"confName": conf["confName"], "confFullName": conf["confFullName"]}
-                    for conf in preview_data["conferences"]
-                ]
+            # Sort teams by prestige within each conference
+            for conf in preview_data["conferences"]:
+                conf["teams"] = sorted(
+                    conf["teams"], key=lambda team: team["prestige"], reverse=True
+                )
         except (FileNotFoundError, IOError) as e:
             print(f"Error loading preview data for year {preview_year}: {e}")
 
@@ -70,7 +60,6 @@ def home(request):
             "years": years,
             "preview": preview_data,
             "selected_year": preview_year,  # Return the year that was actually used
-            "conference_list": conference_list,
         }
     )
 

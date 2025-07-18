@@ -33,17 +33,11 @@ interface PreviewData {
   };
 }
 
-interface ConferenceListItem {
-  confName: string;
-  confFullName: string;
-}
-
 interface LaunchProps {
   years: string[];
   info: Info | null;
   preview: PreviewData | null;
   selected_year?: string;
-  conference_list?: ConferenceListItem[];
 }
 
 const Home = () => {
@@ -101,7 +95,7 @@ const Home = () => {
       
       try {
         const responseData = await apiService.getHome<LaunchProps>(newYear);
-        setData(prevData => ({ ...prevData, preview: responseData.preview, conference_list: responseData.conference_list }));
+        setData(prevData => ({ ...prevData, preview: responseData.preview }));
         setSelectedConference('ALL'); // Reset filter on year change
         
         // Set playoff defaults based on year data
@@ -127,12 +121,13 @@ const Home = () => {
 
   const filteredTeams = data.preview ? (() => {
     if (selectedConference === 'ALL') {
-      return [...data.preview.conferences.flatMap(conf => conf.teams), ...data.preview.independents];
+      return [...data.preview.conferences.flatMap(conf => conf.teams.map(team => ({ ...team, confName: conf.confName }))), ...data.preview.independents.map(team => ({ ...team, confName: null }))];
     }
     if (selectedConference === 'INDEPENDENTS') {
-      return data.preview.independents;
+      return data.preview.independents.map(team => ({ ...team, confName: null }));
     }
-    return data.preview.conferences.find(c => c.confName === selectedConference)?.teams || [];
+    const conf = data.preview.conferences.find(c => c.confName === selectedConference);
+    return conf ? conf.teams.map(team => ({ ...team, confName: conf.confName })) : [];
   })() : [];
 
   return (
@@ -247,7 +242,7 @@ const Home = () => {
                       sx={{ bgcolor: 'white', minWidth: 200 }}
                     >
                       <MenuItem value="ALL">All Conferences</MenuItem>
-                      {data.conference_list?.sort((a, b) => a.confName.localeCompare(b.confName)).map(conf => (
+                      {data.preview?.conferences.sort((a, b) => a.confName.localeCompare(b.confName)).map(conf => (
                         <MenuItem key={conf.confName} value={conf.confName}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <ConfLogo name={conf.confName} size={16} />

@@ -37,7 +37,7 @@ def get_playoff_team_order(info):
     conference_champions = sorted(conference_champions, key=lambda x: x.ranking)
 
     # Apply the same logic as setPlayoffR1
-    autobids = conference_champions[:playoff.autobids]
+    autobids = conference_champions[: playoff.autobids]
 
     # Get wild cards (non-autobid teams)
     autobid_ids = [team.id for team in autobids]
@@ -60,7 +60,7 @@ def get_playoff_team_order(info):
         all_teams = autobids + wild_cards
         all_teams = sorted(all_teams, key=lambda x: x.ranking)
         byes = all_teams[:4]  # Top 4 teams by ranking get byes
-        
+
         # Remove bye teams from autobids and wild_cards
         bye_ids = [team.id for team in byes]
         autobids = [team for team in autobids if team.id not in bye_ids]
