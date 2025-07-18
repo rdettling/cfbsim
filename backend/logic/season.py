@@ -4,8 +4,7 @@ from .sim.sim_helper import getSpread
 from django.db import transaction
 import os
 from .sim.sim import *
-from django.conf import settings
-from .util import get_recruiting_points, get_last_week
+from .util import get_recruiting_points, get_last_week, load_and_merge_year_data
 
 
 def next_season(info):
@@ -13,9 +12,7 @@ def next_season(info):
     while current_year >= info.startYear:
         file_path = f"data/years/{current_year}.json"
         if os.path.exists(file_path):
-            with open(file_path, "r") as metadataFile:
-                data = json.load(metadataFile)
-
+            data = load_and_merge_year_data(current_year)
             break
         else:
             current_year -= 1
@@ -72,8 +69,7 @@ def realignment_summary(info):
 
     team_dict = {}
     if os.path.exists(file_path):
-        with open(file_path, "r") as metadataFile:
-            data = json.load(metadataFile)
+        data = load_and_merge_year_data(next_year)
 
         teams = info.teams.all().select_related("conference")
         for team in teams:
@@ -196,8 +192,7 @@ def init(
     playoff_autobids=None,
     playoff_conf_champ_top_4=None,
 ):
-    with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
-        data = json.load(metadataFile)
+    data = load_and_merge_year_data(year)
 
     # Use provided playoff settings or defaults from JSON
     playoff_config = data["playoff"]

@@ -1,0 +1,31 @@
+{
+    "conferences": {
+        "SEC": {
+            "confFullName": "Southeastern Conference"
+        },
+        "B1G": {
+            "confFullName": "Big Ten Conference"
+        },
+        "ACC": {
+            "confFullName": "Atlantic Coast Conference"
+        },
+        "Big 12": {
+            "confFullName": "Big 12 Conference"
+        },
+        "American": {
+            "confFullName": "American Athletic Conference"
+        },
+        "MWC": {
+            "confFullName": "Mountain West Conference"
+        },
+        "SBC": {
+            "confFullName": "Sun Belt Conference"
+        },
+        "MAC": {
+            "confFullName": "Mid-American Conference"
+        },
+        "CUSA": {
+            "confFullName": "Conference USA"
+        }
+    }
+} 
