@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
+import { TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { CircularProgress, Alert, Container, Typography } from '@mui/material';
 import Navbar from '../components/Navbar';
 import ChampionshipPlayoff from '../components/ChampionshipPlayoff';
@@ -57,6 +58,8 @@ const Playoff = () => {
     const [data, setData] = useState<PlayoffData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedTeam, setSelectedTeam] = useState<string>('');
 
     useEffect(() => {
         const fetchPlayoff = async () => {
@@ -77,6 +80,11 @@ const Playoff = () => {
 
     // Add usePageRefresh for automatic data updates
     usePageRefresh<PlayoffData>(setData);
+
+    const handleTeamClick = (name: string) => {
+        setSelectedTeam(name);
+        setModalOpen(true);
+    };
 
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;
@@ -104,6 +112,7 @@ const Playoff = () => {
                         playoffTeams={data.playoff_teams}
                         bubbleTeams={data.bubble_teams}
                         conferenceChampions={data.conference_champions}
+                        onTeamClick={handleTeamClick}
                     />
                 )}
 
@@ -112,6 +121,7 @@ const Playoff = () => {
                         playoffTeams={data.playoff_teams}
                         bubbleTeams={data.bubble_teams}
                         conferenceChampions={data.conference_champions}
+                        onTeamClick={handleTeamClick}
                     />
                 )}
 
@@ -121,9 +131,16 @@ const Playoff = () => {
                         bubbleTeams={data.bubble_teams}
                         conferenceChampions={data.conference_champions}
                         bracket={data.bracket}
+                        onTeamClick={handleTeamClick}
                     />
                 )}
             </Container>
+            
+            <TeamInfoModal 
+                teamName={selectedTeam} 
+                open={modalOpen} 
+                onClose={() => setModalOpen(false)} 
+            />
         </>
     );
 };

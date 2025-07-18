@@ -1,6 +1,5 @@
 from logic.stats import *
 from api.models import *
-from django.db.models import F, Q
 
 
 def get_position_game_log(pos, game_log, game):
@@ -165,59 +164,31 @@ def get_schedule_game(team, game):
 
 
 def get_last_game(info, team):
-    """Get the last game played by a team"""
-    last_game = (
-        info.games.filter(
-            Q(teamA=team) | Q(teamB=team),
-            year=info.currentYear,
-            scoreA__isnull=False,
-            scoreB__isnull=False,
-        )
-        .order_by("-weekPlayed")
-        .first()
+    games_as_teamA = team.games_as_teamA.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek - 1
     )
-
-    if last_game:
-        return {
-            "week": last_game.weekPlayed,
-            "opponent": (
-                last_game.teamB.name
-                if last_game.teamA == team
-                else last_game.teamA.name
-            ),
-            "result": "W" if last_game.winner == team else "L",
-            "score": (
-                f"{last_game.scoreA}-{last_game.scoreB}"
-                if last_game.teamA == team
-                else f"{last_game.scoreB}-{last_game.scoreA}"
-            ),
-        }
-    return None
+    games_as_teamB = team.games_as_teamB.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek - 1
+    )
+    schedule = list(games_as_teamA | games_as_teamB)
+    if schedule:
+        return get_schedule_game(team, schedule[-1])
+    else:
+        return None
 
 
 def get_next_game(info, team):
-    """Get the next game for a team"""
-    next_game = (
-        info.games.filter(
-            Q(teamA=team) | Q(teamB=team),
-            year=info.currentYear,
-            scoreA__isnull=True,
-            scoreB__isnull=True,
-        )
-        .order_by("weekPlayed")
-        .first()
+    games_as_teamA = team.games_as_teamA.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek
     )
-
-    if next_game:
-        return {
-            "week": next_game.weekPlayed,
-            "opponent": (
-                next_game.teamB.name
-                if next_game.teamA == team
-                else next_game.teamA.name
-            ),
-        }
-    return None
+    games_as_teamB = team.games_as_teamB.filter(
+        year=info.currentYear, weekPlayed=info.currentWeek
+    )
+    schedule = list(games_as_teamA | games_as_teamB)
+    if schedule:
+        return get_schedule_game(team, schedule[0])
+    else:
+        return None
 
 
 def sort_standings(teams):

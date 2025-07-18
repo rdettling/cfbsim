@@ -1,4 +1,5 @@
-import { Box, Typography, Paper, Grid, List, ListItem, Chip } from '@mui/material';
+import { Box, Typography, Paper, Grid, List, ListItem, Chip, Link as MuiLink } from '@mui/material';
+import { TeamLogo } from './TeamComponents';
 
 interface PlayoffTeam {
     name: string;
@@ -13,13 +14,15 @@ interface TwelveTeamPlayoffProps {
     bubbleTeams: any[];
     conferenceChampions: any[];
     bracket: any;
+    onTeamClick: (name: string) => void;
 }
 
-// Team box component with simplified logic
-const TeamBox = ({ team, seed, isTBD = false }: {
+// Team box component with logos and clickable names
+const TeamBox = ({ team, seed, isTBD = false, onTeamClick }: {
     team?: string;
     seed?: number;
     isTBD?: boolean;
+    onTeamClick: (name: string) => void;
 }) => {
     const displayTeam = team?.startsWith('Winner of') ? 'TBD' : team;
     const shouldShowTBD = isTBD || team?.startsWith('Winner of');
@@ -56,22 +59,52 @@ const TeamBox = ({ team, seed, isTBD = false }: {
                     {seed}
                 </Typography>
             )}
-            <Typography sx={{ fontWeight: 'bold' }}>
-                {displayTeam || 'TBD'}
-            </Typography>
+            {!shouldShowTBD && displayTeam && (
+                <TeamLogo name={displayTeam} size={25} />
+            )}
+            {shouldShowTBD ? (
+                <Typography sx={{ fontWeight: 'bold' }}>
+                    {displayTeam || 'TBD'}
+                </Typography>
+            ) : (
+                <MuiLink
+                    component="button"
+                    onClick={() => onTeamClick(displayTeam || '')}
+                    sx={{ 
+                        cursor: 'pointer', 
+                        textDecoration: 'none', 
+                        fontWeight: 'bold',
+                        color: '#333',
+                        '&:hover': { color: '#1976d2' }
+                    }}
+                >
+                    {displayTeam || 'TBD'}
+                </MuiLink>
+            )}
         </Box>
     );
 };
 
 // Matchup component
-const Matchup = ({ matchup, direction }: {
+const Matchup = ({ matchup, direction, onTeamClick }: {
     matchup: any;
     direction: 'left' | 'right';
+    onTeamClick: (name: string) => void;
 }) => (
     <Box sx={{ position: 'relative' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <TeamBox team={matchup.team1} seed={matchup.seed1} isTBD={matchup.team1 === "TBD"} />
-            <TeamBox team={matchup.team2} seed={matchup.seed2} isTBD={matchup.team2 === "TBD"} />
+            <TeamBox 
+                team={matchup.team1} 
+                seed={matchup.seed1} 
+                isTBD={matchup.team1 === "TBD"} 
+                onTeamClick={onTeamClick}
+            />
+            <TeamBox 
+                team={matchup.team2} 
+                seed={matchup.seed2} 
+                isTBD={matchup.team2 === "TBD"} 
+                onTeamClick={onTeamClick}
+            />
         </Box>
         
         {/* Connector line */}
@@ -99,11 +132,12 @@ const Matchup = ({ matchup, direction }: {
 );
 
 // Bracket round component
-const BracketRound = ({ title, matchups, direction = 'left', centerAlign = false }: {
+const BracketRound = ({ title, matchups, direction = 'left', centerAlign = false, onTeamClick }: {
     title: string;
     matchups: any[];
     direction?: 'left' | 'right';
     centerAlign?: boolean;
+    onTeamClick: (name: string) => void;
 }) => (
     <Box sx={{ 
         display: 'flex', 
@@ -128,14 +162,17 @@ const BracketRound = ({ title, matchups, direction = 'left', centerAlign = false
         
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {matchups.map((matchup, idx) => (
-                <Matchup key={idx} matchup={matchup} direction={direction} />
+                <Matchup key={idx} matchup={matchup} direction={direction} onTeamClick={onTeamClick} />
             ))}
         </Box>
     </Box>
 );
 
 // Championship component
-const Championship = ({ championship }: { championship: any }) => (
+const Championship = ({ championship, onTeamClick }: { 
+    championship: any;
+    onTeamClick: (name: string) => void;
+}) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
         <Typography 
             variant="h6" 
@@ -154,11 +191,13 @@ const Championship = ({ championship }: { championship: any }) => (
                     team={championship?.team1} 
                     seed={championship?.seed1} 
                     isTBD={championship?.team1 === "TBD"} 
+                    onTeamClick={onTeamClick}
                 />
                 <TeamBox 
                     team={championship?.team2} 
                     seed={championship?.seed2} 
                     isTBD={championship?.team2 === "TBD"} 
+                    onTeamClick={onTeamClick}
                 />
             </Box>
             
@@ -189,11 +228,12 @@ const Championship = ({ championship }: { championship: any }) => (
     </Box>
 );
 
-// Information section component
-const InfoSection = ({ title, items, renderItem }: {
+// Information section component with clickable team names
+const InfoSection = ({ title, items, renderItem, onTeamClick }: {
     title: string;
     items: any[];
     renderItem: (item: any, index: number) => React.ReactNode;
+    onTeamClick: (name: string) => void;
 }) => (
     <Paper sx={{ p: 3, borderRadius: 2 }}>
         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
@@ -209,7 +249,7 @@ const InfoSection = ({ title, items, renderItem }: {
     </Paper>
 );
 
-const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bracket }: TwelveTeamPlayoffProps) => {
+const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bracket, onTeamClick }: TwelveTeamPlayoffProps) => {
     return (
         <Box>
             {/* Playoff Bracket - Full Width */}
@@ -231,22 +271,25 @@ const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bra
                             title="First Round" 
                             matchups={bracket.left_bracket?.first_round || []}
                             direction="left"
+                            onTeamClick={onTeamClick}
                         />
                         <BracketRound 
                             title="Quarterfinals" 
                             matchups={bracket.left_bracket?.quarterfinals || []}
                             direction="left"
+                            onTeamClick={onTeamClick}
                         />
                         <BracketRound 
                             title="Semifinal" 
                             matchups={[bracket.left_bracket?.semifinal || {}]}
                             direction="left"
                             centerAlign={true}
+                            onTeamClick={onTeamClick}
                         />
                     </Box>
                     
                     {/* Championship */}
-                    <Championship championship={bracket.championship} />
+                    <Championship championship={bracket.championship} onTeamClick={onTeamClick} />
                     
                     {/* Right Bracket */}
                     <Box sx={{ display: 'flex', gap: 6, flex: 1 }}>
@@ -255,16 +298,19 @@ const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bra
                             matchups={[bracket.right_bracket?.semifinal || {}]}
                             direction="right"
                             centerAlign={true}
+                            onTeamClick={onTeamClick}
                         />
                         <BracketRound 
                             title="Quarterfinals" 
                             matchups={bracket.right_bracket?.quarterfinals || []}
                             direction="right"
+                            onTeamClick={onTeamClick}
                         />
                         <BracketRound 
                             title="First Round" 
                             matchups={bracket.right_bracket?.first_round || []}
                             direction="right"
+                            onTeamClick={onTeamClick}
                         />
                     </Box>
                 </Box>
@@ -276,6 +322,7 @@ const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bra
                     <InfoSection
                         title="Playoff Teams"
                         items={playoffTeams.slice(0, 12)}
+                        onTeamClick={onTeamClick}
                         renderItem={(team, index) => (
                             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                                 <Typography 
@@ -288,10 +335,21 @@ const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bra
                                 >
                                     #{team.seed}
                                 </Typography>
+                                <TeamLogo name={team.name} size={25} />
                                 <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                    <MuiLink
+                                        component="button"
+                                        onClick={() => onTeamClick(team.name)}
+                                        sx={{ 
+                                            cursor: 'pointer', 
+                                            textDecoration: 'none', 
+                                            fontWeight: 'bold',
+                                            color: 'text.primary',
+                                            '&:hover': { color: 'primary.main' }
+                                        }}
+                                    >
                                         {team.name}
-                                    </Typography>
+                                    </MuiLink>
                                     <Typography variant="body2" color="text.secondary">
                                         {team.record} • Rank #{team.ranking}
                                     </Typography>
@@ -313,15 +371,27 @@ const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bra
                     <InfoSection
                         title="Bubble Teams"
                         items={bubbleTeams}
+                        onTeamClick={onTeamClick}
                         renderItem={(team) => (
                             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                                 <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 'bold' }}>
                                     #{team.ranking}
                                 </Typography>
+                                <TeamLogo name={team.name} size={20} />
                                 <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                    <MuiLink
+                                        component="button"
+                                        onClick={() => onTeamClick(team.name)}
+                                        sx={{ 
+                                            cursor: 'pointer', 
+                                            textDecoration: 'none', 
+                                            fontWeight: 'bold',
+                                            color: 'text.primary',
+                                            '&:hover': { color: 'primary.main' }
+                                        }}
+                                    >
                                         {team.name}
-                                    </Typography>
+                                    </MuiLink>
                                     <Typography variant="caption" color="text.secondary">
                                         {team.record} • {team.conference}
                                     </Typography>
@@ -335,15 +405,27 @@ const TwelveTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, bra
                     <InfoSection
                         title="Conference Champions"
                         items={conferenceChampions}
+                        onTeamClick={onTeamClick}
                         renderItem={(team) => (
                             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                                 <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 'bold' }}>
                                     #{team.ranking}
                                 </Typography>
+                                <TeamLogo name={team.name} size={20} />
                                 <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                    <MuiLink
+                                        component="button"
+                                        onClick={() => onTeamClick(team.name)}
+                                        sx={{ 
+                                            cursor: 'pointer', 
+                                            textDecoration: 'none', 
+                                            fontWeight: 'bold',
+                                            color: 'text.primary',
+                                            '&:hover': { color: 'primary.main' }
+                                        }}
+                                    >
                                         {team.name}
-                                    </Typography>
+                                    </MuiLink>
                                     <Typography variant="caption" color="text.secondary">
                                         {team.record}
                                     </Typography>
