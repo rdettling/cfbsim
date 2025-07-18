@@ -98,6 +98,7 @@ class OddsSerializer(serializers.ModelSerializer):
 
 class InfoSerializer(serializers.ModelSerializer):
     team = TeamsSerializer(read_only=True)
+    playoff = PlayoffSerializer(read_only=True)
 
     class Meta:
         model = Info

@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 from logic.players import getRatings
 from backend.logic.constants.player_constants import *
 
+
 def simulate_team(prestige_tier: int) -> Tuple[float, float]:
     """
     Simulate a team using the actual getRatings function from players.py
@@ -21,10 +22,10 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
         for _ in range(count):
             # Use the actual getRatings function
             fr, so, jr, sr, star_rating, development_trait = getRatings(prestige_tier)
-            
+
             # Randomly assign player year (1-4)
             player_year = random.randint(1, 4)
-            
+
             # Get the appropriate rating for the player's year
             if player_year == 1:
                 player_rating = fr
@@ -34,7 +35,7 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
                 player_rating = jr
             else:  # player_year == 4
                 player_rating = sr
-            
+
             total_rating += player_rating
             total_stars += star_rating
             total_players += 1
@@ -53,12 +54,12 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
 def compare_teams(team1: Dict, team2: Dict, num_simulations: int = 100) -> Dict:
     """
     Compare two teams over multiple simulations and count how many times team1 has a higher rating.
-    
+
     Args:
         team1: Dict with 'name', 'prestige'
         team2: Dict with 'name', 'prestige'
         num_simulations: Number of times to simulate team ratings
-    
+
     Returns:
         Dict with comparison statistics
     """
@@ -67,19 +68,19 @@ def compare_teams(team1: Dict, team2: Dict, num_simulations: int = 100) -> Dict:
     team2_ratings = []
     team1_stars = []
     team2_stars = []
-    
+
     for _ in range(num_simulations):
         rating1, stars1 = simulate_team(team1["prestige"])
         rating2, stars2 = simulate_team(team2["prestige"])
-        
+
         team1_ratings.append(rating1)
         team2_ratings.append(rating2)
         team1_stars.append(stars1)
         team2_stars.append(stars2)
-        
+
         if rating1 > rating2:
             team1_higher_count += 1
-    
+
     # Calculate statistics
     stats = {
         "team1": {
@@ -101,11 +102,15 @@ def compare_teams(team1: Dict, team2: Dict, num_simulations: int = 100) -> Dict:
             "avg_stars": round(statistics.mean(team2_stars), 2),
         },
         "team1_higher_count": team1_higher_count,
-        "team1_higher_percentage": round((team1_higher_count / num_simulations) * 100, 1),
+        "team1_higher_percentage": round(
+            (team1_higher_count / num_simulations) * 100, 1
+        ),
         "total_simulations": num_simulations,
-        "avg_rating_diff": round(statistics.mean(team1_ratings) - statistics.mean(team2_ratings), 2)
+        "avg_rating_diff": round(
+            statistics.mean(team1_ratings) - statistics.mean(team2_ratings), 2
+        ),
     }
-    
+
     return stats
 
 
@@ -115,31 +120,37 @@ def print_comparison_results(stats: Dict):
     print(f"TEAM COMPARISON: {stats['team1']['name']} vs {stats['team2']['name']}")
     print(f"Simulations: {stats['total_simulations']}")
     print("=" * 80)
-    
+
     # Team 1 stats
     print(f"\n{stats['team1']['name']} (Prestige {stats['team1']['prestige']}):")
     print(f"  Average Star Rating: {stats['team1']['avg_stars']}")
     print(f"  Average Team Rating: {stats['team1']['avg_rating']}")
-    print(f"  Rating Range: {stats['team1']['min_rating']} - {stats['team1']['max_rating']}")
+    print(
+        f"  Rating Range: {stats['team1']['min_rating']} - {stats['team1']['max_rating']}"
+    )
     print(f"  Standard Deviation: {stats['team1']['std_dev']}")
-    
+
     # Team 2 stats
     print(f"\n{stats['team2']['name']} (Prestige {stats['team2']['prestige']}):")
     print(f"  Average Star Rating: {stats['team2']['avg_stars']}")
     print(f"  Average Team Rating: {stats['team2']['avg_rating']}")
-    print(f"  Rating Range: {stats['team2']['min_rating']} - {stats['team2']['max_rating']}")
+    print(
+        f"  Rating Range: {stats['team2']['min_rating']} - {stats['team2']['max_rating']}"
+    )
     print(f"  Standard Deviation: {stats['team2']['std_dev']}")
-    
+
     # Comparison results
     print(f"\nCOMPARISON RESULTS:")
-    print(f"  {stats['team1']['name']} had higher rating: {stats['team1_higher_count']} times")
+    print(
+        f"  {stats['team1']['name']} had higher rating: {stats['team1_higher_count']} times"
+    )
     print(f"  Percentage: {stats['team1_higher_percentage']}%")
     print(f"  Average Rating Difference: {stats['avg_rating_diff']}")
-    
+
     # Summary
-    if stats['team1_higher_percentage'] > 50:
+    if stats["team1_higher_percentage"] > 50:
         print(f"\n🏆 {stats['team1']['name']} typically has a higher rating!")
-    elif stats['team1_higher_percentage'] < 50:
+    elif stats["team1_higher_percentage"] < 50:
         print(f"\n🏆 {stats['team2']['name']} typically has a higher rating!")
     else:
         print(f"\n🤝 Teams are evenly matched!")
@@ -149,17 +160,19 @@ def test_individual_player_creation():
     """Test individual player creation to see the rating system in action."""
     print("🧪 INDIVIDUAL PLAYER CREATION TEST")
     print("=" * 80)
-    
+
     test_prestiges = [1, 4, 7]
-    
+
     for prestige in test_prestiges:
         print(f"\nPrestige {prestige} Team:")
         print("-" * 40)
-        
+
         # Create 5 sample players
         for i in range(5):
             fr, so, jr, sr, stars, dev_trait = getRatings(prestige)
-            print(f"Player {i+1}: {stars}★, Dev {dev_trait}, Ratings: Fr:{fr} So:{so} Jr:{jr} Sr:{sr}")
+            print(
+                f"Player {i+1}: {stars}★, Dev {dev_trait}, Ratings: Fr:{fr} So:{so} Jr:{jr} Sr:{sr}"
+            )
 
 
 def run_rating_tests():
@@ -167,10 +180,10 @@ def run_rating_tests():
     print("🏈 COLLEGE FOOTBALL RATING SYSTEM TEST")
     print("Testing the integrated star-based rating system")
     print("=" * 80)
-    
+
     # Test individual player creation
     test_individual_player_creation()
-    
+
     # Define two teams to compare
     team_1 = {
         "name": "Alabama",
@@ -181,15 +194,15 @@ def run_rating_tests():
         "name": "Boise State",
         "prestige": 4,
     }
-    
+
     print("\n\n" + "=" * 80)
     print("TEAM COMPARISON TEST")
     print("=" * 80)
-    
+
     # Run comparison
     stats = compare_teams(team_1, team_2, num_simulations=100)
     print_comparison_results(stats)
-    
+
     print("\n\n" + "=" * 80)
     print("TEST COMPLETE")
     print("=" * 80)

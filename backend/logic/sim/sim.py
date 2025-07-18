@@ -3,7 +3,6 @@ from api.models import *
 from ..constants.sim_constants import *
 
 
-
 class Drive:
     def __init__(self, game, offense, defense, fieldPosition, i, needed):
         self.game = game

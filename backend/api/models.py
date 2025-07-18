@@ -222,6 +222,7 @@ class Playoff(models.Model):
     )
     teams = models.IntegerField()
     autobids = models.IntegerField()
+    conf_champ_top_4 = models.BooleanField(default=False)
 
     seed_1 = models.ForeignKey(
         Teams, on_delete=models.SET_NULL, null=True, related_name="seed_1"

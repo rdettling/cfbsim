@@ -84,7 +84,7 @@ def run_sim_tests():
     print("🏈 COLLEGE FOOTBALL SIMULATION TEST")
     print("Testing the game simulation system")
     print("=" * 80)
-    
+
     # Test basic team creation
     print("\n🧪 BASIC TEAM TEST")
     print("-" * 40)
@@ -92,7 +92,7 @@ def run_sim_tests():
     b = Team(90)
     print(f"Team A Rating: {a.rating}")
     print(f"Team B Rating: {b.rating}")
-    
+
     # Test game simulation
     print("\n🎮 GAME SIMULATION TEST")
     print("-" * 40)
@@ -101,12 +101,12 @@ def run_sim_tests():
     print(f"Team B Score: {game_results['scoreB']}")
     print(f"Team A Win %: {game_results['winA']:.1%}")
     print(f"Team B Win %: {game_results['winB']:.1%}")
-    
+
     # Test yards simulation
     print("\n📏 YARDS SIMULATION TEST")
     print("-" * 40)
     testYards(a, b, simulations=1000)
-    
+
     print("\n\n" + "=" * 80)
     print("SIMULATION TEST COMPLETE")
     print("=" * 80)

@@ -15,31 +15,55 @@ def noncon(request):
     user_id = request.headers.get("X-User-ID")
     team = request.GET.get("team")
     year = request.GET.get("year")
-    
-    print(f"[DEBUG] noncon API called with: user_id={user_id}, team={team}, year={year}")
-    
+    playoff_teams = request.GET.get("playoff_teams")
+    playoff_autobids = request.GET.get("playoff_autobids")
+    playoff_conf_champ_top_4 = request.GET.get("playoff_conf_champ_top_4")
+
+    print(
+        f"[DEBUG] noncon API called with: user_id={user_id}, team={team}, year={year}, playoff_teams={playoff_teams}"
+    )
+
     # Handle new game creation
     if team and year:
         try:
             print(f"[DEBUG] Creating new game for team: {team}, year: {year}")
             user_id = str(uuid.uuid4())
             print(f"[DEBUG] Generated new user_id: {user_id}")
-            info = init(user_id, team, year)
+
+            # Convert playoff parameters to appropriate types
+            playoff_teams_int = int(playoff_teams) if playoff_teams else None
+            playoff_autobids_int = int(playoff_autobids) if playoff_autobids else None
+            playoff_conf_champ_top_4_bool = (
+                playoff_conf_champ_top_4 == "true" if playoff_conf_champ_top_4 else None
+            )
+
+            info = init(
+                user_id,
+                team,
+                year,
+                playoff_teams_int,
+                playoff_autobids_int,
+                playoff_conf_champ_top_4_bool,
+            )
             print(f"[DEBUG] Game initialized successfully, team: {team}, year: {year}")
         except Exception as e:
             print(f"[ERROR] Failed to initialize game: {str(e)}")
             import traceback
+
             print(traceback.format_exc())
             return Response(
-                {"error": f"Failed to initialize game: {str(e)}", "details": traceback.format_exc()},
-                status=500
+                {
+                    "error": f"Failed to initialize game: {str(e)}",
+                    "details": traceback.format_exc(),
+                },
+                status=500,
             )
     else:
         try:
             print(f"[DEBUG] Loading existing game for user_id: {user_id}")
             info = Info.objects.get(user_id=user_id)
             print(f"[DEBUG] Found info for user_id: {user_id}, team: {info.team.name}")
-            
+
             if info.stage == "progression":
                 print(f"[DEBUG] Stage is progression, running next_season()")
                 next_season(info)
@@ -55,10 +79,14 @@ def noncon(request):
         except Exception as e:
             print(f"[ERROR] Error loading existing game: {str(e)}")
             import traceback
+
             print(traceback.format_exc())
             return Response(
-                {"error": f"Error loading existing game: {str(e)}", "details": traceback.format_exc()},
-                status=500
+                {
+                    "error": f"Error loading existing game: {str(e)}",
+                    "details": traceback.format_exc(),
+                },
+                status=500,
             )
 
     try:
@@ -68,7 +96,7 @@ def noncon(request):
             info.team.games_as_teamA.filter(year=info.currentYear)
             | info.team.games_as_teamB.filter(year=info.currentYear)
         ).order_by("weekPlayed")
-        
+
         print(f"[DEBUG] Found {games.count()} games for team: {info.team.name}")
 
         # Build schedule with empty weeks where no game is scheduled
@@ -98,14 +126,18 @@ def noncon(request):
 
         print(f"[DEBUG] Successfully prepared response data")
         return Response(response_data)
-    
+
     except Exception as e:
         print(f"[ERROR] Error building response: {str(e)}")
         import traceback
+
         print(traceback.format_exc())
         return Response(
-            {"error": f"Error building response: {str(e)}", "details": traceback.format_exc()},
-            status=500
+            {
+                "error": f"Error building response: {str(e)}",
+                "details": traceback.format_exc(),
+            },
+            status=500,
         )
 
 
@@ -169,8 +201,6 @@ def schedule_nc(request):
     return Response({"status": "success"})
 
 
-
-
 @api_view(["GET"])
 def week_schedule(request, week_num):
     """API endpoint for week schedule data"""
@@ -198,4 +228,4 @@ def week_schedule(request, week_num):
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
-    ) 
+    )
