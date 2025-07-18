@@ -36,7 +36,7 @@ def recruiting(request):
         "states": sorted(unique_states),
         "positions": positions,
         "stars": stars,
-        "weeks": [i for i in range(1, info.playoff.lastWeek + 1)],
+        "weeks": [i for i in range(1, info.lastWeek + 1)],
     }
 
     return render(request, "recruiting.html", context)

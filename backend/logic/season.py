@@ -5,7 +5,7 @@ from django.db import transaction
 import os
 from .sim.sim import *
 from django.conf import settings
-from .util import get_recruiting_points
+from .util import get_recruiting_points, get_last_week
 
 
 def next_season(info):
@@ -109,9 +109,12 @@ def realignment_summary(info):
 
 def realignment(info, data):
     info.playoff.teams = data["playoff"]["teams"]
-    info.playoff.autobids = data["playoff"]["autobids"]
-    info.playoff.lastWeek = data["playoff"]["lastWeek"]
+    info.playoff.autobids = data["playoff"].get("conf_champ_autobids", 0)
+    info.playoff.conf_champ_top_4 = data["playoff"].get("conf_champ_top_4", False)
+    # Update lastWeek based on new playoff format
+    info.lastWeek = get_last_week(info.playoff.teams)
     info.playoff.save()
+    info.save()
 
     teams = info.teams.all()
     conferences = info.conferences.all()
@@ -185,10 +188,40 @@ def initialize_rankings(info):
     Teams.objects.bulk_update(teams, ["ranking", "last_rank"])
 
 
-def init(user_id, team_name, year):
+def init(
+    user_id,
+    team_name,
+    year,
+    playoff_teams=None,
+    playoff_autobids=None,
+    playoff_conf_champ_top_4=None,
+):
     with open(f"{settings.YEARS_DATA_DIR}/{year}.json", "r") as metadataFile:
         data = json.load(metadataFile)
 
+    # Use provided playoff settings or defaults from JSON
+    playoff_config = data["playoff"]
+    final_playoff_teams = (
+        playoff_teams if playoff_teams is not None else playoff_config["teams"]
+    )
+    final_playoff_autobids = (
+        playoff_autobids
+        if playoff_autobids is not None
+        else playoff_config.get("conf_champ_autobids", 0)
+    )
+    final_conf_champ_top_4 = (
+        playoff_conf_champ_top_4
+        if playoff_conf_champ_top_4 is not None
+        else playoff_config.get("conf_champ_top_4", False)
+    )
+
+    print(f"playoff_config: {playoff_config}")
+    print(f"final_playoff_teams: {final_playoff_teams}")
+    print(f"final_playoff_autobids: {final_playoff_autobids}")
+    print(f"final_conf_champ_top_4: {final_conf_champ_top_4}")
+
+    # Calculate lastWeek based on playoff format
+    calculated_last_week = get_last_week(final_playoff_teams)
 
     overall_start = time.time()
 
@@ -199,11 +232,14 @@ def init(user_id, team_name, year):
         currentYear=year,
         startYear=year,
         stage="preseason",
-        lastWeek=data["season"]["lastWeek"],
+        lastWeek=calculated_last_week,
     )
 
     playoff = Playoff.objects.create(
-        info=info, teams=data["season"]["playoff"]["teams"], autobids=data["season"]["playoff"]["autobids"]
+        info=info,
+        teams=final_playoff_teams,
+        autobids=final_playoff_autobids,
+        conf_champ_top_4=final_conf_champ_top_4,
     )
     info.playoff = playoff
 

@@ -2,8 +2,18 @@ from ..models import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
-from logic.stats import percentage, average, adjusted_pass_yards_per_attempt, passer_rating
-from logic.util import get_schedule_game, get_player_info, get_position_stats, get_position_game_log
+from logic.stats import (
+    percentage,
+    average,
+    adjusted_pass_yards_per_attempt,
+    passer_rating,
+)
+from logic.util import (
+    get_schedule_game,
+    get_player_info,
+    get_position_stats,
+    get_position_game_log,
+)
 from logic.constants.player_constants import ROSTER
 
 
@@ -18,6 +28,7 @@ def team_info(request):
             "team": TeamsSerializer(team).data,
         }
     )
+
 
 @api_view(["GET"])
 def team_schedule(request, team_name):
@@ -61,7 +72,6 @@ def team_schedule(request, team_name):
     )
 
 
-
 @api_view(["GET"])
 def roster(request, team_name):
     """API endpoint for team roster data"""
@@ -101,6 +111,7 @@ def roster(request, team_name):
         }
     )
 
+
 def _calculate_yearly_stats(player, year_game_logs, current_year, year):
     """Helper function to calculate yearly stats for a player"""
     # Calculate raw stats from game logs
@@ -116,13 +127,19 @@ def _calculate_yearly_stats(player, year_game_logs, current_year, year):
         "rush_touchdowns": sum(gl.rush_touchdowns or 0 for gl in year_game_logs),
         "receiving_yards": sum(gl.receiving_yards or 0 for gl in year_game_logs),
         "receiving_catches": sum(gl.receiving_catches or 0 for gl in year_game_logs),
-        "receiving_touchdowns": sum(gl.receiving_touchdowns or 0 for gl in year_game_logs),
+        "receiving_touchdowns": sum(
+            gl.receiving_touchdowns or 0 for gl in year_game_logs
+        ),
         "field_goals_made": sum(gl.field_goals_made or 0 for gl in year_game_logs),
-        "field_goals_attempted": sum(gl.field_goals_attempted or 0 for gl in year_game_logs),
+        "field_goals_attempted": sum(
+            gl.field_goals_attempted or 0 for gl in year_game_logs
+        ),
     }
 
     # Add player info and derived stats
-    year_stats["class"], year_stats["rating"] = get_player_info(player, current_year, year)
+    year_stats["class"], year_stats["rating"] = get_player_info(
+        player, current_year, year
+    )
     year_stats["completion_percentage"] = percentage(
         year_stats["pass_completions"], year_stats["pass_attempts"]
     )
@@ -161,7 +178,7 @@ def _get_player_years(player, info):
         "jr": [current_year, current_year - 1, current_year - 2],
         "sr": [current_year, current_year - 1, current_year - 2, current_year - 3],
     }
-    
+
     years = year_mapping.get(player.year, [current_year])
     return [year for year in years if info.startYear <= year <= current_year]
 
@@ -181,8 +198,10 @@ def player(request, id):
     yearly_cumulative_stats = {}
     for year in years:
         year_game_logs = player.game_logs.filter(game__year=year)
-        year_stats = _calculate_yearly_stats(player, year_game_logs, info.currentYear, year)
-        
+        year_stats = _calculate_yearly_stats(
+            player, year_game_logs, info.currentYear, year
+        )
+
         # Filter stats based on position
         yearly_cumulative_stats[year] = get_position_stats(player.pos, year_stats)
 
@@ -246,4 +265,3 @@ def history(request, team_name):
             ).data,
         }
     )
-

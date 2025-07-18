@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # Get the project root directory (two levels up from settings.py)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-load_dotenv(os.path.join(PROJECT_ROOT, '.env'))
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
 # Core Settings
 # Use environment variable with a default value
@@ -129,8 +129,8 @@ USE_I18N = True
 USE_TZ = True
 
 # Static Files
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 YEARS_DATA_DIR = BASE_DIR / "data" / "years"
 
 STATICFILES_FINDERS = [
@@ -149,4 +149,4 @@ REST_FRAMEWORK = {
 }
 
 # Use a simpler storage backend to avoid potential issues
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"

@@ -1,30 +1,87 @@
 import random
 from api.models import *
 import json
+from django.db.models import F, ExpressionWrapper, FloatField
+
+
+def get_playoff_team_order(info):
+    """
+    Determine the correct playoff team order using the same logic as setPlayoffR1.
+    This function is used for 12-team playoff scheduling and bracket projections.
+
+    Args:
+        info: Info object containing playoff configuration
+
+    Returns:
+        List of teams in the correct playoff order
+    """
+    playoff = info.playoff
+
+    # Get conference champions (this would normally come from championship games)
+    conferences = info.conferences.all()
+    conference_champions = []
+    for conference in conferences:
+        if conference.championship and conference.championship.winner:
+            conference_champions.append(conference.championship.winner)
+        else:
+            # Fallback to top team in conference if no championship played yet
+            conf_teams = conference.teams.annotate(
+                win_percentage=ExpressionWrapper(
+                    F("confWins") * 1.0 / (F("confWins") + F("confLosses")),
+                    output_field=FloatField(),
+                )
+            ).order_by("-win_percentage", "-confWins", "ranking", "-totalWins")
+            if conf_teams.exists():
+                conference_champions.append(conf_teams.first())
+
+    conference_champions = sorted(conference_champions, key=lambda x: x.ranking)
+
+    # Apply the same logic as setPlayoffR1
+    autobids = conference_champions[:playoff.autobids]
+
+    # Get wild cards (non-autobid teams)
+    autobid_ids = [team.id for team in autobids]
+    wild_cards = info.teams.exclude(id__in=autobid_ids)
+    wild_cards = sorted(wild_cards, key=lambda x: x.ranking)
+
+    # Calculate cutoff for playoff teams
+    cutoff = 8 - (playoff.autobids - 4)
+    non_playoff_teams = wild_cards[cutoff:]
+    wild_cards = wild_cards[:cutoff]
+
+    # Handle conf_champ_top_4 logic
+    if playoff.conf_champ_top_4:
+        # Conference champions get top 4 seeds
+        byes = autobids[:4]  # Top 4 autobids get byes
+        no_bye_autobids = autobids[4:]  # Remaining autobids don't get byes
+    else:
+        # Conference champions don't automatically get top 4 seeds
+        # Top 4 teams by ranking get byes, regardless of autobid status
+        all_teams = autobids + wild_cards
+        all_teams = sorted(all_teams, key=lambda x: x.ranking)
+        byes = all_teams[:4]  # Top 4 teams by ranking get byes
+        
+        # Remove bye teams from autobids and wild_cards
+        bye_ids = [team.id for team in byes]
+        autobids = [team for team in autobids if team.id not in bye_ids]
+        wild_cards = [team for team in wild_cards if team.id not in bye_ids]
+        no_bye_autobids = autobids  # All remaining autobids don't get byes
+
+    # Combine teams in the same order as setPlayoffR1
+    wild_cards.extend(no_bye_autobids)
+    teams = byes + sorted(wild_cards, key=lambda x: x.ranking) + non_playoff_teams
+
+    return teams
 
 
 def setPlayoffR1(info):
     playoff = info.playoff
     games_to_create = []
 
-    conferences = info.conferences.all()
-    conference_champions = sorted(
-        [conf.championship.winner for conf in conferences], key=lambda x: x.ranking
-    )
-    autobids = conference_champions[: playoff.autobids]
-    byes = autobids[:4]
-    no_bye_autobids = autobids[4:]
+    # Use the shared function to get teams in correct order
+    teams = get_playoff_team_order(info)
 
-    wild_cards = info.teams.exclude(id__in=[team.id for team in autobids])
-    wild_cards = sorted(wild_cards, key=lambda x: x.ranking)
-
-    cutoff = 8 - (playoff.autobids - 4)
-    non_playoff_teams = wild_cards[cutoff:]
-    wild_cards = wild_cards[:cutoff]
-
-    wild_cards.extend(no_bye_autobids)
-    teams = byes + sorted(wild_cards, key=lambda x: x.ranking) + non_playoff_teams
-
+    # Update team rankings
     teams_to_update = []
     for i, team in enumerate(teams, 1):
         team.ranking = i
@@ -316,7 +373,6 @@ def set_rivalries(info):
 
     with open(f"data/rivalries.json", "r") as metadataFile:
         rivalries = json.load(metadataFile)
-
 
     for team in teams:
         team.schedule = set()

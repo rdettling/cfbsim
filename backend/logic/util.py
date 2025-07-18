@@ -1,4 +1,6 @@
 from logic.stats import *
+from api.models import *
+from django.db.models import F, Q
 
 
 def get_position_game_log(pos, game_log, game):
@@ -45,7 +47,7 @@ def get_position_game_log(pos, game_log, game):
                 game_log.field_goals_made, game_log.field_goals_attempted
             ),
         }
-    
+
     # Return only base stats for positions not explicitly handled (like "ol")
     return base_log
 
@@ -105,7 +107,7 @@ def get_position_stats(pos, stats):
             "field_goals_attempted": stats["field_goals_attempted"],
             "field_goal_percent": stats["field_goal_percent"],
         }
-    
+
     # Return only base stats for positions not explicitly handled (like "ol")
     return base_stats
 
@@ -163,41 +165,69 @@ def get_schedule_game(team, game):
 
 
 def get_last_game(info, team):
-    games_as_teamA = team.games_as_teamA.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek - 1
+    """Get the last game played by a team"""
+    last_game = (
+        info.games.filter(
+            Q(teamA=team) | Q(teamB=team),
+            year=info.currentYear,
+            scoreA__isnull=False,
+            scoreB__isnull=False,
+        )
+        .order_by("-weekPlayed")
+        .first()
     )
-    games_as_teamB = team.games_as_teamB.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek - 1
-    )
-    schedule = list(games_as_teamA | games_as_teamB)
-    if schedule:
-        return get_schedule_game(team, schedule[-1])
-    else:
-        return None
+
+    if last_game:
+        return {
+            "week": last_game.weekPlayed,
+            "opponent": (
+                last_game.teamB.name
+                if last_game.teamA == team
+                else last_game.teamA.name
+            ),
+            "result": "W" if last_game.winner == team else "L",
+            "score": (
+                f"{last_game.scoreA}-{last_game.scoreB}"
+                if last_game.teamA == team
+                else f"{last_game.scoreB}-{last_game.scoreA}"
+            ),
+        }
+    return None
 
 
 def get_next_game(info, team):
-    games_as_teamA = team.games_as_teamA.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek
+    """Get the next game for a team"""
+    next_game = (
+        info.games.filter(
+            Q(teamA=team) | Q(teamB=team),
+            year=info.currentYear,
+            scoreA__isnull=True,
+            scoreB__isnull=True,
+        )
+        .order_by("weekPlayed")
+        .first()
     )
-    games_as_teamB = team.games_as_teamB.filter(
-        year=info.currentYear, weekPlayed=info.currentWeek
-    )
-    schedule = list(games_as_teamA | games_as_teamB)
-    if schedule:
-        return get_schedule_game(team, schedule[0])
-    else:
-        return None
+
+    if next_game:
+        return {
+            "week": next_game.weekPlayed,
+            "opponent": (
+                next_game.teamB.name
+                if next_game.teamA == team
+                else next_game.teamA.name
+            ),
+        }
+    return None
 
 
 def sort_standings(teams):
     """
     Sort teams for standings display based on conference record, wins, losses, and ranking.
     Works for both conference teams and independent teams.
-    
+
     Args:
         teams: List of team objects to sort
-        
+
     Returns:
         Sorted list of teams
     """
@@ -213,9 +243,25 @@ def sort_standings(teams):
             -t.confWins,
             t.confLosses,
             t.ranking,
-        )
+        ),
     )
 
 
 def get_recruiting_points(prestige):
     return prestige * 100
+
+
+def get_last_week(playoff_teams):
+    """Calculate the last week based on playoff format"""
+    base_weeks = 13  # Regular season (1-12) + Conf Championships (13)
+
+    if playoff_teams == 2:
+        return base_weeks + 1  # Week 14 (BCS Championship)
+    elif playoff_teams == 4:
+        return base_weeks + 2  # Weeks 14-15 (Semifinals + Championship)
+    elif playoff_teams == 12:
+        return (
+            base_weeks + 4
+        )  # Weeks 14-17 (First Round + Quarters + Semis + Championship)
+    else:
+        raise ValueError(f"Unsupported playoff format: {playoff_teams}")

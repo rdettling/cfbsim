@@ -589,6 +589,7 @@ def testGame(teamA, teamB):
         "winB": winB,
     }
 
+
 class Team:
     def __init__(self, rating):
         self.rating = rating

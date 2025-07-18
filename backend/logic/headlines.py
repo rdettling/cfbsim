@@ -12,7 +12,13 @@ def generate_headlines(games):
         headlines = json.load(f)
 
     # Initialize counters for each headline type
-    headline_counts = {"upset": 0, "blowout": 0, "close": 0, "individual": 0, "overtime": 0}
+    headline_counts = {
+        "upset": 0,
+        "blowout": 0,
+        "close": 0,
+        "individual": 0,
+        "overtime": 0,
+    }
 
     for game in games:
         if game.winner == game.teamA:
@@ -42,11 +48,11 @@ def generate_headlines(games):
         elif win_prob < 0.1:
             headline_template = random.choice(headlines["upset"])
             headline_counts["upset"] += 1
-            
+
             # Add spread information for upset headlines using actual game spread
             spread = game.spreadB if game.winner == game.teamA else game.spreadA
             headline_template = headline_template.replace("<spread>", spread)
-            
+
         elif winner_score > loser_score + 20:
             headline_template = random.choice(headlines["blowout"])
             headline_counts["blowout"] += 1
@@ -59,9 +65,15 @@ def generate_headlines(games):
             if player_info:
                 headline_template = random.choice(headlines["individual"])
                 headline_counts["individual"] += 1
-                headline_template = headline_template.replace("<player>", f"{player_info['first']} {player_info['last']}")
-                headline_template = headline_template.replace("<stat_value>", str(player_info['stat_value']))
-                headline_template = headline_template.replace("<stat_type>", player_info['stat_type'])
+                headline_template = headline_template.replace(
+                    "<player>", f"{player_info['first']} {player_info['last']}"
+                )
+                headline_template = headline_template.replace(
+                    "<stat_value>", str(player_info["stat_value"])
+                )
+                headline_template = headline_template.replace(
+                    "<stat_type>", player_info["stat_type"]
+                )
             else:
                 # Fall back to a close game headline if no standout individual performance
                 headline_template = random.choice(headlines["close"])
@@ -84,110 +96,113 @@ def generate_headlines(games):
     # No return value needed as games are modified in place
 
 
-
 def get_best_performance(game, winning_team):
     """Find the best individual performance from the winning team in this game."""
     try:
         # Get all game logs for the winning team in this game
         game_logs = game.game_logs.filter(player__team=winning_team)
-        
+
         best_performance = None
         best_score = 0
-        
+
         for game_log in game_logs:
             player = game_log.player
             performance = None
-            
+
             # Check quarterback performance
             if player.pos == "qb" and game_log.pass_attempts > 0:
                 # Prioritize passing yards and touchdowns
-                score = game_log.pass_yards + (game_log.pass_touchdowns * 50) - (game_log.pass_interceptions * 25)
+                score = (
+                    game_log.pass_yards
+                    + (game_log.pass_touchdowns * 50)
+                    - (game_log.pass_interceptions * 25)
+                )
                 if score > best_score and game_log.pass_yards >= 200:
                     performance = {
-                        'first': player.first,
-                        'last': player.last,
-                        'stat_value': game_log.pass_yards,
-                        'stat_type': 'passing yards'
+                        "first": player.first,
+                        "last": player.last,
+                        "stat_value": game_log.pass_yards,
+                        "stat_type": "passing yards",
                     }
                     best_score = score
-                    
+
                 # Check for multiple passing TDs
                 if game_log.pass_touchdowns >= 3:
                     td_score = game_log.pass_touchdowns * 100
                     if td_score > best_score:
                         performance = {
-                            'first': player.first,
-                            'last': player.last,
-                            'stat_value': game_log.pass_touchdowns,
-                            'stat_type': 'passing touchdowns'
+                            "first": player.first,
+                            "last": player.last,
+                            "stat_value": game_log.pass_touchdowns,
+                            "stat_type": "passing touchdowns",
                         }
                         best_score = td_score
-            
+
             # Check rushing performance
             if player.pos in ["rb", "qb"] and game_log.rush_attempts > 0:
                 score = game_log.rush_yards + (game_log.rush_touchdowns * 60)
                 if score > best_score and game_log.rush_yards >= 100:
                     performance = {
-                        'first': player.first,
-                        'last': player.last,
-                        'stat_value': game_log.rush_yards,
-                        'stat_type': 'rushing yards'
+                        "first": player.first,
+                        "last": player.last,
+                        "stat_value": game_log.rush_yards,
+                        "stat_type": "rushing yards",
                     }
                     best_score = score
-                    
+
                 # Check for multiple rushing TDs
                 if game_log.rush_touchdowns >= 2:
                     td_score = game_log.rush_touchdowns * 80
                     if td_score > best_score:
                         performance = {
-                            'first': player.first,
-                            'last': player.last,
-                            'stat_value': game_log.rush_touchdowns,
-                            'stat_type': 'rushing touchdowns'
+                            "first": player.first,
+                            "last": player.last,
+                            "stat_value": game_log.rush_touchdowns,
+                            "stat_type": "rushing touchdowns",
                         }
                         best_score = td_score
-            
+
             # Check receiving performance
             if player.pos in ["wr", "te", "rb"] and game_log.receiving_catches > 0:
                 score = game_log.receiving_yards + (game_log.receiving_touchdowns * 60)
                 if score > best_score and game_log.receiving_yards >= 100:
                     performance = {
-                        'first': player.first,
-                        'last': player.last,
-                        'stat_value': game_log.receiving_yards,
-                        'stat_type': 'receiving yards'
+                        "first": player.first,
+                        "last": player.last,
+                        "stat_value": game_log.receiving_yards,
+                        "stat_type": "receiving yards",
                     }
                     best_score = score
-                    
+
                 # Check for multiple receiving TDs
                 if game_log.receiving_touchdowns >= 2:
                     td_score = game_log.receiving_touchdowns * 80
                     if td_score > best_score:
                         performance = {
-                            'first': player.first,
-                            'last': player.last,
-                            'stat_value': game_log.receiving_touchdowns,
-                            'stat_type': 'receiving touchdowns'
+                            "first": player.first,
+                            "last": player.last,
+                            "stat_value": game_log.receiving_touchdowns,
+                            "stat_type": "receiving touchdowns",
                         }
                         best_score = td_score
-            
+
             # Check kicking performance
             if player.pos == "k" and game_log.field_goals_made >= 3:
                 score = game_log.field_goals_made * 30
                 if score > best_score:
                     performance = {
-                        'first': player.first,
-                        'last': player.last,
-                        'stat_value': game_log.field_goals_made,
-                        'stat_type': 'field goals'
+                        "first": player.first,
+                        "last": player.last,
+                        "stat_value": game_log.field_goals_made,
+                        "stat_type": "field goals",
                     }
                     best_score = score
-            
+
             if performance:
                 best_performance = performance
-        
+
         return best_performance
-        
+
     except Exception as e:
         # If there's any error accessing game logs, return None
         # This ensures the headline generation doesn't fail

@@ -13,7 +13,7 @@ def accumulate_individual_stats(info, category):
         for player in players:
             game_logs = all_game_logs.filter(player=player)
 
-            #print(len(game_logs))
+            # print(len(game_logs))
 
             stats[player] = accumulate_passing_stats(game_logs)
     elif category == "rushing":

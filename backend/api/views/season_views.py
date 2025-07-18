@@ -7,7 +7,173 @@ from ..serializers import *
 from django.db.models import F, ExpressionWrapper, FloatField
 from operator import attrgetter
 from logic.util import get_last_game, get_next_game, sort_standings
-from logic.sim.sim_helper import save_simulation_data, fetch_and_simulate_games, update_game_results, update_rankings_if_needed, handle_special_weeks
+from logic.schedule import get_playoff_team_order
+from logic.sim.sim_helper import (
+    save_simulation_data,
+    fetch_and_simulate_games,
+    update_game_results,
+    update_rankings_if_needed,
+    handle_special_weeks,
+)
+
+
+def generate_bracket_structure(info, playoff_teams):
+    """Generate bracket structure for the playoff format following the Playoff model schema"""
+    playoff_format = info.playoff.teams
+
+    if playoff_format == 2:
+        # Championship only
+        return {
+            "championship": {
+                "team1": playoff_teams[0].name if len(playoff_teams) > 0 else "TBD",
+                "team2": playoff_teams[1].name if len(playoff_teams) > 1 else "TBD",
+                "seed1": 1,
+                "seed2": 2,
+                "is_projection": info.stage != "playoff",
+            }
+        }
+
+    elif playoff_format == 4:
+        # 4-team playoff: 1v4, 2v3
+        return {
+            "semifinals": [
+                {
+                    "team1": playoff_teams[0].name if len(playoff_teams) > 0 else "TBD",
+                    "team2": playoff_teams[3].name if len(playoff_teams) > 3 else "TBD",
+                    "seed1": 1,
+                    "seed2": 4,
+                    "is_projection": info.stage != "playoff",
+                },
+                {
+                    "team1": playoff_teams[1].name if len(playoff_teams) > 1 else "TBD",
+                    "team2": playoff_teams[2].name if len(playoff_teams) > 2 else "TBD",
+                    "seed1": 2,
+                    "seed2": 3,
+                    "is_projection": info.stage != "playoff",
+                },
+            ],
+            "championship": {
+                "team1": "TBD",
+                "team2": "TBD",
+                "is_projection": info.stage != "playoff",
+            },
+        }
+
+    elif playoff_format == 12:
+        # Get teams in the correct order using the shared function
+        teams = get_playoff_team_order(info)
+
+        # 12-team playoff following the actual setPlayoffR1 logic
+        return {
+            "left_bracket": {
+                "first_round": [
+                    {
+                        "id": "left_r1_1",
+                        "team1": teams[7].name if len(teams) > 7 else "TBD",  # 8th seed
+                        "team2": teams[8].name if len(teams) > 8 else "TBD",  # 9th seed
+                        "seed1": 8,
+                        "seed2": 9,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "left_quarter_1",
+                    },
+                    {
+                        "id": "left_r1_2",
+                        "team1": teams[4].name if len(teams) > 4 else "TBD",  # 5th seed
+                        "team2": (
+                            teams[11].name if len(teams) > 11 else "TBD"
+                        ),  # 12th seed
+                        "seed1": 5,
+                        "seed2": 12,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "left_quarter_2",
+                    },
+                ],
+                "quarterfinals": [
+                    {
+                        "id": "left_quarter_1",
+                        "team1": teams[0].name if len(teams) > 0 else "TBD",  # 1st seed
+                        "team2": "Winner of left_r1_1",
+                        "seed1": 1,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "left_semi",
+                    },
+                    {
+                        "id": "left_quarter_2",
+                        "team1": teams[3].name if len(teams) > 3 else "TBD",  # 4th seed
+                        "team2": "Winner of left_r1_2",
+                        "seed1": 4,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "left_semi",
+                    },
+                ],
+                "semifinal": {
+                    "id": "left_semi",
+                    "team1": "Winner of left_quarter_1",
+                    "team2": "Winner of left_quarter_2",
+                    "is_projection": info.stage != "playoff",
+                    "next_game": "championship",
+                },
+            },
+            "right_bracket": {
+                "first_round": [
+                    {
+                        "id": "right_r1_1",
+                        "team1": teams[6].name if len(teams) > 6 else "TBD",  # 7th seed
+                        "team2": (
+                            teams[9].name if len(teams) > 9 else "TBD"
+                        ),  # 10th seed
+                        "seed1": 7,
+                        "seed2": 10,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "right_quarter_1",
+                    },
+                    {
+                        "id": "right_r1_2",
+                        "team1": teams[5].name if len(teams) > 5 else "TBD",  # 6th seed
+                        "team2": (
+                            teams[10].name if len(teams) > 10 else "TBD"
+                        ),  # 11th seed
+                        "seed1": 6,
+                        "seed2": 11,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "right_quarter_2",
+                    },
+                ],
+                "quarterfinals": [
+                    {
+                        "id": "right_quarter_1",
+                        "team1": teams[1].name if len(teams) > 1 else "TBD",  # 2nd seed
+                        "team2": "Winner of right_r1_1",
+                        "seed1": 2,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "right_semi",
+                    },
+                    {
+                        "id": "right_quarter_2",
+                        "team1": teams[2].name if len(teams) > 2 else "TBD",  # 3rd seed
+                        "team2": "Winner of right_r1_2",
+                        "seed1": 3,
+                        "is_projection": info.stage != "playoff",
+                        "next_game": "right_semi",
+                    },
+                ],
+                "semifinal": {
+                    "id": "right_semi",
+                    "team1": "Winner of right_quarter_1",
+                    "team2": "Winner of right_quarter_2",
+                    "is_projection": info.stage != "playoff",
+                    "next_game": "championship",
+                },
+            },
+            "championship": {
+                "id": "championship",
+                "team1": "Winner of left_semi",
+                "team2": "Winner of right_semi",
+                "is_projection": info.stage != "playoff",
+            },
+        }
+
+    return {}
 
 
 @api_view(["GET"])
@@ -191,7 +357,9 @@ def playoff(request):
         {
             "name": team.name,
             "ranking": team.ranking,
-            "conference": team.conference.confName,
+            "conference": (
+                team.conference.confName if team.conference else "Independent"
+            ),
             "record": format_record(team),
             "seed": next(
                 (pt["seed"] for pt in playoff_data if pt["name"] == team.name), None
@@ -200,6 +368,9 @@ def playoff(request):
         for team in sorted(conference_champions, key=attrgetter("ranking"))
     ]
 
+    # Generate bracket structure based on playoff format
+    bracket_data = generate_bracket_structure(info, playoff_teams)
+
     return Response(
         {
             "info": InfoSerializer(info).data,
@@ -207,6 +378,7 @@ def playoff(request):
             "playoff_teams": playoff_data,
             "bubble_teams": bubble_data,
             "conference_champions": champion_data,
+            "bracket": bracket_data,
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
@@ -275,6 +447,7 @@ def roster_progression(request):
         }
     )
 
+
 @api_view(["GET"])
 def sim(request, dest_week):
     """API endpoint for simulating games up to a destination week"""
@@ -325,6 +498,6 @@ def sim(request, dest_week):
             "status": "success",
             "execution_time": round(total_time, 2),
             "weeks_simulated": dest_week - start_week,
-            'time_per_week': round(total_time / (dest_week - start_week), 2)
+            "time_per_week": round(total_time / (dest_week - start_week), 2),
         }
-    ) 
+    )

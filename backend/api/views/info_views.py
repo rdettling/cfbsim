@@ -9,7 +9,6 @@ from ..serializers import *
 from logic.util import get_last_game, get_next_game, sort_standings
 
 
-
 @api_view(["GET"])
 def home(request):
     """API endpoint for the launch page data"""
@@ -53,7 +52,7 @@ def home(request):
                     # Add conference name to each team for logo display
                     for team in conf["teams"]:
                         team["confName"] = conf["confName"]
-                        
+
                 # Add confName to independents (they don't have a conference logo)
                 for team in preview_data["independents"]:
                     team["confName"] = None
@@ -74,6 +73,7 @@ def home(request):
             "conference_list": conference_list,
         }
     )
+
 
 @api_view(["GET"])
 def dashboard(request):
