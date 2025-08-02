@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference, Player } from '../interfaces';
+import { getTeamRosterRoute, getPlayerRoute } from '../utils/routes';
 import {
     Container,
     Table,
@@ -88,7 +89,7 @@ const Roster = () => {
                 <TeamHeader
                     team={data.team}
                     teams={data.teams}
-                    onTeamChange={(newTeam) => navigate(`/${newTeam}/roster`)}
+                    onTeamChange={(newTeam) => navigate(getTeamRosterRoute(newTeam))}
                 />
                 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 2 }}>
@@ -148,7 +149,7 @@ const Roster = () => {
                                                     <TableCell>
                                                         <Link
                                                             component="button"
-                                                            onClick={() => navigate(`/players/${player.id}`)}
+                                                            onClick={() => navigate(getPlayerRoute(player.id.toString()))}
                                                             sx={{ 
                                                                 cursor: 'pointer',
                                                                 textDecoration: 'none',

@@ -23,6 +23,7 @@ import {
 import Navbar from "../components/Navbar";
 import { TeamLogo, TeamLink, TeamInfoModal } from "../components/TeamComponents";
 import { Team, Info, Conference, Player, GameLog } from "../interfaces";
+import { getGameRoute } from "../utils/routes";
 
 interface PlayerData {
   player: Player;
@@ -353,7 +354,7 @@ export default function PlayerPage() {
   };
 
   const handleGameClick = (gameId: number) => {
-    navigate(`/game/${gameId}`);
+    navigate(getGameRoute(gameId.toString()));
   };
 
   if (loading) return <CircularProgress />;

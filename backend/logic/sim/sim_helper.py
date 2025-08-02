@@ -11,6 +11,7 @@ import time
 from api.models import *
 import random
 from logic.sim.sim import WIN_FACTOR, LOSS_FACTOR
+from logic.constants.sim_constants import POLL_INERTIA_WIN_BONUS, POLL_INERTIA_LOSS_PENALTY, RANKING_TOTAL_WEEKS
 
 
 def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
@@ -39,7 +40,7 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
                 "nonConfLosses": 0,
                 "totalWins": 0,
                 "totalLosses": 0,
-                "resume_total": 0,
+                "strength_of_record": 0,
                 "gamesPlayed": 0,
             }
         if game.teamB_id not in team_updates:
@@ -51,7 +52,7 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
                 "nonConfLosses": 0,
                 "totalWins": 0,
                 "totalLosses": 0,
-                "resume_total": 0,
+                "strength_of_record": 0,
                 "gamesPlayed": 0,
             }
 
@@ -92,8 +93,20 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
         team_updates[loser_id]["totalLosses"] += 1
 
         # Update resume scores
-        team_updates[winner_id]["resume_total"] += game.teamB.rating**WIN_FACTOR
-        team_updates[loser_id]["resume_total"] += game.teamA.rating**LOSS_FACTOR
+        # Determine the opponent rating based on who won
+        if game.winner == game.teamA:
+            # teamA won, so opponent is teamB
+            winner_resume_add = game.teamB.rating**WIN_FACTOR
+            loser_resume_add = game.teamA.rating**LOSS_FACTOR
+        else:
+            # teamB won, so opponent is teamA
+            winner_resume_add = game.teamA.rating**WIN_FACTOR
+            loser_resume_add = game.teamB.rating**LOSS_FACTOR
+        
+        team_updates[winner_id]["strength_of_record"] += winner_resume_add
+        team_updates[loser_id]["strength_of_record"] += loser_resume_add
+        
+
 
     # Apply all team updates at once after all games are simulated
     teams_to_update = []
@@ -105,7 +118,7 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
         team.nonConfLosses += update["nonConfLosses"]
         team.totalWins += update["totalWins"]
         team.totalLosses += update["totalLosses"]
-        team.resume_total += update["resume_total"]
+        team.strength_of_record += update["strength_of_record"]
         team.gamesPlayed += update["gamesPlayed"]
         teams_to_update.append(team)
 
@@ -119,7 +132,7 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
             "nonConfLosses",
             "totalWins",
             "totalLosses",
-            "resume_total",
+            "strength_of_record",
             "gamesPlayed",
         ],
     )
@@ -148,7 +161,7 @@ def update_game_results(games):
     print(f"  Bulk update games: {update_time:.4f} seconds")
 
 
-def update_rankings_if_needed(info):
+def update_rankings(info):
     """Update team rankings if needed for the current week"""
     rankings_start = time.time()
 
@@ -156,7 +169,89 @@ def update_rankings_if_needed(info):
     skip_weeks = {4: [14], 12: [14, 15, 16]}.get(info.playoff.teams, [])
 
     if info.currentWeek not in skip_weeks:
-        update_rankings(info)
+        teams = list(info.teams.all())
+        team_dict = {team.id: team for team in teams}
+        
+        # Calculate poll scores
+        for team in teams:
+            team.last_rank = team.ranking
+            games_played = team.totalWins + team.totalLosses
+            
+            if info.currentWeek == info.lastWeek:
+                # End of season: use only strength_of_record (no inertia)
+                team.poll_score = round(team.strength_of_record / max(1, games_played), 1)
+            else:
+                # Regular season: include poll inertia
+                base_poll_score = team.strength_of_record / max(1, games_played)
+                
+                # Get current week's games for inertia calculation
+                current_games = list(
+                    info.games.filter(
+                        year=info.currentYear, weekPlayed=info.currentWeek
+                    ).select_related("teamA", "teamB")
+                )
+                
+                # Find team's game this week
+                team_game = None
+                for game in current_games:
+                    if game.teamA == team or game.teamB == team:
+                        team_game = game
+                        break
+                
+                # Apply poll inertia
+                if team_game and info.currentWeek <= RANKING_TOTAL_WEEKS:
+                    weeks_left = max(0, RANKING_TOTAL_WEEKS - info.currentWeek)
+                    inertia_scale = weeks_left / RANKING_TOTAL_WEEKS
+                    
+                    inertia_factor = (
+                        POLL_INERTIA_LOSS_PENALTY if team_game.winner != team 
+                        else POLL_INERTIA_WIN_BONUS
+                    )
+                    inertia_value = max(
+                        0, inertia_factor * (len(teams) - team.ranking) * inertia_scale
+                    )
+                    team.poll_score = round(base_poll_score + inertia_value, 1)
+                else:
+                    team.poll_score = round(base_poll_score, 1)
+
+        # Sort and assign rankings
+        if info.currentWeek == info.lastWeek:
+            # End of season: National championship winner gets #1, loser gets #2
+            natty_winner = info.playoff.natty.winner
+            natty_loser = info.playoff.natty.teamA if info.playoff.natty.winner == info.playoff.natty.teamB else info.playoff.natty.teamB
+
+            # Set championship teams to #1 and #2 in the teams list
+            for team in teams:
+                if team.id == natty_winner.id:
+                    team.ranking = 1
+                elif team.id == natty_loser.id:
+                    team.ranking = 2
+            
+            # Sort remaining teams by poll score
+            remaining_teams = [team for team in teams if team.id not in (natty_winner.id, natty_loser.id)]
+            sorted_remaining = sorted(remaining_teams, key=lambda x: (-x.poll_score, x.last_rank))
+            
+            # Assign rankings starting from #3
+            for i, team in enumerate(sorted_remaining, start=3):
+                team.ranking = i
+        else:
+            # Regular season: sort by poll score
+            sorted_teams = sorted(teams, key=lambda x: (-x.poll_score, x.last_rank))
+            for i, team in enumerate(sorted_teams, start=1):
+                team.ranking = i
+
+        # Update database in bulk operations
+        Teams.objects.bulk_update(teams, ["ranking", "last_rank", "poll_score"])
+
+        # Update game rankings for future games
+        future_games = list(info.games.filter(year=info.currentYear, winner=None))
+        for game in future_games:
+            game.rankATOG = team_dict[game.teamA_id].ranking
+            game.rankBTOG = team_dict[game.teamB_id].ranking
+
+        if future_games:
+            Games.objects.bulk_update(future_games, ["rankATOG", "rankBTOG"])
+
         print(f"  Updated rankings: {time.time() - rankings_start:.4f} seconds")
     else:
         print(f"  Skipped rankings update for week {info.currentWeek}")
@@ -198,32 +293,8 @@ def save_simulation_data(info, drives_to_create, plays_to_create):
     # Create game logs from plays
     print(f"  Creating {len(plays_to_create)} plays...")
     plays_start = time.time()
-    make_game_logs(info, plays_to_create)
-    print(f"  make_game_logs completed in {time.time() - plays_start:.4f} seconds")
-
-    # Create drives in batches
-    print(f"  Creating {len(drives_to_create)} drives...")
-    drives_start = time.time()
-    batch_size = 1000
-    for i in range(0, len(drives_to_create), batch_size):
-        Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
-    print(f"  Drives creation completed in {time.time() - drives_start:.4f} seconds")
-
-    # Create plays in batches
-    plays_start = time.time()
-    for i in range(0, len(plays_to_create), batch_size):
-        Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
-    print(f"  Plays creation completed in {time.time() - plays_start:.4f} seconds")
-
-    # Save info object
-    info_save_start = time.time()
-    info.save()
-    print(f"  Info save completed in {time.time() - info_save_start:.4f} seconds")
-
-    print(f"Final data save completed in {time.time() - final_save_start:.4f} seconds")
-
-
-def make_game_logs(info, plays):
+    
+    # Inline make_game_logs logic here
     desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
     game_log_dict = {}
 
@@ -237,7 +308,7 @@ def make_game_logs(info, plays):
         starters_by_team_pos[(player.team, player.pos)].append(player)
 
     # Get all unique games being simmed
-    simmed_games = {play.game for play in plays}
+    simmed_games = {play.game for play in plays_to_create}
 
     # Create a set to store (player, game) combinations for GameLog objects
     player_game_combinations = set()
@@ -259,7 +330,7 @@ def make_game_logs(info, plays):
         game_log_dict[(game_log.player, game_log.game)] = game_log
 
     # Main logic for processing the plays
-    for play in plays:
+    for play in plays_to_create:
         set_play_header(play)
 
         game = play.game
@@ -292,75 +363,35 @@ def make_game_logs(info, plays):
             format_play_text(play, p_starter)
 
     GameLog.objects.bulk_create(game_logs_to_process)
+    
+    print(f"  make_game_logs completed in {time.time() - plays_start:.4f} seconds")
+
+    # Create drives in batches
+    print(f"  Creating {len(drives_to_create)} drives...")
+    drives_start = time.time()
+    batch_size = 1000
+    for i in range(0, len(drives_to_create), batch_size):
+        Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
+    print(f"  Drives creation completed in {time.time() - drives_start:.4f} seconds")
+
+    # Create plays in batches
+    plays_start = time.time()
+    for i in range(0, len(plays_to_create), batch_size):
+        Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
+    print(f"  Plays creation completed in {time.time() - plays_start:.4f} seconds")
+
+    # Save info object
+    info_save_start = time.time()
+    info.save()
+    print(f"  Info save completed in {time.time() - info_save_start:.4f} seconds")
+
+    print(f"Final data save completed in {time.time() - final_save_start:.4f} seconds")
 
 
-def update_rankings(info):
-    """Update team rankings based on performance and poll inertia."""
-    # Fetch all data in a single query
-    teams = list(info.teams.all())
-    team_dict = {team.id: team for team in teams}
 
-    # Constants
-    team_count = len(teams)
-    win_factor, loss_factor = 172, 157
-    total_weeks = 12
-    weeks_left = max(0, total_weeks - info.currentWeek)
-    inertia_scale = weeks_left / total_weeks
 
-    # Get current week's games
-    current_games = list(
-        info.games.filter(
-            year=info.currentYear, weekPlayed=info.currentWeek
-        ).select_related("teamA", "teamB")
-    )
 
-    # Organize games by team for quick lookup
-    team_games = {team.id: [] for team in teams}
-    for game in current_games:
-        team_games[game.teamA.id].append(game)
-        team_games[game.teamB.id].append(game)
 
-    # Update team resume scores
-    for team in teams:
-        # Save previous ranking
-        team.last_rank = team.ranking
-        games_played = team.totalWins + team.totalLosses
-
-        # Calculate resume score
-        if info.currentWeek <= total_weeks:
-            # Base resume on performance and poll inertia
-            base_resume = team.resume_total / max(1, games_played)
-
-            # Apply poll inertia based on recent performance
-            games = team_games.get(team.id, [])
-            inertia_factor = (
-                loss_factor if (games and games[-1].winner != team) else win_factor
-            )
-            inertia_value = max(
-                0, inertia_factor * (team_count - team.ranking) * inertia_scale
-            )
-
-            team.resume = round(base_resume + inertia_value, 1)
-        else:
-            # After regular season, only use performance
-            team.resume = round(team.resume_total / max(1, games_played), 1)
-
-    # Sort and assign new rankings
-    sorted_teams = sorted(teams, key=lambda x: (-x.resume, x.last_rank))
-    for i, team in enumerate(sorted_teams, start=1):
-        team.ranking = i
-
-    # Update database in bulk operations
-    Teams.objects.bulk_update(teams, ["ranking", "last_rank", "resume"])
-
-    # Update game rankings for future games
-    future_games = list(info.games.filter(year=info.currentYear, winner=None))
-    for game in future_games:
-        game.rankATOG = team_dict[game.teamA_id].ranking
-        game.rankBTOG = team_dict[game.teamB_id].ranking
-
-    if future_games:
-        Games.objects.bulk_update(future_games, ["rankATOG", "rankBTOG"])
 
 
 def update_game_log_for_run(play, game_log):
@@ -486,122 +517,3 @@ def choose_receiver(candidates, rating_exponent=4):
     return random.choices(candidates, weights=normalized_chances, k=1)[0]
 
 
-def getSpread(gap, tax_factor=0.05):
-    """Generate spread and odds data for different rating gaps."""
-    odds = {}
-
-    for i in range(gap + 1):
-        teamA = Team(i)
-        teamB = Team(0)
-        results = testGame(teamA, teamB)
-
-        spread = (
-            round((results["scoreA"] - results["scoreB"]) * 2) / 2
-        )  # round to nearest half-point
-
-        if spread > 0:  # teamA is expected to win
-            spreadA = (
-                "-" + str(int(spread)) if spread.is_integer() else "-" + str(spread)
-            )
-            spreadB = (
-                "+" + str(int(spread)) if spread.is_integer() else "+" + str(spread)
-            )
-        elif spread < 0:  # teamB is expected to win
-            spreadA = (
-                "+" + str(abs(int(spread)))
-                if spread.is_integer()
-                else "+" + str(abs(spread))
-            )
-            spreadB = (
-                "-" + str(abs(int(spread)))
-                if spread.is_integer()
-                else "+" + str(abs(spread))
-            )
-        else:
-            spreadA = "Even"
-            spreadB = "Even"
-
-        implied_probA = round(results["winA"] + (tax_factor / 2), 2)
-        implied_probB = round(results["winB"] + (tax_factor / 2), 2)
-
-        if implied_probA >= 1:
-            implied_probA = 0.99
-        elif implied_probA <= 0:
-            implied_probA = 0.01
-        if implied_probB >= 1:
-            implied_probB = 0.99
-        elif implied_probB <= 0:
-            implied_probB = 0.01
-
-        if implied_probA > 0.5:
-            moneylineA = round(implied_probA / (1 - implied_probA) * 100)
-            moneylineA = f"-{moneylineA}"
-        else:
-            moneylineA = round(((1 / implied_probA) - 1) * 100)
-            moneylineA = f"+{moneylineA}"
-
-        if implied_probB > 0.5:
-            moneylineB = round(implied_probB / (1 - implied_probB) * 100)
-            moneylineB = f"-{moneylineB}"
-        else:
-            moneylineB = round(((1 / implied_probB) - 1) * 100)
-            moneylineB = f"+{moneylineB}"
-
-        odds[i] = {
-            "favSpread": spreadA,
-            "udSpread": spreadB,
-            "favWinProb": results["winA"],
-            "udWinProb": results["winB"],
-            "favMoneyline": moneylineA,
-            "udMoneyline": moneylineB,
-        }
-
-    return odds
-
-
-def testGame(teamA, teamB):
-    """Test game simulation between two teams."""
-    tests = 100
-    scoreA = scoreB = 0
-    winA = winB = 0
-
-    for _ in range(tests):
-        game = Game(teamA, teamB)
-        simGame(game)
-
-        scoreA += game.scoreA
-        scoreB += game.scoreB
-
-        if game.winner == teamA:
-            winA += 1
-        elif game.winner == teamB:
-            winB += 1
-
-    scoreA = round(scoreA / tests, 1)
-    scoreB = round(scoreB / tests, 1)
-    winA = round(winA / tests, 3)
-    winB = round(winB / tests, 3)
-
-    return {
-        "scoreA": scoreA,
-        "scoreB": scoreB,
-        "winA": winA,
-        "winB": winB,
-    }
-
-
-class Team:
-    def __init__(self, rating):
-        self.rating = rating
-        self.offense = rating
-        self.defense = rating
-
-
-class Game:
-    def __init__(self, teamA, teamB):
-        self.teamA = teamA
-        self.teamB = teamB
-        self.scoreA = 0
-        self.scoreB = 0
-        self.overtime = 0
-        self.winner = None

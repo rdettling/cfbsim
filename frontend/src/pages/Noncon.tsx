@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiService, usePageRefresh } from "../services/api";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
+import { ROUTES } from '../utils/routes';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import {
     Container,
@@ -65,7 +66,7 @@ export const NonCon = () => {
             // Clear location state after first load to prevent reusing parameters on refresh
             if (isFirstLoad) {
                 setIsFirstLoad(false);
-                navigate('/noncon', { state: {}, replace: true });
+                navigate(ROUTES.NONCON, { state: {}, replace: true });
             }
         } catch (error) {
             console.error("Error fetching noncon data:", error);

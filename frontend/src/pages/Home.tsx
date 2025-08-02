@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Team, Conference, Info } from '../interfaces';
+import { ROUTES } from '../utils/routes';
 import { STAGES } from '../constants/stages';
 import {
   Container,
@@ -341,7 +342,7 @@ const Home = () => {
                                    playoff_autobids: playoffAutobids.toString(),
                                    playoff_conf_champ_top_4: playoffConfChampTop4.toString()
                                  });
-                                 navigate('/noncon', { state: { fromHome: true, initialData: response } });
+                                 navigate(ROUTES.NONCON, { state: { fromHome: true, initialData: response } });
                                } catch (error) {
                                  console.error('Error starting new game:', error);
                                  button.disabled = false;

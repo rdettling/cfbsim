@@ -32,6 +32,8 @@ export interface Team {
     totalLosses: number;
     record: string;
     movement: number;
+    poll_score?: number;
+    strength_of_record?: number;
     last_game: ScheduleGame;
     next_game: ScheduleGame;
     // Game preview stats (optional - only present in game preview)
