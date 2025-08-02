@@ -289,8 +289,8 @@ def refresh_teams_and_games(info):
         team.gamesPlayed = 0
         team.totalWins = 0
         team.totalLosses = 0
-        team.resume_total = 0
-        team.resume = 0
+        team.strength_of_record = 0
+        team.poll_score = 0
 
     Teams.objects.bulk_update(
         teams,
@@ -304,8 +304,8 @@ def refresh_teams_and_games(info):
             "gamesPlayed",
             "totalWins",
             "totalLosses",
-            "resume_total",
-            "resume",
+            "strength_of_record",
+            "poll_score",
         ],
     )
 

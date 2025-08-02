@@ -1,6 +1,6 @@
 import random
 from logic.sim.sim import *
-from logic.sim.sim_helper import testGame, Team, Game
+from logic.betting import testGame, Team, Game
 
 
 def testRun(team1, team2, simulations=10000):

@@ -1,10 +1,12 @@
 from .schedule import *
 from .players import *
-from .sim.sim_helper import getSpread
+from .betting import getSpread
 from django.db import transaction
 import os
 from .sim.sim import *
 from .util import get_recruiting_points, get_last_week, load_and_merge_year_data
+
+
 
 
 def next_season(info):

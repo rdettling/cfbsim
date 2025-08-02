@@ -239,7 +239,7 @@ def get_last_week(playoff_teams):
         )  # Weeks 14-17 (First Round + Quarters + Semis + Championship)
     else:
         raise ValueError(f"Unsupported playoff format: {playoff_teams}")
-
+    
 
 def load_and_merge_year_data(year):
     """Load and merge year-specific data with static data"""

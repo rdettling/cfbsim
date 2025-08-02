@@ -12,7 +12,7 @@ from logic.sim.sim_helper import (
     save_simulation_data,
     fetch_and_simulate_games,
     update_game_results,
-    update_rankings_if_needed,
+    update_rankings,
     handle_special_weeks,
 )
 
@@ -194,6 +194,8 @@ def rankings(request):
             "ranking": t.ranking,
             "record": format_record(t),
             "movement": t.last_rank - t.ranking if t.last_rank else 0,
+            "poll_score": t.poll_score,
+            "strength_of_record": t.strength_of_record,
             "last_game": last_game,
             "next_game": next_game,
         }
@@ -474,7 +476,7 @@ def sim(request, dest_week):
         update_game_results(games)
 
         # 3. Update rankings if needed
-        update_rankings_if_needed(info)
+        update_rankings(info)
 
         # 4. Handle special weeks (conference championships, playoffs, etc.)
         handle_special_weeks(info)

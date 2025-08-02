@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { useNavigate } from 'react-router-dom';
+import { getGameRoute } from '../utils/routes';
 
 import {
     Container,
@@ -15,7 +17,9 @@ import {
     Paper,
     Box,
     CircularProgress,
-    Alert
+    Alert,
+    Chip,
+    Button
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 
@@ -32,6 +36,8 @@ const Rankings = () => {
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
+    const [showAllTeams, setShowAllTeams] = useState(false);
+    const navigate = useNavigate();
 
     const fetchRankings = async () => {
         try {
@@ -68,6 +74,13 @@ const Rankings = () => {
         setModalOpen(true);
     };
 
+    const handleGameClick = (gameId: string) => {
+        navigate(getGameRoute(gameId));
+    };
+
+    // Filter teams based on showAllTeams state
+    const displayedTeams = showAllTeams ? data.rankings : data.rankings.slice(0, 25);
+
     return (
         <>
             <Navbar
@@ -82,55 +95,113 @@ const Rankings = () => {
                     <Typography variant="h5">{stageText}</Typography>
                 </Box>
 
-                <TableContainer component={Paper}>
-                    <Table>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', minWidth: 1200 }}>
+                    <Table sx={{ minWidth: 1200 }}>
                         <TableHead>
-                            <TableRow>
-                                <TableCell>Rank</TableCell>
-                                <TableCell>Team</TableCell>
-                                <TableCell>Record</TableCell>
-                                <TableCell>Last Week</TableCell>
-                                <TableCell>This Week</TableCell>
+                            <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                                <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '80px' }}>Rank</TableCell>
+                                <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '200px' }}>Team</TableCell>
+                                <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '120px' }}>Record</TableCell>
+                                <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '120px' }}>Poll Score</TableCell>
+                                <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '150px' }}>Strength of Record</TableCell>
+                                <TableCell sx={{ color: 'white', fontWeight: 'bold', minWidth: '250px' }}>Last Week</TableCell>
+                                <TableCell sx={{ color: 'white', fontWeight: 'bold', minWidth: '250px' }}>This Week</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {data.rankings.map((team) => (
-                                <TableRow key={team.name}>
-                                    <TableCell>
+                            {displayedTeams.map((team, index) => (
+                                <TableRow 
+                                    key={team.name}
+                                    sx={{ 
+                                        backgroundColor: index % 2 === 0 ? 'background.paper' : 'grey.50',
+                                        '&:hover': { backgroundColor: 'grey.100' }
+                                    }}
+                                >
+                                    <TableCell sx={{ width: '80px' }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            {team.ranking}
-                                            <Typography
-                                                component="span"
-                                                sx={{ color: team.movement > 0 ? 'success.main' : team.movement < 0 ? 'error.main' : 'text.primary' }}
-                                            >
-                                                ({team.movement > 0 ? '+' : ''}{team.movement})
+                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                                {team.ranking}
                                             </Typography>
+                                            {team.movement !== 0 && (
+                                                <Chip
+                                                    label={`${team.movement > 0 ? '+' : ''}${team.movement}`}
+                                                    size="small"
+                                                    color={team.movement > 0 ? 'success' : 'error'}
+                                                    variant="outlined"
+                                                />
+                                            )}
                                         </Box>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell sx={{ width: '200px' }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <TeamLogo name={team.name} />
                                             <TeamLink name={team.name} onTeamClick={handleTeamClick} />
                                         </Box>
                                     </TableCell>
-                                    <TableCell>{team.record}</TableCell>
-                                    <TableCell>
+                                    <TableCell sx={{ width: '120px' }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 'medium', whiteSpace: 'nowrap' }}>
+                                            {team.record}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ width: '120px' }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                            {team.poll_score !== undefined ? team.poll_score.toFixed(1) : 'N/A'}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ width: '150px' }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                            {team.strength_of_record !== undefined ? team.strength_of_record.toFixed(1) : 'N/A'}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ minWidth: '250px' }}>
                                         {team.last_game && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                {team.last_game.result} ({team.last_game.score}) vs
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                <Typography variant="body2">
+                                                    {team.last_game.result}
+                                                </Typography>
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        cursor: 'pointer',
+                                                        textDecoration: 'underline',
+                                                        color: 'primary.main',
+                                                        fontWeight: 'bold',
+                                                        '&:hover': { color: 'primary.dark' }
+                                                    }}
+                                                    onClick={() => handleGameClick(team.last_game.id)}
+                                                >
+                                                    ({team.last_game.score})
+                                                </Typography>
+                                                <Typography variant="body2">vs</Typography>
                                                 <TeamLogo name={team.last_game.opponent.name} size={20} />
-                                                #{team.last_game.opponent.ranking} 
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                    #{team.last_game.opponent.ranking}
+                                                </Typography>
                                                 <TeamLink name={team.last_game.opponent.name} onTeamClick={handleTeamClick} />
                                             </Box>
                                         )}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell sx={{ minWidth: '250px' }}>
                                         {team.next_game && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                                                 <TeamLogo name={team.next_game.opponent.name} size={20} />
-                                                #{team.next_game.opponent.ranking} 
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                    #{team.next_game.opponent.ranking}
+                                                </Typography>
                                                 <TeamLink name={team.next_game.opponent.name} onTeamClick={handleTeamClick} />
-                                                ({team.next_game.spread})
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        cursor: 'pointer',
+                                                        textDecoration: 'underline',
+                                                        color: 'primary.main',
+                                                        fontWeight: 'bold',
+                                                        '&:hover': { color: 'primary.dark' }
+                                                    }}
+                                                    onClick={() => handleGameClick(team.next_game.id)}
+                                                >
+                                                    ({team.next_game.spread})
+                                                </Typography>
                                             </Box>
                                         )}
                                     </TableCell>
@@ -139,6 +210,45 @@ const Rankings = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
+                
+                {/* Toggle button for showing all teams */}
+                {!showAllTeams && data.rankings.length > 25 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowAllTeams(true)}
+                            sx={{
+                                px: 4,
+                                py: 1.5,
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                borderRadius: 2,
+                                textTransform: 'none'
+                            }}
+                        >
+                            Show All {data.rankings.length} Teams
+                        </Button>
+                    </Box>
+                )}
+                
+                {showAllTeams && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowAllTeams(false)}
+                            sx={{
+                                px: 4,
+                                py: 1.5,
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                borderRadius: 2,
+                                textTransform: 'none'
+                            }}
+                        >
+                            Show Top 25 Only
+                        </Button>
+                    </Box>
+                )}
             </Container>
 
             <TeamInfoModal

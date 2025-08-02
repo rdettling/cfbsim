@@ -1,5 +1,6 @@
 import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { Info } from '../interfaces';
+import { ROUTES } from '../utils/routes';
 import { useState } from 'react';
 import LoadingDialog from './LoadingDialog';
 import { useNavigate } from 'react-router-dom';
@@ -30,7 +31,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
     const handleEndOfSeason = () => {
         setIsSimulating(true);
         setTimeout(() => {
-            navigate('/summary');
+            navigate(ROUTES.SEASON_SUMMARY);
             setIsSimulating(false);
         }, 500);
     };

@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
+import { getTeamHistoryRoute, getTeamScheduleRoute } from '../utils/routes';
 import {
     Container,
     Table,
@@ -68,7 +69,7 @@ const TeamHistory = () => {
     }, [teamName]);
 
     const handleTeamChange = (newTeam: string) => {
-        navigate(`/${newTeam}/history`);
+        navigate(getTeamHistoryRoute(newTeam));
     };
 
     if (loading) return <CircularProgress />;
@@ -109,7 +110,7 @@ const TeamHistory = () => {
                                     <TableCell>
                                         <Link
                                             component="button"
-                                            onClick={() => navigate(`/${teamName}/schedule?year=${year.year}`)}
+                                            onClick={() => navigate(`${getTeamScheduleRoute(teamName || '')}?year=${year.year}`)}
                                             sx={{ cursor: 'pointer' }}
                                         >
                                             {year.year}

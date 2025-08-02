@@ -2,6 +2,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, ScheduleGame, Info, Conference } from '../interfaces';
+import { getTeamScheduleRoute, getGameRoute } from '../utils/routes';
 import {
     Container,
     Table,
@@ -88,7 +89,7 @@ const TeamSchedule = () => {
             if (year) params.set('year', year);
             return params;
         });
-        navigate(`/${newTeam}/schedule`);
+        navigate(getTeamScheduleRoute(newTeam));
     };
 
     const handleYearChange = (newYear: string) => {
@@ -202,13 +203,13 @@ const TeamSchedule = () => {
                                                 variant="outlined"
                                                 size="small"
                                                 sx={{ fontWeight: 'bold' }}
-                                                onClick={() => navigate(`/game/${game.id}`)}
+                                                onClick={() => navigate(getGameRoute(game.id))}
                                             />
                                         ) : (
                                             <Button
                                                 variant="outlined"
                                                 size="small"
-                                                onClick={() => navigate(`/game/${game.id}`)}
+                                                onClick={() => navigate(getGameRoute(game.id))}
                                             >
                                                 Preview
                                             </Button>
