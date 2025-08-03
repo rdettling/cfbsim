@@ -49,6 +49,8 @@ class ConferencesSerializer(serializers.ModelSerializer):
 
 
 class PlayersSerializer(serializers.ModelSerializer):
+    change = serializers.IntegerField(read_only=True, required=False)
+
     class Meta:
         model = Players
         fields = "__all__"

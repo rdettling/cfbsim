@@ -5,9 +5,11 @@ from django.db import transaction
 import os
 from .sim.sim import *
 from .util import get_recruiting_points, get_last_week, load_and_merge_year_data
+import time
 
 
 def next_season(info):
+    """Initialize the next season with updated data"""
     current_year = info.currentYear
     while current_year >= info.startYear:
         file_path = f"data/years/{current_year}.json"
@@ -19,44 +21,78 @@ def next_season(info):
 
     update_teams_and_rosters(info, data)
     refresh_teams_and_games(info)
-    set_rivalries(info, data)
+    set_rivalries(info)
 
 
 def update_teams_and_rosters(info, data):
-    start = time.time()
-    realignment(info, data)
-    print(f"Realignment {time.time() - start} seconds")
+    """Update teams, rosters, and related data for the new season"""
+    with transaction.atomic():
+        # Realignment
+        start = time.time()
+        realignment(info, data)
+        print(f"Realignment {time.time() - start} seconds")
 
-    start = time.time()
-    players_to_create = []
+        # Reset non-conference game counters for new season
+        start = time.time()
+        teams = info.teams.all()
+        for team in teams:
+            team.nonConfGames = 0
+            team.confGames = 0
+            team.nonConfWins = 0
+            team.nonConfLosses = 0
+            team.confWins = 0
+            team.confLosses = 0
+            team.totalWins = 0
+            team.totalLosses = 0
+            team.gamesPlayed = 0
+        Teams.objects.bulk_update(
+            teams,
+            [
+                "nonConfGames",
+                "confGames",
+                "nonConfWins",
+                "nonConfLosses",
+                "confWins",
+                "confLosses",
+                "totalWins",
+                "totalLosses",
+                "gamesPlayed",
+            ],
+        )
+        print(f"Reset game counters {time.time() - start} seconds")
 
-    loaded_names = load_names()
-    for team in info.teams.all():
-        if team.rating:
-            fill_roster(team, loaded_names, players_to_create)
-        else:
-            init_roster(team, loaded_names, players_to_create)
-    Players.objects.bulk_create(players_to_create)
-    print(f"Fill rosters {time.time() - start} seconds")
+        # Remove graduating seniors
+        start = time.time()
+        remove_seniors(info)
+        print(f"Remove seniors {time.time() - start} seconds")
 
-    start = time.time()
-    set_starters(info)
-    print(f"Set starters {time.time() - start} seconds")
+        # Fill rosters
+        start = time.time()
+        players_to_create = []
+        loaded_names = load_names()
 
-    start = time.time()
-    calculate_team_ratings(info)
-    print(f"Get ratings {time.time() - start} seconds")
+        for team in info.teams.all():
+            if team.rating:
+                fill_roster(team, loaded_names, players_to_create)
+            else:
+                init_roster(team, loaded_names, players_to_create)
 
-    start = time.time()
-    initialize_rankings(info)
+        Players.objects.bulk_create(players_to_create)
+        print(f"Fill rosters {time.time() - start} seconds")
+
+        # Set starters and calculate ratings
+        start = time.time()
+        set_starters(info)
+        calculate_team_ratings(info)
+        initialize_rankings(info)
+        print(f"Set starters and ratings {time.time() - start} seconds")
 
 
 def start_season(info):
+    """Start the season by filling schedules and setting initial state"""
     start = time.time()
     fillSchedules(info)
-    print(f"fill schedules {time.time() - start} seconds")
-
-    # aiRecruitOffers(info)
+    print(f"Fill schedules {time.time() - start} seconds")
 
     info.currentWeek = 1
     info.stage = "season"
@@ -64,50 +100,55 @@ def start_season(info):
 
 
 def realignment_summary(info):
+    """Generate summary of conference realignment changes"""
     next_year = info.currentYear + 1
     file_path = f"data/years/{next_year}.json"
 
+    if not os.path.exists(file_path):
+        return {}
+
+    data = load_and_merge_year_data(next_year)
     team_dict = {}
-    if os.path.exists(file_path):
-        data = load_and_merge_year_data(next_year)
+    teams = info.teams.all().select_related("conference")
 
-        teams = info.teams.all().select_related("conference")
-        for team in teams:
-            team_dict[team.name] = {
-                "old": team.conference.confName if team.conference else "Independent"
-            }
-
-        for conf in data["conferences"]:
-            for team in conf["teams"]:
-                if team["name"] in team_dict:
-                    team_dict[team["name"]]["new"] = conf["confName"]
-                else:
-                    team_dict[team["name"]] = {"old": "FCS", "new": conf["confName"]}
-
-        for team in data["independents"]:
-            if team["name"] in team_dict:
-                team_dict[team["name"]]["new"] = "Independent"
-            else:
-                team_dict[team["name"]] = {"old": "FCS", "new": "Independent"}
-
-        for team_name in team_dict:
-            if "new" not in team_dict[team_name]:
-                team_dict[team_name]["new"] = "FCS"
-
-        team_dict = {
-            name: confs
-            for name, confs in team_dict.items()
-            if confs["old"] != confs["new"]
+    # Map current teams to their old conferences
+    for team in teams:
+        team_dict[team.name] = {
+            "old": team.conference.confName if team.conference else "Independent"
         }
 
-    return team_dict
+    # Map teams to their new conferences from data
+    for conf in data["conferences"]:
+        for team in conf["teams"]:
+            if team["name"] in team_dict:
+                team_dict[team["name"]]["new"] = conf["confName"]
+            else:
+                team_dict[team["name"]] = {"old": "FCS", "new": conf["confName"]}
+
+    for team in data["independents"]:
+        if team["name"] in team_dict:
+            team_dict[team["name"]]["new"] = "Independent"
+        else:
+            team_dict[team["name"]] = {"old": "FCS", "new": "Independent"}
+
+    # Set default for teams not found in new data
+    for team_name in team_dict:
+        if "new" not in team_dict[team_name]:
+            team_dict[team_name]["new"] = "FCS"
+
+    # Filter to only teams that changed conferences
+    return {
+        name: confs for name, confs in team_dict.items() if confs["old"] != confs["new"]
+    }
 
 
 def realignment(info, data):
-    info.playoff.teams = data["playoff"]["teams"]
-    info.playoff.autobids = data["playoff"].get("conf_champ_autobids", 0)
-    info.playoff.conf_champ_top_4 = data["playoff"].get("conf_champ_top_4", False)
-    # Update lastWeek based on new playoff format
+    """Update playoff settings and team conference assignments"""
+    # Update playoff configuration
+    playoff_config = data["playoff"]
+    info.playoff.teams = playoff_config["teams"]
+    info.playoff.autobids = playoff_config.get("conf_champ_autobids", 0)
+    info.playoff.conf_champ_top_4 = playoff_config.get("conf_champ_top_4", False)
     info.lastWeek = get_last_week(info.playoff.teams)
     info.playoff.save()
     info.save()
@@ -115,59 +156,68 @@ def realignment(info, data):
     teams = info.teams.all()
     conferences = info.conferences.all()
 
-    for conference in data["conferences"]:
-        if not conferences.filter(confName=conference["confName"]).exists():
-            Conferences.objects.create(
-                info=info,
-                confName=conference["confName"],
-                confFullName=conference["confFullName"],
-                confGames=conference["confGames"],
+    # Process conference teams
+    for conference_data in data["conferences"]:
+        conference, created = info.conferences.get_or_create(
+            confName=conference_data["confName"],
+            defaults={
+                "confFullName": conference_data["confFullName"],
+                "confGames": conference_data["confGames"],
+            },
+        )
+
+        for team_data in conference_data["teams"]:
+            team_defaults = {
+                "abbreviation": team_data["abbreviation"],
+                "prestige": team_data["prestige"],
+                "mascot": team_data["mascot"],
+                "colorPrimary": team_data["colorPrimary"],
+                "colorSecondary": team_data["colorSecondary"],
+                "conference": conference,
+                "confLimit": conference_data["confGames"],
+                "nonConfLimit": 12 - conference_data["confGames"],
+                "offers": 25,
+                "recruiting_points": get_recruiting_points(team_data["prestige"]),
+            }
+
+            team, created = info.teams.get_or_create(
+                name=team_data["name"], defaults=team_defaults
             )
 
-        for team in conference["teams"]:
-            try:
-                Team = teams.get(name=team["name"])
-                Team.conference = conferences.get(confName=conference["confName"])
-                Team.confLimit = conference["confGames"]
-                Team.nonConfLimit = 12 - conference["confGames"]
-                Team.save()
-            except Teams.DoesNotExist:
-                Team = Teams.objects.create(
-                    info=info,
-                    name=team["name"],
-                    abbreviation=team["abbreviation"],
-                    prestige=team["prestige"],
-                    mascot=team["mascot"],
-                    colorPrimary=team["colorPrimary"],
-                    colorSecondary=team["colorSecondary"],
-                    conference=info.conferences.get(confName=conference["confName"]),
-                    confLimit=conference["confGames"],
-                    nonConfLimit=12 - conference["confGames"],
-                    offers=25,
-                    recruiting_points=get_recruiting_points(team["prestige"]),
-                )
+            if not created:
+                # Update existing team
+                team.conference = conference
+                team.confLimit = conference_data["confGames"]
+                team.nonConfLimit = 12 - conference_data["confGames"]
+                team.save()
 
-    for team in data["independents"]:
-        try:
-            Team = teams.get(name=team["name"])
-            Team.conference = None
-            Team.save()
-        except Teams.DoesNotExist:
-            Team = Teams.objects.create(
-                info=info,
-                name=team["name"],
-                abbreviation=team["abbreviation"],
-                prestige=team["prestige"],
-                mascot=team["mascot"],
-                colorPrimary=team["colorPrimary"],
-                colorSecondary=team["colorSecondary"],
-                conference=None,
-                confLimit=0,
-                nonConfLimit=12,
-                offers=25,
-                recruiting_points=get_recruiting_points(team["prestige"]),
-            )
+    # Process independent teams
+    for team_data in data["independents"]:
+        team_defaults = {
+            "abbreviation": team_data["abbreviation"],
+            "prestige": team_data["prestige"],
+            "mascot": team_data["mascot"],
+            "colorPrimary": team_data["colorPrimary"],
+            "colorSecondary": team_data["colorSecondary"],
+            "conference": None,
+            "confLimit": 0,
+            "nonConfLimit": 12,
+            "offers": 25,
+            "recruiting_points": get_recruiting_points(team_data["prestige"]),
+        }
 
+        team, created = info.teams.get_or_create(
+            name=team_data["name"], defaults=team_defaults
+        )
+
+        if not created:
+            # Update existing team
+            team.conference = None
+            team.confLimit = 0
+            team.nonConfLimit = 12
+            team.save()
+
+    # Clean up empty conferences
     with transaction.atomic():
         for conference in conferences:
             if conference.teams.count() == 0:
@@ -175,6 +225,7 @@ def realignment(info, data):
 
 
 def initialize_rankings(info):
+    """Initialize team rankings based on ratings"""
     teams = info.teams.all().order_by("-rating")
 
     for i, team in enumerate(teams, start=1):
@@ -192,9 +243,10 @@ def init(
     playoff_autobids=None,
     playoff_conf_champ_top_4=None,
 ):
+    """Initialize a new season with all required data"""
     data = load_and_merge_year_data(year)
 
-    # Use provided playoff settings or defaults from JSON
+    # Determine playoff configuration
     playoff_config = data["playoff"]
     final_playoff_teams = (
         playoff_teams if playoff_teams is not None else playoff_config["teams"]
@@ -210,16 +262,10 @@ def init(
         else playoff_config.get("conf_champ_top_4", False)
     )
 
-    print(f"playoff_config: {playoff_config}")
-    print(f"final_playoff_teams: {final_playoff_teams}")
-    print(f"final_playoff_autobids: {final_playoff_autobids}")
-    print(f"final_conf_champ_top_4: {final_conf_champ_top_4}")
-
-    # Calculate lastWeek based on playoff format
     calculated_last_week = get_last_week(final_playoff_teams)
-
     overall_start = time.time()
 
+    # Create info and playoff objects
     Info.objects.filter(user_id=user_id).delete()
     info = Info.objects.create(
         user_id=user_id,
@@ -238,116 +284,115 @@ def init(
     )
     info.playoff = playoff
 
+    # Create conferences and teams
     conferences_to_create = []
     teams_to_create = []
-    players_to_create = []
-    odds_to_create = []
-    recruits_to_create = []
 
-    for conference in data["conferences"]:
-        Conference = Conferences(
+    for conference_data in data["conferences"]:
+        conference = Conferences(
             info=info,
-            confName=conference["confName"],
-            confFullName=conference["confFullName"],
-            confGames=conference["confGames"],
+            confName=conference_data["confName"],
+            confFullName=conference_data["confFullName"],
+            confGames=conference_data["confGames"],
         )
-        conferences_to_create.append(Conference)
+        conferences_to_create.append(conference)
 
-        for team in conference["teams"]:
-            Team = Teams(
+        for team_data in conference_data["teams"]:
+            team = Teams(
                 info=info,
-                name=team["name"],
-                abbreviation=team["abbreviation"],
-                prestige=team["prestige"],
-                mascot=team["mascot"],
-                colorPrimary=team["colorPrimary"],
-                colorSecondary=team["colorSecondary"],
-                conference=Conference,
-                confLimit=conference["confGames"],
-                nonConfLimit=12 - conference["confGames"],
+                name=team_data["name"],
+                abbreviation=team_data["abbreviation"],
+                prestige=team_data["prestige"],
+                mascot=team_data["mascot"],
+                colorPrimary=team_data["colorPrimary"],
+                colorSecondary=team_data["colorSecondary"],
+                conference=conference,
+                confLimit=conference_data["confGames"],
+                nonConfLimit=12 - conference_data["confGames"],
                 offers=25,
-                recruiting_points=get_recruiting_points(team["prestige"]),
+                recruiting_points=get_recruiting_points(team_data["prestige"]),
             )
-            teams_to_create.append(Team)
-            if team["name"] == team_name:
-                info.team = Team
+            teams_to_create.append(team)
+            if team_data["name"] == team_name:
+                info.team = team
 
-    for team in data["independents"]:
-        Team = Teams(
+    for team_data in data["independents"]:
+        team = Teams(
             info=info,
-            name=team["name"],
-            abbreviation=team["abbreviation"],
-            prestige=team["prestige"],
-            mascot=team["mascot"],
-            colorPrimary=team["colorPrimary"],
-            colorSecondary=team["colorSecondary"],
+            name=team_data["name"],
+            abbreviation=team_data["abbreviation"],
+            prestige=team_data["prestige"],
+            mascot=team_data["mascot"],
+            colorPrimary=team_data["colorPrimary"],
+            colorSecondary=team_data["colorSecondary"],
             conference=None,
-            confLimit=conference["confGames"],
+            confLimit=0,
             nonConfLimit=12,
             offers=25,
-            recruiting_points=get_recruiting_points(team["prestige"]),
+            recruiting_points=get_recruiting_points(team_data["prestige"]),
         )
-        teams_to_create.append(Team)
-        if team["name"] == team_name:
-            info.team = Team
+        teams_to_create.append(team)
+        if team_data["name"] == team_name:
+            info.team = team
 
-    start = time.time()
+    # Bulk create conferences and teams
     Conferences.objects.bulk_create(conferences_to_create)
     Teams.objects.bulk_create(teams_to_create)
     info.save()
-    teams = info.teams.all()
-    print(f"Create teams, conferences {time.time() - start} seconds")
 
+    # Create players
     start = time.time()
+    players_to_create = []
     loaded_names = load_names()
-    for team in teams:
-        init_roster(team, loaded_names, players_to_create)
-    print(f"Init roster {time.time() - start} seconds")
 
-    start = time.time()
+    for team in info.teams.all():
+        init_roster(team, loaded_names, players_to_create)
+
     Players.objects.bulk_create(players_to_create)
     print(f"Create players {time.time() - start} seconds")
 
+    # Finalize setup
     start = time.time()
     set_starters(info)
     print(f"Set starters {time.time() - start} seconds")
 
     start = time.time()
     calculate_team_ratings(info)
-    print(f"Get ratings {time.time() - start} seconds")
+    print(f"Calculate ratings {time.time() - start} seconds")
 
+    # Create odds (after team ratings are calculated)
     start = time.time()
-    initialize_rankings(info)
-    print(f"Init rankings {time.time() - start} seconds")
+    teams = info.teams.all()
+    max_rating = teams.order_by("-rating").first().rating
+    min_rating = teams.order_by("rating").first().rating
+    rating_range = max_rating - min_rating + 10
 
-    start = time.time()
-    odds_list = getSpread(
-        teams.order_by("-rating").first().rating
-        - teams.order_by("rating").first().rating
-        + 10
-    )
+    odds_list = getSpread(rating_range)
+    odds_to_create = []
+
     for diff, odds_data in odds_list.items():
         odds_instance = Odds(
             info=info,
             diff=diff,
             favSpread=odds_data["favSpread"],
             udSpread=odds_data["udSpread"],
-            favWinProb=(odds_data["favWinProb"]),
-            udWinProb=(odds_data["udWinProb"]),
+            favWinProb=odds_data["favWinProb"],
+            udWinProb=odds_data["udWinProb"],
             favMoneyline=odds_data["favMoneyline"],
             udMoneyline=odds_data["udMoneyline"],
         )
         odds_to_create.append(odds_instance)
+
     Odds.objects.bulk_create(odds_to_create)
-    print(f"Odds {time.time() - start} seconds")
+    print(f"Create odds {time.time() - start} seconds")
+
+    start = time.time()
+    initialize_rankings(info)
+    print(f"Initialize rankings {time.time() - start} seconds")
 
     start = time.time()
     set_rivalries(info)
-    print(f"rivalries {time.time() - start} seconds")
+    print(f"Set rivalries {time.time() - start} seconds")
 
     print(f"Total execution Time: {time.time() - overall_start} seconds")
-
-    # generate_recruits(info, recruits_to_create)
-    # Recruits.objects.bulk_create(recruits_to_create)
-
     return info

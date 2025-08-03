@@ -70,6 +70,10 @@ def noncon(request):
                 info.stage = "preseason"
                 info.save()
                 print(f"[DEBUG] Updated stage to preseason")
+
+                # Refresh the info object to get the latest data after next_season()
+                info.refresh_from_db()
+                print(f"[DEBUG] Refreshed info from database")
         except Info.DoesNotExist:
             print(f"[ERROR] Info not found for user_id: {user_id}")
             return Response(
@@ -92,6 +96,9 @@ def noncon(request):
     try:
         # Get team's schedule
         print(f"[DEBUG] Getting schedule for team: {info.team.name}")
+        print(
+            f"[DEBUG] Team nonConfGames: {info.team.nonConfGames}, nonConfLimit: {info.team.nonConfLimit}"
+        )
         games = (
             info.team.games_as_teamA.filter(year=info.currentYear)
             | info.team.games_as_teamB.filter(year=info.currentYear)
@@ -125,6 +132,9 @@ def noncon(request):
             print(f"[DEBUG] Added user_id to response for new game: {user_id}")
 
         print(f"[DEBUG] Successfully prepared response data")
+        print(
+            f"[DEBUG] Final team nonConfGames in response: {response_data['team']['nonConfGames']}"
+        )
         return Response(response_data)
 
     except Exception as e:
