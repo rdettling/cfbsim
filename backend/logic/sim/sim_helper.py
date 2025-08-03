@@ -11,11 +11,18 @@ import time
 from api.models import *
 import random
 from logic.sim.sim import WIN_FACTOR, LOSS_FACTOR
-from logic.constants.sim_constants import POLL_INERTIA_WIN_BONUS, POLL_INERTIA_LOSS_PENALTY, RANKING_TOTAL_WEEKS
+from logic.constants.sim_constants import (
+    POLL_INERTIA_WIN_BONUS,
+    POLL_INERTIA_LOSS_PENALTY,
+    RANKING_TOTAL_WEEKS,
+)
 
 
-def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
+def fetch_and_simulate_games(info, drives_to_create, plays_to_create, log=False):
     """Fetch games for the current week and simulate them with batch team updates"""
+    if log:
+        print(f"  [DEBUG] fetch_and_simulate_games called for week {info.currentWeek}")
+
     query_start = time.time()
 
     # Use select_related to reduce database queries
@@ -26,7 +33,8 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     )
 
     query_time = time.time() - query_start
-    print(f"  Query games: {query_time:.4f} seconds, {len(games)} games found")
+    if log:
+        print(f"  Query games: {query_time:.4f} seconds, {len(games)} games found")
 
     # Create a team dictionary to track all updates
     team_updates = {}
@@ -102,11 +110,9 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
             # teamB won, so opponent is teamA
             winner_resume_add = game.teamA.rating**WIN_FACTOR
             loser_resume_add = game.teamB.rating**LOSS_FACTOR
-        
+
         team_updates[winner_id]["strength_of_record"] += winner_resume_add
         team_updates[loser_id]["strength_of_record"] += loser_resume_add
-        
-
 
     # Apply all team updates at once after all games are simulated
     teams_to_update = []
@@ -138,18 +144,23 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     )
 
     sim_time = time.time() - sim_start
-    print(f"  Total simulation time: {sim_time:.4f} seconds")
+    if log:
+        print(f"  Total simulation time: {sim_time:.4f} seconds")
 
     return games
 
 
-def update_game_results(games):
+def update_game_results(info, games, log=False):
     """Generate headlines and update game results in the database"""
+    if log:
+        print(f"  [DEBUG] update_game_results called with {len(games)} games")
+
     # Generate headlines
     headlines_start = time.time()
     generate_headlines(games)
     headlines_time = time.time() - headlines_start
-    print(f"  Generate headlines: {headlines_time:.4f} seconds")
+    if log:
+        print(f"  Generate headlines: {headlines_time:.4f} seconds")
 
     # Bulk update game results
     update_start = time.time()
@@ -158,11 +169,46 @@ def update_game_results(games):
         ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime", "headline"],
     )
     update_time = time.time() - update_start
-    print(f"  Bulk update games: {update_time:.4f} seconds")
+    if log:
+        print(f"  Bulk update games: {update_time:.4f} seconds")
+
+    # Check if National Championship game was just played
+    if log:
+        print(f"  [DEBUG] Checking for National Championship game in current games")
+
+    natty_game = None
+    if hasattr(info, "playoff") and info.playoff and info.playoff.natty:
+        for game in games:
+            if (
+                game.teamA
+                and game.teamB
+                and game.winner
+                and (
+                    (
+                        game.teamA == info.playoff.natty.teamA
+                        and game.teamB == info.playoff.natty.teamB
+                    )
+                    or (
+                        game.teamA == info.playoff.natty.teamB
+                        and game.teamB == info.playoff.natty.teamA
+                    )
+                )
+            ):
+                natty_game = game
+                if log:
+                    print(
+                        f"  [DEBUG] Found National Championship game: {game.teamA.name} vs {game.teamB.name}, Winner: {game.winner.name}"
+                    )
+                break
+
+    return natty_game
 
 
-def update_rankings(info):
+def update_rankings(info, natty_game=None, log=False):
     """Update team rankings if needed for the current week"""
+    if log:
+        print(f"  [DEBUG] update_rankings called for week {info.currentWeek}")
+
     rankings_start = time.time()
 
     # Skip ranking updates for certain playoff weeks
@@ -171,40 +217,39 @@ def update_rankings(info):
     if info.currentWeek not in skip_weeks:
         teams = list(info.teams.all())
         team_dict = {team.id: team for team in teams}
-        
+
         # Calculate poll scores
         for team in teams:
             team.last_rank = team.ranking
             games_played = team.totalWins + team.totalLosses
-            
+            base_poll_score = team.strength_of_record / max(1, games_played)
+
             if info.currentWeek == info.lastWeek:
-                # End of season: use only strength_of_record (no inertia)
-                team.poll_score = round(team.strength_of_record / max(1, games_played), 1)
+                # End of season: no inertia
+                team.poll_score = round(base_poll_score, 1)
             else:
                 # Regular season: include poll inertia
-                base_poll_score = team.strength_of_record / max(1, games_played)
-                
-                # Get current week's games for inertia calculation
                 current_games = list(
                     info.games.filter(
                         year=info.currentYear, weekPlayed=info.currentWeek
                     ).select_related("teamA", "teamB")
                 )
-                
+
                 # Find team's game this week
                 team_game = None
                 for game in current_games:
                     if game.teamA == team or game.teamB == team:
                         team_game = game
                         break
-                
+
                 # Apply poll inertia
                 if team_game and info.currentWeek <= RANKING_TOTAL_WEEKS:
                     weeks_left = max(0, RANKING_TOTAL_WEEKS - info.currentWeek)
                     inertia_scale = weeks_left / RANKING_TOTAL_WEEKS
-                    
+
                     inertia_factor = (
-                        POLL_INERTIA_LOSS_PENALTY if team_game.winner != team 
+                        POLL_INERTIA_LOSS_PENALTY
+                        if team_game.winner != team
                         else POLL_INERTIA_WIN_BONUS
                     )
                     inertia_value = max(
@@ -214,28 +259,61 @@ def update_rankings(info):
                 else:
                     team.poll_score = round(base_poll_score, 1)
 
-        # Sort and assign rankings
-        if info.currentWeek == info.lastWeek:
-            # End of season: National championship winner gets #1, loser gets #2
-            natty_winner = info.playoff.natty.winner
-            natty_loser = info.playoff.natty.teamA if info.playoff.natty.winner == info.playoff.natty.teamB else info.playoff.natty.teamB
+        # Determine ranking strategy
+        is_end_of_season = info.currentWeek == info.lastWeek
+        natty_winner = None
+        natty_loser = None
 
-            # Set championship teams to #1 and #2 in the teams list
+        if is_end_of_season:
+            if log:
+                print(f"  [DEBUG] End of season ranking logic triggered")
+
+            # Get natty winner/loser if available
+            if natty_game:
+                natty_winner = natty_game.winner
+                natty_loser = (
+                    natty_game.teamA
+                    if natty_game.winner == natty_game.teamB
+                    else natty_game.teamB
+                )
+            elif info.playoff.natty and info.playoff.natty.winner:
+                natty_winner = info.playoff.natty.winner
+                natty_loser = (
+                    info.playoff.natty.teamA
+                    if info.playoff.natty.winner == info.playoff.natty.teamB
+                    else info.playoff.natty.teamB
+                )
+
+        # Assign rankings
+        if natty_winner and natty_loser:
+            # End of season with championship teams
+            if log:
+                print(
+                    f"  [DEBUG] Natty winner: {natty_winner.name}, Natty loser: {natty_loser.name}"
+                )
+
+            # Set championship teams to #1 and #2
             for team in teams:
                 if team.id == natty_winner.id:
                     team.ranking = 1
                 elif team.id == natty_loser.id:
                     team.ranking = 2
-            
+
             # Sort remaining teams by poll score
-            remaining_teams = [team for team in teams if team.id not in (natty_winner.id, natty_loser.id)]
-            sorted_remaining = sorted(remaining_teams, key=lambda x: (-x.poll_score, x.last_rank))
-            
+            remaining_teams = [
+                team
+                for team in teams
+                if team.id not in (natty_winner.id, natty_loser.id)
+            ]
+            sorted_remaining = sorted(
+                remaining_teams, key=lambda x: (-x.poll_score, x.last_rank)
+            )
+
             # Assign rankings starting from #3
             for i, team in enumerate(sorted_remaining, start=3):
                 team.ranking = i
         else:
-            # Regular season: sort by poll score
+            # Regular ranking (season or pre-championship)
             sorted_teams = sorted(teams, key=lambda x: (-x.poll_score, x.last_rank))
             for i, team in enumerate(sorted_teams, start=1):
                 team.ranking = i
@@ -252,13 +330,18 @@ def update_rankings(info):
         if future_games:
             Games.objects.bulk_update(future_games, ["rankATOG", "rankBTOG"])
 
-        print(f"  Updated rankings: {time.time() - rankings_start:.4f} seconds")
+        if log:
+            print(f"  Updated rankings: {time.time() - rankings_start:.4f} seconds")
     else:
-        print(f"  Skipped rankings update for week {info.currentWeek}")
+        if log:
+            print(f"  Skipped rankings update for week {info.currentWeek}")
 
 
-def handle_special_weeks(info):
+def handle_special_weeks(info, log=False):
     """Handle special weeks like conference championships and playoffs"""
+    if log:
+        print(f"  [DEBUG] handle_special_weeks called for week {info.currentWeek}")
+
     special_start = time.time()
 
     # Map of playoff formats to special actions by week
@@ -279,21 +362,30 @@ def handle_special_weeks(info):
 
     if action:
         action_name = action.__name__
-        print(f"  Executing special action: {action_name}")
+        if log:
+            print(f"  Executing special action: {action_name}")
         action(info)
-        print(f"  Special action completed: {time.time() - special_start:.4f} seconds")
+        if log:
+            print(
+                f"  Special action completed: {time.time() - special_start:.4f} seconds"
+            )
     else:
-        print(f"  No special action for week {info.currentWeek}")
+        if log:
+            print(f"  No special action for week {info.currentWeek}")
 
 
-def save_simulation_data(info, drives_to_create, plays_to_create):
+def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
     """Save all accumulated simulation data to the database"""
+    if log:
+        print(f"  [DEBUG] save_simulation_data called")
+
     final_save_start = time.time()
 
     # Create game logs from plays
-    print(f"  Creating {len(plays_to_create)} plays...")
+    if log:
+        print(f"  Creating {len(plays_to_create)} plays...")
     plays_start = time.time()
-    
+
     # Inline make_game_logs logic here
     desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
     game_log_dict = {}
@@ -363,35 +455,39 @@ def save_simulation_data(info, drives_to_create, plays_to_create):
             format_play_text(play, p_starter)
 
     GameLog.objects.bulk_create(game_logs_to_process)
-    
-    print(f"  make_game_logs completed in {time.time() - plays_start:.4f} seconds")
+
+    if log:
+        print(f"  make_game_logs completed in {time.time() - plays_start:.4f} seconds")
 
     # Create drives in batches
-    print(f"  Creating {len(drives_to_create)} drives...")
+    if log:
+        print(f"  Creating {len(drives_to_create)} drives...")
     drives_start = time.time()
     batch_size = 1000
     for i in range(0, len(drives_to_create), batch_size):
         Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
-    print(f"  Drives creation completed in {time.time() - drives_start:.4f} seconds")
+    if log:
+        print(
+            f"  Drives creation completed in {time.time() - drives_start:.4f} seconds"
+        )
 
     # Create plays in batches
     plays_start = time.time()
     for i in range(0, len(plays_to_create), batch_size):
         Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
-    print(f"  Plays creation completed in {time.time() - plays_start:.4f} seconds")
+    if log:
+        print(f"  Plays creation completed in {time.time() - plays_start:.4f} seconds")
 
     # Save info object
     info_save_start = time.time()
     info.save()
-    print(f"  Info save completed in {time.time() - info_save_start:.4f} seconds")
+    if log:
+        print(f"  Info save completed in {time.time() - info_save_start:.4f} seconds")
 
-    print(f"Final data save completed in {time.time() - final_save_start:.4f} seconds")
-
-
-
-
-
-
+    if log:
+        print(
+            f"Final data save completed in {time.time() - final_save_start:.4f} seconds"
+        )
 
 
 def update_game_log_for_run(play, game_log):
@@ -515,5 +611,3 @@ def choose_receiver(candidates, rating_exponent=4):
 
     # Use random.choices for weighted selection
     return random.choices(candidates, weights=normalized_chances, k=1)[0]
-
-

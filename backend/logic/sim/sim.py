@@ -50,7 +50,7 @@ def simPass(fieldPosition, offense, defense):
     if rand_sack < BASE_SACK_RATE:
         # Sack
         result["outcome"] = "sack"
-        result["yards"] = sackYards(offense, defense)
+        result["yards"] = sackYards()
     elif rand_completion < BASE_COMP_PERCENT:
         # Completed pass
         result["yards"] = passYards(offense, defense)
@@ -105,37 +105,38 @@ def simRun(fieldPosition, offense, defense):
     return result
 
 
-def passYards(offense, defense, base_mean=7.5, std_dev=7, advantage_factor=0.22):
+def passYards(offense, defense):
     rating_difference = offense.offense - defense.defense
-    advantage_yardage = rating_difference * advantage_factor
-    mean_yardage = base_mean + advantage_yardage
-    raw_yardage = random.gauss(mean_yardage, std_dev)  # simulating normal distribution
-
-    if raw_yardage < 0:
-        return round(raw_yardage / 3)
-    else:
-        return round(raw_yardage + (0.008 * (raw_yardage**2.7)))
-
-
-def sackYards(offense, defense, base_mean=-6, std_dev=2, advantage_factor=0.10):
-    rating_difference = offense.offense - defense.defense
-    advantage_yardage = rating_difference * advantage_factor
-    mean_yardage = base_mean + advantage_yardage
-    raw_yardage = random.gauss(mean_yardage, std_dev)
-
-    return round(min(raw_yardage, 0))
-
-
-def runYards(offense, defense, base_mean=2.8, std_dev=5.5, advantage_factor=0.08):
-    rating_difference = offense.offense - defense.defense
-    advantage_yardage = rating_difference * advantage_factor
-    mean_yardage = base_mean + advantage_yardage
-    raw_yardage = random.gauss(mean_yardage, std_dev)
+    advantage_yardage = rating_difference * PASS_ADVANTAGE_FACTOR
+    mean_yardage = PASS_BASE_MEAN + advantage_yardage
+    raw_yardage = random.gauss(mean_yardage, PASS_STD_DEV)  # simulating normal distribution
 
     if raw_yardage < 0:
         return round(raw_yardage)
     else:
-        return round(raw_yardage + (0.00044 * (raw_yardage**4.2)))
+        multiplied_yards = raw_yardage + (PASS_POSITIVE_MULTIPLIER * (raw_yardage**PASS_POSITIVE_POWER))
+        rounded_yards = round(multiplied_yards)
+        return min(rounded_yards, 99)
+
+
+def sackYards():
+    raw_yardage = random.gauss(SACK_BASE_MEAN, SACK_STD_DEV)
+    rounded_yards = round(raw_yardage)
+    return min(rounded_yards, 0)
+
+
+def runYards(offense, defense):
+    rating_difference = offense.offense - defense.defense
+    advantage_yardage = rating_difference * RUN_ADVANTAGE_FACTOR
+    mean_yardage = RUN_BASE_MEAN + advantage_yardage
+    raw_yardage = random.gauss(mean_yardage, RUN_STD_DEV)
+
+    if raw_yardage < 0:
+        return round(raw_yardage)
+    else:
+        multiplied_yards = raw_yardage + (RUN_POSITIVE_MULTIPLIER * (raw_yardage**RUN_POSITIVE_POWER))
+        rounded_yards = round(multiplied_yards)
+        return min(rounded_yards, 99)
 
 
 def simDrive(

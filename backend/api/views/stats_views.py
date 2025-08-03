@@ -100,108 +100,144 @@ def ratings_stats(request):
     """API endpoint for ratings and star distribution statistics by prestige tier"""
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
-
-    # Get all players with their team prestige
     players = info.players.select_related("team").all()
     teams = info.teams.all()
 
-    # Group players by team prestige
+    # Initialize data structures
     prestige_stats = {}
     team_counts = {}
     team_ratings = {}
+    star_data = {
+        star: {"count": 0, "fr": 0, "so": 0, "jr": 0, "sr": 0} for star in range(1, 6)
+    }
 
+    # Process players
     for player in players:
         prestige = player.team.prestige
+        star = player.stars
 
+        # Prestige stats
         if prestige not in prestige_stats:
             prestige_stats[prestige] = {
                 "total_players": 0,
                 "total_stars": 0,
                 "star_counts": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
             }
-
         prestige_stats[prestige]["total_players"] += 1
-        prestige_stats[prestige]["total_stars"] += player.stars
-        prestige_stats[prestige]["star_counts"][player.stars] += 1
+        prestige_stats[prestige]["total_stars"] += star
+        prestige_stats[prestige]["star_counts"][star] += 1
 
-    # Calculate team ratings by prestige
+        # Star rating data
+        star_data[star]["count"] += 1
+        star_data[star]["fr"] += player.rating_fr
+        star_data[star]["so"] += player.rating_so
+        star_data[star]["jr"] += player.rating_jr
+        star_data[star]["sr"] += player.rating_sr
+
+    # Process teams
     for team in teams:
         prestige = team.prestige
         team_counts[prestige] = team_counts.get(prestige, 0) + 1
-
         if prestige not in team_ratings:
             team_ratings[prestige] = {"total_rating": 0, "count": 0}
-
         team_ratings[prestige]["total_rating"] += team.rating
         team_ratings[prestige]["count"] += 1
 
-    # Calculate prestige vs stars percentage table
+    # Build prestige stars table
     prestige_stars_table = []
     for prestige in sorted(prestige_stats.keys()):
         stats = prestige_stats[prestige]
-        total_players = stats["total_players"]
-
-        if total_players > 0:
+        if stats["total_players"] > 0:
             avg_team_rating = round(
                 team_ratings[prestige]["total_rating"]
                 / team_ratings[prestige]["count"],
                 1,
             )
-            avg_stars = round(stats["total_stars"] / total_players, 2)
+            avg_stars = round(stats["total_stars"] / stats["total_players"], 2)
 
-            row = {
-                "prestige": prestige,
-                "avg_rating": avg_team_rating,
-                "avg_stars": avg_stars,
-                "star_percentages": {},
+            prestige_stars_table.append(
+                {
+                    "prestige": prestige,
+                    "avg_rating": avg_team_rating,
+                    "avg_stars": avg_stars,
+                    "star_percentages": {
+                        star: round(
+                            (stats["star_counts"][star] / stats["total_players"]) * 100,
+                            1,
+                        )
+                        for star in range(1, 6)
+                    },
+                }
+            )
+
+    # Calculate star averages
+    def calculate_averages(star_data):
+        return {
+            star: {
+                "count": data["count"],
+                "avg_ratings": (
+                    round(
+                        (data["fr"] + data["so"] + data["jr"] + data["sr"])
+                        / (data["count"] * 4),
+                        1,
+                    )
+                    if data["count"] > 0
+                    else 0
+                ),
+                "avg_ratings_fr": (
+                    round(data["fr"] / data["count"], 1) if data["count"] > 0 else 0
+                ),
+                "avg_ratings_so": (
+                    round(data["so"] / data["count"], 1) if data["count"] > 0 else 0
+                ),
+                "avg_ratings_jr": (
+                    round(data["jr"] / data["count"], 1) if data["count"] > 0 else 0
+                ),
+                "avg_ratings_sr": (
+                    round(data["sr"] / data["count"], 1) if data["count"] > 0 else 0
+                ),
             }
+            for star, data in star_data.items()
+        }
 
-            # Calculate star distribution percentages
-            for star in range(1, 6):
-                percentage = round(
-                    (stats["star_counts"][star] / total_players) * 100, 1
-                )
-                row["star_percentages"][star] = percentage
+    star_averages = calculate_averages(star_data)
 
-            prestige_stars_table.append(row)
-
-    # Calculate total star counts across all teams
-    total_star_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-    star_ratings = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-
-    for player in players:
-        star = player.stars
-        total_star_counts[star] += 1
-        star_ratings[star] += player.rating
-
-    # Calculate average ratings for each star level
-    star_averages = {}
-    for star in range(1, 6):
-        if total_star_counts[star] > 0:
-            star_averages[star] = round(star_ratings[star] / total_star_counts[star], 1)
-        else:
-            star_averages[star] = 0
-
-    # Add average ratings to the total_star_counts
-    total_star_counts_with_avg = {
-        "counts": total_star_counts,
-        "avg_ratings": star_averages,
+    total_star_counts = {
+        "counts": {star: data["count"] for star, data in star_averages.items()},
+        "avg_ratings": {
+            star: data["avg_ratings"] for star, data in star_averages.items()
+        },
+        "avg_ratings_fr": {
+            star: data["avg_ratings_fr"] for star, data in star_averages.items()
+        },
+        "avg_ratings_so": {
+            star: data["avg_ratings_so"] for star, data in star_averages.items()
+        },
+        "avg_ratings_jr": {
+            star: data["avg_ratings_jr"] for star, data in star_averages.items()
+        },
+        "avg_ratings_sr": {
+            star: data["avg_ratings_sr"] for star, data in star_averages.items()
+        },
     }
 
-    # Format team counts by prestige
-    team_counts_formatted = []
-    for prestige in sorted(team_counts.keys()):
-        team_counts_formatted.append(
-            {"prestige": prestige, "team_count": team_counts[prestige]}
-        )
+    # Get teams sorted by rating (descending)
+    teams_sorted = sorted(teams, key=lambda t: t.rating or 0, reverse=True)
+    teams_data = [
+        {"name": team.name, "prestige": team.prestige, "rating": team.rating or 0}
+        for team in teams_sorted
+    ]
 
     return Response(
         {
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(info.team).data,
             "prestige_stars_table": prestige_stars_table,
-            "total_star_counts": total_star_counts_with_avg,
-            "team_counts_by_prestige": team_counts_formatted,
+            "total_star_counts": total_star_counts,
+            "team_counts_by_prestige": [
+                {"prestige": p, "team_count": c} for p, c in sorted(team_counts.items())
+            ],
+            "teams": teams_data,
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

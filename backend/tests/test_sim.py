@@ -1,82 +1,55 @@
-import random
+import sys
+import os
+import django
+
+# Add the backend directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Configure Django settings
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cfbsim.settings")
+django.setup()
+
 from logic.sim.sim import *
-from logic.betting import testGame, Team, Game
+from logic.betting import testGame, Team
+from logic.constants.sim_constants import TEST_SIMULATIONS, TEST_SIM_RATING_DIFF
 
 
-def testRun(team1, team2, simulations=10000):
-    print(f"Offense rating: {team1.offense} Defense rating: {team2.defense}")
+def test_yards(
+    team1, team2, yards_function, function_name, simulations=TEST_SIMULATIONS
+):
+    """
+    Generic test function for any yards function.
 
-    results = [runYards(team1, team2) for _ in range(simulations)]
+    Args:
+        team1: Offensive team
+        team2: Defensive team
+        yards_function: Function to test (e.g., passYards, runYards, sackYards)
+        function_name: Name of the function for display purposes
+        simulations: Number of simulations to run
+    """
+    print(f"\n📊 {function_name.upper()} TEST")
+    
+    # Handle functions that don't take arguments (like sackYards)
+    if yards_function.__name__ == "sackYards":
+        print("Sack yards (no team ratings)")
+        results = [yards_function() for _ in range(simulations)]
+    else:
+        print(f"Offense rating: {team1.offense} Defense rating: {team2.defense}")
+        results = [yards_function(team1, team2) for _ in range(simulations)]
+    
+    print("-" * 50)
     results.sort()
 
     # Compute the percentiles
     percentiles = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99]
     for p in percentiles:
         index = int(p / 100 * simulations) - 1  # Subtract 1 because lists are 0-based
-        print(f"{p}th Percentile Yards Gained: {results[index]}")
+        print(f"{p:2d}th Percentile: {results[index]:6.1f} yards")
 
     average_yards = sum(results) / simulations
-    print(f"Average Yards Gained: {average_yards}")
-
-
-def testPass(team1, team2, simulations=10000):
-    print(f"Offense rating: {team1.offense} Defense rating: {team2.defense}")
-
-    results = [passYards(team1, team2) for _ in range(simulations)]
-    results.sort()
-
-    # Compute the percentiles
-    percentiles = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99]
-    for p in percentiles:
-        index = int(p / 100 * simulations) - 1  # Subtract 1 because lists are 0-based
-        print(f"{p}th Percentile Yards Gained: {results[index]}")
-
-    average_yards = sum(results) / simulations
-    print(f"Average Yards Gained: {average_yards}")
-
-
-def testSack(team1, team2, simulations=10000):
-    print(f"Offense rating: {team1.offense} Defense rating: {team2.defense}")
-
-    results = [sackYards(team1, team2) for _ in range(simulations)]
-    results.sort()
-
-    # Compute the percentiles
-    percentiles = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99]
-    for p in percentiles:
-        index = int(p / 100 * simulations) - 1  # Subtract 1 because lists are 0-based
-        print(f"{p}th Percentile Yards Gained: {results[index]}")
-
-    average_yards = sum(results) / simulations
-    print(f"Average Yards Gained: {average_yards}")
-
-
-def testYards(team1, team2, simulations=10000):
-    comp = 0.62  # completion percentage
-
-    print(f"Offense rating: {team1.offense} Defense rating: {team2.defense}")
-
-    passYards_total = 0
-    rushYards_total = sum([runYards(team1, team2) for _ in range(simulations)])
-
-    # simulate passYards
-    for _ in range(simulations):
-        if random.random() < comp:
-            passYards_total += passYards(team1, team2)
-        # else it's an incomplete pass and we increment by 0, so do nothing
-
-    average = (passYards_total + rushYards_total) / (2 * simulations)
-
-    print(f"Average yards per play: {average}")
-    print(f"Average yards per rush: {rushYards_total / simulations}")
-    print(f"Average yards per pass: {passYards_total / simulations}")
-
-
-def getWinProb(teamARating, teamBRating):
-    power = 15
-    sum = (teamARating**power) + (teamBRating**power)
-    teamAChance = (teamARating**power) / sum
-    return teamAChance
+    print(f"Average Yards: {average_yards:.2f}")
+    print(f"Min Yards: {min(results):.1f}")
+    print(f"Max Yards: {max(results):.1f}")
 
 
 def run_sim_tests():
@@ -89,7 +62,7 @@ def run_sim_tests():
     print("\n🧪 BASIC TEAM TEST")
     print("-" * 40)
     a = Team(90)
-    b = Team(90)
+    b = Team(90 - TEST_SIM_RATING_DIFF)
     print(f"Team A Rating: {a.rating}")
     print(f"Team B Rating: {b.rating}")
 
@@ -103,10 +76,18 @@ def run_sim_tests():
     print(f"Team B Win %: {game_results['winB']:.1%}")
 
     # Test yards simulation
-    print("\n📏 YARDS SIMULATION TEST")
+    print("\n📏 YARDS SIMULATION TESTS")
     print("-" * 40)
-    testYards(a, b, simulations=1000)
+
+    # Test each yards function
+    test_yards(a, b, passYards, "pass", TEST_SIMULATIONS)
+    test_yards(a, b, runYards, "run", TEST_SIMULATIONS)
+    test_yards(a, b, sackYards, "sack", TEST_SIMULATIONS)
 
     print("\n\n" + "=" * 80)
     print("SIMULATION TEST COMPLETE")
     print("=" * 80)
+
+
+if __name__ == "__main__":
+    run_sim_tests()

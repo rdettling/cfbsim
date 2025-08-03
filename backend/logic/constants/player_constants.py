@@ -1,13 +1,19 @@
 # === Rating System Constants ===
 
-STARS_BASE = {1: 15, 2: 30, 3: 50, 4: 68, 5: 80}
+STARS_BASE = {1: 15, 2: 30, 3: 45, 4: 60, 5: 75}
 
 STARS_PRESTIGE = {
-    1: {1: 60, 2: 30, 3: 10, 4: 0, 5: 0},
+    1: {
+        1: 70,
+        2: 25,
+        3: 5,
+        4: 0,
+        5: 0,
+    },
     2: {
-        1: 30,
-        2: 50,
-        3: 20,
+        1: 40,
+        2: 35,
+        3: 15,
         4: 0,
         5: 0,
     },
@@ -36,23 +42,23 @@ STARS_PRESTIGE = {
         1: 0,
         2: 0,
         3: 40,
-        4: 53,
-        5: 7,
+        4: 55,
+        5: 5,
     },
     7: {
         1: 0,
         2: 0,
-        3: 15,
-        4: 70,
+        3: 10,
+        4: 75,
         5: 15,
     },
 }
 
-DEVELOPMENT_AVERAGES = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+BASE_DEVELOPMENT = 5  # Base development all players get per year
 
-RATING_STD_DEV = 12
+RATING_STD_DEV = 6
 DEVELOPMENT_STD_DEV = 5
-RANDOM_VARIANCE_RANGE = (-3, 3)  # applied once to final team rating
+RANDOM_VARIANCE_RANGE = (0, 5)  # applied once to final team rating
 
 ROSTER = {
     "qb": 1,
@@ -66,4 +72,27 @@ ROSTER = {
     "s": 2,
     "k": 1,
     "p": 1,
+}
+
+# === Team Rating Calculation Constants ===
+
+# Overall team rating weights
+OFFENSE_WEIGHT = 0.60
+DEFENSE_WEIGHT = 0.40
+
+# Position weights for offensive rating calculation
+OFFENSIVE_WEIGHTS = {
+    "qb": 40,
+    "rb": 10, 
+    "wr": 25,
+    "te": 5,
+    "ol": 20,
+}
+
+# Position weights for defensive rating calculation
+DEFENSIVE_WEIGHTS = {
+    "dl": 35,
+    "lb": 20,
+    "cb": 30,
+    "s": 15,
 }

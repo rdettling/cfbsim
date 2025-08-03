@@ -1,7 +1,6 @@
 import json
 import random
 from api.models import *
-from django.db.models import Count, Sum, Case, When, F
 from collections import Counter
 from .constants.player_constants import *
 
@@ -25,7 +24,7 @@ def load_names():
     return processed_names
 
 
-def getRatings(prestige):
+def generate_player_ratings(prestige):
     """
     Generate player ratings for all years using the new star-based system.
     Returns: (fr, so, jr, sr) ratings
@@ -55,7 +54,7 @@ def getRatings(prestige):
     sr_rating = fr_rating
 
     # Get base progression for this development trait
-    base_progression = DEVELOPMENT_AVERAGES[development_trait]
+    base_progression = BASE_DEVELOPMENT + development_trait
 
     # Sophomore year progression
     so_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
@@ -117,35 +116,7 @@ def progress_players(info, first_time=False):
     return players.filter(team=info.team).exclude(year="sr")
 
 
-def aiRecruitOffers(info):
-    # Get all AI teams related to this info
-    ai_teams = info.teams.all().exclude(pk=info.team.pk)
 
-    # Get all recruits related to this info
-    recruits = info.recruits.all().order_by("overall_rank")
-
-    offers_to_create = []
-
-    for team in ai_teams:
-        # Here, we'll find the top recruit (by overall_rank) without an offer.
-        recruit_without_offer = (
-            recruits.annotate(offer_count=Count("offers")).filter(offer_count=0).first()
-        )
-
-        if recruit_without_offer:
-            offers_to_create.append(
-                Offers(
-                    info=info,
-                    recruit=recruit_without_offer,
-                    team=team,
-                )
-            )
-
-            # Remove this recruit from the recruits QuerySet to avoid offering him again
-            recruits = recruits.exclude(pk=recruit_without_offer.pk)
-
-    # Bulk create all the offers
-    Offers.objects.bulk_create(offers_to_create)
 
 
 def generateName(position, names):
@@ -174,91 +145,128 @@ def generateName(position, names):
     return (first, last)
 
 
-def get_ratings(info):
-    offense_weight = 0.60
-    defense_weight = 0.40
-    offensive_weights = {"qb": 40, "rb": 10, "wr": 25, "te": 5, "ol": 20}
-    defensive_weights = {"dl": 35, "lb": 20, "cb": 30, "s": 15}
+def calculate_team_ratings_from_players(players_data):
+    """
+    Calculate team ratings from a list of player data.
+    This is a pure function that can be used for testing without Django models.
+    
+    Args:
+        players_data: List of dicts with 'pos', 'rating', 'starter' keys
+        
+    Returns:
+        Dict with 'offense', 'defense', 'overall' ratings
+    """
+    # Filter to only starters
+    starters = [p for p in players_data if p['starter']]
+    
+    # Calculate weighted ratings for each player
+    weighted_players = []
+    for player in starters:
+        pos = player['pos']
+        rating = player['rating']
+        
+        # Get position weight
+        if pos in OFFENSIVE_WEIGHTS:
+            weight = OFFENSIVE_WEIGHTS[pos]
+        elif pos in DEFENSIVE_WEIGHTS:
+            weight = DEFENSIVE_WEIGHTS[pos]
+        else:
+            weight = 0  # Kickers, punters, etc.
+            
+        weighted_players.append({
+            'pos': pos,
+            'rating': rating,
+            'weight': weight,
+            'weighted_rating': rating * weight
+        })
+    
+    # Calculate offensive and defensive totals
+    offensive_players = [p for p in weighted_players if p['pos'] in OFFENSIVE_WEIGHTS]
+    defensive_players = [p for p in weighted_players if p['pos'] in DEFENSIVE_WEIGHTS]
+    
+    # Calculate weighted averages
+    offensive_rating = 0
+    if offensive_players:
+        total_weight = sum(p['weight'] for p in offensive_players)
+        if total_weight > 0:
+            offensive_rating = sum(p['weighted_rating'] for p in offensive_players) / total_weight
+    
+    defensive_rating = 0
+    if defensive_players:
+        total_weight = sum(p['weight'] for p in defensive_players)
+        if total_weight > 0:
+            defensive_rating = sum(p['weighted_rating'] for p in defensive_players) / total_weight
+    
+    # Add random variance
+    offense_variance = random.uniform(*RANDOM_VARIANCE_RANGE)
+    defense_variance = random.uniform(*RANDOM_VARIANCE_RANGE)
+    
+    offensive_rating += offense_variance
+    defensive_rating += defense_variance
+    
+    # Calculate overall rating
+    overall_rating = (offensive_rating * OFFENSE_WEIGHT) + (defensive_rating * DEFENSE_WEIGHT)
+    
+    return {
+        'offense': round(offensive_rating),
+        'defense': round(defensive_rating),
+        'overall': round(overall_rating)
+    }
 
-    # Prepare cases for weighted rating calculation
-    weight_cases = [
-        When(pos=pos, then=weight)
-        for pos, weight in {**offensive_weights, **defensive_weights}.items()
-    ]
 
-    all_players = (
-        info.players.select_related("team")
-        .filter(starter=True)
-        .annotate(position_weight=Case(*weight_cases, default=0))
-        .annotate(weighted_rating=F("rating") * F("position_weight"))
-    )
+def calculate_team_ratings(info):
+    """
+    Calculate team ratings for all teams in the info object using Django models.
+    Uses the pure function calculate_team_ratings_from_players to avoid code duplication.
+    """
     teams = info.teams.prefetch_related("players").all()
 
-    team_ratings = {team.id: {"offense": 0, "defense": 0} for team in teams}
-
     for team in teams:
-        team_players = all_players.filter(team=team)
+        # Get all starter players for this team
+        starters = team.players.filter(starter=True)
+        
+        # Convert to the format expected by calculate_team_ratings_from_players
+        players_data = [
+            {
+                'pos': player.pos,
+                'rating': player.rating,
+                'starter': player.starter
+            }
+            for player in starters
+        ]
+        
+        # Calculate team ratings using the pure function
+        team_ratings = calculate_team_ratings_from_players(players_data)
+        
+        # Update the team model
+        team.offense = team_ratings['offense']
+        team.defense = team_ratings['defense']
+        team.rating = team_ratings['overall']
 
-        # Calculate weighted sum and total weight for offense and defense
-        offensive_data = team_players.filter(
-            pos__in=offensive_weights.keys()
-        ).aggregate(
-            weighted_sum=Sum("weighted_rating"), total_weight=Sum("position_weight")
-        )
-        defensive_data = team_players.filter(
-            pos__in=defensive_weights.keys()
-        ).aggregate(
-            weighted_sum=Sum("weighted_rating"), total_weight=Sum("position_weight")
-        )
-
-        # Calculate weighted average ratings for offense and defense
-        offensive_rating = (
-            offensive_data["weighted_sum"] / offensive_data["total_weight"]
-            if offensive_data["total_weight"] > 0
-            else 0
-        )
-        defensive_rating = (
-            defensive_data["weighted_sum"] / defensive_data["total_weight"]
-            if defensive_data["total_weight"] > 0
-            else 0
-        )
-
-        team_ratings[team.id]["offense"] = offensive_rating
-        team_ratings[team.id]["defense"] = defensive_rating
-
-    for team in teams:
-        team_data = team_ratings.get(team.id)
-
-        offense_rating = team_data["offense"]
-        defense_rating = team_data["defense"]
-        overall_rating = (offense_rating * offense_weight) + (
-            defense_rating * defense_weight
-        )
-
-        team.offense = round(offense_rating)
-        team.defense = round(defense_rating)
-        team.rating = round(overall_rating)
-
+    # Bulk update all teams
     Teams.objects.bulk_update(teams, ["offense", "defense", "rating"])
 
 
 def set_starters(info):
+    """
+    Set starters for all teams in the database.
+    """
     players = info.players.select_related("team").all()
-    teams = info.teams.all()
-
+    
+    # Reset all starters
     for player in players:
         player.starter = False
-
+    
+    # Group players by team and position
     players_by_team_and_position = {
-        team: {position: [] for position in ROSTER} for team in teams
+        team: {position: [] for position in ROSTER} for team in info.teams.all()
     }
 
     for player in players:
         players_by_team_and_position[player.team][player.pos].append(player)
 
-    # Iterate over each team's players
+    # Set starters for each team and position
     for team_players in players_by_team_and_position.values():
-        # Iterate over each position in a team
         for position, players_in_position in team_players.items():
             players_in_position.sort(key=lambda x: x.rating, reverse=True)
 
@@ -268,7 +276,56 @@ def set_starters(info):
     Players.objects.bulk_update(players, ["starter"])
 
 
+def create_player(team, position, year, loaded_names):
+    """
+    Create a single player for a team.
+    
+    Args:
+        team: Team object
+        position: Player position
+        year: Player year ('fr', 'so', 'jr', 'sr')
+        loaded_names: Loaded name data
+        
+    Returns:
+        Players object (not saved to database)
+    """
+    first, last = generateName(position, loaded_names)
+    fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(team.prestige)
+    
+    # Get rating for the specified year
+    if year == "fr":
+        rating = fr
+    elif year == "so":
+        rating = so
+    elif year == "jr":
+        rating = jr
+    elif year == "sr":
+        rating = sr
+    
+    return Players(
+        info=team.info,
+        team=team,
+        first=first,
+        last=last,
+        year=year,
+        pos=position,
+        rating=rating,
+        rating_fr=fr,
+        rating_so=so,
+        rating_jr=jr,
+        rating_sr=sr,
+        stars=star_rating,
+        development_trait=development_trait,
+        starter=False,
+    )
+
+
 def fill_roster(team, loaded_names, players_to_create):
+    """
+    Fill missing players for an existing team.
+    Only adds players that are needed to reach the full roster size.
+    All new players are freshmen.
+    """
     player_counts = Counter(team.players.values_list("pos", flat=True))
 
     for position, count in ROSTER.items():
@@ -276,143 +333,123 @@ def fill_roster(team, loaded_names, players_to_create):
         needed = max(0, (2 * count + 1) - current_count)
 
         for _ in range(needed):
-            first, last = generateName(position, loaded_names)
-
-            fr, so, jr, sr, star_rating, development_trait = getRatings(team.prestige)
-
-            player = Players(
-                info=team.info,
-                team=team,
-                first=first,
-                last=last,
-                year="fr",
-                pos=position,
-                rating=fr,
-                rating_fr=fr,
-                rating_so=so,
-                rating_jr=jr,
-                rating_sr=sr,
-                stars=star_rating,
-                development_trait=development_trait,
-                starter=False,
-            )
+            player = create_player(team, position, "fr", loaded_names)
             players_to_create.append(player)
 
 
 def init_roster(team, loaded_names, players_to_create):
+    """
+    Initialize a complete roster for a new team.
+    Creates full roster with random year distribution.
+    Starters are set separately by set_starters().
+    """
     years = ["fr", "so", "jr", "sr"]
-
-    team_players = []
+    
+    # Create full roster
     for position, count in ROSTER.items():
         for i in range(2 * count + 1):
-            first, last = generateName(position, loaded_names)
             year = random.choice(years)
-
-            fr, so, jr, sr, star_rating, development_trait = getRatings(team.prestige)
-
-            if year == "fr":
-                rating = fr
-            elif year == "so":
-                rating = so
-            elif year == "jr":
-                rating = jr
-            elif year == "sr":
-                rating = sr
-
-            player = Players(
-                info=team.info,
-                team=team,
-                first=first,
-                last=last,
-                year=year,
-                pos=position,
-                rating=rating,
-                rating_fr=fr,
-                rating_so=so,
-                rating_jr=jr,
-                rating_sr=sr,
-                stars=star_rating,
-                development_trait=development_trait,
-                starter=False,
-            )
-            team_players.append(player)
-
-    for position in ROSTER:
-        players_in_position = [p for p in team_players if p.pos == position]
-        players_in_position.sort(key=lambda p: p.rating, reverse=True)
-
-        for player in players_in_position[: ROSTER[position]]:
-            player.starter = True
-
-    players_to_create.extend(team_players)
+            player = create_player(team, position, year, loaded_names)
+            players_to_create.append(player)
 
 
-def generate_recruit(
-    stars, info, overall_rank, state_ranks, position_ranks, states_list, positions_list
-):
-    position = random.choice(positions_list)
-    first, last = generateName(position)
-    state = random.choice(states_list)
+# def generate_recruit(
+#     stars, info, overall_rank, state_ranks, position_ranks, states_list, positions_list
+# ):
+#     position = random.choice(positions_list)
+#     first, last = generateName(position)
+#     state = random.choice(states_list)
 
-    # Get the current state rank for the selected state and update it
-    current_state_rank = state_ranks.get(state, 1)
-    state_ranks[state] = current_state_rank + 1
+#     # Get the current state rank for the selected state and update it
+#     current_state_rank = state_ranks.get(state, 1)
+#     state_ranks[state] = current_state_rank + 1
 
-    # Get the current position rank for the selected position and update it
-    current_position_rank = position_ranks.get(position, 1)
-    position_ranks[position] = current_position_rank + 1
+#     # Get the current position rank for the selected position and update it
+#     current_position_rank = position_ranks.get(position, 1)
+#     position_ranks[position] = current_position_rank + 1
 
-    if stars == 5:
-        min_prestige = 90
-    elif stars == 4:
-        min_prestige = 80
-    else:
-        min_prestige = 0
+#     if stars == 5:
+#         min_prestige = 90
+#     elif stars == 4:
+#         min_prestige = 80
+#     else:
+#         min_prestige = 0
 
-    return Recruits(
-        info=info,
-        first=first,
-        last=last,
-        pos=position,
-        stars=stars,
-        state=state,
-        overall_rank=overall_rank,
-        min_prestige=min_prestige,
-        state_rank=current_state_rank,
-        position_rank=current_position_rank,
-    )
+#     return Recruits(
+#         info=info,
+#         first=first,
+#         last=last,
+#         pos=position,
+#         stars=stars,
+#         state=state,
+#         overall_rank=overall_rank,
+#         min_prestige=min_prestige,
+#         state_rank=current_state_rank,
+#         position_rank=current_position_rank,
+#     )
 
 
-def generate_recruits(info, recruits_to_create):
-    with open("start/static/states.json", "r") as file:
-        STATE_FREQUENCIES = json.load(file)
+# def generate_recruits(info, recruits_to_create):
+#     with open("start/static/states.json", "r") as file:
+#         STATE_FREQUENCIES = json.load(file)
 
-    states_list = [
-        state for state, freq in STATE_FREQUENCIES.items() for _ in range(freq)
-    ]
+#     states_list = [
+#         state for state, freq in STATE_FREQUENCIES.items() for _ in range(freq)
+#     ]
 
-    positions_list = [pos for pos, freq in ROSTER.items() for _ in range(freq)]
+#     positions_list = [pos for pos, freq in ROSTER.items() for _ in range(freq)]
 
-    stars_distribution = {5: 30, 4: 300, 3: 1000}
+#     stars_distribution = {5: 30, 4: 300, 3: 1000}
 
-    # Overall rank starts at 1
-    current_overall_rank = 1
+#     # Overall rank starts at 1
+#     current_overall_rank = 1
 
-    # Dictionaries to keep track of state ranks and position ranks
-    state_ranks = {}
-    position_ranks = {}
+#     # Dictionaries to keep track of state ranks and position ranks
+#     state_ranks = {}
+#     position_ranks = {}
 
-    for stars, count in stars_distribution.items():
-        for _ in range(count):
-            recruits_to_create.append(
-                generate_recruit(
-                    stars,
-                    info,
-                    current_overall_rank,
-                    state_ranks,
-                    position_ranks,
-                    states_list,
-                    positions_list,
-                )
-            )
-            current_overall_rank += 1
+#     for stars, count in stars_distribution.items():
+#         for _ in range(count):
+#             recruits_to_create.append(
+#                 generate_recruit(
+#                     stars,
+#                     info,
+#                     current_overall_rank,
+#                     state_ranks,
+#                     position_ranks,
+#                     states_list,
+#                     positions_list,
+#                 )
+#             )
+#             current_overall_rank += 1
+
+
+# def aiRecruitOffers(info):
+#     # Get all AI teams related to this info
+#     ai_teams = info.teams.all().exclude(pk=info.team.pk)
+
+#     # Get all recruits related to this info
+#     recruits = info.recruits.all().order_by("overall_rank")
+
+#     offers_to_create = []
+
+#     for team in ai_teams:
+#         # Here, we'll find the top recruit (by overall_rank) without an offer.
+#         recruit_without_offer = (
+#             recruits.annotate(offer_count=Count("offers")).filter(offer_count=0).first()
+#         )
+
+#         if recruit_without_offer:
+#             offers_to_create.append(
+#                 Offers(
+#                     info=info,
+#                     recruit=recruit_without_offer,
+#                     team=team,
+#                 )
+#             )
+
+#             # Remove this recruit from the recruits QuerySet to avoid offering him again
+#             recruits = recruits.exclude(pk=recruit_without_offer.pk)
+
+#     # Bulk create all the offers
+#     Offers.objects.bulk_create(offers_to_create)
