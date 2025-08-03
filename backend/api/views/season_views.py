@@ -470,16 +470,18 @@ def sim(request, dest_week):
         print(f"\nSimulating week {info.currentWeek}...")
 
         # 1. Fetch and simulate games
-        games = fetch_and_simulate_games(info, drives_to_create, plays_to_create)
+        games = fetch_and_simulate_games(
+            info, drives_to_create, plays_to_create, log=True
+        )
 
         # 2. Generate headlines and update game results
-        update_game_results(games)
+        natty_game = update_game_results(info, games, log=True)
 
-        # 3. Update rankings if needed
-        update_rankings(info)
+        # 3. Handle special weeks (conference championships, playoffs, etc.)
+        handle_special_weeks(info, log=True)
 
-        # 4. Handle special weeks (conference championships, playoffs, etc.)
-        handle_special_weeks(info)
+        # 4. Update rankings if needed
+        update_rankings(info, natty_game, log=True)
 
         # Increment week and log completion time
         info.currentWeek += 1
@@ -488,7 +490,7 @@ def sim(request, dest_week):
         )
 
     # Save all accumulated data
-    save_simulation_data(info, drives_to_create, plays_to_create)
+    save_simulation_data(info, drives_to_create, plays_to_create, log=True)
 
     total_time = time.time() - total_start_time
     print(

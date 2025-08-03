@@ -192,9 +192,20 @@ export interface RatingsStatsData {
     total_star_counts: {
         counts: Record<number, number>;
         avg_ratings: Record<number, number>;
+        avg_ratings_fr: Record<number, number>;
+        avg_ratings_so: Record<number, number>;
+        avg_ratings_jr: Record<number, number>;
+        avg_ratings_sr: Record<number, number>;
     };
     team_counts_by_prestige: TeamCountRow[];
+    teams: TeamRating[];
     conferences: Conference[];
+}
+
+export interface TeamRating {
+    name: string;
+    prestige: number;
+    rating: number;
 }
 
 export interface PrestigeStarsRow {

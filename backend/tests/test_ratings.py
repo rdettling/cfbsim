@@ -1,27 +1,29 @@
 import random
 import statistics
 from typing import Dict, List, Tuple
-from logic.players import getRatings
+from logic.players import generate_player_ratings, calculate_team_ratings_from_players
 from backend.logic.constants.player_constants import *
 
 
 def simulate_team(prestige_tier: int) -> Tuple[float, float]:
     """
-    Simulate a team using the actual getRatings function from players.py
+    Simulate a team using the actual team rating calculation logic from players.py
     prestige_tier: 1-7
     Returns: (team overall from 0-100, average star rating)
     """
     assert 1 <= prestige_tier <= 7, "Prestige must be between 1 and 7"
 
-    total_rating = 0
-    total_players = 0
+    players_data = []
     total_stars = 0
+    total_players = 0
 
-    # Simulate player ratings for all starters
+    # Generate players for all starter positions
     for pos, count in ROSTER.items():
         for _ in range(count):
-            # Use the actual getRatings function
-            fr, so, jr, sr, star_rating, development_trait = getRatings(prestige_tier)
+            # Generate player ratings
+            fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(
+                prestige_tier
+            )
 
             # Randomly assign player year (1-4)
             player_year = random.randint(1, 4)
@@ -36,19 +38,26 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
             else:  # player_year == 4
                 player_rating = sr
 
-            total_rating += player_rating
+            # Add player data
+            players_data.append(
+                {
+                    "pos": pos,
+                    "rating": player_rating,
+                    "starter": True,  # All players in ROSTER are starters
+                }
+            )
+
             total_stars += star_rating
             total_players += 1
 
-    team_average = total_rating / total_players
+    # Calculate team ratings using the actual logic
+    team_ratings = calculate_team_ratings_from_players(players_data)
     average_stars = total_stars / total_players
 
-    # Add team-wide variance
-    randomness = random.uniform(*RANDOM_VARIANCE_RANGE)
-    final_rating = team_average + randomness
-
     # Clamp to 0–100
-    return max(0, min(100, round(final_rating, 1))), round(average_stars, 2)
+    final_rating = max(0, min(100, team_ratings["overall"]))
+
+    return final_rating, round(average_stars, 2)
 
 
 def compare_teams(team1: Dict, team2: Dict, num_simulations: int = 100) -> Dict:
@@ -169,7 +178,7 @@ def test_individual_player_creation():
 
         # Create 5 sample players
         for i in range(5):
-            fr, so, jr, sr, stars, dev_trait = getRatings(prestige)
+            fr, so, jr, sr, stars, dev_trait = generate_player_ratings(prestige)
             print(
                 f"Player {i+1}: {stars}★, Dev {dev_trait}, Ratings: Fr:{fr} So:{so} Jr:{jr} Sr:{sr}"
             )

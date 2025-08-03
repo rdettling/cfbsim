@@ -1,4 +1,5 @@
 from logic.sim.sim import simGame
+from logic.constants.sim_constants import TEST_SIMULATIONS
 
 
 def getSpread(gap, tax_factor=0.05):
@@ -76,11 +77,10 @@ def getSpread(gap, tax_factor=0.05):
 
 def testGame(teamA, teamB):
     """Test game simulation between two teams."""
-    tests = 100
     scoreA = scoreB = 0
     winA = winB = 0
 
-    for _ in range(tests):
+    for _ in range(TEST_SIMULATIONS):
         game = Game(teamA, teamB)
         simGame(game)
 
@@ -92,10 +92,10 @@ def testGame(teamA, teamB):
         elif game.winner == teamB:
             winB += 1
 
-    scoreA = round(scoreA / tests, 1)
-    scoreB = round(scoreB / tests, 1)
-    winA = round(winA / tests, 3)
-    winB = round(winB / tests, 3)
+    scoreA = round(scoreA / TEST_SIMULATIONS, 1)
+    scoreB = round(scoreB / TEST_SIMULATIONS, 1)
+    winA = round(winA / TEST_SIMULATIONS, 3)
+    winB = round(winB / TEST_SIMULATIONS, 3)
 
     return {
         "scoreA": scoreA,
@@ -119,4 +119,4 @@ class Game:
         self.scoreA = 0
         self.scoreB = 0
         self.overtime = 0
-        self.winner = None 
+        self.winner = None

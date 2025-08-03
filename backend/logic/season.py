@@ -7,8 +7,6 @@ from .sim.sim import *
 from .util import get_recruiting_points, get_last_week, load_and_merge_year_data
 
 
-
-
 def next_season(info):
     current_year = info.currentYear
     while current_year >= info.startYear:
@@ -46,7 +44,7 @@ def update_teams_and_rosters(info, data):
     print(f"Set starters {time.time() - start} seconds")
 
     start = time.time()
-    get_ratings(info)
+    calculate_team_ratings(info)
     print(f"Get ratings {time.time() - start} seconds")
 
     start = time.time()
@@ -311,7 +309,11 @@ def init(
     print(f"Create players {time.time() - start} seconds")
 
     start = time.time()
-    get_ratings(info)
+    set_starters(info)
+    print(f"Set starters {time.time() - start} seconds")
+
+    start = time.time()
+    calculate_team_ratings(info)
     print(f"Get ratings {time.time() - start} seconds")
 
     start = time.time()
