@@ -116,9 +116,6 @@ def progress_players(info, first_time=False):
     return players.filter(team=info.team).exclude(year="sr")
 
 
-
-
-
 def generateName(position, names):
     positions = {
         "qb": 15,
@@ -149,22 +146,22 @@ def calculate_team_ratings_from_players(players_data):
     """
     Calculate team ratings from a list of player data.
     This is a pure function that can be used for testing without Django models.
-    
+
     Args:
         players_data: List of dicts with 'pos', 'rating', 'starter' keys
-        
+
     Returns:
         Dict with 'offense', 'defense', 'overall' ratings
     """
     # Filter to only starters
-    starters = [p for p in players_data if p['starter']]
-    
+    starters = [p for p in players_data if p["starter"]]
+
     # Calculate weighted ratings for each player
     weighted_players = []
     for player in starters:
-        pos = player['pos']
-        rating = player['rating']
-        
+        pos = player["pos"]
+        rating = player["rating"]
+
         # Get position weight
         if pos in OFFENSIVE_WEIGHTS:
             weight = OFFENSIVE_WEIGHTS[pos]
@@ -172,45 +169,53 @@ def calculate_team_ratings_from_players(players_data):
             weight = DEFENSIVE_WEIGHTS[pos]
         else:
             weight = 0  # Kickers, punters, etc.
-            
-        weighted_players.append({
-            'pos': pos,
-            'rating': rating,
-            'weight': weight,
-            'weighted_rating': rating * weight
-        })
-    
+
+        weighted_players.append(
+            {
+                "pos": pos,
+                "rating": rating,
+                "weight": weight,
+                "weighted_rating": rating * weight,
+            }
+        )
+
     # Calculate offensive and defensive totals
-    offensive_players = [p for p in weighted_players if p['pos'] in OFFENSIVE_WEIGHTS]
-    defensive_players = [p for p in weighted_players if p['pos'] in DEFENSIVE_WEIGHTS]
-    
+    offensive_players = [p for p in weighted_players if p["pos"] in OFFENSIVE_WEIGHTS]
+    defensive_players = [p for p in weighted_players if p["pos"] in DEFENSIVE_WEIGHTS]
+
     # Calculate weighted averages
     offensive_rating = 0
     if offensive_players:
-        total_weight = sum(p['weight'] for p in offensive_players)
+        total_weight = sum(p["weight"] for p in offensive_players)
         if total_weight > 0:
-            offensive_rating = sum(p['weighted_rating'] for p in offensive_players) / total_weight
-    
+            offensive_rating = (
+                sum(p["weighted_rating"] for p in offensive_players) / total_weight
+            )
+
     defensive_rating = 0
     if defensive_players:
-        total_weight = sum(p['weight'] for p in defensive_players)
+        total_weight = sum(p["weight"] for p in defensive_players)
         if total_weight > 0:
-            defensive_rating = sum(p['weighted_rating'] for p in defensive_players) / total_weight
-    
+            defensive_rating = (
+                sum(p["weighted_rating"] for p in defensive_players) / total_weight
+            )
+
     # Add random variance
     offense_variance = random.uniform(*RANDOM_VARIANCE_RANGE)
     defense_variance = random.uniform(*RANDOM_VARIANCE_RANGE)
-    
+
     offensive_rating += offense_variance
     defensive_rating += defense_variance
-    
+
     # Calculate overall rating
-    overall_rating = (offensive_rating * OFFENSE_WEIGHT) + (defensive_rating * DEFENSE_WEIGHT)
-    
+    overall_rating = (offensive_rating * OFFENSE_WEIGHT) + (
+        defensive_rating * DEFENSE_WEIGHT
+    )
+
     return {
-        'offense': round(offensive_rating),
-        'defense': round(defensive_rating),
-        'overall': round(overall_rating)
+        "offense": round(offensive_rating),
+        "defense": round(defensive_rating),
+        "overall": round(overall_rating),
     }
 
 
@@ -224,24 +229,20 @@ def calculate_team_ratings(info):
     for team in teams:
         # Get all starter players for this team
         starters = team.players.filter(starter=True)
-        
+
         # Convert to the format expected by calculate_team_ratings_from_players
         players_data = [
-            {
-                'pos': player.pos,
-                'rating': player.rating,
-                'starter': player.starter
-            }
+            {"pos": player.pos, "rating": player.rating, "starter": player.starter}
             for player in starters
         ]
-        
+
         # Calculate team ratings using the pure function
         team_ratings = calculate_team_ratings_from_players(players_data)
-        
+
         # Update the team model
-        team.offense = team_ratings['offense']
-        team.defense = team_ratings['defense']
-        team.rating = team_ratings['overall']
+        team.offense = team_ratings["offense"]
+        team.defense = team_ratings["defense"]
+        team.rating = team_ratings["overall"]
 
     # Bulk update all teams
     Teams.objects.bulk_update(teams, ["offense", "defense", "rating"])
@@ -252,11 +253,11 @@ def set_starters(info):
     Set starters for all teams in the database.
     """
     players = info.players.select_related("team").all()
-    
+
     # Reset all starters
     for player in players:
         player.starter = False
-    
+
     # Group players by team and position
     players_by_team_and_position = {
         team: {position: [] for position in ROSTER} for team in info.teams.all()
@@ -279,19 +280,21 @@ def set_starters(info):
 def create_player(team, position, year, loaded_names):
     """
     Create a single player for a team.
-    
+
     Args:
         team: Team object
         position: Player position
         year: Player year ('fr', 'so', 'jr', 'sr')
         loaded_names: Loaded name data
-        
+
     Returns:
         Players object (not saved to database)
     """
     first, last = generateName(position, loaded_names)
-    fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(team.prestige)
-    
+    fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(
+        team.prestige
+    )
+
     # Get rating for the specified year
     if year == "fr":
         rating = fr
@@ -301,7 +304,7 @@ def create_player(team, position, year, loaded_names):
         rating = jr
     elif year == "sr":
         rating = sr
-    
+
     return Players(
         info=team.info,
         team=team,
@@ -344,7 +347,7 @@ def init_roster(team, loaded_names, players_to_create):
     Starters are set separately by set_starters().
     """
     years = ["fr", "so", "jr", "sr"]
-    
+
     # Create full roster
     for position, count in ROSTER.items():
         for i in range(2 * count + 1):

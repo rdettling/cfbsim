@@ -28,7 +28,7 @@ def test_yards(
         simulations: Number of simulations to run
     """
     print(f"\n📊 {function_name.upper()} TEST")
-    
+
     # Handle functions that don't take arguments (like sackYards)
     if yards_function.__name__ == "sackYards":
         print("Sack yards (no team ratings)")
@@ -36,7 +36,7 @@ def test_yards(
     else:
         print(f"Offense rating: {team1.offense} Defense rating: {team2.defense}")
         results = [yards_function(team1, team2) for _ in range(simulations)]
-    
+
     print("-" * 50)
     results.sort()
 

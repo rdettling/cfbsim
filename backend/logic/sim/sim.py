@@ -109,12 +109,16 @@ def passYards(offense, defense):
     rating_difference = offense.offense - defense.defense
     advantage_yardage = rating_difference * PASS_ADVANTAGE_FACTOR
     mean_yardage = PASS_BASE_MEAN + advantage_yardage
-    raw_yardage = random.gauss(mean_yardage, PASS_STD_DEV)  # simulating normal distribution
+    raw_yardage = random.gauss(
+        mean_yardage, PASS_STD_DEV
+    )  # simulating normal distribution
 
     if raw_yardage < 0:
         return round(raw_yardage)
     else:
-        multiplied_yards = raw_yardage + (PASS_POSITIVE_MULTIPLIER * (raw_yardage**PASS_POSITIVE_POWER))
+        multiplied_yards = raw_yardage + (
+            PASS_POSITIVE_MULTIPLIER * (raw_yardage**PASS_POSITIVE_POWER)
+        )
         rounded_yards = round(multiplied_yards)
         return min(rounded_yards, 99)
 
@@ -134,7 +138,9 @@ def runYards(offense, defense):
     if raw_yardage < 0:
         return round(raw_yardage)
     else:
-        multiplied_yards = raw_yardage + (RUN_POSITIVE_MULTIPLIER * (raw_yardage**RUN_POSITIVE_POWER))
+        multiplied_yards = raw_yardage + (
+            RUN_POSITIVE_MULTIPLIER * (raw_yardage**RUN_POSITIVE_POWER)
+        )
         rounded_yards = round(multiplied_yards)
         return min(rounded_yards, 99)
 

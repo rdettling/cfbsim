@@ -83,7 +83,7 @@ DEFENSE_WEIGHT = 0.40
 # Position weights for offensive rating calculation
 OFFENSIVE_WEIGHTS = {
     "qb": 40,
-    "rb": 10, 
+    "rb": 10,
     "wr": 25,
     "te": 5,
     "ol": 20,

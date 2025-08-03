@@ -21,7 +21,9 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
     for pos, count in ROSTER.items():
         for _ in range(count):
             # Generate player ratings
-            fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(prestige_tier)
+            fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(
+                prestige_tier
+            )
 
             # Randomly assign player year (1-4)
             player_year = random.randint(1, 4)
@@ -37,12 +39,14 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
                 player_rating = sr
 
             # Add player data
-            players_data.append({
-                'pos': pos,
-                'rating': player_rating,
-                'starter': True  # All players in ROSTER are starters
-            })
-            
+            players_data.append(
+                {
+                    "pos": pos,
+                    "rating": player_rating,
+                    "starter": True,  # All players in ROSTER are starters
+                }
+            )
+
             total_stars += star_rating
             total_players += 1
 
@@ -51,7 +55,7 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
     average_stars = total_stars / total_players
 
     # Clamp to 0–100
-    final_rating = max(0, min(100, team_ratings['overall']))
+    final_rating = max(0, min(100, team_ratings["overall"]))
 
     return final_rating, round(average_stars, 2)
 
