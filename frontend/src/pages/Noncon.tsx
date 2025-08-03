@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiService, usePageRefresh } from "../services/api";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
@@ -41,6 +41,7 @@ export const NonCon = () => {
     const [selectedOpponent, setSelectedOpponent] = useState("");
     const [teamInfoModalOpen, setTeamInfoModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState("");
+    const initialLoadComplete = useRef(false);
 
     // Check if we came from home page
     const isFromHome = location.state?.fromHome === true;
@@ -49,6 +50,8 @@ export const NonCon = () => {
 
     const fetchData = async () => {
         try {
+            console.log("Fetching noncon data, isFromHome:", isFromHome, "teamFromHome:", teamFromHome);
+            
             // Only pass team and year parameters on first load from home page
             if (isFirstLoad && isFromHome && teamFromHome && yearFromHome) {
                 console.log("Fetching with team and year:", teamFromHome, yearFromHome);
@@ -59,7 +62,9 @@ export const NonCon = () => {
                 setData(responseData);
             } else {
                 // Regular fetch without parameters
+                console.log("Fetching existing game data");
                 const responseData = await apiService.getNonCon<NonConData>();
+                console.log("Received data:", responseData);
                 setData(responseData);
             }
 
@@ -77,8 +82,36 @@ export const NonCon = () => {
         fetchData();
     }, []);
 
-    // Add usePageRefresh for automatic data updates
-    usePageRefresh<NonConData>(setData);
+    // Custom page refresh handler that only works after initial load
+    const handlePageRefresh = (newData: NonConData) => {
+        if (initialLoadComplete.current) {
+            setData(newData);
+        }
+    };
+
+    // Always call usePageRefresh but control its behavior
+    usePageRefresh<NonConData>(handlePageRefresh);
+
+    // Mark initial load as complete after first render
+    useEffect(() => {
+        if (!isFirstLoad) {
+            initialLoadComplete.current = true;
+        }
+    }, [isFirstLoad]);
+
+    // Force a refresh when the component mounts to ensure we get the latest data
+    // after any season transitions that might have happened
+    useEffect(() => {
+        if (!isFromHome) {
+            // If not from home, we might be coming from a previous season
+            // Force a refresh to get the latest data after season transition
+            const timer = setTimeout(() => {
+                console.log("Forcing refresh for season transition");
+                fetchData();
+            }, 500); // Increased timeout to ensure backend has processed the transition
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     const handleScheduleGame = async () => {
         try {

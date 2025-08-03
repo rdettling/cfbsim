@@ -403,7 +403,7 @@ def season_summary(request):
         {
             "team": TeamsSerializer(info.team).data,
             "info": InfoSerializer(info).data,
-            "championship": GamesSerializer(info.playoff.natty).data,
+            "champion": TeamsSerializer(info.playoff.natty.winner).data,
             "realignment": realignment_summary(info),
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True

@@ -54,11 +54,11 @@ STARS_PRESTIGE = {
     },
 }
 
-BASE_DEVELOPMENT = 5  # Base development all players get per year
+BASE_DEVELOPMENT = 4  # Base development all players get per year
 
 RATING_STD_DEV = 6
-DEVELOPMENT_STD_DEV = 5
-RANDOM_VARIANCE_RANGE = (0, 5)  # applied once to final team rating
+DEVELOPMENT_STD_DEV = 4
+RANDOM_VARIANCE_RANGE = (5, 9)  # applied once to final team rating
 
 ROSTER = {
     "qb": 1,

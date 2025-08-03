@@ -59,14 +59,20 @@ def generate_player_ratings(prestige):
     # Sophomore year progression
     so_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
     so_rating += so_progression
+    # Ensure sophomore rating is at least as high as freshman rating
+    so_rating = max(so_rating, fr_rating)
 
     # Junior year progression
     jr_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
     jr_rating = so_rating + jr_progression
+    # Ensure junior rating is at least as high as sophomore rating
+    jr_rating = max(jr_rating, so_rating)
 
     # Senior year progression
     sr_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
     sr_rating = jr_rating + sr_progression
+    # Ensure senior rating is at least as high as junior rating
+    sr_rating = max(sr_rating, jr_rating)
 
     # Cap all ratings at 99
     fr_rating = min(fr_rating, 99)
@@ -85,9 +91,9 @@ def generate_player_ratings(prestige):
 
 
 def remove_seniors(info):
+    """Remove all seniors from all teams"""
     players = info.players.all()
-    team = info.team
-    leaving_seniors = players.filter(year="sr", team=team)
+    leaving_seniors = players.filter(year="sr")
     leaving_seniors_list = list(leaving_seniors)
     leaving_seniors.delete()
     print(f"Removed seniors: {len(leaving_seniors_list)} players")
