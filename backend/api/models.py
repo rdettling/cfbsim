@@ -66,6 +66,7 @@ class Players(models.Model):
     stars = models.IntegerField()
     development_trait = models.IntegerField()
     starter = models.BooleanField()
+    active = models.BooleanField(default=True)  # True for current roster, False for graduated players
 
 
 class Years(models.Model):

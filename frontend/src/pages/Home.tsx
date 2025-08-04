@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/api';
+import { apiService, ROUTES } from '../services/api';
 import { Team, Conference, Info } from '../interfaces';
-import { ROUTES } from '../utils/routes';
 import { STAGES } from '../constants/stages';
 import {
   Container,

@@ -97,9 +97,14 @@ class OddsSerializer(serializers.ModelSerializer):
         model = Odds
         fields = "__all__"
 
+class TeamNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teams
+        fields = ["name"]
+
 
 class InfoSerializer(serializers.ModelSerializer):
-    team = TeamsSerializer(read_only=True)
+    team = TeamNameSerializer(read_only=True)
     playoff = PlayoffSerializer(read_only=True)
 
     class Meta:
@@ -113,10 +118,7 @@ class ConferenceNameSerializer(serializers.ModelSerializer):
         fields = ["id", "confName"]
 
 
-class TeamNameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Teams
-        fields = ["name"]
+
 
 
 class GamesSerializer(serializers.ModelSerializer):

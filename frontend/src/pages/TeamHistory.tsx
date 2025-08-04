@@ -1,8 +1,7 @@
-import { useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
-import { Team, Info, Conference } from '../interfaces';
-import { getTeamHistoryRoute, getTeamScheduleRoute } from '../utils/routes';
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { apiService, usePageRefresh, getTeamHistoryRoute, getTeamScheduleRoute } from "../services/api";
+import { Team, Info, Conference } from "../interfaces";
 import {
     Container,
     Table,

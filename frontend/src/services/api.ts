@@ -10,6 +10,37 @@ export const API_BASE_URL = isProduction
     ? '' // In production, use relative URLs (empty string for same domain)
     : 'http://127.0.0.1:8000'; // In development, use the local server
 
+// Route definitions matching App.tsx
+export const ROUTES = {
+    HOME: '/',
+    NONCON: '/noncon',
+    DASHBOARD: '/dashboard',
+    RANKINGS: '/rankings',
+    TEAM_SCHEDULE: '/:teamName/schedule',
+    TEAM_ROSTER: '/:teamName/roster',
+    TEAM_HISTORY: '/:teamName/history',
+    PLAYOFF: '/playoff',
+    STANDINGS: '/standings/:conference_name',
+    PLAYER: '/players/:playerId',
+    WEEK_SCHEDULE: '/schedule/:week',
+    GAME: '/game/:id',
+    TEAM_STATS: '/stats/team',
+    INDIVIDUAL_STATS: '/stats/individual',
+    RATINGS_STATS: '/stats/ratings',
+    SEASON_SUMMARY: '/summary',
+    ROSTER_PROGRESSION: '/roster_progression',
+    RECRUITING_SUMMARY: '/recruiting_summary',
+} as const;
+
+// Helper functions to generate routes
+export const getGameRoute = (gameId: string) => `/game/${gameId}`;
+export const getTeamScheduleRoute = (teamName: string) => `/${teamName}/schedule`;
+export const getTeamRosterRoute = (teamName: string) => `/${teamName}/roster`;
+export const getTeamHistoryRoute = (teamName: string) => `/${teamName}/history`;
+export const getStandingsRoute = (conferenceName: string) => `/standings/${conferenceName}`;
+export const getPlayerRoute = (playerId: string) => `/players/${playerId}`;
+export const getWeekScheduleRoute = (week: string) => `/schedule/${week}`;
+
 // Create an axios instance with the base URL
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -171,6 +202,10 @@ export const apiService = {
     getRosterProgression: <T>() => 
         request<T>('get', '/api/roster_progression/'),
     
+    // Recruiting summary
+    getRecruitingSummary: <T>() => 
+        request<T>('get', '/api/recruiting_summary/'),
+    
     // Generic request function for custom endpoints
     get: <T>(endpoint: string, params?: Record<string, any>) => 
         request<T>('get', endpoint, { params }),
@@ -193,6 +228,7 @@ const routeToApiMapping: Record<string, (params: any) => Promise<any>> = {
     '/stats/ratings': () => apiService.getRatingsStats(),
     '/summary': () => apiService.getSeasonSummary(),
     '/roster_progression': () => apiService.getRosterProgression(),
+    '/recruiting_summary': () => apiService.getRecruitingSummary(),
     '/noncon': () => apiService.getNonCon(),
     
     // Dynamic routes - these will be matched by pattern in the usePageRefresh function

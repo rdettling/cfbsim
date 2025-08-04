@@ -120,7 +120,22 @@ def format_record(team):
 
 def get_schedule_game(team, game):
     is_team_a = game.teamA == team
-    opponent = game.teamB if is_team_a else game.teamA
+
+    if is_team_a:
+        opponent = game.teamB
+        opponent_ranking = game.rankBTOG
+        result = game.resultA
+        spread = game.spreadA
+        moneyline = game.moneylineA
+        score = f"{game.scoreA}-{game.scoreB}"
+    else:
+        opponent = game.teamA
+        opponent_ranking = game.rankATOG
+        result = game.resultB
+        spread = game.spreadB
+        moneyline = game.moneylineB
+        score = f"{game.scoreB}-{game.scoreA}"
+
 
     # Construct the label
     if game.name:
@@ -146,23 +161,15 @@ def get_schedule_game(team, game):
         "weekPlayed": game.weekPlayed,
         "opponent": {
             "name": opponent.name,
-            "ranking": opponent.ranking,
+            "ranking": opponent_ranking,
             "rating": opponent.rating,
             "record": format_record(opponent),
         },
         "label": label,
-        "result": game.resultA if is_team_a else game.resultB,
-        "spread": game.spreadA if is_team_a else game.spreadB,
-        "moneyline": game.moneylineA if is_team_a else game.moneylineB,
-        "score": (
-            (
-                f"{game.scoreA}-{game.scoreB}"
-                if is_team_a
-                else f"{game.scoreB}-{game.scoreA}"
-            )
-            if game.winner
-            else None
-        ),
+        "result": result,
+        "spread": spread,
+        "moneyline": moneyline,
+        "score": score,
     }
 
 

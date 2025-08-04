@@ -19,6 +19,8 @@ import IndividualStats from "./pages/IndividualStats";
 import RatingsStats from "./pages/RatingsStats";
 import SeasonSummary from "./pages/SeasonSummary";
 import RosterProgression from "./pages/RosterProgression";
+import RecruitingSummary from "./pages/RecruitingSummary";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -48,6 +50,7 @@ const App = () => {
             <Route path="stats/ratings" element={<RatingsStats />} />
             <Route path="/summary" element={<SeasonSummary />} />
             <Route path="/roster_progression" element={<RosterProgression />} />
+            <Route path="/recruiting_summary" element={<RecruitingSummary />} />
           </Routes>
         </Box>
         <Footer />

@@ -1,6 +1,6 @@
 from ..models import *
 from django.db.models import F
-from logic.season import *
+from logic.season import update_history, realignment_summary
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
@@ -381,68 +381,6 @@ def playoff(request):
             "bubble_teams": bubble_data,
             "conference_champions": champion_data,
             "bracket": bracket_data,
-            "conferences": ConferenceNameSerializer(
-                info.conferences.all().order_by("confName"), many=True
-            ).data,
-        }
-    )
-
-
-@api_view(["GET"])
-def season_summary(request):
-    """API endpoint for season summary data"""
-    user_id = request.headers.get("X-User-ID")
-    info = Info.objects.get(user_id=user_id)
-
-    if info.stage == "season":
-        update_history(info)
-        info.stage = "summary"
-        info.save()
-
-    return Response(
-        {
-            "team": TeamsSerializer(info.team).data,
-            "info": InfoSerializer(info).data,
-            "champion": TeamsSerializer(info.playoff.natty.winner).data,
-            "realignment": realignment_summary(info),
-            "conferences": ConferenceNameSerializer(
-                info.conferences.all().order_by("confName"), many=True
-            ).data,
-        }
-    )
-
-
-@api_view(["GET"])
-def roster_progression(request):
-    user_id = request.headers.get("X-User-ID")
-    info = Info.objects.get(user_id=user_id)
-
-    # Update rosters and info if not in "roster progression" stage
-    if info.stage == "summary":
-        progressed = progress_players(info, first_time=True)
-        info.stage = "progression"
-        info.currentYear += 1
-        info.currentWeek = 1
-        info.save()
-    else:
-        progressed = progress_players(info)
-
-    for player in progressed:
-        if player.year == "so":
-            player.change = player.rating - player.rating_fr
-        elif player.year == "jr":
-            player.change = player.rating - player.rating_so
-        elif player.year == "sr":
-            player.change = player.rating - player.rating_jr
-
-    return Response(
-        {
-            "team": TeamsSerializer(info.team).data,
-            "info": InfoSerializer(info).data,
-            "progressed": PlayersSerializer(progressed, many=True).data,
-            "leaving": PlayersSerializer(
-                info.team.players.filter(year="sr"), many=True
-            ).data,
             "conferences": ConferenceNameSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
