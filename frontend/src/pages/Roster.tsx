@@ -1,9 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { apiService, usePageRefresh, getTeamRosterRoute, getPlayerRoute } from '../services/api';
 import { Team, Info, Conference, Player } from '../interfaces';
-import { getTeamRosterRoute, getPlayerRoute } from '../utils/routes';
 import {
     Container,
     Table,

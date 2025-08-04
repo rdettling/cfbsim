@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { apiService, usePageRefresh, getPlayerRoute } from '../services/api';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Container, Typography, Box, CircularProgress, Alert,
@@ -8,8 +8,7 @@ import {
     FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import Navbar from '../components/Navbar';
-import { TeamInfoModal } from '../components/TeamComponents';
-import { getPlayerRoute } from '../utils/routes';
+import { TeamInfoModal, TeamLink, TeamLogo } from '../components/TeamComponents';
 
 interface ProgressedPlayer extends Player {
     change: number;

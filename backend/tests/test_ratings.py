@@ -1,13 +1,16 @@
 import random
 import statistics
 from typing import Dict, List, Tuple
-from logic.players import generate_player_ratings, calculate_team_ratings_from_players
+import unittest
+from django.test import TestCase
+from logic.player_generation import generate_player_ratings
+from logic.roster_management import calculate_team_ratings_from_players
 from backend.logic.constants.player_constants import *
 
 
 def simulate_team(prestige_tier: int) -> Tuple[float, float]:
     """
-    Simulate a team using the actual team rating calculation logic from players.py
+    Simulate a team using the actual team rating calculation logic from roster_management.py
     prestige_tier: 1-7
     Returns: (team overall from 0-100, average star rating)
     """

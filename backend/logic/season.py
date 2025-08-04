@@ -1,15 +1,62 @@
-from .schedule import *
-from .players import *
+from .schedule import set_rivalries, fillSchedules
+from api.models import *
+from .player_generation import load_names
+from .roster_management import (
+    remove_seniors,
+    create_freshmen,
+    set_starters,
+    calculate_team_ratings,
+    init_roster,
+    progress_years,
+)
 from .betting import getSpread
 from django.db import transaction
 import os
-from .sim.sim import *
 from .util import get_recruiting_points, get_last_week, load_and_merge_year_data
 import time
 
 
-def next_season(info):
-    """Initialize the next season with updated data"""
+def transition_rosters(info):
+    """Part 1: Remove seniors and add freshmen (called by recruiting summary)"""
+    remove_seniors(info)
+    progress_years(info)
+    create_freshmen(info)
+
+    # Set starters and calculate ratings
+    set_starters(info)
+    calculate_team_ratings(info)
+
+
+def refresh_playoff(info, data):
+    """Update playoff format and clear game references for new season"""
+    playoff_config = data["playoff"]
+    info.playoff.teams = playoff_config["teams"]
+    info.playoff.autobids = playoff_config.get("conf_champ_autobids", 0)
+    info.playoff.conf_champ_top_4 = playoff_config.get("conf_champ_top_4", False)
+    info.lastWeek = get_last_week(info.playoff.teams)
+    
+    # Clear all playoff game references (set to None)
+    info.playoff.seed_1 = None
+    info.playoff.seed_2 = None
+    info.playoff.seed_3 = None
+    info.playoff.seed_4 = None
+    info.playoff.left_r1_1 = None
+    info.playoff.left_r1_2 = None
+    info.playoff.right_r1_1 = None
+    info.playoff.right_r1_2 = None
+    info.playoff.left_quarter_1 = None
+    info.playoff.left_quarter_2 = None
+    info.playoff.right_quarter_1 = None
+    info.playoff.right_quarter_2 = None
+    info.playoff.left_semi = None
+    info.playoff.right_semi = None
+    info.playoff.natty = None
+    
+    info.playoff.save()
+
+
+def transition_season_data(info):
+    """Part 2: Handle realignment and game refresh (called by noncon)"""
     current_year = info.currentYear
     while current_year >= info.startYear:
         file_path = f"data/years/{current_year}.json"
@@ -19,20 +66,18 @@ def next_season(info):
         else:
             current_year -= 1
 
-    update_teams_and_rosters(info, data)
-    refresh_teams_and_games(info)
-    set_rivalries(info)
-
-
-def update_teams_and_rosters(info, data):
-    """Update teams, rosters, and related data for the new season"""
     with transaction.atomic():
         # Realignment
         start = time.time()
         realignment(info, data)
         print(f"Realignment {time.time() - start} seconds")
 
-        # Reset non-conference game counters for new season
+        # Update playoff format and refresh playoff games
+        start = time.time()
+        refresh_playoff(info, data)
+        print(f"Updated playoff format and cleared game references {time.time() - start} seconds")
+
+        # Reset all game counters and stats for new season
         start = time.time()
         teams = info.teams.all()
         for team in teams:
@@ -45,6 +90,8 @@ def update_teams_and_rosters(info, data):
             team.totalWins = 0
             team.totalLosses = 0
             team.gamesPlayed = 0
+            team.strength_of_record = 0
+            team.poll_score = 0
         Teams.objects.bulk_update(
             teams,
             [
@@ -57,35 +104,46 @@ def update_teams_and_rosters(info, data):
                 "totalWins",
                 "totalLosses",
                 "gamesPlayed",
+                "strength_of_record",
+                "poll_score",
             ],
         )
         print(f"Reset game counters {time.time() - start} seconds")
 
-        # Remove graduating seniors
-        start = time.time()
-        remove_seniors(info)
-        print(f"Remove seniors {time.time() - start} seconds")
+        # Clear plays and drives
+        info.plays.all().delete()
+        info.drives.all().delete()
 
-        # Fill rosters
-        start = time.time()
-        players_to_create = []
-        loaded_names = load_names()
-
-        for team in info.teams.all():
-            if team.rating:
-                fill_roster(team, loaded_names, players_to_create)
-            else:
-                init_roster(team, loaded_names, players_to_create)
-
-        Players.objects.bulk_create(players_to_create)
-        print(f"Fill rosters {time.time() - start} seconds")
-
-        # Set starters and calculate ratings
-        start = time.time()
-        set_starters(info)
-        calculate_team_ratings(info)
+        # Recalculate rankings after realignment
         initialize_rankings(info)
-        print(f"Set starters and ratings {time.time() - start} seconds")
+        print(f"Initialize rankings {time.time() - start} seconds")
+
+    set_rivalries(info)
+
+
+def update_history(info):
+    teams = info.teams.all()
+
+    years = []
+
+    for team in teams:
+        years.append(
+            Years(
+                info=info,
+                team=team,
+                year=info.currentYear,
+                wins=team.totalWins,
+                losses=team.totalLosses,
+                prestige=team.prestige,
+                rating=team.rating,
+                rank=team.ranking,
+                conference=(
+                    team.conference.confName if team.conference else "Independent"
+                ),
+            )
+        )
+
+    Years.objects.bulk_create(years)
 
 
 def start_season(info):

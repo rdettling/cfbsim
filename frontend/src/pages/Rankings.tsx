@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { apiService, usePageRefresh, getGameRoute } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { useNavigate } from 'react-router-dom';
-import { getGameRoute } from '../utils/routes';
 
 import {
     Container,

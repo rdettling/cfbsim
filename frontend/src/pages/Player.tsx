@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { apiService, usePageRefresh } from "../services/api";
+import { apiService, usePageRefresh, getGameRoute } from "../services/api";
 import {
   Box,
   Table,
@@ -23,7 +23,6 @@ import {
 import Navbar from "../components/Navbar";
 import { TeamLogo, TeamLink, TeamInfoModal } from "../components/TeamComponents";
 import { Team, Info, Conference, Player, GameLog } from "../interfaces";
-import { getGameRoute } from "../utils/routes";
 
 interface PlayerData {
   player: Player;

@@ -249,67 +249,6 @@ def scheduleGame(
     return team, opponent, game
 
 
-def update_history(info):
-    teams = info.teams.all()
-
-    years = []
-
-    for team in teams:
-        years.append(
-            Years(
-                info=info,
-                team=team,
-                year=info.currentYear,
-                wins=team.totalWins,
-                losses=team.totalLosses,
-                prestige=team.prestige,
-                rating=team.rating,
-                rank=team.ranking,
-                conference=(
-                    team.conference.confName if team.conference else "Independent"
-                ),
-            )
-        )
-
-    Years.objects.bulk_create(years)
-
-
-def refresh_teams_and_games(info):
-    teams = info.teams.all()
-    info.plays.all().delete()
-    info.drives.all().delete()
-
-    for team in teams:
-        team.confGames = 0
-        team.confWins = 0
-        team.confLosses = 0
-        team.nonConfGames = 0
-        team.nonConfWins = 0
-        team.nonConfLosses = 0
-        team.gamesPlayed = 0
-        team.totalWins = 0
-        team.totalLosses = 0
-        team.strength_of_record = 0
-        team.poll_score = 0
-
-    Teams.objects.bulk_update(
-        teams,
-        [
-            "confGames",
-            "confWins",
-            "confLosses",
-            "nonConfGames",
-            "nonConfWins",
-            "nonConfLosses",
-            "gamesPlayed",
-            "totalWins",
-            "totalLosses",
-            "strength_of_record",
-            "poll_score",
-        ],
-    )
-
-
 def setNatty(info):
     playoff = info.playoff
     playoff.refresh_from_db()

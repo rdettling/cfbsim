@@ -1,6 +1,6 @@
 import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { Info } from '../interfaces';
-import { ROUTES } from '../utils/routes';
+import { ROUTES } from '../services/api';
 import { useState } from 'react';
 import LoadingDialog from './LoadingDialog';
 import { useNavigate } from 'react-router-dom';
