@@ -76,7 +76,7 @@ class GameLogSerializer(serializers.ModelSerializer):
 
 class YearsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Years
+        model = History
         fields = "__all__"
 
 
@@ -97,6 +97,7 @@ class OddsSerializer(serializers.ModelSerializer):
         model = Odds
         fields = "__all__"
 
+
 class TeamNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teams
@@ -116,9 +117,6 @@ class ConferenceNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conferences
         fields = ["id", "confName"]
-
-
-
 
 
 class GamesSerializer(serializers.ModelSerializer):

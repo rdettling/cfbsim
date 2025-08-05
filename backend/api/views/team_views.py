@@ -82,7 +82,9 @@ def roster(request, team_name):
     # Process roster data by position
     roster_data = []
     for position in positions:
-        players = team.players.filter(pos=position, active=True).order_by("-starter", "-rating")
+        players = team.players.filter(pos=position, active=True).order_by(
+            "-starter", "-rating"
+        )
         for player in players:
             player_data = {
                 "id": player.id,
@@ -145,7 +147,7 @@ def _calculate_yearly_stats(player, year_game_logs, current_year, year):
         year_stats["class"], year_stats["rating"] = get_player_info(
             player, current_year, year
         )
-    
+
     year_stats["completion_percentage"] = percentage(
         year_stats["pass_completions"], year_stats["pass_attempts"]
     )
@@ -178,18 +180,18 @@ def _calculate_yearly_stats(player, year_game_logs, current_year, year):
 def _get_player_years(player, info):
     """Helper function to get available years for a player based on their class and active status"""
     current_year = info.currentYear
-    
+
     # If player is inactive, only show the year they were last active
     if not player.active:
         # For inactive players, only show the year they graduated
         # We can determine this by looking at their game logs
-        game_years = player.game_logs.values_list('game__year', flat=True).distinct()
+        game_years = player.game_logs.values_list("game__year", flat=True).distinct()
         if game_years:
             return sorted(game_years, reverse=True)
         else:
             # If no game logs, just show current year as fallback
             return [current_year]
-    
+
     # For active players, show years based on their class
     year_mapping = {
         "fr": [current_year],

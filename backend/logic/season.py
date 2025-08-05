@@ -12,8 +12,100 @@ from .roster_management import (
 from .betting import getSpread
 from django.db import transaction
 import os
-from .util import get_recruiting_points, get_last_week, load_and_merge_year_data
+import json
+from .util import get_recruiting_points, get_last_week, load_year_data
 import time
+
+
+def init_history_data(info, start_year):
+    """Initialize the History table with data from ratings files and optional prestige data."""
+    ratings_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "data", "ratings"
+    )
+    years_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "data", "years"
+    )
+
+    if not os.path.exists(ratings_dir):
+        print("Error: Ratings directory not found")
+        return
+
+    # Get historical years (before start year)
+    rating_files = [
+        f
+        for f in os.listdir(ratings_dir)
+        if f.startswith("ratings_") and f.endswith(".json")
+    ]
+    years = [int(f.replace("ratings_", "").replace(".json", "")) for f in rating_files]
+    years = [year for year in years if year < start_year]
+    years.sort(reverse=True)
+
+    print(f"Found {len(years)} historical years: {years}")
+
+    # Create team lookup for efficiency
+    team_lookup = {team.name: team for team in info.teams.all()}
+    history_records = []
+
+    for year in years:
+        print(f"Processing year {year}...")
+
+        # Load ratings and prestige data
+        ratings_file = os.path.join(ratings_dir, f"ratings_{year}.json")
+        with open(ratings_file, "r") as f:
+            ratings_data = json.load(f)
+
+        year_file = os.path.join(years_dir, f"{year}.json")
+        prestige_data = None
+        if os.path.exists(year_file):
+            with open(year_file, "r") as f:
+                prestige_data = json.load(f)
+
+        # Process teams
+        for team_data in ratings_data["teams"]:
+            team_name = team_data["team"]
+            team = team_lookup.get(team_name)
+
+            if not team:
+                print(f"Warning: Team '{team_name}' not found, skipping")
+                continue
+
+            # Get prestige from year data
+            prestige = None
+            if prestige_data:
+                # Check conferences first
+                for conf_data in prestige_data["conferences"].values():
+                    if team_name in conf_data["teams"]:
+                        prestige = conf_data["teams"][team_name]
+                        break
+
+                # Check independents if not found
+                if prestige is None and "independents" in prestige_data:
+                    if team_name in prestige_data["independents"]:
+                        prestige = prestige_data["independents"][team_name]
+
+            # Create history record
+            history_records.append(
+                History(
+                    info=info,
+                    team=team,
+                    year=year,
+                    conference=team_data.get("conference", "Independent"),
+                    rank=team_data.get("rank"),
+                    wins=team_data.get("wins", 0),
+                    losses=team_data.get("losses", 0),
+                    prestige=prestige,
+                    rating=None,
+                )
+            )
+
+        print(f"  Processed {len(ratings_data['teams'])} teams")
+
+    # Bulk create records
+    if history_records:
+        History.objects.bulk_create(history_records)
+        print(f"Created {len(history_records)} history records")
+    else:
+        print("No history records to create")
 
 
 def transition_rosters(info):
@@ -34,7 +126,7 @@ def refresh_playoff(info, data):
     info.playoff.autobids = playoff_config.get("conf_champ_autobids", 0)
     info.playoff.conf_champ_top_4 = playoff_config.get("conf_champ_top_4", False)
     info.lastWeek = get_last_week(info.playoff.teams)
-    
+
     # Clear all playoff game references (set to None)
     info.playoff.seed_1 = None
     info.playoff.seed_2 = None
@@ -51,7 +143,7 @@ def refresh_playoff(info, data):
     info.playoff.left_semi = None
     info.playoff.right_semi = None
     info.playoff.natty = None
-    
+
     info.playoff.save()
 
 
@@ -61,7 +153,7 @@ def transition_season_data(info):
     while current_year >= info.startYear:
         file_path = f"data/years/{current_year}.json"
         if os.path.exists(file_path):
-            data = load_and_merge_year_data(current_year)
+            data = load_year_data(current_year)
             break
         else:
             current_year -= 1
@@ -75,7 +167,9 @@ def transition_season_data(info):
         # Update playoff format and refresh playoff games
         start = time.time()
         refresh_playoff(info, data)
-        print(f"Updated playoff format and cleared game references {time.time() - start} seconds")
+        print(
+            f"Updated playoff format and cleared game references {time.time() - start} seconds"
+        )
 
         # Reset all game counters and stats for new season
         start = time.time()
@@ -118,7 +212,7 @@ def transition_season_data(info):
         initialize_rankings(info)
         print(f"Initialize rankings {time.time() - start} seconds")
 
-    set_rivalries(info)
+        set_rivalries(info)
 
 
 def update_history(info):
@@ -128,7 +222,7 @@ def update_history(info):
 
     for team in teams:
         years.append(
-            Years(
+            History(
                 info=info,
                 team=team,
                 year=info.currentYear,
@@ -143,7 +237,7 @@ def update_history(info):
             )
         )
 
-    Years.objects.bulk_create(years)
+    History.objects.bulk_create(years)
 
 
 def start_season(info):
@@ -165,7 +259,8 @@ def realignment_summary(info):
     if not os.path.exists(file_path):
         return {}
 
-    data = load_and_merge_year_data(next_year)
+    data = load_year_data(next_year)
+
     team_dict = {}
     teams = info.teams.all().select_related("conference")
 
@@ -176,23 +271,21 @@ def realignment_summary(info):
         }
 
     # Map teams to their new conferences from data
-    for conf in data["conferences"]:
-        for team in conf["teams"]:
-            if team["name"] in team_dict:
-                team_dict[team["name"]]["new"] = conf["confName"]
+    for conf_name, conf_data in data["conferences"].items():
+        for team in conf_data["teams"]:
+            team_name = team["name"]
+            if team_name in team_dict:
+                team_dict[team_name]["new"] = conf_name
             else:
-                team_dict[team["name"]] = {"old": "FCS", "new": conf["confName"]}
+                team_dict[team_name] = {"old": "FCS", "new": conf_name}
 
+    # Map independent teams
     for team in data["independents"]:
-        if team["name"] in team_dict:
-            team_dict[team["name"]]["new"] = "Independent"
+        team_name = team["name"]
+        if team_name in team_dict:
+            team_dict[team_name]["new"] = "Independent"
         else:
-            team_dict[team["name"]] = {"old": "FCS", "new": "Independent"}
-
-    # Set default for teams not found in new data
-    for team_name in team_dict:
-        if "new" not in team_dict[team_name]:
-            team_dict[team_name]["new"] = "FCS"
+            team_dict[team_name] = {"old": "FCS", "new": "Independent"}
 
     # Filter to only teams that changed conferences
     return {
@@ -215,16 +308,16 @@ def realignment(info, data):
     conferences = info.conferences.all()
 
     # Process conference teams
-    for conference_data in data["conferences"]:
+    for conf_name, conf_data in data["conferences"].items():
         conference, created = info.conferences.get_or_create(
-            confName=conference_data["confName"],
+            confName=conf_name,
             defaults={
-                "confFullName": conference_data["confFullName"],
-                "confGames": conference_data["confGames"],
+                "confFullName": conf_data["confFullName"],
+                "confGames": conf_data["confGames"],
             },
         )
 
-        for team_data in conference_data["teams"]:
+        for team_data in conf_data["teams"]:
             team_defaults = {
                 "abbreviation": team_data["abbreviation"],
                 "prestige": team_data["prestige"],
@@ -232,8 +325,8 @@ def realignment(info, data):
                 "colorPrimary": team_data["colorPrimary"],
                 "colorSecondary": team_data["colorSecondary"],
                 "conference": conference,
-                "confLimit": conference_data["confGames"],
-                "nonConfLimit": 12 - conference_data["confGames"],
+                "confLimit": conf_data["confGames"],
+                "nonConfLimit": 12 - conf_data["confGames"],
                 "offers": 25,
                 "recruiting_points": get_recruiting_points(team_data["prestige"]),
             }
@@ -245,8 +338,8 @@ def realignment(info, data):
             if not created:
                 # Update existing team
                 team.conference = conference
-                team.confLimit = conference_data["confGames"]
-                team.nonConfLimit = 12 - conference_data["confGames"]
+                team.confLimit = conf_data["confGames"]
+                team.nonConfLimit = 12 - conf_data["confGames"]
                 team.save()
 
     # Process independent teams
@@ -302,7 +395,7 @@ def init(
     playoff_conf_champ_top_4=None,
 ):
     """Initialize a new season with all required data"""
-    data = load_and_merge_year_data(year)
+    data = load_year_data(year)
 
     # Determine playoff configuration
     playoff_config = data["playoff"]
@@ -346,16 +439,16 @@ def init(
     conferences_to_create = []
     teams_to_create = []
 
-    for conference_data in data["conferences"]:
+    for conf_name, conf_data in data["conferences"].items():
         conference = Conferences(
             info=info,
-            confName=conference_data["confName"],
-            confFullName=conference_data["confFullName"],
-            confGames=conference_data["confGames"],
+            confName=conf_name,
+            confFullName=conf_data["confFullName"],
+            confGames=conf_data["confGames"],
         )
         conferences_to_create.append(conference)
 
-        for team_data in conference_data["teams"]:
+        for team_data in conf_data["teams"]:
             team = Teams(
                 info=info,
                 name=team_data["name"],
@@ -365,8 +458,8 @@ def init(
                 colorPrimary=team_data["colorPrimary"],
                 colorSecondary=team_data["colorSecondary"],
                 conference=conference,
-                confLimit=conference_data["confGames"],
-                nonConfLimit=12 - conference_data["confGames"],
+                confLimit=conf_data["confGames"],
+                nonConfLimit=12 - conf_data["confGames"],
                 offers=25,
                 recruiting_points=get_recruiting_points(team_data["prestige"]),
             )
@@ -397,6 +490,11 @@ def init(
     Conferences.objects.bulk_create(conferences_to_create)
     Teams.objects.bulk_create(teams_to_create)
     info.save()
+
+    # Initialize history data
+    start = time.time()
+    init_history_data(info, year)
+    print(f"Initialize history {time.time() - start} seconds")
 
     # Create players
     start = time.time()
