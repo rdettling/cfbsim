@@ -25,10 +25,10 @@ def remove_seniors(info):
     players = info.players.all()
     graduating_seniors = players.filter(year="sr", active=True)
     graduating_seniors_list = list(graduating_seniors)
-    
+
     # Set seniors to inactive and remove starter status
     graduating_seniors.update(active=False, starter=False)
-    
+
     print(f"Marked {len(graduating_seniors_list)} seniors as inactive")
 
 
@@ -36,20 +36,20 @@ def progress_ratings(info):
     """
     Update player ratings to next year's rating without changing years.
     Used for roster progression page to show rating improvements.
-    
+
     Args:
         info: Info object
-    
+
     Returns:
         List of progressed players with their change values
     """
     players = info.players.filter(active=True)
     progressed_players = []
     to_update = []
-    
+
     for player in players.exclude(year="sr"):
         old_rating = player.rating
-        
+
         if player.year == "fr":
             player.rating = player.rating_so
             player.change = player.rating - player.rating_fr
@@ -61,14 +61,14 @@ def progress_ratings(info):
             player.change = player.rating - player.rating_jr
         else:
             player.change = 0
-        
+
         print(
             f"DEBUG: {player.first} {player.last} - old: {old_rating}, new: {player.rating}, change: {player.change}"
         )
-        
+
         to_update.append(player)
         progressed_players.append(player)
-    
+
     Players.objects.bulk_update(to_update, ["rating"])
     return [p for p in progressed_players if p.team == info.team and p.year != "sr"]
 
@@ -77,16 +77,16 @@ def progress_years(info):
     """
     Progress players to the next year (fr->so, so->jr, jr->sr).
     Used for recruiting summary stage when transitioning seasons.
-    
+
     Args:
         info: Info object
-    
+
     Returns:
         List of progressed players
     """
     players = info.players.filter(active=True)
     to_update = []
-    
+
     for player in players.exclude(year="sr"):
         if player.year == "fr":
             player.year = "so"
@@ -94,16 +94,18 @@ def progress_years(info):
             player.year = "jr"
         elif player.year == "jr":
             player.year = "sr"
-    
+
         to_update.append(player)
-    
+
     Players.objects.bulk_update(to_update, ["year"])
     return [p for p in to_update if p.team == info.team and p.year != "sr"]
 
 
 def fill_roster(team, loaded_names, players_to_create):
     """Fill missing players for an existing team"""
-    player_counts = Counter(team.players.filter(active=True).values_list("pos", flat=True))
+    player_counts = Counter(
+        team.players.filter(active=True).values_list("pos", flat=True)
+    )
 
     for position, count in ROSTER.items():
         current_count = player_counts.get(position, 0)

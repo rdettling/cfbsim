@@ -136,7 +136,6 @@ def get_schedule_game(team, game):
         moneyline = game.moneylineB
         score = f"{game.scoreB}-{game.scoreA}"
 
-
     # Construct the label
     if game.name:
         label = game.name
@@ -248,12 +247,12 @@ def get_last_week(playoff_teams):
         raise ValueError(f"Unsupported playoff format: {playoff_teams}")
 
 
-def load_and_merge_year_data(year):
-    """Load and merge year-specific data with static data"""
+def load_year_data(year):
+    """Load year-specific data with team metadata"""
     # Load year-specific data
     year_file_path = os.path.join(settings.YEARS_DATA_DIR, f"{year}.json")
-    with open(year_file_path, "r") as metadataFile:
-        year_data = json.load(metadataFile)
+    with open(year_file_path, "r") as f:
+        year_data = json.load(f)
 
     # Load static data
     teams_path = os.path.join(settings.BASE_DIR, "data", "teams.json")
@@ -262,42 +261,36 @@ def load_and_merge_year_data(year):
 
     conferences_path = os.path.join(settings.BASE_DIR, "data", "conferences.json")
     with open(conferences_path, "r") as f:
-        conferences_data = json.load(f)["conferences"]
+        conferences_data = json.load(f)
 
-    # Merge data to create the full structure
-    data = {"playoff": year_data["playoff"], "conferences": [], "independents": []}
-
-    # Helper function to merge team data
-    def merge_team(team, team_metadata):
+    # Add team metadata to year data
+    def add_team_metadata(team_name, prestige):
+        team_metadata = teams_data[team_name]
         return {
-            "name": team["name"],
+            "name": team_name,
+            "prestige": prestige,
             "mascot": team_metadata["mascot"],
             "abbreviation": team_metadata["abbreviation"],
-            "prestige": team["prestige"],
             "ceiling": team_metadata["ceiling"],
             "floor": team_metadata["floor"],
             "colorPrimary": team_metadata["colorPrimary"],
             "colorSecondary": team_metadata["colorSecondary"],
         }
 
-    # Merge conference data
-    for conf in year_data["conferences"]:
-        conf_name = conf["confName"]
-        conf_metadata = conferences_data[conf_name]
+    # Process conferences
+    for conf_name, conf_data in year_data["conferences"].items():
+        conf_data["confName"] = conf_name
+        conf_data["confFullName"] = conferences_data.get(conf_name, conf_name)
+        conf_data["confGames"] = conf_data["games"]  # Map games to confGames
+        conf_data["teams"] = [
+            add_team_metadata(team_name, prestige)
+            for team_name, prestige in conf_data["teams"].items()
+        ]
 
-        merged_conf = {
-            "confName": conf_name,
-            "confFullName": conf_metadata["confFullName"],
-            "confGames": conf["confGames"],
-            "teams": [
-                merge_team(team, teams_data[team["name"]]) for team in conf["teams"]
-            ],
-        }
-        data["conferences"].append(merged_conf)
-
-    # Merge independent teams
-    data["independents"] = [
-        merge_team(team, teams_data[team["name"]]) for team in year_data["independents"]
+    # Process independents
+    year_data["independents"] = [
+        add_team_metadata(team_name, prestige)
+        for team_name, prestige in year_data["Independent"].items()
     ]
 
-    return data
+    return year_data

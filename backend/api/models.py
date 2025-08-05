@@ -66,15 +66,17 @@ class Players(models.Model):
     stars = models.IntegerField()
     development_trait = models.IntegerField()
     starter = models.BooleanField()
-    active = models.BooleanField(default=True)  # True for current roster, False for graduated players
+    active = models.BooleanField(
+        default=True
+    )  # True for current roster, False for graduated players
 
 
-class Years(models.Model):
+class History(models.Model):
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="years")
     team = models.ForeignKey(Teams, on_delete=models.CASCADE, related_name="years")
     year = models.IntegerField()
-    prestige = models.IntegerField()
-    rating = models.IntegerField()
+    prestige = models.IntegerField(null=True)
+    rating = models.IntegerField(null=True)
     wins = models.IntegerField()
     losses = models.IntegerField()
     rank = models.IntegerField()

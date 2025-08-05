@@ -150,6 +150,7 @@ def noncon(request):
     # Handle new game creation
     if team and year:
         user_id = str(uuid.uuid4())
+        year = int(year)
 
         # Convert playoff parameters to appropriate types
         playoff_teams_int = int(playoff_teams) if playoff_teams else None

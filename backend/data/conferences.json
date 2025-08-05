@@ -1,31 +1,15 @@
 {
-    "conferences": {
-        "SEC": {
-            "confFullName": "Southeastern Conference"
-        },
-        "B1G": {
-            "confFullName": "Big Ten Conference"
-        },
-        "ACC": {
-            "confFullName": "Atlantic Coast Conference"
-        },
-        "Big 12": {
-            "confFullName": "Big 12 Conference"
-        },
-        "American": {
-            "confFullName": "American Athletic Conference"
-        },
-        "MWC": {
-            "confFullName": "Mountain West Conference"
-        },
-        "SBC": {
-            "confFullName": "Sun Belt Conference"
-        },
-        "MAC": {
-            "confFullName": "Mid-American Conference"
-        },
-        "CUSA": {
-            "confFullName": "Conference USA"
-        }
-    }
+    "SEC": "Southeastern Conference",
+    "Big Ten": "Big Ten Conference",
+    "ACC": "Atlantic Coast Conference",
+    "Big 12": "Big 12 Conference",
+    "American": "American Athletic Conference",
+    "MWC": "Mountain West Conference",
+    "Sun Belt": "Sun Belt Conference",
+    "MAC": "Mid-American Conference",
+    "CUSA": "Conference USA",
+    "Pac-12": "Pac-12 Conference",
+    "Big East": "Big East Conference",
+    "WAC": "Western Athletic Conference",
+    "Pac-10": "Pac-10 Conference"
 } 

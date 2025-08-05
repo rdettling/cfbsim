@@ -10,7 +10,7 @@ from logic.util import (
     get_last_game,
     get_next_game,
     sort_standings,
-    load_and_merge_year_data,
+    load_year_data,
 )
 
 
@@ -43,13 +43,13 @@ def home(request):
 
     if preview_year:
         try:
-            # Load and merge data using utility function
-            preview_data = load_and_merge_year_data(preview_year)
+            # Load data using utility function
+            preview_data = load_year_data(preview_year)
 
             # Sort teams by prestige within each conference
-            for conf in preview_data["conferences"]:
-                conf["teams"] = sorted(
-                    conf["teams"], key=lambda team: team["prestige"], reverse=True
+            for conf_name, conf_data in preview_data["conferences"].items():
+                conf_data["teams"] = sorted(
+                    conf_data["teams"], key=lambda team: team["prestige"], reverse=True
                 )
         except (FileNotFoundError, IOError) as e:
             print(f"Error loading preview data for year {preview_year}: {e}")
