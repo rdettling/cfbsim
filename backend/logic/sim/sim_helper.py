@@ -464,11 +464,11 @@ def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
         Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
     time_section(drives_start, "  • Drives saved to database")
 
-    # # Phase 3: Save plays to database
-    # plays_start = time.time()
-    # for i in range(0, len(plays_to_create), batch_size):
-    #     Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
-    # time_section(plays_start, "  • Plays saved to database")
+    # Phase 3: Save plays to database
+    plays_start = time.time()
+    for i in range(0, len(plays_to_create), batch_size):
+        Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
+    time_section(plays_start, "  • Plays saved to database")
 
     # Phase 4: Save info object
     info_save_start = time.time()
