@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from ..serializers import *
 from django.db.models import F, ExpressionWrapper, FloatField
 from operator import attrgetter
-from logic.util import get_last_game, get_next_game, sort_standings
+from logic.util import get_last_game, get_next_game, sort_standings, time_section
 from logic.schedule import get_playoff_team_order
 from logic.sim.sim_helper import (
     save_simulation_data,
@@ -15,6 +15,7 @@ from logic.sim.sim_helper import (
     update_rankings,
     handle_special_weeks,
 )
+import time
 
 
 def generate_bracket_structure(info, playoff_teams):
@@ -391,55 +392,43 @@ def playoff(request):
 @api_view(["GET"])
 def sim(request, dest_week):
     """API endpoint for simulating games up to a destination week"""
-    total_start_time = time.time()
+    overall_start = time.time()
 
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
     start_week = info.currentWeek
-    print(f"Starting simulation from week {start_week} to week {dest_week}")
 
     drives_to_create = []
     plays_to_create = []
 
     # Simulate each week until we reach the destination week
     while info.currentWeek < dest_week:
-        week_start_time = time.time()
-        print(f"\nSimulating week {info.currentWeek}...")
-
         # 1. Fetch and simulate games
         games = fetch_and_simulate_games(
-            info, drives_to_create, plays_to_create, log=True
+            info, drives_to_create, plays_to_create
         )
 
         # 2. Generate headlines and update game results
-        natty_game = update_game_results(info, games, log=True)
+        natty_game = update_game_results(info, games)
 
         # 3. Handle special weeks (conference championships, playoffs, etc.)
-        handle_special_weeks(info, log=True)
+        handle_special_weeks(info)
 
         # 4. Update rankings if needed
-        update_rankings(info, natty_game, log=True)
+        update_rankings(info, natty_game)
 
         # Increment week and log completion time
         info.currentWeek += 1
-        print(
-            f"Week {info.currentWeek-1} completed in {time.time() - week_start_time:.4f} seconds"
-        )
 
     # Save all accumulated data
-    save_simulation_data(info, drives_to_create, plays_to_create, log=True)
+    save_simulation_data(info, drives_to_create, plays_to_create)
 
-    total_time = time.time() - total_start_time
-    print(
-        f"\nTotal simulation time from week {start_week} to {info.currentWeek}: {total_time:.4f} seconds"
-    )
+    time_section(overall_start, f"Total simulation time from week {start_week} to {info.currentWeek}")
 
     return Response(
         {
             "status": "success",
-            "execution_time": round(total_time, 2),
             "weeks_simulated": dest_week - start_week,
-            "time_per_week": round(total_time / (dest_week - start_week), 2),
         }
     )

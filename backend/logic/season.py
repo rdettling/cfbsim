@@ -13,7 +13,7 @@ from .betting import getSpread
 from django.db import transaction
 import os
 import json
-from .util import get_recruiting_points, get_last_week, load_year_data
+from .util import get_recruiting_points, get_last_week, load_year_data, time_section
 import time
 
 
@@ -47,7 +47,7 @@ def init_history_data(info, start_year):
     history_records = []
 
     for year in years:
-        print(f"Processing year {year}...")
+        #print(f"Processing year {year}...")
 
         # Load ratings and prestige data
         ratings_file = os.path.join(ratings_dir, f"ratings_{year}.json")
@@ -66,7 +66,7 @@ def init_history_data(info, start_year):
             team = team_lookup.get(team_name)
 
             if not team:
-                print(f"Warning: Team '{team_name}' not found, skipping")
+                #print(f"Warning: Team '{team_name}' not found, skipping")
                 continue
 
             # Get prestige from year data
@@ -98,14 +98,12 @@ def init_history_data(info, start_year):
                 )
             )
 
-        print(f"  Processed {len(ratings_data['teams'])} teams")
+        #print(f"  Processed {len(ratings_data['teams'])} teams")
 
     # Bulk create records
     if history_records:
         History.objects.bulk_create(history_records)
-        print(f"Created {len(history_records)} history records")
-    else:
-        print("No history records to create")
+        
 
 
 def transition_rosters(info):
@@ -242,9 +240,7 @@ def update_history(info):
 
 def start_season(info):
     """Start the season by filling schedules and setting initial state"""
-    start = time.time()
     fillSchedules(info)
-    print(f"Fill schedules {time.time() - start} seconds")
 
     info.currentWeek = 1
     info.stage = "season"
@@ -395,6 +391,12 @@ def init(
     playoff_conf_champ_top_4=None,
 ):
     """Initialize a new season with all required data"""
+    overall_start = time.time()
+    print(f"\n--- SEASON INITIALIZATION ---")
+    print("PHASE 1: DATA LOADING AND CONFIGURATION")
+    
+    # Phase 1: Load data and configure playoff settings
+    config_start = time.time()
     data = load_year_data(year)
 
     # Determine playoff configuration
@@ -414,8 +416,12 @@ def init(
     )
 
     calculated_last_week = get_last_week(final_playoff_teams)
-    overall_start = time.time()
+    time_section(config_start, "  • Data loaded and playoff configuration set")
 
+    # Phase 2: Create core objects
+    core_start = time.time()
+    print("PHASE 2: CORE OBJECT CREATION")
+    
     # Create info and playoff objects
     Info.objects.filter(user_id=user_id).delete()
     info = Info.objects.create(
@@ -434,8 +440,12 @@ def init(
         conf_champ_top_4=final_conf_champ_top_4,
     )
     info.playoff = playoff
+    time_section(core_start, "  • Info and playoff objects created")
 
-    # Create conferences and teams
+    # Phase 3: Create conferences and teams
+    teams_start = time.time()
+    print("PHASE 3: CONFERENCES AND TEAMS")
+    
     conferences_to_create = []
     teams_to_create = []
 
@@ -490,14 +500,17 @@ def init(
     Conferences.objects.bulk_create(conferences_to_create)
     Teams.objects.bulk_create(teams_to_create)
     info.save()
+    time_section(teams_start, "  • Conferences and teams created")
 
-    # Initialize history data
-    start = time.time()
+    # Phase 4: Initialize historical data
+    history_start = time.time()
+    print("PHASE 4: HISTORICAL DATA")
     init_history_data(info, year)
-    print(f"Initialize history {time.time() - start} seconds")
+    time_section(history_start, "  • Historical data initialized")
 
-    # Create players
-    start = time.time()
+    # Phase 5: Create players
+    player_start = time.time()
+    print("PHASE 5: PLAYER CREATION")
     players_to_create = []
     loaded_names = load_names()
 
@@ -505,19 +518,25 @@ def init(
         init_roster(team, loaded_names, players_to_create)
 
     Players.objects.bulk_create(players_to_create)
-    print(f"Create players {time.time() - start} seconds")
+    time_section(player_start, "  • Players created")
 
-    # Finalize setup
-    start = time.time()
+    # Phase 6: Team setup and ratings
+    setup_start = time.time()
+    print("PHASE 6: TEAM SETUP AND RATINGS")
+    
+    # Set starters
+    starter_start = time.time()
     set_starters(info)
-    print(f"Set starters {time.time() - start} seconds")
+    time_section(starter_start, "  • Starters assigned")
 
-    start = time.time()
+    # Calculate team ratings
+    rating_start = time.time()
     calculate_team_ratings(info)
-    print(f"Calculate ratings {time.time() - start} seconds")
+    time_section(rating_start, "  • Team ratings calculated")
 
-    # Create odds (after team ratings are calculated)
-    start = time.time()
+    # Phase 7: Create betting odds
+    odds_start = time.time()
+    print("PHASE 7: BETTING ODDS")
     teams = info.teams.all()
     max_rating = teams.order_by("-rating").first().rating
     min_rating = teams.order_by("rating").first().rating
@@ -540,15 +559,23 @@ def init(
         odds_to_create.append(odds_instance)
 
     Odds.objects.bulk_create(odds_to_create)
-    print(f"Create odds {time.time() - start} seconds")
+    time_section(odds_start, "  • Betting odds created")
 
-    start = time.time()
+    # Phase 8: Final initialization
+    final_start = time.time()
+    print("PHASE 8: FINAL INITIALIZATION")
+    
+    # Initialize rankings
+    ranking_start = time.time()
     initialize_rankings(info)
-    print(f"Initialize rankings {time.time() - start} seconds")
+    time_section(ranking_start, "  • Team rankings initialized")
 
-    start = time.time()
+    # Set rivalries
+    rival_start = time.time()
     set_rivalries(info)
-    print(f"Set rivalries {time.time() - start} seconds")
+    time_section(rival_start, "  • Rivalries set")
 
-    print(f"Total execution Time: {time.time() - overall_start} seconds")
+    time_section(setup_start, "PHASE 6-8 TOTAL")
+    time_section(overall_start, "SEASON INITIALIZATION COMPLETE")
+    print("--- SEASON INITIALIZATION COMPLETE ---\n")
     return info

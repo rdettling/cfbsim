@@ -294,3 +294,7 @@ def load_year_data(year):
     ]
 
     return year_data
+
+def time_section(section_start, section_name):
+    duration = round(time.time() - section_start, 2)
+    print(f"{section_name}: {duration} seconds")
