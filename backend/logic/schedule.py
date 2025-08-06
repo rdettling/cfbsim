@@ -2,7 +2,8 @@ import random
 from api.models import *
 import json
 from django.db.models import F, ExpressionWrapper, FloatField
-
+import time
+from .util import time_section
 
 def get_playoff_team_order(info):
     """
@@ -361,7 +362,12 @@ def set_rivalries(info):
 
 
 def fillSchedules(info):
-    start = time.time()
+    overall_start = time.time()
+    print(f"\n--- SCHEDULE GENERATION ---")
+    print("PHASE 1: INITIALIZATION")
+    
+    # Phase 1: Initialize data structures
+    init_start = time.time()
     teams = list(info.teams.all())
     conferences = list(info.conferences.all())
     games = info.games.filter(year=info.currentYear)
@@ -376,6 +382,7 @@ def fillSchedules(info):
     for game in games:
         scheduled_games[game.teamA.name].add(game.teamB.name)
         scheduled_games[game.teamB.name].add(game.teamA.name)
+    time_section(init_start, "  • Data structures initialized")
 
     def potential_opponents(team):
         return [
@@ -393,8 +400,9 @@ def fillSchedules(info):
             )
         ]
 
-    print(f"First part {time.time() - start} seconds")
-    start = time.time()
+    # Phase 2: Non-conference scheduling
+    non_conf_start = time.time()
+    print("PHASE 2: NON-CONFERENCE SCHEDULING")
     teamsList = teams[:]
     while teamsList:
         for team in teamsList:
@@ -413,9 +421,11 @@ def fillSchedules(info):
             scheduled_games[team.name].add(opponent.name)
             scheduled_games[opponent.name].add(team.name)
 
-    print(f"Noncon {time.time() - start} seconds")
+    time_section(non_conf_start, "  • Non-conference games scheduled")
 
-    start = time.time()
+    # Phase 3: Conference scheduling
+    conf_start = time.time()
+    print("PHASE 3: CONFERENCE SCHEDULING")
     for conference in conferences:
         confTeams = [team for team in teams if team.conference == conference]
         confTeamsList = confTeams[:]
@@ -446,9 +456,11 @@ def fillSchedules(info):
                 scheduled_games[team.name].add(opponent.name)
                 scheduled_games[opponent.name].add(team.name)
 
-    print(f"Conf {time.time() - start} seconds")
+    time_section(conf_start, "  • Conference games scheduled")
 
-    start = time.time()
+    # Phase 4: Week assignment
+    assign_weeks_start = time.time()
+    print("PHASE 4: WEEK ASSIGNMENT")
     teams = sorted(teams, key=lambda team: team.prestige, reverse=True)
 
     all_games = info.games.filter(year=info.currentYear)
@@ -490,10 +502,14 @@ def fillSchedules(info):
                                 game.weekPlayed = currentWeek
                                 team.gamesPlayed += 1
                                 opponent.gamesPlayed += 1
-    print(f"Assign weeks {time.time() - start} seconds")
+    time_section(assign_weeks_start, "  • Games assigned to weeks")
 
-    start = time.time()
+    # Phase 5: Database persistence
+    bulk_start = time.time()
+    print("PHASE 5: DATABASE PERSISTENCE")
     Games.objects.bulk_create(games_to_create)
     Teams.objects.bulk_update(teams, ["confGames", "nonConfGames"])
+    time_section(bulk_start, "  • Games and team data saved to database")
 
-    print(f"End {time.time() - start} seconds")
+    time_section(overall_start, "SCHEDULE GENERATION COMPLETE")
+    print("--- SCHEDULE GENERATION COMPLETE ---\n")

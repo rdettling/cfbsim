@@ -6,6 +6,7 @@ from logic.schedule import (
     setPlayoffR1,
     setPlayoffQuarter,
 )
+from logic.util import time_section
 from logic.headlines import generate_headlines
 import time
 from api.models import *
@@ -18,25 +19,49 @@ from logic.constants.sim_constants import (
 )
 
 
-def fetch_and_simulate_games(info, drives_to_create, plays_to_create, log=False):
+def run_week_simulation(info, drives_to_create, plays_to_create):
+    """Main function to run a complete week simulation with clear timing structure"""
+    week_start = time.time()
+    print(f"\n=== SIMULATING WEEK {info.currentWeek} ===")
+    
+    # Step 1: Simulate all games for the week
+    games = fetch_and_simulate_games(info, drives_to_create, plays_to_create)
+    
+    # Step 2: Process game results and generate headlines
+    natty_game = update_game_results(info, games)
+    
+    # Step 3: Handle special weeks (conference championships, playoffs)
+    handle_special_weeks(info)
+    
+    # Step 4: Update team rankings
+    update_rankings(info, natty_game)
+    
+    # Step 5: Save all simulation data to database
+    save_simulation_data(info, drives_to_create, plays_to_create)
+    
+    time_section(week_start, f"WEEK {info.currentWeek} COMPLETED")
+    print("=" * 50)
+    
+    return games
+
+
+def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     """Fetch games for the current week and simulate them with batch team updates"""
-    if log:
-        print(f"  [DEBUG] fetch_and_simulate_games called for week {info.currentWeek}")
-
+    total_start = time.time()
+    print(f"\n--- WEEK {info.currentWeek} SIMULATION ---")
+    print("PHASE 1: GAME SIMULATION")
+    
+    # Phase 1: Fetch games from database
     query_start = time.time()
-
-    # Use select_related to reduce database queries
     games = list(
         info.games.filter(
             year=info.currentYear, weekPlayed=info.currentWeek
         ).select_related("teamA", "teamB")
     )
+    time_section(query_start, f"  • Database query - {len(games)} games found")
 
-    query_time = time.time() - query_start
-    if log:
-        print(f"  Query games: {query_time:.4f} seconds, {len(games)} games found")
-
-    # Create a team dictionary to track all updates
+    # Phase 2: Initialize team tracking
+    setup_start = time.time()
     team_updates = {}
     for game in games:
         if game.teamA_id not in team_updates:
@@ -63,10 +88,10 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create, log=False)
                 "strength_of_record": 0,
                 "gamesPlayed": 0,
             }
+    time_section(setup_start, "  • Team tracking initialized")
 
-    # Simulate all games for the current week
+    # Phase 3: Simulate all games
     sim_start = time.time()
-
     for game in games:
         # Track that these teams will play a game
         team_updates[game.teamA_id]["gamesPlayed"] += 1
@@ -75,8 +100,7 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create, log=False)
         # Simulate the game
         simGame(game, info, drives_to_create, plays_to_create)
 
-        # Instead of letting simGame update the team objects directly,
-        # we'll capture the results here and apply them in batch
+        # Capture results for batch processing
         if game.winner == game.teamA:
             winner_id, loser_id = game.teamA_id, game.teamB_id
         else:
@@ -101,20 +125,20 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create, log=False)
         team_updates[loser_id]["totalLosses"] += 1
 
         # Update resume scores
-        # Determine the opponent rating based on who won
         if game.winner == game.teamA:
-            # teamA won, so opponent is teamB
             winner_resume_add = game.teamB.rating**WIN_FACTOR
             loser_resume_add = game.teamA.rating**LOSS_FACTOR
         else:
-            # teamB won, so opponent is teamA
             winner_resume_add = game.teamA.rating**WIN_FACTOR
             loser_resume_add = game.teamB.rating**LOSS_FACTOR
 
         team_updates[winner_id]["strength_of_record"] += winner_resume_add
         team_updates[loser_id]["strength_of_record"] += loser_resume_add
 
-    # Apply all team updates at once after all games are simulated
+    time_section(sim_start, "  • All games simulated")
+
+    # Phase 4: Batch update team records
+    update_start = time.time()
     teams_to_update = []
     for team_id, update in team_updates.items():
         team = update["team"]
@@ -142,40 +166,31 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create, log=False)
             "gamesPlayed",
         ],
     )
-
-    sim_time = time.time() - sim_start
-    if log:
-        print(f"  Total simulation time: {sim_time:.4f} seconds")
-
+    time_section(update_start, "  • Team records updated in database")
+    time_section(total_start, "PHASE 1 TOTAL")
+    print()
     return games
 
 
-def update_game_results(info, games, log=False):
+def update_game_results(info, games):
     """Generate headlines and update game results in the database"""
-    if log:
-        print(f"  [DEBUG] update_game_results called with {len(games)} games")
-
-    # Generate headlines
+    total_start = time.time()
+    print("PHASE 2: GAME RESULTS PROCESSING")
+    
+    # Phase 1: Generate headlines
     headlines_start = time.time()
     generate_headlines(games)
-    headlines_time = time.time() - headlines_start
-    if log:
-        print(f"  Generate headlines: {headlines_time:.4f} seconds")
+    time_section(headlines_start, "  • Headlines generated")
 
-    # Bulk update game results
+    # Phase 2: Update game results in database
     update_start = time.time()
     Games.objects.bulk_update(
         games,
         ["scoreA", "scoreB", "winner", "resultA", "resultB", "overtime", "headline"],
     )
-    update_time = time.time() - update_start
-    if log:
-        print(f"  Bulk update games: {update_time:.4f} seconds")
+    time_section(update_start, "  • Game results saved to database")
 
     # Check if National Championship game was just played
-    if log:
-        print(f"  [DEBUG] Checking for National Championship game in current games")
-
     natty_game = None
     if hasattr(info, "playoff") and info.playoff and info.playoff.natty:
         for game in games:
@@ -195,30 +210,27 @@ def update_game_results(info, games, log=False):
                 )
             ):
                 natty_game = game
-                if log:
-                    print(
-                        f"  [DEBUG] Found National Championship game: {game.teamA.name} vs {game.teamB.name}, Winner: {game.winner.name}"
-                    )
                 break
 
+    time_section(total_start, "PHASE 2 TOTAL")
+    print()
     return natty_game
 
 
-def update_rankings(info, natty_game=None, log=False):
+def update_rankings(info, natty_game=None):
     """Update team rankings if needed for the current week"""
-    if log:
-        print(f"  [DEBUG] update_rankings called for week {info.currentWeek}")
-
-    rankings_start = time.time()
+    total_start = time.time()
+    print("PHASE 4: RANKINGS UPDATE")
 
     # Skip ranking updates for certain playoff weeks
     skip_weeks = {4: [14], 12: [14, 15, 16]}.get(info.playoff.teams, [])
 
     if info.currentWeek not in skip_weeks:
+        # Phase 1: Calculate poll scores
+        poll_start = time.time()
         teams = list(info.teams.all())
         team_dict = {team.id: team for team in teams}
 
-        # Calculate poll scores
         for team in teams:
             team.last_rank = team.ranking
             games_played = team.totalWins + team.totalLosses
@@ -258,16 +270,15 @@ def update_rankings(info, natty_game=None, log=False):
                     team.poll_score = round(base_poll_score + inertia_value, 1)
                 else:
                     team.poll_score = round(base_poll_score, 1)
+        time_section(poll_start, "  • Poll scores calculated")
 
-        # Determine ranking strategy
+        # Phase 2: Determine ranking strategy and assign rankings
+        ranking_start = time.time()
         is_end_of_season = info.currentWeek == info.lastWeek
         natty_winner = None
         natty_loser = None
 
         if is_end_of_season:
-            if log:
-                print(f"  [DEBUG] End of season ranking logic triggered")
-
             # Get natty winner/loser if available
             if natty_game:
                 natty_winner = natty_game.winner
@@ -287,11 +298,6 @@ def update_rankings(info, natty_game=None, log=False):
         # Assign rankings
         if natty_winner and natty_loser:
             # End of season with championship teams
-            if log:
-                print(
-                    f"  [DEBUG] Natty winner: {natty_winner.name}, Natty loser: {natty_loser.name}"
-                )
-
             # Set championship teams to #1 and #2
             for team in teams:
                 if team.id == natty_winner.id:
@@ -317,7 +323,10 @@ def update_rankings(info, natty_game=None, log=False):
             sorted_teams = sorted(teams, key=lambda x: (-x.poll_score, x.last_rank))
             for i, team in enumerate(sorted_teams, start=1):
                 team.ranking = i
+        time_section(ranking_start, "  • Team rankings assigned")
 
+        # Phase 3: Update database and future game rankings
+        db_start = time.time()
         # Update database in bulk operations
         Teams.objects.bulk_update(teams, ["ranking", "last_rank", "poll_score"])
 
@@ -329,20 +338,19 @@ def update_rankings(info, natty_game=None, log=False):
 
         if future_games:
             Games.objects.bulk_update(future_games, ["rankATOG", "rankBTOG"])
+        time_section(db_start, "  • Database updated with new rankings")
 
-        if log:
-            print(f"  Updated rankings: {time.time() - rankings_start:.4f} seconds")
+        time_section(total_start, "PHASE 4 TOTAL")
     else:
-        if log:
-            print(f"  Skipped rankings update for week {info.currentWeek}")
+        time_section(total_start, f"SKIPPED: Rankings update for week {info.currentWeek}")
+    print()
+    return
 
 
-def handle_special_weeks(info, log=False):
+def handle_special_weeks(info):
     """Handle special weeks like conference championships and playoffs"""
-    if log:
-        print(f"  [DEBUG] handle_special_weeks called for week {info.currentWeek}")
-
     special_start = time.time()
+    print("PHASE 3: SPECIAL WEEK HANDLING")
 
     # Map of playoff formats to special actions by week
     special_actions = {
@@ -361,32 +369,21 @@ def handle_special_weeks(info, log=False):
     action = special_actions.get(info.playoff.teams, {}).get(info.currentWeek)
 
     if action:
-        action_name = action.__name__
-        if log:
-            print(f"  Executing special action: {action_name}")
+        action_name = action.__name__.replace("set", "").replace("_", " ").title()
         action(info)
-        if log:
-            print(
-                f"  Special action completed: {time.time() - special_start:.4f} seconds"
-            )
+        time_section(special_start, f"  • {action_name} completed")
     else:
-        if log:
-            print(f"  No special action for week {info.currentWeek}")
+        time_section(special_start, "  • No special week action required")
+    print()
 
 
 def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
     """Save all accumulated simulation data to the database"""
-    if log:
-        print(f"  [DEBUG] save_simulation_data called")
+    total_start = time.time()
+    print("PHASE 5: DATA PERSISTENCE")
 
-    final_save_start = time.time()
-
-    # Create game logs from plays
-    if log:
-        print(f"  Creating {len(plays_to_create)} plays...")
-    plays_start = time.time()
-
-    # Inline make_game_logs logic here
+    # Phase 1: Create game logs from plays
+    game_logs_start = time.time()
     desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
     game_log_dict = {}
 
@@ -455,39 +452,28 @@ def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
             format_play_text(play, p_starter)
 
     GameLog.objects.bulk_create(game_logs_to_process)
+    time_section(game_logs_start, "  • Game logs created from plays")
 
-    if log:
-        print(f"  make_game_logs completed in {time.time() - plays_start:.4f} seconds")
-
-    # Create drives in batches
-    if log:
-        print(f"  Creating {len(drives_to_create)} drives...")
+    # Phase 2: Save drives to database
     drives_start = time.time()
     batch_size = 1000
     for i in range(0, len(drives_to_create), batch_size):
         Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
-    if log:
-        print(
-            f"  Drives creation completed in {time.time() - drives_start:.4f} seconds"
-        )
+    time_section(drives_start, "  • Drives saved to database")
 
-    # Create plays in batches
+    # Phase 3: Save plays to database
     plays_start = time.time()
     for i in range(0, len(plays_to_create), batch_size):
         Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
-    if log:
-        print(f"  Plays creation completed in {time.time() - plays_start:.4f} seconds")
+    time_section(plays_start, "  • Plays saved to database")
 
-    # Save info object
+    # Phase 4: Save info object
     info_save_start = time.time()
     info.save()
-    if log:
-        print(f"  Info save completed in {time.time() - info_save_start:.4f} seconds")
+    time_section(info_save_start, "  • Simulation state saved")
 
-    if log:
-        print(
-            f"Final data save completed in {time.time() - final_save_start:.4f} seconds"
-        )
+    time_section(total_start, "PHASE 5 TOTAL")
+    print("--- WEEK SIMULATION COMPLETE ---\n")
 
 
 def update_game_log_for_run(play, game_log):
