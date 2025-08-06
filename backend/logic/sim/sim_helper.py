@@ -231,6 +231,19 @@ def update_rankings(info, natty_game=None):
         teams = list(info.teams.all())
         team_dict = {team.id: team for team in teams}
 
+        # Fetch all current week games once instead of querying for each team
+        current_games = list(
+            info.games.filter(
+                year=info.currentYear, weekPlayed=info.currentWeek
+            ).select_related("teamA", "teamB")
+        )
+        
+        # Create lookup dictionary for team games
+        team_games = {}
+        for game in current_games:
+            team_games[game.teamA_id] = game
+            team_games[game.teamB_id] = game
+
         for team in teams:
             team.last_rank = team.ranking
             games_played = team.totalWins + team.totalLosses
@@ -241,18 +254,8 @@ def update_rankings(info, natty_game=None):
                 team.poll_score = round(base_poll_score, 1)
             else:
                 # Regular season: include poll inertia
-                current_games = list(
-                    info.games.filter(
-                        year=info.currentYear, weekPlayed=info.currentWeek
-                    ).select_related("teamA", "teamB")
-                )
-
-                # Find team's game this week
-                team_game = None
-                for game in current_games:
-                    if game.teamA == team or game.teamB == team:
-                        team_game = game
-                        break
+                # Use lookup instead of searching through games
+                team_game = team_games.get(team.id)
 
                 # Apply poll inertia
                 if team_game and info.currentWeek <= RANKING_TOTAL_WEEKS:
@@ -456,16 +459,16 @@ def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
 
     # Phase 2: Save drives to database
     drives_start = time.time()
-    batch_size = 1000
+    batch_size = 250  # Reduced from 1000 for better Heroku PostgreSQL performance
     for i in range(0, len(drives_to_create), batch_size):
         Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
     time_section(drives_start, "  • Drives saved to database")
 
-    # Phase 3: Save plays to database
-    plays_start = time.time()
-    for i in range(0, len(plays_to_create), batch_size):
-        Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
-    time_section(plays_start, "  • Plays saved to database")
+    # # Phase 3: Save plays to database
+    # plays_start = time.time()
+    # for i in range(0, len(plays_to_create), batch_size):
+    #     Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
+    # time_section(plays_start, "  • Plays saved to database")
 
     # Phase 4: Save info object
     info_save_start = time.time()
