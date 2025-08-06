@@ -79,9 +79,9 @@ def init_history_data(info, start_year):
                         break
 
                 # Check independents if not found
-                if prestige is None and "independents" in prestige_data:
-                    if team_name in prestige_data["independents"]:
-                        prestige = prestige_data["independents"][team_name]
+                if prestige is None and "Independent" in prestige_data:
+                    if team_name in prestige_data["Independent"]:
+                        prestige = prestige_data["Independent"][team_name]
 
             # Create history record
             history_records.append(

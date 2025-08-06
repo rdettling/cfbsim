@@ -261,6 +261,11 @@ def history(request, team_name):
     # Get years data and process it
     years_data = []
     for year in team.years.order_by("-year"):
+        # Check if there are games for this year
+        games_as_teamA = team.games_as_teamA.filter(year=year.year)
+        games_as_teamB = team.games_as_teamB.filter(year=year.year)
+        has_games = (games_as_teamA | games_as_teamB).exists()
+        
         years_data.append(
             {
                 "year": year.year,
@@ -270,6 +275,7 @@ def history(request, team_name):
                 "wins": year.wins,
                 "losses": year.losses,
                 "rank": year.rank,
+                "has_games": has_games,
             }
         )
 

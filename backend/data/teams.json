@@ -291,7 +291,7 @@
         "Stanford": {
             "mascot": "Cardinal",
             "abbreviation": "STAN",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#8C1515",
             "colorSecondary": "#FFFFFF"
