@@ -372,9 +372,8 @@ def handle_special_weeks(info):
     action = special_actions.get(info.playoff.teams, {}).get(info.currentWeek)
 
     if action:
-        action_name = action.__name__.replace("set", "").replace("_", " ").title()
         action(info)
-        time_section(special_start, f"  • {action_name} completed")
+        time_section(special_start, f"  • {action.__name__} completed")
     else:
         time_section(special_start, "  • No special week action required")
     print()
