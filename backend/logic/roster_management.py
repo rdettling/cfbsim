@@ -208,27 +208,37 @@ def calculate_team_ratings(info):
 
 
 def set_starters(info):
-    """Set starters for all teams"""
-    players = info.players.filter(active=True).select_related("team").all()
-
-    # Reset all starters
-    for player in players:
-        player.starter = False
-
-    # Group players by team and position
-    players_by_team_and_position = {
-        team: {position: [] for position in ROSTER} for team in info.teams.all()
-    }
-
-    for player in players:
-        players_by_team_and_position[player.team][player.pos].append(player)
-
-    # Set starters for each team and position
-    for team_players in players_by_team_and_position.values():
-        for position, players_in_position in team_players.items():
-            players_in_position.sort(key=lambda x: x.rating, reverse=True)
-
-            for player in players_in_position[: ROSTER[position]]:
-                player.starter = True
-
-    Players.objects.bulk_update(players, ["starter"])
+    """Set starters for all teams - optimized version"""
+    # Reset all starters to False in one database operation
+    info.players.filter(active=True).update(starter=False)
+    
+    # Process each team individually to reduce memory usage
+    teams = info.teams.all()
+    players_to_update = []
+    
+    for team in teams:
+        # Get players for this team only, grouped by position
+        team_players = team.players.filter(active=True).select_related("team")
+        
+        # Group by position for this team
+        players_by_position = {}
+        for player in team_players:
+            if player.pos not in players_by_position:
+                players_by_position[player.pos] = []
+            players_by_position[player.pos].append(player)
+        
+        # Set starters for each position on this team
+        for position, players_in_position in players_by_position.items():
+            if position in ROSTER:
+                # Sort by rating (highest first) and take top N players
+                sorted_players = sorted(players_in_position, key=lambda x: x.rating, reverse=True)
+                starter_count = ROSTER[position]
+                
+                # Mark top players as starters
+                for player in sorted_players[:starter_count]:
+                    player.starter = True
+                    players_to_update.append(player)
+    
+    # Bulk update only the players that changed
+    if players_to_update:
+        Players.objects.bulk_update(players_to_update, ["starter"])

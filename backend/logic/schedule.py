@@ -384,6 +384,10 @@ def fillSchedules(info):
         scheduled_games[game.teamB.name].add(game.teamA.name)
     time_section(init_start, "  • Data structures initialized")
 
+    # Phase 2: Non-conference scheduling
+    non_conf_start = time.time()
+    print("PHASE 2: NON-CONFERENCE SCHEDULING")
+
     def potential_opponents(team):
         return [
             opponent
@@ -400,9 +404,6 @@ def fillSchedules(info):
             )
         ]
 
-    # Phase 2: Non-conference scheduling
-    non_conf_start = time.time()
-    print("PHASE 2: NON-CONFERENCE SCHEDULING")
     teamsList = teams[:]
     while teamsList:
         for team in teamsList:
