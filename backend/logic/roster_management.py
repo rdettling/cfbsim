@@ -107,9 +107,9 @@ def fill_roster(team, loaded_names, players_to_create):
         team.players.filter(active=True).values_list("pos", flat=True)
     )
 
-    for position, count in ROSTER.items():
+    for position, position_config in ROSTER.items():
         current_count = player_counts.get(position, 0)
-        needed = max(0, (2 * count + 1) - current_count)
+        needed = max(0, position_config["total"] - current_count)
 
         for _ in range(needed):
             player = create_player(team, position, "fr", loaded_names)
@@ -120,8 +120,8 @@ def init_roster(team, loaded_names, players_to_create):
     """Initialize a complete roster for a new team"""
     years = ["fr", "so", "jr", "sr"]
 
-    for position, count in ROSTER.items():
-        for i in range(2 * count + 1):
+    for position, position_config in ROSTER.items():
+        for i in range(position_config["total"]):
             year = random.choice(years)
             player = create_player(team, position, year, loaded_names)
             players_to_create.append(player)
@@ -232,7 +232,7 @@ def set_starters(info):
             if position in ROSTER:
                 # Sort by rating (highest first) and take top N players
                 sorted_players = sorted(players_in_position, key=lambda x: x.rating, reverse=True)
-                starter_count = ROSTER[position]
+                starter_count = ROSTER[position]["starters"]
                 
                 # Mark top players as starters
                 for player in sorted_players[:starter_count]:

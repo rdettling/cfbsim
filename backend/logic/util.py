@@ -298,3 +298,32 @@ def load_year_data(year):
 def time_section(section_start, section_name):
     duration = round(time.time() - section_start, 2)
     print(f"{section_name}: {duration} seconds")
+
+
+def watchability(rank_a, rank_b, win_prob_a, win_prob_b, num_teams):
+    ranking_weight=0.9
+
+    # Calculate combined ranking score (lower ranking = higher score)
+    combined_ranking = (rank_a + rank_b) / 2
+    
+    # Calculate ranking score based on how good the teams are
+    # Better teams (lower rankings) get higher scores
+    # Scale so that #1 vs #2 (combined_ranking = 1.5) gives max score
+    max_ranking_score = num_teams - 1.5  # Score for #1 vs #2
+    ranking_score = max(0, num_teams - combined_ranking)
+    
+    # Calculate competitiveness score (closer to 50-50 = more competitive)
+    competitiveness = 1 - abs(win_prob_a - win_prob_b)
+    
+    # Weighted combination of ranking and competitiveness
+    # Scale so that max possible score is 100
+    max_possible_score = (ranking_weight * max_ranking_score) + ((1 - ranking_weight) * num_teams)
+    watchability_score = (ranking_weight * ranking_score) + ((1 - ranking_weight) * competitiveness * num_teams)
+    
+    # Scale to 0-100 range
+    watchability_score = (watchability_score / max_possible_score) * 100
+    
+    # Ensure final score is not negative
+    watchability_score = max(0, watchability_score)
+    
+    return round(watchability_score, 1)

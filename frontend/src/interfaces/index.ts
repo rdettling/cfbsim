@@ -93,6 +93,7 @@ export interface Game {
     winProbA: number;
     winProbB: number;
     winner: Team;
+    watchability_score: number;
     // Additional properties for game results
     name?: string;
     base_label?: string;
