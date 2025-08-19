@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { InlineLastWeek, InlineThisWeek } from '../components/InlineGameComponents';
 import {
     Container, Typography, TableContainer, Table,
     TableHead, TableBody, TableRow, TableCell,
@@ -18,55 +19,159 @@ interface StandingsData {
     conferences: Conference[];
 }
 
-const GameCell = ({ game, type, onTeamClick }: {
-    game: NonNullable<StandingsData['teams'][0]['last_game' | 'next_game']>,
-    type: 'last' | 'next',
-    onTeamClick: (name: string) => void
-}) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {type === 'last' && `${game.result} (${game.score}) vs`}
-        <TeamLogo name={game.opponent.name} size={20} />
-        <TeamLink name={game.opponent.name} onTeamClick={onTeamClick} />
-        {type === 'next' && `(${game.spread})`}
-    </Box>
-);
-
 const StandingsTable = ({ data, conference_name, onTeamClick }: {
     data: StandingsData,
     conference_name: string | undefined,
     onTeamClick: (name: string) => void
 }) => (
-    <TableContainer component={Paper}>
-        <Table>
+    <TableContainer 
+        component={Paper} 
+        sx={{ 
+            borderRadius: 3, 
+            overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+            minWidth: 1000
+        }}
+    >
+        <Table sx={{ minWidth: 1000 }}>
             <TableHead>
-                <TableRow>
-                    <TableCell>Rank</TableCell>
-                    <TableCell>Team</TableCell>
-                    {conference_name !== 'independent' && <TableCell>Conf</TableCell>}
-                    <TableCell>Overall</TableCell>
-                    <TableCell>Last Week</TableCell>
-                    <TableCell>This Week</TableCell>
+                <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                    <TableCell sx={{ 
+                        color: 'white', 
+                        fontWeight: 'bold', 
+                        fontSize: '1rem',
+                        width: '80px',
+                        textAlign: 'center'
+                    }}>
+                        Rank
+                    </TableCell>
+                    <TableCell sx={{ 
+                        color: 'white', 
+                        fontWeight: 'bold', 
+                        fontSize: '1rem',
+                        minWidth: '250px'
+                    }}>
+                        Team
+                    </TableCell>
+                    {conference_name !== 'independent' && (
+                        <TableCell sx={{ 
+                            color: 'white', 
+                            fontWeight: 'bold', 
+                            fontSize: '1rem',
+                            width: '100px',
+                            textAlign: 'center'
+                        }}>
+                            Conf
+                        </TableCell>
+                    )}
+                    <TableCell sx={{ 
+                        color: 'white', 
+                        fontWeight: 'bold', 
+                        fontSize: '1rem',
+                        width: '100px',
+                        textAlign: 'center'
+                    }}>
+                        Overall
+                    </TableCell>
+                    <TableCell sx={{ 
+                        color: 'white', 
+                        fontWeight: 'bold', 
+                        fontSize: '1rem',
+                        minWidth: '200px'
+                    }}>
+                        Last Week
+                    </TableCell>
+                    <TableCell sx={{ 
+                        color: 'white', 
+                        fontWeight: 'bold', 
+                        fontSize: '1rem',
+                        minWidth: '200px'
+                    }}>
+                        This Week
+                    </TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>
                 {data.teams.map((team, index) => (
-                    <TableRow key={team.name}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <TeamLogo name={team.name} size={30} />
-                                <TeamLink name={team.name} onTeamClick={onTeamClick} />
+                    <TableRow 
+                        key={team.name}
+                        sx={{ 
+                            backgroundColor: index % 2 === 0 ? 'background.paper' : 'grey.50',
+                            '&:hover': { 
+                                backgroundColor: 'grey.100',
+                                transition: 'background-color 0.2s ease'
+                            },
+                            height: '72px'
+                        }}
+                    >
+                        <TableCell sx={{ 
+                            width: '80px',
+                            textAlign: 'center',
+                            py: 2
+                        }}>
+                            <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                    fontWeight: 'bold',
+                                    color: index < 3 ? 'primary.main' : 'text.primary'
+                                }}
+                            >
+                                {index + 1}
+                            </Typography>
+                        </TableCell>
+                        <TableCell sx={{ minWidth: '250px', py: 2 }}>
+                            <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 2
+                            }}>
+                                <TeamLogo name={team.name} size={40} />
+                                <Box>
+                                    <TeamLink name={team.name} onTeamClick={onTeamClick} />
+                                    <Typography 
+                                        variant="caption" 
+                                        sx={{ 
+                                            display: 'block',
+                                            color: 'text.secondary',
+                                            fontSize: '0.75rem'
+                                        }}
+                                    >
+                                        {team.confName}
+                                    </Typography>
+                                </Box>
                             </Box>
                         </TableCell>
                         {conference_name !== 'independent' && (
-                            <TableCell>{team.confWins}-{team.confLosses}</TableCell>
+                            <TableCell sx={{ 
+                                width: '100px',
+                                textAlign: 'center',
+                                py: 2
+                            }}>
+                                <Typography 
+                                    variant="body1" 
+                                    sx={{ fontWeight: 'medium' }}
+                                >
+                                    {team.confWins}-{team.confLosses}
+                                </Typography>
+                            </TableCell>
                         )}
-                        <TableCell>{team.totalWins}-{team.totalLosses}</TableCell>
-                        <TableCell>
-                            {team.last_game && <GameCell game={team.last_game} type="last" onTeamClick={onTeamClick} />}
+                        <TableCell sx={{ 
+                            width: '100px',
+                            textAlign: 'center',
+                            py: 2
+                        }}>
+                            <Typography 
+                                variant="body1" 
+                                sx={{ fontWeight: 'medium' }}
+                            >
+                                {team.totalWins}-{team.totalLosses}
+                            </Typography>
                         </TableCell>
-                        <TableCell>
-                            {team.next_game && <GameCell game={team.next_game} type="next" onTeamClick={onTeamClick} />}
+                        <TableCell sx={{ minWidth: '200px', py: 2 }}>
+                            <InlineLastWeek team={team} onTeamClick={onTeamClick} />
+                        </TableCell>
+                        <TableCell sx={{ minWidth: '200px', py: 2 }}>
+                            <InlineThisWeek team={team} onTeamClick={onTeamClick} />
                         </TableCell>
                     </TableRow>
                 ))}
@@ -109,15 +214,80 @@ const Standings = () => {
     return (
         <>
             <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
-            <Container>
-                <Box sx={{ textAlign: 'center', mb: 3 }}>
-                    {conference_name !== 'independent' && (
-                        <Box component="img" src={`/logos/conferences/${data.conference}.png`}
-                            sx={{ height: 100, mb: 2 }} alt={data.conference} />
-                    )}
-                    <Typography variant="h2">
-                        {conference_name === 'independent' ? 'Independent Teams' : `${data.conference} Standings`}
-                    </Typography>
+            <Container maxWidth="xl">
+                <Box sx={{ 
+                    textAlign: 'center', 
+                    mb: 5,
+                    py: 4,
+                    background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)',
+                    borderRadius: 3,
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    {/* Background decoration */}
+                    <Box sx={{
+                        position: 'absolute',
+                        top: -50,
+                        right: -50,
+                        width: 200,
+                        height: 200,
+                        background: 'linear-gradient(45deg, rgba(25, 118, 210, 0.1), rgba(25, 118, 210, 0.05))',
+                        borderRadius: '50%',
+                        zIndex: 0
+                    }} />
+                    <Box sx={{
+                        position: 'absolute',
+                        bottom: -30,
+                        left: -30,
+                        width: 150,
+                        height: 150,
+                        background: 'linear-gradient(45deg, rgba(25, 118, 210, 0.08), rgba(25, 118, 210, 0.03))',
+                        borderRadius: '50%',
+                        zIndex: 0
+                    }} />
+                    
+                    <Box sx={{ position: 'relative', zIndex: 1 }}>
+                        {conference_name !== 'independent' && (
+                            <Box 
+                                component="img" 
+                                src={`/logos/conferences/${data.conference}.png`}
+                                sx={{ 
+                                    height: 120, 
+                                    mb: 3,
+                                    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))',
+                                    transition: 'transform 0.3s ease',
+                                    '&:hover': {
+                                        transform: 'scale(1.05)'
+                                    }
+                                }} 
+                                alt={data.conference} 
+                            />
+                        )}
+                        <Typography 
+                            variant="h2" 
+                            sx={{ 
+                                fontWeight: 700,
+                                background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                mb: 1,
+                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                            }}
+                        >
+                            {conference_name === 'independent' ? 'Independent Teams' : `${data.conference} Standings`}
+                        </Typography>
+                        <Typography 
+                            variant="h6" 
+                            sx={{ 
+                                color: 'text.secondary',
+                                fontWeight: 400,
+                                fontSize: '1.1rem'
+                            }}
+                        >
+                            Conference Rankings & Team Performance
+                        </Typography>
+                    </Box>
                 </Box>
                 <StandingsTable
                     data={data}

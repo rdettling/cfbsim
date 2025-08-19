@@ -61,17 +61,17 @@ DEVELOPMENT_STD_DEV = 4
 RANDOM_VARIANCE_RANGE = (5, 9)  # applied once to final team rating
 
 ROSTER = {
-    "qb": 1,
-    "rb": 1,
-    "wr": 3,
-    "te": 1,
-    "ol": 5,
-    "dl": 4,
-    "lb": 3,
-    "cb": 2,
-    "s": 2,
-    "k": 1,
-    "p": 1,
+    "qb": {"starters": 1, "total": 4},
+    "rb": {"starters": 1, "total": 5},
+    "wr": {"starters": 3, "total": 7},
+    "te": {"starters": 1, "total": 5},
+    "ol": {"starters": 5, "total": 12},
+    "dl": {"starters": 4, "total": 9},
+    "lb": {"starters": 3, "total": 7},
+    "cb": {"starters": 2, "total": 6},
+    "s": {"starters": 2, "total": 5},
+    "k": {"starters": 1, "total": 2},
+    "p": {"starters": 1, "total": 2},
 }
 
 # === Team Rating Calculation Constants ===

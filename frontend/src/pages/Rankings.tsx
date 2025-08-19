@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh, getGameRoute } from '../services/api';
+import { apiService, usePageRefresh } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
-import { useNavigate } from 'react-router-dom';
+import { InlineLastWeek, InlineThisWeek } from '../components/InlineGameComponents';
+
 
 import {
     Container,
@@ -36,7 +37,6 @@ const Rankings = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
     const [showAllTeams, setShowAllTeams] = useState(false);
-    const navigate = useNavigate();
 
     const fetchRankings = async () => {
         try {
@@ -71,10 +71,6 @@ const Rankings = () => {
     const handleTeamClick = (name: string) => {
         setSelectedTeam(name);
         setModalOpen(true);
-    };
-
-    const handleGameClick = (gameId: string) => {
-        navigate(getGameRoute(gameId));
     };
 
     // Filter teams based on showAllTeams state
@@ -153,56 +149,10 @@ const Rankings = () => {
                                         </Typography>
                                     </TableCell>
                                     <TableCell sx={{ minWidth: '250px' }}>
-                                        {team.last_game && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                                <Typography variant="body2">
-                                                    {team.last_game.result}
-                                                </Typography>
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{
-                                                        cursor: 'pointer',
-                                                        textDecoration: 'underline',
-                                                        color: 'primary.main',
-                                                        fontWeight: 'bold',
-                                                        '&:hover': { color: 'primary.dark' }
-                                                    }}
-                                                    onClick={() => handleGameClick(team.last_game.id)}
-                                                >
-                                                    ({team.last_game.score})
-                                                </Typography>
-                                                <Typography variant="body2">vs</Typography>
-                                                <TeamLogo name={team.last_game.opponent.name} size={20} />
-                                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                                    #{team.last_game.opponent.ranking}
-                                                </Typography>
-                                                <TeamLink name={team.last_game.opponent.name} onTeamClick={handleTeamClick} />
-                                            </Box>
-                                        )}
+                                        <InlineLastWeek team={team} onTeamClick={handleTeamClick} />
                                     </TableCell>
                                     <TableCell sx={{ minWidth: '250px' }}>
-                                        {team.next_game && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                                <TeamLogo name={team.next_game.opponent.name} size={20} />
-                                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                                    #{team.next_game.opponent.ranking}
-                                                </Typography>
-                                                <TeamLink name={team.next_game.opponent.name} onTeamClick={handleTeamClick} />
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{
-                                                        cursor: 'pointer',
-                                                        textDecoration: 'underline',
-                                                        color: 'primary.main',
-                                                        fontWeight: 'bold',
-                                                        '&:hover': { color: 'primary.dark' }
-                                                    }}
-                                                    onClick={() => handleGameClick(team.next_game.id)}
-                                                >
-                                                    ({team.next_game.spread})
-                                                </Typography>
-                                            </Box>
-                                        )}
+                                        <InlineThisWeek team={team} onTeamClick={handleTeamClick} />
                                     </TableCell>
                                 </TableRow>
                             ))}

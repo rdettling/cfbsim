@@ -21,8 +21,8 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
     total_players = 0
 
     # Generate players for all starter positions
-    for pos, count in ROSTER.items():
-        for _ in range(count):
+    for pos, position_config in ROSTER.items():
+        for _ in range(position_config["starters"]):
             # Generate player ratings
             fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(
                 prestige_tier
