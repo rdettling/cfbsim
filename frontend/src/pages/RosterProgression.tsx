@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh, getPlayerRoute } from '../services/api';
+import { useState } from 'react';
+import { apiService, getPlayerRoute } from '../services/api';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
-    Container, Typography, Box, CircularProgress, Alert,
+    Container, Typography, Box, Alert,
     Table, TableBody, TableCell, TableContainer, TableHead,
     TableRow, Paper, Card, CardContent, Grid, Chip,
     FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import { DataPage } from '../components/DataPage';
 import { TeamInfoModal, TeamLink, TeamLogo } from '../components/TeamComponents';
 
 interface ProgressedPlayer extends Player {
@@ -158,160 +158,132 @@ const PlayerTable = ({ players, title, color, showChange = false, positionFilter
 };
 
 const RosterProgression = () => {
-    const [data, setData] = useState<RosterProgressionData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam] = useState<string>('');
     const [positionFilter, setPositionFilter] = useState<string>('');
 
-    useEffect(() => {
-        const fetchRosterProgression = async () => {
-            try {
-                const responseData = await apiService.getRosterProgression<RosterProgressionData>();
-                setData(responseData);
-            } catch (error) {
-                setError('Failed to load roster progression data');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchRosterProgression();
-    }, []);
-
-    usePageRefresh<RosterProgressionData>(setData);
-
-    useEffect(() => {
-        document.title = data?.team.name ? `${data.team.name} Roster Progression` : 'Roster Progression';
-        return () => { document.title = 'College Football'; };
-    }, [data?.team.name]);
-
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress size={60} />
-            </Box>
-        );
-    }
-    
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
-
-    // Calculate summary stats
-    const totalProgressed = data.progressed.length;
-    const totalLeaving = data.leaving.length;
-    const avgRatingChange = totalProgressed > 0 
-        ? Math.round(data.progressed.reduce((sum, player) => sum + player.change, 0) / totalProgressed)
-        : 0;
-    const maxRatingChange = totalProgressed > 0 
-        ? Math.max(...data.progressed.map(player => player.change))
-        : 0;
-
-    const statCards = [
-        {
-            title: 'Players Progressed',
-            value: totalProgressed,
-            color: 'success' as const,
-            gradient: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)'
-        },
-        {
-            title: 'Seniors Leaving',
-            value: totalLeaving,
-            color: 'warning' as const,
-            gradient: 'linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%)'
-        },
-        {
-            title: 'Avg Rating Change',
-            value: avgRatingChange,
-            color: 'info' as const,
-            gradient: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
-        },
-        {
-            title: 'Max Rating Gain',
-            value: maxRatingChange,
-            color: 'secondary' as const,
-            gradient: 'linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%)'
-        }
-    ];
-
-    // Get unique positions for filter dropdown
-    const allPlayers = [...data.progressed, ...data.leaving];
-    const uniquePositions = [...new Set(allPlayers.map(player => player.pos))].sort();
-
     return (
         <>
-            <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
-            <Container maxWidth="lg" sx={{ py: 4 }}>
-                {/* Header Section */}
-                <Box sx={{ textAlign: 'center', mb: 6 }}>
-                    <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                        Roster Progression
-                    </Typography>
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                        {data.info.currentYear} → {data.info.currentYear + 1} Season Transition
-                    </Typography>
-                </Box>
+            <DataPage
+                fetchFunction={() => apiService.getRosterProgression<RosterProgressionData>()}
+            >
+                {(data) => {
+                    // Calculate summary stats
+                    const totalProgressed = data.progressed.length;
+                    const totalLeaving = data.leaving.length;
+                    const avgRatingChange = totalProgressed > 0 
+                        ? Math.round(data.progressed.reduce((sum: number, player: ProgressedPlayer) => sum + player.change, 0) / totalProgressed)
+                        : 0;
+                    const maxRatingChange = totalProgressed > 0 
+                        ? Math.max(...data.progressed.map((player: ProgressedPlayer) => player.change))
+                        : 0;
 
-                {/* Summary Stats */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    {statCards.map((card, index) => (
-                        <Grid item xs={12} sm={6} md={3} key={index}>
-                            <StatCard {...card} />
-                        </Grid>
-                    ))}
-                </Grid>
+                    const statCards = [
+                        {
+                            title: 'Players Progressed',
+                            value: totalProgressed,
+                            color: 'success' as const,
+                            gradient: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)'
+                        },
+                        {
+                            title: 'Seniors Leaving',
+                            value: totalLeaving,
+                            color: 'warning' as const,
+                            gradient: 'linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%)'
+                        },
+                        {
+                            title: 'Avg Rating Change',
+                            value: avgRatingChange,
+                            color: 'info' as const,
+                            gradient: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
+                        },
+                        {
+                            title: 'Max Rating Gain',
+                            value: maxRatingChange,
+                            color: 'secondary' as const,
+                            gradient: 'linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%)'
+                        }
+                    ];
 
-                {/* Position Filter */}
-                <Box sx={{ mb: 3 }}>
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Filter by Position</InputLabel>
-                        <Select
-                            value={positionFilter}
-                            label="Filter by Position"
-                            onChange={(e) => setPositionFilter(e.target.value)}
-                        >
-                            <MenuItem value="">All Positions</MenuItem>
-                            {uniquePositions.map((pos) => (
-                                <MenuItem key={pos} value={pos}>
-                                    {pos.toUpperCase()}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
+                    // Get unique positions for filter dropdown
+                    const allPlayers = [...data.progressed, ...data.leaving];
+                    const uniquePositions = [...new Set(allPlayers.map(player => player.pos))].sort();
 
-                {/* Players Progressed Section */}
-                <PlayerTable 
-                    players={data.progressed}
-                    title="Players Progressed"
-                    color="success"
-                    showChange={true}
-                    positionFilter={positionFilter}
-                />
+                    return (
+                        <>
+                            {/* Header Section */}
+                            <Box sx={{ textAlign: 'center', mb: 6 }}>
+                                <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                                    Roster Progression
+                                </Typography>
+                                <Typography variant="h6" color="text.secondary" gutterBottom>
+                                    {data.info.currentYear} → {data.info.currentYear + 1} Season Transition
+                                </Typography>
+                            </Box>
 
-                {/* Seniors Leaving Section */}
-                <PlayerTable 
-                    players={data.leaving}
-                    title="Seniors Leaving"
-                    color="warning"
-                    showChange={false}
-                    positionFilter={positionFilter}
-                />
+                            {/* Summary Stats */}
+                            <Grid container spacing={3} sx={{ mb: 4 }}>
+                                {statCards.map((card, index) => (
+                                    <Grid item xs={12} sm={6} md={3} key={index}>
+                                        <StatCard {...card} />
+                                    </Grid>
+                                ))}
+                            </Grid>
 
-                {/* Next Steps Section */}
-                <Card sx={{ background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
-                    <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                            Ready for Next Season
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                            Your roster has been updated for the upcoming season. 
-                            {totalProgressed > 0 && ` ${totalProgressed} players have improved their skills.`}
-                            {totalLeaving > 0 && ` ${totalLeaving} seniors have graduated.`}
-                        </Typography>
-                    </CardContent>
-                </Card>
-            </Container>
+                            {/* Position Filter */}
+                            <Box sx={{ mb: 3 }}>
+                                <FormControl sx={{ minWidth: 200 }}>
+                                    <InputLabel>Filter by Position</InputLabel>
+                                    <Select
+                                        value={positionFilter}
+                                        label="Filter by Position"
+                                        onChange={(e) => setPositionFilter(e.target.value)}
+                                    >
+                                        <MenuItem value="">All Positions</MenuItem>
+                                        {uniquePositions.map((pos) => (
+                                            <MenuItem key={pos} value={pos}>
+                                                {pos.toUpperCase()}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Box>
+
+                            {/* Players Progressed Section */}
+                            <PlayerTable 
+                                players={data.progressed}
+                                title="Players Progressed"
+                                color="success"
+                                showChange={true}
+                                positionFilter={positionFilter}
+                            />
+
+                            {/* Seniors Leaving Section */}
+                            <PlayerTable 
+                                players={data.leaving}
+                                title="Seniors Leaving"
+                                color="warning"
+                                showChange={false}
+                                positionFilter={positionFilter}
+                            />
+
+                            {/* Next Steps Section */}
+                            <Card sx={{ background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
+                                <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                                        Ready for Next Season
+                                    </Typography>
+                                    <Typography variant="body1" color="text.secondary">
+                                        Your roster has been updated for the upcoming season. 
+                                        {totalProgressed > 0 && ` ${totalProgressed} players have improved their skills.`}
+                                        {totalLeaving > 0 && ` ${totalLeaving} seniors have graduated.`}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </>
+                    );
+                }}
+            </DataPage>
             
             <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
         </>

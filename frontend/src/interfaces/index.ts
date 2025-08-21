@@ -57,7 +57,7 @@ export interface Info {
     currentWeek: number;
     currentYear: number;
     stage: string;
-    team: Team;
+    team: string;
     lastWeek: number;
 }
 
@@ -219,4 +219,48 @@ export interface PrestigeStarsRow {
 export interface TeamCountRow {
     prestige: number;
     team_count: number;
+}
+
+// Playoff-related interfaces
+export interface PlayoffTeam {
+    name: string;
+    seed?: number;
+    ranking: number;
+    record: string;
+    is_autobid: boolean;
+}
+
+export interface BubbleTeam {
+    name: string;
+    ranking: number;
+    record: string;
+    conference: string;
+}
+
+export interface ConferenceChampion {
+    name: string;
+    ranking: number;
+    record: string;
+    seed?: number;
+    conference: string;
+}
+
+// Common prop interfaces
+export interface TeamClickHandler {
+    onTeamClick: (name: string) => void;
+}
+
+// Common table row interfaces
+export interface TableRow {
+    id: string | number;
+    [key: string]: any;
+}
+
+// Common filter interfaces
+export interface FilterOptions {
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
 }

@@ -211,34 +211,36 @@ def set_starters(info):
     """Set starters for all teams - optimized version"""
     # Reset all starters to False in one database operation
     info.players.filter(active=True).update(starter=False)
-    
+
     # Process each team individually to reduce memory usage
     teams = info.teams.all()
     players_to_update = []
-    
+
     for team in teams:
         # Get players for this team only, grouped by position
         team_players = team.players.filter(active=True).select_related("team")
-        
+
         # Group by position for this team
         players_by_position = {}
         for player in team_players:
             if player.pos not in players_by_position:
                 players_by_position[player.pos] = []
             players_by_position[player.pos].append(player)
-        
+
         # Set starters for each position on this team
         for position, players_in_position in players_by_position.items():
             if position in ROSTER:
                 # Sort by rating (highest first) and take top N players
-                sorted_players = sorted(players_in_position, key=lambda x: x.rating, reverse=True)
+                sorted_players = sorted(
+                    players_in_position, key=lambda x: x.rating, reverse=True
+                )
                 starter_count = ROSTER[position]["starters"]
-                
+
                 # Mark top players as starters
                 for player in sorted_players[:starter_count]:
                     player.starter = True
                     players_to_update.append(player)
-    
+
     # Bulk update only the players that changed
     if players_to_update:
         Players.objects.bulk_update(players_to_update, ["starter"])

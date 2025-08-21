@@ -72,8 +72,9 @@ def game_preview(info, game):
         {
             "info": InfoSerializer(info).data,
             "game": game_data,
+            "team": TeamsSerializer(info.team).data,
             "top_players": top_players,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -247,10 +248,11 @@ def game_result(info, game):
         {
             "info": InfoSerializer(info).data,
             "game": GamesSerializer(game).data,
+            "team": TeamsSerializer(info.team).data,
             "drives": drives_data,
             "stats": game_stats(game),
             "game_logs": categorized_game_log_strings,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }

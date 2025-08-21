@@ -208,7 +208,7 @@ def rankings(request):
             "info": InfoSerializer(info).data,
             "rankings": rankings_data,
             "team": TeamsSerializer(info.team).data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -247,7 +247,7 @@ def standings(request, conference_name):
                 "team": TeamsSerializer(info.team).data,
                 "conference": conference.confName,
                 "teams": [process_team(team) for team in sorted_teams],
-                "conferences": ConferenceNameSerializer(
+                "conferences": ConferencesSerializer(
                     info.conferences.all().order_by("confName"), many=True
                 ).data,
             }
@@ -264,7 +264,7 @@ def standings(request, conference_name):
                 "info": InfoSerializer(info).data,
                 "team": TeamsSerializer(info.team).data,
                 "teams": [process_team(team) for team in sorted_independents],
-                "conferences": ConferenceNameSerializer(
+                "conferences": ConferencesSerializer(
                     info.conferences.all().order_by("confName"), many=True
                 ).data,
             }
@@ -378,11 +378,12 @@ def playoff(request):
         {
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(info.team).data,
+            "playoff": PlayoffSerializer(info.playoff).data,
             "playoff_teams": playoff_data,
             "bubble_teams": bubble_data,
             "conference_champions": champion_data,
             "bracket": bracket_data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -405,9 +406,7 @@ def sim(request, dest_week):
     # Simulate each week until we reach the destination week
     while info.currentWeek < dest_week:
         # 1. Fetch and simulate games
-        games = fetch_and_simulate_games(
-            info, drives_to_create, plays_to_create
-        )
+        games = fetch_and_simulate_games(info, drives_to_create, plays_to_create)
 
         # 2. Generate headlines and update game results
         natty_game = update_game_results(info, games)
@@ -424,7 +423,10 @@ def sim(request, dest_week):
     # Save all accumulated data
     save_simulation_data(info, drives_to_create, plays_to_create)
 
-    time_section(overall_start, f"Total simulation time from week {start_week} to {info.currentWeek}")
+    time_section(
+        overall_start,
+        f"Total simulation time from week {start_week} to {info.currentWeek}",
+    )
 
     return Response(
         {

@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh, getPlayerRoute } from '../services/api';
+import { apiService, getPlayerRoute } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Container, Typography, Box, CircularProgress, Alert,
     Table, TableBody, TableCell, TableContainer, TableHead,
-    TableRow, Paper, Card, CardContent, Grid, Chip,
-    FormControl, InputLabel, Select, MenuItem, Accordion,
-    AccordionSummary, AccordionDetails
+    TableRow, Card, CardContent, Chip, Tabs, Tab, Dialog,
+    DialogTitle, DialogContent, IconButton, Button
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CloseIcon from '@mui/icons-material/Close';
 import Navbar from '../components/Navbar';
-import { TeamInfoModal, TeamLink, TeamLogo } from '../components/TeamComponents';
+import { TeamInfoModal, TeamLink, TeamLogo, ConfLogo } from '../components/TeamComponents';
 
 interface FreshmanPlayer {
     id: number;
@@ -19,7 +18,6 @@ interface FreshmanPlayer {
     pos: string;
     rating: number;
     stars: number;
-    development_trait: number;
 }
 
 interface TeamRecruits {
@@ -27,50 +25,95 @@ interface TeamRecruits {
     players: FreshmanPlayer[];
 }
 
+interface TeamRanking {
+    team_name: string;
+    team: Team;
+    players: FreshmanPlayer[];
+    avg_stars: number;
+    player_count: number;
+    five_stars: number;
+    four_stars: number;
+    three_stars: number;
+    weighted_score: number;
+}
+
 interface RecruitingSummaryData {
     info: Info;
     team: Team;
     conferences: Conference[];
-    freshmen_by_team: Record<string, TeamRecruits>;
-    summary_stats: {
-        total_freshmen: number;
-        avg_rating: number;
-        max_rating: number;
-        min_rating: number;
-    };
+    team_rankings: TeamRanking[];
 }
 
-interface StatCardProps {
-    title: string;
-    value: number;
-    color: 'primary' | 'secondary' | 'success' | 'info';
-    gradient: string;
+// Reusable PlayerRow component
+interface PlayerRowProps {
+    player: FreshmanPlayer & { teamName?: string };
+    index: number;
+    showTeam?: boolean;
+    onTeamClick?: (teamName: string) => void;
 }
 
-const StatCard = ({ title, value, color, gradient }: StatCardProps) => (
-    <Card sx={{ height: '100%', background: gradient }}>
-        <CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', color: `${color}.main` }}>
-                {value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-                {title}
-            </Typography>
-        </CardContent>
-    </Card>
+const PlayerRow = ({ player, index, showTeam = false, onTeamClick }: PlayerRowProps) => (
+    <TableRow sx={{ '&:hover': { backgroundColor: 'grey.50' }, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <TableCell sx={styles.cell}>#{index + 1}</TableCell>
+        <TableCell sx={styles.cell}>
+            <Box component="a" href={getPlayerRoute(player.id.toString())}
+                 sx={{ textDecoration: 'none', color: 'primary.main', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}>
+                {player.first} {player.last}
+            </Box>
+        </TableCell>
+        {showTeam && player.teamName && (
+            <TableCell sx={styles.cell}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TeamLogo name={player.teamName} size={25} />
+                    <TeamLink name={player.teamName} onTeamClick={() => onTeamClick?.(player.teamName!)} />
+                </Box>
+            </TableCell>
+        )}
+        <TableCell sx={styles.cell}><Chip label={player.pos} size="small" color="secondary" variant="outlined" /></TableCell>
+        <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>{player.rating}</TableCell>
+        <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                {[...Array(player.stars)].map((_, i) => (
+                    <img key={i} src="/logos/star.png" alt="star" style={{ width: 16, height: 16 }} />
+                ))}
+            </Box>
+        </TableCell>
+    </TableRow>
 );
+
+// Simplified styles
+const styles = {
+    card: { boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: 2 },
+    header: { p: 3, borderBottom: '1px solid', borderColor: 'divider' },
+    cell: { fontWeight: 600, fontSize: '0.875rem', py: 2.5 },
+    starCell: (hasStars: boolean) => ({
+        fontWeight: 600, fontSize: '0.875rem', py: 2.5, textAlign: 'center' as const,
+        color: hasStars ? 'warning.main' : 'text.secondary',
+        backgroundColor: hasStars ? 'warning.50' : 'transparent', borderRadius: 1, mx: 0.5
+    }),
+    tabs: {
+        '& .MuiTab-root': { fontSize: '1.1rem', fontWeight: 600, textTransform: 'none', minHeight: 56, px: 4 },
+        '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' }
+    }
+};
+
+function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
+    return <div role="tabpanel" hidden={value !== index}>{value === index && <Box sx={{ pt: 3 }}>{children}</Box>}</div>;
+}
 
 const RecruitingSummary = () => {
     const [data, setData] = useState<RecruitingSummaryData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [positionFilter, setPositionFilter] = useState<string>('');
-    const [teamFilter, setTeamFilter] = useState<string>('');
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
+    const [tabValue, setTabValue] = useState(0);
+    const [teamRecruitsModalOpen, setTeamRecruitsModalOpen] = useState(false);
+    const [selectedTeamRecruits, setSelectedTeamRecruits] = useState<TeamRecruits | null>(null);
+    const [showAllTeams, setShowAllTeams] = useState(false);
 
     useEffect(() => {
-        const fetchRecruitingSummary = async () => {
+        const fetchData = async () => {
             try {
                 const responseData = await apiService.getRecruitingSummary<RecruitingSummaryData>();
                 setData(responseData);
@@ -80,345 +123,219 @@ const RecruitingSummary = () => {
                 setLoading(false);
             }
         };
-
-        fetchRecruitingSummary();
+        fetchData();
     }, []);
 
-    usePageRefresh<RecruitingSummaryData>(setData);
+    // Note: usePageRefresh was removed, manual refresh handling would need to be implemented if needed
 
     useEffect(() => {
         document.title = data?.team.name ? `${data.team.name} Recruiting Summary` : 'Recruiting Summary';
         return () => { document.title = 'College Football'; };
     }, [data?.team.name]);
 
-    const handleTeamClick = (teamName: string) => {
-        setSelectedTeam(teamName);
-        setModalOpen(true);
-    };
-
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress size={60} />
-            </Box>
-        );
-    }
-    
+    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress size={60} /></Box>;
     if (error) return <Alert severity="error">{error}</Alert>;
     if (!data) return <Alert severity="warning">No data available</Alert>;
 
-    // Get all freshmen for filtering
-    const allFreshmen = Object.values(data.freshmen_by_team).flatMap(teamData => 
-        teamData.players.map(player => ({ ...player, teamName: teamData.team.name }))
-    );
+    const allFreshmen = data.team_rankings.flatMap(teamRanking => 
+        teamRanking.players.map(player => ({ ...player, teamName: teamRanking.team_name }))
+    ).sort((a, b) => b.rating - a.rating);
 
-    // Get unique positions and teams for filters
-    const uniquePositions = [...new Set(allFreshmen.map(player => player.pos))].sort();
-    const uniqueTeams = Object.keys(data.freshmen_by_team).sort();
+    const displayedTeams = data.team_rankings.slice(0, showAllTeams ? data.team_rankings.length : 25);
 
-    // Filter and sort freshmen
-    const filteredFreshmen = allFreshmen
-        .filter(player => !positionFilter || player.pos === positionFilter)
-        .filter(player => !teamFilter || player.teamName === teamFilter)
-        .sort((a, b) => b.rating - a.rating);
-
-    const statCards = [
-        {
-            title: 'Total Freshmen',
-            value: data.summary_stats.total_freshmen,
-            color: 'primary' as const,
-            gradient: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
-        },
-        {
-            title: 'Average Rating',
-            value: data.summary_stats.avg_rating,
-            color: 'success' as const,
-            gradient: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)'
-        },
-        {
-            title: 'Highest Rating',
-            value: data.summary_stats.max_rating,
-            color: 'secondary' as const,
-            gradient: 'linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%)'
-        },
-        {
-            title: 'Lowest Rating',
-            value: data.summary_stats.min_rating,
-            color: 'info' as const,
-            gradient: 'linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%)'
+    const handleTeamRecruitsClick = (teamName: string) => {
+        const teamRanking = data.team_rankings.find(ranking => ranking.team_name === teamName);
+        if (teamRanking) {
+            setSelectedTeamRecruits({ team: teamRanking.team, players: teamRanking.players });
+            setTeamRecruitsModalOpen(true);
         }
-    ];
+    };
 
     return (
         <>
             <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
             <Container maxWidth="lg" sx={{ py: 4 }}>
-                {/* Header Section */}
+                {/* Header */}
                 <Box sx={{ textAlign: 'center', mb: 6 }}>
-                    <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                        Recruiting Summary
+                    <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '2rem', md: '2.5rem' } }}>
+                        {data.info.currentYear} Recruiting Rankings
                     </Typography>
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                        {data.info.currentYear} Freshman Class
+                    <Typography variant="body1" color="text.secondary" sx={{ opacity: 0.8 }}>
+                        College Football Team Rankings
                     </Typography>
                 </Box>
 
-                {/* Summary Stats */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    {statCards.map((card, index) => (
-                        <Grid item xs={12} sm={6} md={3} key={index}>
-                            <StatCard {...card} />
-                        </Grid>
-                    ))}
-                </Grid>
-
-                {/* Filters */}
-                <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Filter by Position</InputLabel>
-                        <Select
-                            value={positionFilter}
-                            label="Filter by Position"
-                            onChange={(e) => setPositionFilter(e.target.value)}
-                        >
-                            <MenuItem value="">All Positions</MenuItem>
-                            {uniquePositions.map((pos) => (
-                                <MenuItem key={pos} value={pos}>
-                                    {pos.toUpperCase()}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel>Filter by Team</InputLabel>
-                        <Select
-                            value={teamFilter}
-                            label="Filter by Team"
-                            onChange={(e) => setTeamFilter(e.target.value)}
-                        >
-                            <MenuItem value="">All Teams</MenuItem>
-                            {uniqueTeams.map((teamName) => (
-                                <MenuItem key={teamName} value={teamName}>
-                                    {teamName}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                {/* Tabs */}
+                <Box sx={{ mb: 4 }}>
+                    <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={styles.tabs}>
+                        <Tab label="Team Rankings" />
+                        <Tab label="Player Rankings" />
+                    </Tabs>
                 </Box>
 
-                {/* Top Recruits Table */}
-                <Card sx={{ mb: 4 }}>
-                    <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                            <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                Top Recruits
-                            </Typography>
-                            <Chip 
-                                label={`${filteredFreshmen.length} players`} 
-                                color="primary" 
-                                size="small"
-                            />
-                            {(positionFilter || teamFilter) && (
-                                <Chip 
-                                    label="Filtered" 
-                                    color="secondary" 
-                                    size="small"
-                                    variant="outlined"
-                                />
-                            )}
-                        </Box>
-                        
-                        {filteredFreshmen.length > 0 ? (
-                            <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
+                {/* Team Rankings Tab */}
+                <TabPanel value={tabValue} index={0}>
+                    <Card sx={styles.card}>
+                        <CardContent sx={{ p: 0 }}>
+                            <Box sx={styles.header}>
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>Team Rankings</Typography>
+                            </Box>
+                            
+                            <TableContainer>
                                 <Table>
                                     <TableHead>
-                                        <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rank</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Name</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Team</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Position</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rating</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Stars</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Development</TableCell>
+                                        <TableRow sx={{ backgroundColor: 'grey.100' }}>
+                                            <TableCell sx={styles.cell}>Rank</TableCell>
+                                            <TableCell sx={styles.cell}>Team</TableCell>
+                                            <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>Total</TableCell>
+                                            <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>5★</TableCell>
+                                            <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>4★</TableCell>
+                                            <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>3★</TableCell>
+                                            <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>Avg Stars</TableCell>
+                                            <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>Points</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {filteredFreshmen.slice(0, 50).map((player, index) => (
-                                            <TableRow key={player.id} sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
-                                                <TableCell sx={{ fontWeight: 'bold' }}>
-                                                    #{index + 1}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Box 
-                                                        component="a" 
-                                                        href={getPlayerRoute(player.id.toString())}
-                                                        sx={{ 
-                                                            textDecoration: 'none', 
-                                                            color: 'primary.main',
-                                                            fontWeight: 'bold',
-                                                            '&:hover': { textDecoration: 'underline' }
-                                                        }}
-                                                    >
-                                                        {player.first} {player.last}
+                                        {displayedTeams.map((team, index) => (
+                                            <TableRow key={team.team_name} sx={{ '&:hover': { backgroundColor: 'grey.50' }, borderBottom: '1px solid', borderColor: 'divider' }}>
+                                                <TableCell sx={styles.cell}>#{index + 1}</TableCell>
+                                                <TableCell sx={styles.cell}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+                                                         onClick={() => handleTeamRecruitsClick(team.team_name)}>
+                                                        <TeamLogo name={team.team_name} size={28} />
+                                                        <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem', '&:hover': { color: 'primary.main' } }}>
+                                                            {team.team_name}
+                                                        </Typography>
                                                     </Box>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <TeamLogo name={player.teamName} size={25} />
-                                                        <TeamLink 
-                                                            name={player.teamName} 
-                                                            onTeamClick={() => handleTeamClick(player.teamName)}
-                                                        />
-                                                    </Box>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip 
-                                                        label={player.pos} 
-                                                        size="small"
-                                                        color="secondary"
-                                                        variant="outlined"
-                                                    />
-                                                </TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold' }}>
-                                                    {player.rating}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip 
-                                                        label={`${player.stars}★`}
-                                                        size="small"
-                                                        color="warning"
-                                                        variant="outlined"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip 
-                                                        label={`${player.development_trait}/5`}
-                                                        size="small"
-                                                        color="info"
-                                                        variant="outlined"
-                                                    />
-                                                </TableCell>
+                                                <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>{team.player_count}</TableCell>
+                                                <TableCell sx={styles.starCell(team.five_stars > 0)}>{team.five_stars}</TableCell>
+                                                <TableCell sx={styles.starCell(team.four_stars > 0)}>{team.four_stars}</TableCell>
+                                                <TableCell sx={{ ...styles.cell, textAlign: 'center', color: 'text.secondary' }}>{team.three_stars}</TableCell>
+                                                <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>{team.avg_stars}</TableCell>
+                                                <TableCell sx={{ ...styles.cell, textAlign: 'center', color: 'primary.main' }}>{team.weighted_score}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
                             </TableContainer>
-                        ) : (
-                            <Box sx={{ textAlign: 'center', py: 4 }}>
-                                <Typography variant="h6" color="text.secondary" gutterBottom>
-                                    No recruits found
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    No freshmen match the current filters.
-                                </Typography>
-                            </Box>
-                        )}
-                    </CardContent>
-                </Card>
+                            
+                            {/* Show More Button */}
+                            {data.team_rankings.length > 25 && (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+                                    <Button variant="outlined" onClick={() => setShowAllTeams(!showAllTeams)} 
+                                            sx={{ px: 4, py: 1.5, fontWeight: 600, textTransform: 'none', borderRadius: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}>
+                                        {showAllTeams ? `Show Top 25 (of ${data.team_rankings.length} teams)` : `Show All ${data.team_rankings.length} Teams`}
+                                    </Button>
+                                </Box>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabPanel>
 
-                {/* Team Breakdown */}
-                <Card>
-                    <CardContent>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 3 }}>
-                            Team Breakdown
-                        </Typography>
-                        
-                        {Object.entries(data.freshmen_by_team)
-                            .filter(([teamName, teamData]) => 
-                                !teamFilter || teamName === teamFilter
-                            )
-                            .sort(([, a], [, b]) => b.team.prestige - a.team.prestige)
-                            .map(([teamName, teamData]) => (
-                                <Accordion key={teamName} sx={{ mb: 1 }}>
-                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                                            <TeamLogo name={teamName} size={30} />
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                {teamName}
-                                            </Typography>
-                                            <Chip 
-                                                label={`${teamData.players.length} recruits`} 
-                                                size="small"
-                                                color="primary"
-                                            />
-                                            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
-                                                Prestige: {teamData.team.prestige}
-                                            </Typography>
-                                        </Box>
-                                    </AccordionSummary>
-                                    <AccordionDetails>
-                                        <TableContainer>
-                                            <Table size="small">
-                                                <TableHead>
-                                                    <TableRow>
-                                                        <TableCell>Name</TableCell>
-                                                        <TableCell>Position</TableCell>
-                                                        <TableCell>Rating</TableCell>
-                                                        <TableCell>Stars</TableCell>
-                                                        <TableCell>Development</TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {teamData.players
-                                                        .filter(player => !positionFilter || player.pos === positionFilter)
-                                                        .sort((a, b) => b.rating - a.rating)
-                                                        .map((player) => (
-                                                            <TableRow key={player.id}>
-                                                                <TableCell>
-                                                                    <Box 
-                                                                        component="a" 
-                                                                        href={getPlayerRoute(player.id.toString())}
-                                                                        sx={{ 
-                                                                            textDecoration: 'none', 
-                                                                            color: 'primary.main',
-                                                                            fontWeight: 'bold',
-                                                                            '&:hover': { textDecoration: 'underline' }
-                                                                        }}
-                                                                    >
-                                                                        {player.first} {player.last}
-                                                                    </Box>
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Chip 
-                                                                        label={player.pos} 
-                                                                        size="small"
-                                                                        color="secondary"
-                                                                        variant="outlined"
-                                                                    />
-                                                                </TableCell>
-                                                                <TableCell sx={{ fontWeight: 'bold' }}>
-                                                                    {player.rating}
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Chip 
-                                                                        label={`${player.stars}★`}
-                                                                        size="small"
-                                                                        color="warning"
-                                                                        variant="outlined"
-                                                                    />
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Chip 
-                                                                        label={`${player.development_trait}/5`}
-                                                                        size="small"
-                                                                        color="info"
-                                                                        variant="outlined"
-                                                                    />
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                    </AccordionDetails>
-                                </Accordion>
-                            ))}
-                    </CardContent>
-                </Card>
+                {/* Player Rankings Tab */}
+                <TabPanel value={tabValue} index={1}>
+                    <Card sx={styles.card}>
+                        <CardContent sx={{ p: 0 }}>
+                            <Box sx={{ ...styles.header, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>Player Rankings</Typography>
+                                <Chip label={`${allFreshmen.length} players`} color="primary" size="small" sx={{ fontWeight: 600 }} />
+                            </Box>
+                            
+                            {allFreshmen.length > 0 ? (
+                                <TableContainer>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: 'grey.100' }}>
+                                                <TableCell sx={styles.cell}>Rank</TableCell>
+                                                <TableCell sx={styles.cell}>Name</TableCell>
+                                                <TableCell sx={styles.cell}>Team</TableCell>
+                                                <TableCell sx={styles.cell}>Position</TableCell>
+                                                <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>Rating</TableCell>
+                                                <TableCell sx={{ ...styles.cell, textAlign: 'center' }}>Stars</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {allFreshmen.slice(0, 100).map((player, index) => (
+                                                <PlayerRow 
+                                                    key={player.id}
+                                                    player={player}
+                                                    index={index}
+                                                    showTeam={true}
+                                                    onTeamClick={(teamName) => { setSelectedTeam(teamName); setModalOpen(true); }}
+                                                />
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            ) : (
+                                <Box sx={{ textAlign: 'center', py: 4 }}>
+                                    <Typography variant="h6" color="text.secondary" gutterBottom>No recruits found</Typography>
+                                    <Typography variant="body2" color="text.secondary">No freshmen match the current filters.</Typography>
+                                </Box>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabPanel>
             </Container>
             
             <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
+            
+            {/* Team Recruits Modal */}
+            <Dialog open={teamRecruitsModalOpen} onClose={() => setTeamRecruitsModalOpen(false)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {selectedTeamRecruits && (
+                            <>
+                                <TeamLogo name={selectedTeamRecruits.team.name} size={40} />
+                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{selectedTeamRecruits.team.name} Recruiting Class</Typography>
+                            </>
+                        )}
+                        <IconButton aria-label="close" onClick={() => setTeamRecruitsModalOpen(false)} 
+                                   sx={{ position: 'absolute', right: 8, top: 8, color: 'grey.500' }}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    {selectedTeamRecruits && (
+                        <Box>
+                            <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
+                                <Chip label={`${selectedTeamRecruits.players.length} recruits`} color="primary" size="small" />
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <ConfLogo name={selectedTeamRecruits.team.conference} size={24} />
+                                    <Typography variant="body2" color="text.secondary">{selectedTeamRecruits.team.conference}</Typography>
+                                </Box>
+                                <Typography variant="body2" color="text.secondary">Prestige: {selectedTeamRecruits.team.prestige}</Typography>
+                            </Box>
+                            
+                            <TableContainer>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rank</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Name</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Position</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rating</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Stars</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {selectedTeamRecruits.players.sort((a, b) => b.rating - a.rating).map((player, index) => (
+                                            <PlayerRow 
+                                                key={player.id}
+                                                player={player}
+                                                index={index}
+                                                showTeam={false}
+                                            />
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Box>
+                    )}
+                </DialogContent>
+            </Dialog>
         </>
     );
 };

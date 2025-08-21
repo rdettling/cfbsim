@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { useState } from 'react';
+import { apiService } from '../services/api';
 import { Team, Info, ScheduleGame, Conference } from '../interfaces';
-import { TeamLogo, TeamInfoModal, ConfLogo } from '../components/TeamComponents';
+import { TeamInfoModal, ConfLogo, TeamLogo } from '../components/TeamComponents';
 import {
-    Container, Typography, Card, CardContent, Table,
+    Typography, Card, CardContent, Table,
     TableBody, TableCell, TableContainer, TableHead, Chip,
-    TableRow, Paper, Box, CircularProgress, Alert,
-    Link as MuiLink, Button, Grid
+    TableRow, Paper, Box, Link as MuiLink, Button, Grid, Alert
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import { DataPage } from '../components/DataPage';
 
 interface DashboardData {
     info: Info;
@@ -20,12 +19,23 @@ interface DashboardData {
     conferences: Conference[];
 }
 
+// Types for component props
+interface GameCardProps {
+    game: ScheduleGame;
+    type: 'prev' | 'curr';
+    onTeamClick: (name: string) => void;
+}
+
+interface TeamRowProps {
+    team: Team;
+    showRating?: boolean;
+    rank?: number;
+    highlight?: boolean;
+    onTeamClick: (name: string) => void;
+}
+
 // Game card with clickable team name
-const GameCard = ({ game, type, onTeamClick }: { 
-    game: ScheduleGame, 
-    type: 'prev' | 'curr', 
-    onTeamClick: (name: string) => void 
-}) => (
+const GameCard = ({ game, type, onTeamClick }: GameCardProps) => (
     <Card elevation={3} sx={{ 
         mb: 2, 
         borderLeft: type === 'prev' ? 
@@ -93,13 +103,7 @@ const GameCard = ({ game, type, onTeamClick }: {
 );
 
 // Team row with clickable team name
-const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClick }: { 
-    team: Team, 
-    showRating?: boolean, 
-    rank?: number,
-    highlight?: boolean,
-    onTeamClick: (name: string) => void 
-}) => (
+const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClick }: TeamRowProps) => (
     <TableRow 
         sx={{
             bgcolor: highlight ? 'rgba(25, 118, 210, 0.08)' : 'inherit',
@@ -132,52 +136,27 @@ const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClic
 );
 
 const Dashboard = () => {
-    const [data, setData] = useState<DashboardData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    // Modal state for team info
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
-
-    usePageRefresh<DashboardData>(setData);
-
-    useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                const responseData = await apiService.getDashboard<DashboardData>();
-                setData(responseData);
-            } catch (error) {
-                setError('Failed to load dashboard data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboard();
-        return () => { document.title = 'College Football'; };
-    }, []);
-
-    useEffect(() => {
-        if (data?.team.name) {
-            document.title = `${data.team.name} Dashboard`;
-        }
-    }, [data?.team.name]);
 
     const handleTeamClick = (name: string) => {
         setSelectedTeam(name);
         setModalOpen(true);
     };
 
-    if (loading) return <CircularProgress />;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
-
-    const confName = data.team.conference;
-
     return (
         <>
-            <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
-            <Container>
-                {/* Team Header with Conference Logo */}
+            {/* DataPage handles loading, error states, and auto-refresh on game changes */}
+            <DataPage
+                fetchFunction={() => apiService.getDashboard<DashboardData>()}
+            >
+                {(data) => {
+                    const confName = data.team.conference;
+
+                    return (
+                        <>
+                            {/* Team Header with Conference Logo */}
                 <Paper elevation={2} sx={{ mb: 4, p: 3, borderRadius: 2 }}>
                     <Grid container spacing={2} alignItems="center">
                         <Grid item xs={12} md={1}>
@@ -188,8 +167,8 @@ const Dashboard = () => {
                                 {data.team.ranking > 0 && `#${data.team.ranking} `}{data.team.name} {data.team.mascot}
                             </Typography>
                             <Typography variant="h6">
-                                Record: <strong>{data.team.totalWins}-{data.team.totalLosses}</strong>
-                                {data.team.conference && <> (<strong>{data.team.confWins}-{data.team.confLosses}</strong> in conference)</>}
+                                Record: <strong>{data.team.record}</strong>
+                            
                                 &nbsp;&nbsp;•&nbsp;&nbsp;Rating: <strong>{data.team.rating}</strong>
                             </Typography>
                         </Grid>
@@ -274,7 +253,10 @@ const Dashboard = () => {
                         </Table>
                     </TableContainer>
                 </Box>
-            </Container>
+                        </>
+                    );
+                }}
+            </DataPage>
             
             <TeamInfoModal 
                 teamName={selectedTeam} 

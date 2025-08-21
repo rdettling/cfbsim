@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { useState } from 'react';
+import { apiService } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { Link as RouterLink } from 'react-router-dom';
 import {
-    Container, Typography, Box, Tabs, Tab, CircularProgress, Alert,
+    Typography, Box, Tabs, Tab,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Link as MuiLink
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import { DataPage } from '../components/DataPage';
 
 interface PlayerData {
     id: number;
@@ -74,57 +74,28 @@ const StatsTable = ({ stats, sortBy }: { stats: Record<string, PlayerData>, sort
 };
 
 const IndividualStats = () => {
-    const [data, setData] = useState<StatsData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [tabValue, setTabValue] = useState(0);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const responseData = await apiService.getIndividualStatsList<StatsData>();
-                setData(responseData);
-            } catch (error) {
-                setError('Failed to load individual stats');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
-
-    // Add usePageRefresh for automatic data updates
-    usePageRefresh<StatsData>(setData);
-
-    useEffect(() => {
-        document.title = 'Individual Stats';
-        return () => {
-            document.title = 'College Football';
-        };
-    }, []);
-
-    if (loading) return <CircularProgress />;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
-
     return (
-        <>
-            <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
-            <Container>
-                <Typography variant="h3" align="center" gutterBottom>Individual Stats</Typography>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                    <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} centered>
-                        <Tab label="Passing" />
-                        <Tab label="Rushing" />
-                        <Tab label="Receiving" />
-                    </Tabs>
-                </Box>
-                <Box hidden={tabValue !== 0}><StatsTable stats={data.stats.passing} sortBy="adjusted_pass_yards_per_attempt" /></Box>
-                <Box hidden={tabValue !== 1}><StatsTable stats={data.stats.rushing} sortBy="yards_per_game" /></Box>
-                <Box hidden={tabValue !== 2}><StatsTable stats={data.stats.receiving} sortBy="yards_per_game" /></Box>
-            </Container>
-        </>
+        <DataPage
+            fetchFunction={() => apiService.getIndividualStatsList<StatsData>()}
+            dependencies={[]}
+        >
+            {(data) => (
+                <>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} centered>
+                            <Tab label="Passing" />
+                            <Tab label="Rushing" />
+                            <Tab label="Receiving" />
+                        </Tabs>
+                    </Box>
+                    <Box hidden={tabValue !== 0}><StatsTable stats={data.stats.passing} sortBy="adjusted_pass_yards_per_attempt" /></Box>
+                    <Box hidden={tabValue !== 1}><StatsTable stats={data.stats.rushing} sortBy="yards_per_game" /></Box>
+                    <Box hidden={tabValue !== 2}><StatsTable stats={data.stats.receiving} sortBy="yards_per_game" /></Box>
+                </>
+            )}
+        </DataPage>
     );
 };
 

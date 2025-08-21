@@ -2,9 +2,9 @@ import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { Info } from '../interfaces';
 import { ROUTES } from '../services/api';
 import { useState } from 'react';
-import LoadingDialog from './LoadingDialog';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
+import LoadingDialog from './LoadingDialog';
 
 interface SeasonBannerProps {
     info: Info & { lastWeek: number };
@@ -13,6 +13,7 @@ interface SeasonBannerProps {
 const SeasonBanner = ({ info }: SeasonBannerProps) => {
     const navigate = useNavigate();
     const [isSimulating, setIsSimulating] = useState(false);
+    const [simulationMessage, setSimulationMessage] = useState('');
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const isEndOfSeason = info.currentWeek > info.lastWeek;
 
@@ -29,6 +30,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
     };
 
     const handleEndOfSeason = () => {
+        setSimulationMessage('Simulating to Season Summary');
         setIsSimulating(true);
         setTimeout(() => {
             navigate(ROUTES.SEASON_SUMMARY);
@@ -38,6 +40,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
 
     const handleAdvance = async (destWeek: number) => {
         setAnchorEl(null);
+        setSimulationMessage(`Simulating Week ${info.currentWeek}`);
         setIsSimulating(true);
         try {
             await apiService.get(`/api/sim/${destWeek}/`);
@@ -136,7 +139,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
             </Stack>
             <LoadingDialog 
                 open={isSimulating} 
-                message={isEndOfSeason ? 'Loading Season Summary...' : 'Simulating games...'}
+                message={simulationMessage}
             />
         </>
     );

@@ -1,20 +1,12 @@
 import { Box, Typography, Paper, Grid, List, ListItem, Chip, Link as MuiLink } from '@mui/material';
 import { TeamLogo } from './TeamComponents';
+import { PlayoffTeam, TeamClickHandler } from '../interfaces';
 
-interface PlayoffTeam {
-    name: string;
-    seed?: number;
-    ranking: number;
-    record: string;
-    is_autobid: boolean;
-}
-
-interface TwelveTeamPlayoffProps {
+interface TwelveTeamPlayoffProps extends TeamClickHandler {
     playoffTeams: PlayoffTeam[];
     bubbleTeams: any[];
     conferenceChampions: any[];
     bracket: any;
-    onTeamClick: (name: string) => void;
 }
 
 // Team box component with logos and clickable names

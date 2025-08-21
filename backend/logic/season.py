@@ -47,7 +47,7 @@ def init_history_data(info, start_year):
     history_records = []
 
     for year in years:
-        #print(f"Processing year {year}...")
+        # print(f"Processing year {year}...")
 
         # Load ratings and prestige data
         ratings_file = os.path.join(ratings_dir, f"ratings_{year}.json")
@@ -66,7 +66,7 @@ def init_history_data(info, start_year):
             team = team_lookup.get(team_name)
 
             if not team:
-                #print(f"Warning: Team '{team_name}' not found, skipping")
+                # print(f"Warning: Team '{team_name}' not found, skipping")
                 continue
 
             # Get prestige from year data
@@ -98,12 +98,11 @@ def init_history_data(info, start_year):
                 )
             )
 
-        #print(f"  Processed {len(ratings_data['teams'])} teams")
+        # print(f"  Processed {len(ratings_data['teams'])} teams")
 
     # Bulk create records
     if history_records:
         History.objects.bulk_create(history_records)
-        
 
 
 def transition_rosters(info):
@@ -394,7 +393,7 @@ def init(
     overall_start = time.time()
     print(f"\n--- SEASON INITIALIZATION ---")
     print("PHASE 1: DATA LOADING AND CONFIGURATION")
-    
+
     # Phase 1: Load data and configure playoff settings
     config_start = time.time()
     data = load_year_data(year)
@@ -421,7 +420,7 @@ def init(
     # Phase 2: Create core objects
     core_start = time.time()
     print("PHASE 2: CORE OBJECT CREATION")
-    
+
     # Create info and playoff objects
     Info.objects.filter(user_id=user_id).delete()
     info = Info.objects.create(
@@ -445,7 +444,7 @@ def init(
     # Phase 3: Create conferences and teams
     teams_start = time.time()
     print("PHASE 3: CONFERENCES AND TEAMS")
-    
+
     conferences_to_create = []
     teams_to_create = []
 
@@ -523,7 +522,7 @@ def init(
     # Phase 6: Team setup and ratings
     setup_start = time.time()
     print("PHASE 6: TEAM SETUP AND RATINGS")
-    
+
     # Set starters
     starter_start = time.time()
     set_starters(info)
@@ -564,7 +563,7 @@ def init(
     # Phase 8: Final initialization
     final_start = time.time()
     print("PHASE 8: FINAL INITIALIZATION")
-    
+
     # Initialize rankings
     ranking_start = time.time()
     initialize_rankings(info)

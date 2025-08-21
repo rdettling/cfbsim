@@ -1,20 +1,14 @@
-import { Box, Typography, Paper, Grid, List, ListItem, Chip } from '@mui/material';
+import { Box, Typography, Paper, Grid, List, ListItem, Chip, Link as MuiLink } from '@mui/material';
+import { TeamLogo } from './TeamComponents';
+import { PlayoffTeam, TeamClickHandler } from '../interfaces';
 
-interface PlayoffTeam {
-    name: string;
-    seed?: number;
-    ranking: number;
-    record: string;
-    is_autobid: boolean;
-}
-
-interface FourTeamPlayoffProps {
+interface FourTeamPlayoffProps extends TeamClickHandler {
     playoffTeams: PlayoffTeam[];
     bubbleTeams: any[];
     conferenceChampions: any[];
 }
 
-const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: FourTeamPlayoffProps) => {
+const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, onTeamClick }: FourTeamPlayoffProps) => {
     return (
         <Grid container spacing={3}>
             {/* Playoff Bracket */}
@@ -32,7 +26,20 @@ const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: Fou
                                         gap: 1,
                                         fontWeight: 'bold'
                                     }}>
-                                        #1 {playoffTeams[0]?.name}
+                                        <TeamLogo name={playoffTeams[0]?.name} size={20} />
+                                        <MuiLink
+                                            component="button"
+                                            onClick={() => onTeamClick(playoffTeams[0]?.name || '')}
+                                            sx={{ 
+                                                cursor: 'pointer', 
+                                                textDecoration: 'none', 
+                                                fontWeight: 'bold',
+                                                color: 'text.primary',
+                                                '&:hover': { color: 'primary.main' }
+                                            }}
+                                        >
+                                            #1 {playoffTeams[0]?.name}
+                                        </MuiLink>
                                     </Box>
                                     <Box sx={{ 
                                         display: 'flex', 
@@ -40,7 +47,20 @@ const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: Fou
                                         gap: 1,
                                         fontWeight: 'bold'
                                     }}>
-                                        #4 {playoffTeams[3]?.name}
+                                        <TeamLogo name={playoffTeams[3]?.name} size={20} />
+                                        <MuiLink
+                                            component="button"
+                                            onClick={() => onTeamClick(playoffTeams[3]?.name || '')}
+                                            sx={{ 
+                                                cursor: 'pointer', 
+                                                textDecoration: 'none', 
+                                                fontWeight: 'bold',
+                                                color: 'text.primary',
+                                                '&:hover': { color: 'primary.main' }
+                                            }}
+                                        >
+                                            #4 {playoffTeams[3]?.name}
+                                        </MuiLink>
                                     </Box>
                                 </Box>
                             </Paper>
@@ -52,7 +72,20 @@ const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: Fou
                                         gap: 1,
                                         fontWeight: 'bold'
                                     }}>
-                                        #2 {playoffTeams[1]?.name}
+                                        <TeamLogo name={playoffTeams[1]?.name} size={20} />
+                                        <MuiLink
+                                            component="button"
+                                            onClick={() => onTeamClick(playoffTeams[1]?.name || '')}
+                                            sx={{ 
+                                                cursor: 'pointer', 
+                                                textDecoration: 'none', 
+                                                fontWeight: 'bold',
+                                                color: 'text.primary',
+                                                '&:hover': { color: 'primary.main' }
+                                            }}
+                                        >
+                                            #2 {playoffTeams[1]?.name}
+                                        </MuiLink>
                                     </Box>
                                     <Box sx={{ 
                                         display: 'flex', 
@@ -60,7 +93,20 @@ const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: Fou
                                         gap: 1,
                                         fontWeight: 'bold'
                                     }}>
-                                        #3 {playoffTeams[2]?.name}
+                                        <TeamLogo name={playoffTeams[2]?.name} size={20} />
+                                        <MuiLink
+                                            component="button"
+                                            onClick={() => onTeamClick(playoffTeams[2]?.name || '')}
+                                            sx={{ 
+                                                cursor: 'pointer', 
+                                                textDecoration: 'none', 
+                                                fontWeight: 'bold',
+                                                color: 'text.primary',
+                                                '&:hover': { color: 'primary.main' }
+                                            }}
+                                        >
+                                            #3 {playoffTeams[2]?.name}
+                                        </MuiLink>
                                     </Box>
                                 </Box>
                             </Paper>
@@ -107,9 +153,20 @@ const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: Fou
                                         <Typography variant="body2" sx={{ minWidth: 30 }}>
                                             #{team.seed}
                                         </Typography>
-                                        <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                                        <MuiLink
+                                            component="button"
+                                            onClick={() => onTeamClick(team.name)}
+                                            sx={{ 
+                                                cursor: 'pointer', 
+                                                textDecoration: 'none', 
+                                                fontWeight: 'bold',
+                                                color: 'text.primary',
+                                                flexGrow: 1,
+                                                '&:hover': { color: 'primary.main' }
+                                            }}
+                                        >
                                             {team.name}
-                                        </Typography>
+                                        </MuiLink>
                                         <Typography variant="body2" sx={{ minWidth: 60 }}>
                                             {team.record}
                                         </Typography>
@@ -137,9 +194,20 @@ const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: Fou
                                         <Typography variant="body2" sx={{ minWidth: 40 }}>
                                             #{team.ranking}
                                         </Typography>
-                                        <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                                        <MuiLink
+                                            component="button"
+                                            onClick={() => onTeamClick(team.name)}
+                                            sx={{ 
+                                                cursor: 'pointer', 
+                                                textDecoration: 'none', 
+                                                fontWeight: 'bold',
+                                                color: 'text.primary',
+                                                flexGrow: 1,
+                                                '&:hover': { color: 'primary.main' }
+                                            }}
+                                        >
                                             {team.name}
-                                        </Typography>
+                                        </MuiLink>
                                         <Typography variant="body2" sx={{ minWidth: 60 }}>
                                             {team.record}
                                         </Typography>
@@ -162,9 +230,20 @@ const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions }: Fou
                                         <Typography variant="body2" sx={{ minWidth: 40 }}>
                                             #{team.ranking}
                                         </Typography>
-                                        <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                                        <MuiLink
+                                            component="button"
+                                            onClick={() => onTeamClick(team.name)}
+                                            sx={{ 
+                                                cursor: 'pointer', 
+                                                textDecoration: 'none', 
+                                                fontWeight: 'bold',
+                                                color: 'text.primary',
+                                                flexGrow: 1,
+                                                '&:hover': { color: 'primary.main' }
+                                            }}
+                                        >
                                             {team.name}
-                                        </Typography>
+                                        </MuiLink>
                                         <Typography variant="body2" sx={{ minWidth: 60 }}>
                                             {team.record}
                                         </Typography>

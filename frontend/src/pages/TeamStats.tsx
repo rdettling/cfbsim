@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { useState } from 'react';
+import { apiService } from '../services/api';
 import type { Team, Info, Conference, TeamStats as TeamStatsType } from '../interfaces';
 import {
-    Container,
     Typography,
     Table,
     TableBody,
@@ -13,13 +12,11 @@ import {
     Paper,
     Box,
     Link as MuiLink,
-    CircularProgress,
-    Alert,
     Tabs,
     Tab
 } from '@mui/material';
-import Navbar from '../components/Navbar';
 import { TeamInfoModal } from '../components/TeamComponents';
+import { DataPage } from '../components/DataPage';
 
 interface TeamStatsData {
     info: Info;
@@ -30,47 +27,14 @@ interface TeamStatsData {
 }
 
 const TeamStats = () => {
-    const [data, setData] = useState<TeamStatsData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [tabValue, setTabValue] = useState(0);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
-
-    usePageRefresh<TeamStatsData>(setData);
-
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const responseData = await apiService.getTeamStatsList<TeamStatsData>();
-                setData(responseData);
-            } catch (error) {
-                setError('Failed to load team stats');
-                console.error('Error fetching team stats:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
-    }, []);
-
-    useEffect(() => {
-        document.title = 'Team Stats';
-        return () => {
-            document.title = 'College Football';
-        };
-    }, []);
 
     const handleTeamClick = (teamName: string) => {
         setSelectedTeam(teamName);
         setModalOpen(true);
     };
-
-    if (loading) return <CircularProgress />;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
 
     const renderStatsTable = (stats: Record<string, TeamStatsType>, type: 'offense' | 'defense') => (
         <TableContainer component={Paper}>
@@ -157,31 +121,28 @@ const TeamStats = () => {
 
     return (
         <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
-            <Container>
-                <Typography variant="h3" align="center" gutterBottom>
-                    Team Stats
-                </Typography>
+            <DataPage
+                fetchFunction={() => apiService.getTeamStatsList<TeamStatsData>()}
+                dependencies={[]}
+            >
+                {(data) => (
+                    <>
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                            <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} centered>
+                                <Tab label="Offense" />
+                                <Tab label="Defense" />
+                            </Tabs>
+                        </Box>
 
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                    <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} centered>
-                        <Tab label="Offense" />
-                        <Tab label="Defense" />
-                    </Tabs>
-                </Box>
-
-                <Box hidden={tabValue !== 0}>
-                    {renderStatsTable(data.offense, 'offense')}
-                </Box>
-                <Box hidden={tabValue !== 1}>
-                    {renderStatsTable(data.defense, 'defense')}
-                </Box>
-            </Container>
+                        <Box hidden={tabValue !== 0}>
+                            {renderStatsTable(data.offense, 'offense')}
+                        </Box>
+                        <Box hidden={tabValue !== 1}>
+                            {renderStatsTable(data.defense, 'defense')}
+                        </Box>
+                    </>
+                )}
+            </DataPage>
 
             <TeamInfoModal
                 teamName={selectedTeam}

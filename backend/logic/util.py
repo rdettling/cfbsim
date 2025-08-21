@@ -295,35 +295,118 @@ def load_year_data(year):
 
     return year_data
 
+
 def time_section(section_start, section_name):
     duration = round(time.time() - section_start, 2)
     print(f"{section_name}: {duration} seconds")
 
 
 def watchability(rank_a, rank_b, win_prob_a, win_prob_b, num_teams):
-    ranking_weight=0.9
+    ranking_weight = 0.9
 
     # Calculate combined ranking score (lower ranking = higher score)
     combined_ranking = (rank_a + rank_b) / 2
-    
+
     # Calculate ranking score based on how good the teams are
     # Better teams (lower rankings) get higher scores
     # Scale so that #1 vs #2 (combined_ranking = 1.5) gives max score
     max_ranking_score = num_teams - 1.5  # Score for #1 vs #2
     ranking_score = max(0, num_teams - combined_ranking)
-    
+
     # Calculate competitiveness score (closer to 50-50 = more competitive)
     competitiveness = 1 - abs(win_prob_a - win_prob_b)
-    
+
     # Weighted combination of ranking and competitiveness
     # Scale so that max possible score is 100
-    max_possible_score = (ranking_weight * max_ranking_score) + ((1 - ranking_weight) * num_teams)
-    watchability_score = (ranking_weight * ranking_score) + ((1 - ranking_weight) * competitiveness * num_teams)
-    
+    max_possible_score = (ranking_weight * max_ranking_score) + (
+        (1 - ranking_weight) * num_teams
+    )
+    watchability_score = (ranking_weight * ranking_score) + (
+        (1 - ranking_weight) * competitiveness * num_teams
+    )
+
     # Scale to 0-100 range
     watchability_score = (watchability_score / max_possible_score) * 100
-    
+
     # Ensure final score is not negative
     watchability_score = max(0, watchability_score)
-    
+
     return round(watchability_score, 1)
+
+
+def calculate_recruiting_rankings(freshmen_by_team, quality_focus=0.92):
+    """
+    Calculate team recruiting rankings based on their freshmen class.
+
+    Args:
+        freshmen_by_team: Dictionary with team names as keys and team data as values
+        quality_focus: Focus on quality vs quantity (0.0 to 1.0, default 0.9)
+                       0.0 = quantity-focused, 1.0 = quality-focused
+
+    Returns:
+        List of team rankings sorted by recruiting class strength
+    """
+    team_rankings = []
+
+    for team_name, team_data in freshmen_by_team.items():
+        players = team_data["players"]
+
+        if not players:
+            continue
+
+        # Calculate recruiting metrics
+        total_points = sum(player["rating"] for player in players)
+        avg_stars = sum(player["stars"] for player in players) / len(players)
+        player_count = len(players)
+
+        # Calculate star breakdowns (including all stars)
+        five_stars = sum(1 for player in players if player["stars"] == 5)
+        four_stars = sum(1 for player in players if player["stars"] == 4)
+        three_stars = sum(1 for player in players if player["stars"] == 3)
+        two_stars = sum(1 for player in players if player["stars"] == 2)
+        one_stars = sum(1 for player in players if player["stars"] == 1)
+
+        # Calculate weighted score combining quality and quantity
+        quantity_weight = 1.0 - quality_focus
+        weighted_score = (quality_focus * avg_stars) + (quantity_weight * player_count)
+
+        team_rankings.append(
+            {
+                "team_name": team_name,
+                "team": team_data["team"],
+                "players": players,
+                "total_points": total_points,
+                "avg_stars": round(avg_stars, 2),
+                "player_count": player_count,
+                "five_stars": five_stars,
+                "four_stars": four_stars,
+                "three_stars": three_stars,
+                "two_stars": two_stars,
+                "one_stars": one_stars,
+                "weighted_score": round(weighted_score, 1),
+            }
+        )
+
+    # Sort by weighted score (highest first), then by total points as tiebreaker
+    team_rankings.sort(
+        key=lambda x: (x["weighted_score"], x["total_points"]), reverse=True
+    )
+
+    # Scale scores from 0-100 (100 = best, 0 = worst)
+    if team_rankings:
+        max_score = team_rankings[0]["weighted_score"]
+        min_score = team_rankings[-1]["weighted_score"]
+        score_range = max_score - min_score
+
+        for ranking in team_rankings:
+            if score_range > 0:
+                # Scale from 0-100: (score - min) / range * 100
+                scaled_score = (
+                    (ranking["weighted_score"] - min_score) / score_range
+                ) * 100
+            else:
+                # If all teams have the same score, give them all 100
+                scaled_score = 100
+            ranking["weighted_score"] = round(scaled_score, 1)
+
+    return team_rankings

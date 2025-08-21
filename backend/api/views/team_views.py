@@ -61,12 +61,10 @@ def team_schedule(request, team_name):
             "team": TeamsSerializer(team).data,
             "games": [get_schedule_game(team, game) for game in schedule],
             "years": list(range(info.currentYear, info.startYear - 1, -1)),
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
-            "teams": TeamNameSerializer(
-                info.teams.all().order_by("name"), many=True
-            ).data,
+            "teams": [team.name for team in info.teams.all().order_by("name")],
         }
     )
 
@@ -103,12 +101,10 @@ def roster(request, team_name):
             "team": TeamsSerializer(team).data,
             "roster": roster_data,
             "positions": positions,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
-            "teams": TeamNameSerializer(
-                info.teams.all().order_by("name"), many=True
-            ).data,
+            "teams": [team.name for team in info.teams.all().order_by("name")],
         }
     )
 
@@ -244,7 +240,7 @@ def player(request, id):
             "team": TeamsSerializer(team).data,
             "yearly_cumulative_stats": yearly_cumulative_stats,
             "game_logs": game_logs,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -265,7 +261,7 @@ def history(request, team_name):
         games_as_teamA = team.games_as_teamA.filter(year=year.year)
         games_as_teamB = team.games_as_teamB.filter(year=year.year)
         has_games = (games_as_teamA | games_as_teamB).exists()
-        
+
         years_data.append(
             {
                 "year": year.year,
@@ -284,11 +280,9 @@ def history(request, team_name):
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(team).data,
             "years": years_data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
-            "teams": TeamNameSerializer(
-                info.teams.all().order_by("name"), many=True
-            ).data,
+            "teams": [team.name for team in info.teams.all().order_by("name")],
         }
     )

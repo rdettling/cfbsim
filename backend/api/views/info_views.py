@@ -99,7 +99,7 @@ def dashboard(request):
             "top_10": TeamsSerializer(
                 info.teams.order_by("ranking")[:10], many=True
             ).data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }

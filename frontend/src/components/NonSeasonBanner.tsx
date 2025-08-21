@@ -22,14 +22,14 @@ interface NonSeasonBannerProps {
 
 const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
     const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSimulating, setIsSimulating] = useState(false);
 
     const handleStageChange = (path: string) => {
-        setIsLoading(true);
+        setIsSimulating(true);
         // Add small delay to show loading state
         setTimeout(() => {
             navigate(path);
-            setIsLoading(false);
+            setIsSimulating(false);
         }, 500);
     };
 
@@ -91,8 +91,8 @@ const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
                 </Button>
             </Stack>
             <LoadingDialog 
-                open={isLoading} 
-                message={`Loading ${nextStage.label}...`}
+                open={isSimulating} 
+                message={`Simulating to ${nextStage.label}`}
             />
         </>
     );

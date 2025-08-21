@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiService, usePageRefresh } from '../services/api';
+import { apiService } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
-import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { TeamInfoModal } from '../components/TeamComponents';
+import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import { InlineLastWeek, InlineThisWeek } from '../components/InlineGameComponents';
 import {
-    Container, Typography, TableContainer, Table,
+    Typography, TableContainer, Table,
     TableHead, TableBody, TableRow, TableCell,
-    Paper, Box, CircularProgress, Alert
+    Paper, Box
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import { DataPage } from '../components/DataPage';
 
 interface StandingsData {
     info: Info;
@@ -182,48 +183,34 @@ const StandingsTable = ({ data, conference_name, onTeamClick }: {
 
 const Standings = () => {
     const { conference_name } = useParams();
-    const [data, setData] = useState<StandingsData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
 
-    usePageRefresh<StandingsData>(setData);
-
-    useEffect(() => {
-        const fetchStandings = async () => {
-            try {
-                if (conference_name) {
-                    const responseData = await apiService.getConferenceStandings<StandingsData>(conference_name);
-                    setData(responseData);
-                }
-            } catch (error) {
-                setError('Failed to load standings data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (conference_name) fetchStandings();
-    }, [conference_name]);
-
-    if (loading) return <CircularProgress />;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
+    const handleTeamClick = (name: string) => {
+        setSelectedTeam(name);
+        setModalOpen(true);
+    };
 
     return (
         <>
-            <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
-            <Container maxWidth="xl">
-                <Box sx={{ 
-                    textAlign: 'center', 
-                    mb: 5,
-                    py: 4,
-                    background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)',
-                    borderRadius: 3,
-                    position: 'relative',
-                    overflow: 'hidden'
-                }}>
+            <DataPage
+                fetchFunction={() => conference_name ? apiService.getConferenceStandings<StandingsData>(conference_name) : Promise.reject('No conference specified')}
+                dependencies={[conference_name]}
+            >
+                {(data) => {
+                    const title = conference_name === 'independent' ? 'Independent Teams' : `${data.conference} Standings`;
+
+                    return (
+                        <>
+                            <Box sx={{ 
+                                textAlign: 'center', 
+                                mb: 5,
+                                py: 4,
+                                background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)',
+                                borderRadius: 3,
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}>
                     {/* Background decoration */}
                     <Box sx={{
                         position: 'absolute',
@@ -294,7 +281,10 @@ const Standings = () => {
                     conference_name={conference_name}
                     onTeamClick={(name) => { setSelectedTeam(name); setModalOpen(true); }}
                 />
-            </Container>
+                        </>
+                    );
+                }}
+            </DataPage>
             <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
         </>
     );
