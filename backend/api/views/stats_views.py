@@ -46,7 +46,7 @@ def team_stats(request):
             "team": TeamsSerializer(info.team).data,
             "offense": offense,
             "defense": defense,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -88,7 +88,7 @@ def individual_stats(request):
                 "rushing": rushing_stats,
                 "receiving": receiving_stats,
             },
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -238,7 +238,7 @@ def ratings_stats(request):
                 {"prestige": p, "team_count": c} for p, c in sorted(team_counts.items())
             ],
             "teams": teams_data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh, getTeamRosterRoute, getPlayerRoute } from '../services/api';
+import { useState } from 'react';
+import { apiService, getTeamRosterRoute, getPlayerRoute } from '../services/api';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Container,
@@ -14,8 +14,6 @@ import {
     TableContainer,
     Paper,
     Link,
-    CircularProgress,
-    Alert,
     FormControl,
     InputLabel,
     Select,
@@ -23,8 +21,8 @@ import {
     Chip,
     Typography
 } from '@mui/material';
-import Navbar from '../components/Navbar';
 import TeamHeader from '../components/TeamHeader';
+import { DataPage } from '../components/DataPage';
 
 interface RosterData {
     info: Info;
@@ -32,41 +30,19 @@ interface RosterData {
     roster: Player[];
     positions: string[];
     conferences: Conference[];
-    teams: Team[];
+    teams: string[];
 }
 
 const Roster = () => {
     const { teamName } = useParams();
     const navigate = useNavigate();
-    const [data, setData] = useState<RosterData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [positionFilter, setPositionFilter] = useState('');
 
-    usePageRefresh<RosterData>(setData);
-
-    useEffect(() => {
-        const fetchRoster = async () => {
-            try {
-                if (teamName) {
-                    const responseData = await apiService.getTeamRoster<RosterData>(teamName);
-                    setData(responseData);
-                }
-            } catch (error) {
-                setError('Failed to load roster');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchRoster();
+    // Set document title
+    React.useEffect(() => {
         document.title = teamName ? `${teamName} Roster` : 'Roster';
         return () => { document.title = 'College Football'; };
     }, [teamName]);
-
-    if (loading) return <CircularProgress />;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No roster data available</Alert>;
 
     // Map year abbreviations to full names for better readability
     const yearLabels = {
@@ -77,19 +53,21 @@ const Roster = () => {
     };
 
     return (
-        <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
-            <Container>
-                <TeamHeader
-                    team={data.team}
-                    teams={data.teams}
-                    onTeamChange={(newTeam) => navigate(getTeamRosterRoute(newTeam))}
-                />
+        <DataPage
+            fetchFunction={() => {
+                if (!teamName) throw new Error('No team name provided');
+                return apiService.getTeamRoster<RosterData>(teamName);
+            }}
+            dependencies={[teamName]}
+        >
+            {(data) => {
+                return (
+                    <Container>
+                        <TeamHeader
+                            team={data.team}
+                            teams={data.teams}
+                            onTeamChange={(newTeam) => navigate(getTeamRosterRoute(newTeam))}
+                        />
                 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 2 }}>
                     <Typography variant="h5">Team Roster</Typography>
@@ -187,8 +165,10 @@ const Roster = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
-            </Container>
-        </>
+                    </Container>
+                );
+            }}
+        </DataPage>
     );
 };
 

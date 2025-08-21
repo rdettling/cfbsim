@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { apiService, usePageRefresh, getGameRoute } from "../services/api";
+import { useState } from "react";
+import { apiService, getGameRoute } from "../services/api";
 import {
   Box,
   Table,
@@ -12,17 +12,14 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  CircularProgress,
-  Alert,
   Container,
   Typography,
   Paper,
   Divider,
-  Stack,
 } from "@mui/material";
-import Navbar from "../components/Navbar";
 import { TeamLogo, TeamLink, TeamInfoModal } from "../components/TeamComponents";
 import { Team, Info, Conference, Player, GameLog } from "../interfaces";
+import { DataPage } from "../components/DataPage";
 
 interface PlayerData {
   player: Player;
@@ -126,7 +123,7 @@ const PlayerHeader = ({
       <StatItem 
         label="Starter" 
         value={
-          <Typography variant="h6" sx={{ fontSize: '1.5rem' }}>
+          <Typography variant="body1" sx={{ fontSize: '1.5rem' }}>
             {player.starter ? "✅" : "❌"}
           </Typography>
         } 
@@ -195,7 +192,6 @@ const CareerStatsTable = ({ yearlyStats }: { yearlyStats: PlayerData['yearly_cum
 const GameLogsTable = ({ 
   gameLogs, 
   years, 
-  currentYear, 
   selectedYear, 
   onYearChange, 
   onTeamClick, 
@@ -203,7 +199,6 @@ const GameLogsTable = ({
 }: {
   gameLogs: GameLog[];
   years: number[];
-  currentYear: number;
   selectedYear: string;
   onYearChange: (year: string) => void;
   onTeamClick: (name: string) => void;
@@ -314,34 +309,8 @@ export default function PlayerPage() {
   const { playerId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [data, setData] = useState<PlayerData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
-
-  usePageRefresh<PlayerData>(setData);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const year = searchParams.get("year");
-        const id = playerId?.split("/").pop();
-        
-        if (id) {
-          const responseData = await apiService.getPlayer<PlayerData>(id, year || undefined);
-          setData(responseData);
-        }
-      } catch (error) {
-        console.error("Error fetching player data:", error);
-        setError("Failed to load player data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [playerId, searchParams]);
 
   const handleTeamClick = (name: string) => {
     setSelectedTeam(name);
@@ -356,40 +325,44 @@ export default function PlayerPage() {
     navigate(getGameRoute(gameId.toString()));
   };
 
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
-  if (!data) return <Alert severity="warning">No data available</Alert>;
-
-  const selectedYear = searchParams.get("year") || data.info.currentYear.toString();
-
   return (
     <>
-      <Navbar
-        team={data.team}
-        currentStage={data.info.stage}
-        info={data.info}
-        conferences={data.conferences}
-      />
-      
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <PlayerHeader 
-          player={data.player} 
-          team={data.team} 
-          onTeamClick={handleTeamClick} 
-        />
-        
-        <CareerStatsTable yearlyStats={data.yearly_cumulative_stats} />
-        
-        <GameLogsTable
-          gameLogs={data.game_logs}
-          years={data.years}
-          currentYear={data.info.currentYear}
-          selectedYear={selectedYear}
-          onYearChange={handleYearChange}
-          onTeamClick={handleTeamClick}
-          onGameClick={handleGameClick}
-        />
-      </Container>
+      <DataPage
+        fetchFunction={() => {
+          if (!playerId) throw new Error('No player ID provided');
+          const year = searchParams.get("year");
+          const id = playerId.split("/").pop()!;
+          return apiService.getPlayer<PlayerData>(id, year || undefined);
+        }}
+        dependencies={[playerId, searchParams]}
+      >
+        {(data) => {
+          const selectedYear = searchParams.get("year") || data.info.currentYear.toString();
+          
+          return (
+            <>
+              <Container maxWidth="lg" sx={{ py: 3 }}>
+                <PlayerHeader 
+                  player={data.player} 
+                  team={data.team} 
+                  onTeamClick={handleTeamClick} 
+                />
+                
+                <CareerStatsTable yearlyStats={data.yearly_cumulative_stats} />
+                
+                <GameLogsTable
+                  gameLogs={data.game_logs}
+                  years={data.years}
+                  selectedYear={selectedYear}
+                  onYearChange={handleYearChange}
+                  onTeamClick={handleTeamClick}
+                  onGameClick={handleGameClick}
+                />
+              </Container>
+            </>
+          );
+        }}
+      </DataPage>
 
       <TeamInfoModal 
         teamName={selectedTeam} 

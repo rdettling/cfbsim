@@ -4,7 +4,7 @@ import { TeamLogo, ConfLogo } from './TeamComponents';
 
 interface TeamHeaderProps {
     team: Team;
-    teams: Team[];
+    teams: string[];
     years?: string[];
     onTeamChange: (team: string) => void;
     onYearChange?: (year: string) => void;
@@ -102,11 +102,11 @@ const TeamHeader = ({ team, teams, years, onTeamChange, onYearChange, selectedYe
                             onChange={(e) => onTeamChange(e.target.value)}
                             label="Team"
                         >
-                            {teams.map(t => (
-                                <MenuItem key={t.name} value={t.name}>
+                            {teams.map(teamName => (
+                                <MenuItem key={teamName} value={teamName}>
                                     <Stack direction="row" spacing={1} alignItems="center">
-                                        <TeamLogo name={t.name} size={24} />
-                                        <Typography>{t.name}</Typography>
+                                        <TeamLogo name={teamName} size={24} />
+                                        <Typography>{teamName}</Typography>
                                     </Stack>
                                 </MenuItem>
                             ))}

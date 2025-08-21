@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { apiService } from '../services/api';
 import { RatingsStatsData } from '../interfaces';
 import { TeamInfoModal } from '../components/TeamComponents';
 import {
@@ -13,7 +13,7 @@ const RatingsStats = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedTeam, setSelectedTeam] = useState('');
+    const [selectedTeam] = useState('');
 
     const fetchRatingsStats = async () => {
         try {
@@ -26,7 +26,7 @@ const RatingsStats = () => {
         }
     };
 
-    usePageRefresh<RatingsStatsData>(setData);
+    // Note: usePageRefresh was removed, manual refresh handling would need to be implemented if needed
 
     useEffect(() => {
         fetchRatingsStats();

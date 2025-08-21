@@ -1,13 +1,10 @@
-import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { useState } from 'react';
+import { apiService } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
-import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { TeamInfoModal } from '../components/TeamComponents';
+import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import { InlineLastWeek, InlineThisWeek } from '../components/InlineGameComponents';
-
-
 import {
-    Container,
-    Typography,
     TableContainer,
     Table,
     TableHead,
@@ -16,12 +13,11 @@ import {
     TableCell,
     Paper,
     Box,
-    CircularProgress,
-    Alert,
     Chip,
-    Button
+    Button,
+    Typography
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import { DataPage } from '../components/DataPage';
 
 interface RankingsData {
     info: Info;
@@ -31,66 +27,34 @@ interface RankingsData {
 }
 
 const Rankings = () => {
-    const [data, setData] = useState<RankingsData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
     const [showAllTeams, setShowAllTeams] = useState(false);
-
-    const fetchRankings = async () => {
-        try {
-            const responseData = await apiService.getRankings<RankingsData>();
-            setData(responseData);
-        } catch (error) {
-            setError('Failed to load rankings data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Use the new usePageRefresh from api.ts
-    usePageRefresh<RankingsData>(setData);
-
-    useEffect(() => {
-        fetchRankings();
-        document.title = 'AP Rankings';
-        return () => { document.title = 'College Football'; };
-    }, []);
-
-    if (loading) return <CircularProgress />;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
-
-    const stageText = data.info.stage === 'season'
-        ? `Week ${data.info.currentWeek}`
-        : data.info.stage === 'schedule non conference'
-            ? 'Preseason'
-            : 'End of season';
 
     const handleTeamClick = (name: string) => {
         setSelectedTeam(name);
         setModalOpen(true);
     };
 
-    // Filter teams based on showAllTeams state
-    const displayedTeams = showAllTeams ? data.rankings : data.rankings.slice(0, 25);
-
     return (
         <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
-            <Container>
-                <Box sx={{ textAlign: 'center', mb: 3 }}>
-                    <Typography variant="h2">AP Top 25</Typography>
-                    <Typography variant="h5">{stageText}</Typography>
-                </Box>
+            <DataPage
+                fetchFunction={() => apiService.getRankings<RankingsData>()}
+                dependencies={[]}
+            >
+                {(data) => {
+                    const stageText = data.info.stage === 'season'
+                        ? `Week ${data.info.currentWeek}`
+                        : data.info.stage === 'schedule non conference'
+                            ? 'Preseason'
+                            : 'End of season';
 
-                <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', minWidth: 1200 }}>
+                    // Filter teams based on showAllTeams state
+                    const displayedTeams = showAllTeams ? data.rankings : data.rankings.slice(0, 25);
+
+                    return (
+                        <>
+                            <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', minWidth: 1200 }}>
                     <Table sx={{ minWidth: 1200 }}>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: 'primary.main' }}>
@@ -198,7 +162,10 @@ const Rankings = () => {
                         </Button>
                     </Box>
                 )}
-            </Container>
+                        </>
+                    );
+                }}
+            </DataPage>
 
             <TeamInfoModal
                 teamName={selectedTeam}

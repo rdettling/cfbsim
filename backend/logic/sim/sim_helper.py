@@ -23,25 +23,25 @@ def run_week_simulation(info, drives_to_create, plays_to_create):
     """Main function to run a complete week simulation with clear timing structure"""
     week_start = time.time()
     print(f"\n=== SIMULATING WEEK {info.currentWeek} ===")
-    
+
     # Step 1: Simulate all games for the week
     games = fetch_and_simulate_games(info, drives_to_create, plays_to_create)
-    
+
     # Step 2: Process game results and generate headlines
     natty_game = update_game_results(info, games)
-    
+
     # Step 3: Handle special weeks (conference championships, playoffs)
     handle_special_weeks(info)
-    
+
     # Step 4: Update team rankings
     update_rankings(info, natty_game)
-    
+
     # Step 5: Save all simulation data to database
     save_simulation_data(info, drives_to_create, plays_to_create)
-    
+
     time_section(week_start, f"WEEK {info.currentWeek} COMPLETED")
     print("=" * 50)
-    
+
     return games
 
 
@@ -50,7 +50,7 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     total_start = time.time()
     print(f"\n--- WEEK {info.currentWeek} SIMULATION ---")
     print("PHASE 1: GAME SIMULATION")
-    
+
     # Phase 1: Fetch games from database
     query_start = time.time()
     games = list(
@@ -176,7 +176,7 @@ def update_game_results(info, games):
     """Generate headlines and update game results in the database"""
     total_start = time.time()
     print("PHASE 2: GAME RESULTS PROCESSING")
-    
+
     # Phase 1: Generate headlines
     headlines_start = time.time()
     generate_headlines(games)
@@ -237,7 +237,7 @@ def update_rankings(info, natty_game=None):
                 year=info.currentYear, weekPlayed=info.currentWeek
             ).select_related("teamA", "teamB")
         )
-        
+
         # Create lookup dictionary for team games
         team_games = {}
         for game in current_games:
@@ -345,7 +345,9 @@ def update_rankings(info, natty_game=None):
 
         time_section(total_start, "PHASE 4 TOTAL")
     else:
-        time_section(total_start, f"SKIPPED: Rankings update for week {info.currentWeek}")
+        time_section(
+            total_start, f"SKIPPED: Rankings update for week {info.currentWeek}"
+        )
     print()
     return
 

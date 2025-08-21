@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService, usePageRefresh } from '../services/api';
+import { apiService } from '../services/api';
 import { Team, Info, Conference, Game } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
@@ -62,8 +62,7 @@ const SeasonSummary = () => {
         fetchSummary();
     }, []);
 
-    // Add usePageRefresh for automatic data updates
-    usePageRefresh<SummaryData>(setData);
+    // Note: usePageRefresh was removed, manual refresh handling would need to be implemented if needed
 
     const handleTeamClick = (teamName: string) => {
         setSelectedTeam(teamName);

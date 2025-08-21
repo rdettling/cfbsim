@@ -2,7 +2,7 @@ from ..models import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
-from logic.util import get_schedule_game
+from logic.util import get_schedule_game, calculate_recruiting_rankings
 from logic.roster_management import progress_ratings
 import uuid
 from logic.season import (
@@ -31,7 +31,7 @@ def season_summary(request):
             "info": InfoSerializer(info).data,
             "champion": TeamsSerializer(info.playoff.natty.winner).data,
             "realignment": realignment_summary(info),
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -59,7 +59,7 @@ def roster_progression(request):
             "leaving": PlayersSerializer(
                 info.team.players.filter(year="sr", active=True), many=True
             ).data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }
@@ -74,17 +74,14 @@ def recruiting_summary(request):
 
     # Transition from progression to recruiting_summary stage
     if info.stage == "progression":
-        # Part 1: Remove seniors, progress players, and add freshmen
         transition_rosters(info)
-
         info.stage = "recruiting_summary"
         info.save()
 
-    # Get all freshmen players (new recruits) from the current season
+    # Get all freshmen players and group by team
     freshmen = info.players.filter(year="fr").select_related("team", "team__conference")
-
-    # Group freshmen by team
     freshmen_by_team = {}
+
     for player in freshmen:
         team_name = player.team.name
         if team_name not in freshmen_by_team:
@@ -104,34 +101,30 @@ def recruiting_summary(request):
             }
         )
 
-    # Sort teams by prestige (highest first)
-    sorted_teams = sorted(
-        freshmen_by_team.items(), key=lambda x: x[1]["team"]["prestige"], reverse=True
-    )
-
-    # Calculate summary stats
-    total_freshmen = len(freshmen)
-    avg_rating = (
-        sum(player.rating for player in freshmen) / total_freshmen
-        if total_freshmen > 0
-        else 0
-    )
-    max_rating = max(player.rating for player in freshmen) if total_freshmen > 0 else 0
-    min_rating = min(player.rating for player in freshmen) if total_freshmen > 0 else 0
+    # Calculate team recruiting rankings
+    team_rankings = calculate_recruiting_rankings(freshmen_by_team)
 
     return Response(
         {
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(info.team).data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
-            "freshmen_by_team": dict(sorted_teams),
+            "team_rankings": team_rankings,
             "summary_stats": {
-                "total_freshmen": total_freshmen,
-                "avg_rating": round(avg_rating, 1),
-                "max_rating": max_rating,
-                "min_rating": min_rating,
+                "total_freshmen": len(freshmen),
+                "avg_rating": (
+                    round(sum(player.rating for player in freshmen) / len(freshmen), 1)
+                    if freshmen
+                    else 0
+                ),
+                "max_rating": (
+                    max(player.rating for player in freshmen) if freshmen else 0
+                ),
+                "min_rating": (
+                    min(player.rating for player in freshmen) if freshmen else 0
+                ),
             },
         }
     )

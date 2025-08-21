@@ -5,6 +5,7 @@ from django.db.models import F, ExpressionWrapper, FloatField
 import time
 from .util import time_section
 
+
 def get_playoff_team_order(info):
     """
     Determine the correct playoff team order using the same logic as setPlayoffR1.
@@ -365,7 +366,7 @@ def fillSchedules(info):
     overall_start = time.time()
     print(f"\n--- SCHEDULE GENERATION ---")
     print("PHASE 1: INITIALIZATION")
-    
+
     # Phase 1: Initialize data structures
     init_start = time.time()
     teams = list(info.teams.all())

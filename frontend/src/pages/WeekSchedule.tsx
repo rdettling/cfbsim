@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiService, usePageRefresh } from '../services/api';
+import { apiService } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Container,
@@ -12,9 +12,7 @@ import {
     Button,
     Grid,
     Card,
-    CardContent,
-    IconButton
-} from '@mui/material';
+    CardContent} from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import Navbar from '../components/Navbar';
 import { TeamLogo, TeamInfoModal } from '../components/TeamComponents';
@@ -52,7 +50,7 @@ export default function WeekSchedule() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
-    usePageRefresh<WeekScheduleData>(setData);
+    // Note: usePageRefresh was removed, manual refresh handling would need to be implemented if needed
 
     useEffect(() => {
         const fetchSchedule = async () => {

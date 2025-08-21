@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { apiService, usePageRefresh, getTeamHistoryRoute, getTeamScheduleRoute } from "../services/api";
+import { apiService, getTeamHistoryRoute, getTeamScheduleRoute } from "../services/api";
 import { Team, Info, Conference } from "../interfaces";
 import {
     Container,
@@ -12,8 +12,6 @@ import {
     TableContainer,
     Paper,
     Link,
-    CircularProgress,
-    Alert,
     Typography,
     Box,
     Stack,
@@ -21,10 +19,10 @@ import {
 import {
     Schedule,
 } from '@mui/icons-material';
-import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import TeamHeader from '../components/TeamHeader';
 import { ConfLogo } from '../components/TeamComponents';
+import { DataPage } from '../components/DataPage';
 
 interface YearHistory {
     year: number;
@@ -42,35 +40,15 @@ interface HistoryData {
     team: Team;
     years: YearHistory[];
     conferences: Conference[];
-    teams: Team[];
+    teams: string[];
 }
 
 const TeamHistory = () => {
     const { teamName } = useParams();
-    const [data, setData] = useState<HistoryData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    // Add usePageRefresh for automatic data updates
-    usePageRefresh<HistoryData>(setData);
-
+    // Set document title
     useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                setLoading(true);
-                if (teamName) {
-                    const responseData = await apiService.getTeamHistory<HistoryData>(teamName);
-                    setData(responseData);
-                }
-            } catch (error) {
-                setError('Failed to load team history');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchHistory();
         document.title = teamName ? `${teamName} History` : 'Team History';
         return () => { document.title = 'College Football'; };
     }, [teamName]);
@@ -110,31 +88,25 @@ const TeamHistory = () => {
         );
     };
 
-    if (loading) return (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-            <CircularProgress />
-        </Box>
-    );
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No history data available</Alert>;
-
-    const totalWins = data.years.reduce((sum, year) => sum + year.wins, 0);
-    const totalLosses = data.years.reduce((sum, year) => sum + year.losses, 0);
-
     return (
-        <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
-            <Container maxWidth="lg" sx={{ py: 3 }}>
-                <TeamHeader 
-                    team={data.team}
-                    teams={data.teams}
-                    onTeamChange={handleTeamChange}
-                />
+        <DataPage
+            fetchFunction={() => {
+                if (!teamName) throw new Error('No team name provided');
+                return apiService.getTeamHistory<HistoryData>(teamName);
+            }}
+            dependencies={[teamName]}
+        >
+            {(data) => {
+                const totalWins = data.years.reduce((sum, year) => sum + year.wins, 0);
+                const totalLosses = data.years.reduce((sum, year) => sum + year.losses, 0);
+
+                return (
+                    <Container maxWidth="lg" sx={{ py: 3 }}>
+                        <TeamHeader 
+                            team={data.team}
+                            teams={data.teams}
+                            onTeamChange={handleTeamChange}
+                        />
 
                 {/* History Table */}
                 <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
@@ -242,9 +214,11 @@ const TeamHistory = () => {
                             </TableBody>
                         </Table>
                     </TableContainer>
-                </Paper>
-            </Container>
-        </>
+                        </Paper>
+                    </Container>
+                );
+            }}
+        </DataPage>
     );
 };
 

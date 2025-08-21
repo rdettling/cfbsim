@@ -58,10 +58,13 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
             id: 'conferences',
             label: 'CONFERENCE STANDINGS',
             items: [
-                ...conferences.map(conf => ({
-                    label: conf.confName,
-                    path: `/standings/${conf.confName}`
-                })),
+                ...conferences.map(conf => {
+                    const confName = Object.keys(conf)[0];
+                    return {
+                        label: confName,
+                        path: `/standings/${confName}`
+                    };
+                }),
                 { label: 'Independent', path: '/standings/independent' }
             ]
         },
@@ -99,7 +102,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
             <Toolbar sx={{ py: 1, minHeight: '64px !important' }}>
                 {/* Left Section - Team Logo */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
-                    <TeamLogo name={info.team.name} size={40} />
+                    <TeamLogo name={team.name} size={40} />
                 </Box>
 
                 {/* Center Section - Navigation */}

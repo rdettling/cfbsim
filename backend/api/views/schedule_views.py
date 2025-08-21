@@ -86,22 +86,24 @@ def week_schedule(request, week_num):
     # Calculate watchability score for each game
     for game_data in games_data:
         # Get the original game object to access winProbA and winProbB
-        game = games.get(id=game_data['id'])
-        
+        game = games.get(id=game_data["id"])
+
         # Calculate watchability score using the utility function
-        watchability_score = watchability(game.rankATOG, game.rankBTOG, game.winProbA, game.winProbB, num_teams)
-        
-        game_data['watchability_score'] = watchability_score
+        watchability_score = watchability(
+            game.rankATOG, game.rankBTOG, game.winProbA, game.winProbB, num_teams
+        )
+
+        game_data["watchability_score"] = watchability_score
 
     # Sort games by watchability score (highest first)
-    games_data.sort(key=lambda x: x['watchability_score'], reverse=True)
+    games_data.sort(key=lambda x: x["watchability_score"], reverse=True)
 
     return Response(
         {
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(info.team).data,
             "games": games_data,
-            "conferences": ConferenceNameSerializer(
+            "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
         }

@@ -11,7 +11,6 @@ class TeamsSerializer(serializers.ModelSerializer):
         model = Teams
         fields = [
             "name",
-            "abbreviation",
             "conference",
             "ranking",
             "prestige",
@@ -45,7 +44,10 @@ class PlayoffSerializer(serializers.ModelSerializer):
 class ConferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conferences
-        fields = "__all__"
+        fields = ["id", "confName"]
+
+    def to_representation(self, instance):
+        return {instance.confName: instance.id}
 
 
 class PlayersSerializer(serializers.ModelSerializer):
@@ -105,18 +107,14 @@ class TeamNameSerializer(serializers.ModelSerializer):
 
 
 class InfoSerializer(serializers.ModelSerializer):
-    team = TeamNameSerializer(read_only=True)
-    playoff = PlayoffSerializer(read_only=True)
+    team = serializers.SerializerMethodField()
 
     class Meta:
         model = Info
         fields = "__all__"
 
-
-class ConferenceNameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Conferences
-        fields = ["id", "confName"]
+    def get_team(self, obj):
+        return obj.team.name
 
 
 class GamesSerializer(serializers.ModelSerializer):

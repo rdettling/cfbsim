@@ -1,6 +1,4 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 
 // Determine if we're in production based on the URL
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
@@ -92,19 +90,6 @@ const request = async <T>(
     options?: { params?: Record<string, any>; data?: any }
 ): Promise<T> => {
     try {
-        // Add debug logging for all API calls
-        const fullUrl = `${API_BASE_URL}${url}`;
-        const queryParams = options?.params 
-            ? `?${new URLSearchParams(options.params as Record<string, string>).toString()}`
-            : '';
-        
-        console.log(`Making ${method.toUpperCase()} request to: ${url}${queryParams}`);
-        console.log(`Full URL with base: ${fullUrl}${queryParams}`);
-        
-        if (options?.data) {
-            console.log('Request payload:', options.data);
-        }
-        
         // Create the config object
         const config = {
             params: options?.params
@@ -127,13 +112,9 @@ const request = async <T>(
                 response = await api.delete<T>(url, config);
                 break;
         }
-
-        // Log the complete response data
-        console.log(`Response from ${url}:`, response.data);
         
         return response.data;
     } catch (error) {
-        console.error(`Error in ${method.toUpperCase()} request to ${url}:`, error);
         return handleError(error as AxiosError);
     }
 };
@@ -216,103 +197,5 @@ export const apiService = {
     delete: <T>(endpoint: string, params?: Record<string, any>) => 
         request<T>('delete', endpoint, { params }),
 };
-
-// Route mapping for usePageRefresh
-const routeToApiMapping: Record<string, (params: any) => Promise<any>> = {
-    // Static routes
-    '/dashboard': () => apiService.getDashboard(),
-    '/rankings': () => apiService.getRankings(),
-    '/playoff': () => apiService.getPlayoff(),
-    '/stats/team': () => apiService.getTeamStatsList(),
-    '/stats/individual': () => apiService.getIndividualStatsList(),
-    '/stats/ratings': () => apiService.getRatingsStats(),
-    '/summary': () => apiService.getSeasonSummary(),
-    '/roster_progression': () => apiService.getRosterProgression(),
-    '/recruiting_summary': () => apiService.getRecruitingSummary(),
-    '/noncon': () => apiService.getNonCon(),
-    
-    // Dynamic routes - these will be matched by pattern in the usePageRefresh function
-};
-
-// Custom hook that uses the apiService for page refreshes
-export function usePageRefresh<T>(setData: (data: T) => void) {
-    const location = useLocation();
-
-    const refreshCurrentPage = async () => {
-        const path = location.pathname;
-        const pathParts = path.split('/').filter(Boolean); // Remove empty strings
-        const searchParams = new URLSearchParams(location.search);
-        let data;
-
-        try {
-            // Check for exact static routes first
-            if (routeToApiMapping[path]) {
-                data = await routeToApiMapping[path]({});
-            }
-            // Handle dynamic routes
-            else if (pathParts.length >= 1) {
-                const firstPart = pathParts[0];
-                const secondPart = pathParts.length > 1 ? pathParts[1] : '';
-                
-                // Conference standings: /standings/:conference
-                if (path.startsWith('/standings/')) {
-                    data = await apiService.getConferenceStandings(secondPart);
-                }
-                // Week schedule: /schedule/:week
-                else if (firstPart === 'schedule') {
-                    data = await apiService.getWeekSchedule(parseInt(secondPart));
-                }
-                // Game details: /game/:id
-                else if (firstPart === 'game') {
-                    data = await apiService.getGame(secondPart);
-                }
-                // Player details: /players/:id
-                else if (firstPart === 'players') {
-                    const year = searchParams.get('year');
-                    data = await apiService.getPlayer(secondPart, year || undefined);
-                }
-                // Team pages with second path part
-                else if (secondPart) {
-                    const teamName = firstPart;
-                    
-                    // Team roster: /:team/roster
-                    if (secondPart === 'roster') {
-                        data = await apiService.getTeamRoster(teamName);
-                    }
-                    // Team schedule: /:team/schedule
-                    else if (secondPart === 'schedule') {
-                        const year = searchParams.get('year');
-                        data = await apiService.getTeamSchedule(teamName, year || undefined);
-                    }
-                    // Team history: /:team/history
-                    else if (secondPart === 'history') {
-                        data = await apiService.getTeamHistory(teamName);
-                    }
-                    // Team stats: /:team/stats
-                    else if (secondPart === 'stats') {
-                        data = await apiService.getTeamStats(teamName);
-                    }
-                }
-            }
-
-            // Update data if response was received
-            if (data) {
-                setData(data as T);
-            }
-        } catch (error) {
-            console.error('Error refreshing page data:', error);
-        }
-    };
-
-    useEffect(() => {
-        const handlePageRefresh = () => refreshCurrentPage();
-
-        window.addEventListener('pageDataRefresh', handlePageRefresh);
-
-        return () => {
-            window.removeEventListener('pageDataRefresh', handlePageRefresh);
-        };
-    }, [location.pathname, location.search]); // Re-attach when route changes
-}
 
 export default apiService;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { apiService, usePageRefresh, ROUTES } from "../services/api";
+import { apiService, ROUTES } from "../services/api";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import {
@@ -81,15 +81,9 @@ export const NonCon = () => {
         fetchData();
     }, []);
 
-    // Custom page refresh handler that only works after initial load
-    const handlePageRefresh = (newData: NonConData) => {
-        if (initialLoadComplete.current) {
-            setData(newData);
-        }
-    };
 
-    // Always call usePageRefresh but control its behavior
-    usePageRefresh<NonConData>(handlePageRefresh);
+
+    // Note: usePageRefresh was removed, manual refresh handling would need to be implemented if needed
 
     // Mark initial load as complete after first render
     useEffect(() => {
