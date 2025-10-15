@@ -227,6 +227,7 @@ class Playoff(models.Model):
     autobids = models.IntegerField()
     conf_champ_top_4 = models.BooleanField(default=False)
 
+    # All possible seeds (1-12)
     seed_1 = models.ForeignKey(
         Teams, on_delete=models.SET_NULL, null=True, related_name="seed_1"
     )
@@ -238,6 +239,30 @@ class Playoff(models.Model):
     )
     seed_4 = models.ForeignKey(
         Teams, on_delete=models.SET_NULL, null=True, related_name="seed_4"
+    )
+    seed_5 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_5"
+    )
+    seed_6 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_6"
+    )
+    seed_7 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_7"
+    )
+    seed_8 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_8"
+    )
+    seed_9 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_9"
+    )
+    seed_10 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_10"
+    )
+    seed_11 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_11"
+    )
+    seed_12 = models.ForeignKey(
+        Teams, on_delete=models.SET_NULL, null=True, related_name="seed_12"
     )
 
     left_r1_1 = models.ForeignKey(

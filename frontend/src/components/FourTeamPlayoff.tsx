@@ -1,271 +1,93 @@
-import { Box, Typography, Paper, Grid, List, ListItem, Chip, Link as MuiLink } from '@mui/material';
-import { TeamLogo } from './TeamComponents';
-import { PlayoffTeam, TeamClickHandler } from '../interfaces';
+import { Box, Typography, Paper } from '@mui/material';
+import { TeamClickHandler } from '../interfaces';
+import { Matchup, Championship } from './PlayoffComponents';
 
 interface FourTeamPlayoffProps extends TeamClickHandler {
-    playoffTeams: PlayoffTeam[];
-    bubbleTeams: any[];
-    conferenceChampions: any[];
+    playoffTeams: any[];
+    bracket?: any;
 }
 
-const FourTeamPlayoff = ({ playoffTeams, bubbleTeams, conferenceChampions, onTeamClick }: FourTeamPlayoffProps) => {
+const FourTeamPlayoff = ({ playoffTeams, bracket, onTeamClick }: FourTeamPlayoffProps) => {
+    // Log bracket data for debugging
+    console.log('FourTeamPlayoff bracket:', bracket);
     return (
-        <Grid container spacing={3}>
-            {/* Playoff Bracket */}
-            <Grid item xs={12} lg={8}>
-                <Paper sx={{ p: 3 }}>
-                    <Typography variant="h5" gutterBottom>Playoff Bracket</Typography>
-                    <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                            <Typography variant="h6" gutterBottom>Semifinals</Typography>
-                            <Paper sx={{ p: 2, mb: 1, minHeight: 80 }}>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        fontWeight: 'bold'
-                                    }}>
-                                        <TeamLogo name={playoffTeams[0]?.name} size={20} />
-                                        <MuiLink
-                                            component="button"
-                                            onClick={() => onTeamClick(playoffTeams[0]?.name || '')}
-                                            sx={{ 
-                                                cursor: 'pointer', 
-                                                textDecoration: 'none', 
-                                                fontWeight: 'bold',
-                                                color: 'text.primary',
-                                                '&:hover': { color: 'primary.main' }
-                                            }}
-                                        >
-                                            #1 {playoffTeams[0]?.name}
-                                        </MuiLink>
-                                    </Box>
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        fontWeight: 'bold'
-                                    }}>
-                                        <TeamLogo name={playoffTeams[3]?.name} size={20} />
-                                        <MuiLink
-                                            component="button"
-                                            onClick={() => onTeamClick(playoffTeams[3]?.name || '')}
-                                            sx={{ 
-                                                cursor: 'pointer', 
-                                                textDecoration: 'none', 
-                                                fontWeight: 'bold',
-                                                color: 'text.primary',
-                                                '&:hover': { color: 'primary.main' }
-                                            }}
-                                        >
-                                            #4 {playoffTeams[3]?.name}
-                                        </MuiLink>
-                                    </Box>
-                                </Box>
-                            </Paper>
-                            <Paper sx={{ p: 2, mb: 1, minHeight: 80 }}>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        fontWeight: 'bold'
-                                    }}>
-                                        <TeamLogo name={playoffTeams[1]?.name} size={20} />
-                                        <MuiLink
-                                            component="button"
-                                            onClick={() => onTeamClick(playoffTeams[1]?.name || '')}
-                                            sx={{ 
-                                                cursor: 'pointer', 
-                                                textDecoration: 'none', 
-                                                fontWeight: 'bold',
-                                                color: 'text.primary',
-                                                '&:hover': { color: 'primary.main' }
-                                            }}
-                                        >
-                                            #2 {playoffTeams[1]?.name}
-                                        </MuiLink>
-                                    </Box>
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        fontWeight: 'bold'
-                                    }}>
-                                        <TeamLogo name={playoffTeams[2]?.name} size={20} />
-                                        <MuiLink
-                                            component="button"
-                                            onClick={() => onTeamClick(playoffTeams[2]?.name || '')}
-                                            sx={{ 
-                                                cursor: 'pointer', 
-                                                textDecoration: 'none', 
-                                                fontWeight: 'bold',
-                                                color: 'text.primary',
-                                                '&:hover': { color: 'primary.main' }
-                                            }}
-                                        >
-                                            #3 {playoffTeams[2]?.name}
-                                        </MuiLink>
-                                    </Box>
-                                </Box>
-                            </Paper>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="h6" gutterBottom>Championship</Typography>
-                            <Paper sx={{ p: 2, mb: 1, minHeight: 80 }}>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        fontWeight: 'bold',
-                                        color: '#666'
-                                    }}>
-                                        TBD
-                                    </Box>
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        fontWeight: 'bold',
-                                        color: '#666'
-                                    }}>
-                                        TBD
-                                    </Box>
-                                </Box>
-                            </Paper>
-                        </Grid>
-                    </Grid>
-                </Paper>
-            </Grid>
-
-            {/* Sidebar Information */}
-            <Grid item xs={12} lg={4}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {/* Playoff Teams */}
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6" gutterBottom>Playoff Teams</Typography>
-                        <List dense>
-                            {playoffTeams.slice(0, 4).map((team) => (
-                                <ListItem key={team.name} sx={{ py: 0.5 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                                        <Typography variant="body2" sx={{ minWidth: 30 }}>
-                                            #{team.seed}
-                                        </Typography>
-                                        <MuiLink
-                                            component="button"
-                                            onClick={() => onTeamClick(team.name)}
-                                            sx={{ 
-                                                cursor: 'pointer', 
-                                                textDecoration: 'none', 
-                                                fontWeight: 'bold',
-                                                color: 'text.primary',
-                                                flexGrow: 1,
-                                                '&:hover': { color: 'primary.main' }
-                                            }}
-                                        >
-                                            {team.name}
-                                        </MuiLink>
-                                        <Typography variant="body2" sx={{ minWidth: 60 }}>
-                                            {team.record}
-                                        </Typography>
-                                        {team.is_autobid && (
-                                            <Chip 
-                                                label="Auto" 
-                                                color="primary" 
-                                                size="small" 
-                                                sx={{ ml: 1 }}
-                                            />
-                                        )}
-                                    </Box>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
-
-                    {/* Bubble Teams */}
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6" gutterBottom>Bubble Teams</Typography>
-                        <List dense>
-                            {bubbleTeams.map((team) => (
-                                <ListItem key={team.name} sx={{ py: 0.5 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                                        <Typography variant="body2" sx={{ minWidth: 40 }}>
-                                            #{team.ranking}
-                                        </Typography>
-                                        <MuiLink
-                                            component="button"
-                                            onClick={() => onTeamClick(team.name)}
-                                            sx={{ 
-                                                cursor: 'pointer', 
-                                                textDecoration: 'none', 
-                                                fontWeight: 'bold',
-                                                color: 'text.primary',
-                                                flexGrow: 1,
-                                                '&:hover': { color: 'primary.main' }
-                                            }}
-                                        >
-                                            {team.name}
-                                        </MuiLink>
-                                        <Typography variant="body2" sx={{ minWidth: 60 }}>
-                                            {team.record}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ minWidth: 80 }}>
-                                            {team.conference}
-                                        </Typography>
-                                    </Box>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
-
-                    {/* Conference Champions */}
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6" gutterBottom>Conference Champions</Typography>
-                        <List dense>
-                            {conferenceChampions.map((team) => (
-                                <ListItem key={team.name} sx={{ py: 0.5 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                                        <Typography variant="body2" sx={{ minWidth: 40 }}>
-                                            #{team.ranking}
-                                        </Typography>
-                                        <MuiLink
-                                            component="button"
-                                            onClick={() => onTeamClick(team.name)}
-                                            sx={{ 
-                                                cursor: 'pointer', 
-                                                textDecoration: 'none', 
-                                                fontWeight: 'bold',
-                                                color: 'text.primary',
-                                                flexGrow: 1,
-                                                '&:hover': { color: 'primary.main' }
-                                            }}
-                                        >
-                                            {team.name}
-                                        </MuiLink>
-                                        <Typography variant="body2" sx={{ minWidth: 60 }}>
-                                            {team.record}
-                                        </Typography>
-                                        {team.seed && (
-                                            <Chip 
-                                                label={team.seed <= 4 
-                                                    ? `Seed #${team.seed}` 
-                                                    : 'Playoff'
-                                                }
-                                                color={team.seed <= 4 ? 'primary' : 'success'}
-                                                size="small"
-                                                sx={{ ml: 1 }}
-                                            />
-                                        )}
-                                    </Box>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Paper>
+        <Box>
+            {/* Playoff Bracket - Full Width */}
+            <Paper sx={{ p: 4, borderRadius: 2, overflow: 'auto' }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
+                    4-Team Playoff Bracket
+                </Typography>
+                
+                <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 8,
+                    minWidth: 1000
+                }}>
+                    {/* Left Side - Semifinal 1 */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
+                        <Typography 
+                            variant="h6" 
+                            sx={{ 
+                                fontWeight: 'bold', 
+                                textAlign: 'center',
+                                color: '#1976d2',
+                                fontSize: '1rem'
+                            }}
+                        >
+                            Semifinal
+                        </Typography>
+                        
+                        <Matchup 
+                            matchup={bracket?.semifinals?.[0] || {
+                                team1: playoffTeams[0]?.name,
+                                team2: playoffTeams[3]?.name,
+                                seed1: 1,
+                                seed2: 4
+                            }}
+                            direction="left"
+                            onTeamClick={onTeamClick}
+                        />
+                    </Box>
+                    
+                    {/* Center - Championship */}
+                    <Championship 
+                        championship={bracket?.championship || {
+                            team1: "TBD",
+                            team2: "TBD"
+                        }}
+                        onTeamClick={onTeamClick}
+                    />
+                    
+                    {/* Right Side - Semifinal 2 */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
+                        <Typography 
+                            variant="h6" 
+                            sx={{ 
+                                fontWeight: 'bold', 
+                                textAlign: 'center',
+                                color: '#1976d2',
+                                fontSize: '1rem'
+                            }}
+                        >
+                            Semifinal
+                        </Typography>
+                        
+                        <Matchup 
+                            matchup={bracket?.semifinals?.[1] || {
+                                team1: playoffTeams[1]?.name,
+                                team2: playoffTeams[2]?.name,
+                                seed1: 2,
+                                seed2: 3
+                            }}
+                            direction="right"
+                            onTeamClick={onTeamClick}
+                        />
+                    </Box>
                 </Box>
-            </Grid>
-        </Grid>
+            </Paper>
+        </Box>
     );
 };
 

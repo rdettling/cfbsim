@@ -33,7 +33,7 @@ const Game = () => {
             {data?.game.winner ? (
                 <GameResult data={data} />
             ) : (
-                data && <GamePreview game={data.game} top_players={data.top_players} />
+                data && <GamePreview game={data.game} />
             )}
         </PageLayout>
     );

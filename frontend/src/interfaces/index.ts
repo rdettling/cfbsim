@@ -51,6 +51,8 @@ export interface Team {
             rank: number;
         };
     };
+    // Game preview top players (optional - only present in game preview)
+    top_players?: Player[];
 }
 
 export interface Info {
@@ -144,7 +146,6 @@ export interface GamePreviewData {
     game: Game;
     team: Team;
     conferences: Conference[];
-    top_players: Player[][];
     // Additional properties for game results
     drives?: Array<{
         offense: string;

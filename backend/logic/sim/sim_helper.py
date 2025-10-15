@@ -18,33 +18,6 @@ from logic.constants.sim_constants import (
     RANKING_TOTAL_WEEKS,
 )
 
-
-def run_week_simulation(info, drives_to_create, plays_to_create):
-    """Main function to run a complete week simulation with clear timing structure"""
-    week_start = time.time()
-    print(f"\n=== SIMULATING WEEK {info.currentWeek} ===")
-
-    # Step 1: Simulate all games for the week
-    games = fetch_and_simulate_games(info, drives_to_create, plays_to_create)
-
-    # Step 2: Process game results and generate headlines
-    natty_game = update_game_results(info, games)
-
-    # Step 3: Handle special weeks (conference championships, playoffs)
-    handle_special_weeks(info)
-
-    # Step 4: Update team rankings
-    update_rankings(info, natty_game)
-
-    # Step 5: Save all simulation data to database
-    save_simulation_data(info, drives_to_create, plays_to_create)
-
-    time_section(week_start, f"WEEK {info.currentWeek} COMPLETED")
-    print("=" * 50)
-
-    return games
-
-
 def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     """Fetch games for the current week and simulate them with batch team updates"""
     total_start = time.time()
@@ -220,7 +193,7 @@ def update_game_results(info, games):
 def update_rankings(info, natty_game=None):
     """Update team rankings if needed for the current week"""
     total_start = time.time()
-    print("PHASE 4: RANKINGS UPDATE")
+    print("PHASE 3: RANKINGS UPDATE")
 
     # Skip ranking updates for certain playoff weeks
     skip_weeks = {4: [14], 12: [14, 15, 16]}.get(info.playoff.teams, [])
@@ -343,7 +316,7 @@ def update_rankings(info, natty_game=None):
             Games.objects.bulk_update(future_games, ["rankATOG", "rankBTOG"])
         time_section(db_start, "  • Database updated with new rankings")
 
-        time_section(total_start, "PHASE 4 TOTAL")
+        time_section(total_start, "PHASE 3 TOTAL")
     else:
         time_section(
             total_start, f"SKIPPED: Rankings update for week {info.currentWeek}"
@@ -355,7 +328,7 @@ def update_rankings(info, natty_game=None):
 def handle_special_weeks(info):
     """Handle special weeks like conference championships and playoffs"""
     special_start = time.time()
-    print("PHASE 3: SPECIAL WEEK HANDLING")
+    print("PHASE 4: SPECIAL WEEK HANDLING")
 
     # Map of playoff formats to special actions by week
     special_actions = {

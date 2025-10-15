@@ -89,8 +89,15 @@ def setPlayoffR1(info):
         team.ranking = i
         teams_to_update.append(team)
     Teams.objects.bulk_update(teams_to_update, ["ranking"])
-
-    playoff.seed_1, playoff.seed_2, playoff.seed_3, playoff.seed_4 = teams[:4]
+    
+    # Set all 12 seeds for 12-team playoff
+    for i in range(1, 13):
+        setattr(playoff, f"seed_{i}", teams[i-1])
+    
+    print(f"Set playoff seeds for 12-team playoff")
+    for i in range(1, 13):
+        team = getattr(playoff, f"seed_{i}")
+        print(f"Seed #{i}: {team.name} (Rank #{team.ranking})")
 
     def schedule_playoff_game(team1, team2, description):
         return scheduleGame(info, team1, team2, games_to_create, 14, description)[2]
@@ -114,11 +121,17 @@ def setPlayoffQuarter(info):
             info, team1, team2, games_to_create, 15, "Playoff quarterfinal"
         )[2]
 
+    # Use the stored seeds
+    seed_1 = playoff.seed_1
+    seed_2 = playoff.seed_2
+    seed_3 = playoff.seed_3
+    seed_4 = playoff.seed_4
+    
     matchups = [
-        ("left_quarter_1", playoff.seed_1, playoff.left_r1_1.winner),
-        ("left_quarter_2", playoff.seed_4, playoff.left_r1_2.winner),
-        ("right_quarter_1", playoff.seed_2, playoff.right_r1_1.winner),
-        ("right_quarter_2", playoff.seed_3, playoff.right_r1_2.winner),
+        ("left_quarter_1", seed_1, playoff.left_r1_1.winner),
+        ("left_quarter_2", seed_4, playoff.left_r1_2.winner),
+        ("right_quarter_1", seed_2, playoff.right_r1_1.winner),
+        ("right_quarter_2", seed_3, playoff.right_r1_2.winner),
     ]
 
     for matchup in matchups:
@@ -142,7 +155,19 @@ def setPlayoffSemi(info):
         )[2]
 
     if playoff.teams == 4:
-        teams = info.teams.order_by("ranking")
+        # Get the top 4 teams by ranking
+        teams = info.teams.order_by("ranking")[:4]
+        
+        # Set the seeds in the playoff object
+        playoff.seed_1 = teams[0]
+        playoff.seed_2 = teams[1]
+        playoff.seed_3 = teams[2]
+        playoff.seed_4 = teams[3]
+        
+        print(f"4-team playoff semifinals:")
+        print(f"Seed #1 {teams[0].name} vs Seed #4 {teams[3].name}")
+        print(f"Seed #2 {teams[1].name} vs Seed #3 {teams[2].name}")
+
         playoff.left_semi = schedule_playoff_game(teams[0], teams[3], 14)
         playoff.right_semi = schedule_playoff_game(teams[1], teams[2], 14)
     elif playoff.teams == 12:
@@ -258,7 +283,15 @@ def setNatty(info):
     week_mapping = {2: 14, 4: 15, 12: 17}
 
     if playoff.teams == 2:
-        teams = info.teams.order_by("ranking")
+        # Get the top 2 teams by ranking
+        teams = info.teams.order_by("ranking")[:2]
+        
+        # Set the seeds in the playoff object
+        playoff.seed_1 = teams[0]
+        playoff.seed_2 = teams[1]
+        
+        print(f"2-team playoff championship:")
+        print(f"Seed #1 {teams[0].name} vs Seed #2 {teams[1].name}")
 
         playoff.natty = scheduleGame(
             info,
