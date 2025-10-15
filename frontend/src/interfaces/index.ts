@@ -142,6 +142,7 @@ export interface GameLog {
 export interface GamePreviewData {
     info: Info;
     game: Game;
+    team: Team;
     conferences: Conference[];
     top_players: Player[][];
     // Additional properties for game results

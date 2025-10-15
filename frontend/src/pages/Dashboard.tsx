@@ -5,9 +5,10 @@ import { TeamInfoModal, ConfLogo, TeamLogo } from '../components/TeamComponents'
 import {
     Typography, Card, CardContent, Table,
     TableBody, TableCell, TableContainer, TableHead, Chip,
-    TableRow, Paper, Box, Link as MuiLink, Button, Grid, Alert
+    TableRow, Paper, Box, Link as MuiLink, Button, Grid
 } from '@mui/material';
-import { DataPage } from '../components/DataPage';
+import { useDataFetching } from '../hooks/useDataFetching';
+import { PageLayout } from '../components/PageLayout';
 
 interface DashboardData {
     info: Info;
@@ -140,130 +141,140 @@ const Dashboard = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
+    const { data, loading, error } = useDataFetching({
+        fetchFunction: () => apiService.getDashboard<DashboardData>(),
+        autoRefreshOnGameChange: true
+    });
+
     const handleTeamClick = (name: string) => {
         setSelectedTeam(name);
         setModalOpen(true);
     };
 
+    const confName = data?.team.conference;
+
     return (
-        <>
-            {/* DataPage handles loading, error states, and auto-refresh on game changes */}
-            <DataPage
-                fetchFunction={() => apiService.getDashboard<DashboardData>()}
-            >
-                {(data) => {
-                    const confName = data.team.conference;
-
-                    return (
-                        <>
-                            {/* Team Header with Conference Logo */}
-                <Paper elevation={2} sx={{ mb: 4, p: 3, borderRadius: 2 }}>
-                    <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} md={1}>
-                            <TeamLogo name={data.team.name} size={80} />
-                        </Grid>
-                        <Grid item xs={12} md={9}>
-                            <Typography variant="h3" fontWeight="bold" gutterBottom>
-                                {data.team.ranking > 0 && `#${data.team.ranking} `}{data.team.name} {data.team.mascot}
-                            </Typography>
-                            <Typography variant="h6">
-                                Record: <strong>{data.team.record}</strong>
-                            
-                                &nbsp;&nbsp;•&nbsp;&nbsp;Rating: <strong>{data.team.rating}</strong>
-                            </Typography>
-                        </Grid>
-                        {confName && (
-                            <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <ConfLogo name={confName} size={60} />
-                                    <Typography variant="subtitle1" sx={{ mt: 1 }}>{confName}</Typography>
-                                </Box>
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="lg"
+        >
+                {data && (
+                    <>
+                        {/* Team Header with Conference Logo */}
+                        <Paper elevation={2} sx={{ mb: 4, p: 3, borderRadius: 2 }}>
+                            <Grid container spacing={2} alignItems="center">
+                                <Grid item xs={12} md={1}>
+                                    <TeamLogo name={data.team.name} size={80} />
+                                </Grid>
+                                <Grid item xs={12} md={9}>
+                                    <Typography variant="h3" fontWeight="bold" gutterBottom>
+                                        {data.team.ranking > 0 && `#${data.team.ranking} `}{data.team.name} {data.team.mascot}
+                                    </Typography>
+                                    <Typography variant="h6">
+                                        Record: <strong>{data.team.record}</strong>
+                                    
+                                        &nbsp;&nbsp;•&nbsp;&nbsp;Rating: <strong>{data.team.rating}</strong>
+                                    </Typography>
+                                </Grid>
+                                {confName && (
+                                    <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                        <Box sx={{ textAlign: 'center' }}>
+                                            <ConfLogo name={confName} size={60} />
+                                            <Typography variant="subtitle1" sx={{ mt: 1 }}>{confName}</Typography>
+                                        </Box>
+                                    </Grid>
+                                )}
                             </Grid>
-                        )}
-                    </Grid>
-                </Paper>
+                        </Paper>
 
-                <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3}>
-                    {/* Game Cards Section */}
-                    <Box>
-                        <Typography variant="h5" sx={{ mb: 2, borderBottom: '2px solid', borderColor: 'primary.main', pb: 1 }}>
-                            Games
-                        </Typography>
-                        {data.prev_game?.opponent && <GameCard game={data.prev_game} type="prev" onTeamClick={handleTeamClick} />}
-                        {data.curr_game?.opponent && <GameCard game={data.curr_game} type="curr" onTeamClick={handleTeamClick} />}
-                        {!data.prev_game?.opponent && !data.curr_game?.opponent && (
-                            <Alert severity="info">No recent or upcoming games available</Alert>
-                        )}
-                    </Box>
+                        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3}>
+                            {/* Game Cards Section */}
+                            <Box>
+                                <Typography variant="h5" sx={{ mb: 2, borderBottom: '2px solid', borderColor: 'primary.main', pb: 1 }}>
+                                    Games
+                                </Typography>
+                                {data.prev_game?.opponent && <GameCard game={data.prev_game} type="prev" onTeamClick={handleTeamClick} />}
+                                {data.curr_game?.opponent && <GameCard game={data.curr_game} type="curr" onTeamClick={handleTeamClick} />}
+                                {!data.prev_game?.opponent && !data.curr_game?.opponent && (
+                                    <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+                                        <Typography variant="body2" color="info.dark">No recent or upcoming games available</Typography>
+                                    </Box>
+                                )}
+                            </Box>
 
-                    {/* Conference Standings Section */}
-                    <TableContainer component={Paper} elevation={3}>
-                        <Box sx={{ bgcolor: data.team.colorPrimary || 'primary.main', color: 'white', p: 2 }}>
-                            <Typography variant="h5" align="center">
-                                {confName ? `${confName} Standings` : 'Independent Teams'}
-                            </Typography>
+                            {/* Conference Standings Section */}
+                            <TableContainer component={Paper} elevation={3}>
+                                <Box sx={{ bgcolor: data.team.colorPrimary || 'primary.main', color: 'white', p: 2 }}>
+                                    <Typography variant="h5" align="center">
+                                        {confName ? `${confName} Standings` : 'Independent Teams'}
+                                    </Typography>
+                                </Box>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>
+                                            <TableCell>Team</TableCell>
+                                            <TableCell align="center">Rating</TableCell>
+                                            <TableCell align="center">Conf</TableCell>
+                                            <TableCell align="center">Overall</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {data.confTeams.map(team => (
+                                            <TeamRow 
+                                                key={team.name} 
+                                                team={team} 
+                                                showRating 
+                                                highlight={team.name === data.team.name}
+                                                onTeamClick={handleTeamClick} 
+                                            />
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+
+                            {/* AP Top 10 Section */}
+                            <TableContainer component={Paper} elevation={3}>
+                                <Box sx={{ bgcolor: 'primary.main', color: 'white', p: 2 }}>
+                                    <Typography variant="h5" align="center">AP Top 10</Typography>
+                                </Box>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>
+                                            <TableCell>Rank</TableCell>
+                                            <TableCell>Team</TableCell>
+                                            <TableCell align="center">Record</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {data.top_10.map((team, index) => (
+                                            <TeamRow 
+                                                key={team.name} 
+                                                team={team} 
+                                                rank={index + 1} 
+                                                highlight={team.name === data.team.name}
+                                                onTeamClick={handleTeamClick} 
+                                            />
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                         </Box>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>
-                                    <TableCell>Team</TableCell>
-                                    <TableCell align="center">Rating</TableCell>
-                                    <TableCell align="center">Conf</TableCell>
-                                    <TableCell align="center">Overall</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {data.confTeams.map(team => (
-                                    <TeamRow 
-                                        key={team.name} 
-                                        team={team} 
-                                        showRating 
-                                        highlight={team.name === data.team.name}
-                                        onTeamClick={handleTeamClick} 
-                                    />
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-
-                    {/* AP Top 10 Section */}
-                    <TableContainer component={Paper} elevation={3}>
-                        <Box sx={{ bgcolor: 'primary.main', color: 'white', p: 2 }}>
-                            <Typography variant="h5" align="center">AP Top 10</Typography>
-                        </Box>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>
-                                    <TableCell>Rank</TableCell>
-                                    <TableCell>Team</TableCell>
-                                    <TableCell align="center">Record</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {data.top_10.map((team, index) => (
-                                    <TeamRow 
-                                        key={team.name} 
-                                        team={team} 
-                                        rank={index + 1} 
-                                        highlight={team.name === data.team.name}
-                                        onTeamClick={handleTeamClick} 
-                                    />
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </Box>
-                        </>
-                    );
-                }}
-            </DataPage>
+                    </>
+                )}
             
             <TeamInfoModal 
                 teamName={selectedTeam} 
                 open={modalOpen} 
                 onClose={() => setModalOpen(false)} 
             />
-        </>
+        </PageLayout>
     );
 };
 

@@ -4,10 +4,11 @@ import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { Link as RouterLink } from 'react-router-dom';
 import {
-    Typography, Box, Tabs, Tab,
+    Box, Tabs, Tab,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Link as MuiLink
 } from '@mui/material';
-import { DataPage } from '../components/DataPage';
+import { useDataFetching } from '../hooks/useDataFetching';
+import { PageLayout } from '../components/PageLayout';
 
 interface PlayerData {
     id: number;
@@ -76,26 +77,38 @@ const StatsTable = ({ stats, sortBy }: { stats: Record<string, PlayerData>, sort
 const IndividualStats = () => {
     const [tabValue, setTabValue] = useState(0);
 
+    const { data, loading, error } = useDataFetching({
+        fetchFunction: () => apiService.getIndividualStatsList<StatsData>(),
+        autoRefreshOnGameChange: true
+    });
+
     return (
-        <DataPage
-            fetchFunction={() => apiService.getIndividualStatsList<StatsData>()}
-            dependencies={[]}
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="lg"
         >
-            {(data) => (
+            {data && (
                 <>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} centered>
-                            <Tab label="Passing" />
-                            <Tab label="Rushing" />
-                            <Tab label="Receiving" />
-                        </Tabs>
-                    </Box>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                    <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} centered>
+                        <Tab label="Passing" />
+                        <Tab label="Rushing" />
+                        <Tab label="Receiving" />
+                    </Tabs>
+                </Box>
                     <Box hidden={tabValue !== 0}><StatsTable stats={data.stats.passing} sortBy="adjusted_pass_yards_per_attempt" /></Box>
                     <Box hidden={tabValue !== 1}><StatsTable stats={data.stats.rushing} sortBy="yards_per_game" /></Box>
                     <Box hidden={tabValue !== 2}><StatsTable stats={data.stats.receiving} sortBy="yards_per_game" /></Box>
                 </>
             )}
-        </DataPage>
+        </PageLayout>
     );
 };
 

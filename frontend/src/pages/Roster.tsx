@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { apiService, getTeamRosterRoute, getPlayerRoute } from '../services/api';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
-    Container,
     Table,
     TableBody,
     TableCell,
@@ -22,7 +21,8 @@ import {
     Typography
 } from '@mui/material';
 import TeamHeader from '../components/TeamHeader';
-import { DataPage } from '../components/DataPage';
+import { useDataFetching } from '../hooks/useDataFetching';
+import { PageLayout } from '../components/PageLayout';
 
 interface RosterData {
     info: Info;
@@ -37,6 +37,15 @@ const Roster = () => {
     const { teamName } = useParams();
     const navigate = useNavigate();
     const [positionFilter, setPositionFilter] = useState('');
+
+    const { data, loading, error } = useDataFetching({
+        fetchFunction: () => {
+            if (!teamName) throw new Error('No team name provided');
+            return apiService.getTeamRoster<RosterData>(teamName);
+        },
+        dependencies: [teamName],
+        autoRefreshOnGameChange: true
+    });
 
     // Set document title
     React.useEffect(() => {
@@ -53,54 +62,56 @@ const Roster = () => {
     };
 
     return (
-        <DataPage
-            fetchFunction={() => {
-                if (!teamName) throw new Error('No team name provided');
-                return apiService.getTeamRoster<RosterData>(teamName);
-            }}
-            dependencies={[teamName]}
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
         >
-            {(data) => {
-                return (
-                    <Container>
-                        <TeamHeader
-                            team={data.team}
-                            teams={data.teams}
-                            onTeamChange={(newTeam) => navigate(getTeamRosterRoute(newTeam))}
-                        />
-                
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 2 }}>
-                    <Typography variant="h5">Team Roster</Typography>
-                    <FormControl size="small" sx={{ minWidth: 180 }}>
-                        <InputLabel>Position Filter</InputLabel>
-                        <Select
-                            value={positionFilter}
-                            onChange={(e) => setPositionFilter(e.target.value as string)}
-                            label="Position Filter"
-                        >
-                            <MenuItem value="">All Positions</MenuItem>
-                            {data.positions.map(pos => (
-                                <MenuItem key={pos} value={pos}>{pos}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
+            {data && (
+                <>
+                    <TeamHeader
+                        team={data.team}
+                        teams={data.teams}
+                        onTeamChange={(newTeam) => navigate(getTeamRosterRoute(newTeam))}
+                    />
+            
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 2 }}>
+                        <Typography variant="h5">Team Roster</Typography>
+                        <FormControl size="small" sx={{ minWidth: 180 }}>
+                            <InputLabel>Position Filter</InputLabel>
+                            <Select
+                                value={positionFilter}
+                                onChange={(e) => setPositionFilter(e.target.value as string)}
+                                label="Position Filter"
+                            >
+                                <MenuItem value="">All Positions</MenuItem>
+                                {data.positions.map((pos: string) => (
+                                    <MenuItem key={pos} value={pos}>{pos}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
 
-                <TableContainer component={Paper} elevation={2}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: data.team.colorPrimary || 'primary.main' }}>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Name</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rating</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Year</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {data.positions
-                                .filter(position => positionFilter === '' || positionFilter === position)
-                                .map(position => {
-                                    const playersInPosition = data.roster.filter(player => player.pos === position);
+                    <TableContainer component={Paper} elevation={2}>
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow sx={{ backgroundColor: data.team.colorPrimary || 'primary.main' }}>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Name</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rating</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Year</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {data.positions
+                                    .filter((position: string) => positionFilter === '' || positionFilter === position)
+                                    .map((position: string) => {
+                                        const playersInPosition = data.roster.filter((player: Player) => player.pos === position);
                                     return playersInPosition.length > 0 ? (
                                         <React.Fragment key={`pos-${position}`}>
                                             <TableRow>
@@ -114,7 +125,7 @@ const Roster = () => {
                                                     {position}
                                                 </TableCell>
                                             </TableRow>
-                                            {playersInPosition.map(player => (
+                                            {playersInPosition.map((player: Player) => (
                                                 <TableRow 
                                                     key={`player-${player.id}`}
                                                     sx={{ 
@@ -160,15 +171,14 @@ const Roster = () => {
                                                 </TableRow>
                                             ))}
                                         </React.Fragment>
-                                    ) : null;
-                                })}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-                    </Container>
-                );
-            }}
-        </DataPage>
+                                        ) : null;
+                                    })}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </>
+            )}
+        </PageLayout>
     );
 };
 

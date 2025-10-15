@@ -3,10 +3,10 @@ import { apiService } from '../services/api';
 import { RatingsStatsData } from '../interfaces';
 import { TeamInfoModal } from '../components/TeamComponents';
 import {
-    Container, Typography, TableContainer, Table, TableHead, TableBody,
-    TableRow, TableCell, Paper, Box, CircularProgress, Alert, Chip, Grid
+    Typography, TableContainer, Table, TableHead, TableBody,
+    TableRow, TableCell, Paper, Box, Chip, Grid
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import { PageLayout } from '../components/PageLayout';
 
 const RatingsStats = () => {
     const [data, setData] = useState<RatingsStatsData | null>(null);
@@ -33,14 +33,6 @@ const RatingsStats = () => {
         document.title = 'Ratings Statistics';
         return () => { document.title = 'College Football'; };
     }, []);
-
-    if (loading) return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <CircularProgress size={60} />
-        </Box>
-    );
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
 
     const getPrestigeColor = (prestige: number) => ({
         1: '#696969', // Dim Gray (worst)
@@ -91,15 +83,20 @@ const RatingsStats = () => {
     );
 
     return (
-        <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
-            <Container maxWidth="xl" sx={{ py: 4 }}>
-                <Grid container spacing={4}>
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="xl"
+        >
+            {data && (
+                <>
+                    <Grid container spacing={4}>
                     {/* Left column - Tables */}
                     <Grid item xs={12} md={8}>
                         <Grid container spacing={4}>
@@ -252,10 +249,11 @@ const RatingsStats = () => {
                         </Paper>
                     </Grid>
                 </Grid>
-            </Container>
 
-            <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
-        </>
+                <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
+                </>
+            )}
+        </PageLayout>
     );
 };
 
