@@ -119,6 +119,20 @@ const Home = () => {
     setPlayoffConfChampTop4(is12Team);
   };
 
+  // Helper function to handle autobids change
+  const handleAutobidsChange = (autobids: number) => {
+    setPlayoffAutobids(autobids);
+  };
+
+  // Helper function to handle conf champ top 4 change
+  const handleConfChampTop4Change = (value: boolean) => {
+    setPlayoffConfChampTop4(value);
+    // If setting to true, ensure autobids is at least 4
+    if (value && playoffAutobids < 4) {
+      setPlayoffAutobids(4);
+    }
+  };
+
   // Helper function to start new game
   const handleStartGame = async (team: any) => {
     try {
@@ -247,7 +261,7 @@ const Home = () => {
                       </Typography>
                       <Select
                         value={playoffAutobids}
-                        onChange={(e) => setPlayoffAutobids(Number(e.target.value))}
+                        onChange={(e) => handleAutobidsChange(Number(e.target.value))}
                         fullWidth
                         size="small"
                         sx={{ mb: 2 }}
@@ -255,7 +269,11 @@ const Home = () => {
                         {Array.from(
                           { length: Object.keys(data.preview?.conferences || {}).length + 1 },
                           (_, i) => (
-                            <MenuItem key={i} value={i}>
+                            <MenuItem 
+                              key={i} 
+                              value={i}
+                              disabled={playoffConfChampTop4 && i < 4}
+                            >
                               {i}
                             </MenuItem>
                           )
@@ -267,7 +285,7 @@ const Home = () => {
                       </Typography>
                       <Select
                         value={playoffConfChampTop4 ? "true" : "false"}
-                        onChange={(e) => setPlayoffConfChampTop4(e.target.value === "true")}
+                        onChange={(e) => handleConfChampTop4Change(e.target.value === "true")}
                         fullWidth
                         size="small"
                         sx={{ mb: 2 }}

@@ -21,6 +21,14 @@ def game(request, id):
 
 def game_preview(info, game):
     """API endpoint for game preview data"""
+    # Calculate team stats and rankings
+    team_stats_data = calculate_team_stats_with_rankings(info, game.teamA, game.teamB)
+
+    # Get game data and add stats to team objects
+    game_data = GamesSerializer(game).data
+    game_data["teamA"].update(team_stats_data["team_a"])
+    game_data["teamB"].update(team_stats_data["team_b"])
+
     # Fetch top 5 starters for each team
     top_players_a = list(
         game.teamA.players.filter(starter=True).order_by("-rating")[:5]
@@ -34,11 +42,11 @@ def game_preview(info, game):
     top_players_a += [None] * (max_players - len(top_players_a))
     top_players_b += [None] * (max_players - len(top_players_b))
 
-    # Process player data
-    top_players = [[], []]  # Two arrays: one for teamA, one for teamB
+    # Process player data and add to team objects
+    game_data["teamA"]["top_players"] = []
     for player_a in top_players_a:
         if player_a:
-            top_players[0].append(
+            game_data["teamA"]["top_players"].append(
                 {
                     "id": player_a.id,
                     "first": player_a.first,
@@ -48,9 +56,10 @@ def game_preview(info, game):
                 }
             )
 
+    game_data["teamB"]["top_players"] = []
     for player_b in top_players_b:
         if player_b:
-            top_players[1].append(
+            game_data["teamB"]["top_players"].append(
                 {
                     "id": player_b.id,
                     "first": player_b.first,
@@ -60,20 +69,11 @@ def game_preview(info, game):
                 }
             )
 
-    # Calculate team stats and rankings
-    team_stats_data = calculate_team_stats_with_rankings(info, game.teamA, game.teamB)
-
-    # Get game data and add stats to team objects
-    game_data = GamesSerializer(game).data
-    game_data["teamA"].update(team_stats_data["team_a"])
-    game_data["teamB"].update(team_stats_data["team_b"])
-
     return Response(
         {
             "info": InfoSerializer(info).data,
             "game": game_data,
             "team": TeamsSerializer(info.team).data,
-            "top_players": top_players,
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

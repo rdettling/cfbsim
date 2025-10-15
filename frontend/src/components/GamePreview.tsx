@@ -21,10 +21,9 @@ import { TeamInfoModal } from './TeamComponents';
 
 interface GamePreviewProps {
     game: Game;
-    top_players: Player[][];
 }
 
-const GamePreview = ({ game, top_players }: GamePreviewProps) => {
+const GamePreview = ({ game }: GamePreviewProps) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
@@ -248,7 +247,7 @@ const GamePreview = ({ game, top_players }: GamePreviewProps) => {
                                                 </Typography>
                                             </MuiLink>
                                         </Box>
-                                        {top_players[teamIndex].slice(0, 5).map(renderPlayerCard)}
+                                        {team.top_players?.slice(0, 5).map(renderPlayerCard)}
                                     </Grid>
                                 ))}
                             </Grid>

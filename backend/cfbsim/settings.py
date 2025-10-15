@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
+# If SECRET_KEY is still None, generate a default one for development
+if not os.environ.get("SECRET_KEY"):
+    os.environ["SECRET_KEY"] = "django-insecure-dev-key-change-in-production-12345"
+
 # Core Settings
 # Use environment variable with a default value
 DEV = os.environ.get("DJANGO_ENV", "development") == "development"
