@@ -3,19 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import {
-    Container,
     Typography,
     Box,
     Link as MuiLink,
-    CircularProgress,
-    Alert,
     Button,
     Grid,
     Card,
-    CardContent} from '@mui/material';
+    CardContent
+} from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import Navbar from '../components/Navbar';
 import { TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { useDataFetching } from '../hooks/useDataFetching';
+import { PageLayout } from '../components/PageLayout';
 
 interface Game {
     id: number;
@@ -44,41 +43,39 @@ interface WeekScheduleData {
 export default function WeekSchedule() {
     const { week } = useParams();
     const navigate = useNavigate();
-    const [data, setData] = useState<WeekScheduleData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
-    // Note: usePageRefresh was removed, manual refresh handling would need to be implemented if needed
+    const { data, loading, error } = useDataFetching({
+        fetchFunction: () => {
+            // Get the current week from the URL at the time of fetch
+            const currentWeek = window.location.pathname.split('/').pop();
+            if (!currentWeek) throw new Error('Week number is required');
+            const weekNum = parseInt(currentWeek, 10);
+            if (isNaN(weekNum)) throw new Error('Invalid week number');
+            console.log('🔍 WeekSchedule: Fetching data for week', weekNum);
+            return apiService.getWeekSchedule<WeekScheduleData>(weekNum);
+        },
+        dependencies: [week],
+        autoRefreshOnGameChange: true // Enable auto-refresh for the week we're viewing
+    });
 
+    // Add debug logging for auto-refresh events
     useEffect(() => {
-        const fetchSchedule = async () => {
-            if (!week) {
-                setError('Week number is required');
-                setLoading(false);
-                return;
-            }
-
-            const weekNum = parseInt(week, 10);
-            if (isNaN(weekNum)) {
-                setError('Invalid week number');
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const responseData = await apiService.getWeekSchedule<WeekScheduleData>(weekNum);
-                setData(responseData);
-            } catch (error) {
-                setError('Failed to load week schedule data');
-            } finally {
-                setLoading(false);
-            }
+        const handleGameChange = () => {
+            console.log('🔄 WeekSchedule: Auto-refresh triggered for week', week);
         };
 
-        fetchSchedule();
+        window.addEventListener('pageDataRefresh', handleGameChange);
+        console.log('📡 WeekSchedule: Listening for pageDataRefresh events');
+
+        return () => {
+            window.removeEventListener('pageDataRefresh', handleGameChange);
+            console.log('📡 WeekSchedule: Removed pageDataRefresh listener');
+        };
     }, [week]);
+
+    // Remove the separate current week hook since we want to refresh the week we're viewing
 
     useEffect(() => {
         document.title = week ? `Week ${week} Schedule` : 'College Football';
@@ -107,21 +104,20 @@ export default function WeekSchedule() {
         }
     };
 
-    if (loading) return <CircularProgress />;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
-
-
-
     return (
-        <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
-            <Container maxWidth="xl">
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="xl"
+        >
+            {data && (
+                <>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
                     <Button
                         onClick={() => handleWeekNavigation('prev')}
@@ -264,13 +260,14 @@ export default function WeekSchedule() {
                         </Grid>
                     ))}
                 </Grid>
-            </Container>
-
-            <TeamInfoModal
-                teamName={selectedTeam}
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-            />
-        </>
+                
+                <TeamInfoModal
+                    teamName={selectedTeam}
+                    open={modalOpen}
+                    onClose={() => setModalOpen(false)}
+                />
+                </>
+            )}
+        </PageLayout>
     );
 }

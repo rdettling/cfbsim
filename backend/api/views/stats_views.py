@@ -40,12 +40,35 @@ def team_stats(request):
             team, games, plays.filter(defense=team)
         )
 
+    # Calculate league averages
+    def calculate_averages(stats_dict):
+        if not stats_dict:
+            return {}
+        
+        # Get all stat keys from the first team (they should all have the same keys)
+        stat_keys = list(next(iter(stats_dict.values())).keys())
+        
+        averages = {}
+        for key in stat_keys:
+            values = [stats[key] for stats in stats_dict.values() if stats[key] is not None]
+            if values:
+                averages[key] = round(sum(values) / len(values), 1)
+            else:
+                averages[key] = 0
+        
+        return averages
+
+    offense_averages = calculate_averages(offense)
+    defense_averages = calculate_averages(defense)
+
     return Response(
         {
             "info": InfoSerializer(info).data,
             "team": TeamsSerializer(info.team).data,
             "offense": offense,
             "defense": defense,
+            "offense_averages": offense_averages,
+            "defense_averages": defense_averages,
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { apiService, getTeamHistoryRoute, getTeamScheduleRoute } from "../services/api";
 import { Team, Info, Conference } from "../interfaces";
 import {
-    Container,
     Table,
     TableBody,
     TableCell,
@@ -14,7 +13,7 @@ import {
     Link,
     Typography,
     Box,
-    Stack,
+    Stack
 } from '@mui/material';
 import {
     Schedule,
@@ -22,7 +21,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import TeamHeader from '../components/TeamHeader';
 import { ConfLogo } from '../components/TeamComponents';
-import { DataPage } from '../components/DataPage';
+import { useDataFetching } from '../hooks/useDataFetching';
+import { PageLayout } from '../components/PageLayout';
 
 interface YearHistory {
     year: number;
@@ -46,6 +46,15 @@ interface HistoryData {
 const TeamHistory = () => {
     const { teamName } = useParams();
     const navigate = useNavigate();
+
+    const { data, loading, error } = useDataFetching({
+        fetchFunction: () => {
+            if (!teamName) throw new Error('No team name provided');
+            return apiService.getTeamHistory<HistoryData>(teamName);
+        },
+        dependencies: [teamName],
+        autoRefreshOnGameChange: true
+    });
 
     // Set document title
     useEffect(() => {
@@ -88,25 +97,28 @@ const TeamHistory = () => {
         );
     };
 
-    return (
-        <DataPage
-            fetchFunction={() => {
-                if (!teamName) throw new Error('No team name provided');
-                return apiService.getTeamHistory<HistoryData>(teamName);
-            }}
-            dependencies={[teamName]}
-        >
-            {(data) => {
-                const totalWins = data.years.reduce((sum, year) => sum + year.wins, 0);
-                const totalLosses = data.years.reduce((sum, year) => sum + year.losses, 0);
+    const totalWins = data?.years.reduce((sum: number, year: YearHistory) => sum + year.wins, 0) || 0;
+    const totalLosses = data?.years.reduce((sum: number, year: YearHistory) => sum + year.losses, 0) || 0;
 
-                return (
-                    <Container maxWidth="lg" sx={{ py: 3 }}>
-                        <TeamHeader 
-                            team={data.team}
-                            teams={data.teams}
-                            onTeamChange={handleTeamChange}
-                        />
+    return (
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="lg"
+        >
+            {data && (
+                <>
+                <TeamHeader 
+                    team={data.team}
+                    teams={data.teams}
+                    onTeamChange={handleTeamChange}
+                />
 
                 {/* History Table */}
                 <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
@@ -139,7 +151,7 @@ const TeamHistory = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {data.years.map((year) => (
+                                {data.years.map((year: YearHistory) => (
                                     <TableRow 
                                         key={year.year}
                                         sx={{ 
@@ -214,11 +226,10 @@ const TeamHistory = () => {
                             </TableBody>
                         </Table>
                     </TableContainer>
-                        </Paper>
-                    </Container>
-                );
-            }}
-        </DataPage>
+                </Paper>
+                </>
+            )}
+        </PageLayout>
     );
 };
 

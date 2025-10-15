@@ -10,7 +10,8 @@ import {
     TableHead, TableBody, TableRow, TableCell,
     Paper, Box
 } from '@mui/material';
-import { DataPage } from '../components/DataPage';
+import { useDataFetching } from '../hooks/useDataFetching';
+import { PageLayout } from '../components/PageLayout';
 
 interface StandingsData {
     info: Info;
@@ -186,31 +187,43 @@ const Standings = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
 
+    const { data, loading, error } = useDataFetching({
+        fetchFunction: () => {
+            if (!conference_name) throw new Error('No conference specified');
+            return apiService.getConferenceStandings<StandingsData>(conference_name);
+        },
+        dependencies: [conference_name],
+        autoRefreshOnGameChange: true
+    });
+
     const handleTeamClick = (name: string) => {
         setSelectedTeam(name);
         setModalOpen(true);
     };
 
     return (
-        <>
-            <DataPage
-                fetchFunction={() => conference_name ? apiService.getConferenceStandings<StandingsData>(conference_name) : Promise.reject('No conference specified')}
-                dependencies={[conference_name]}
-            >
-                {(data) => {
-                    const title = conference_name === 'independent' ? 'Independent Teams' : `${data.conference} Standings`;
-
-                    return (
-                        <>
-                            <Box sx={{ 
-                                textAlign: 'center', 
-                                mb: 5,
-                                py: 4,
-                                background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)',
-                                borderRadius: 3,
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}>
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="lg"
+        >
+            {data && (
+                <>
+                    <Box sx={{ 
+                        textAlign: 'center', 
+                        mb: 5,
+                        py: 4,
+                        background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)',
+                        borderRadius: 3,
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
                     {/* Background decoration */}
                     <Box sx={{
                         position: 'absolute',
@@ -276,17 +289,15 @@ const Standings = () => {
                         </Typography>
                     </Box>
                 </Box>
-                <StandingsTable
-                    data={data}
-                    conference_name={conference_name}
-                    onTeamClick={(name) => { setSelectedTeam(name); setModalOpen(true); }}
-                />
-                        </>
-                    );
-                }}
-            </DataPage>
-            <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
-        </>
+                    <StandingsTable
+                        data={data}
+                        conference_name={conference_name}
+                        onTeamClick={handleTeamClick}
+                    />
+                    <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
+                </>
+            )}
+        </PageLayout>
     );
 };
 

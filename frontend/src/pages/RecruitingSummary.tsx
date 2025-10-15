@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { apiService, getPlayerRoute } from '../services/api';
 import { Team, Info, Conference } from '../interfaces';
 import {
-    Container, Typography, Box, CircularProgress, Alert,
+    Typography, Box,
     Table, TableBody, TableCell, TableContainer, TableHead,
     TableRow, Card, CardContent, Chip, Tabs, Tab, Dialog,
     DialogTitle, DialogContent, IconButton, Button
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import Navbar from '../components/Navbar';
 import { TeamInfoModal, TeamLink, TeamLogo, ConfLogo } from '../components/TeamComponents';
+import { PageLayout } from '../components/PageLayout';
 
 interface FreshmanPlayer {
     id: number;
@@ -133,18 +133,14 @@ const RecruitingSummary = () => {
         return () => { document.title = 'College Football'; };
     }, [data?.team.name]);
 
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress size={60} /></Box>;
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
-
-    const allFreshmen = data.team_rankings.flatMap(teamRanking => 
+    const allFreshmen = data?.team_rankings.flatMap(teamRanking => 
         teamRanking.players.map(player => ({ ...player, teamName: teamRanking.team_name }))
-    ).sort((a, b) => b.rating - a.rating);
+    ).sort((a, b) => b.rating - a.rating) || [];
 
-    const displayedTeams = data.team_rankings.slice(0, showAllTeams ? data.team_rankings.length : 25);
+    const displayedTeams = data?.team_rankings.slice(0, showAllTeams ? data.team_rankings.length : 25) || [];
 
     const handleTeamRecruitsClick = (teamName: string) => {
-        const teamRanking = data.team_rankings.find(ranking => ranking.team_name === teamName);
+        const teamRanking = data?.team_rankings.find(ranking => ranking.team_name === teamName);
         if (teamRanking) {
             setSelectedTeamRecruits({ team: teamRanking.team, players: teamRanking.players });
             setTeamRecruitsModalOpen(true);
@@ -152,9 +148,19 @@ const RecruitingSummary = () => {
     };
 
     return (
-        <>
-            <Navbar team={data.team} currentStage={data.info.stage} info={data.info} conferences={data.conferences} />
-            <Container maxWidth="lg" sx={{ py: 4 }}>
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="lg"
+        >
+            {data && (
+                <>
                 {/* Header */}
                 <Box sx={{ textAlign: 'center', mb: 6 }}>
                     <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '2rem', md: '2.5rem' } }}>
@@ -277,9 +283,8 @@ const RecruitingSummary = () => {
                         </CardContent>
                     </Card>
                 </TabPanel>
-            </Container>
             
-            <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
+                <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
             
             {/* Team Recruits Modal */}
             <Dialog open={teamRecruitsModalOpen} onClose={() => setTeamRecruitsModalOpen(false)} maxWidth="md" fullWidth>
@@ -336,7 +341,9 @@ const RecruitingSummary = () => {
                     )}
                 </DialogContent>
             </Dialog>
-        </>
+                </>
+            )}
+        </PageLayout>
     );
 };
 

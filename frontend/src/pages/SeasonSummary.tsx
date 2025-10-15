@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
-import { Team, Info, Conference, Game } from '../interfaces';
+import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
-    Container,
     Typography,
     Table,
     TableBody,
@@ -13,17 +12,11 @@ import {
     TableContainer,
     Paper,
     Box,
-    CircularProgress,
-    Alert,
     Card,
     CardContent,
-    Grid,
-    Chip,
-    Divider,
-    Stack
-} from '@mui/material';
-import Navbar from '../components/Navbar';
+    Chip} from '@mui/material';
 import { TeamInfoModal } from '../components/TeamComponents';
+import { PageLayout } from '../components/PageLayout';
 
 interface RealignmentData {
     [team: string]: {
@@ -69,28 +62,22 @@ const SeasonSummary = () => {
         setModalOpen(true);
     };
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress size={60} />
-            </Box>
-        );
-    }
-    
-    if (error) return <Alert severity="error">{error}</Alert>;
-    if (!data) return <Alert severity="warning">No data available</Alert>;
-
-    const champion = data.champion;
+    const champion = data?.champion;
 
     return (
-        <>
-            <Navbar
-                team={data.team}
-                currentStage={data.info.stage}
-                info={data.info}
-                conferences={data.conferences}
-            />
-            <Container maxWidth="lg" sx={{ py: 4 }}>
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="lg"
+        >
+            {data && (
+                <>
                 {/* Header Section */}
                 <Box sx={{ textAlign: 'center', mb: 6 }}>
                     <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
@@ -208,14 +195,15 @@ const SeasonSummary = () => {
                         </Typography>
                     </CardContent>
                 </Card>
-            </Container>
 
-            <TeamInfoModal
-                teamName={selectedTeam}
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-            />
-        </>
+                <TeamInfoModal
+                    teamName={selectedTeam}
+                    open={modalOpen}
+                    onClose={() => setModalOpen(false)}
+                />
+                </>
+            )}
+        </PageLayout>
     );
 };
 

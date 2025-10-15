@@ -17,7 +17,8 @@ import {
     Button,
     Typography
 } from '@mui/material';
-import { DataPage } from '../components/DataPage';
+import { useDataFetching } from '../hooks/useDataFetching';
+import { PageLayout } from '../components/PageLayout';
 
 interface RankingsData {
     info: Info;
@@ -31,30 +32,34 @@ const Rankings = () => {
     const [selectedTeam, setSelectedTeam] = useState('');
     const [showAllTeams, setShowAllTeams] = useState(false);
 
+    const { data, loading, error } = useDataFetching({
+        fetchFunction: () => apiService.getRankings<RankingsData>(),
+        autoRefreshOnGameChange: true
+    });
+
     const handleTeamClick = (name: string) => {
         setSelectedTeam(name);
         setModalOpen(true);
     };
 
+    // Filter teams based on showAllTeams state
+    const displayedTeams = data ? (showAllTeams ? data.rankings : data.rankings.slice(0, 25)) : [];
+
     return (
-        <>
-            <DataPage
-                fetchFunction={() => apiService.getRankings<RankingsData>()}
-                dependencies={[]}
-            >
-                {(data) => {
-                    const stageText = data.info.stage === 'season'
-                        ? `Week ${data.info.currentWeek}`
-                        : data.info.stage === 'schedule non conference'
-                            ? 'Preseason'
-                            : 'End of season';
-
-                    // Filter teams based on showAllTeams state
-                    const displayedTeams = showAllTeams ? data.rankings : data.rankings.slice(0, 25);
-
-                    return (
-                        <>
-                            <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', minWidth: 1200 }}>
+        <PageLayout 
+            loading={loading} 
+            error={error}
+            navbarData={data ? {
+                team: data.team,
+                currentStage: data.info.stage,
+                info: data.info,
+                conferences: data.conferences
+            } : undefined}
+            containerMaxWidth="lg"
+        >
+            {data && (
+                <>
+                    <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', minWidth: 1200 }}>
                     <Table sx={{ minWidth: 1200 }}>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: 'primary.main' }}>
@@ -161,18 +166,16 @@ const Rankings = () => {
                             Show Top 25 Only
                         </Button>
                     </Box>
-                )}
-                        </>
-                    );
-                }}
-            </DataPage>
+                    )}
 
-            <TeamInfoModal
-                teamName={selectedTeam}
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-            />
-        </>
+                    <TeamInfoModal
+                        teamName={selectedTeam}
+                        open={modalOpen}
+                        onClose={() => setModalOpen(false)}
+                    />
+                </>
+            )}
+        </PageLayout>
     );
 };
 
