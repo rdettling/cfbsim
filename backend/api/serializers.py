@@ -52,10 +52,14 @@ class ConferencesSerializer(serializers.ModelSerializer):
 
 class PlayersSerializer(serializers.ModelSerializer):
     change = serializers.IntegerField(read_only=True, required=False)
+    team = serializers.SerializerMethodField()
 
     class Meta:
         model = Players
         fields = "__all__"
+
+    def get_team(self, obj):
+        return obj.team.name if obj.team else None
 
 
 class DrivesSerializer(serializers.ModelSerializer):

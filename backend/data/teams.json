@@ -1079,6 +1079,22 @@
             "floor": 1,
             "colorPrimary": "#B3A369",
             "colorSecondary": "#000000"
+        },
+        "Missouri State": {
+            "mascot": "Bears",
+            "abbreviation": "MOST",
+            "ceiling": 3,
+            "floor": 1,
+            "colorPrimary": "#5E0009",
+            "colorSecondary": "#000000"
+        },
+        "Delaware": {
+            "mascot": "Blue Hens",
+            "abbreviation": "DEL",
+            "ceiling": 3,
+            "floor": 1,
+            "colorPrimary": "#00539F",
+            "colorSecondary": "#FFDD31"
         }
     }
 } 

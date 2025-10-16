@@ -30,7 +30,7 @@ interface Game {
     spreadB?: number;
     winner: boolean;
     overtime?: number;
-    watchability_score: number;
+    watchability: number;
 }
 
 interface WeekScheduleData {
@@ -192,7 +192,7 @@ export default function WeekSchedule() {
                                             {game.label}
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                            Watchability: {game.watchability_score}
+                                            Watchability: {game.watchability}
                                         </Typography>
                                     </Box>
 

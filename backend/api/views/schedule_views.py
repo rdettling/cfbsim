@@ -5,7 +5,6 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
 from logic.schedule import scheduleGame
-from logic.util import watchability
 
 
 @api_view(["GET"])
@@ -74,29 +73,11 @@ def week_schedule(request, week_num):
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
-    # Get games for the specified week
-    games = info.games.filter(year=info.currentYear, weekPlayed=week_num)
+    # Get games for the specified week, ordered by watchability (highest first)
+    games = info.games.filter(year=info.currentYear, weekPlayed=week_num).order_by('-watchability')
 
     # Process games data
     games_data = GamesSerializer(games, many=True).data
-
-    # Get team count once (outside the loop for efficiency)
-    num_teams = info.teams.count()
-
-    # Calculate watchability score for each game
-    for game_data in games_data:
-        # Get the original game object to access winProbA and winProbB
-        game = games.get(id=game_data["id"])
-
-        # Calculate watchability score using the utility function
-        watchability_score = watchability(
-            game.rankATOG, game.rankBTOG, game.winProbA, game.winProbB, num_teams
-        )
-
-        game_data["watchability_score"] = watchability_score
-
-    # Sort games by watchability score (highest first)
-    games_data.sort(key=lambda x: x["watchability_score"], reverse=True)
 
     return Response(
         {

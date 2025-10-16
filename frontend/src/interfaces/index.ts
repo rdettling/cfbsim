@@ -120,6 +120,7 @@ export interface Player {
     stars: number;
     development_trait: number;
     starter: boolean;
+    active: boolean;
     year: string;
     team: string;
 }

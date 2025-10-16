@@ -89,6 +89,20 @@ def dashboard(request):
         independent_teams = sort_standings(independent_teams)
         related_teams = TeamsSerializer(independent_teams, many=True).data
 
+    # Get top 10 watchability games from last week
+    top_games = []
+    if info.currentWeek > 1:
+        last_week_games = info.games.filter(
+            year=info.currentYear, 
+            weekPlayed=info.currentWeek - 1,
+            winner__isnull=False  # Only completed games
+        ).order_by('-watchability')[:10]
+        
+        top_games = [
+            {"id": game.id, "headline": game.headline}
+            for game in last_week_games
+        ]
+
     return Response(
         {
             "info": InfoSerializer(info).data,
@@ -99,6 +113,7 @@ def dashboard(request):
             "top_10": TeamsSerializer(
                 info.teams.order_by("ranking")[:10], many=True
             ).data,
+            "top_games": top_games,
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
