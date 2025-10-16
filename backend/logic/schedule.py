@@ -3,7 +3,7 @@ from api.models import *
 import json
 from django.db.models import F, ExpressionWrapper, FloatField
 import time
-from .util import time_section
+from .util import time_section, watchability
 
 
 def get_playoff_team_order(info):
@@ -259,6 +259,10 @@ def scheduleGame(
         rankATOG=team.ranking,
         rankBTOG=opponent.ranking,
     )
+    
+    # Calculate and set watchability score
+    num_teams = info.teams.count()
+    game.watchability = watchability(game, num_teams)
 
     games_to_create.append(game)
 

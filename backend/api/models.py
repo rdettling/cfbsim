@@ -152,6 +152,7 @@ class Games(models.Model):
     scoreA = models.IntegerField(null=True)
     scoreB = models.IntegerField(null=True)
     headline = models.CharField(max_length=255, null=True)
+    watchability = models.FloatField(null=True)
 
 
 class Conferences(models.Model):

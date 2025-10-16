@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link as RouterLink } from 'react-router-dom';
 import { apiService } from '../services/api';
 import type { Player } from '../interfaces';
 import { Team, Info, Conference } from '../interfaces';
@@ -11,26 +11,365 @@ import {
     CardContent,
     Grid,
     Box,
-    Chip,
     Table,
     TableBody,
     TableCell,
-    TableRow
+    TableRow,
+    TableHead,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel,
+    Paper,
+    Link
 } from '@mui/material';
 import { useDataFetching } from '../hooks/useDataFetching';
 import { PageLayout } from '../components/PageLayout';
+
+interface GameLog {
+    game: {
+        id: number;
+        weekPlayed: number;
+        opponent: {
+            name: string;
+            ranking: number;
+            rating: number;
+            record: string;
+        };
+        label: string;
+        result: string;
+        spread: string;
+        moneyline: string;
+        score: string;
+    };
+    [key: string]: any;
+}
 
 interface PlayerData {
     info: Info;
     team: Team;
     player: Player;
     conferences: Conference[];
+    career_stats: { [year: number]: any };
+    game_logs: { [year: number]: GameLog[] };
 }
+
+// PlayerHeader Component
+interface PlayerHeaderProps {
+    player: Player;
+    onTeamClick: (name: string) => void;
+}
+
+const PlayerHeader = ({ player, onTeamClick }: PlayerHeaderProps) => {
+    return (
+        <Card elevation={3} sx={{ mb: 3 }}>
+            <CardContent>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={9}>
+                        <Typography variant="h3" fontWeight="bold" gutterBottom>
+                            {player.first} {player.last}
+                        </Typography>
+                        
+                        <Table size="small" sx={{ maxWidth: 500 }}>
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Team</TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <TeamLogo name={player.team} size={30} />
+                                            <TeamLink name={player.team} onTeamClick={onTeamClick} />
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Position</TableCell>
+                                    <TableCell>{player.pos}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Year</TableCell>
+                                    <TableCell>{player.year.toUpperCase()}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Recruit Stars</TableCell>
+                                    <TableCell>
+                                        {player.stars > 0 ? `${'★'.repeat(player.stars)}` : 'N/A'}
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Development Trait</TableCell>
+                                    <TableCell>{player.development_trait}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Starter</TableCell>
+                                    <TableCell>
+                                        <Typography color={player.starter ? 'success.main' : 'error.main'}>
+                                            {player.starter ? '✓' : '✗'}
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Active</TableCell>
+                                    <TableCell>
+                                        <Typography color={player.active ? 'success.main' : 'error.main'}>
+                                            {player.active ? '✓' : '✗'}
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                        <Paper elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}>
+                            <Typography variant="h2" fontWeight="bold">
+                                {player.rating}
+                            </Typography>
+                            <Typography variant="body1">
+                                Overall Rating
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+            </CardContent>
+        </Card>
+    );
+};
+
+// CareerStats Component
+interface CareerStatsProps {
+    careerStatsByYear: { [year: number]: any };
+    years: number[];
+}
+
+const CareerStats = ({ careerStatsByYear, years }: CareerStatsProps) => {
+    if (years.length === 0) return null;
+
+    // Get all stat keys from the first year's data
+    const firstYearStats = careerStatsByYear[years[0]];
+    if (!firstYearStats) return null;
+
+    const statKeys = Object.keys(firstYearStats).filter(key => 
+        !['class', 'rating'].includes(key)
+    );
+
+    // Format stat label for display
+    const formatStatLabel = (key: string) => {
+        return key.replace(/_/g, ' ').split(' ').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+    };
+
+    return (
+        <Card elevation={2} sx={{ mb: 3 }}>
+            <CardContent>
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                    Career Statistics
+                </Typography>
+
+                <Box sx={{ overflowX: 'auto' }}>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: 'grey.100' }}>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Year</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Class</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Rating</TableCell>
+                                {statKeys.map(key => (
+                                    <TableCell key={key} align="right" sx={{ fontWeight: 'bold' }}>
+                                        {formatStatLabel(key)}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {years.map((year, idx) => {
+                                const yearStats = careerStatsByYear[year];
+                                if (!yearStats) return null;
+
+                                return (
+                                    <TableRow 
+                                        key={year}
+                                        sx={{ 
+                                            bgcolor: idx % 2 === 0 ? 'white' : 'grey.50',
+                                            '&:hover': { bgcolor: 'grey.100' }
+                                        }}
+                                    >
+                                        <TableCell sx={{ fontWeight: 'bold' }}>{year}</TableCell>
+                                        <TableCell>{yearStats.class}</TableCell>
+                                        <TableCell>{yearStats.rating}</TableCell>
+                                        {statKeys.map(key => (
+                                            <TableCell key={key} align="right">
+                                                <Typography variant="body2">
+                                                    {yearStats[key] != null ? (
+                                                        typeof yearStats[key] === 'number' ? 
+                                                            Number.isInteger(yearStats[key]) ? yearStats[key] : yearStats[key].toFixed(1)
+                                                            : String(yearStats[key])
+                                                    ) : '-'}
+                                                </Typography>
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </Box>
+            </CardContent>
+        </Card>
+    );
+};
+
+// GameLogs Component
+interface GameLogsProps {
+    gameLogsByYear: { [year: number]: GameLog[] };
+    years: number[];
+    selectedYear: number | null;
+    onYearChange: (year: number) => void;
+    onTeamClick: (name: string) => void;
+}
+
+const GameLogs = ({ gameLogsByYear, years, selectedYear, onYearChange, onTeamClick }: GameLogsProps) => {
+    const gameLogs = selectedYear ? gameLogsByYear[selectedYear] || [] : [];
+    
+    const renderGameLogsTable = () => {
+        if (!gameLogs || gameLogs.length === 0) {
+            return (
+                <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                    No games played this season
+                </Typography>
+            );
+        }
+
+        const firstLog = gameLogs[0];
+        // Filter to only include stat fields (exclude 'game' object)
+        const statKeys = Object.keys(firstLog).filter(key => key !== 'game');
+
+        // Format stat label for display
+        const formatStatLabel = (key: string) => {
+            return key.replace(/_/g, ' ').split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        };
+
+        return (
+            <Box sx={{ overflowX: 'auto' }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow sx={{ bgcolor: 'grey.100' }}>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Week</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Opponent</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Result</TableCell>
+                            {statKeys.map(key => (
+                                <TableCell key={key} align="right" sx={{ fontWeight: 'bold' }}>
+                                    {formatStatLabel(key)}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {gameLogs.map((log, idx) => {
+                            const game = log.game;
+                            const isWin = game.result === 'W';
+                            
+                            return (
+                                <TableRow 
+                                    key={idx}
+                                    sx={{ 
+                                        bgcolor: isWin 
+                                            ? 'rgba(76, 175, 80, 0.1)' // Light green for win
+                                            : 'rgba(244, 67, 54, 0.1)', // Light red for loss
+                                        '&:hover': { 
+                                            bgcolor: isWin 
+                                                ? 'rgba(76, 175, 80, 0.2)' 
+                                                : 'rgba(244, 67, 54, 0.2)'
+                                        }
+                                    }}
+                                >
+                                    <TableCell>{game.weekPlayed}</TableCell>
+                                    <TableCell>
+                                        <Box>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                                {game.opponent.ranking > 0 && game.opponent.ranking <= 25 && (
+                                                    <Typography variant="body2" fontWeight="bold" color="primary">
+                                                        #{game.opponent.ranking}
+                                                    </Typography>
+                                                )}
+                                                <TeamLogo name={game.opponent.name} size={24} />
+                                                <Box sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                                                    <TeamLink name={game.opponent.name} onTeamClick={onTeamClick} />
+                                                </Box>
+                                            </Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {game.label}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Link
+                                            component={RouterLink}
+                                            to={`/game/${game.id}`}
+                                            sx={{
+                                                textDecoration: 'none',
+                                                fontWeight: 'bold',
+                                                color: 'inherit',
+                                                '&:hover': {
+                                                    textDecoration: 'underline',
+                                                    color: 'primary.main'
+                                                }
+                                            }}
+                                        >
+                                            {game.score}
+                                        </Link>
+                                    </TableCell>
+                                    {statKeys.map(key => (
+                                        <TableCell key={key} align="right">
+                                            <Typography variant="body2">
+                                                {log[key] != null ? (
+                                                    typeof log[key] === 'number' ? 
+                                                        Number.isInteger(log[key]) ? log[key] : log[key].toFixed(1)
+                                                        : String(log[key])
+                                                ) : '-'}
+                                            </Typography>
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </Box>
+        );
+    };
+
+    return (
+        <Card elevation={2}>
+            <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h5" fontWeight="bold">
+                        Game Logs
+                    </Typography>
+                    <FormControl sx={{ minWidth: 120 }}>
+                        <InputLabel>Year</InputLabel>
+                        <Select
+                            value={selectedYear || ''}
+                            label="Year"
+                            onChange={(e) => onYearChange(Number(e.target.value))}
+                        >
+                            {years.map(year => (
+                                <MenuItem key={year} value={year}>{year}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+                {renderGameLogsTable()}
+            </CardContent>
+        </Card>
+    );
+};
 
 const Player = () => {
     const { playerId } = useParams();
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
+    const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
     const { data, loading, error } = useDataFetching({
         fetchFunction: () => {
@@ -47,6 +386,20 @@ const Player = () => {
     };
 
     const player = data?.player;
+    const careerStatsByYear = data?.career_stats || {};
+    const gameLogsByYear = data?.game_logs || {};
+    
+    // Derive years from career stats (or game logs as fallback)
+    const years = Object.keys(careerStatsByYear).length > 0 
+        ? Object.keys(careerStatsByYear).map(Number).sort((a, b) => b - a)
+        : Object.keys(gameLogsByYear).map(Number).sort((a, b) => b - a);
+    
+    // Set initial year if not selected
+    useEffect(() => {
+        if (!selectedYear && years.length > 0) {
+            setSelectedYear(years[0]);
+        }
+    }, [years, selectedYear]);
 
     return (
         <PageLayout 
@@ -58,106 +411,27 @@ const Player = () => {
                 info: data.info,
                 conferences: data.conferences
             } : undefined}
-            containerMaxWidth="lg"
+            containerMaxWidth="xl"
         >
             {data && player && (
                 <>
-                    <Card elevation={3} sx={{ mb: 4 }}>
-                        <CardContent>
-                            <Grid container spacing={3} alignItems="center">
-                            <Grid item xs={12} md={8}>
-                                <Typography variant="h3" fontWeight="bold" gutterBottom>
-                                    {player.first} {player.last}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                    <TeamLogo name={player.team} size={40} />
-                                    <TeamLink name={player.team} onTeamClick={handleTeamClick} />
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                    <Chip label={`${player.pos} • ${player.year}`} color="primary" />
-                                    <Chip label={`Overall: ${player.rating}`} color="secondary" />
-                                    {player.stars > 0 && <Chip label={`${player.stars}★`} color="warning" />}
-                                </Box>
-                            </Grid>
-                            <Grid item xs={12} md={4}>
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h4" fontWeight="bold" color="primary">
-                                        {player.rating}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Overall Rating
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                        </Grid>
-                        </CardContent>
-                    </Card>
+                    <PlayerHeader 
+                        player={player} 
+                        onTeamClick={handleTeamClick} 
+                    />
 
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                            <Card elevation={2}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Player Information
-                                    </Typography>
-                                <Table size="small">
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell>Position</TableCell>
-                                            <TableCell>{player.pos}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Class</TableCell>
-                                            <TableCell>{player.year}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Stars</TableCell>
-                                            <TableCell>{player.stars}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Development</TableCell>
-                                            <TableCell>{player.development_trait}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Starter</TableCell>
-                                            <TableCell>{player.starter ? 'Yes' : 'No'}</TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                        </Grid>
+                    <CareerStats
+                        careerStatsByYear={careerStatsByYear}
+                        years={years}
+                    />
 
-                        <Grid item xs={12} md={6}>
-                            <Card elevation={2}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Ratings by Year
-                                    </Typography>
-                                <Table size="small">
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell>Freshman</TableCell>
-                                            <TableCell>{player.rating_fr}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Sophomore</TableCell>
-                                            <TableCell>{player.rating_so}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Junior</TableCell>
-                                            <TableCell>{player.rating_jr}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Senior</TableCell>
-                                            <TableCell>{player.rating_sr}</TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                        </Grid>
-                    </Grid>
+                    <GameLogs
+                        gameLogsByYear={gameLogsByYear}
+                        years={years}
+                        selectedYear={selectedYear}
+                        onYearChange={setSelectedYear}
+                        onTeamClick={handleTeamClick}
+                    />
 
                     <TeamInfoModal
                         teamName={selectedTeam}

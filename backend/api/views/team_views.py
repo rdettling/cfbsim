@@ -211,35 +211,35 @@ def player(request, id):
     # Get available years for this player
     years = _get_player_years(player, info)
 
-    # Calculate yearly cumulative stats
-    yearly_cumulative_stats = {}
+    # Calculate career stats organized by year
+    career_stats_by_year = {}
     for year in years:
         year_game_logs = player.game_logs.filter(game__year=year)
         year_stats = _calculate_yearly_stats(
             player, year_game_logs, info.currentYear, year
         )
-
         # Filter stats based on position
-        yearly_cumulative_stats[year] = get_position_stats(player.pos, year_stats)
+        career_stats_by_year[year] = get_position_stats(player.pos, year_stats)
 
-    # Get game logs for selected year
-    year = request.GET.get("year", str(info.currentYear))
-    game_logs = []
-    for gl in player.game_logs.filter(game__year=year).order_by("game__weekPlayed"):
-        # Filter game log stats based on position
-        filtered_game_log = get_position_game_log(
-            player.pos, gl, get_schedule_game(team, gl.game)
-        )
-        game_logs.append(filtered_game_log)
+    # Get game logs organized by year
+    game_logs_by_year = {}
+    for year in years:
+        year_logs = []
+        for gl in player.game_logs.filter(game__year=year).order_by("game__weekPlayed"):
+            # Filter game log stats based on position
+            filtered_game_log = get_position_game_log(
+                player.pos, gl, get_schedule_game(team, gl.game)
+            )
+            year_logs.append(filtered_game_log)
+        game_logs_by_year[year] = year_logs
 
     return Response(
         {
             "info": InfoSerializer(info).data,
             "player": PlayersSerializer(player).data,
-            "years": years,
             "team": TeamsSerializer(team).data,
-            "yearly_cumulative_stats": yearly_cumulative_stats,
-            "game_logs": game_logs,
+            "career_stats": career_stats_by_year,
+            "game_logs": game_logs_by_year,
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

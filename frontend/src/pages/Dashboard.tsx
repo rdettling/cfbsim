@@ -17,6 +17,7 @@ interface DashboardData {
     team: Team;
     confTeams: Team[];
     top_10: Team[];
+    top_games: Array<{ id: number; headline: string }>;
     conferences: Conference[];
 }
 
@@ -163,7 +164,7 @@ const Dashboard = () => {
                 info: data.info,
                 conferences: data.conferences
             } : undefined}
-            containerMaxWidth="lg"
+            containerMaxWidth="xl"
         >
                 {data && (
                     <>
@@ -194,7 +195,7 @@ const Dashboard = () => {
                             </Grid>
                         </Paper>
 
-                        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3}>
+                        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={3}>
                             {/* Game Cards Section */}
                             <Box>
                                 <Typography variant="h5" sx={{ mb: 2, borderBottom: '2px solid', borderColor: 'primary.main', pb: 1 }}>
@@ -264,6 +265,52 @@ const Dashboard = () => {
                                         ))}
                                     </TableBody>
                                 </Table>
+                            </TableContainer>
+
+                            {/* Top Games Section */}
+                            <TableContainer component={Paper} elevation={3}>
+                                <Box sx={{ bgcolor: 'success.main', color: 'white', p: 2 }}>
+                                    <Typography variant="h5" align="center">Headlines</Typography>
+                                </Box>
+                                {data.top_games.length > 0 ? (
+                                    <Box sx={{ p: 2 }}>
+                                        {data.top_games.map((game) => (
+                                            <Box 
+                                                key={game.id}
+                                                sx={{ 
+                                                    display: 'flex',
+                                                    alignItems: 'flex-start',
+                                                    mb: 1.5,
+                                                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' },
+                                                    p: 1,
+                                                    borderRadius: 1
+                                                }}
+                                            >
+                                                <Typography variant="body2" sx={{ mr: 1 }}>•</Typography>
+                                                <Typography 
+                                                    variant="body2"
+                                                    component="a"
+                                                    href={`/game/${game.id}`}
+                                                    sx={{ 
+                                                        cursor: 'pointer', 
+                                                        textDecoration: 'none',
+                                                        '&:hover': { textDecoration: 'underline' },
+                                                        flex: 1,
+                                                        color: 'primary.main'
+                                                    }}
+                                                >
+                                                    {game.headline}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                ) : (
+                                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            No games played yet
+                                        </Typography>
+                                    </Box>
+                                )}
                             </TableContainer>
                         </Box>
                     </>

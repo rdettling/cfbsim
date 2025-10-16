@@ -301,8 +301,13 @@ def time_section(section_start, section_name):
     print(f"{section_name}: {duration} seconds")
 
 
-def watchability(rank_a, rank_b, win_prob_a, win_prob_b, num_teams):
+def watchability(game, num_teams):
     ranking_weight = 0.9
+    
+    rank_a = game.rankATOG
+    rank_b = game.rankBTOG
+    win_prob_a = game.winProbA
+    win_prob_b = game.winProbB
 
     # Calculate combined ranking score (lower ranking = higher score)
     combined_ranking = (rank_a + rank_b) / 2
