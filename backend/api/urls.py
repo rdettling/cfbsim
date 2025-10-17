@@ -6,6 +6,8 @@ from .views.season_views import (
     standings,
     playoff,
     sim,
+    live_sim,
+    live_sim_games,
 )
 from .views.stages_views import (
     season_summary,
@@ -37,6 +39,8 @@ urlpatterns = [
     path("stats/individual/", individual_stats),
     path("stats/ratings/", ratings_stats),
     path("sim/<int:dest_week>/", sim),
+    path("live-sim-games/", live_sim_games),
+    path("game/<int:game_id>/live-sim/", live_sim),
     # path("fetch_play/", views.fetch_play, name="fetch_play"),
     path("roster_progression/", roster_progression),
     path("recruiting_summary/", recruiting_summary),

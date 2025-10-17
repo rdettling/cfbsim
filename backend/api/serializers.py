@@ -62,16 +62,44 @@ class PlayersSerializer(serializers.ModelSerializer):
         return obj.team.name if obj.team else None
 
 
-class DrivesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Drives
-        fields = "__all__"
-
-
 class PlaysSerializer(serializers.ModelSerializer):
+    """Serializer for individual plays"""
     class Meta:
         model = Plays
-        fields = "__all__"
+        fields = [
+            'id',
+            'down',
+            'yardsLeft',
+            'startingFP',
+            'playType',
+            'yardsGained',
+            'result',
+            'text',
+            'header',
+            'scoreA',
+            'scoreB',
+        ]
+
+
+class DrivesSerializer(serializers.ModelSerializer):
+    """Serializer for drives with nested plays"""
+    plays = PlaysSerializer(many=True, read_only=True)
+    offense = serializers.CharField(source='offense.name', read_only=True)
+    defense = serializers.CharField(source='defense.name', read_only=True)
+    
+    class Meta:
+        model = Drives
+        fields = [
+            'driveNum',
+            'offense',
+            'defense',
+            'startingFP',
+            'result',
+            'points',
+            'plays',
+            'scoreAAfter',
+            'scoreBAfter'
+        ]
 
 
 class GameLogSerializer(serializers.ModelSerializer):

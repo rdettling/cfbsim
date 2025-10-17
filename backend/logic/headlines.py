@@ -88,12 +88,7 @@ def generate_headlines(games):
         # Set the headline on the game object
         game.headline = headline
 
-        # print(f"Generated headline: {game.headline}")
-
-    # Print the counts of each headline type
-    # print("Headline counts:", headline_counts)
-
-    # No return value needed as games are modified in place
+    return games
 
 
 def get_best_performance(game, winning_team):

@@ -561,7 +561,6 @@ def init(
     time_section(odds_start, "  • Betting odds created")
 
     # Phase 8: Final initialization
-    final_start = time.time()
     print("PHASE 8: FINAL INITIALIZATION")
 
     # Initialize rankings

@@ -8,6 +8,8 @@ import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';
 import { STAGES } from '../constants/stages';
 import { apiService } from '../services/api';
+import GameSelectionModal from './GameSelectionModal';
+import LiveSimModal from './LiveSimModal';
 
 interface NavbarProps {
     team: Team;
@@ -21,6 +23,9 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
     const currentStageInfo = STAGES.find(stage => stage.id === currentStage);
     const nextStageInfo = STAGES.find(stage => stage.id === currentStageInfo?.next);
     const [menuAnchors, setMenuAnchors] = useState<Record<string, HTMLElement | null>>({});
+    const [gameSelectionOpen, setGameSelectionOpen] = useState(false);
+    const [liveSimOpen, setLiveSimOpen] = useState(false);
+    const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
 
     // Menu handling functions
     const handleMenuOpen = (menu: string) => (event: React.MouseEvent<HTMLElement>) => {
@@ -41,6 +46,23 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         apiCall()
             .then(() => navigate(path))
             .catch(err => console.error(`Error navigating to ${path}:`, err));
+    };
+
+    // Live sim handlers
+    const handleLiveSimClick = () => {
+        setGameSelectionOpen(true);
+    };
+
+    const handleGameSelect = (gameId: number) => {
+        setSelectedGameId(gameId);
+        setLiveSimOpen(true);
+    };
+
+    const handleLiveSimClose = () => {
+        setLiveSimOpen(false);
+        setSelectedGameId(null);
+        // Refresh the page to show updated data
+        window.location.reload();
     };
 
     // Dropdown menu configurations
@@ -214,7 +236,40 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     >
                         PLAYOFF
                     </Button>
+
+                    {currentStage === 'season' && (
+                        <Button 
+                            color="inherit" 
+                            onClick={handleLiveSimClick}
+                            sx={{
+                                px: 2,
+                                py: 1,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                fontSize: '0.95rem',
+                                color: 'success.main',
+                                ml: 1,
+                                '&:hover': {
+                                    backgroundColor: 'rgba(46, 125, 50, 0.04)'
+                                }
+                            }}
+                        >
+                            LIVE SIM
+                        </Button>
+                    )}
                 </Stack>
+
+                {/* Live Sim Modals */}
+                <GameSelectionModal
+                    open={gameSelectionOpen}
+                    onClose={() => setGameSelectionOpen(false)}
+                    onGameSelect={handleGameSelect}
+                />
+                <LiveSimModal
+                    open={liveSimOpen}
+                    onClose={handleLiveSimClose}
+                    gameId={selectedGameId}
+                />
 
                 {/* Right Section - Season Info and Home */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>

@@ -24,11 +24,11 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
     print(f"\n--- WEEK {info.currentWeek} SIMULATION ---")
     print("PHASE 1: GAME SIMULATION")
 
-    # Phase 1: Fetch games from database
+    # Phase 1: Fetch games from database (only unplayed games)
     query_start = time.time()
     games = list(
         info.games.filter(
-            year=info.currentYear, weekPlayed=info.currentWeek
+            year=info.currentYear, weekPlayed=info.currentWeek, winner__isnull=True
         ).select_related("teamA", "teamB")
     )
     time_section(query_start, f"  • Database query - {len(games)} games found")
@@ -70,8 +70,8 @@ def fetch_and_simulate_games(info, drives_to_create, plays_to_create):
         team_updates[game.teamA_id]["gamesPlayed"] += 1
         team_updates[game.teamB_id]["gamesPlayed"] += 1
 
-        # Simulate the game
-        simGame(game, info, drives_to_create, plays_to_create)
+        # Simulate the game using shared utility
+        process_single_game(game, info, drives_to_create, plays_to_create)
 
         # Capture results for batch processing
         if game.winner == game.teamA:
@@ -205,9 +205,10 @@ def update_rankings(info, natty_game=None):
         team_dict = {team.id: team for team in teams}
 
         # Fetch all current week games once instead of querying for each team
+        # Only include games that have been played (have a winner)
         current_games = list(
             info.games.filter(
-                year=info.currentYear, weekPlayed=info.currentWeek
+                year=info.currentYear, weekPlayed=info.currentWeek, winner__isnull=False
             ).select_related("teamA", "teamB")
         )
 
@@ -359,76 +360,16 @@ def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
     total_start = time.time()
     print("PHASE 5: DATA PERSISTENCE")
 
-    # Phase 1: Create game logs from plays
+    # Phase 1: Create game logs from plays using shared utility
     game_logs_start = time.time()
-    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
-    game_log_dict = {}
-
-    all_starters = info.players.filter(
-        starter=True, pos__in=desired_positions
-    ).select_related("team")
-
-    # Group them by position and team
-    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
-    for player in all_starters:
-        starters_by_team_pos[(player.team, player.pos)].append(player)
-
+    
     # Get all unique games being simmed
     simmed_games = {play.game for play in plays_to_create}
-
-    # Create a set to store (player, game) combinations for GameLog objects
-    player_game_combinations = set()
-
+    
+    # Process each game's logs using the shared utility
     for game in simmed_games:
-        for team in [game.teamA, game.teamB]:
-            for pos in desired_positions:
-                starters = starters_by_team_pos.get((team, pos))
-                for starter in starters:
-                    player_game_combinations.add((starter, game))
-
-    # Create the in-memory GameLog objects
-    game_logs_to_process = [
-        GameLog(info=info, player=player, game=game)
-        for player, game in player_game_combinations
-    ]
-
-    for game_log in game_logs_to_process:
-        game_log_dict[(game_log.player, game_log.game)] = game_log
-
-    # Main logic for processing the plays
-    for play in plays_to_create:
-        set_play_header(play)
-
-        game = play.game
-        offense_team = play.offense
-
-        rb_starters = starters_by_team_pos.get((offense_team, "rb"))
-        qb_starter = starters_by_team_pos.get((offense_team, "qb"))[0]
-        wr_starters = starters_by_team_pos.get((offense_team, "wr"))
-        te_starters = starters_by_team_pos.get((offense_team, "te"))
-        k_starter = starters_by_team_pos.get((offense_team, "k"))[0]
-        p_starter = starters_by_team_pos.get((offense_team, "p"))[0]
-
-        if play.playType == "run":
-            runner = random.choice(rb_starters)
-            game_log = game_log_dict[(runner, game)]
-            update_game_log_for_run(play, game_log)
-            format_play_text(play, runner)
-        elif play.playType == "pass":
-            candidates = wr_starters + te_starters + rb_starters
-            receiver = choose_receiver(candidates)
-            qb_game_log = game_log_dict[(qb_starter, game)]
-            receiver_game_log = game_log_dict[(receiver, game)]
-            update_game_log_for_pass(play, qb_game_log, receiver_game_log)
-            format_play_text(play, qb_starter, receiver)
-        elif play.playType == "field goal":
-            game_log = game_log_dict[(k_starter, game)]
-            update_game_log_for_kick(play, game_log)
-            format_play_text(play, k_starter)
-        elif play.playType == "punt":
-            format_play_text(play, p_starter)
-
-    GameLog.objects.bulk_create(game_logs_to_process)
+        create_game_logs_from_plays(game, info, plays_to_create)
+    
     time_section(game_logs_start, "  • Game logs created from plays")
 
     # Phase 2: Save drives to database
@@ -574,3 +515,214 @@ def choose_receiver(candidates, rating_exponent=4):
 
     # Use random.choices for weighted selection
     return random.choices(candidates, weights=normalized_chances, k=1)[0]
+
+
+# Shared utility functions for live sim and batch sim
+def process_single_game(game, info, drives_to_create, plays_to_create):
+    """
+    Process a single game simulation and return the game with updated results.
+    This handles the core simulation logic that's shared between live and batch sim.
+    """
+    # Simulate the game
+    simGame(game, info, drives_to_create, plays_to_create)
+    
+    # Generate headline for this game
+    generate_headlines([game])
+    
+    return game
+
+
+def update_team_records_from_game(game):
+    """
+    Update team records based on game results.
+    Returns the updated team objects.
+    """
+    teamA, teamB = game.teamA, game.teamB
+    is_conference_game = (
+        teamA.conference and teamB.conference and teamA.conference == teamB.conference
+    )
+    
+    # Update games played
+    teamA.gamesPlayed += 1
+    teamB.gamesPlayed += 1
+    
+    # Update records based on winner
+    if game.winner == teamA:
+        teamA.totalWins += 1
+        teamB.totalLosses += 1
+        if is_conference_game:
+            teamA.confWins += 1
+            teamB.confLosses += 1
+        else:
+            teamA.nonConfWins += 1
+            teamB.nonConfLosses += 1
+    else:
+        teamB.totalWins += 1
+        teamA.totalLosses += 1
+        if is_conference_game:
+            teamB.confWins += 1
+            teamA.confLosses += 1
+        else:
+            teamB.nonConfWins += 1
+            teamA.nonConfLosses += 1
+    
+    return teamA, teamB
+
+
+def create_game_logs_from_plays(game, info, plays_to_create):
+    """
+    Create game logs from plays for a single game.
+    This is the shared logic for processing plays into game logs.
+    """
+    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
+    game_log_dict = {}
+    
+    # Get all starters for both teams
+    all_starters = info.players.filter(
+        starter=True, pos__in=desired_positions
+    ).select_related("team")
+    
+    # Group them by position and team
+    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
+    for player in all_starters:
+        starters_by_team_pos[(player.team, player.pos)].append(player)
+    
+    # Create a set to store (player, game) combinations for GameLog objects
+    player_game_combinations = set()
+    
+    for team in [game.teamA, game.teamB]:
+        for pos in desired_positions:
+            starters = starters_by_team_pos.get((team, pos))
+            if starters:
+                for starter in starters:
+                    player_game_combinations.add((starter, game))
+    
+    # Create the in-memory GameLog objects
+    game_logs_to_process = [
+        GameLog(info=info, player=player, game=game)
+        for player, game in player_game_combinations
+    ]
+    
+    # Create lookup dictionary
+    for game_log in game_logs_to_process:
+        game_log_dict[(game_log.player, game_log.game)] = game_log
+    
+    # Process plays for this specific game
+    game_plays = [play for play in plays_to_create if play.game == game]
+    
+    for play in game_plays:
+        set_play_header(play)
+        
+        offense_team = play.offense
+        
+        # Get starters for this offense team
+        rb_starters = starters_by_team_pos.get((offense_team, "rb"))
+        qb_starter = starters_by_team_pos.get((offense_team, "qb"))
+        wr_starters = starters_by_team_pos.get((offense_team, "wr"))
+        te_starters = starters_by_team_pos.get((offense_team, "te"))
+        k_starter = starters_by_team_pos.get((offense_team, "k"))
+        p_starter = starters_by_team_pos.get((offense_team, "p"))
+        
+        if not (rb_starters and qb_starter and wr_starters and te_starters and k_starter and p_starter):
+            continue
+            
+        if play.playType == "run":
+            runner = random.choice(rb_starters)
+            game_log = game_log_dict[(runner, game)]
+            update_game_log_for_run(play, game_log)
+            format_play_text(play, runner)
+        elif play.playType == "pass":
+            candidates = wr_starters + te_starters + rb_starters
+            receiver = choose_receiver(candidates)
+            qb_game_log = game_log_dict[(qb_starter[0], game)]
+            receiver_game_log = game_log_dict[(receiver, game)]
+            update_game_log_for_pass(play, qb_game_log, receiver_game_log)
+            format_play_text(play, qb_starter[0], receiver)
+        elif play.playType == "field goal":
+            game_log = game_log_dict[(k_starter[0], game)]
+            update_game_log_for_kick(play, game_log)
+            format_play_text(play, k_starter[0])
+        elif play.playType == "punt":
+            format_play_text(play, p_starter[0])
+    
+    # Bulk create the game logs
+    GameLog.objects.bulk_create(game_logs_to_process)
+    
+    return game_logs_to_process
+
+
+def format_plays_for_frontend(plays_to_create):
+    """
+    Format plays data for frontend consumption.
+    Returns a list of formatted play dictionaries.
+    """
+    plays_data = []
+    for play in plays_to_create:
+        plays_data.append({
+            "play_id": len(plays_data) + 1,
+            "drive_num": play.drive.driveNum if play.drive else 0,
+            "offense": play.offense.name,
+            "defense": play.defense.name,
+            "down": play.down,
+            "yards_left": play.yardsLeft,
+            "field_position": play.startingFP,
+            "play_type": play.playType,
+            "yards_gained": play.yardsGained,
+            "text": play.text or "",
+            "header": play.header or "",
+            "result": play.result,
+            "score_after": {"teamA": play.scoreA, "teamB": play.scoreB},
+        })
+    
+    return plays_data
+
+
+def format_game_logs_for_frontend(game):
+    """
+    Format game logs for frontend consumption.
+    Returns a dictionary with passing, rushing, and receiving logs.
+    """
+    game_logs = game.game_logs.select_related("player", "player__team").all()
+    
+    passing_logs = []
+    rushing_logs = []
+    receiving_logs = []
+    
+    for log in game_logs:
+        # Passing logs
+        if log.pass_attempts > 0:
+            passing_logs.append({
+                "player": f"{log.player.first} {log.player.last}",
+                "team": log.player.team.name,
+                "completions": log.pass_completions,
+                "attempts": log.pass_attempts,
+                "yards": log.pass_yards,
+                "touchdowns": log.pass_touchdowns,
+                "interceptions": log.pass_interceptions,
+            })
+        
+        # Rushing logs
+        if log.rush_attempts > 0:
+            rushing_logs.append({
+                "player": f"{log.player.first} {log.player.last}",
+                "team": log.player.team.name,
+                "attempts": log.rush_attempts,
+                "yards": log.rush_yards,
+                "touchdowns": log.rush_touchdowns,
+            })
+        
+        # Receiving logs
+        if log.receiving_catches > 0:
+            receiving_logs.append({
+                "player": f"{log.player.first} {log.player.last}",
+                "team": log.player.team.name,
+                "catches": log.receiving_catches,
+                "yards": log.receiving_yards,
+                "touchdowns": log.receiving_touchdowns,
+            })
+    
+    return {
+        "passing": passing_logs,
+        "rushing": rushing_logs,
+        "receiving": receiving_logs,
+    }

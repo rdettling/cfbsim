@@ -1,20 +1,24 @@
 from ..models import *
 from django.db.models import F
-from logic.season import update_history, realignment_summary
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
 from django.db.models import F, ExpressionWrapper, FloatField
 from operator import attrgetter
-from logic.util import get_last_game, get_next_game, sort_standings, time_section
-from logic.schedule import get_playoff_team_order
+from logic.util import get_last_game, get_next_game, sort_standings, time_section, format_record
 from logic.sim.sim_helper import (
     save_simulation_data,
     fetch_and_simulate_games,
     update_game_results,
     update_rankings,
     handle_special_weeks,
+    process_single_game,
+    update_team_records_from_game,
+    create_game_logs_from_plays,
+    format_plays_for_frontend,
+    format_game_logs_for_frontend,
 )
+
 import time
 
 
@@ -353,36 +357,55 @@ def standings(request, conference_name):
 @api_view(["GET"])
 def playoff(request):
     """API endpoint for playoff projection data"""
-    user_id = request.headers.get("X-User-ID")
-    info = Info.objects.get(user_id=user_id)
-    playoff_format = info.playoff.teams
-    is_projection = info.currentWeek < 14
-    
-    print(f"Playoff view - is_projection: {is_projection}, current week: {info.currentWeek}")
-    
-    # Get playoff object
-    playoff_obj = info.playoff_info.first()
+    try:
+        print("PLAYOFF DEBUG: Starting playoff view")
+        user_id = request.headers.get("X-User-ID")
+        print(f"PLAYOFF DEBUG: user_id = {user_id}")
+        
+        info = Info.objects.get(user_id=user_id)
+        print(f"PLAYOFF DEBUG: Got info object")
+        
+        playoff_format = info.playoff.teams
+        print(f"PLAYOFF DEBUG: playoff_format = {playoff_format}")
+        
+        is_projection = info.currentWeek < 14
+        print(f"PLAYOFF DEBUG: is_projection = {is_projection}, current week = {info.currentWeek}")
+        
+        # Get playoff object
+        playoff_obj = info.playoff_info.first()
+        print(f"PLAYOFF DEBUG: Got playoff_obj")
 
-    # Get conference champions or top teams from each conference
-    conference_champions = []
-    for conference in info.conferences.all():
-        if conference.championship and conference.championship.winner:
-            conference_champions.append(conference.championship.winner)
-        else:
-            conf_teams = conference.teams.annotate(
-                win_percentage=ExpressionWrapper(
-                    F("confWins") * 1.0 / (F("confWins") + F("confLosses")),
-                    output_field=FloatField(),
-                )
-            ).order_by("-win_percentage", "-confWins", "ranking", "-totalWins")
-            if conf_teams.exists():
-                conference_champions.append(conf_teams.first())
+        # Get conference champions or top teams from each conference
+        conference_champions = []
+        print(f"PLAYOFF DEBUG: Starting conference champions loop")
+        for conference in info.conferences.all():
+            if conference.championship and conference.championship.winner:
+                conference_champions.append(conference.championship.winner)
+            else:
+                conf_teams = conference.teams.annotate(
+                    win_percentage=ExpressionWrapper(
+                        F("confWins") * 1.0 / (F("confWins") + F("confLosses")),
+                        output_field=FloatField(),
+                    )
+                ).order_by("-win_percentage", "-confWins", "ranking", "-totalWins")
+                if conf_teams.exists():
+                    conference_champions.append(conf_teams.first())
 
-    # Sort conference champions by ranking
-    conference_champions.sort(key=attrgetter("ranking"))
+        print(f"PLAYOFF DEBUG: Got {len(conference_champions)} conference champions")
+        
+        # Sort conference champions by ranking
+        conference_champions.sort(key=attrgetter("ranking"))
+        print(f"PLAYOFF DEBUG: Sorted conference champions")
+    except Exception as e:
+        print(f"PLAYOFF DEBUG ERROR: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
 
     # Different logic based on playoff format
+    print(f"PLAYOFF DEBUG: Processing playoff format {playoff_format}")
     if playoff_format == 2:
+        print(f"PLAYOFF DEBUG: In 2-team playoff branch")
         if not is_projection and playoff_obj.seed_1 and playoff_obj.seed_2:
             # Use actual playoff teams from playoff object
             playoff_teams = [playoff_obj.seed_1, playoff_obj.seed_2]
@@ -432,6 +455,7 @@ def playoff(request):
         ]
 
     elif playoff_format == 4:
+        print(f"PLAYOFF DEBUG: In 4-team playoff branch")
         if not is_projection and playoff_obj.seed_1 and playoff_obj.seed_2 and playoff_obj.seed_3 and playoff_obj.seed_4:
             # Use actual playoff teams from playoff object
             playoff_teams = [playoff_obj.seed_1, playoff_obj.seed_2, playoff_obj.seed_3, playoff_obj.seed_4]
@@ -483,6 +507,7 @@ def playoff(request):
         ]
 
     else:  # playoff_format == 12
+        print(f"PLAYOFF DEBUG: In 12-team playoff branch")
         # Check if we have actual playoff data
         if not is_projection and all([getattr(playoff_obj, f"seed_{i}", None) for i in range(1, 13)]):
             # Use actual playoff teams from playoff object
@@ -622,10 +647,23 @@ def playoff(request):
             }
             for team in sorted(conference_champions, key=attrgetter("ranking"))
         ]
+    
+    print(f"PLAYOFF DEBUG: playoff_data created with {len(playoff_data)} teams")
+    print(f"PLAYOFF DEBUG: bubble_data created with {len(bubble_data)} teams")
+    print(f"PLAYOFF DEBUG: champion_data created with {len(champion_data)} teams")
 
     # Generate bracket structure based on playoff format
-    bracket_data = generate_bracket_structure(info, playoff_teams)
+    print(f"PLAYOFF DEBUG: About to call generate_bracket_structure with {len(playoff_teams)} teams")
+    try:
+        bracket_data = generate_bracket_structure(info, playoff_teams)
+        print(f"PLAYOFF DEBUG: Successfully generated bracket_data")
+    except Exception as e:
+        print(f"PLAYOFF DEBUG ERROR in generate_bracket_structure: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
 
+    print(f"PLAYOFF DEBUG: Building response")
     return Response(
         {
             "info": InfoSerializer(info).data,
@@ -686,3 +724,111 @@ def sim(request, dest_week):
             "weeks_simulated": dest_week - start_week,
         }
     )
+
+
+@api_view(["GET"])
+def live_sim_games(request):
+    """
+    API endpoint to get all unplayed games in the current week for live simulation.
+    """
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+    
+    # Get all unplayed games in the current week
+    games = info.games.filter(
+        year=info.currentYear,
+        weekPlayed=info.currentWeek,
+        winner__isnull=True
+    ).select_related('teamA', 'teamB', 'teamA__conference', 'teamB__conference')
+    
+    games_data = []
+    for game in games:
+        games_data.append({
+            "id": game.id,
+            "teamA": {
+                "name": game.teamA.name,
+                "ranking": game.rankATOG,
+                "record": format_record(game.teamA),
+            },
+            "teamB": {
+                "name": game.teamB.name,
+                "ranking": game.rankBTOG,
+                "record": format_record(game.teamB),
+            },
+            "label": game.base_label,
+            "spread": game.spreadA,
+        })
+    
+    return Response({
+        "games": games_data,
+        "week": info.currentWeek,
+    })
+
+
+@api_view(["POST"])
+def live_sim(request, game_id):
+    """
+    API endpoint for live simulation of a single game.
+    Simulates the game, saves to DB, and returns all plays for frontend display.
+    """
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+    
+    # Get the game and verify it's in the current week and hasn't been played
+    game = info.games.get(id=game_id)
+    
+    if game.winner:
+        return Response({"error": "Game has already been played"}, status=400)
+    
+    if game.weekPlayed != info.currentWeek:
+        return Response({"error": "Can only simulate games in the current week"}, status=400)
+    
+    # Prepare lists for bulk creation
+    drives_to_create = []
+    plays_to_create = []
+    
+    # Process the game using shared utility
+    game = process_single_game(game, info, drives_to_create, plays_to_create)
+    
+    # Update team records using shared utility
+    teamA, teamB = update_team_records_from_game(game)
+    
+    # Save updated team records to database
+    Teams.objects.bulk_update([teamA, teamB], [
+        "gamesPlayed", "totalWins", "totalLosses", "confWins", "confLosses", 
+        "nonConfWins", "nonConfLosses"
+    ])
+    
+    # Create game logs using shared utility (BEFORE saving plays)
+    create_game_logs_from_plays(game, info, plays_to_create)
+    
+    # Save game results to database
+    Games.objects.bulk_update([game], ["headline", "scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"])
+    
+    # Save drives and plays to database
+    Drives.objects.bulk_create(drives_to_create)
+    Plays.objects.bulk_create(plays_to_create)
+    
+    # Query saved drives with their plays from database and serialize
+    drives = game.drives.prefetch_related('plays').order_by('driveNum')
+    drives_data = DrivesSerializer(drives, many=True).data
+    
+    # Format game logs
+    game_logs_data = format_game_logs_for_frontend(game)
+    
+    return Response({
+        "game_info": {
+            "id": game.id,
+            "teamA": TeamsSerializer(teamA).data,
+            "teamB": TeamsSerializer(teamB).data,
+        },
+        "drives": drives_data,
+        "final_result": {
+            "scoreA": game.scoreA,
+            "scoreB": game.scoreB,
+            "winner": game.winner.name,
+            "headline": game.headline,
+            "overtime": game.overtime,
+        },
+        "game_logs": game_logs_data,
+    })
