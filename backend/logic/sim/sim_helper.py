@@ -355,6 +355,31 @@ def handle_special_weeks(info):
     print()
 
 
+def get_or_cache_starters(info):
+    """
+    Get starters from cache or query and cache them.
+    Starters don't change during the season, so we can cache them.
+    """
+    # Check if we have cached starters
+    if hasattr(info, '_starters_cache'):
+        return info._starters_cache
+    
+    # Query and cache
+    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
+    all_starters = info.players.filter(
+        starter=True, pos__in=desired_positions
+    ).select_related("team")
+    
+    # Group them by position and team
+    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
+    for player in all_starters:
+        starters_by_team_pos[(player.team, player.pos)].append(player)
+    
+    # Cache on info object
+    info._starters_cache = starters_by_team_pos
+    return starters_by_team_pos
+
+
 def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
     """Save all accumulated simulation data to the database"""
     total_start = time.time()
@@ -366,29 +391,36 @@ def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
     # Get all unique games being simmed
     simmed_games = {play.game for play in plays_to_create}
     
+    # Get starters (cached across multiple week sims)
+    starters_by_team_pos = get_or_cache_starters(info)
+    
+    # Pre-group plays by game (major optimization to avoid O(n*m) filtering)
+    plays_by_game = {}
+    for play in plays_to_create:
+        if play.game not in plays_by_game:
+            plays_by_game[play.game] = []
+        plays_by_game[play.game].append(play)
+    
     # Accumulate all game logs from all games
     all_game_logs = []
     for game in simmed_games:
-        game_logs = create_game_logs_from_plays(game, info, plays_to_create)
+        game_plays = plays_by_game.get(game, [])
+        game_logs = create_game_logs_from_plays_optimized(game, info, game_plays, starters_by_team_pos)
         all_game_logs.extend(game_logs)
     
-    # Bulk create all game logs at once
-    batch_size = 250
-    for i in range(0, len(all_game_logs), batch_size):
-        GameLog.objects.bulk_create(all_game_logs[i : i + batch_size])
+    # Bulk create all game logs
+    GameLog.objects.bulk_create(all_game_logs)
     
     time_section(game_logs_start, "  • Game logs created from plays")
 
     # Phase 2: Save drives to database
     drives_start = time.time()
-    for i in range(0, len(drives_to_create), batch_size):
-        Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
+    Drives.objects.bulk_create(drives_to_create)
     time_section(drives_start, "  • Drives saved to database")
 
     # Phase 3: Save plays to database
     plays_start = time.time()
-    for i in range(0, len(plays_to_create), batch_size):
-        Plays.objects.bulk_create(plays_to_create[i : i + batch_size])
+    Plays.objects.bulk_create(plays_to_create)
     time_section(plays_start, "  • Plays saved to database")
 
     # Phase 4: Save info object
@@ -575,24 +607,15 @@ def update_team_records_from_game(game):
     return teamA, teamB
 
 
-def create_game_logs_from_plays(game, info, plays_to_create):
+def create_game_logs_from_plays_optimized(game, info, game_plays, starters_by_team_pos):
     """
+    Optimized version that accepts pre-fetched starters and pre-filtered plays.
     Create game logs from plays for a single game.
     Returns the game log objects WITHOUT saving them to the database.
     The caller is responsible for bulk creating the game logs.
     """
-    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
     game_log_dict = {}
-    
-    # Get all starters for both teams
-    all_starters = info.players.filter(
-        starter=True, pos__in=desired_positions
-    ).select_related("team")
-    
-    # Group them by position and team
-    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
-    for player in all_starters:
-        starters_by_team_pos[(player.team, player.pos)].append(player)
+    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
     
     # Create a set to store (player, game) combinations for GameLog objects
     player_game_combinations = set()
@@ -614,9 +637,7 @@ def create_game_logs_from_plays(game, info, plays_to_create):
     for game_log in game_logs_to_process:
         game_log_dict[(game_log.player, game_log.game)] = game_log
     
-    # Process plays for this specific game
-    game_plays = [play for play in plays_to_create if play.game == game]
-    
+    # Process plays
     for play in game_plays:
         set_play_header(play)
         
@@ -654,6 +675,27 @@ def create_game_logs_from_plays(game, info, plays_to_create):
     
     # Return the game logs WITHOUT saving to database
     return game_logs_to_process
+
+
+def create_game_logs_from_plays(game, info, plays_to_create):
+    """
+    Original version for single game use (like live sim).
+    Queries starters for this specific game.
+    """
+    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
+    
+    # Get all starters for both teams
+    all_starters = info.players.filter(
+        starter=True, pos__in=desired_positions
+    ).select_related("team")
+    
+    # Group them by position and team
+    starters_by_team_pos = {(player.team, player.pos): [] for player in all_starters}
+    for player in all_starters:
+        starters_by_team_pos[(player.team, player.pos)].append(player)
+    
+    # Use the optimized function with the fetched starters
+    return create_game_logs_from_plays_optimized(game, info, plays_to_create, starters_by_team_pos)
 
 
 def format_plays_for_frontend(plays_to_create):

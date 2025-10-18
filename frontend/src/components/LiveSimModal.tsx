@@ -168,6 +168,49 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
     const isGameComplete = currentPlayIndex >= plays.length;
     const currentPlay = isGameComplete ? plays[plays.length - 1] : plays[currentPlayIndex];
 
+    // Helper function to find current drive
+    const getCurrentDrive = () => {
+        let playCount = 0;
+        for (const drive of drives) {
+            const driveEndIndex = playCount + drive.plays.length - 1;
+            if (currentPlayIndex >= playCount && currentPlayIndex <= driveEndIndex) {
+                return drive;
+            }
+            playCount += drive.plays.length;
+        }
+        return null;
+    };
+
+    const currentDrive = getCurrentDrive();
+    const isTeamAOnOffense = currentDrive?.offense === gameData.teamA.name;
+    
+    // Check if previous play is from the same drive
+    const isFirstPlayOfDrive = () => {
+        if (currentPlayIndex === 0) return true;
+        let playCount = 0;
+        for (const drive of drives) {
+            if (currentPlayIndex === playCount) return true;
+            playCount += drive.plays.length;
+        }
+        return false;
+    };
+    
+    const previousPlayYards = currentPlayIndex > 0 && !isFirstPlayOfDrive() ? plays[currentPlayIndex - 1].yardsGained : undefined;
+    const fieldYardLine = isTeamAOnOffense ? currentPlay.startingFP : (100 - currentPlay.startingFP);
+
+    // Possession indicator component
+    const PossessionIndicator = () => (
+        <img 
+            src="/logos/football.png" 
+            alt="Football" 
+            style={{ 
+                width: '32px', 
+                height: '32px', 
+                objectFit: 'contain'
+            }}
+        />
+    );
+
     return (
         <Dialog 
             open={open} 
@@ -217,31 +260,7 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                                                         <Typography variant="h5" fontWeight="bold">
                                                             {gameData.teamA.name}
                                                         </Typography>
-                                                        {(() => {
-                                                            // Find the current drive to get the offense team
-                                                            let playCount = 0;
-                                                            let currentDrive = null;
-                                                            for (const drive of drives) {
-                                                                const driveEndIndex = playCount + drive.plays.length - 1;
-                                                                if (currentPlayIndex >= playCount && currentPlayIndex <= driveEndIndex) {
-                                                                    currentDrive = drive;
-                                                                    break;
-                                                                }
-                                                                playCount += drive.plays.length;
-                                                            }
-                                                            
-                                                            return currentDrive && currentDrive.offense === gameData.teamA.name ? (
-                                                                <img 
-                                                                    src="/logos/football.png" 
-                                                                    alt="Football" 
-                                                                    style={{ 
-                                                                        width: '32px', 
-                                                                        height: '32px', 
-                                                                        objectFit: 'contain'
-                                                                    }}
-                                                                />
-                                                            ) : null;
-                                                        })()}
+                                                        {isTeamAOnOffense && <PossessionIndicator />}
                                                     </Box>
                                                     <Typography variant="body2" color="text.secondary">
                                                         {gameData.teamA.record}
@@ -252,7 +271,7 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                                             {/* Score */}
                                             <Box sx={{ textAlign: 'center' }}>
                                                 <Typography variant="h2" fontWeight="bold">
-                                                    {currentPlay.scoreA} - {currentPlay.scoreB}
+                                                    {isGameComplete ? gameData.scoreA : currentPlay.scoreA} - {isGameComplete ? gameData.scoreB : currentPlay.scoreB}
                                                 </Typography>
                                             </Box>
 
@@ -260,31 +279,7 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                                 <Box sx={{ textAlign: 'right' }}>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-                                                        {(() => {
-                                                            // Find the current drive to get the offense team
-                                                            let playCount = 0;
-                                                            let currentDrive = null;
-                                                            for (const drive of drives) {
-                                                                const driveEndIndex = playCount + drive.plays.length - 1;
-                                                                if (currentPlayIndex >= playCount && currentPlayIndex <= driveEndIndex) {
-                                                                    currentDrive = drive;
-                                                                    break;
-                                                                }
-                                                                playCount += drive.plays.length;
-                                                            }
-                                                            
-                                                            return currentDrive && currentDrive.offense === gameData.teamB.name ? (
-                                                                <img 
-                                                                    src="/logos/football.png" 
-                                                                    alt="Football" 
-                                                                    style={{ 
-                                                                        width: '32px', 
-                                                                        height: '32px', 
-                                                                        objectFit: 'contain'
-                                                                    }}
-                                                                />
-                                                            ) : null;
-                                                        })()}
+                                                        {!isTeamAOnOffense && <PossessionIndicator />}
                                                         <Typography variant="h5" fontWeight="bold">
                                                             {gameData.teamB.name}
                                                         </Typography>
@@ -363,48 +358,21 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
 
                             {/* Football Field Visualization */}
                             <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                                {(() => {
-                                    // Find the current drive to get the offense team
-                                    let playCount = 0;
-                                    let currentDrive = null;
-                                    for (const drive of drives) {
-                                        const driveEndIndex = playCount + drive.plays.length - 1;
-                                        if (currentPlayIndex >= playCount && currentPlayIndex <= driveEndIndex) {
-                                            currentDrive = drive;
-                                            break;
-                                        }
-                                        playCount += drive.plays.length;
-                                    }
-                                    
-                                    if (!currentDrive) return null;
-                                    
-                                    // Get previous play yards gained (if not the first play)
-                                    const previousPlayYards = currentPlayIndex > 0 ? plays[currentPlayIndex - 1].yardsGained : undefined;
-                                    
-                                    // Determine if Team A is on offense
-                                    const isTeamAOnOffense = currentDrive.offense === gameData.teamA.name;
-                                    
-                                    // Convert yard line: if Team B has the ball, flip the field position
-                                    // startingFP is always from the perspective of the team with the ball
-                                    // But our field always has Team A going left-to-right (0 to 100)
-                                    const fieldYardLine = isTeamAOnOffense ? currentPlay.startingFP : (100 - currentPlay.startingFP);
-                                    
-                                    return (
-                                        <FootballField 
-                                            currentYardLine={fieldYardLine}
-                                            teamA={gameData.teamA.name}
-                                            teamB={gameData.teamB.name}
-                                            isTeamAOnOffense={isTeamAOnOffense}
-                                            down={currentPlay.down}
-                                            yardsToGo={currentPlay.yardsLeft}
-                                            previousPlayYards={previousPlayYards}
-                                            teamAColorPrimary={gameData.teamA.colorPrimary}
-                                            teamAColorSecondary={gameData.teamA.colorSecondary}
-                                            teamBColorPrimary={gameData.teamB.colorPrimary}
-                                            teamBColorSecondary={gameData.teamB.colorSecondary}
-                                        />
-                                    );
-                                })()}
+                                {currentDrive && (
+                                    <FootballField 
+                                        currentYardLine={fieldYardLine}
+                                        teamA={gameData.teamA.name}
+                                        teamB={gameData.teamB.name}
+                                        isTeamAOnOffense={isTeamAOnOffense}
+                                        down={currentPlay.down}
+                                        yardsToGo={currentPlay.yardsLeft}
+                                        previousPlayYards={previousPlayYards}
+                                        teamAColorPrimary={gameData.teamA.colorPrimary}
+                                        teamAColorSecondary={gameData.teamA.colorSecondary}
+                                        teamBColorPrimary={gameData.teamB.colorPrimary}
+                                        teamBColorSecondary={gameData.teamB.colorSecondary}
+                                    />
+                                )}
                             </Paper>
 
                         </Box>

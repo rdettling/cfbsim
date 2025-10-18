@@ -16,12 +16,10 @@ interface FootballFieldProps {
 
 const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, yardsToGo, previousPlayYards, teamAColorPrimary, teamAColorSecondary, teamBColorPrimary, teamBColorSecondary }: FootballFieldProps) => {
     // Field dimensions based on yards
-    const PIXELS_PER_YARD = 7;  // Scale: 12 pixels = 1 yard
+    const PIXELS_PER_YARD = 7;
     const END_ZONE_YARDS = 10;
     const FIELD_YARDS = 100;
-    const FIELD_WIDTH_YARDS = 53;  // Real football field is 53⅓ yards wide
-    
-    // Text sizes
+    const FIELD_WIDTH_YARDS = 53;
     const YARD_LINE_NUMBER_SIZE = '1.5rem';
     const END_ZONE_TEXT_SIZE = '1.8rem';
     
@@ -32,41 +30,36 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
     const fieldHeight = FIELD_WIDTH_YARDS * PIXELS_PER_YARD;
     
     // Helper function to convert yard line to pixel position
-    const yardToPixels = (yard: number): number => {
-        return endZoneWidth + (yard * PIXELS_PER_YARD);
-    };
+    const yardToPixels = (yard: number): number => endZoneWidth + (yard * PIXELS_PER_YARD);
     
-    // Calculate ball position
+    // Calculate positions
     const ballPosition = yardToPixels(currentYardLine);
-    
-    // Calculate first down line position
     const firstDownYardLine = isTeamAOnOffense ? 
         Math.min(100, currentYardLine + yardsToGo) : 
         Math.max(0, currentYardLine - yardsToGo);
     const firstDownPosition = yardToPixels(firstDownYardLine);
     
-    // Calculate previous play zone (if yards were gained/lost)
-    let previousPlayZone = null;
-    if (previousPlayYards !== undefined && previousPlayYards !== 0) {
-        const previousYardLine = isTeamAOnOffense ? 
-            currentYardLine - previousPlayYards : 
-            currentYardLine + previousPlayYards;
-        
-        const startPosition = yardToPixels(Math.max(0, Math.min(100, previousYardLine)));
-        const endPosition = ballPosition;
-        const zoneLeft = Math.min(startPosition, endPosition);
-        const zoneWidth = Math.abs(endPosition - startPosition);
-        
-        previousPlayZone = {
-            left: zoneLeft,
-            width: zoneWidth,
-            isGain: previousPlayYards > 0,
-            yards: previousPlayYards
-        };
-    }
+    // Calculate previous play zone
+    const previousPlayZone = previousPlayYards && previousPlayYards !== 0 ? {
+        left: Math.min(
+            yardToPixels(Math.max(0, Math.min(100, currentYardLine - previousPlayYards * (isTeamAOnOffense ? 1 : -1)))),
+            ballPosition
+        ),
+        width: Math.abs(previousPlayYards * PIXELS_PER_YARD),
+        isGain: previousPlayYards > 0,
+        yards: previousPlayYards
+    } : null;
     
-    // Generate yard line markers (every 10 yards, excluding goal lines at 0 and 100)
+    // Yard line markers (every 10 yards, excluding goal lines)
     const yardLines = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+    
+    // Helper to format down text
+    const getDownText = (d: number) => ['1st', '2nd', '3rd', '4th'][d - 1] || '4th';
+    
+    // Vertical line component
+    const VerticalLine = ({ left, width, color, zIndex, shadow }: { left: number; width: number; color: string; zIndex: number; shadow?: string }) => (
+        <Box sx={{ position: 'absolute', left, top: 0, bottom: 0, width, bgcolor: color, zIndex, ...(shadow && { boxShadow: shadow }) }} />
+    );
 
     return (
         <Box sx={{ 
@@ -118,47 +111,14 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                     }}
                 >
                     {/* Yard line markers */}
-                    {yardLines.map((yard) => {
-                        const leftPosition = yard * PIXELS_PER_YARD;
-                        
-                        return (
-                            <Box
-                                key={yard}
-                                sx={{
-                                    position: 'absolute',
-                                    left: leftPosition,
-                                    top: 0,
-                                    height: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                {/* Vertical line */}
-                                <Box
-                                    sx={{
-                                        width: 3,
-                                        height: '100%',
-                                        bgcolor: 'white',
-                                        opacity: 0.9
-                                    }}
-                                />
-                                {/* Yard number */}
-                                <Typography
-                                    sx={{
-                                        position: 'absolute',
-                                        top: 8,
-                                        color: 'white',
-                                        fontWeight: 'bold',
-                                        fontSize: YARD_LINE_NUMBER_SIZE,
-                                        textShadow: '1px 1px 3px rgba(0,0,0,0.8)'
-                                    }}
-                                >
-                                    {yard <= 50 ? yard : 100 - yard}
-                                </Typography>
-                            </Box>
-                        );
-                    })}
+                    {yardLines.map((yard) => (
+                        <Box key={yard} sx={{ position: 'absolute', left: yard * PIXELS_PER_YARD, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Box sx={{ width: 3, height: '100%', bgcolor: 'white', opacity: 0.9 }} />
+                            <Typography sx={{ position: 'absolute', top: 8, color: 'white', fontWeight: 'bold', fontSize: YARD_LINE_NUMBER_SIZE, textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}>
+                                {yard <= 50 ? yard : 100 - yard}
+                            </Typography>
+                        </Box>
+                    ))}
                 </Box>
 
                 {/* Team B End Zone */}
@@ -186,117 +146,51 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 </Box>
 
                 {/* Down and Distance Display */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: ballPosition,
-                        top: '25%',
-                        transform: isTeamAOnOffense ? 'translateX(-100%)' : 'translateX(0%)', // Team A goes right (badge on left), Team B goes left (badge on right)
-                        bgcolor: 'rgba(33, 150, 243, 0.8)', // Blue with transparency
-                        zIndex: 6,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        px: 2,
-                        py: 0.5,
-                        borderRadius: 1
-                    }}
-                >
-                    <Typography
-                        sx={{
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '0.8rem',
-                            textShadow: '1px 1px 3px rgba(0,0,0,0.9)',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        {down === 1 ? '1st' : down === 2 ? '2nd' : down === 3 ? '3rd' : '4th'} & {yardsToGo}
+                <Box sx={{
+                    position: 'absolute',
+                    left: ballPosition,
+                    top: '25%',
+                    transform: isTeamAOnOffense ? 'translateX(-100%)' : 'translateX(0%)',
+                    bgcolor: 'rgba(33, 150, 243, 0.8)',
+                    zIndex: 6,
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: 1
+                }}>
+                    <Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.8rem', textShadow: '1px 1px 3px rgba(0,0,0,0.9)', whiteSpace: 'nowrap' }}>
+                        {getDownText(down)} & {yardsToGo}
                     </Typography>
                 </Box>
 
                 {/* Previous Play Yards Gained/Lost Zone */}
                 {previousPlayZone && (
-                    <Box
-                        sx={{
-                            position: 'absolute',
-                            left: previousPlayZone.left,
-                            top: '75%',
-                            height: '15%',
-                            width: previousPlayZone.width,
-                            bgcolor: previousPlayZone.isGain ? 'rgba(76, 175, 80, 0.7)' : 'rgba(244, 67, 54, 0.7)', // Green for gain, red for loss
-                            zIndex: 3,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        <Typography
-                            sx={{
-                                color: 'white',
-                                fontWeight: 'bold',
-                                fontSize: '0.7rem',
-                                textShadow: '1px 1px 3px rgba(0,0,0,0.9)'
-                            }}
-                        >
+                    <Box sx={{
+                        position: 'absolute',
+                        left: previousPlayZone.left,
+                        top: '75%',
+                        height: '15%',
+                        width: previousPlayZone.width,
+                        bgcolor: previousPlayZone.isGain ? 'rgba(76, 175, 80, 0.7)' : 'rgba(244, 67, 54, 0.7)',
+                        zIndex: 3,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.7rem', textShadow: '1px 1px 3px rgba(0,0,0,0.9)' }}>
                             {previousPlayZone.isGain ? '+' : ''}{previousPlayZone.yards} YDS
                         </Typography>
                     </Box>
                 )}
 
-                {/* Goal Lines (white lines at 0 and 100 yard lines) */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: endZoneWidth,
-                        top: 0,
-                        bottom: 0,
-                        width: 3,
-                        bgcolor: 'white',
-                        opacity: 0.9,
-                        zIndex: 4
-                    }}
-                />
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: endZoneWidth + fieldWidth,
-                        top: 0,
-                        bottom: 0,
-                        width: 3,
-                        bgcolor: 'white',
-                        opacity: 0.9,
-                        zIndex: 4
-                    }}
-                />
+                {/* Goal Lines */}
+                <VerticalLine left={endZoneWidth} width={3} color="rgba(255, 255, 255, 0.9)" zIndex={4} />
+                <VerticalLine left={endZoneWidth + fieldWidth} width={3} color="rgba(255, 255, 255, 0.9)" zIndex={4} />
 
-                {/* Line of Scrimmage (Blue Line) */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: ballPosition,
-                        top: 0,
-                        bottom: 0,
-                        width: 4,
-                        bgcolor: '#2196F3', // Blue
-                        zIndex: 5,
-                        boxShadow: '0 0 8px rgba(33, 150, 243, 0.8)'
-                    }}
-                />
+                {/* Line of Scrimmage (Blue) */}
+                <VerticalLine left={ballPosition} width={4} color="#2196F3" zIndex={5} shadow="0 0 8px rgba(33, 150, 243, 0.8)" />
 
-                {/* First Down Line (Yellow Line) */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: firstDownPosition,
-                        top: 0,
-                        bottom: 0,
-                        width: 4,
-                        bgcolor: '#FFD700', // Gold yellow
-                        zIndex: 5,
-                        boxShadow: '0 0 8px rgba(255, 215, 0, 0.8)'
-                    }}
-                />
+                {/* First Down Line (Yellow) */}
+                <VerticalLine left={firstDownPosition} width={4} color="#FFD700" zIndex={5} shadow="0 0 8px rgba(255, 215, 0, 0.8)" />
 
                 {/* Ball position indicator */}
                 <Box

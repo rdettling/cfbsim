@@ -781,6 +781,11 @@ def live_sim(request, game_id):
     if game.weekPlayed != info.currentWeek:
         return Response({"error": "Can only simulate games in the current week"}, status=400)
     
+    # Save pre-game records to avoid spoiling the result
+    from logic.util import format_record
+    pre_game_record_a = format_record(game.teamA)
+    pre_game_record_b = format_record(game.teamB)
+    
     # Prepare lists for bulk creation
     drives_to_create = []
     plays_to_create = []
@@ -812,9 +817,14 @@ def live_sim(request, game_id):
     drives = game.drives.prefetch_related('plays').order_by('driveNum')
     drives_data = DrivesSerializer(drives, many=True).data
     
+    # Serialize game data and manually override team records with pre-game values
+    game_data = GamesSerializer(game).data
+    game_data['teamA']['record'] = pre_game_record_a
+    game_data['teamB']['record'] = pre_game_record_b
+    
     return Response({
         "info": InfoSerializer(info).data,
-        "game": GamesSerializer(game).data,
+        "game": game_data,
         "team": TeamsSerializer(info.team).data,
         "drives": drives_data,
         "conferences": ConferencesSerializer(
