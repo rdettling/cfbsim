@@ -37,72 +37,77 @@ interface TeamRowProps {
 }
 
 // Game card with clickable team name
-const GameCard = ({ game, type, onTeamClick }: GameCardProps) => (
-    <Card elevation={3} sx={{ 
-        mb: 2, 
-        borderLeft: type === 'prev' ? 
-            `5px solid ${game.result?.includes('W') ? 'green' : game.result?.includes('L') ? 'red' : 'grey'}` : 
-            '5px solid #1976d2', 
-        '&:hover': { transform: 'translateY(-3px)' },
-        transition: 'transform 0.2s',
-    }}>
-        <CardContent>
-            <Typography variant="subtitle1" fontWeight="bold" color="text.secondary" gutterBottom>
-                {type === 'prev' ? 'Last Week' : 'This Week'}
-            </Typography>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TeamLogo name={game.opponent.name} size={40} />
-                    <Box>
-                        <MuiLink
-                            component="button"
-                            onClick={() => onTeamClick(game.opponent.name)}
-                            sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' }}
-                        >
-                            {game.opponent.ranking > 0 ? `#${game.opponent.ranking} ` : ''}{game.opponent.name}
-                        </MuiLink>
-                        <Typography variant="body2" color="text.secondary">
-                            {game.opponent.record}
-                        </Typography>
+const GameCard = ({ game, type, onTeamClick }: GameCardProps) => {
+    // Check if game has been played (either from last week or live-simmed this week)
+    const isCompleted = game.result !== null && game.result !== undefined;
+    
+    return (
+        <Card elevation={3} sx={{ 
+            mb: 2, 
+            borderLeft: isCompleted ? 
+                `5px solid ${game.result?.includes('W') ? 'green' : game.result?.includes('L') ? 'red' : 'grey'}` : 
+                '5px solid #1976d2', 
+            '&:hover': { transform: 'translateY(-3px)' },
+            transition: 'transform 0.2s',
+        }}>
+            <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold" color="text.secondary" gutterBottom>
+                    {type === 'prev' ? 'Last Week' : 'This Week'}
+                </Typography>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TeamLogo name={game.opponent.name} size={40} />
+                        <Box>
+                            <MuiLink
+                                component="button"
+                                onClick={() => onTeamClick(game.opponent.name)}
+                                sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' }}
+                            >
+                                {game.opponent.ranking > 0 ? `#${game.opponent.ranking} ` : ''}{game.opponent.name}
+                            </MuiLink>
+                            <Typography variant="body2" color="text.secondary">
+                                {game.opponent.record}
+                            </Typography>
+                        </Box>
                     </Box>
+                    
+                    {isCompleted && (
+                        <Chip 
+                            label={game.result} 
+                            color={game.result?.includes('W') ? 'success' : 'error'} 
+                            size="medium"
+                            sx={{ fontWeight: 'bold' }}
+                        />
+                    )}
                 </Box>
                 
-                {type === 'prev' && (
-                    <Chip 
-                        label={game.result} 
-                        color={game.result?.includes('W') ? 'success' : 'error'} 
-                        size="medium"
-                        sx={{ fontWeight: 'bold' }}
-                    />
-                )}
-            </Box>
-            
-            {type === 'prev' && (
-                <Box sx={{ textAlign: 'center', mb: 1 }}>
-                    <Typography variant="h5" fontWeight="bold">{game.score}</Typography>
-                </Box>
-            )}
-            
-            {type === 'curr' && (
-                <Box sx={{ mb: 2, p: 1, bgcolor: 'rgba(0,0,0,0.04)', borderRadius: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2">Spread: <strong>{game.spread}</strong></Typography>
-                        <Typography variant="body2">Moneyline: <strong>{game.moneyline}</strong></Typography>
+                {isCompleted && (
+                    <Box sx={{ textAlign: 'center', mb: 1 }}>
+                        <Typography variant="h5" fontWeight="bold">{game.score}</Typography>
                     </Box>
+                )}
+                
+                {!isCompleted && (
+                    <Box sx={{ mb: 2, p: 1, bgcolor: 'rgba(0,0,0,0.04)', borderRadius: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2">Spread: <strong>{game.spread}</strong></Typography>
+                            <Typography variant="body2">Moneyline: <strong>{game.moneyline}</strong></Typography>
+                        </Box>
+                    </Box>
+                )}
+                
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <MuiLink href={`/game/${game.id}`} sx={{ textDecoration: 'none' }}>
+                        <Button size="small" variant="outlined">
+                            {isCompleted ? 'Game Summary' : 'Game Preview'}
+                        </Button>
+                    </MuiLink>
                 </Box>
-            )}
-            
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <MuiLink href={`/game/${game.id}`} sx={{ textDecoration: 'none' }}>
-                    <Button size="small" variant="outlined">
-                        {type === 'prev' ? 'Game Summary' : 'Game Preview'}
-                    </Button>
-                </MuiLink>
-            </Box>
-        </CardContent>
-    </Card>
-);
+            </CardContent>
+        </Card>
+    );
+};
 
 // Team row with clickable team name
 const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClick }: TeamRowProps) => (

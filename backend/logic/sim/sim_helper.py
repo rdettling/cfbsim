@@ -366,15 +366,21 @@ def save_simulation_data(info, drives_to_create, plays_to_create, log=False):
     # Get all unique games being simmed
     simmed_games = {play.game for play in plays_to_create}
     
-    # Process each game's logs using the shared utility
+    # Accumulate all game logs from all games
+    all_game_logs = []
     for game in simmed_games:
-        create_game_logs_from_plays(game, info, plays_to_create)
+        game_logs = create_game_logs_from_plays(game, info, plays_to_create)
+        all_game_logs.extend(game_logs)
+    
+    # Bulk create all game logs at once
+    batch_size = 250
+    for i in range(0, len(all_game_logs), batch_size):
+        GameLog.objects.bulk_create(all_game_logs[i : i + batch_size])
     
     time_section(game_logs_start, "  • Game logs created from plays")
 
     # Phase 2: Save drives to database
     drives_start = time.time()
-    batch_size = 250  # Reduced from 1000 for better Heroku PostgreSQL performance
     for i in range(0, len(drives_to_create), batch_size):
         Drives.objects.bulk_create(drives_to_create[i : i + batch_size])
     time_section(drives_start, "  • Drives saved to database")
@@ -572,7 +578,8 @@ def update_team_records_from_game(game):
 def create_game_logs_from_plays(game, info, plays_to_create):
     """
     Create game logs from plays for a single game.
-    This is the shared logic for processing plays into game logs.
+    Returns the game log objects WITHOUT saving them to the database.
+    The caller is responsible for bulk creating the game logs.
     """
     desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
     game_log_dict = {}
@@ -645,9 +652,7 @@ def create_game_logs_from_plays(game, info, plays_to_create):
         elif play.playType == "punt":
             format_play_text(play, p_starter[0])
     
-    # Bulk create the game logs
-    GameLog.objects.bulk_create(game_logs_to_process)
-    
+    # Return the game logs WITHOUT saving to database
     return game_logs_to_process
 
 

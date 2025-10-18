@@ -15,8 +15,6 @@ from logic.sim.sim_helper import (
     process_single_game,
     update_team_records_from_game,
     create_game_logs_from_plays,
-    format_plays_for_frontend,
-    format_game_logs_for_frontend,
 )
 
 import time
@@ -734,12 +732,12 @@ def live_sim_games(request):
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
     
-    # Get all unplayed games in the current week
+    # Get all unplayed games in the current week, sorted by watchability (highest first)
     games = info.games.filter(
         year=info.currentYear,
         weekPlayed=info.currentWeek,
         winner__isnull=True
-    ).select_related('teamA', 'teamB', 'teamA__conference', 'teamB__conference')
+    ).select_related('teamA', 'teamB').order_by('-watchability')
     
     games_data = []
     for game in games:
@@ -756,7 +754,7 @@ def live_sim_games(request):
                 "record": format_record(game.teamB),
             },
             "label": game.base_label,
-            "spread": game.spreadA,
+            "watchability": game.watchability,
         })
     
     return Response({
@@ -799,36 +797,27 @@ def live_sim(request, game_id):
         "nonConfWins", "nonConfLosses"
     ])
     
-    # Create game logs using shared utility (BEFORE saving plays)
-    create_game_logs_from_plays(game, info, plays_to_create)
+    # Create game logs using shared utility (returns logs, doesn't save)
+    game_logs_to_create = create_game_logs_from_plays(game, info, plays_to_create)
     
     # Save game results to database
     Games.objects.bulk_update([game], ["headline", "scoreA", "scoreB", "winner", "resultA", "resultB", "overtime"])
     
-    # Save drives and plays to database
+    # Save drives, plays, and game logs to database
     Drives.objects.bulk_create(drives_to_create)
     Plays.objects.bulk_create(plays_to_create)
+    GameLog.objects.bulk_create(game_logs_to_create)
     
     # Query saved drives with their plays from database and serialize
     drives = game.drives.prefetch_related('plays').order_by('driveNum')
     drives_data = DrivesSerializer(drives, many=True).data
     
-    # Format game logs
-    game_logs_data = format_game_logs_for_frontend(game)
-    
     return Response({
-        "game_info": {
-            "id": game.id,
-            "teamA": TeamsSerializer(teamA).data,
-            "teamB": TeamsSerializer(teamB).data,
-        },
+        "info": InfoSerializer(info).data,
+        "game": GamesSerializer(game).data,
+        "team": TeamsSerializer(info.team).data,
         "drives": drives_data,
-        "final_result": {
-            "scoreA": game.scoreA,
-            "scoreB": game.scoreB,
-            "winner": game.winner.name,
-            "headline": game.headline,
-            "overtime": game.overtime,
-        },
-        "game_logs": game_logs_data,
+        "conferences": ConferencesSerializer(
+            info.conferences.all().order_by("confName"), many=True
+        ).data,
     })

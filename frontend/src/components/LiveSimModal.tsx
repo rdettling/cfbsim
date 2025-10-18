@@ -7,16 +7,14 @@ import {
     Button,
     IconButton,
     CircularProgress,
-    LinearProgress,
     Paper,
-    Slider,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import { TeamLogo } from './TeamComponents';
+import DriveSummary from './DriveSummary';
+import FootballField from './FootballField';
 import { apiService } from '../services/api';
 
 interface Play {
@@ -43,18 +41,29 @@ interface Drive {
     plays: Play[];
 }
 
-interface GameInfo {
+interface GameData {
     id: number;
-    teamA: any;
-    teamB: any;
-}
-
-interface FinalResult {
+    teamA: {
+        name: string;
+        record: string;
+        colorPrimary: string;
+        colorSecondary: string;
+    };
+    teamB: {
+        name: string;
+        record: string;
+        colorPrimary: string;
+        colorSecondary: string;
+    };
     scoreA: number;
     scoreB: number;
-    winner: string;
+    winner: {
+        name: string;
+    };
     headline: string;
     overtime: number;
+    weekPlayed: number;
+    year: number;
 }
 
 
@@ -69,27 +78,13 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
     const [currentPlayIndex, setCurrentPlayIndex] = useState(0);
     const [plays, setPlays] = useState<Play[]>([]);
     const [drives, setDrives] = useState<Drive[]>([]);
-    const [gameInfo, setGameInfo] = useState<GameInfo | null>(null);
-    const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
-    const [autoPlay, setAutoPlay] = useState(false);
-    const [playSpeed, setPlaySpeed] = useState(1000); // ms between plays
+    const [gameData, setGameData] = useState<GameData | null>(null);
 
     useEffect(() => {
         if (open && gameId) {
             simulateGame();
         }
     }, [open, gameId]);
-
-    useEffect(() => {
-        if (autoPlay && currentPlayIndex < plays.length - 1) {
-            const timer = setTimeout(() => {
-                setCurrentPlayIndex(prev => prev + 1);
-            }, playSpeed);
-            return () => clearTimeout(timer);
-        } else if (currentPlayIndex >= plays.length - 1) {
-            setAutoPlay(false);
-        }
-    }, [autoPlay, currentPlayIndex, plays.length, playSpeed]);
 
     const simulateGame = async () => {
         if (!gameId) return;
@@ -110,8 +105,7 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
             });
             
             setPlays(allPlays);
-            setGameInfo(response.game_info);
-            setFinalResult(response.final_result);
+            setGameData(response.game);
             setCurrentPlayIndex(0);
         } catch (error) {
             console.error('Error simulating game:', error);
@@ -121,7 +115,7 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
     };
 
     const handleNextPlay = () => {
-        if (currentPlayIndex < plays.length - 1) {
+        if (currentPlayIndex < plays.length) {
             setCurrentPlayIndex(prev => prev + 1);
         }
     };
@@ -140,7 +134,6 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                     // On last drive, jump to end of game
                     setCurrentPlayIndex(plays.length - 1);
                 }
-                setAutoPlay(false);
                 return;
             }
             playCount += drives[i].plays.length;
@@ -148,44 +141,19 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
     };
 
     const handleSimToEnd = () => {
-        setCurrentPlayIndex(plays.length - 1);
-        setAutoPlay(false);
-    };
-
-    const toggleAutoPlay = () => {
-        setAutoPlay(!autoPlay);
+        setCurrentPlayIndex(plays.length);
     };
 
     const handleClose = () => {
-        setAutoPlay(false);
         setCurrentPlayIndex(0);
         setPlays([]);
         setDrives([]);
-        setGameInfo(null);
-        setFinalResult(null);
+        setGameData(null);
         onClose();
     };
 
-    // Helper function to get completed drives up to current play
-    const getCompletedDrives = () => {
-        const completed: Drive[] = [];
-        let playCount = 0;
-        
-        for (const drive of drives) {
-            const driveEndIndex = playCount + drive.plays.length - 1;
-            // Include drive if it's completely finished OR if game is complete and we're at/past this drive
-            if (driveEndIndex < currentPlayIndex || (isGameComplete && currentPlayIndex >= playCount)) {
-                completed.push(drive);
-            } else {
-                break;
-            }
-            playCount += drive.plays.length;
-        }
-        
-        return completed;
-    };
 
-    if (!gameInfo || !finalResult) {
+    if (!gameData) {
         return (
             <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
                 <DialogContent>
@@ -197,18 +165,17 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
         );
     }
 
-    const currentPlay = plays[currentPlayIndex];
-    const progress = ((currentPlayIndex + 1) / plays.length) * 100;
-    const isGameComplete = currentPlayIndex === plays.length - 1;
+    const isGameComplete = currentPlayIndex >= plays.length;
+    const currentPlay = isGameComplete ? plays[plays.length - 1] : plays[currentPlayIndex];
 
     return (
         <Dialog 
             open={open} 
             onClose={handleClose}
-            maxWidth="lg"
+            maxWidth="xl"
             fullWidth
             PaperProps={{
-                sx: { borderRadius: 2, height: '90vh' }
+                sx: { borderRadius: 2, height: '95vh', width: '95vw' }
             }}
         >
             <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -237,134 +204,220 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                     <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', gap: 2, p: 3 }}>
                         {/* Left Column - Main Game View */}
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                            {/* Scoreboard */}
+                            {/* Combined Header */}
                             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-                                {/* Team A */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <TeamLogo name={gameInfo.teamA.name} size={60} />
-                                    <Box>
-                                        <Typography variant="h5" fontWeight="bold">
-                                            {gameInfo.teamA.name}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {gameInfo.teamA.record}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-
-                                {/* Score */}
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h2" fontWeight="bold">
-                                        {isGameComplete ? finalResult.scoreA : currentPlay.scoreA} - {isGameComplete ? finalResult.scoreB : currentPlay.scoreB}
-                                    </Typography>
-                                    {isGameComplete && finalResult.overtime > 0 && (
-                                        <Typography variant="caption" color="error.main">
-                                            {finalResult.overtime}OT
-                                        </Typography>
-                                    )}
-                                </Box>
-
-                                {/* Team B */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Box sx={{ textAlign: 'right' }}>
-                                        <Typography variant="h5" fontWeight="bold">
-                                            {gameInfo.teamB.name}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {gameInfo.teamB.record}
-                                        </Typography>
-                                    </Box>
-                                    <TeamLogo name={gameInfo.teamB.name} size={60} />
-                                </Box>
-                            </Box>
-                        </Paper>
-
-                        {/* Play Display */}
-                        <Paper elevation={2} sx={{ p: 3, mb: 3, minHeight: 150 }}>
-                            {isGameComplete ? (
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" fontWeight="bold" color="success.main" gutterBottom>
-                                        GAME COMPLETE
-                                    </Typography>
-                                    <Typography variant="h6" gutterBottom>
-                                        {finalResult.headline}
-                                    </Typography>
-                                    <Typography variant="body1" color="text.secondary" sx={{ mt: 1, fontSize: '1.25rem' }}>
-                                        {finalResult.winner} wins
-                                    </Typography>
-                                </Box>
-                            ) : (
                                 <>
-                                    <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                                        {currentPlay.header}
-                                    </Typography>
-                                    <Typography variant="h5" fontWeight="medium" sx={{ mt: 2 }}>
-                                        {currentPlay.text}
-                                    </Typography>
-                                    <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Play {currentPlayIndex + 1} of {plays.length}
-                                        </Typography>
-                                    </Box>
+                                        {/* Scoreboard */}
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', mb: 3 }}>
+                                            {/* Team A */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <TeamLogo name={gameData.teamA.name} size={60} />
+                                                <Box>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <Typography variant="h5" fontWeight="bold">
+                                                            {gameData.teamA.name}
+                                                        </Typography>
+                                                        {(() => {
+                                                            // Find the current drive to get the offense team
+                                                            let playCount = 0;
+                                                            let currentDrive = null;
+                                                            for (const drive of drives) {
+                                                                const driveEndIndex = playCount + drive.plays.length - 1;
+                                                                if (currentPlayIndex >= playCount && currentPlayIndex <= driveEndIndex) {
+                                                                    currentDrive = drive;
+                                                                    break;
+                                                                }
+                                                                playCount += drive.plays.length;
+                                                            }
+                                                            
+                                                            return currentDrive && currentDrive.offense === gameData.teamA.name ? (
+                                                                <img 
+                                                                    src="/logos/football.png" 
+                                                                    alt="Football" 
+                                                                    style={{ 
+                                                                        width: '32px', 
+                                                                        height: '32px', 
+                                                                        objectFit: 'contain'
+                                                                    }}
+                                                                />
+                                                            ) : null;
+                                                        })()}
+                                                    </Box>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {gameData.teamA.record}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+
+                                            {/* Score */}
+                                            <Box sx={{ textAlign: 'center' }}>
+                                                <Typography variant="h2" fontWeight="bold">
+                                                    {currentPlay.scoreA} - {currentPlay.scoreB}
+                                                </Typography>
+                                            </Box>
+
+                                            {/* Team B */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <Box sx={{ textAlign: 'right' }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                                                        {(() => {
+                                                            // Find the current drive to get the offense team
+                                                            let playCount = 0;
+                                                            let currentDrive = null;
+                                                            for (const drive of drives) {
+                                                                const driveEndIndex = playCount + drive.plays.length - 1;
+                                                                if (currentPlayIndex >= playCount && currentPlayIndex <= driveEndIndex) {
+                                                                    currentDrive = drive;
+                                                                    break;
+                                                                }
+                                                                playCount += drive.plays.length;
+                                                            }
+                                                            
+                                                            return currentDrive && currentDrive.offense === gameData.teamB.name ? (
+                                                                <img 
+                                                                    src="/logos/football.png" 
+                                                                    alt="Football" 
+                                                                    style={{ 
+                                                                        width: '32px', 
+                                                                        height: '32px', 
+                                                                        objectFit: 'contain'
+                                                                    }}
+                                                                />
+                                                            ) : null;
+                                                        })()}
+                                                        <Typography variant="h5" fontWeight="bold">
+                                                            {gameData.teamB.name}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {gameData.teamB.record}
+                                                    </Typography>
+                                                </Box>
+                                                <TeamLogo name={gameData.teamB.name} size={60} />
+                                            </Box>
+                                        </Box>
+
+                                        {/* Current Play Info or Final Result */}
+                                        {isGameComplete ? (
+                                            <Box sx={{ 
+                                                pt: 2, 
+                                                borderTop: '1px solid', 
+                                                borderColor: 'divider',
+                                                px: 2,
+                                                textAlign: 'center'
+                                            }}>
+                                                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                                    FINAL: {gameData.headline}
+                                                </Typography>
+                                                <Button
+                                                    variant="contained"
+                                                    href={`/game/${gameData.id}`}
+                                                    sx={{ mt: 1 }}
+                                                >
+                                                    View Game Summary
+                                                </Button>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'space-between',
+                                                gap: 3,
+                                                pt: 2, 
+                                                borderTop: '1px solid', 
+                                                borderColor: 'divider',
+                                                px: 2
+                                            }}>
+                                                {/* Down & Distance */}
+                                                <Box sx={{ flex: 1, textAlign: 'center' }}>
+                                                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
+                                                        Current Down & Distance
+                                                    </Typography>
+                                                    <Typography variant="h6" color="primary.main">
+                                                        {currentPlay.header}
+                                                    </Typography>
+                                                </Box>
+                                                
+                                                {/* Divider */}
+                                                <Box sx={{ width: '1px', height: '40px', bgcolor: 'divider' }} />
+                                                
+                                                {/* Last Play */}
+                                                <Box sx={{ flex: 2, textAlign: 'center' }}>
+                                                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
+                                                        Last Play
+                                                    </Typography>
+                                                    {currentPlayIndex > 0 ? (
+                                                        <Typography variant="h6" fontWeight="medium">
+                                                            {plays[currentPlayIndex - 1].text}
+                                                        </Typography>
+                                                    ) : (
+                                                        <Typography variant="h6" fontWeight="medium" color="text.secondary">
+                                                            Game starting...
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </Box>
+                                        )}
                                 </>
-                            )}
-                        </Paper>
+                            </Paper>
+
+                            {/* Football Field Visualization */}
+                            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                                {(() => {
+                                    // Find the current drive to get the offense team
+                                    let playCount = 0;
+                                    let currentDrive = null;
+                                    for (const drive of drives) {
+                                        const driveEndIndex = playCount + drive.plays.length - 1;
+                                        if (currentPlayIndex >= playCount && currentPlayIndex <= driveEndIndex) {
+                                            currentDrive = drive;
+                                            break;
+                                        }
+                                        playCount += drive.plays.length;
+                                    }
+                                    
+                                    if (!currentDrive) return null;
+                                    
+                                    // Get previous play yards gained (if not the first play)
+                                    const previousPlayYards = currentPlayIndex > 0 ? plays[currentPlayIndex - 1].yardsGained : undefined;
+                                    
+                                    // Determine if Team A is on offense
+                                    const isTeamAOnOffense = currentDrive.offense === gameData.teamA.name;
+                                    
+                                    // Convert yard line: if Team B has the ball, flip the field position
+                                    // startingFP is always from the perspective of the team with the ball
+                                    // But our field always has Team A going left-to-right (0 to 100)
+                                    const fieldYardLine = isTeamAOnOffense ? currentPlay.startingFP : (100 - currentPlay.startingFP);
+                                    
+                                    return (
+                                        <FootballField 
+                                            currentYardLine={fieldYardLine}
+                                            teamA={gameData.teamA.name}
+                                            teamB={gameData.teamB.name}
+                                            isTeamAOnOffense={isTeamAOnOffense}
+                                            down={currentPlay.down}
+                                            yardsToGo={currentPlay.yardsLeft}
+                                            previousPlayYards={previousPlayYards}
+                                            teamAColorPrimary={gameData.teamA.colorPrimary}
+                                            teamAColorSecondary={gameData.teamA.colorSecondary}
+                                            teamBColorPrimary={gameData.teamB.colorPrimary}
+                                            teamBColorSecondary={gameData.teamB.colorSecondary}
+                                        />
+                                    );
+                                })()}
+                            </Paper>
 
                         </Box>
 
                         {/* Right Column - Drive Summary */}
                         <Box sx={{ width: 280, minWidth: 280 }}>
-                            <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                                    Drive Summary
-                                </Typography>
-                                <Box sx={{ flex: 1, overflow: 'auto' }}>
-                                    {getCompletedDrives().length === 0 ? (
-                                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 2 }}>
-                                            No completed drives yet
-                                        </Typography>
-                                    ) : (
-                                        getCompletedDrives().map((drive, idx) => (
-                                            <Box 
-                                                key={idx}
-                                                sx={{ 
-                                                    mb: 1.5, 
-                                                    p: 1.5, 
-                                                    border: '1px solid',
-                                                    borderColor: 'divider',
-                                                    borderRadius: 1,
-                                                    '&:hover': { bgcolor: 'action.hover' }
-                                                }}
-                                            >
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                                                    <Typography variant="caption" fontWeight="bold">
-                                                        Drive #{drive.driveNum + 1}
-                                                    </Typography>
-                                                    <Typography 
-                                                        variant="caption" 
-                                                        sx={{ 
-                                                            fontWeight: 'bold',
-                                                            color: drive.points > 0 ? 'success.main' : 'text.secondary'
-                                                        }}
-                                                    >
-                                                        {drive.points > 0 ? `+${drive.points}` : '0'} pts
-                                                    </Typography>
-                                                </Box>
-                                                <Typography variant="caption" color="text.secondary" display="block">
-                                                    {drive.offense}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary" display="block">
-                                                    {drive.result}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {drive.plays.length} plays
-                                                </Typography>
-                                            </Box>
-                                        ))
-                                    )}
-                                </Box>
-                            </Paper>
+                            <DriveSummary 
+                                drives={drives}
+                                currentPlayIndex={currentPlayIndex}
+                                totalPlays={plays.length}
+                                isGameComplete={isGameComplete}
+                                variant="modal"
+                            />
                         </Box>
                     </Box>
                 )}
@@ -377,37 +430,13 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                         p: 2,
                         backgroundColor: 'background.paper'
                     }}>
-                        {/* Progress bar */}
-                        <Box sx={{ mb: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="caption" color="text.secondary">
-                                    Play {currentPlayIndex + 1} of {plays.length}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {Math.round(progress)}%
-                                </Typography>
-                            </Box>
-                            <LinearProgress variant="determinate" value={progress} />
-                        </Box>
-
                         {/* Control buttons */}
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                             <Button
-                                onClick={toggleAutoPlay}
-                                variant="contained"
-                                color={autoPlay ? "error" : "success"}
-                                startIcon={autoPlay ? <PauseIcon /> : <PlayArrowIcon />}
-                                disabled={isGameComplete}
-                                size="large"
-                            >
-                                {autoPlay ? 'Pause' : 'Auto Play'}
-                            </Button>
-
-                            <Button
                                 onClick={handleNextPlay}
-                                disabled={currentPlayIndex >= plays.length - 1}
+                                disabled={isGameComplete}
                                 endIcon={<SkipNextIcon />}
-                                variant="outlined"
+                                variant="contained"
                                 size="large"
                             >
                                 Next Play
@@ -432,29 +461,6 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                                 Sim to End
                             </Button>
                         </Box>
-
-                        {/* Speed slider */}
-                        {!isGameComplete && (
-                            <Box sx={{ mt: 2, px: 4 }}>
-                                <Typography variant="caption" color="text.secondary" gutterBottom>
-                                    Auto-play Speed
-                                </Typography>
-                                <Slider
-                                    value={playSpeed}
-                                    onChange={(_, value) => setPlaySpeed(value as number)}
-                                    min={100}
-                                    max={2000}
-                                    step={100}
-                                    marks={[
-                                        { value: 100, label: 'Fast' },
-                                        { value: 1000, label: 'Normal' },
-                                        { value: 2000, label: 'Slow' }
-                                    ]}
-                                    valueLabelDisplay="auto"
-                                    valueLabelFormat={(value) => `${value}ms`}
-                                />
-                            </Box>
-                        )}
                     </Box>
                 )}
             </DialogContent>

@@ -28,7 +28,7 @@ interface Game {
         record: string;
     };
     label: string;
-    spread: string;
+    watchability: number;
 }
 
 interface GameSelectionModalProps {
@@ -86,9 +86,9 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                 borderColor: 'divider',
                 pb: 2
             }}>
-                <Typography variant="h5" fontWeight="bold">
+                <Box component="span" sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                     Select Game to Simulate - Week {week}
-                </Typography>
+                </Box>
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -168,10 +168,11 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                                             </Typography>
                                             <Typography 
                                                 variant="caption" 
-                                                color="text.secondary"
+                                                color="success.main"
+                                                fontWeight="bold"
                                                 sx={{ mt: 0.5 }}
                                             >
-                                                {game.spread}
+                                                {game.watchability}
                                             </Typography>
                                         </Box>
 

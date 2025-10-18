@@ -86,6 +86,7 @@ class DrivesSerializer(serializers.ModelSerializer):
     plays = PlaysSerializer(many=True, read_only=True)
     offense = serializers.CharField(source='offense.name', read_only=True)
     defense = serializers.CharField(source='defense.name', read_only=True)
+    yards = serializers.SerializerMethodField()
     
     class Meta:
         model = Drives
@@ -96,10 +97,15 @@ class DrivesSerializer(serializers.ModelSerializer):
             'startingFP',
             'result',
             'points',
+            'yards',
             'plays',
             'scoreAAfter',
             'scoreBAfter'
         ]
+    
+    def get_yards(self, obj):
+        """Calculate total yards gained for this drive"""
+        return sum(play.yardsGained for play in obj.plays.all())
 
 
 class GameLogSerializer(serializers.ModelSerializer):
@@ -133,9 +139,14 @@ class OddsSerializer(serializers.ModelSerializer):
 
 
 class TeamNameSerializer(serializers.ModelSerializer):
+    record = serializers.SerializerMethodField()
+    
     class Meta:
         model = Teams
-        fields = ["name"]
+        fields = ["name", "record", "colorPrimary", "colorSecondary"]
+    
+    def get_record(self, obj):
+        return format_record(obj)
 
 
 class InfoSerializer(serializers.ModelSerializer):

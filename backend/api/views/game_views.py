@@ -225,18 +225,8 @@ def game_result(info, game):
             }
             categorized_game_log_strings["Kicking"].append(k_game_log_dict)
 
-    # Process drives data
-    drives_data = []
-    for drive in drives:
-        drives_data.append(
-            {
-                "offense": drive.offense.name,
-                "result": drive.result,
-                "points": drive.points,
-                "scoreAAfter": drive.scoreAAfter,
-                "scoreBAfter": drive.scoreBAfter,
-            }
-        )
+    # Serialize drives with nested plays
+    drives_data = DrivesSerializer(drives.order_by('driveNum'), many=True).data
 
     # Sort rushing and receiving game logs by yards (descending)
     categorized_game_log_strings["Rushing"].sort(key=lambda x: x["yards"], reverse=True)
