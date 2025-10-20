@@ -18,6 +18,7 @@ import {
     Link as MuiLink,
 } from '@mui/material';
 import { TeamLogo, TeamLink, TeamInfoModal } from './TeamComponents';
+import DriveSummary from './DriveSummary';
 import { GamePreviewData } from '../interfaces';
 
 interface GameResultProps {
@@ -77,46 +78,6 @@ const TeamHeader = ({
     </Box>
 );
 
-// Helper component for drive summary
-const DriveSummary = ({ drives }: { drives: any[] }) => (
-    <Card elevation={2} sx={{ height: '100%' }}>
-        <CardContent>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                Drive Summary
-            </Typography>
-            <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
-                {drives.map((drive, index) => (
-                    <Box key={index} sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <TeamLogo name={drive.offense} size={20} />
-                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                    {drive.offense}
-                                </Typography>
-                            </Box>
-                            <Typography variant="body2" color="text.secondary">
-                                {drive.result.split(' ').map((word: string) => 
-                                    word.charAt(0).toUpperCase() + word.slice(1)
-                                ).join(' ')}
-                            </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                            <Typography variant="body2" sx={{ 
-                                fontWeight: 'bold', 
-                                color: drive.points > 0 ? 'success.main' : 'text.secondary' 
-                            }}>
-                                {drive.points > 0 ? `+${drive.points} pts` : 'No score'}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {drive.scoreAAfter}-{drive.scoreBAfter}
-                            </Typography>
-                        </Box>
-                    </Box>
-                ))}
-            </Box>
-        </CardContent>
-    </Card>
-);
 
 // Helper component for team statistics
 const TeamStatistics = ({ 
@@ -302,7 +263,10 @@ const GameResult = ({ data }: GameResultProps) => {
                 {/* Drives Summary */}
                 {drives.length > 0 && (
                     <Grid item xs={12} md={6}>
-                        <DriveSummary drives={drives} />
+                        <DriveSummary 
+                            drives={drives}
+                            variant="page"
+                        />
                     </Grid>
                 )}
 

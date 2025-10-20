@@ -187,6 +187,12 @@ export const apiService = {
     getRecruitingSummary: <T>() => 
         request<T>('get', '/api/recruiting_summary/'),
     
+    // Live sim
+    getLiveSimGames: <T>() => 
+        request<T>('get', '/api/live-sim-games/'),
+    liveSimGame: <T>(gameId: number) => 
+        request<T>('post', `/api/game/${gameId}/live-sim/`),
+    
     // Generic request function for custom endpoints
     get: <T>(endpoint: string, params?: Record<string, any>) => 
         request<T>('get', endpoint, { params }),

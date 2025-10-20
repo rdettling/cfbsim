@@ -62,16 +62,50 @@ class PlayersSerializer(serializers.ModelSerializer):
         return obj.team.name if obj.team else None
 
 
-class DrivesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Drives
-        fields = "__all__"
-
-
 class PlaysSerializer(serializers.ModelSerializer):
+    """Serializer for individual plays"""
     class Meta:
         model = Plays
-        fields = "__all__"
+        fields = [
+            'id',
+            'down',
+            'yardsLeft',
+            'startingFP',
+            'playType',
+            'yardsGained',
+            'result',
+            'text',
+            'header',
+            'scoreA',
+            'scoreB',
+        ]
+
+
+class DrivesSerializer(serializers.ModelSerializer):
+    """Serializer for drives with nested plays"""
+    plays = PlaysSerializer(many=True, read_only=True)
+    offense = serializers.CharField(source='offense.name', read_only=True)
+    defense = serializers.CharField(source='defense.name', read_only=True)
+    yards = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Drives
+        fields = [
+            'driveNum',
+            'offense',
+            'defense',
+            'startingFP',
+            'result',
+            'points',
+            'yards',
+            'plays',
+            'scoreAAfter',
+            'scoreBAfter'
+        ]
+    
+    def get_yards(self, obj):
+        """Calculate total yards gained for this drive"""
+        return sum(play.yardsGained for play in obj.plays.all())
 
 
 class GameLogSerializer(serializers.ModelSerializer):
@@ -105,9 +139,14 @@ class OddsSerializer(serializers.ModelSerializer):
 
 
 class TeamNameSerializer(serializers.ModelSerializer):
+    record = serializers.SerializerMethodField()
+    
     class Meta:
         model = Teams
-        fields = ["name"]
+        fields = ["name", "record", "colorPrimary", "colorSecondary"]
+    
+    def get_record(self, obj):
+        return format_record(obj)
 
 
 class InfoSerializer(serializers.ModelSerializer):

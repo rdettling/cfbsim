@@ -76,6 +76,12 @@ def dashboard(request):
 
     last_game = get_last_game(info, team)
     next_game = get_next_game(info, team)
+    
+    # Check if the current week game has been played (via live sim or regular sim)
+    # If so, treat it as the "last game" and clear "next game"
+    if next_game and next_game.get('winner'):
+        last_game = next_game
+        next_game = None
 
     # Get conference teams or independent teams based on team's status
     if team.conference:
