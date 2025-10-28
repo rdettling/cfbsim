@@ -44,6 +44,7 @@ export interface GameData {
         name: string;
     };
     headline: string;
+    base_label: string;
     overtime: number;
     weekPlayed: number;
     year: number;

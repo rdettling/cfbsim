@@ -57,7 +57,7 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
     // Calculate previous play zone - flip based on offense team
     const previousPlayZone = previousPlayYards && previousPlayYards !== 0 ? {
         left: Math.min(
-            yardToPixels(Math.max(0, Math.min(100, displayYardLine - previousPlayYards))),
+            yardToPixels(Math.max(0, Math.min(100, displayYardLine - previousPlayYards * (isTeamAOnOffense ? 1 : -1)))),
             ballPosition
         ),
         width: Math.abs(previousPlayYards * PIXELS_PER_YARD),

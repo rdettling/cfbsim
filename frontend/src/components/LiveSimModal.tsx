@@ -3,7 +3,9 @@ import {
     DialogContent,
     Box,
     CircularProgress,
+    IconButton,
 } from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
 import DriveSummary from "./DriveSummary";
 import FootballField from "./FootballField";
 import GameHeader from "./GameHeader";
@@ -272,10 +274,27 @@ const LiveSimModal = ({
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
-            <DialogContent sx={{ p: 0, minHeight: "80vh" }}>
-                <Box sx={{ display: "flex", height: "100%" }}>
+            <DialogContent sx={{ p: 0, height: "80vh", maxHeight: "80vh", position: 'relative' }}>
+                {/* Close Button */}
+                <IconButton
+                    onClick={handleClose}
+                    sx={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        zIndex: 10,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 1)',
+                        }
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
+                
+                <Box sx={{ display: "flex", height: "100%", overflow: "hidden" }}>
                         {/* Left side - Main content */}
-                        <Box sx={{ flex: 1, p: 3 }}>
+                        <Box sx={{ flex: 1, p: 3, overflowY: 'auto' }}>
 
                         {/* Game Header */}
                         <GameHeader
@@ -285,17 +304,7 @@ const LiveSimModal = ({
                             plays={plays}
                             isPlaybackComplete={isPlaybackComplete}
                             lastPlayText={getLastPlayText()}
-                        />
-
-                        {/* Game Controls */}
-                        <GameControls
-                            isInteractive={false}
-                            isGameComplete={isGameComplete}
-                            isPlaybackComplete={isPlaybackComplete}
-                            startInteractiveSimulation={() => {}}
-                            handleNextPlay={handleNextPlay}
-                            handleNextDrive={handleNextDrive}
-                            handleSimToEnd={handleSimToEnd}
+                            currentDrive={currentDrive}
                         />
 
                         {/* Football Field */}
@@ -314,6 +323,17 @@ const LiveSimModal = ({
                                         teamBColorSecondary={gameData.teamB.colorSecondary}
                                     />
                         </Box>
+
+                        {/* Game Controls */}
+                        <GameControls
+                            isInteractive={false}
+                            isGameComplete={isGameComplete}
+                            isPlaybackComplete={isPlaybackComplete}
+                            startInteractiveSimulation={() => {}}
+                            handleNextPlay={handleNextPlay}
+                            handleNextDrive={handleNextDrive}
+                            handleSimToEnd={handleSimToEnd}
+                        />
                         </Box>
 
                     {/* Right side - Drive Summary */}
@@ -324,14 +344,38 @@ const LiveSimModal = ({
                             borderLeft: "1px solid",
                             borderColor: "divider",
                             p: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: '100%',
+                            overflow: 'hidden'
                         }}
                     >
+                        <Box sx={{ 
+                            flex: 1, 
+                            overflowY: 'auto',
+                            pr: 1,
+                            '&::-webkit-scrollbar': {
+                                width: '6px',
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                background: 'rgba(0,0,0,0.1)',
+                                borderRadius: '3px',
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                background: 'rgba(0,0,0,0.3)',
+                                borderRadius: '3px',
+                            },
+                            '&::-webkit-scrollbar-thumb:hover': {
+                                background: 'rgba(0,0,0,0.5)',
+                            }
+                        }}>
                             <DriveSummary 
-                            drives={drives as any}
+                                drives={drives as any}
                                 currentPlayIndex={currentPlayIndex}
                                 variant="modal"
                             />
                         </Box>
+                    </Box>
                     </Box>
             </DialogContent>
         </Dialog>
