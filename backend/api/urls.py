@@ -5,9 +5,14 @@ from .views.season_views import (
     rankings,
     standings,
     playoff,
-    sim,
+    advance_week,
     live_sim,
-    live_sim_games,
+    get_games_to_live_sim,
+)
+from .views.interactive_views import (
+    start_interactive_sim,
+    submit_decision,
+    exit_interactive_sim,
 )
 from .views.stages_views import (
     season_summary,
@@ -38,10 +43,12 @@ urlpatterns = [
     path("stats/team/", team_stats),
     path("stats/individual/", individual_stats),
     path("stats/ratings/", ratings_stats),
-    path("sim/<int:dest_week>/", sim),
-    path("live-sim-games/", live_sim_games),
+    path("sim/<int:dest_week>/", advance_week),
+    path("live-sim-games/", get_games_to_live_sim),
     path("game/<int:game_id>/live-sim/", live_sim),
-    # path("fetch_play/", views.fetch_play, name="fetch_play"),
+    path("game/<int:game_id>/start-interactive-sim/", start_interactive_sim),
+    path("game/<int:game_id>/submit-decision/", submit_decision),
+    path("game/<int:game_id>/exit-interactive-sim/", exit_interactive_sim),
     path("roster_progression/", roster_progression),
     path("recruiting_summary/", recruiting_summary),
     path("summary/", season_summary),

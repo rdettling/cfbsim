@@ -76,10 +76,10 @@ def dashboard(request):
 
     last_game = get_last_game(info, team)
     next_game = get_next_game(info, team)
-    
+
     # Check if the current week game has been played (via live sim or regular sim)
     # If so, treat it as the "last game" and clear "next game"
-    if next_game and next_game.get('winner'):
+    if next_game and next_game.get("winner"):
         last_game = next_game
         next_game = None
 
@@ -99,14 +99,13 @@ def dashboard(request):
     top_games = []
     if info.currentWeek > 1:
         last_week_games = info.games.filter(
-            year=info.currentYear, 
+            year=info.currentYear,
             weekPlayed=info.currentWeek - 1,
-            winner__isnull=False  # Only completed games
-        ).order_by('-watchability')[:10]
-        
+            winner__isnull=False,  # Only completed games
+        ).order_by("-watchability")[:10]
+
         top_games = [
-            {"id": game.id, "headline": game.headline}
-            for game in last_week_games
+            {"id": game.id, "headline": game.headline} for game in last_week_games
         ]
 
     return Response(

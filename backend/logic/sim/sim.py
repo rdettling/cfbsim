@@ -3,30 +3,6 @@ from api.models import *
 from ..constants.sim_constants import *
 
 
-class Drive:
-    def __init__(self, game, offense, defense, fieldPosition, i, needed):
-        self.game = game
-        self.offense = offense
-        self.defense = defense
-        self.startingFP = fieldPosition
-        self.driveNum = i
-        self.result = None
-        self.points = 0
-        self.points_needed = needed
-        self.scoreAAfter = game.scoreA
-        self.scoreBAfter = game.scoreB
-
-
-class Play:
-    def __init__(self, game, drive, offense, defense, fieldPosition, down):
-        game = game
-        drive = drive
-        offense = offense
-        defense = defense
-        startingFP = fieldPosition
-        down = down
-
-
 def simPass(fieldPosition, offense, defense):
     """
     Simulate a pass play with outcome and yardage.
@@ -145,171 +121,200 @@ def runYards(offense, defense):
         return min(rounded_yards, 99)
 
 
+def format_play_text(play, starters):
+    rb_starters = starters.get((play.offense, "rb"), [])
+    qb_starters = starters.get((play.offense, "qb"), [])
+    wr_starters = starters.get((play.offense, "wr"), [])
+    te_starters = starters.get((play.offense, "te"), [])
+    k_starters = starters.get((play.offense, "k"), [])
+    p_starters = starters.get((play.offense, "p"), [])
+
+    if play.playType == "run":
+        runner = random.choice(rb_starters)
+        if play.result == "fumble":
+            play.text = f"{runner.first} {runner.last} fumbled"
+        elif play.result == "touchdown":
+            play.text = f"{runner.first} {runner.last} ran {play.yardsGained} yards for a touchdown"
+        else:
+            play.text = f"{runner.first} {runner.last} ran for {play.yardsGained} yards"
+
+    elif play.playType == "pass":
+        qb = qb_starters[0]
+
+        if play.result == "sack":
+            play.text = f"{qb.first} {qb.last} was sacked for a loss of {abs(play.yardsGained)} yards"
+        elif play.result == "interception":
+            play.text = f"{qb.first} {qb.last}'s pass was intercepted"
+        elif play.result == "incomplete pass":
+            play.text = f"{qb.first} {qb.last}'s pass was incomplete"
+        else:
+            # Complete pass or touchdown - need receiver
+            candidates = wr_starters + te_starters + rb_starters
+            receiver = choose_receiver(candidates)
+
+            if play.result == "touchdown":
+                play.text = f"{qb.first} {qb.last} pass complete to {receiver.first} {receiver.last} for {play.yardsGained} yards for a touchdown"
+            else:
+                play.text = f"{qb.first} {qb.last} pass complete to {receiver.first} {receiver.last} for {play.yardsGained} yards"
+
+    elif play.playType == "field goal":
+        kicker = k_starters[0]
+        kicker_name = f"{kicker.first} {kicker.last}"
+        distance = 100 - play.startingFP + 17
+
+        if play.result == "made field goal":
+            play.text = (
+                f"{kicker.first} {kicker.last}'s {distance} yard field goal is good"
+            )
+        else:
+            play.text = (
+                f"{kicker.first} {kicker.last}'s {distance} yard field goal is no good"
+            )
+
+    elif play.playType == "punt":
+        punter = p_starters[0]
+        play.text = f"{punter.first} {punter.last} punted"
+
+
 def simDrive(
-    game, fieldPosition, lead, offense, defense, driveNum, info, plays_to_create
+    game,
+    fieldPosition,
+    lead,
+    offense,
+    defense,
+    driveNum,
+    info,
+    plays_to_create=None,
+    starters=None,
 ):
-    """
-    Simulate a single drive in a football game.
-
-    Args:
-        game: The game object
-        fieldPosition: Starting field position (yards from own goal line)
-        lead: Current score lead/deficit for the offensive team
-        offense: Team on offense
-        defense: Team on defense
-        driveNum: Drive number in the game
-        info: Optional info object for database operations
-        plays_to_create: List to collect play objects for bulk creation
-
-    Returns:
-        tuple: (drive object, new field position for next drive)
-    """
     # Calculate drive number and points needed
     drive_index = driveNum // 2 if driveNum % 2 == 0 else (driveNum - 1) // 2
     needed = points_needed(lead, drive_index)
 
-    # Create drive object
-    if info:
-        drive = Drives(
-            info=info,
-            game=game,
-            driveNum=driveNum,
-            offense=offense,
-            defense=defense,
-            startingFP=fieldPosition,
-            result=None,
-            points=0,
-            points_needed=needed,
-            scoreAAfter=game.scoreA,
-            scoreBAfter=game.scoreB,
-        )
-    else:
-        drive = Drive(game, offense, defense, fieldPosition, driveNum, needed)
+    drive = Drives(
+        info=info,
+        game=game,
+        driveNum=driveNum,
+        offense=offense,
+        defense=defense,
+        startingFP=fieldPosition,
+        result=None,
+        points=0,
+        points_needed=needed,
+        scoreAAfter=game.scoreA,
+        scoreBAfter=game.scoreB,
+    )
 
     # Simulate plays until drive ends
     while not drive.result:
         for down in range(1, 5):
-            # Create play object
-            if info:
-                play = Plays(
-                    info=info,
-                    game=game,
-                    drive=drive,
-                    offense=offense,
-                    defense=defense,
-                    startingFP=fieldPosition,
-                    down=down,
-                    scoreA=game.scoreA,
-                    scoreB=game.scoreB,
-                )
-            else:
-                play = Play(game, drive, offense, defense, fieldPosition, down)
+            # Create play object (always use Django model, even for fake games)
+            play = Plays(
+                info=info,
+                game=game,
+                drive=drive,
+                offense=offense,
+                defense=defense,
+                startingFP=fieldPosition,
+                down=down,
+                scoreA=game.scoreA,
+                scoreB=game.scoreB,
+            )
 
             # Set yards needed for first down
             if down == 1:
                 yardsLeft = 100 - fieldPosition if fieldPosition >= 90 else 10
+
             play.yardsLeft = yardsLeft
+
+            # Set play header only for database Play objects (not in-memory Play class)
+            if info:
+                set_play_header(play)
 
             # Handle 4th down decisions
             if down == 4:
                 decision = fourthDown(fieldPosition, yardsLeft, needed)
 
-                # Field goal attempt
-                if decision == "field goal":
+                if decision == "field_goal":
                     play.playType = "field goal"
                     play.yardsGained = 0
 
                     if fieldGoal(100 - fieldPosition):
                         play.result = "made field goal"
-                        if info:
-                            plays_to_create.append(play)
-
-                        drive.result = "field goal"
+                        drive.result = "made field goal"
                         drive.points = 3
-                        update_score_after(game, drive)
-                        return drive, 20
+                        update_drive_score_after(game, drive)
                     else:
                         play.result = "missed field goal"
-                        if info:
-                            plays_to_create.append(play)
-
                         drive.result = "missed field goal"
-                        return drive, 100 - fieldPosition
+                        drive.points = 0
+                    
+                    # Format play text if starters are available
+                    if starters and info:
+                        format_play_text(play, starters)
+                    
+                    plays_to_create.append(play)
+                    return drive, 20 if play.result == "made field goal" else 100 - fieldPosition
 
-                # Punt
                 elif decision == "punt":
                     play.playType = "punt"
-                    play.yardsGained = 0
                     play.result = "punt"
-                    if info:
-                        plays_to_create.append(play)
-
+                    play.yardsGained = 0
                     drive.result = "punt"
+                    drive.points = 0
+                    
+                    # Format play text if starters are available
+                    if starters and info:
+                        format_play_text(play, starters)
+                    
+                    plays_to_create.append(play)
                     return drive, 100 - (fieldPosition + 40)
 
-            # Simulate offensive play (pass or run)
-            is_pass_play = random.random() < BASE_PASS_FREQ
-
-            if is_pass_play:
-                # Pass play
-                result = simPass(fieldPosition, offense, defense)
-                play.playType = "pass"
-
-                # Handle interception
-                if result["outcome"] == "interception":
-                    play.yardsGained = 0
-                    play.result = "interception"
-                    if info:
-                        plays_to_create.append(play)
-
-                    drive.result = "interception"
-                    return drive, 100 - fieldPosition
-            else:
-                # Run play
-                result = simRun(fieldPosition, offense, defense)
+            if random.random() < 0.5:
                 play.playType = "run"
+                result = simRun(fieldPosition, offense, defense)
+            else:
+                play.playType = "pass"
+                result = simPass(fieldPosition, offense, defense)
 
-                # Handle fumble
-                if result["outcome"] == "fumble":
-                    play.yardsGained = 0
-                    play.result = "fumble"
-                    if info:
-                        plays_to_create.append(play)
+            play.yardsGained = result["yards"]
+            play.result = result["outcome"]
+            fieldPosition += result["yards"]
+            yardsLeft -= result["yards"]
 
-                    drive.result = "fumble"
-                    return drive, 100 - fieldPosition
+            # Format play text if starters are available
+            if starters and info:
+                format_play_text(play, starters)
+
+            plays_to_create.append(play)
 
             # Update play and field position
-            yardsGained = result["yards"]
-            play.yardsGained = yardsGained
-            play.result = result["outcome"]
-
-            # Update field position and yards left
-            fieldPosition += yardsGained
-            yardsLeft -= yardsGained
-
-            # Add play to database
-            if info:
-                plays_to_create.append(play)
-
-            # Handle play outcomes
             if result["outcome"] == "touchdown":
                 drive.result = "touchdown"
                 drive.points = 7
-                update_score_after(game, drive)
+                update_drive_score_after(game, drive)
                 return drive, 20
+            elif result["outcome"] == "interception":
+                drive.result = "interception"
+                return drive, 100 - fieldPosition
+            elif result["outcome"] == "fumble":
+                drive.result = "fumble"
+                return drive, 100 - fieldPosition
             elif fieldPosition < 1:
                 drive.result = "safety"
                 drive.points = 0
-                update_score_after(game, drive)
+                update_drive_score_after(game, drive)
                 return drive, 20
-            elif down == 4 and yardsLeft > 0:
+            elif down == 4 and play.yardsLeft > 0:
                 drive.result = "turnover on downs"
                 return drive, 100 - fieldPosition
-
-            # Check if first down achieved
+            
+            # Check for first down - if yardsLeft <= 0, reset to 1st down
             if yardsLeft <= 0:
-                break  # Reset downs
+                # First down achieved, reset to 1st down and recalculate yardsLeft
+                down = 0  # Will become 1 in next iteration
+                yardsLeft = 100 - fieldPosition if fieldPosition >= 90 else 10
+                break  # Exit the down loop to start fresh with 1st down
 
 
 def fourthDown(fieldPosition, yardsLeft, needed):
@@ -346,15 +351,17 @@ def fourthDown(fieldPosition, yardsLeft, needed):
             return "field goal"
 
 
-def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
+def simGame(
+    game, info=None, drives_to_create=None, plays_to_create=None, starters=None
+):
     """
     Simulate a complete football game including regular time and overtime if needed.
 
     Args:
         game: The game object to simulate
-        info: Optional info object for database operations
-        drives_to_create: List to collect drive objects for bulk creation
-        plays_to_create: List to collect play objects for bulk creation
+        info: Optional info object for database operations (if None, fake game)
+        drives_to_create: List to collect drive objects for bulk creation (if None, fake game)
+        plays_to_create: List to collect play objects for bulk creation (if None, fake game)
     """
     # Reset game score
     game.scoreA = game.scoreB = 0
@@ -363,14 +370,14 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
     # Simulate regular time drives
     for i in range(total_drives):
         # Determine offense and defense for this drive
-        is_team_a_offense = i % 2 == 0
-        offense = game.teamA if is_team_a_offense else game.teamB
-        defense = game.teamB if is_team_a_offense else game.teamA
-        lead = (
-            game.scoreA - game.scoreB
-            if is_team_a_offense
-            else game.scoreB - game.scoreA
-        )
+        if i % 2 == 0:
+            offense = game.teamA
+            defense = game.teamB
+            lead = game.scoreA - game.scoreB
+        else:
+            offense = game.teamB
+            defense = game.teamA
+            lead = game.scoreB - game.scoreA
 
         # Set starting field position for first drive of each half
         if i == 0 or i == DRIVES_PER_TEAM:
@@ -378,20 +385,28 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
 
         # Simulate the drive
         drive, fieldPosition = simDrive(
-            game, fieldPosition, lead, offense, defense, i, info, plays_to_create
+            game,
+            fieldPosition,
+            lead,
+            offense,
+            defense,
+            i,
+            info,
+            plays_to_create,
+            starters,
         )
 
         # Update game score
         game.scoreA = drive.scoreAAfter
         game.scoreB = drive.scoreBAfter
 
-        # Store drive for database creation
+        # Store drive for database creation (only for real games)
         if info and drives_to_create is not None:
             drives_to_create.append(drive)
 
     # Simulate overtime if needed
     if game.scoreA == game.scoreB:
-        overtime(game, info, drives_to_create, plays_to_create)
+        overtime(game, info, drives_to_create, plays_to_create, starters)
 
     # Set the winner without updating team records
     if game.scoreA > game.scoreB:
@@ -402,7 +417,7 @@ def simGame(game, info=None, drives_to_create=None, plays_to_create=None):
         game.resultA, game.resultB = "L", "W"
 
 
-def overtime(game, info=None, drives_to_create=None, plays_to_create=None):
+def overtime(game, info=None, drives_to_create=None, plays_to_create=None, starters=None):
     """
     Simulate overtime periods until a winner is determined.
 
@@ -440,13 +455,14 @@ def overtime(game, info=None, drives_to_create=None, plays_to_create=None):
                 drive_num,
                 info,
                 plays_to_create,
+                starters,
             )
 
             # Update game score
             game.scoreA = drive.scoreAAfter
             game.scoreB = drive.scoreBAfter
 
-            # Store drive for database creation
+            # Store drive for database creation (only for real games)
             if info and drives_to_create is not None:
                 drives_to_create.append(drive)
 
@@ -507,7 +523,7 @@ def points_needed(lead, driveNum):
     return 9  # Indicates the game is out of reach
 
 
-def update_score_after(game, drive):
+def update_drive_score_after(game, drive):
     if not drive.result == "safety":
         if drive.offense == game.teamA:
             drive.scoreAAfter += drive.points
@@ -518,3 +534,140 @@ def update_score_after(game, drive):
             drive.scoreBAfter += 2
         else:
             drive.scoreAAfter += 2
+
+
+def set_play_header(play):
+    """Set play header during simulation"""
+    if play.startingFP < 50:
+        location = f"{play.offense.abbreviation} {play.startingFP}"
+    elif play.startingFP > 50:
+        location = f"{play.defense.abbreviation} {100 - play.startingFP}"
+    else:
+        location = f"{play.startingFP}"
+
+    if play.startingFP + play.yardsLeft >= 100:
+        if play.down == 1:
+            play.header = f"{play.down}st and goal at {location}"
+        elif play.down == 2:
+            play.header = f"{play.down}nd and goal at {location}"
+        elif play.down == 3:
+            play.header = f"{play.down}rd and goal at {location}"
+        elif play.down == 4:
+            play.header = f"{play.down}th and goal at {location}"
+    else:
+        if play.down == 1:
+            play.header = f"{play.down}st and {play.yardsLeft} at {location}"
+        elif play.down == 2:
+            play.header = f"{play.down}nd and {play.yardsLeft} at {location}"
+        elif play.down == 3:
+            play.header = f"{play.down}rd and {play.yardsLeft} at {location}"
+        elif play.down == 4:
+            play.header = f"{play.down}th and {play.yardsLeft} at {location}"
+
+
+def choose_receiver(candidates, rating_exponent=4):
+    """Choose a receiver with improved performance."""
+    if not candidates:
+        return None
+
+    # Use pre-computed position bias values
+    pos_bias = {"wr": 1.4, "te": 1.0, "rb": 0.6}
+
+    # Calculate weighted chances directly
+    chances = []
+    total_chance = 0
+
+    for candidate in candidates:
+        # Use faster power calculation
+        weighted_rating = candidate.rating**rating_exponent
+        chance = weighted_rating * pos_bias.get(candidate.pos.lower(), 1.0)
+        chances.append(chance)
+        total_chance += chance
+
+    # Avoid division by zero
+    if total_chance == 0:
+        return random.choice(candidates)
+
+    # Normalize chances
+    normalized_chances = [chance / total_chance for chance in chances]
+
+    # Use random.choices for weighted selection
+    return random.choices(candidates, weights=normalized_chances, k=1)[0]
+
+
+def generatePlaysBank(game, info, starters_cache, num_plays=100):
+    """
+    Generate a bank of pre-simulated plays for interactive simulation.
+    Only includes core play data - frontend will fill in contextual info.
+    
+    Args:
+        game: Game object
+        info: Info object
+        starters_cache: Cached starters for player names
+        num_plays: Number of plays to generate per team per play type
+    
+    Returns:
+        dict: {
+            'teamA': {
+                'run': [{'playType': 'run', 'yardsGained': 5, 'result': 'run'}, ...],
+                'pass': [{'playType': 'pass', 'yardsGained': 12, 'result': 'pass'}, ...],
+                'punt': [{'playType': 'punt', 'yardsGained': 0, 'result': 'punt'}, ...],
+                'field_goal': [{'playType': 'field_goal', 'yardsGained': 0, 'result': 'made field goal'}, ...]
+            },
+            'teamB': {...}
+        }
+    """
+    plays_bank = {
+        'teamA': {'run': [], 'pass': [], 'punt': [], 'field_goal': []},
+        'teamB': {'run': [], 'pass': [], 'punt': [], 'field_goal': []}
+    }
+    
+    teams = [game.teamA, game.teamB]
+    team_keys = ['teamA', 'teamB']
+    
+    for i, (team, team_key) in enumerate(zip(teams, team_keys)):
+        defense = game.teamB if team == game.teamA else game.teamA
+        
+        # Generate run plays
+        for _ in range(num_plays):
+            # Simulate at various field positions to get realistic outcomes
+            field_pos = random.choice([20, 30, 40, 50, 60, 70, 80, 90])
+            result = simRun(field_pos, team, defense)
+            
+            plays_bank[team_key]['run'].append({
+                'playType': 'run',
+                'yardsGained': result["yards"],
+                'result': result["outcome"]
+            })
+        
+        # Generate pass plays
+        for _ in range(num_plays):
+            field_pos = random.choice([20, 30, 40, 50, 60, 70, 80, 90])
+            result = simPass(field_pos, team, defense)
+            
+            plays_bank[team_key]['pass'].append({
+                'playType': 'pass',
+                'yardsGained': result["yards"],
+                'result': result["outcome"]
+            })
+        
+        # Generate punt plays
+        for _ in range(20):  # Fewer punts needed
+            plays_bank[team_key]['punt'].append({
+                'playType': 'punt',
+                'yardsGained': 0,
+                'result': 'punt'
+            })
+        
+        # Generate field goal plays
+        for _ in range(20):  # Fewer field goals needed
+            field_pos = random.choice([50, 60, 70, 80, 90])
+            made = fieldGoal(100 - field_pos)
+            
+            plays_bank[team_key]['field_goal'].append({
+                'playType': 'field_goal',
+                'yardsGained': 0,
+                'result': 'made field goal' if made else 'missed field goal'
+            })
+    
+    return plays_bank

@@ -10,7 +10,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cfbsim.settings")
 django.setup()
 
 from logic.sim.sim import *
-from logic.betting import testGame, Team
+from logic.betting import testGame, create_test_team
 from logic.constants.sim_constants import TEST_SIMULATIONS, TEST_SIM_RATING_DIFF
 
 
@@ -61,8 +61,8 @@ def run_sim_tests():
     # Test basic team creation
     print("\n🧪 BASIC TEAM TEST")
     print("-" * 40)
-    a = Team(90)
-    b = Team(90 - TEST_SIM_RATING_DIFF)
+    a = create_test_team(90)
+    b = create_test_team(90 - TEST_SIM_RATING_DIFF)
     print(f"Team A Rating: {a.rating}")
     print(f"Team B Rating: {b.rating}")
 

@@ -64,45 +64,47 @@ class PlayersSerializer(serializers.ModelSerializer):
 
 class PlaysSerializer(serializers.ModelSerializer):
     """Serializer for individual plays"""
+
     class Meta:
         model = Plays
         fields = [
-            'id',
-            'down',
-            'yardsLeft',
-            'startingFP',
-            'playType',
-            'yardsGained',
-            'result',
-            'text',
-            'header',
-            'scoreA',
-            'scoreB',
+            "id",
+            "down",
+            "yardsLeft",
+            "startingFP",
+            "playType",
+            "yardsGained",
+            "result",
+            "text",
+            "header",
+            "scoreA",
+            "scoreB",
         ]
 
 
 class DrivesSerializer(serializers.ModelSerializer):
     """Serializer for drives with nested plays"""
+
     plays = PlaysSerializer(many=True, read_only=True)
-    offense = serializers.CharField(source='offense.name', read_only=True)
-    defense = serializers.CharField(source='defense.name', read_only=True)
+    offense = serializers.CharField(source="offense.name", read_only=True)
+    defense = serializers.CharField(source="defense.name", read_only=True)
     yards = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Drives
         fields = [
-            'driveNum',
-            'offense',
-            'defense',
-            'startingFP',
-            'result',
-            'points',
-            'yards',
-            'plays',
-            'scoreAAfter',
-            'scoreBAfter'
+            "driveNum",
+            "offense",
+            "defense",
+            "startingFP",
+            "result",
+            "points",
+            "yards",
+            "plays",
+            "scoreAAfter",
+            "scoreBAfter",
         ]
-    
+
     def get_yards(self, obj):
         """Calculate total yards gained for this drive"""
         return sum(play.yardsGained for play in obj.plays.all())
@@ -138,13 +140,13 @@ class OddsSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class TeamNameSerializer(serializers.ModelSerializer):
+class TeamSimpleSerializer(serializers.ModelSerializer):
     record = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Teams
         fields = ["name", "record", "colorPrimary", "colorSecondary"]
-    
+
     def get_record(self, obj):
         return format_record(obj)
 
@@ -161,9 +163,10 @@ class InfoSerializer(serializers.ModelSerializer):
 
 
 class GamesSerializer(serializers.ModelSerializer):
-    teamA = TeamNameSerializer()
-    teamB = TeamNameSerializer()
+    teamA = TeamSimpleSerializer()
+    teamB = TeamSimpleSerializer()
 
     class Meta:
         model = Games
         fields = "__all__"
+

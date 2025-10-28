@@ -198,9 +198,7 @@ class Plays(models.Model):
 
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="plays")
     game = models.ForeignKey(Games, on_delete=models.CASCADE, related_name="plays")
-    drive = models.ForeignKey(
-        Drives, on_delete=models.CASCADE, related_name="plays", null=True
-    )
+    drive = models.ForeignKey(Drives, on_delete=models.CASCADE, related_name="plays")
     offense = models.ForeignKey(
         Teams, on_delete=models.CASCADE, related_name="plays_as_offense"
     )
@@ -213,12 +211,10 @@ class Plays(models.Model):
     playType = models.CharField(max_length=50)
     yardsGained = models.IntegerField()
     result = models.CharField(max_length=50)
-    text = models.CharField(max_length=100, null=True)
-    header = models.CharField(max_length=100, null=True)
+    text = models.CharField(max_length=100)
+    header = models.CharField(max_length=100)
     scoreA = models.IntegerField()
     scoreB = models.IntegerField()
-    next_play_id = models.IntegerField(null=True)
-
 
 class Playoff(models.Model):
     info = models.ForeignKey(

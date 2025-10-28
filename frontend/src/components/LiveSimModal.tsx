@@ -1,71 +1,18 @@
-import { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogContent,
     Box,
-    Typography,
-    Button,
-    IconButton,
     CircularProgress,
-    Paper,
-} from '@mui/material';
+    IconButton,
+} from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import FastForwardIcon from '@mui/icons-material/FastForward';
-import { TeamLogo } from './TeamComponents';
-import DriveSummary from './DriveSummary';
-import FootballField from './FootballField';
-import { apiService } from '../services/api';
-
-interface Play {
-    id: number;
-    down: number;
-    yardsLeft: number;
-    startingFP: number;
-    playType: string;
-    yardsGained: number;
-    text: string;
-    header: string;
-    result: string;
-    scoreA: number;
-    scoreB: number;
-}
-
-interface Drive {
-    driveNum: number;
-    offense: string;
-    defense: string;
-    startingFP: number;
-    result: string;
-    points: number;
-    plays: Play[];
-}
-
-interface GameData {
-    id: number;
-    teamA: {
-        name: string;
-        record: string;
-        colorPrimary: string;
-        colorSecondary: string;
-    };
-    teamB: {
-        name: string;
-        record: string;
-        colorPrimary: string;
-        colorSecondary: string;
-    };
-    scoreA: number;
-    scoreB: number;
-    winner: {
-        name: string;
-    };
-    headline: string;
-    overtime: number;
-    weekPlayed: number;
-    year: number;
-}
-
+import DriveSummary from "./DriveSummary";
+import FootballField from "./FootballField";
+import GameHeader from "./GameHeader";
+import GameControls from "./GameControls";
+import { apiService } from "../services/api";
+import { Play, Drive, GameData } from "../types/game";
+import { useState, useEffect } from "react";
 
 interface LiveSimModalProps {
     open: boolean;
@@ -73,45 +20,67 @@ interface LiveSimModalProps {
     gameId: number | null;
 }
 
-const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
-    const [loading, setLoading] = useState(false);
+const LiveSimModal = ({
+    open,
+    onClose,
+    gameId,
+}: LiveSimModalProps) => {
+    // Regular sim state only
     const [currentPlayIndex, setCurrentPlayIndex] = useState(0);
     const [plays, setPlays] = useState<Play[]>([]);
     const [drives, setDrives] = useState<Drive[]>([]);
     const [gameData, setGameData] = useState<GameData | null>(null);
+    const [isGameComplete, setIsGameComplete] = useState(false);
 
+    // Calculate if playback is complete for regular sim
+    const isPlaybackComplete = currentPlayIndex >= plays.length;
+
+    // Mark game as complete when user has watched through all plays
+    useEffect(() => {
+        if (isPlaybackComplete && plays.length > 0 && !isGameComplete) {
+            setIsGameComplete(true);
+        }
+    }, [isPlaybackComplete, plays.length, isGameComplete]);
+
+    // Start regular simulation when modal opens
     useEffect(() => {
         if (open && gameId) {
-            simulateGame();
+            startRegularSimulation();
         }
     }, [open, gameId]);
 
-    const simulateGame = async () => {
+    const startRegularSimulation = async () => {
         if (!gameId) return;
         
-        setLoading(true);
         try {
             const response = await apiService.liveSimGame(gameId) as any;
-            
-            // Store drives
-            setDrives(response.drives);
-            
-            // Flatten drives into a single array of plays for navigation
-            const allPlays: Play[] = [];
+            handleRegularResponse(response);
+        } catch (error) {
+            console.error('❌ Error starting simulation:', error);
+        }
+    };
+
+    const handleRegularResponse = (response: any) => {
+        // Store drives
+        setDrives(response.drives);
+        
+        // Flatten drives into a single array of plays for navigation
+        let allPlays: Play[] = [];
+        if (response.drives) {
             response.drives.forEach((drive: Drive) => {
                 drive.plays.forEach((play: Play) => {
                     allPlays.push(play);
                 });
             });
-            
-            setPlays(allPlays);
-            setGameData(response.game);
-            setCurrentPlayIndex(0);
-        } catch (error) {
-            console.error('Error simulating game:', error);
-        } finally {
-            setLoading(false);
         }
+        
+        setPlays(allPlays);
+        setGameData(response.game);
+        setCurrentPlayIndex(0);
+        setIsGameComplete(false);
+        
+        // Start the simulation loop
+        simLoop();
     };
 
     const handleNextPlay = () => {
@@ -132,7 +101,7 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
                     setCurrentPlayIndex(nextDriveStartIndex);
                 } else {
                     // On last drive, jump to end of game
-                    setCurrentPlayIndex(plays.length - 1);
+                    setCurrentPlayIndex(plays.length);
                 }
                 return;
             }
@@ -144,31 +113,24 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
         setCurrentPlayIndex(plays.length);
     };
 
-    const handleClose = () => {
+    const reset = () => {
         setCurrentPlayIndex(0);
         setPlays([]);
         setDrives([]);
         setGameData(null);
-        onClose();
+        setIsGameComplete(false);
     };
 
-
-    if (!gameData) {
-        return (
-            <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-                <DialogContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                        {loading ? <CircularProgress /> : <Typography>Loading...</Typography>}
-                    </Box>
-                </DialogContent>
-            </Dialog>
-        );
-    }
-
-    const isGameComplete = currentPlayIndex >= plays.length;
-    const currentPlay = isGameComplete ? plays[plays.length - 1] : plays[currentPlayIndex];
-
-    // Helper function to find current drive
+    // Simple regular sim data
+    const currentPlay = currentPlayIndex !== undefined && plays.length > 0
+        ? plays[currentPlayIndex]
+        : null;
+    
+    const previousPlay = currentPlayIndex !== undefined && plays.length > 0 && currentPlayIndex > 0
+        ? plays[currentPlayIndex - 1]
+        : null;
+    
+    // Get the current drive to determine offense
     const getCurrentDrive = () => {
         let playCount = 0;
         for (const drive of drives) {
@@ -182,259 +144,185 @@ const LiveSimModal = ({ open, onClose, gameId }: LiveSimModalProps) => {
     };
 
     const currentDrive = getCurrentDrive();
-    const isTeamAOnOffense = currentDrive?.offense === gameData.teamA.name;
-    
-    // Check if previous play is from the same drive
-    const isFirstPlayOfDrive = () => {
-        if (currentPlayIndex === 0) return true;
+    const isTeamAOnOffense = currentDrive?.offense === gameData?.teamA.name;
+
+    // Set up the simulation data structure
+    const simLoop = () => {
+        if (plays.length === 0) return;
+        
+        // Just set up the data - user controls progression with buttons
+        setCurrentPlayIndex(0);
+    };
+
+    // Get the last play text using simple double nested loops
+    const getLastPlayText = () => {
+        if (currentPlayIndex === 0) {
+            return ''; // No previous play
+        }
+        
         let playCount = 0;
         for (const drive of drives) {
-            if (currentPlayIndex === playCount) return true;
+            for (const play of drive.plays) {
+                if (playCount === currentPlayIndex - 1) {
+                    return play.text;
+                }
+                playCount++;
+            }
+        }
+        
+        return '';
+    };
+
+    // Simple calculations
+    const fieldPosition = currentPlay?.startingFP || 20;
+    
+    // Check if this is the first play of a drive
+    const isFirstPlayOfDrive = () => {
+        if (!currentDrive || !currentPlay) return false;
+        
+        let playCount = 0;
+        for (const drive of drives) {
+            if (drive === currentDrive) {
+                // This is the current drive, check if current play is the first play
+                return playCount === currentPlayIndex;
+            }
             playCount += drive.plays.length;
         }
         return false;
     };
     
-    const previousPlayYards = currentPlayIndex > 0 && !isFirstPlayOfDrive() ? plays[currentPlayIndex - 1].yardsGained : undefined;
-    const fieldYardLine = isTeamAOnOffense ? currentPlay.startingFP : (100 - currentPlay.startingFP);
+    const previousPlayYards = isFirstPlayOfDrive() ? 0 : (previousPlay?.yardsGained || 0);
 
-    // Possession indicator component
-    const PossessionIndicator = () => (
-        <img 
-            src="/logos/football.png" 
-            alt="Football" 
-            style={{ 
-                width: '32px', 
-                height: '32px', 
-                objectFit: 'contain'
-            }}
-        />
-    );
+    const handleClose = () => {
+        reset();
+        onClose();
+    };
+
+    if (!gameData) {
+        return (
+            <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
+                <DialogContent>
+                    <Box
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                        minHeight="400px"
+                    >
+                        <CircularProgress />
+                    </Box>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
-        <Dialog 
-            open={open} 
-            onClose={handleClose}
-            maxWidth="xl"
-            fullWidth
-            PaperProps={{
-                sx: { borderRadius: 2, height: '95vh', width: '95vw' }
-            }}
-        >
-            <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                {/* Header with close button */}
-                <Box sx={{ 
-                    p: 2, 
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                }}>
-                    <Typography variant="h5" fontWeight="bold">
-                        Live Simulation
-                    </Typography>
-                    <IconButton onClick={handleClose} size="small">
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
+        <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
+            <DialogContent sx={{ p: 0, height: "80vh", maxHeight: "80vh", position: 'relative' }}>
+                {/* Close Button */}
+                <IconButton
+                    onClick={handleClose}
+                    sx={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        zIndex: 10,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 1)',
+                        }
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
+                
+                <Box sx={{ display: "flex", height: "100%", overflow: "hidden" }}>
+                        {/* Left side - Main content */}
+                        <Box sx={{ flex: 1, p: 3, overflowY: 'auto' }}>
 
-                {loading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                        <CircularProgress size={60} />
-                    </Box>
-                ) : (
-                    <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', gap: 2, p: 3 }}>
-                        {/* Left Column - Main Game View */}
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                            {/* Combined Header */}
-                            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-                                <>
-                                        {/* Scoreboard */}
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', mb: 3 }}>
-                                            {/* Team A */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                <TeamLogo name={gameData.teamA.name} size={60} />
-                                                <Box>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <Typography variant="h5" fontWeight="bold">
-                                                            {gameData.teamA.name}
-                                                        </Typography>
-                                                        {isTeamAOnOffense && <PossessionIndicator />}
-                                                    </Box>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {gameData.teamA.record}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
+                        {/* Game Header */}
+                        <GameHeader
+                            gameData={gameData}
+                            currentPlay={currentPlay}
+                            isTeamAOnOffense={isTeamAOnOffense}
+                            plays={plays}
+                            isPlaybackComplete={isPlaybackComplete}
+                            lastPlayText={getLastPlayText()}
+                            currentDrive={currentDrive}
+                        />
 
-                                            {/* Score */}
-                                            <Box sx={{ textAlign: 'center' }}>
-                                                <Typography variant="h2" fontWeight="bold">
-                                                    {isGameComplete ? gameData.scoreA : currentPlay.scoreA} - {isGameComplete ? gameData.scoreB : currentPlay.scoreB}
-                                                </Typography>
-                                            </Box>
-
-                                            {/* Team B */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                <Box sx={{ textAlign: 'right' }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-                                                        {!isTeamAOnOffense && <PossessionIndicator />}
-                                                        <Typography variant="h5" fontWeight="bold">
-                                                            {gameData.teamB.name}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {gameData.teamB.record}
-                                                    </Typography>
-                                                </Box>
-                                                <TeamLogo name={gameData.teamB.name} size={60} />
-                                            </Box>
-                                        </Box>
-
-                                        {/* Current Play Info or Final Result */}
-                                        {isGameComplete ? (
-                                            <Box sx={{ 
-                                                pt: 2, 
-                                                borderTop: '1px solid', 
-                                                borderColor: 'divider',
-                                                px: 2,
-                                                textAlign: 'center'
-                                            }}>
-                                                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                                                    FINAL: {gameData.headline}
-                                                </Typography>
-                                                <Button
-                                                    variant="contained"
-                                                    href={`/game/${gameData.id}`}
-                                                    sx={{ mt: 1 }}
-                                                >
-                                                    View Game Summary
-                                                </Button>
-                                            </Box>
-                                        ) : (
-                                            <Box sx={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                justifyContent: 'space-between',
-                                                gap: 3,
-                                                pt: 2, 
-                                                borderTop: '1px solid', 
-                                                borderColor: 'divider',
-                                                px: 2
-                                            }}>
-                                                {/* Down & Distance */}
-                                                <Box sx={{ flex: 1, textAlign: 'center' }}>
-                                                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
-                                                        Current Down & Distance
-                                                    </Typography>
-                                                    <Typography variant="h6" color="primary.main">
-                                                        {currentPlay.header}
-                                                    </Typography>
-                                                </Box>
-                                                
-                                                {/* Divider */}
-                                                <Box sx={{ width: '1px', height: '40px', bgcolor: 'divider' }} />
-                                                
-                                                {/* Last Play */}
-                                                <Box sx={{ flex: 2, textAlign: 'center' }}>
-                                                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
-                                                        Last Play
-                                                    </Typography>
-                                                    {currentPlayIndex > 0 ? (
-                                                        <Typography variant="h6" fontWeight="medium">
-                                                            {plays[currentPlayIndex - 1].text}
-                                                        </Typography>
-                                                    ) : (
-                                                        <Typography variant="h6" fontWeight="medium" color="text.secondary">
-                                                            Game starting...
-                                                        </Typography>
-                                                    )}
-                                                </Box>
-                                            </Box>
-                                        )}
-                                </>
-                            </Paper>
-
-                            {/* Football Field Visualization */}
-                            <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-                                {currentDrive && (
+                        {/* Football Field */}
+                        <Box sx={{ mt: 2 }}>
                                     <FootballField 
-                                        currentYardLine={fieldYardLine}
+                                currentYardLine={fieldPosition}
                                         teamA={gameData.teamA.name}
                                         teamB={gameData.teamB.name}
                                         isTeamAOnOffense={isTeamAOnOffense}
-                                        down={currentPlay.down}
-                                        yardsToGo={currentPlay.yardsLeft}
+                                down={currentPlay?.down || 1}
+                                yardsToGo={currentPlay?.yardsLeft || 10}
                                         previousPlayYards={previousPlayYards}
                                         teamAColorPrimary={gameData.teamA.colorPrimary}
                                         teamAColorSecondary={gameData.teamA.colorSecondary}
                                         teamBColorPrimary={gameData.teamB.colorPrimary}
                                         teamBColorSecondary={gameData.teamB.colorSecondary}
                                     />
-                                )}
-                            </Paper>
-
                         </Box>
 
-                        {/* Right Column - Drive Summary */}
-                        <Box sx={{ width: 280, minWidth: 280 }}>
+                        {/* Game Controls */}
+                        <GameControls
+                            isInteractive={false}
+                            isGameComplete={isGameComplete}
+                            isPlaybackComplete={isPlaybackComplete}
+                            startInteractiveSimulation={() => {}}
+                            handleNextPlay={handleNextPlay}
+                            handleNextDrive={handleNextDrive}
+                            handleSimToEnd={handleSimToEnd}
+                        />
+                        </Box>
+
+                    {/* Right side - Drive Summary */}
+                    <Box
+                        sx={{
+                            width: 400,
+                            backgroundColor: "grey.50",
+                            borderLeft: "1px solid",
+                            borderColor: "divider",
+                            p: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: '100%',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <Box sx={{ 
+                            flex: 1, 
+                            overflowY: 'auto',
+                            pr: 1,
+                            '&::-webkit-scrollbar': {
+                                width: '6px',
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                background: 'rgba(0,0,0,0.1)',
+                                borderRadius: '3px',
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                background: 'rgba(0,0,0,0.3)',
+                                borderRadius: '3px',
+                            },
+                            '&::-webkit-scrollbar-thumb:hover': {
+                                background: 'rgba(0,0,0,0.5)',
+                            }
+                        }}>
                             <DriveSummary 
-                                drives={drives}
+                                drives={drives as any}
                                 currentPlayIndex={currentPlayIndex}
-                                totalPlays={plays.length}
-                                isGameComplete={isGameComplete}
                                 variant="modal"
                             />
                         </Box>
                     </Box>
-                )}
-
-                {/* Controls Footer */}
-                {!loading && (
-                    <Box sx={{ 
-                        borderTop: '1px solid',
-                        borderColor: 'divider',
-                        p: 2,
-                        backgroundColor: 'background.paper'
-                    }}>
-                        {/* Control buttons */}
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                            <Button
-                                onClick={handleNextPlay}
-                                disabled={isGameComplete}
-                                endIcon={<SkipNextIcon />}
-                                variant="contained"
-                                size="large"
-                            >
-                                Next Play
-                            </Button>
-
-                            <Button
-                                onClick={handleNextDrive}
-                                disabled={isGameComplete}
-                                endIcon={<FastForwardIcon />}
-                                variant="outlined"
-                                size="large"
-                            >
-                                Next Drive
-                            </Button>
-
-                            <Button
-                                onClick={handleSimToEnd}
-                                disabled={isGameComplete}
-                                variant="outlined"
-                                size="large"
-                            >
-                                Sim to End
-                            </Button>
-                        </Box>
                     </Box>
-                )}
             </DialogContent>
         </Dialog>
     );
 };
 
 export default LiveSimModal;
-
