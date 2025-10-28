@@ -303,7 +303,7 @@ def time_section(section_start, section_name):
 
 def watchability(game, num_teams):
     ranking_weight = 0.9
-    
+
     rank_a = game.rankATOG
     rank_b = game.rankBTOG
     win_prob_a = game.winProbA

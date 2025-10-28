@@ -193,6 +193,20 @@ export const apiService = {
     liveSimGame: <T>(gameId: number) => 
         request<T>('post', `/api/game/${gameId}/live-sim/`),
     
+    // Interactive live sim
+    startInteractiveSim: <T>(gameId: number) =>
+        request<T>('post', `/api/game/${gameId}/start-interactive-sim/`),
+    submitDecision: <T>(gameId: number, decision: string) => {
+        console.log('📤 Submitting decision to API:', { gameId, decision });
+        return request<T>('post', `/api/game/${gameId}/submit-decision/`, { data: { decision } });
+    },
+    exitInteractiveSim: <T>(gameId: number) =>
+        request<T>('post', `/api/game/${gameId}/exit-interactive-sim/`),
+    
+    // New plays bank API methods
+    completeInteractiveSim: <T>(gameId: number, gameData: any) =>
+        request<T>('post', `/api/game/${gameId}/complete-interactive-sim/`, { data: gameData }),
+    
     // Generic request function for custom endpoints
     get: <T>(endpoint: string, params?: Record<string, any>) => 
         request<T>('get', endpoint, { params }),

@@ -74,7 +74,9 @@ def week_schedule(request, week_num):
     info = Info.objects.get(user_id=user_id)
 
     # Get games for the specified week, ordered by watchability (highest first)
-    games = info.games.filter(year=info.currentYear, weekPlayed=week_num).order_by('-watchability')
+    games = info.games.filter(year=info.currentYear, weekPlayed=week_num).order_by(
+        "-watchability"
+    )
 
     # Process games data
     games_data = GamesSerializer(games, many=True).data

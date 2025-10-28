@@ -89,7 +89,8 @@ export const NonCon = () => {
                 week: selectedWeek,
             });
             handleCloseModal();
-            // Data will auto-refresh on game changes
+            // Trigger page data refresh to update the schedule
+            window.dispatchEvent(new Event('pageDataRefresh'));
         } catch (error) {
             console.error("Error scheduling game:", error);
         }

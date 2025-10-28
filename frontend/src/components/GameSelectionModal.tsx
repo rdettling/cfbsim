@@ -29,12 +29,13 @@ interface Game {
     };
     label: string;
     watchability: number;
+    is_user_game?: boolean;
 }
 
 interface GameSelectionModalProps {
     open: boolean;
     onClose: () => void;
-    onGameSelect: (gameId: number) => void;
+    onGameSelect: (gameId: number, isUserGame: boolean) => void;
 }
 
 const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalProps) => {
@@ -61,8 +62,8 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
         }
     };
 
-    const handleGameClick = (gameId: number) => {
-        onGameSelect(gameId);
+    const handleGameClick = (game: Game) => {
+        onGameSelect(game.id, game.is_user_game || false);
         onClose();
     };
 
@@ -113,16 +114,23 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                                 disablePadding
                                 sx={{
                                     borderBottom: index < games.length - 1 ? '1px solid' : 'none',
-                                    borderColor: 'divider'
+                                    borderColor: 'divider',
+                                    ...(game.is_user_game && {
+                                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                        borderLeft: '4px solid',
+                                        borderLeftColor: 'primary.main',
+                                    })
                                 }}
                             >
                                 <ListItemButton 
-                                    onClick={() => handleGameClick(game.id)}
+                                    onClick={() => handleGameClick(game)}
                                     sx={{
                                         py: 2,
                                         px: 3,
                                         '&:hover': {
-                                            backgroundColor: 'rgba(46, 125, 50, 0.04)'
+                                            backgroundColor: game.is_user_game 
+                                                ? 'rgba(25, 118, 210, 0.12)' 
+                                                : 'rgba(46, 125, 50, 0.04)'
                                         }
                                     }}
                                 >
@@ -162,18 +170,20 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                                             <Typography 
                                                 variant="body2" 
                                                 fontWeight="bold" 
-                                                color="text.secondary"
+                                                color={game.is_user_game ? 'primary.main' : 'text.secondary'}
                                             >
-                                                VS
+                                                {game.is_user_game ? 'YOUR GAME' : 'VS'}
                                             </Typography>
-                                            <Typography 
-                                                variant="caption" 
-                                                color="success.main"
-                                                fontWeight="bold"
-                                                sx={{ mt: 0.5 }}
-                                            >
-                                                {game.watchability}
-                                            </Typography>
+                                            {!game.is_user_game && (
+                                                <Typography 
+                                                    variant="caption" 
+                                                    color="success.main"
+                                                    fontWeight="bold"
+                                                    sx={{ mt: 0.5 }}
+                                                >
+                                                    {game.watchability}
+                                                </Typography>
+                                            )}
                                         </Box>
 
                                         {/* Team B */}

@@ -77,8 +77,8 @@ const DriveSummary = ({
         
         for (const drive of drives) {
             const driveEndIndex = playCount + (drive.plays?.length || 0) - 1;
-            // Include drive if it's completely finished OR if game is complete and we're at/past this drive
-            if (driveEndIndex < currentPlayIndex || (isGameComplete && currentPlayIndex >= playCount)) {
+            // Include drive only if it's completely finished (all plays have been watched)
+            if (driveEndIndex < currentPlayIndex) {
                 completed.push(drive);
             } else {
                 break;

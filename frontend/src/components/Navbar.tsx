@@ -10,6 +10,7 @@ import { STAGES } from '../constants/stages';
 import { apiService } from '../services/api';
 import GameSelectionModal from './GameSelectionModal';
 import LiveSimModal from './LiveSimModal';
+import InteractiveSimModal from './InteractiveSimModal';
 
 interface NavbarProps {
     team: Team;
@@ -25,6 +26,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
     const [menuAnchors, setMenuAnchors] = useState<Record<string, HTMLElement | null>>({});
     const [gameSelectionOpen, setGameSelectionOpen] = useState(false);
     const [liveSimOpen, setLiveSimOpen] = useState(false);
+    const [interactiveSimOpen, setInteractiveSimOpen] = useState(false);
     const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
 
     // Menu handling functions
@@ -53,13 +55,25 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         setGameSelectionOpen(true);
     };
 
-    const handleGameSelect = (gameId: number) => {
+    const handleGameSelect = (gameId: number, isUserGame: boolean) => {
+        console.log('Game selected:', gameId, 'isUserGame:', isUserGame);
         setSelectedGameId(gameId);
-        setLiveSimOpen(true);
+        if (isUserGame) {
+            setInteractiveSimOpen(true);
+        } else {
+            setLiveSimOpen(true);
+        }
     };
 
     const handleLiveSimClose = () => {
         setLiveSimOpen(false);
+        setSelectedGameId(null);
+        // Refresh the page to show updated data
+        window.location.reload();
+    };
+
+    const handleInteractiveSimClose = () => {
+        setInteractiveSimOpen(false);
         setSelectedGameId(null);
         // Refresh the page to show updated data
         window.location.reload();
@@ -268,6 +282,11 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                 <LiveSimModal
                     open={liveSimOpen}
                     onClose={handleLiveSimClose}
+                    gameId={selectedGameId}
+                />
+                <InteractiveSimModal
+                    open={interactiveSimOpen}
+                    onClose={handleInteractiveSimClose}
                     gameId={selectedGameId}
                 />
 

@@ -89,11 +89,11 @@ def setPlayoffR1(info):
         team.ranking = i
         teams_to_update.append(team)
     Teams.objects.bulk_update(teams_to_update, ["ranking"])
-    
+
     # Set all 12 seeds for 12-team playoff
     for i in range(1, 13):
-        setattr(playoff, f"seed_{i}", teams[i-1])
-    
+        setattr(playoff, f"seed_{i}", teams[i - 1])
+
     print(f"Set playoff seeds for 12-team playoff")
     for i in range(1, 13):
         team = getattr(playoff, f"seed_{i}")
@@ -126,7 +126,7 @@ def setPlayoffQuarter(info):
     seed_2 = playoff.seed_2
     seed_3 = playoff.seed_3
     seed_4 = playoff.seed_4
-    
+
     matchups = [
         ("left_quarter_1", seed_1, playoff.left_r1_1.winner),
         ("left_quarter_2", seed_4, playoff.left_r1_2.winner),
@@ -157,13 +157,13 @@ def setPlayoffSemi(info):
     if playoff.teams == 4:
         # Get the top 4 teams by ranking
         teams = info.teams.order_by("ranking")[:4]
-        
+
         # Set the seeds in the playoff object
         playoff.seed_1 = teams[0]
         playoff.seed_2 = teams[1]
         playoff.seed_3 = teams[2]
         playoff.seed_4 = teams[3]
-        
+
         print(f"4-team playoff semifinals:")
         print(f"Seed #1 {teams[0].name} vs Seed #4 {teams[3].name}")
         print(f"Seed #2 {teams[1].name} vs Seed #3 {teams[2].name}")
@@ -259,7 +259,7 @@ def scheduleGame(
         rankATOG=team.ranking,
         rankBTOG=opponent.ranking,
     )
-    
+
     # Calculate and set watchability score
     num_teams = info.teams.count()
     game.watchability = watchability(game, num_teams)
@@ -289,11 +289,11 @@ def setNatty(info):
     if playoff.teams == 2:
         # Get the top 2 teams by ranking
         teams = info.teams.order_by("ranking")[:2]
-        
+
         # Set the seeds in the playoff object
         playoff.seed_1 = teams[0]
         playoff.seed_2 = teams[1]
-        
+
         print(f"2-team playoff championship:")
         print(f"Seed #1 {teams[0].name} vs Seed #2 {teams[1].name}")
 

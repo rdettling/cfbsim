@@ -1,15 +1,32 @@
 import json
 import random
 
+# Cache headlines data so we don't reload JSON on every call
+_HEADLINES_CACHE = None
+
+
+def _load_headlines():
+    """Load and cache headlines from JSON file"""
+    global _HEADLINES_CACHE
+    if _HEADLINES_CACHE is None:
+        with open("data/headlines.json") as f:
+            _HEADLINES_CACHE = json.load(f)
+    return _HEADLINES_CACHE
+
 
 def generate_headlines(games):
     """Generate headlines for a list of games.
 
     This function modifies the games in place by setting their headline attribute.
-    No return value is needed.
+
+    Args:
+        games: List of game objects or single game object
     """
-    with open("data/headlines.json") as f:
-        headlines = json.load(f)
+    # Handle single game case
+    if not isinstance(games, list):
+        games = [games]
+
+    headlines = _load_headlines()
 
     # Initialize counters for each headline type
     headline_counts = {
@@ -88,13 +105,15 @@ def generate_headlines(games):
         # Set the headline on the game object
         game.headline = headline
 
-    return games
-
 
 def get_best_performance(game, winning_team):
     """Find the best individual performance from the winning team in this game."""
     try:
         # Get all game logs for the winning team in this game
+        # Handle case where game_logs might not exist yet (e.g., during interactive sim)
+        if not hasattr(game, "game_logs") or game.game_logs.count() == 0:
+            return None
+
         game_logs = game.game_logs.filter(player__team=winning_team)
 
         best_performance = None

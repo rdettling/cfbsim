@@ -44,18 +44,20 @@ def team_stats(request):
     def calculate_averages(stats_dict):
         if not stats_dict:
             return {}
-        
+
         # Get all stat keys from the first team (they should all have the same keys)
         stat_keys = list(next(iter(stats_dict.values())).keys())
-        
+
         averages = {}
         for key in stat_keys:
-            values = [stats[key] for stats in stats_dict.values() if stats[key] is not None]
+            values = [
+                stats[key] for stats in stats_dict.values() if stats[key] is not None
+            ]
             if values:
                 averages[key] = round(sum(values) / len(values), 1)
             else:
                 averages[key] = 0
-        
+
         return averages
 
     offense_averages = calculate_averages(offense)
