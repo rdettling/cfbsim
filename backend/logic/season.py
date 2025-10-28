@@ -573,7 +573,6 @@ def init(
     set_rivalries(info)
     time_section(rival_start, "  • Rivalries set")
 
-    time_section(setup_start, "PHASE 6-8 TOTAL")
     time_section(overall_start, "SEASON INITIALIZATION COMPLETE")
     print("--- SEASON INITIALIZATION COMPLETE ---\n")
     return info

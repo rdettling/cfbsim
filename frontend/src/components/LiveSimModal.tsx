@@ -45,7 +45,6 @@ const LiveSimModal = ({
     // Start regular simulation when modal opens
     useEffect(() => {
         if (open && gameId) {
-            console.log('🎬 Starting regular simulation for game:', gameId);
             startRegularSimulation();
         }
     }, [open, gameId]);
@@ -62,8 +61,6 @@ const LiveSimModal = ({
     };
 
     const handleRegularResponse = (response: any) => {
-        console.log('📡 Live Sim API Response:', response);
-        
         // Store drives
         setDrives(response.drives);
         
@@ -71,15 +68,11 @@ const LiveSimModal = ({
         let allPlays: Play[] = [];
         if (response.drives) {
             response.drives.forEach((drive: Drive) => {
-                console.log('🏃 Drive:', drive);
                 drive.plays.forEach((play: Play) => {
-                    console.log('⚽ Play:', play);
                     allPlays.push(play);
                 });
             });
         }
-        
-        console.log('📋 All Plays Flattened:', allPlays);
         
         setPlays(allPlays);
         setGameData(response.game);
@@ -152,33 +145,6 @@ const LiveSimModal = ({
 
     const currentDrive = getCurrentDrive();
     const isTeamAOnOffense = currentDrive?.offense === gameData?.teamA.name;
-    
-    // Debug the offense comparison
-    useEffect(() => {
-        if (currentPlay && gameData && currentDrive) {
-            console.log('🔍 Offense Debug:', {
-                currentDriveOffense: currentDrive.offense,
-                teamAName: gameData.teamA.name,
-                teamBName: gameData.teamB.name,
-                isTeamAOnOffense,
-                comparison: currentDrive.offense === gameData.teamA.name
-            });
-        }
-    }, [currentPlay, gameData, currentDrive, isTeamAOnOffense]);
-
-    // Debug logging for play data
-    useEffect(() => {
-        if (currentPlay) {
-            console.log('🎮 Current Play Debug:', {
-                playIndex: currentPlayIndex,
-                totalPlays: plays.length,
-                currentPlay: currentPlay,
-                previousPlay: previousPlay,
-                isTeamAOnOffense,
-                gameData: gameData
-            });
-        }
-    }, [currentPlay, currentPlayIndex, plays.length, previousPlay, isTeamAOnOffense, gameData]);
 
     // Set up the simulation data structure
     const simLoop = () => {
@@ -186,7 +152,6 @@ const LiveSimModal = ({
         
         // Just set up the data - user controls progression with buttons
         setCurrentPlayIndex(0);
-        console.log('🎮 Simulation ready with', plays.length, 'plays across', drives.length, 'drives');
     };
 
     // Get the last play text using simple double nested loops
@@ -227,28 +192,6 @@ const LiveSimModal = ({
     };
     
     const previousPlayYards = isFirstPlayOfDrive() ? 0 : (previousPlay?.yardsGained || 0);
-
-    // Debug logging for FootballField props
-    useEffect(() => {
-        if (currentPlay) {
-            console.log('🏈 FootballField Props Debug:', {
-                currentYardLine: fieldPosition,
-                teamA: gameData?.teamA.name,
-                teamB: gameData?.teamB.name,
-                isTeamAOnOffense,
-                down: currentPlay.down,
-                yardsToGo: currentPlay.yardsLeft,
-                previousPlayYards,
-                teamAColorPrimary: gameData?.teamA.colorPrimary,
-                teamAColorSecondary: gameData?.teamA.colorSecondary,
-                teamBColorPrimary: gameData?.teamB.colorPrimary,
-                teamBColorSecondary: gameData?.teamB.colorSecondary,
-                currentPlayIndex,
-                totalPlays: plays.length,
-                currentPlay: currentPlay
-            });
-        }
-    }, [currentPlay, fieldPosition, isTeamAOnOffense, previousPlayYards, gameData, currentPlayIndex, plays.length]);
 
     const handleClose = () => {
         reset();

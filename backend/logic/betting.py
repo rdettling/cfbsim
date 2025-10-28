@@ -5,8 +5,8 @@ import random
 
 
 def create_test_team(rating=0):
-    """Create a test Teams instance for betting calculations."""
-    # Create a minimal Info instance for the team
+    """Create a test Teams instance for betting calculations (in-memory only)."""
+    # Create a minimal Info instance for the team (in-memory only)
     info = Info(
         user_id="test_betting",
         currentWeek=1,
@@ -14,9 +14,8 @@ def create_test_team(rating=0):
         startYear=2024,
         lastWeek=15
     )
-    info.save()
     
-    # Create a test Teams instance
+    # Create a test Teams instance (in-memory only)
     team = Teams(
         info=info,
         name=f"Test Team {rating}",
@@ -46,31 +45,15 @@ def create_test_team(rating=0):
         offers=0,
         recruiting_points=0
     )
-    team.save()
     return team
-
-
-def cleanup_test_data():
-    """Clean up test data from previous runs."""
-    # Delete test games
-    Games.objects.filter(base_label="Test Game").delete()
-    
-    # Delete test teams
-    Teams.objects.filter(name__startswith="Test Team").delete()
-    
-    # Delete test info
-    Info.objects.filter(user_id="test_betting").delete()
 
 
 def getSpread(gap, tax_factor=0.05):
     """Generate spread and odds data for different rating gaps."""
     odds = {}
-    
-    # Clean up any existing test data first
-    cleanup_test_data()
 
     for i in range(gap + 1):
-        # Create fake Teams instances for testing
+        # Create fake Teams instances for testing (in-memory only)
         teamA = create_test_team(rating=i)
         teamB = create_test_team(rating=0)
         results = testGame(teamA, teamB)
@@ -135,20 +118,17 @@ def getSpread(gap, tax_factor=0.05):
             "favMoneyline": moneylineA,
             "udMoneyline": moneylineB,
         }
-
-    # Clean up test data after calculation
-    cleanup_test_data()
     
     return odds
 
 
 def testGame(teamA, teamB):
-    """Test game simulation between two teams."""
+    """Test game simulation between two teams (in-memory only)."""
     scoreA = scoreB = 0
     winA = winB = 0
 
     for _ in range(TEST_SIMULATIONS):
-        # Create a proper Games instance with all required fields
+        # Create a Games instance in-memory only (no database save)
         game = Games(
             info=teamA.info,  # Use the same info instance
             teamA=teamA,
@@ -173,9 +153,8 @@ def testGame(teamA, teamB):
             headline=None,
             watchability=0.0
         )
-        game.save()
         
-        # Simulate the game
+        # Simulate the game (in-memory only)
         simGame(game, teamA.info, [], [], None)  # Pass empty lists for drives and plays, no starters for test games
 
         scoreA += game.scoreA or 0
