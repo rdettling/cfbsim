@@ -61,6 +61,8 @@ export interface Info {
     stage: string;
     team: string;
     lastWeek: number;
+    colorPrimary?: string;
+    colorSecondary?: string;
 }
 
 export interface ScheduleGame {
