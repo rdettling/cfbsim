@@ -62,10 +62,6 @@ def progress_ratings(info):
         else:
             player.change = 0
 
-        print(
-            f"DEBUG: {player.first} {player.last} - old: {old_rating}, new: {player.rating}, change: {player.change}"
-        )
-
         to_update.append(player)
         progressed_players.append(player)
 

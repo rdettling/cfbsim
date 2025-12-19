@@ -8,9 +8,10 @@ import uuid
 from logic.season import (
     transition_rosters,
     update_history,
-    realignment_summary,
+    get_next_season_preview,
     init,
-    transition_season_data,
+    apply_realignment_and_playoff,
+    refresh_season_data,
 )
 
 
@@ -30,7 +31,6 @@ def season_summary(request):
             "team": TeamsSerializer(info.team).data,
             "info": InfoSerializer(info).data,
             "champion": TeamsSerializer(info.playoff.natty.winner).data,
-            "realignment": realignment_summary(info),
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
@@ -39,12 +39,69 @@ def season_summary(request):
 
 
 @api_view(["GET"])
+def realignment_view(request):
+    """API endpoint for realignment stage"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+
+    # Transition from summary to realignment stage
+    if info.stage == "summary":
+        info.stage = "realignment"
+        info.save()
+
+    # Get next season preview (realignment and playoff changes)
+    realignment_changes, playoff_changes = get_next_season_preview(info)
+
+    return Response(
+        {
+            "team": TeamsSerializer(info.team).data,
+            "info": InfoSerializer(info).data,
+            "settings": SettingsSerializer(info.settings).data,
+            "realignment": realignment_changes,
+            "playoff_changes": playoff_changes,
+            "conferences": ConferencesSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
+
+
+@api_view(["PUT"])
+def update_realignment_settings(request):
+    """API endpoint to update realignment settings"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+
+    try:
+        settings = info.settings
+    except Settings.DoesNotExist:
+        settings = Settings.objects.create(info=info)
+
+    # Update settings from request data
+    data = request.data.copy()
+    
+    # Ensure proper values for 2 or 4 team playoffs
+    playoff_teams = data.get('playoff_teams', settings.playoff_teams)
+    if playoff_teams in [2, 4]:
+        data['playoff_autobids'] = 0
+        data['playoff_conf_champ_top_4'] = False
+    
+    serializer = SettingsSerializer(settings, data=data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(["GET"])
 def roster_progression(request):
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
-    # Only update stage when transitioning from summary to progression
-    if info.stage == "summary":
+    # Transition from realignment to progression stage
+    # Apply realignment and playoff changes (increments year)
+    if info.stage == "realignment":
+        apply_realignment_and_playoff(info)
         info.stage = "progression"
         info.save()
 
@@ -139,6 +196,8 @@ def noncon(request):
     playoff_teams = request.GET.get("playoff_teams")
     playoff_autobids = request.GET.get("playoff_autobids")
     playoff_conf_champ_top_4 = request.GET.get("playoff_conf_champ_top_4")
+    auto_realignment = request.GET.get("auto_realignment", "true").lower() == "true"
+    auto_update_postseason_format = request.GET.get("auto_update_postseason_format", "true").lower() == "true"
 
     # Handle new game creation
     if team and year:
@@ -159,19 +218,20 @@ def noncon(request):
             playoff_teams_int,
             playoff_autobids_int,
             playoff_conf_champ_top_4_bool,
+            auto_realignment,
+            auto_update_postseason_format,
         )
 
     else:
         info = Info.objects.get(user_id=user_id)
-
+        
+        # Transition from recruiting_summary to preseason
         if info.stage == "recruiting_summary":
-            # Part 2: Handle realignment and game refresh
+            # Refresh season data (clear counters, plays, drives, init rankings, set rivalries)
+            refresh_season_data(info)
             info.stage = "preseason"
-            info.currentYear += 1
-            info.currentWeek = 1
-
-            transition_season_data(info)
             info.save()
+
 
     # Get team's schedule
     games = (

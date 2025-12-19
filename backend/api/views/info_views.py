@@ -2,7 +2,7 @@ import json
 from ..models import *
 from logic.season import start_season
 import os
-from django.conf import settings
+from django.conf import settings as django_settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
@@ -32,7 +32,7 @@ def home(request):
     # Get available years - only once, regardless of 'year' parameter
     years = [
         f.split(".")[0]
-        for f in os.listdir(settings.YEARS_DATA_DIR)
+        for f in os.listdir(django_settings.YEARS_DATA_DIR)
         if f.endswith(".json")
     ]
     years.sort(reverse=True)
@@ -124,3 +124,15 @@ def dashboard(request):
             ).data,
         }
     )
+
+
+@api_view(["GET"])
+def settings(request):
+    """API endpoint to get or update current user's settings"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+    settings_obj = info.settings
+
+    if request.method == "GET":
+        return Response(SettingsSerializer(settings_obj).data)
+   

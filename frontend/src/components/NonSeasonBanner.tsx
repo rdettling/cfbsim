@@ -18,9 +18,11 @@ interface NonSeasonBannerProps {
         next: string;
         season: boolean;
     };
+    primaryColor?: string;
+    secondaryColor?: string;
 }
 
-const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
+const NonSeasonBanner = ({ currentStage, nextStage, primaryColor = '#1976d2', secondaryColor = '#ffffff' }: NonSeasonBannerProps) => {
     const navigate = useNavigate();
     const [isSimulating, setIsSimulating] = useState(false);
 
@@ -39,7 +41,6 @@ const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
             <Stack direction="row" spacing={1} alignItems="center">
                 <Button
                     variant="contained"
-                    color="primary"
                     size="small"
                     onClick={() => handleStageChange(currentStage.path)}
                     sx={{
@@ -50,7 +51,15 @@ const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
                         textTransform: 'none',
                         borderRadius: 1.5,
                         minWidth: 'auto',
-                        position: 'relative'
+                        position: 'relative',
+                        backgroundColor: primaryColor,
+                        color: secondaryColor,
+                        boxShadow: 'none',
+                        '&:hover': {
+                            backgroundColor: primaryColor,
+                            opacity: 0.9,
+                            boxShadow: 'none'
+                        }
                     }}
                 >
                     {currentStage.label}
@@ -69,7 +78,6 @@ const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
 
                 <Button
                     variant="outlined"
-                    color="primary"
                     size="small"
                     onClick={() => handleStageChange(nextStage.path)}
                     sx={{
@@ -81,9 +89,12 @@ const NonSeasonBanner = ({ currentStage, nextStage }: NonSeasonBannerProps) => {
                         borderRadius: 1.5,
                         minWidth: 'auto',
                         borderWidth: '1px',
+                        borderColor: primaryColor,
+                        color: primaryColor,
                         '&:hover': {
-                            backgroundColor: 'rgba(25, 118, 210, 0.04)',
-                            borderWidth: '1px'
+                            backgroundColor: `${primaryColor}15`,
+                            borderWidth: '1px',
+                            borderColor: primaryColor
                         }
                     }}
                 >

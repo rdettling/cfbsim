@@ -7,6 +7,7 @@ from logic.schedule import (
     setPlayoffQuarter,
 )
 from logic.util import time_section
+from api.models import Settings
 import time
 from api.models import *
 import random
@@ -24,7 +25,9 @@ def update_rankings(info):
     total_start = time.time()
 
     # Skip ranking updates for certain playoff weeks
-    skip_weeks = {4: [14], 12: [14, 15, 16]}.get(info.playoff.teams, [])
+    # Get playoff teams from settings
+    playoff_teams = info.settings.playoff_teams
+    skip_weeks = {4: [14], 12: [14, 15, 16]}.get(playoff_teams, [])
 
     if info.currentWeek not in skip_weeks:
         # Phase 1: Calculate poll scores
@@ -157,7 +160,8 @@ def handle_special_weeks(info):
     }
 
     # Get the action for the current playoff format and week
-    action = special_actions.get(info.playoff.teams, {}).get(info.currentWeek)
+    playoff_teams = info.settings.playoff_teams
+    action = special_actions.get(playoff_teams, {}).get(info.currentWeek)
 
     if action:
         action(info)

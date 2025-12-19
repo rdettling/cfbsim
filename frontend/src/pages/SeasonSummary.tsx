@@ -18,19 +18,11 @@ import {
 import { TeamInfoModal } from '../components/TeamComponents';
 import { PageLayout } from '../components/PageLayout';
 
-interface RealignmentData {
-    [team: string]: {
-        old: string;
-        new: string;
-    };
-}
-
 interface SummaryData {
     info: Info;
     team: Team;
     conferences: Conference[];
     champion: Team; // Changed from championship to champion to match backend
-    realignment: RealignmentData;
 }
 
 const SeasonSummary = () => {
@@ -119,69 +111,6 @@ const SeasonSummary = () => {
                         </CardContent>
                     </Card>
                 )}
-
-                {/* Realignment Section */}
-                <Card sx={{ mb: 4 }}>
-                    <CardContent>
-                        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main', mb: 3 }}>
-                            Conference Realignment for Next Season
-                        </Typography>
-                        
-                        {Object.entries(data.realignment).length > 0 ? (
-                            <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Team</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Old Conference</TableCell>
-                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>New Conference</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {Object.entries(data.realignment).map(([team, confs]) => (
-                                            <TableRow key={team} sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
-                                                <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                        <TeamLogo name={team} size={30} />
-                                                        <TeamLink 
-                                                            name={team} 
-                                                            onTeamClick={() => handleTeamClick(team)}
-                                                        />
-                                                    </Box>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip 
-                                                        label={confs.old} 
-                                                        variant="outlined" 
-                                                        color="error"
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip 
-                                                        label={confs.new} 
-                                                        variant="outlined" 
-                                                        color="success"
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        ) : (
-                            <Box sx={{ textAlign: 'center', py: 4 }}>
-                                <Typography variant="h6" color="text.secondary" gutterBottom>
-                                    No Conference Changes
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    All teams remain in their current conferences for the upcoming season.
-                                </Typography>
-                            </Box>
-                        )}
-                    </CardContent>
-                </Card>
 
                 {/* Next Steps Section */}
                 <Card sx={{ background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>

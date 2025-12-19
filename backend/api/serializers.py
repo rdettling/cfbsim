@@ -178,3 +178,15 @@ class GamesSerializer(serializers.ModelSerializer):
         model = Games
         fields = "__all__"
 
+
+class SettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Settings
+        fields = [
+            "playoff_teams",
+            "playoff_autobids",
+            "playoff_conf_champ_top_4",
+            "auto_realignment",
+            "auto_update_postseason_format"
+        ]
+

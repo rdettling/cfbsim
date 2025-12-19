@@ -1,6 +1,7 @@
 import { AppBar, Toolbar, Button, Stack, Typography, Box, Menu, MenuItem, Divider, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useState } from 'react';
 import { Conference, Team, Info } from '../interfaces';
 import { TeamLogo } from './TeamComponents';
@@ -348,9 +349,35 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                             borderRadius: 2,
                             border: '1px solid rgba(0, 0, 0, 0.08)'
                         }}>
-                            <NonSeasonBanner currentStage={currentStageInfo} nextStage={nextStageInfo} />
+                            <NonSeasonBanner 
+                                currentStage={currentStageInfo} 
+                                nextStage={nextStageInfo}
+                                primaryColor={primaryColor}
+                                secondaryColor={secondaryColor}
+                            />
                         </Box>
                     )}
+
+                    {/* Settings Button - Icon Only */}
+                    <Button 
+                        color="inherit" 
+                        onClick={() => navigate('/settings')}
+                        sx={{
+                            minWidth: 'auto',
+                            width: 40,
+                            height: 40,
+                            p: 0,
+                            borderRadius: 2,
+                            color: 'text.secondary',
+                            '&:hover': {
+                                backgroundColor: `${primaryColor}15`,
+                                color: primaryColor
+                            }
+                        }}
+                        aria-label="Settings"
+                    >
+                        <SettingsIcon />
+                    </Button>
 
                     {/* Home Button - Icon Only */}
                     <Button 

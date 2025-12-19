@@ -1,5 +1,5 @@
 from django.urls import path
-from .views.info_views import home, dashboard
+from .views.info_views import home, dashboard, settings
 from .views.schedule_views import fetch_teams, schedule_nc, week_schedule
 from .views.season_views import (
     rankings,
@@ -19,6 +19,8 @@ from .views.stages_views import (
     roster_progression,
     recruiting_summary,
     noncon,
+    realignment_view,
+    update_realignment_settings,
 )
 from .views.team_views import team_info, team_schedule, roster, history, player
 from .views.game_views import game
@@ -52,4 +54,7 @@ urlpatterns = [
     path("roster_progression/", roster_progression),
     path("recruiting_summary/", recruiting_summary),
     path("summary/", season_summary),
+    path("realignment/", realignment_view),
+    path("realignment/update/", update_realignment_settings),
+    path("settings/", settings),
 ]

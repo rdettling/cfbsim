@@ -65,6 +65,14 @@ export interface Info {
     colorSecondary?: string;
 }
 
+export interface Settings {
+    playoff_teams: number;  // 2, 4, or 12
+    playoff_autobids?: number;  // Only if playoff_teams === 12
+    playoff_conf_champ_top_4?: boolean;  // Only if playoff_teams === 12
+    auto_realignment: boolean;
+    auto_update_postseason_format: boolean;
+}
+
 export interface ScheduleGame {
     weekPlayed: number;
     opponent: {

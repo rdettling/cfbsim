@@ -38,8 +38,12 @@ def get_playoff_team_order(info):
 
     conference_champions = sorted(conference_champions, key=lambda x: x.ranking)
 
+    # Get playoff settings
+    playoff_autobids = info.settings.playoff_autobids or 0
+    playoff_conf_champ_top_4 = info.settings.playoff_conf_champ_top_4
+
     # Apply the same logic as setPlayoffR1
-    autobids = conference_champions[: playoff.autobids]
+    autobids = conference_champions[: playoff_autobids]
 
     # Get wild cards (non-autobid teams)
     autobid_ids = [team.id for team in autobids]
@@ -47,12 +51,12 @@ def get_playoff_team_order(info):
     wild_cards = sorted(wild_cards, key=lambda x: x.ranking)
 
     # Calculate cutoff for playoff teams
-    cutoff = 8 - (playoff.autobids - 4)
+    cutoff = 8 - (playoff_autobids - 4)
     non_playoff_teams = wild_cards[cutoff:]
     wild_cards = wild_cards[:cutoff]
 
     # Handle conf_champ_top_4 logic
-    if playoff.conf_champ_top_4:
+    if playoff_conf_champ_top_4:
         # Conference champions get top 4 seeds
         byes = autobids[:4]  # Top 4 autobids get byes
         no_bye_autobids = autobids[4:]  # Remaining autobids don't get byes
@@ -154,7 +158,10 @@ def setPlayoffSemi(info):
             info, team1, team2, games_to_create, week, "Playoff semifinal"
         )[2]
 
-    if playoff.teams == 4:
+    # Get playoff teams from settings
+    playoff_teams = info.settings.playoff_teams
+    
+    if playoff_teams == 4:
         # Get the top 4 teams by ranking
         teams = info.teams.order_by("ranking")[:4]
 
@@ -170,7 +177,7 @@ def setPlayoffSemi(info):
 
         playoff.left_semi = schedule_playoff_game(teams[0], teams[3], 14)
         playoff.right_semi = schedule_playoff_game(teams[1], teams[2], 14)
-    elif playoff.teams == 12:
+    elif playoff_teams == 12:
         playoff.left_semi = schedule_playoff_game(
             playoff.left_quarter_1.winner, playoff.left_quarter_2.winner, 16
         )
@@ -285,8 +292,11 @@ def setNatty(info):
     playoff.refresh_from_db()
     games_to_create = []
     week_mapping = {2: 14, 4: 15, 12: 17}
+    
+    # Get playoff teams from settings
+    playoff_teams = info.settings.playoff_teams
 
-    if playoff.teams == 2:
+    if playoff_teams == 2:
         # Get the top 2 teams by ranking
         teams = info.teams.order_by("ranking")[:2]
 
@@ -302,7 +312,7 @@ def setNatty(info):
             teams[0],
             teams[1],
             games_to_create,
-            week_mapping.get(playoff.teams),
+            week_mapping.get(playoff_teams),
             "National Championship",
         )[2]
     else:
@@ -311,7 +321,7 @@ def setNatty(info):
             playoff.left_semi.winner,
             playoff.right_semi.winner,
             games_to_create,
-            week_mapping.get(playoff.teams),
+            week_mapping.get(playoff_teams),
             "National Championship",
         )[2]
 

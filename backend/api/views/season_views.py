@@ -28,7 +28,7 @@ from logic.headlines import generate_headlines
 
 def generate_bracket_structure(info, playoff_teams):
     """Generate bracket structure for the playoff format following the Playoff model schema"""
-    playoff_format = info.playoff.teams
+    playoff_format = info.settings.playoff_teams
     is_projection = info.currentWeek < 14
     playoff_obj = info.playoff_info.first()
 
@@ -387,7 +387,7 @@ def playoff(request):
         info = Info.objects.get(user_id=user_id)
         print(f"PLAYOFF DEBUG: Got info object")
 
-        playoff_format = info.playoff.teams
+        playoff_format = info.settings.playoff_teams
         print(f"PLAYOFF DEBUG: playoff_format = {playoff_format}")
 
         is_projection = info.currentWeek < 14
@@ -564,8 +564,8 @@ def playoff(request):
 
             # For actual playoff, we still need to determine which teams were autobids
             # This will be used for the is_autobid flag in playoff_data
-            autobids = info.playoff.autobids
-            conf_champ_top_4 = info.playoff.conf_champ_top_4
+            autobids = info.settings.playoff_autobids or 0
+            conf_champ_top_4 = info.settings.playoff_conf_champ_top_4
 
             if autobids > 0:
                 if conf_champ_top_4:
@@ -614,8 +614,8 @@ def playoff(request):
 
         else:
             # Get the number of autobids for projection
-            autobids = info.playoff.autobids
-            conf_champ_top_4 = info.playoff.conf_champ_top_4
+            autobids = info.settings.playoff_autobids or 0
+            conf_champ_top_4 = info.settings.playoff_conf_champ_top_4
 
             # Get the top 4 seeds based on setting
             if conf_champ_top_4:
