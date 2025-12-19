@@ -153,13 +153,21 @@ class TeamSimpleSerializer(serializers.ModelSerializer):
 
 class InfoSerializer(serializers.ModelSerializer):
     team = serializers.SerializerMethodField()
+    colorPrimary = serializers.SerializerMethodField()
+    colorSecondary = serializers.SerializerMethodField()
 
     class Meta:
         model = Info
         fields = "__all__"
 
     def get_team(self, obj):
-        return obj.team.name
+        return obj.team.name if obj.team else None
+
+    def get_colorPrimary(self, obj):
+        return obj.team.colorPrimary if obj.team else None
+
+    def get_colorSecondary(self, obj):
+        return obj.team.colorSecondary if obj.team else None
 
 
 class GamesSerializer(serializers.ModelSerializer):
@@ -169,4 +177,16 @@ class GamesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Games
         fields = "__all__"
+
+
+class SettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Settings
+        fields = [
+            "playoff_teams",
+            "playoff_autobids",
+            "playoff_conf_champ_top_4",
+            "auto_realignment",
+            "auto_update_postseason_format"
+        ]
 

@@ -20,6 +20,8 @@ import RatingsStats from "./pages/RatingsStats";
 import SeasonSummary from "./pages/SeasonSummary";
 import RosterProgression from "./pages/RosterProgression";
 import RecruitingSummary from "./pages/RecruitingSummary";
+import SettingsPage from "./pages/Settings";
+import Realignment from "./pages/Realignment";
 
 const App = () => {
   return (
@@ -49,8 +51,10 @@ const App = () => {
             <Route path="stats/individual" element={<IndividualStats />} />
             <Route path="stats/ratings" element={<RatingsStats />} />
             <Route path="/summary" element={<SeasonSummary />} />
+            <Route path="/realignment" element={<Realignment />} />
             <Route path="/roster_progression" element={<RosterProgression />} />
             <Route path="/recruiting_summary" element={<RecruitingSummary />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Box>
         <Footer />

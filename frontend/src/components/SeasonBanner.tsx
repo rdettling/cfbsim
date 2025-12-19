@@ -8,9 +8,11 @@ import LoadingDialog from './LoadingDialog';
 
 interface SeasonBannerProps {
     info: Info & { lastWeek: number };
+    primaryColor?: string;
+    secondaryColor?: string;
 }
 
-const SeasonBanner = ({ info }: SeasonBannerProps) => {
+const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#ffffff' }: SeasonBannerProps) => {
     const navigate = useNavigate();
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulationMessage, setSimulationMessage] = useState('');
@@ -73,7 +75,6 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
                 </Typography>
                 <Button 
                     variant="contained" 
-                    color="primary" 
                     size="small"
                     onClick={handleClick}
                     aria-controls="week-menu"
@@ -85,7 +86,15 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
                         fontWeight: 600,
                         textTransform: 'none',
                         borderRadius: 2,
-                        minWidth: 'auto'
+                        minWidth: 'auto',
+                        backgroundColor: primaryColor,
+                        color: secondaryColor,
+                        boxShadow: 'none',
+                        '&:hover': {
+                            backgroundColor: primaryColor,
+                            opacity: 0.9,
+                            boxShadow: 'none'
+                        }
                     }}
                 >
                     {isEndOfSeason ? 'Season Summary' : 'Advance'}
@@ -113,7 +122,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
                                 px: 2,
                                 fontSize: '0.9rem',
                                 '&:hover': {
-                                    backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                    backgroundColor: `${primaryColor}15`
                                 }
                             }}
                         >
@@ -129,7 +138,7 @@ const SeasonBanner = ({ info }: SeasonBannerProps) => {
                             px: 2,
                             fontSize: '0.9rem',
                             '&:hover': {
-                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                backgroundColor: `${primaryColor}15`
                             }
                         }}
                     >

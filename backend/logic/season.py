@@ -116,13 +116,38 @@ def transition_rosters(info):
     calculate_team_ratings(info)
 
 
-def refresh_playoff(info, data):
-    """Update playoff format and clear game references for new season"""
+def refresh_playoff(info, data, update_format=False):
+    """
+    Clear playoff game references for new season and optionally update playoff format.
+    
+    Args:
+        info: Info object
+        data: Year data dictionary
+        update_format: If True, update settings from year data file values.
+                      If False, keep existing settings preferences.
+    """
     playoff_config = data["playoff"]
-    info.playoff.teams = playoff_config["teams"]
-    info.playoff.autobids = playoff_config.get("conf_champ_autobids", 0)
-    info.playoff.conf_champ_top_4 = playoff_config.get("conf_champ_top_4", False)
-    info.lastWeek = get_last_week(info.playoff.teams)
+    
+    if update_format:
+        # Update settings from year data file values
+        playoff_teams_value = playoff_config["teams"]
+        playoff_autobids_value = playoff_config.get("conf_champ_autobids", 0)
+        playoff_conf_champ_top_4_value = playoff_config.get("conf_champ_top_4", False)
+        
+        # Ensure proper values for 2 or 4 team playoffs
+        if playoff_teams_value in [2, 4]:
+            playoff_autobids_value = 0
+            playoff_conf_champ_top_4_value = False
+        
+        info.settings.playoff_teams = playoff_teams_value
+        info.settings.playoff_autobids = playoff_autobids_value
+        info.settings.playoff_conf_champ_top_4 = playoff_conf_champ_top_4_value
+        info.settings.save()
+    
+    # Use settings for lastWeek calculation
+    playoff_teams = info.settings.playoff_teams
+   
+    info.lastWeek = get_last_week(playoff_teams)
 
     # Clear all playoff game references (set to None)
     info.playoff.seed_1 = None
@@ -144,8 +169,17 @@ def refresh_playoff(info, data):
     info.playoff.save()
 
 
-def transition_season_data(info):
-    """Part 2: Handle realignment and game refresh (called by noncon)"""
+def apply_realignment_and_playoff(info):
+    """
+    Apply realignment and playoff changes for next season.
+    Called at roster_progression stage.
+    Increments year and applies changes based on settings.
+    """
+    # Increment year
+    info.currentYear += 1
+    info.currentWeek = 1
+    
+    # Find the closest available year data file for the new year
     current_year = info.currentYear
     while current_year >= info.startYear:
         file_path = f"data/years/{current_year}.json"
@@ -154,20 +188,35 @@ def transition_season_data(info):
             break
         else:
             current_year -= 1
+    else:
+        # Fallback if no year data found
+        data = load_year_data(info.currentYear)
 
     with transaction.atomic():
-        # Realignment
+        # Realignment (respects auto_realignment setting)
         start = time.time()
         realignment(info, data)
         print(f"Realignment {time.time() - start} seconds")
 
-        # Update playoff format and refresh playoff games
+        # Update playoff format and refresh playoff games (respects auto_update_postseason_format setting)
         start = time.time()
-        refresh_playoff(info, data)
+        try:
+            update_format = info.settings.auto_update_postseason_format
+        except (Settings.DoesNotExist, AttributeError):
+            update_format = True  # Default behavior
+        
+        refresh_playoff(info, data, update_format=update_format)
         print(
             f"Updated playoff format and cleared game references {time.time() - start} seconds"
         )
 
+
+def refresh_season_data(info):
+    """
+    Refresh season data: reset counters, clear plays/drives, initialize rankings, set rivalries.
+    Called at noncon stage when transitioning from recruiting_summary.
+    """
+    with transaction.atomic():
         # Reset all game counters and stats for new season
         start = time.time()
         teams = info.teams.all()
@@ -205,7 +254,7 @@ def transition_season_data(info):
         info.plays.all().delete()
         info.drives.all().delete()
 
-        # Recalculate rankings after realignment
+        # Initialize rankings
         initialize_rankings(info)
         print(f"Initialize rankings {time.time() - start} seconds")
 
@@ -246,16 +295,25 @@ def start_season(info):
     info.save()
 
 
-def realignment_summary(info):
-    """Generate summary of conference realignment changes"""
+def get_next_season_preview(info):
+    """
+    Generate preview of changes for next season, assuming auto_realignment=True and auto_update_postseason_format=True.
+    Returns a tuple of (realignment_changes, playoff_changes) so users can see what would happen.
+    
+    Returns:
+        tuple: (realignment_dict, playoff_changes_dict)
+            - realignment_dict: Teams changing conferences {team_name: {"old": conf, "new": conf}}
+            - playoff_changes_dict: Playoff format changes {"teams": {"old": X, "new": Y}, ...}
+    """
     next_year = info.currentYear + 1
     file_path = f"data/years/{next_year}.json"
 
     if not os.path.exists(file_path):
-        return {}
+        return {}, {}
 
     data = load_year_data(next_year)
 
+    # Get realignment changes (always show what would happen if auto_realignment=True)
     team_dict = {}
     teams = info.teams.all().select_related("conference")
 
@@ -265,7 +323,7 @@ def realignment_summary(info):
             "old": team.conference.confName if team.conference else "Independent"
         }
 
-    # Map teams to their new conferences from data
+    # Map teams to their new conferences from data (what would happen with auto_realignment=True)
     for conf_name, conf_data in data["conferences"].items():
         for team in conf_data["teams"]:
             team_name = team["name"]
@@ -283,23 +341,52 @@ def realignment_summary(info):
             team_dict[team_name] = {"old": "FCS", "new": "Independent"}
 
     # Filter to only teams that changed conferences
-    return {
+    realignment_changes = {
         name: confs for name, confs in team_dict.items() if confs["old"] != confs["new"]
     }
 
+    # Get playoff changes (always show what would happen if auto_update_postseason_format=True)
+    playoff_changes = {}
+    playoff_config = data.get("playoff", {})
+    
+    current_settings = info.settings
+    current_teams = current_settings.playoff_teams
+    current_autobids = current_settings.playoff_autobids or 0
+    current_conf_champ_top_4 = current_settings.playoff_conf_champ_top_4
+
+    
+    # Get next year's playoff values (what would be applied if auto_update_postseason_format=True)
+    next_teams = playoff_config.get("teams", current_teams)
+    next_autobids = playoff_config.get("conf_champ_autobids", 0)
+    next_conf_champ_top_4 = playoff_config.get("conf_champ_top_4", False)
+    
+    # Ensure proper values for 2 or 4 team playoffs
+    if next_teams in [2, 4]:
+        next_autobids = 0
+        next_conf_champ_top_4 = False
+    
+    # Build playoff changes dict (only include fields that actually change)
+    if current_teams != next_teams:
+        playoff_changes["teams"] = {"old": current_teams, "new": next_teams}
+    if current_autobids != next_autobids:
+        playoff_changes["autobids"] = {"old": current_autobids, "new": next_autobids}
+    if current_conf_champ_top_4 != next_conf_champ_top_4:
+        playoff_changes["conf_champ_top_4"] = {"old": current_conf_champ_top_4, "new": next_conf_champ_top_4}
+
+    return realignment_changes, playoff_changes
+
 
 def realignment(info, data):
-    """Update playoff settings and team conference assignments"""
-    # Update playoff configuration
-    playoff_config = data["playoff"]
-    info.playoff.teams = playoff_config["teams"]
-    info.playoff.autobids = playoff_config.get("conf_champ_autobids", 0)
-    info.playoff.conf_champ_top_4 = playoff_config.get("conf_champ_top_4", False)
-    info.lastWeek = get_last_week(info.playoff.teams)
-    info.playoff.save()
-    info.save()
-
-    teams = info.teams.all()
+    """Update team conference assignments based on year data"""
+    # Check auto_realignment setting
+    try:
+        if not info.settings.auto_realignment:
+            # Skip realignment if auto_realignment is False
+            return
+    except (Settings.DoesNotExist, AttributeError):
+        # If settings don't exist, proceed with realignment (default behavior)
+        pass
+    
     conferences = info.conferences.all()
 
     # Process conference teams
@@ -388,6 +475,8 @@ def init(
     playoff_teams=None,
     playoff_autobids=None,
     playoff_conf_champ_top_4=None,
+    auto_realignment=True,
+    auto_update_postseason_format=True,
 ):
     """Initialize a new season with all required data"""
     overall_start = time.time()
@@ -400,19 +489,23 @@ def init(
 
     # Determine playoff configuration
     playoff_config = data["playoff"]
-    final_playoff_teams = (
-        playoff_teams if playoff_teams is not None else playoff_config["teams"]
-    )
-    final_playoff_autobids = (
-        playoff_autobids
-        if playoff_autobids is not None
-        else playoff_config.get("conf_champ_autobids", 0)
-    )
-    final_conf_champ_top_4 = (
-        playoff_conf_champ_top_4
-        if playoff_conf_champ_top_4 is not None
-        else playoff_config.get("conf_champ_top_4", False)
-    )
+    
+    # Determine final playoff values for Settings based on auto_update_postseason_format
+    if auto_update_postseason_format:
+        # Use year data file values for settings
+        final_playoff_teams = playoff_config["teams"]
+        final_playoff_autobids = playoff_config.get("conf_champ_autobids", 0)
+        final_conf_champ_top_4 = playoff_config.get("conf_champ_top_4", False)
+    else:
+        # Use settings preferences
+        final_playoff_teams = playoff_teams if playoff_teams is not None else playoff_config["teams"]
+        final_playoff_autobids = playoff_autobids if playoff_autobids is not None else playoff_config.get("conf_champ_autobids", 0)
+        final_conf_champ_top_4 = playoff_conf_champ_top_4 if playoff_conf_champ_top_4 is not None else playoff_config.get("conf_champ_top_4", False)
+
+    # Ensure proper values for 2 or 4 team playoffs
+    if final_playoff_teams in [2, 4]:
+        final_playoff_autobids = 0
+        final_conf_champ_top_4 = False
 
     calculated_last_week = get_last_week(final_playoff_teams)
     time_section(config_start, "  • Data loaded and playoff configuration set")
@@ -432,14 +525,21 @@ def init(
         lastWeek=calculated_last_week,
     )
 
-    playoff = Playoff.objects.create(
-        info=info,
-        teams=final_playoff_teams,
-        autobids=final_playoff_autobids,
-        conf_champ_top_4=final_conf_champ_top_4,
-    )
+    # Create Playoff instance (without teams/autobids/conf_champ_top_4 - those are in Settings now)
+    playoff = Playoff.objects.create(info=info)
     info.playoff = playoff
-    time_section(core_start, "  • Info and playoff objects created")
+    
+    # Create Settings instance with playoff format values
+    Settings.objects.create(
+        info=info,
+        playoff_teams=final_playoff_teams,
+        playoff_autobids=final_playoff_autobids,
+        playoff_conf_champ_top_4=final_conf_champ_top_4,
+        auto_realignment=auto_realignment,
+        auto_update_postseason_format=auto_update_postseason_format
+    )
+    
+    time_section(core_start, "  • Info, playoff, and settings objects created")
 
     # Phase 3: Create conferences and teams
     teams_start = time.time()

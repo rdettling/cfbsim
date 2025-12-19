@@ -18,6 +18,20 @@ class Info(models.Model):
     stage = models.CharField(null=True, max_length=50)
 
 
+class Settings(models.Model):
+    info = models.OneToOneField(
+        Info, on_delete=models.CASCADE, related_name="settings"
+    )
+    # Playoff format preferences (these are user preferences, not duplicating Playoff model)
+    playoff_teams = models.IntegerField(default=4)  # 2, 4, or 12
+    playoff_autobids = models.IntegerField(default=6, null=True)  # Only if teams=12
+    playoff_conf_champ_top_4 = models.BooleanField(default=False)  # Only if teams=12
+    # Realignment setting
+    auto_realignment = models.BooleanField(default=True)
+    # Postseason format update setting
+    auto_update_postseason_format = models.BooleanField(default=True)
+
+
 class Teams(models.Model):
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="teams")
     name = models.CharField(max_length=50)
@@ -220,9 +234,8 @@ class Playoff(models.Model):
     info = models.ForeignKey(
         Info, on_delete=models.CASCADE, related_name="playoff_info"
     )
-    teams = models.IntegerField()
-    autobids = models.IntegerField()
-    conf_champ_top_4 = models.BooleanField(default=False)
+    # Note: teams, autobids, and conf_champ_top_4 are now stored in Settings model
+    # Access via info.settings.playoff_teams, etc.
 
     # All possible seeds (1-12)
     seed_1 = models.ForeignKey(

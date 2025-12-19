@@ -1,6 +1,7 @@
-import { AppBar, Toolbar, Button, Stack, Typography, Box, Menu, MenuItem, Divider } from '@mui/material';
+import { AppBar, Toolbar, Button, Stack, Typography, Box, Menu, MenuItem, Divider, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useState } from 'react';
 import { Conference, Team, Info } from '../interfaces';
 import { TeamLogo } from './TeamComponents';
@@ -10,7 +11,6 @@ import { STAGES } from '../constants/stages';
 import { apiService } from '../services/api';
 import GameSelectionModal from './GameSelectionModal';
 import LiveSimModal from './LiveSimModal';
-import InteractiveSimModal from './InteractiveSimModal';
 
 interface NavbarProps {
     team: Team;
@@ -26,8 +26,11 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
     const [menuAnchors, setMenuAnchors] = useState<Record<string, HTMLElement | null>>({});
     const [gameSelectionOpen, setGameSelectionOpen] = useState(false);
     const [liveSimOpen, setLiveSimOpen] = useState(false);
-    const [interactiveSimOpen, setInteractiveSimOpen] = useState(false);
     const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
+
+    // Team colors with fallbacks
+    const primaryColor = info.colorPrimary || team.colorPrimary || '#1976d2';
+    const secondaryColor = info.colorSecondary || team.colorSecondary || '#ffffff';
 
     // Menu handling functions
     const handleMenuOpen = (menu: string) => (event: React.MouseEvent<HTMLElement>) => {
@@ -55,25 +58,13 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         setGameSelectionOpen(true);
     };
 
-    const handleGameSelect = (gameId: number, isUserGame: boolean) => {
-        console.log('Game selected:', gameId, 'isUserGame:', isUserGame);
+    const handleGameSelect = (gameId: number) => {
         setSelectedGameId(gameId);
-        if (isUserGame) {
-            setInteractiveSimOpen(true);
-        } else {
-            setLiveSimOpen(true);
-        }
+        setLiveSimOpen(true);
     };
 
     const handleLiveSimClose = () => {
         setLiveSimOpen(false);
-        setSelectedGameId(null);
-        // Refresh the page to show updated data
-        window.location.reload();
-    };
-
-    const handleInteractiveSimClose = () => {
-        setInteractiveSimOpen(false);
         setSelectedGameId(null);
         // Refresh the page to show updated data
         window.location.reload();
@@ -131,6 +122,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
             sx={{ 
                 mb: 3,
                 backgroundColor: 'white',
+                borderTop: `3px solid ${primaryColor}`,
                 borderBottom: '1px solid',
                 borderColor: 'divider'
             }}
@@ -155,7 +147,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                                 fontSize: '0.95rem',
                                 color: 'text.primary',
                                 '&:hover': {
-                                    backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                    backgroundColor: `${primaryColor}15`
                                 }
                             }}
                         >
@@ -176,7 +168,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                                     fontSize: '0.95rem',
                                     color: 'text.primary',
                                     '&:hover': {
-                                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                        backgroundColor: `${primaryColor}15`
                                     }
                                 }}
                             >
@@ -204,7 +196,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                                             px: 2,
                                             fontSize: '0.95rem',
                                             '&:hover': {
-                                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                                backgroundColor: `${primaryColor}15`
                                             }
                                         }}
                                     >
@@ -226,7 +218,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                             fontSize: '0.95rem',
                             color: 'text.primary',
                             '&:hover': {
-                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                backgroundColor: `${primaryColor}15`
                             }
                         }}
                     >
@@ -244,33 +236,12 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                             fontSize: '0.95rem',
                             color: 'text.primary',
                             '&:hover': {
-                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                backgroundColor: `${primaryColor}15`
                             }
                         }}
                     >
                         PLAYOFF
                     </Button>
-
-                    {currentStage === 'season' && (
-                        <Button 
-                            color="inherit" 
-                            onClick={handleLiveSimClick}
-                            sx={{
-                                px: 2,
-                                py: 1,
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                fontSize: '0.95rem',
-                                color: 'success.main',
-                                ml: 1,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(46, 125, 50, 0.04)'
-                                }
-                            }}
-                        >
-                            LIVE SIM
-                        </Button>
-                    )}
                 </Stack>
 
                 {/* Live Sim Modals */}
@@ -284,84 +255,149 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     onClose={handleLiveSimClose}
                     gameId={selectedGameId}
                 />
-                <InteractiveSimModal
-                    open={interactiveSimOpen}
-                    onClose={handleInteractiveSimClose}
-                    gameId={selectedGameId}
-                />
 
-                {/* Right Section - Season Info and Home */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    {/* Season Info Card */}
+                {/* Right Section - Redesigned */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    {/* Season Info - Compact Display */}
                     <Box sx={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: 2,
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        gap: 1.5,
                         px: 2,
-                        py: 1,
+                        py: 0.75,
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
                         borderRadius: 2,
-                        border: '1px solid rgba(0, 0, 0, 0.08)'
+                        border: `1px solid ${primaryColor}20`,
+                        borderLeft: `3px solid ${primaryColor}`
                     }}>
                         <Typography 
                             variant="h6" 
                             sx={{ 
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 color: 'text.primary',
-                                fontSize: '1rem'
+                                fontSize: '1.1rem',
+                                lineHeight: 1
                             }}
                         >
                             {info.currentYear}
                         </Typography>
-
-                        <Divider orientation="vertical" flexItem sx={{ height: 20 }} />
-
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                    fontWeight: 500,
-                                    color: 'text.secondary',
-                                    fontSize: '0.8rem',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
-                                }}
-                            >
-                                {currentStageInfo?.banner_label}
-                            </Typography>
-                            
-                            {/* Banner */}
-                            {currentStageInfo && (
-                                currentStageInfo.season ? (
-                                    <SeasonBanner info={info} />
-                                ) : (
-                                    nextStageInfo && (
-                                        <NonSeasonBanner currentStage={currentStageInfo} nextStage={nextStageInfo} />
-                                    )
-                                )
-                            )}
-                        </Box>
+                        <Divider orientation="vertical" flexItem sx={{ height: 24, mx: 0.5 }} />
+                        <Chip 
+                            label={currentStageInfo?.banner_label || ''}
+                            size="small"
+                            sx={{
+                                height: 24,
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                backgroundColor: `${primaryColor}1A`,
+                                color: primaryColor
+                            }}
+                        />
                     </Box>
 
-                    {/* Home Button */}
+                    {/* Simulation Controls - Grouped (Week/Advance + Live Sim) */}
+                    {currentStage === 'season' && (
+                        <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1,
+                            px: 1.5,
+                            py: 0.75,
+                            backgroundColor: `${primaryColor}0A`,
+                            borderRadius: 2,
+                            border: `1px solid ${primaryColor}26`
+                        }}>
+                            <SeasonBanner info={info} primaryColor={primaryColor} secondaryColor={secondaryColor} />
+                            <Divider orientation="vertical" flexItem sx={{ height: 24, mx: 0.5 }} />
+                            <Button 
+                                variant="contained"
+                                onClick={handleLiveSimClick}
+                                size="small"
+                                sx={{
+                                    px: 2,
+                                    py: 0.5,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    fontSize: '0.85rem',
+                                    borderRadius: 1.5,
+                                    boxShadow: 'none',
+                                    backgroundColor: primaryColor,
+                                    color: secondaryColor,
+                                    '&:hover': {
+                                        boxShadow: 'none',
+                                        backgroundColor: primaryColor,
+                                        opacity: 0.9
+                                    }
+                                }}
+                            >
+                                Live Sim
+                            </Button>
+                        </Box>
+                    )}
+
+                    {/* Non-season stage info */}
+                    {currentStage !== 'season' && currentStageInfo && nextStageInfo && (
+                        <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1,
+                            px: 1.5,
+                            py: 0.75,
+                            backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                            borderRadius: 2,
+                            border: '1px solid rgba(0, 0, 0, 0.08)'
+                        }}>
+                            <NonSeasonBanner 
+                                currentStage={currentStageInfo} 
+                                nextStage={nextStageInfo}
+                                primaryColor={primaryColor}
+                                secondaryColor={secondaryColor}
+                            />
+                        </Box>
+                    )}
+
+                    {/* Settings Button - Icon Only */}
+                    <Button 
+                        color="inherit" 
+                        onClick={() => navigate('/settings')}
+                        sx={{
+                            minWidth: 'auto',
+                            width: 40,
+                            height: 40,
+                            p: 0,
+                            borderRadius: 2,
+                            color: 'text.secondary',
+                            '&:hover': {
+                                backgroundColor: `${primaryColor}15`,
+                                color: primaryColor
+                            }
+                        }}
+                        aria-label="Settings"
+                    >
+                        <SettingsIcon />
+                    </Button>
+
+                    {/* Home Button - Icon Only */}
                     <Button 
                         color="inherit" 
                         onClick={navigateWithApi('/', () => apiService.getHome())}
-                        startIcon={<HomeIcon />}
                         sx={{
-                            px: 2,
-                            py: 1,
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            fontSize: '0.95rem',
-                            color: 'text.primary',
+                            minWidth: 'auto',
+                            width: 40,
+                            height: 40,
+                            p: 0,
                             borderRadius: 2,
+                            color: 'text.secondary',
                             '&:hover': {
-                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                backgroundColor: `${primaryColor}15`,
+                                color: primaryColor
                             }
                         }}
+                        aria-label="Home"
                     >
-                        HOME
+                        <HomeIcon />
                     </Button>
                 </Box>
             </Toolbar>

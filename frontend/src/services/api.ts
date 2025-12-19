@@ -187,6 +187,18 @@ export const apiService = {
     getRecruitingSummary: <T>() => 
         request<T>('get', '/api/recruiting_summary/'),
     
+    // Realignment
+    getRealignment: <T>() => 
+        request<T>('get', '/api/realignment/'),
+    updateRealignmentSettings: <T>(settings: any) => 
+        request<T>('put', '/api/realignment/update/', { data: settings }),
+    
+    // Settings
+    getSettings: <T>() => 
+        request<T>('get', '/api/settings/'),
+    updateSettings: <T>(settings: any) => 
+        request<T>('put', '/api/settings/', { data: settings }),
+    
     // Live sim
     getLiveSimGames: <T>() => 
         request<T>('get', '/api/live-sim-games/'),
