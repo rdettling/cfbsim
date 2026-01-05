@@ -62,7 +62,7 @@ RANDOM_VARIANCE_RANGE = (5, 9)  # applied once to final team rating
 
 ROSTER = {
     "qb": {"starters": 1, "total": 4},
-    "rb": {"starters": 1, "total": 5},
+    "rb": {"starters": 2, "total": 5},
     "wr": {"starters": 3, "total": 7},
     "te": {"starters": 1, "total": 5},
     "ol": {"starters": 5, "total": 12},

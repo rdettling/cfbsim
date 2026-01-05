@@ -21,7 +21,8 @@ import {
     FormControl,
     InputLabel,
     Paper,
-    Link
+    Link,
+    Chip
 } from '@mui/material';
 import { useDataFetching } from '../hooks/useDataFetching';
 import { PageLayout } from '../components/PageLayout';
@@ -52,15 +53,17 @@ interface PlayerData {
     conferences: Conference[];
     career_stats: { [year: number]: any };
     game_logs: { [year: number]: GameLog[] };
+    awards: Array<{ slug: string; name: string }>;
 }
 
 // PlayerHeader Component
 interface PlayerHeaderProps {
     player: Player;
     onTeamClick: (name: string) => void;
+    awards: Array<{ slug: string; name: string }>;
 }
 
-const PlayerHeader = ({ player, onTeamClick }: PlayerHeaderProps) => {
+const PlayerHeader = ({ player, onTeamClick, awards }: PlayerHeaderProps) => {
     return (
         <Card elevation={3} sx={{ mb: 3 }}>
             <CardContent>
@@ -69,6 +72,20 @@ const PlayerHeader = ({ player, onTeamClick }: PlayerHeaderProps) => {
                         <Typography variant="h3" fontWeight="bold" gutterBottom>
                             {player.first} {player.last}
                         </Typography>
+
+                        {awards.length > 0 && (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                {awards.map(award => (
+                                    <Chip
+                                        key={award.slug}
+                                        label={award.name}
+                                        variant="outlined"
+                                        color="secondary"
+                                        sx={{ fontWeight: 600 }}
+                                    />
+                                ))}
+                            </Box>
+                        )}
                         
                         <Table size="small" sx={{ maxWidth: 500 }}>
                             <TableBody>
@@ -386,6 +403,7 @@ const Player = () => {
     };
 
     const player = data?.player;
+    const awards = data?.awards ?? [];
     const careerStatsByYear = data?.career_stats || {};
     const gameLogsByYear = data?.game_logs || {};
     
@@ -418,6 +436,7 @@ const Player = () => {
                     <PlayerHeader 
                         player={player} 
                         onTeamClick={handleTeamClick} 
+                        awards={awards}
                     />
 
                     <CareerStats

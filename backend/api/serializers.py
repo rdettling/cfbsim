@@ -186,7 +186,50 @@ class SettingsSerializer(serializers.ModelSerializer):
             "playoff_teams",
             "playoff_autobids",
             "playoff_conf_champ_top_4",
-            "auto_realignment",
-            "auto_update_postseason_format"
+        "auto_realignment",
+        "auto_update_postseason_format"
         ]
 
+
+class AwardPlayerSerializer(serializers.ModelSerializer):
+    team_name = serializers.CharField(source="team.name", read_only=True)
+
+    class Meta:
+        model = Players
+        fields = [
+            "id",
+            "first",
+            "last",
+            "pos",
+            "rating",
+            "stars",
+            "team_name",
+        ]
+
+
+class AwardSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source="name", read_only=True)
+    category_slug = serializers.CharField(source="slug", read_only=True)
+    category_description = serializers.CharField(source="description", read_only=True)
+    first_place = AwardPlayerSerializer(read_only=True)
+    second_place = AwardPlayerSerializer(read_only=True)
+    third_place = AwardPlayerSerializer(read_only=True)
+
+    class Meta:
+        model = Award
+        fields = [
+            "category_slug",
+            "category_name",
+            "category_description",
+            "is_final",
+            "last_updated",
+            "first_place",
+            "first_score",
+            "first_stats",
+            "second_place",
+            "second_score",
+            "second_stats",
+            "third_place",
+            "third_score",
+            "third_stats",
+        ]

@@ -20,6 +20,35 @@ from logic.constants.sim_constants import (
 )
 
 
+DEFENDER_POSITIONS = ["dl", "lb", "cb", "s"]
+
+
+def weighted_player_choice(players, bias_map=None):
+    """Pick a starter based on rating-weighted randomness."""
+    if not players:
+        return None
+
+    bias_map = bias_map or {}
+    weights = []
+    for player in players:
+        base_rating = max(player.rating or 0, 0) + 5
+        bias = bias_map.get(player.pos.lower(), 1.0)
+        weights.append(base_rating * bias)
+
+    if sum(weights) == 0:
+        return random.choice(players)
+
+    return random.choices(players, weights=weights, k=1)[0]
+
+
+def collect_defenders(team, starters_by_team_pos):
+    """Collect all defensive starters for a team."""
+    defenders = []
+    for pos in DEFENDER_POSITIONS:
+        defenders.extend(starters_by_team_pos.get((team, pos), []))
+    return defenders
+
+
 def update_rankings(info):
     """Update team rankings if needed for the current week"""
     total_start = time.time()
@@ -180,7 +209,7 @@ def get_or_cache_starters(info):
         return info._starters_cache
 
     # Query and cache
-    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
+    desired_positions = {"qb", "rb", "wr", "te", "k", "p", "dl", "lb", "cb", "s"}
     all_starters = info.players.filter(
         starter=True, pos__in=desired_positions
     ).select_related("team")
@@ -376,13 +405,14 @@ def update_team_records(games):
 def create_game_logs_from_plays(
     game, info, plays_to_process=None, starters_by_team_pos=None
 ):
-    desired_positions = {"qb", "rb", "wr", "te", "k", "p"}
+    desired_positions = {"qb", "rb", "wr", "te", "k", "dl", "lb", "cb", "s"}
 
-    # Get starters if not provided
+    # Get starters if not provided (relies on starter flag; supports multiple RB starters)
     if starters_by_team_pos is None:
-        all_starters = info.players.filter(
-            starter=True, pos__in=desired_positions
-        ).select_related("team")
+        all_starters = list(
+            info.players.filter(starter=True, pos__in=desired_positions)
+            .select_related("team")
+        )
 
         starters_by_team_pos = {
             (player.team, player.pos): [] for player in all_starters
@@ -425,6 +455,8 @@ def create_game_logs_from_plays(
         wr_starters = starters_by_team_pos.get((offense_team, "wr"))
         te_starters = starters_by_team_pos.get((offense_team, "te"))
         k_starter = starters_by_team_pos.get((offense_team, "k"))
+        defense_team = play.defense
+        defense_defenders = collect_defenders(defense_team, starters_by_team_pos)
 
         if not (
             rb_starters and qb_starter and wr_starters and te_starters and k_starter
@@ -432,7 +464,7 @@ def create_game_logs_from_plays(
             continue
 
         if play.playType == "run":
-            runner = random.choice(rb_starters)
+            runner = weighted_player_choice(rb_starters)
             game_log = game_log_dict[(runner, game)]
             # Update run stats
             game_log.rush_attempts += 1
@@ -441,9 +473,29 @@ def create_game_logs_from_plays(
                 game_log.rush_touchdowns += 1
             elif play.result == "fumble":
                 game_log.fumbles += 1
+            tackler = weighted_player_choice(
+                defense_defenders,
+                bias_map={"dl": 1.2, "lb": 1.1, "cb": 0.8, "s": 0.9},
+            )
+            if tackler:
+                defense_log = game_log_dict[(tackler, game)]
+                defense_log.tackles += 1
         elif play.playType == "pass":
+            if play.result == "sack":
+                qb_log = game_log_dict[(qb_starter[0], game)]
+                qb_log.pass_attempts += 1
+                sack_defender = weighted_player_choice(
+                    defense_defenders, bias_map={"dl": 1.4, "lb": 1.1}
+                )
+                if sack_defender:
+                    defense_log = game_log_dict[(sack_defender, game)]
+                    defense_log.sacks += 1
+                continue
+
             candidates = wr_starters + te_starters + rb_starters
             receiver = choose_receiver(candidates)
+            if not receiver:
+                continue
             qb_game_log = game_log_dict[(qb_starter[0], game)]
             receiver_game_log = game_log_dict[(receiver, game)]
             # Update pass stats
@@ -458,8 +510,17 @@ def create_game_logs_from_plays(
                     receiver_game_log.receiving_touchdowns += 1
             elif play.result == "interception":
                 qb_game_log.pass_interceptions += 1
+                interceptor = weighted_player_choice(
+                    defense_defenders, bias_map={"cb": 1.3, "s": 1.3, "lb": 0.8}
+                )
+                if interceptor:
+                    defense_log = game_log_dict[(interceptor, game)]
+                    defense_log.interceptions += 1
         elif play.playType == "field goal":
-            game_log = game_log_dict[(k_starter[0], game)]
+            kicker = weighted_player_choice(k_starter)
+            if not kicker:
+                continue
+            game_log = game_log_dict[(kicker, game)]
             # Update kick stats
             game_log.field_goals_attempted += 1
             if play.result == "made field goal":

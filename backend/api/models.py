@@ -360,3 +360,45 @@ class Offers(models.Model):
 
     class Meta:
         unique_together = ["recruit", "team"]
+
+
+class Award(models.Model):
+    info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="awards")
+    slug = models.CharField(max_length=64)
+    name = models.CharField(max_length=128, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    is_final = models.BooleanField(default=False)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    first_place = models.ForeignKey(
+        Players,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="award_first_place",
+    )
+    first_score = models.FloatField(null=True, blank=True)
+    first_stats = models.JSONField(null=True, blank=True)
+
+    second_place = models.ForeignKey(
+        Players,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="award_second_place",
+    )
+    second_score = models.FloatField(null=True, blank=True)
+    second_stats = models.JSONField(null=True, blank=True)
+
+    third_place = models.ForeignKey(
+        Players,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="award_third_place",
+    )
+    third_score = models.FloatField(null=True, blank=True)
+    third_stats = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("info", "slug", "is_final")
