@@ -233,6 +233,8 @@ def player(request, id):
             year_logs.append(filtered_game_log)
         game_logs_by_year[year] = year_logs
 
+    awards = Award.objects.filter(info=info, is_final=True, first_place=player)
+
     return Response(
         {
             "info": InfoSerializer(info).data,
@@ -240,6 +242,7 @@ def player(request, id):
             "team": TeamsSerializer(team).data,
             "career_stats": career_stats_by_year,
             "game_logs": game_logs_by_year,
+            "awards": [{"slug": award.slug, "name": award.name} for award in awards],
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,

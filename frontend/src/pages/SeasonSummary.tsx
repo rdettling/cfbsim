@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
-import { Team, Info, Conference } from '../interfaces';
+import { Team, Info, Conference, AwardSnapshot } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
     Typography,
@@ -14,7 +14,9 @@ import {
     Box,
     Card,
     CardContent,
-    Chip} from '@mui/material';
+    Chip,
+    Stack,
+    Link as MuiLink} from '@mui/material';
 import { TeamInfoModal } from '../components/TeamComponents';
 import { PageLayout } from '../components/PageLayout';
 
@@ -23,6 +25,7 @@ interface SummaryData {
     team: Team;
     conferences: Conference[];
     champion: Team; // Changed from championship to champion to match backend
+    awards: AwardSnapshot[];
 }
 
 const SeasonSummary = () => {
@@ -55,6 +58,9 @@ const SeasonSummary = () => {
     };
 
     const champion = data?.champion;
+    const awards = data?.awards ?? [];
+
+    const getAwardStatLine = (stats?: Record<string, any> | null) => stats?.stat_line ?? 'No stats yet';
 
     return (
         <PageLayout 
@@ -108,6 +114,63 @@ const SeasonSummary = () => {
                                     py: 1
                                 }} 
                             />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {awards.length > 0 && (
+                    <Card sx={{ mb: 4 }}>
+                        <CardContent>
+                            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+                                Award Winners
+                            </Typography>
+                            <Stack spacing={2}>
+                                {awards.map(award => {
+                                    const winner = award.first_place;
+                                    return (
+                                        <Box
+                                            key={award.category_slug}
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                borderBottom: '1px solid',
+                                                borderColor: 'divider',
+                                                pb: 2,
+                                                '&:last-of-type': { borderBottom: 'none', pb: 0 }
+                                            }}
+                                        >
+                                            <Box>
+                                                <Typography variant="subtitle2" color="text.secondary">
+                                                    {award.category_name}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    {winner && <TeamLogo name={winner.team_name} size={32} />}
+                                                    {winner ? (
+                                                        <MuiLink
+                                                            href={`/players/${winner.id}`}
+                                                            underline="hover"
+                                                            sx={{ fontWeight: 700 }}
+                                                        >
+                                                            {winner.first} {winner.last}
+                                                        </MuiLink>
+                                                    ) : (
+                                                        <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                                                            TBD
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {getAwardStatLine(award.first_stats)}
+                                                </Typography>
+                                            </Box>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {winner?.pos || '--'}
+                                            </Typography>
+                                        </Box>
+                                    );
+                                })}
+                            </Stack>
                         </CardContent>
                     </Card>
                 )}

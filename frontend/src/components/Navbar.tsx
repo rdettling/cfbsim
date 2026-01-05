@@ -101,7 +101,8 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
             items: [
                 { label: 'Team', path: '/stats/team' },
                 { label: 'Individual', path: '/stats/individual' },
-                { label: 'Ratings', path: '/stats/ratings' }
+                { label: 'Ratings', path: '/stats/ratings' },
+                { label: 'Awards', path: '/awards' }
             ]
         },
         {

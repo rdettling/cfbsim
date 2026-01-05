@@ -193,6 +193,10 @@ export const apiService = {
     updateRealignmentSettings: <T>(settings: any) => 
         request<T>('put', '/api/realignment/update/', { data: settings }),
     
+    // Awards
+    getAwards: <T>() =>
+        request<T>('get', '/api/awards/'),
+    
     // Settings
     getSettings: <T>() => 
         request<T>('get', '/api/settings/'),

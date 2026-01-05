@@ -13,6 +13,7 @@ from logic.season import (
     apply_realignment_and_playoff,
     refresh_season_data,
 )
+from logic.awards import finalize_awards
 
 
 @api_view(["GET"])
@@ -25,6 +26,11 @@ def season_summary(request):
         update_history(info)
         info.stage = "summary"
         info.save()
+        finalize_awards(info)
+
+    final_awards = Award.objects.filter(info=info, is_final=True).select_related(
+        "first_place", "second_place", "third_place"
+    )
 
     return Response(
         {
@@ -34,6 +40,7 @@ def season_summary(request):
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
+            "awards": AwardSerializer(final_awards, many=True).data,
         }
     )
 

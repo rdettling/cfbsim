@@ -22,6 +22,7 @@ import RosterProgression from "./pages/RosterProgression";
 import RecruitingSummary from "./pages/RecruitingSummary";
 import SettingsPage from "./pages/Settings";
 import Realignment from "./pages/Realignment";
+import Awards from "./pages/Awards";
 
 const App = () => {
   return (
@@ -55,6 +56,7 @@ const App = () => {
             <Route path="/roster_progression" element={<RosterProgression />} />
             <Route path="/recruiting_summary" element={<RecruitingSummary />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/awards" element={<Awards />} />
           </Routes>
         </Box>
         <Footer />

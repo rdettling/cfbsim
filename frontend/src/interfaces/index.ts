@@ -277,3 +277,39 @@ export interface FilterOptions {
     page?: number;
     limit?: number;
 }
+
+
+export interface AwardPlayer {
+    id: number;
+    first: string;
+    last: string;
+    pos: string;
+    rating: number;
+    stars: number;
+    team_name: string;
+}
+
+export interface AwardSnapshot {
+    category_slug: string;
+    category_name: string;
+    category_description: string;
+    is_final: boolean;
+    last_updated: string;
+    first_place: AwardPlayer | null;
+    first_score: number | null;
+    first_stats: Record<string, any> | null;
+    second_place: AwardPlayer | null;
+    second_score: number | null;
+    second_stats: Record<string, any> | null;
+    third_place: AwardPlayer | null;
+    third_score: number | null;
+    third_stats: Record<string, any> | null;
+}
+
+export interface AwardsPageData {
+    info: Info;
+    team: Team;
+    conferences: Conference[];
+    favorites: AwardSnapshot[];
+    final: AwardSnapshot[];
+}

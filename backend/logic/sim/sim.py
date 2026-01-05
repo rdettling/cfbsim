@@ -164,16 +164,16 @@ def format_play_text(play, starters):
 
         if play.result == "made field goal":
             play.text = (
-                f"{kicker.first} {kicker.last}'s {distance} yard field goal is good"
+                f"{kicker_name}'s {distance} yard field goal is good"
             )
         else:
             play.text = (
-                f"{kicker.first} {kicker.last}'s {distance} yard field goal is no good"
+                f"{kicker_name}'s {distance} yard field goal is no good"
             )
 
     elif play.playType == "punt":
-        punter = p_starters[0]
-        play.text = f"{punter.first} {punter.last} punted"
+        punter = p_starters[0] if p_starters else None
+        play.text = f"{punter.first} {punter.last} punted" if punter else "Punt"
 
 
 def simDrive(
@@ -233,13 +233,13 @@ def simDrive(
 
             # Handle 4th down decisions
             if down == 4:
-                decision = fourthDown(fieldPosition, yardsLeft, needed)
+                decision = decide_fourth_down(fieldPosition, yardsLeft, needed)
 
                 if decision == "field_goal":
                     play.playType = "field goal"
                     play.yardsGained = 0
 
-                    if fieldGoal(100 - fieldPosition):
+                    if fieldGoal(fieldPosition):
                         play.result = "made field goal"
                         drive.result = "made field goal"
                         drive.points = 3
@@ -281,6 +281,7 @@ def simDrive(
             play.result = result["outcome"]
             fieldPosition += result["yards"]
             yardsLeft -= result["yards"]
+            play.yardsLeft = yardsLeft
 
             # Format play text if starters are available
             if starters and info:
@@ -305,7 +306,7 @@ def simDrive(
                 drive.points = 0
                 update_drive_score_after(game, drive)
                 return drive, 20
-            elif down == 4 and play.yardsLeft > 0:
+            elif down == 4 and yardsLeft > 0:
                 drive.result = "turnover on downs"
                 return drive, 100 - fieldPosition
             
@@ -317,38 +318,34 @@ def simDrive(
                 break  # Exit the down loop to start fresh with 1st down
 
 
-def fourthDown(fieldPosition, yardsLeft, needed):
-    # Always go for it if needed points are more than 3
-    if needed in [6, 7, 8]:
-        return "go"
+def decide_fourth_down(fieldPosition, yardsLeft, needed):
+    """
+    Conservative fourth-down logic with a single source of truth.
+    fieldPosition is yards from own goal line. FG distance = (100 - fieldPosition) + 17.
+    """
+    distance = (100 - fieldPosition) + 17
+    fg_in_range = distance <= 55
 
-    # Decisions when needed points are 3
-    if needed == 3:
-        if fieldPosition < FIELD_GOAL_RANGE:
-            # If not in field goal range, go for it
-            return "go"
-        else:
-            # In field goal range, attempt a field goal
-            return "field goal"
+    # If a makeable FG exists, take the points by default.
+    if fg_in_range and needed <= 3:
+        return "field_goal"
 
-    # Standard decisions based on field position and yards left
-    if fieldPosition < 40:
+    # If it's 4th and long, kick if possible, otherwise punt.
+    if yardsLeft >= 7:
+        return "field_goal" if fg_in_range else "punt"
+
+    # Conventional conservative approach by field position for shorter yardage
+    if fieldPosition < 45:
         return "punt"
-    elif fieldPosition < FIELD_GOAL_RANGE:
-        if yardsLeft < 5:
-            return "go"
-        else:
-            return "punt"
-    elif fieldPosition < 70:
-        if yardsLeft < 3:
-            return "go"
-        else:
-            return "field goal"
-    else:
-        if yardsLeft < 5:
-            return "go"
-        else:
-            return "field goal"
+
+    if fieldPosition < 55:
+        # Middle of the field: go only on very short yardage
+        return "go" if yardsLeft <= 2 else ("field_goal" if fg_in_range else "punt")
+
+    # Inside opponent territory: prefer FG unless inches/short
+    if yardsLeft <= 1 and not fg_in_range:
+        return "go"
+    return "field_goal"
 
 
 def simGame(
@@ -474,7 +471,12 @@ def overtime(game, info=None, drives_to_create=None, plays_to_create=None, start
                 break
 
 
-def fieldGoal(yard_line):
+def fieldGoal(field_position):
+    """
+    Decide FG make/miss given line of scrimmage measured from the kicking team's own goal line.
+    Example: field_position=60 (opponent 40) -> distance = (100 - 60) + 17 = 57 yards.
+    """
+    yard_line = 100 - field_position
     distance = yard_line + 17
 
     if distance < 37:
@@ -593,81 +595,3 @@ def choose_receiver(candidates, rating_exponent=4):
 
     # Use random.choices for weighted selection
     return random.choices(candidates, weights=normalized_chances, k=1)[0]
-
-
-def generatePlaysBank(game, info, starters_cache, num_plays=100):
-    """
-    Generate a bank of pre-simulated plays for interactive simulation.
-    Only includes core play data - frontend will fill in contextual info.
-    
-    Args:
-        game: Game object
-        info: Info object
-        starters_cache: Cached starters for player names
-        num_plays: Number of plays to generate per team per play type
-    
-    Returns:
-        dict: {
-            'teamA': {
-                'run': [{'playType': 'run', 'yardsGained': 5, 'result': 'run'}, ...],
-                'pass': [{'playType': 'pass', 'yardsGained': 12, 'result': 'pass'}, ...],
-                'punt': [{'playType': 'punt', 'yardsGained': 0, 'result': 'punt'}, ...],
-                'field_goal': [{'playType': 'field_goal', 'yardsGained': 0, 'result': 'made field goal'}, ...]
-            },
-            'teamB': {...}
-        }
-    """
-    plays_bank = {
-        'teamA': {'run': [], 'pass': [], 'punt': [], 'field_goal': []},
-        'teamB': {'run': [], 'pass': [], 'punt': [], 'field_goal': []}
-    }
-    
-    teams = [game.teamA, game.teamB]
-    team_keys = ['teamA', 'teamB']
-    
-    for i, (team, team_key) in enumerate(zip(teams, team_keys)):
-        defense = game.teamB if team == game.teamA else game.teamA
-        
-        # Generate run plays
-        for _ in range(num_plays):
-            # Simulate at various field positions to get realistic outcomes
-            field_pos = random.choice([20, 30, 40, 50, 60, 70, 80, 90])
-            result = simRun(field_pos, team, defense)
-            
-            plays_bank[team_key]['run'].append({
-                'playType': 'run',
-                'yardsGained': result["yards"],
-                'result': result["outcome"]
-            })
-        
-        # Generate pass plays
-        for _ in range(num_plays):
-            field_pos = random.choice([20, 30, 40, 50, 60, 70, 80, 90])
-            result = simPass(field_pos, team, defense)
-            
-            plays_bank[team_key]['pass'].append({
-                'playType': 'pass',
-                'yardsGained': result["yards"],
-                'result': result["outcome"]
-            })
-        
-        # Generate punt plays
-        for _ in range(20):  # Fewer punts needed
-            plays_bank[team_key]['punt'].append({
-                'playType': 'punt',
-                'yardsGained': 0,
-                'result': 'punt'
-            })
-        
-        # Generate field goal plays
-        for _ in range(20):  # Fewer field goals needed
-            field_pos = random.choice([50, 60, 70, 80, 90])
-            made = fieldGoal(100 - field_pos)
-            
-            plays_bank[team_key]['field_goal'].append({
-                'playType': 'field_goal',
-                'yardsGained': 0,
-                'result': 'made field goal' if made else 'missed field goal'
-            })
-    
-    return plays_bank

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from ..serializers import *
 from logic.stats import game_stats, accumulate_team_stats
 from django.db.models import Q
+from logic.util import format_player_game_log_summary, categorize_game_logs
 
 
 @api_view(["GET"])
@@ -171,68 +172,11 @@ def calculate_team_stats_with_rankings(info, team_a, team_b):
 def game_result(info, game):
     """API endpoint for game result data"""
     drives = game.drives.all()
-    game_logs = game.game_logs.all()
-
-    # Process game logs by category
-    categorized_game_log_strings = {
-        "Passing": [],
-        "Rushing": [],
-        "Receiving": [],
-        "Kicking": [],
-    }
-
-    for game_log in game_logs:
-        player = game_log.player
-        position = player.pos
-        team_name = player.team.name
-
-        if "qb" in position.lower():
-            qb_game_log_dict = {
-                "player_id": player.id,
-                "team_name": team_name,
-                "game_log_string": f"{player.first} {player.last} ({team_name} - QB): {game_log.pass_completions}/{game_log.pass_attempts} for {game_log.pass_yards} yards, {game_log.pass_touchdowns} TDs, {game_log.pass_interceptions} INTs",
-            }
-            categorized_game_log_strings["Passing"].append(qb_game_log_dict)
-
-        if "rb" in position.lower() or (
-            "qb" in position.lower() and game_log.rush_attempts > 0
-        ):
-            rush_game_log_dict = {
-                "player_id": player.id,
-                "team_name": team_name,
-                "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.rush_attempts} carries, {game_log.rush_yards} yards, {game_log.rush_touchdowns} TDs",
-                "yards": game_log.rush_yards,
-            }
-            categorized_game_log_strings["Rushing"].append(rush_game_log_dict)
-
-        if (
-            "wr" in position.lower()
-            or ("rb" in position.lower() and game_log.receiving_catches > 0)
-            or ("te" in position.lower() and game_log.receiving_catches > 0)
-        ):
-            recv_game_log_dict = {
-                "player_id": player.id,
-                "team_name": team_name,
-                "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {game_log.receiving_catches} catches, {game_log.receiving_yards} yards, {game_log.receiving_touchdowns} TDs",
-                "yards": game_log.receiving_yards,
-            }
-            categorized_game_log_strings["Receiving"].append(recv_game_log_dict)
-        if "k" in position.lower():
-            k_game_log_dict = {
-                "player_id": player.id,
-                "team_name": team_name,
-                "game_log_string": f"{player.first} {player.last} ({team_name} - K): {game_log.field_goals_made}/{game_log.field_goals_attempted} FG",
-            }
-            categorized_game_log_strings["Kicking"].append(k_game_log_dict)
+    game_logs = game.game_logs.select_related("player", "player__team").all()
+    categorized_game_log_strings = categorize_game_logs(game_logs)
 
     # Serialize drives with nested plays
     drives_data = DrivesSerializer(drives.order_by("driveNum"), many=True).data
-
-    # Sort rushing and receiving game logs by yards (descending)
-    categorized_game_log_strings["Rushing"].sort(key=lambda x: x["yards"], reverse=True)
-    categorized_game_log_strings["Receiving"].sort(
-        key=lambda x: x["yards"], reverse=True
-    )
 
     return Response(
         {

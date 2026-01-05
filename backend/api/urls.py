@@ -9,11 +9,6 @@ from .views.season_views import (
     live_sim,
     get_games_to_live_sim,
 )
-from .views.interactive_views import (
-    start_interactive_sim,
-    submit_decision,
-    exit_interactive_sim,
-)
 from .views.stages_views import (
     season_summary,
     roster_progression,
@@ -25,6 +20,7 @@ from .views.stages_views import (
 from .views.team_views import team_info, team_schedule, roster, history, player
 from .views.game_views import game
 from .views.stats_views import team_stats, individual_stats, ratings_stats
+from .views.award_views import awards, awards_status
 
 urlpatterns = [
     path("home/", home),
@@ -48,13 +44,12 @@ urlpatterns = [
     path("sim/<int:dest_week>/", advance_week),
     path("live-sim-games/", get_games_to_live_sim),
     path("game/<int:game_id>/live-sim/", live_sim),
-    path("game/<int:game_id>/start-interactive-sim/", start_interactive_sim),
-    path("game/<int:game_id>/submit-decision/", submit_decision),
-    path("game/<int:game_id>/exit-interactive-sim/", exit_interactive_sim),
     path("roster_progression/", roster_progression),
     path("recruiting_summary/", recruiting_summary),
     path("summary/", season_summary),
     path("realignment/", realignment_view),
     path("realignment/update/", update_realignment_settings),
     path("settings/", settings),
+    path("awards/", awards),
+    path("awards/status/", awards_status),
 ]

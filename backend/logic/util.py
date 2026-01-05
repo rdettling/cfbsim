@@ -30,7 +30,20 @@ def get_position_game_log(pos, game_log, game):
                 game_log.pass_interceptions,
             ),
         }
-    elif pos in ["rb", "wr", "te"]:
+    elif pos == "rb":
+        return {
+            **base_log,
+            "rush_attempts": game_log.rush_attempts,
+            "rush_yards": game_log.rush_yards,
+            "rush_touchdowns": game_log.rush_touchdowns,
+            "receiving_catches": game_log.receiving_catches,
+            "receiving_yards": game_log.receiving_yards,
+            "yards_per_rec": average(
+                game_log.receiving_yards, game_log.receiving_catches
+            ),
+            "receiving_touchdowns": game_log.receiving_touchdowns,
+        }
+    elif pos in ["wr", "te"]:
         return {
             **base_log,
             "receiving_catches": game_log.receiving_catches,
@@ -94,7 +107,19 @@ def get_position_stats(pos, stats):
             "passer_rating": stats["passer_rating"],
             "adjusted_pass_yards_per_attempt": stats["adjusted_pass_yards_per_attempt"],
         }
-    elif pos in ["rb", "wr", "te"]:
+    elif pos == "rb":
+        return {
+            **base_stats,
+            "rush_attempts": stats["rush_attempts"],
+            "rush_yards": stats["rush_yards"],
+            "yards_per_rush": stats["yards_per_rush"],
+            "rush_touchdowns": stats["rush_touchdowns"],
+            "receiving_catches": stats["receiving_catches"],
+            "receiving_yards": stats["receiving_yards"],
+            "yards_per_rec": stats["yards_per_rec"],
+            "receiving_touchdowns": stats["receiving_touchdowns"],
+        }
+    elif pos in ["wr", "te"]:
         return {
             **base_stats,
             "receiving_catches": stats["receiving_catches"],
@@ -170,6 +195,175 @@ def get_schedule_game(team, game):
         "moneyline": moneyline,
         "score": score,
     }
+
+
+def format_player_game_log_summary(game_logs):
+    """Format consolidated stats for one or more game logs similar to game_result output."""
+    if not game_logs:
+        return "No stats yet"
+
+    totals = {
+        "pass_attempts": 0,
+        "pass_completions": 0,
+        "pass_yards": 0,
+        "pass_touchdowns": 0,
+        "pass_interceptions": 0,
+        "rush_attempts": 0,
+        "rush_yards": 0,
+        "rush_touchdowns": 0,
+        "receiving_catches": 0,
+        "receiving_yards": 0,
+        "receiving_touchdowns": 0,
+        "field_goals_made": 0,
+        "field_goals_attempted": 0,
+        "tackles": 0,
+        "sacks": 0,
+        "interceptions": 0,
+    }
+    for log in game_logs:
+        totals["pass_attempts"] += log.pass_attempts or 0
+        totals["pass_completions"] += log.pass_completions or 0
+        totals["pass_yards"] += log.pass_yards or 0
+        totals["pass_touchdowns"] += log.pass_touchdowns or 0
+        totals["pass_interceptions"] += log.pass_interceptions or 0
+
+        totals["rush_attempts"] += log.rush_attempts or 0
+        totals["rush_yards"] += log.rush_yards or 0
+        totals["rush_touchdowns"] += log.rush_touchdowns or 0
+
+        totals["receiving_catches"] += log.receiving_catches or 0
+        totals["receiving_yards"] += log.receiving_yards or 0
+        totals["receiving_touchdowns"] += log.receiving_touchdowns or 0
+
+        totals["field_goals_made"] += log.field_goals_made or 0
+        totals["field_goals_attempted"] += log.field_goals_attempted or 0
+
+        totals["tackles"] += log.tackles or 0
+        totals["sacks"] += log.sacks or 0
+        totals["interceptions"] += log.interceptions or 0
+
+    parts = []
+
+    if totals["pass_attempts"] > 0:
+        parts.append(
+            f"{totals['pass_completions']}/{totals['pass_attempts']} for {totals['pass_yards']} yards, {totals['pass_touchdowns']} TDs, {totals['pass_interceptions']} INTs"
+        )
+
+    if totals["rush_attempts"] > 0:
+        parts.append(
+            f"{totals['rush_attempts']} carries for {totals['rush_yards']} yards, {totals['rush_touchdowns']} TDs"
+        )
+
+    if totals["receiving_catches"] > 0:
+        parts.append(
+            f"{totals['receiving_catches']} catches for {totals['receiving_yards']} yards, {totals['receiving_touchdowns']} TDs"
+        )
+
+    if totals["field_goals_attempted"] > 0:
+        accuracy = (
+            round((totals["field_goals_made"] / totals["field_goals_attempted"]) * 100, 1)
+            if totals["field_goals_attempted"] > 0
+            else 0
+        )
+        parts.append(f"{totals['field_goals_made']}/{totals['field_goals_attempted']} FG ({accuracy}%)")
+
+    if not parts and (totals["tackles"] or totals["sacks"] or totals["interceptions"]):
+        defender_parts = []
+        if totals["tackles"]:
+            defender_parts.append(f"Tackles: {totals['tackles']}")
+        if totals["sacks"]:
+            defender_parts.append(f"Sacks: {totals['sacks']}")
+        if totals["interceptions"]:
+            defender_parts.append(f"INTs: {totals['interceptions']}")
+        parts.append(", ".join(defender_parts))
+
+    return " · ".join(parts) if parts else "No stats yet"
+
+
+def _format_log_for_category(log, category):
+    """Return a category-specific stat line for a single game log."""
+    if category == "Passing":
+        return f"{log.pass_completions or 0}/{log.pass_attempts or 0} for {log.pass_yards or 0} yards, {log.pass_touchdowns or 0} TDs, {log.pass_interceptions or 0} INTs"
+
+    if category == "Rushing":
+        return f"{log.rush_attempts or 0} carries for {log.rush_yards or 0} yards, {log.rush_touchdowns or 0} TDs"
+
+    if category == "Receiving":
+        return f"{log.receiving_catches or 0} catches for {log.receiving_yards or 0} yards, {log.receiving_touchdowns or 0} TDs"
+
+    if category == "Kicking":
+        made = log.field_goals_made or 0
+        att = log.field_goals_attempted or 0
+        accuracy = f" ({round((made / att) * 100, 1)}%)" if att > 0 else ""
+        return f"{made}/{att} FG{accuracy}"
+
+    return ""
+
+
+def categorize_game_logs(game_logs):
+    """
+    Bucket game logs into passing/rushing/receiving/kicking categories while sharing
+    the unified stat-line formatter. The returned structure matches what the game
+    result view expects.
+    """
+    categorized = {"Passing": [], "Rushing": [], "Receiving": [], "Kicking": []}
+
+    for log in game_logs:
+        player = log.player
+        position = player.pos
+        team_name = player.team.name if player.team else "Unknown"
+        base = {
+            "player_id": player.id,
+            "team_name": team_name,
+        }
+
+        if "qb" in position.lower():
+            summary = _format_log_for_category(log, "Passing")
+            categorized["Passing"].append(
+                {
+                    **base,
+                    "game_log_string": f"{player.first} {player.last} ({team_name} - QB): {summary}",
+                }
+            )
+
+        if "rb" in position.lower() or ("qb" in position.lower() and (log.rush_attempts or 0) > 0):
+            summary = _format_log_for_category(log, "Rushing")
+            categorized["Rushing"].append(
+                {
+                    **base,
+                    "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {summary}",
+                    "yards": log.rush_yards,
+                }
+            )
+
+        if (
+            "wr" in position.lower()
+            or ("rb" in position.lower() and (log.receiving_catches or 0) > 0)
+            or ("te" in position.lower() and (log.receiving_catches or 0) > 0)
+        ):
+            summary = _format_log_for_category(log, "Receiving")
+            categorized["Receiving"].append(
+                {
+                    **base,
+                    "game_log_string": f"{player.first} {player.last} ({team_name} - {position.upper()}): {summary}",
+                    "yards": log.receiving_yards,
+                }
+            )
+
+        if "k" in position.lower():
+            summary = _format_log_for_category(log, "Kicking")
+            categorized["Kicking"].append(
+                {
+                    **base,
+                    "game_log_string": f"{player.first} {player.last} ({team_name} - K): {summary}",
+                }
+            )
+
+    # Sort rushing/receiving by yards descending for display
+    categorized["Rushing"].sort(key=lambda x: x.get("yards") or 0, reverse=True)
+    categorized["Receiving"].sort(key=lambda x: x.get("yards") or 0, reverse=True)
+
+    return categorized
 
 
 def get_last_game(info, team):
