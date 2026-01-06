@@ -286,6 +286,143 @@ def update_history(info):
     History.objects.bulk_create(years)
 
 
+def _calculate_prestige_tier_counts(prestige_config, total_teams):
+    return {
+        int(tier): int((percentage / 100) * total_teams)
+        for tier, percentage in prestige_config.items()
+    }
+
+
+def _assign_prestige_tiers(sorted_teams, teams_data, tier_counts):
+    result = []
+    teams_in_tiers = {tier: 0 for tier in range(1, 8)}
+    current_tier = 7
+
+    for entry in sorted_teams:
+        team = entry["team"]
+        team_info = teams_data["teams"].get(team.name, {})
+        ceiling = team_info.get("ceiling", 7)
+        floor = team_info.get("floor", 1)
+
+        target_tier = min(current_tier, ceiling)
+        assigned_tier = target_tier
+
+        if target_tier < current_tier:
+            for tier in range(target_tier, 0, -1):
+                if teams_in_tiers[tier] < tier_counts.get(tier, 0):
+                    assigned_tier = tier
+                    break
+        else:
+            if teams_in_tiers[current_tier] >= tier_counts.get(current_tier, 0):
+                current_tier -= 1
+                while (
+                    current_tier > 0
+                    and teams_in_tiers[current_tier] >= tier_counts.get(current_tier, 0)
+                ):
+                    current_tier -= 1
+                if current_tier == 0:
+                    current_tier = 1
+            assigned_tier = current_tier
+
+        prestige = min(assigned_tier, ceiling)
+        prestige = max(prestige, floor)
+        teams_in_tiers[prestige] += 1
+
+        result.append({"team": team, "prestige": prestige})
+
+    return result
+
+
+def _collect_rank_averages(info, start_year, end_year):
+    teams = list(info.teams.all())
+    ranks_by_team = {team.id: [] for team in teams}
+
+    history_entries = (
+        info.years.filter(year__gte=start_year, year__lte=end_year)
+        .select_related("team")
+        .only("team_id", "rank")
+    )
+
+    for entry in history_entries:
+        if entry.rank is not None:
+            ranks_by_team.setdefault(entry.team_id, []).append(entry.rank)
+
+    avg_by_team_id = {}
+    for team in teams:
+        ranks = ranks_by_team.get(team.id, [])
+        avg_by_team_id[team.id] = sum(ranks) / len(ranks) if ranks else None
+
+    return avg_by_team_id
+
+
+def get_prestige_avg_ranks(info):
+    current_year = info.currentYear
+    avg_after = _collect_rank_averages(info, current_year - 3, current_year)
+    avg_before = _collect_rank_averages(info, current_year - 4, current_year - 1)
+
+    return {
+        team.name: {"before": avg_before.get(team.id), "after": avg_after.get(team.id)}
+        for team in info.teams.all()
+    }
+
+
+def calculate_prestige_changes(info):
+    """Calculate prestige_change for each team based on 4-year average rank."""
+    current_year = info.currentYear
+    avg_after = _collect_rank_averages(info, current_year - 3, current_year)
+    avg_before = _collect_rank_averages(info, current_year - 4, current_year - 1)
+
+    teams = list(info.teams.all())
+    teams_with_avg = [
+        {"team": team, "avg_rank": avg_after.get(team.id)} for team in teams
+    ]
+
+    sorted_teams = sorted(
+        teams_with_avg,
+        key=lambda x: (x["avg_rank"] is None, x["avg_rank"] or float("inf")),
+    )
+
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    with open(os.path.join(data_dir, "prestige_config.json"), "r") as f:
+        prestige_config = json.load(f)
+    with open(os.path.join(data_dir, "teams.json"), "r") as f:
+        teams_data = json.load(f)
+
+    tier_counts = _calculate_prestige_tier_counts(prestige_config, len(sorted_teams))
+    assigned = _assign_prestige_tiers(sorted_teams, teams_data, tier_counts)
+
+    for entry in assigned:
+        team = entry["team"]
+        desired = entry["prestige"]
+
+        if desired > team.prestige:
+            desired = min(team.prestige + 1, desired)
+        elif desired < team.prestige:
+            desired = max(team.prestige - 1, desired)
+
+        team.prestige_change = desired - team.prestige
+
+    Teams.objects.bulk_update(teams, ["prestige_change"])
+    return {
+        team.name: {"before": avg_before.get(team.id), "after": avg_after.get(team.id)}
+        for team in teams
+    }
+
+
+def apply_prestige_changes(info):
+    teams = list(info.teams.all())
+
+    for team in teams:
+        if team.prestige_change:
+            team.prestige += team.prestige_change
+            team.recruiting_points = get_recruiting_points(team.prestige)
+            team.prestige_change = 0
+
+    Teams.objects.bulk_update(
+        teams, ["prestige", "recruiting_points", "prestige_change"]
+    )
+
+
 def start_season(info):
     """Start the season by filling schedules and setting initial state"""
     fillSchedules(info)

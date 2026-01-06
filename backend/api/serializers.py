@@ -14,6 +14,7 @@ class TeamsSerializer(serializers.ModelSerializer):
             "conference",
             "ranking",
             "prestige",
+            "prestige_change",
             "rating",
             "record",
             "nonConfGames",
