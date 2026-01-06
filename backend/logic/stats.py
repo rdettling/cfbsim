@@ -1,5 +1,5 @@
 from api.models import *
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 MIN_YARDS = 100
 
@@ -9,43 +9,118 @@ def accumulate_individual_stats(info, category):
     all_game_logs = info.game_logs.filter(game__year=info.currentYear)
 
     if category == "passing":
-        players = info.players.filter(pos="qb", starter=True)
-        for player in players:
-            game_logs = all_game_logs.filter(player=player)
-
-            # print(len(game_logs))
-
-            stats[player] = accumulate_passing_stats(game_logs)
-    elif category == "rushing":
-        players = info.players.filter(Q(pos="qb") | Q(pos="rb"), starter=True)
-        temp_stats = {}
-
-        for player in players:
-            game_logs = all_game_logs.filter(player=player)
-
-            # print(len(game_logs))
-
-            player_stats = accumulate_rushing_stats(game_logs)
-
-            if player_stats["yards"] >= MIN_YARDS:
-                temp_stats[player] = player_stats
-
-        stats = temp_stats
-    elif category == "receiving":
-        players = info.players.filter(
-            Q(pos="rb") | Q(pos="wr") | Q(pos="te"), starter=True
+        players = list(
+            info.players.filter(pos="qb", starter=True).select_related("team")
         )
-
-        temp_stats = {}
+        totals = {
+            row["player_id"]: row
+            for row in all_game_logs.filter(player__pos="qb", player__starter=True)
+            .values("player_id")
+            .annotate(
+                att=Sum("pass_attempts"),
+                cmp=Sum("pass_completions"),
+                yards=Sum("pass_yards"),
+                td=Sum("pass_touchdowns"),
+                inter=Sum("pass_interceptions"),
+            )
+        }
 
         for player in players:
-            game_logs = all_game_logs.filter(player=player)
-            player_stats = accumulate_receiving_stats(game_logs)
+            row = totals.get(player.id, {})
+            att = row.get("att") or 0
+            cmp = row.get("cmp") or 0
+            yards = row.get("yards") or 0
+            td = row.get("td") or 0
+            inter = row.get("inter") or 0
 
-            if player_stats["yards"] >= MIN_YARDS:
-                temp_stats[player] = player_stats
+            stats[player] = {
+                "att": att,
+                "cmp": cmp,
+                "yards": yards,
+                "td": td,
+                "int": inter,
+                "pct": percentage(cmp, att),
+                "passer_rating": passer_rating(cmp, att, yards, td, inter),
+                "adjusted_pass_yards_per_attempt": adjusted_pass_yards_per_attempt(
+                    yards, td, inter, att
+                ),
+                "yards_per_game": average(yards, player.team.gamesPlayed),
+            }
 
-        stats = temp_stats
+    elif category == "rushing":
+        players = list(
+            info.players.filter(Q(pos="qb") | Q(pos="rb"), starter=True).select_related(
+                "team"
+            )
+        )
+        totals = {
+            row["player_id"]: row
+            for row in all_game_logs.filter(
+                player__starter=True, player__pos__in=["qb", "rb"]
+            )
+            .values("player_id")
+            .annotate(
+                att=Sum("rush_attempts"),
+                yards=Sum("rush_yards"),
+                td=Sum("rush_touchdowns"),
+                fumbles=Sum("fumbles"),
+            )
+        }
+
+        for player in players:
+            row = totals.get(player.id, {})
+            att = row.get("att") or 0
+            yards = row.get("yards") or 0
+            td = row.get("td") or 0
+            fumbles = row.get("fumbles") or 0
+
+            if yards < MIN_YARDS:
+                continue
+
+            stats[player] = {
+                "att": att,
+                "yards": yards,
+                "td": td,
+                "fumbles": fumbles,
+                "yards_per_rush": average(yards, att),
+                "yards_per_game": average(yards, player.team.gamesPlayed),
+            }
+
+    elif category == "receiving":
+        players = list(
+            info.players.filter(
+                Q(pos="rb") | Q(pos="wr") | Q(pos="te"), starter=True
+            ).select_related("team")
+        )
+        totals = {
+            row["player_id"]: row
+            for row in all_game_logs.filter(
+                player__starter=True, player__pos__in=["rb", "wr", "te"]
+            )
+            .values("player_id")
+            .annotate(
+                rec=Sum("receiving_catches"),
+                yards=Sum("receiving_yards"),
+                td=Sum("receiving_touchdowns"),
+            )
+        }
+
+        for player in players:
+            row = totals.get(player.id, {})
+            rec = row.get("rec") or 0
+            yards = row.get("yards") or 0
+            td = row.get("td") or 0
+
+            if yards < MIN_YARDS:
+                continue
+
+            stats[player] = {
+                "rec": rec,
+                "yards": yards,
+                "td": td,
+                "yards_per_rec": average(yards, rec),
+                "yards_per_game": average(yards, player.team.gamesPlayed),
+            }
 
     return stats
 

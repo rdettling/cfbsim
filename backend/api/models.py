@@ -37,6 +37,7 @@ class Teams(models.Model):
     name = models.CharField(max_length=50)
     abbreviation = models.CharField(max_length=4)
     prestige = models.IntegerField()
+    prestige_change = models.IntegerField(default=0)
     rating = models.IntegerField(null=True)
     offense = models.IntegerField(null=True)
     defense = models.IntegerField(null=True)
@@ -368,6 +369,8 @@ class Award(models.Model):
     name = models.CharField(max_length=128, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     is_final = models.BooleanField(default=False)
+    calculated_year = models.IntegerField(null=True, blank=True)
+    calculated_week = models.IntegerField(null=True, blank=True)
     last_updated = models.DateTimeField(auto_now=True)
 
     first_place = models.ForeignKey(

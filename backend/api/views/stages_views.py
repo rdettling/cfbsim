@@ -8,6 +8,9 @@ import uuid
 from logic.season import (
     transition_rosters,
     update_history,
+    calculate_prestige_changes,
+    get_prestige_avg_ranks,
+    apply_prestige_changes,
     get_next_season_preview,
     init,
     apply_realignment_and_playoff,
@@ -24,19 +27,30 @@ def season_summary(request):
 
     if info.stage == "season":
         update_history(info)
+        avg_ranks = calculate_prestige_changes(info)
         info.stage = "summary"
         info.save()
         finalize_awards(info)
+    else:
+        avg_ranks = get_prestige_avg_ranks(info)
 
     final_awards = Award.objects.filter(info=info, is_final=True).select_related(
         "first_place", "second_place", "third_place"
     )
+
+    teams = info.teams.exclude(prestige_change=0).order_by("name")
+    teams_data = TeamsSerializer(teams, many=True).data
+    for team_data in teams_data:
+        rank_data = avg_ranks.get(team_data["name"], {})
+        team_data["avg_rank_before"] = rank_data.get("before")
+        team_data["avg_rank_after"] = rank_data.get("after")
 
     return Response(
         {
             "team": TeamsSerializer(info.team).data,
             "info": InfoSerializer(info).data,
             "champion": TeamsSerializer(info.playoff.natty.winner).data,
+            "teams": teams_data,
             "conferences": ConferencesSerializer(
                 info.conferences.all().order_by("confName"), many=True
             ).data,
@@ -53,6 +67,7 @@ def realignment_view(request):
 
     # Transition from summary to realignment stage
     if info.stage == "summary":
+        apply_prestige_changes(info)
         info.stage = "realignment"
         info.save()
 

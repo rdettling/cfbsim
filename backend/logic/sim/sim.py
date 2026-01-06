@@ -323,29 +323,24 @@ def decide_fourth_down(fieldPosition, yardsLeft, needed):
     Conservative fourth-down logic with a single source of truth.
     fieldPosition is yards from own goal line. FG distance = (100 - fieldPosition) + 17.
     """
-    distance = (100 - fieldPosition) + 17
-    fg_in_range = distance <= 55
+    # Base decision by field position and distance to go.
+    if fieldPosition <= 40:
+        decision = "punt"
+    elif fieldPosition <= 50:
+        decision = "go" if yardsLeft == 1 else "punt"
+    elif fieldPosition <= 62:
+        decision = "go" if yardsLeft <= 2 else "punt"
+    else:
+        decision = "go" if yardsLeft <= 3 else "field_goal"
 
-    # If a makeable FG exists, take the points by default.
-    if fg_in_range and needed <= 3:
-        return "field_goal"
+    # If points are needed to stay in the game, avoid punts and low-value FGs.
+    if needed > 0:
+        if decision == "punt":
+            decision = "go"
+        elif decision == "field_goal" and needed > 3:
+            decision = "go"
 
-    # If it's 4th and long, kick if possible, otherwise punt.
-    if yardsLeft >= 7:
-        return "field_goal" if fg_in_range else "punt"
-
-    # Conventional conservative approach by field position for shorter yardage
-    if fieldPosition < 45:
-        return "punt"
-
-    if fieldPosition < 55:
-        # Middle of the field: go only on very short yardage
-        return "go" if yardsLeft <= 2 else ("field_goal" if fg_in_range else "punt")
-
-    # Inside opponent territory: prefer FG unless inches/short
-    if yardsLeft <= 1 and not fg_in_range:
-        return "go"
-    return "field_goal"
+    return decision
 
 
 def simGame(
