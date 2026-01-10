@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
 from logic.schedule import scheduleGame
+from logic.util import watchability
 
 
 @api_view(["GET"])
@@ -60,6 +61,8 @@ def schedule_nc(request):
         week,
     )
 
+    num_teams = info.teams.count()
+    games_to_create[0].watchability = watchability(games_to_create[0], num_teams)
     team.save()
     opponent.save()
     games_to_create[0].save()

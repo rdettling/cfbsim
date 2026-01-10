@@ -6,8 +6,8 @@ from logic.util import (
     get_schedule_game,
     calculate_recruiting_rankings,
     time_section,
-    REGULAR_SEASON_WEEKS,
 )
+from logic.constants.schedule_constants import REGULAR_SEASON_WEEKS
 from logic.roster_management import progress_ratings
 import uuid
 import time

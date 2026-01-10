@@ -14,7 +14,7 @@ from .betting import load_precomputed_odds
 from django.db import transaction
 import os
 import json
-from .util import get_recruiting_points, get_last_week, load_year_data, time_section
+from .util import get_recruiting_points, load_year_data, time_section
 import time
 
 

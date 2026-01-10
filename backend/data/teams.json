@@ -300,7 +300,7 @@
         "Indiana": {
             "mascot": "Hoosiers",
             "abbreviation": "IU",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#990000",
             "colorSecondary": "#EEEDEB",
