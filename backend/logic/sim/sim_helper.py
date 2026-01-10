@@ -1,4 +1,3 @@
-from logic.sim.sim import choose_receiver
 from logic.schedule import (
     setConferenceChampionships,
     setNatty,
@@ -10,6 +9,7 @@ from logic.util import time_section
 from api.models import Settings
 import time
 from api.models import *
+from django.db import transaction
 import random
 from logic.constants.sim_constants import (
     POLL_INERTIA_WIN_BONUS,
@@ -39,6 +39,60 @@ def weighted_player_choice(players, bias_map=None):
         return random.choice(players)
 
     return random.choices(players, weights=weights, k=1)[0]
+
+
+def _build_weight_cache(players, bias_map=None):
+    """Precompute weights for repeated weighted choices."""
+    if not players:
+        return ([], [], 0)
+
+    bias_map = bias_map or {}
+    weights = []
+    total = 0
+    for player in players:
+        base_rating = max(player.rating or 0, 0) + 5
+        bias = bias_map.get(player.pos.lower(), 1.0)
+        weight = base_rating * bias
+        weights.append(weight)
+        total += weight
+
+    return (players, weights, total)
+
+
+def _choose_weighted_cached(weight_cache):
+    """Choose a player using cached weights."""
+    players, weights, total = weight_cache
+    if not players:
+        return None
+    if total == 0:
+        return random.choice(players)
+    return random.choices(players, weights=weights, k=1)[0]
+
+
+def _build_receiver_weight_cache(candidates, rating_exponent=4):
+    """Precompute weights for receiver selection."""
+    if not candidates:
+        return ([], [], 0)
+
+    pos_bias = {"wr": 1.4, "te": 1.0, "rb": 0.6}
+    weights = []
+    total = 0
+    for candidate in candidates:
+        weighted_rating = candidate.rating**rating_exponent
+        weight = weighted_rating * pos_bias.get(candidate.pos.lower(), 1.0)
+        weights.append(weight)
+        total += weight
+    return (candidates, weights, total)
+
+
+def _choose_receiver_cached(weight_cache):
+    """Choose a receiver using cached weights."""
+    candidates, weights, total = weight_cache
+    if not candidates:
+        return None
+    if total == 0:
+        return random.choice(candidates)
+    return random.choices(candidates, weights=weights, k=1)[0]
 
 
 def collect_defenders(team, starters_by_team_pos):
@@ -277,27 +331,38 @@ def save_other_lists(info, drives_to_create, plays_to_create):
     starters_by_team_pos = get_or_cache_starters(info)
 
     # Pre-group plays by game for efficiency
+    group_start = time.time()
     plays_by_game = {}
+    games_by_id = {}
     for play in plays_to_create:
-        if play.game not in plays_by_game:
-            plays_by_game[play.game] = []
-        plays_by_game[play.game].append(play)
+        game_id = play.game_id
+        if game_id not in plays_by_game:
+            plays_by_game[game_id] = []
+            games_by_id[game_id] = play.game
+        plays_by_game[game_id].append(play)
+    time_section(group_start, "Grouping plays by game")
 
     # Create game logs for all games
+    logs_start = time.time()
     all_game_logs = []
-    for game, game_plays in plays_by_game.items():
+    for game_id, game_plays in plays_by_game.items():
+        game = games_by_id[game_id]
         game_logs = create_game_logs_from_plays(
             game, info, game_plays, starters_by_team_pos
         )
         all_game_logs.extend(game_logs)
+    time_section(logs_start, "Game logs built in memory")
 
     # Save all simulation data
-    if drives_to_create:
-        Drives.objects.bulk_create(drives_to_create)
-    if plays_to_create:
-        Plays.objects.bulk_create(plays_to_create)
-    if all_game_logs:
-        GameLog.objects.bulk_create(all_game_logs)
+    save_start = time.time()
+    with transaction.atomic():
+        if drives_to_create:
+            Drives.objects.bulk_create(drives_to_create, batch_size=2000)
+        if plays_to_create:
+            Plays.objects.bulk_create(plays_to_create, batch_size=2000)
+        if all_game_logs:
+            GameLog.objects.bulk_create(all_game_logs, batch_size=2000)
+    time_section(save_start, "Bulk inserts")
 
     time_section(total_start, "Saving drives, plays, and game logs")
 
@@ -441,31 +506,68 @@ def create_game_logs_from_plays(
     ]
 
     # Create lookup dictionary
-    game_log_dict = {}
-    for game_log in game_logs_to_process:
-        game_log_dict[(game_log.player, game_log.game)] = game_log
+    game_log_dict = {game_log.player_id: game_log for game_log in game_logs_to_process}
+
+    # Precompute starter and defender caches per team
+    team_cache = {}
+    for team in [game.teamA, game.teamB]:
+        rb_starters = starters_by_team_pos.get((team, "rb")) or []
+        qb_starters = starters_by_team_pos.get((team, "qb")) or []
+        wr_starters = starters_by_team_pos.get((team, "wr")) or []
+        te_starters = starters_by_team_pos.get((team, "te")) or []
+        k_starters = starters_by_team_pos.get((team, "k")) or []
+        defenders = collect_defenders(team, starters_by_team_pos)
+
+        team_cache[team.id] = {
+            "rb": rb_starters,
+            "qb": qb_starters,
+            "wr": wr_starters,
+            "te": te_starters,
+            "k": k_starters,
+            "defenders": defenders,
+            "rb_weights": _build_weight_cache(rb_starters),
+            "k_weights": _build_weight_cache(k_starters),
+            "tackler_weights": _build_weight_cache(
+                defenders, bias_map={"dl": 1.2, "lb": 1.1, "cb": 0.8, "s": 0.9}
+            ),
+            "sack_weights": _build_weight_cache(
+                defenders, bias_map={"dl": 1.4, "lb": 1.1}
+            ),
+            "int_weights": _build_weight_cache(
+                defenders, bias_map={"cb": 1.3, "s": 1.3, "lb": 0.8}
+            ),
+        }
 
     # Note: Headers are now set during simulation in sim.py
     for play in plays_to_process:
         offense_team = play.offense
 
+        offense_cache = team_cache.get(offense_team.id)
+        if not offense_cache:
+            continue
+
         # Get starters for this offense team
-        rb_starters = starters_by_team_pos.get((offense_team, "rb"))
-        qb_starter = starters_by_team_pos.get((offense_team, "qb"))
-        wr_starters = starters_by_team_pos.get((offense_team, "wr"))
-        te_starters = starters_by_team_pos.get((offense_team, "te"))
-        k_starter = starters_by_team_pos.get((offense_team, "k"))
+        rb_starters = offense_cache["rb"]
+        qb_starters = offense_cache["qb"]
+        wr_starters = offense_cache["wr"]
+        te_starters = offense_cache["te"]
+        k_starters = offense_cache["k"]
         defense_team = play.defense
-        defense_defenders = collect_defenders(defense_team, starters_by_team_pos)
+        defense_cache = team_cache.get(defense_team.id)
+        defense_defenders = defense_cache["defenders"] if defense_cache else []
 
         if not (
-            rb_starters and qb_starter and wr_starters and te_starters and k_starter
+            rb_starters and qb_starters and wr_starters and te_starters and k_starters
         ):
             continue
 
         if play.playType == "run":
-            runner = weighted_player_choice(rb_starters)
-            game_log = game_log_dict[(runner, game)]
+            runner = _choose_weighted_cached(offense_cache["rb_weights"])
+            if not runner:
+                continue
+            game_log = game_log_dict.get(runner.id)
+            if not game_log:
+                continue
             # Update run stats
             game_log.rush_attempts += 1
             game_log.rush_yards += play.yardsGained
@@ -473,31 +575,38 @@ def create_game_logs_from_plays(
                 game_log.rush_touchdowns += 1
             elif play.result == "fumble":
                 game_log.fumbles += 1
-            tackler = weighted_player_choice(
-                defense_defenders,
-                bias_map={"dl": 1.2, "lb": 1.1, "cb": 0.8, "s": 0.9},
-            )
+            tackler = _choose_weighted_cached(defense_cache["tackler_weights"])
             if tackler:
-                defense_log = game_log_dict[(tackler, game)]
-                defense_log.tackles += 1
+                defense_log = game_log_dict.get(tackler.id)
+                if defense_log:
+                    defense_log.tackles += 1
         elif play.playType == "pass":
             if play.result == "sack":
-                qb_log = game_log_dict[(qb_starter[0], game)]
+                qb = qb_starters[0]
+                qb_log = game_log_dict.get(qb.id)
+                if not qb_log:
+                    continue
                 qb_log.pass_attempts += 1
-                sack_defender = weighted_player_choice(
-                    defense_defenders, bias_map={"dl": 1.4, "lb": 1.1}
-                )
+                sack_defender = _choose_weighted_cached(defense_cache["sack_weights"])
                 if sack_defender:
-                    defense_log = game_log_dict[(sack_defender, game)]
-                    defense_log.sacks += 1
+                    defense_log = game_log_dict.get(sack_defender.id)
+                    if defense_log:
+                        defense_log.sacks += 1
                 continue
 
             candidates = wr_starters + te_starters + rb_starters
-            receiver = choose_receiver(candidates)
+            receiver_cache = offense_cache.get("receiver_weights")
+            if receiver_cache is None:
+                receiver_cache = _build_receiver_weight_cache(candidates)
+                offense_cache["receiver_weights"] = receiver_cache
+            receiver = _choose_receiver_cached(receiver_cache)
             if not receiver:
                 continue
-            qb_game_log = game_log_dict[(qb_starter[0], game)]
-            receiver_game_log = game_log_dict[(receiver, game)]
+            qb = qb_starters[0]
+            qb_game_log = game_log_dict.get(qb.id)
+            receiver_game_log = game_log_dict.get(receiver.id)
+            if not qb_game_log or not receiver_game_log:
+                continue
             # Update pass stats
             qb_game_log.pass_attempts += 1
             if play.result in ["pass", "touchdown"]:
@@ -510,17 +619,18 @@ def create_game_logs_from_plays(
                     receiver_game_log.receiving_touchdowns += 1
             elif play.result == "interception":
                 qb_game_log.pass_interceptions += 1
-                interceptor = weighted_player_choice(
-                    defense_defenders, bias_map={"cb": 1.3, "s": 1.3, "lb": 0.8}
-                )
+                interceptor = _choose_weighted_cached(defense_cache["int_weights"])
                 if interceptor:
-                    defense_log = game_log_dict[(interceptor, game)]
-                    defense_log.interceptions += 1
+                    defense_log = game_log_dict.get(interceptor.id)
+                    if defense_log:
+                        defense_log.interceptions += 1
         elif play.playType == "field goal":
-            kicker = weighted_player_choice(k_starter)
+            kicker = _choose_weighted_cached(offense_cache["k_weights"])
             if not kicker:
                 continue
-            game_log = game_log_dict[(kicker, game)]
+            game_log = game_log_dict.get(kicker.id)
+            if not game_log:
+                continue
             # Update kick stats
             game_log.field_goals_attempted += 1
             if play.result == "made field goal":

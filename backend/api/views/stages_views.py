@@ -2,9 +2,10 @@ from ..models import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
-from logic.util import get_schedule_game, calculate_recruiting_rankings
+from logic.util import get_schedule_game, calculate_recruiting_rankings, time_section
 from logic.roster_management import progress_ratings
 import uuid
+import time
 from logic.season import (
     transition_rosters,
     update_history,
@@ -117,45 +118,62 @@ def update_realignment_settings(request):
 
 @api_view(["GET"])
 def roster_progression(request):
+    overall_start = time.time()
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
     # Transition from realignment to progression stage
     # Apply realignment and playoff changes (increments year)
     if info.stage == "realignment":
+        transition_start = time.time()
         apply_realignment_and_playoff(info)
         info.stage = "progression"
         info.save()
+        time_section(transition_start, "  • Realignment applied")
 
     # Always calculate changes without actually progressing players
     progressed = progress_ratings(info)
 
-    return Response(
-        {
-            "team": TeamsSerializer(info.team).data,
-            "info": InfoSerializer(info).data,
-            "progressed": PlayersSerializer(progressed, many=True).data,
-            "leaving": PlayersSerializer(
-                info.team.players.filter(year="sr", active=True), many=True
-            ).data,
-            "conferences": ConferencesSerializer(
-                info.conferences.all().order_by("confName"), many=True
-            ).data,
-        }
-    )
+    leaving_start = time.time()
+    leaving_players = info.team.players.filter(year="sr", active=True)
+    time_section(leaving_start, "  • Leaving players queried")
+
+    serialize_start = time.time()
+    team_data = TeamsSerializer(info.team).data
+    info_data = InfoSerializer(info).data
+    progressed_data = PlayersSerializer(progressed, many=True).data
+    leaving_data = PlayersSerializer(leaving_players, many=True).data
+    conferences_data = ConferencesSerializer(
+        info.conferences.all().order_by("confName"), many=True
+    ).data
+    time_section(serialize_start, "  • Serialization")
+
+    payload = {
+        "team": team_data,
+        "info": info_data,
+        "progressed": progressed_data,
+        "leaving": leaving_data,
+        "conferences": conferences_data,
+    }
+
+    time_section(overall_start, "ROSTER PROGRESSION TOTAL")
+    return Response(payload)
 
 
 @api_view(["GET"])
 def recruiting_summary(request):
     """API endpoint for recruiting summary data"""
+    overall_start = time.time()
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
     # Transition from progression to recruiting_summary stage
     if info.stage == "progression":
+        transition_start = time.time()
         transition_rosters(info)
         info.stage = "recruiting_summary"
         info.save()
+        time_section(transition_start, "  • Rosters transitioned")
 
     # Get all freshmen players and group by team
     freshmen = info.players.filter(year="fr").select_related("team", "team__conference")
@@ -183,29 +201,32 @@ def recruiting_summary(request):
     # Calculate team recruiting rankings
     team_rankings = calculate_recruiting_rankings(freshmen_by_team)
 
+    info_data = InfoSerializer(info).data
+    team_data = TeamsSerializer(info.team).data
+    conferences_data = ConferencesSerializer(
+        info.conferences.all().order_by("confName"), many=True
+    ).data
+
+    payload = {
+        "info": info_data,
+        "team": team_data,
+        "conferences": conferences_data,
+        "team_rankings": team_rankings,
+        "summary_stats": {
+            "total_freshmen": len(freshmen),
+            "avg_rating": (
+                round(sum(player.rating for player in freshmen) / len(freshmen), 1)
+                if freshmen
+                else 0
+            ),
+            "max_rating": max(player.rating for player in freshmen) if freshmen else 0,
+            "min_rating": min(player.rating for player in freshmen) if freshmen else 0,
+        },
+    }
+
+    time_section(overall_start, "RECRUITING SUMMARY TOTAL")
     return Response(
-        {
-            "info": InfoSerializer(info).data,
-            "team": TeamsSerializer(info.team).data,
-            "conferences": ConferencesSerializer(
-                info.conferences.all().order_by("confName"), many=True
-            ).data,
-            "team_rankings": team_rankings,
-            "summary_stats": {
-                "total_freshmen": len(freshmen),
-                "avg_rating": (
-                    round(sum(player.rating for player in freshmen) / len(freshmen), 1)
-                    if freshmen
-                    else 0
-                ),
-                "max_rating": (
-                    max(player.rating for player in freshmen) if freshmen else 0
-                ),
-                "min_rating": (
-                    min(player.rating for player in freshmen) if freshmen else 0
-                ),
-            },
-        }
+        payload
     )
 
 

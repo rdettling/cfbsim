@@ -9,7 +9,7 @@ from .roster_management import (
     init_roster,
     progress_years,
 )
-from .betting import getSpread
+from .betting import load_precomputed_odds
 from django.db import transaction
 import os
 import json
@@ -107,6 +107,7 @@ def init_history_data(info, start_year):
 
 def transition_rosters(info):
     """Part 1: Remove seniors and add freshmen (called by recruiting summary)"""
+    overall_start = time.time()
     remove_seniors(info)
     progress_years(info)
     create_freshmen(info)
@@ -114,6 +115,7 @@ def transition_rosters(info):
     # Set starters and calculate ratings
     set_starters(info)
     calculate_team_ratings(info)
+    time_section(overall_start, "  • transition_rosters total")
 
 
 def refresh_playoff(info, data, update_format=False):
@@ -778,7 +780,14 @@ def init(
     min_rating = teams.order_by("rating").first().rating
     rating_range = max_rating - min_rating + 10
 
-    odds_list = getSpread(rating_range)
+    odds_list = load_precomputed_odds(max_diff=min(rating_range, 100))
+    max_available_diff = max(odds_list.keys()) if odds_list else 0
+    if rating_range > max_available_diff and odds_list:
+        print(
+            f"  • Betting odds capped at diff {max_available_diff} for higher gaps"
+        )
+        for diff in range(max_available_diff + 1, rating_range + 1):
+            odds_list[diff] = odds_list[max_available_diff].copy()
     odds_to_create = []
 
     for diff, odds_data in odds_list.items():
