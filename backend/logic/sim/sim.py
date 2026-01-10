@@ -3,7 +3,18 @@ from api.models import *
 from ..constants.sim_constants import *
 
 
-def simPass(fieldPosition, offense, defense):
+def _adjusted_ratings(offense, defense, game=None):
+    offense_rating = offense.offense
+    defense_rating = defense.defense
+    if game and not game.neutralSite:
+        if game.homeTeam == offense:
+            offense_rating += HOME_FIELD_ADVANTAGE
+        elif game.homeTeam == defense:
+            defense_rating += HOME_FIELD_ADVANTAGE
+    return offense_rating, defense_rating
+
+
+def simPass(fieldPosition, offense, defense, game=None):
     """
     Simulate a pass play with outcome and yardage.
 
@@ -29,7 +40,7 @@ def simPass(fieldPosition, offense, defense):
         result["yards"] = sackYards()
     elif rand_completion < BASE_COMP_PERCENT:
         # Completed pass
-        result["yards"] = passYards(offense, defense)
+        result["yards"] = passYards(offense, defense, game)
 
         # Check for touchdown
         if result["yards"] + fieldPosition >= 100:
@@ -47,7 +58,7 @@ def simPass(fieldPosition, offense, defense):
     return result
 
 
-def simRun(fieldPosition, offense, defense):
+def simRun(fieldPosition, offense, defense, game=None):
     """
     Simulate a run play with outcome and yardage.
 
@@ -69,7 +80,7 @@ def simRun(fieldPosition, offense, defense):
         result["outcome"] = "fumble"
     else:
         # Successful run
-        result["yards"] = runYards(offense, defense)
+        result["yards"] = runYards(offense, defense, game)
 
         # Check for touchdown
         if result["yards"] + fieldPosition >= 100:
@@ -81,8 +92,9 @@ def simRun(fieldPosition, offense, defense):
     return result
 
 
-def passYards(offense, defense):
-    rating_difference = offense.offense - defense.defense
+def passYards(offense, defense, game=None):
+    offense_rating, defense_rating = _adjusted_ratings(offense, defense, game)
+    rating_difference = offense_rating - defense_rating
     advantage_yardage = rating_difference * PASS_ADVANTAGE_FACTOR
     mean_yardage = PASS_BASE_MEAN + advantage_yardage
     raw_yardage = random.gauss(
@@ -105,8 +117,9 @@ def sackYards():
     return min(rounded_yards, 0)
 
 
-def runYards(offense, defense):
-    rating_difference = offense.offense - defense.defense
+def runYards(offense, defense, game=None):
+    offense_rating, defense_rating = _adjusted_ratings(offense, defense, game)
+    rating_difference = offense_rating - defense_rating
     advantage_yardage = rating_difference * RUN_ADVANTAGE_FACTOR
     mean_yardage = RUN_BASE_MEAN + advantage_yardage
     raw_yardage = random.gauss(mean_yardage, RUN_STD_DEV)
@@ -286,10 +299,10 @@ def simDrive(
 
             if random.random() < 0.5:
                 play_type = "run"
-                result = simRun(fieldPosition, offense, defense)
+                result = simRun(fieldPosition, offense, defense, game)
             else:
                 play_type = "pass"
-                result = simPass(fieldPosition, offense, defense)
+                result = simPass(fieldPosition, offense, defense, game)
 
             if play is not None:
                 play.playType = play_type

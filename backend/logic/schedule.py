@@ -3,11 +3,12 @@ from api.models import *
 import json
 from django.db.models import F, ExpressionWrapper, FloatField, Q
 import time
-from .util import (
-    time_section,
-    watchability,
+from .util import time_section, watchability
+from logic.constants.sim_constants import HOME_FIELD_ADVANTAGE
+from logic.constants.schedule_constants import (
     REGULAR_SEASON_WEEKS,
     REGULAR_SEASON_GAMES,
+    CONFERENCE_CHAMPIONSHIP_WEEK,
 )
 
 
@@ -114,7 +115,7 @@ def setPlayoffR1(info):
             team1,
             team2,
             games_to_create,
-            16,
+            CONFERENCE_CHAMPIONSHIP_WEEK + 1,
             description,
             neutral_site=True,
         )[2]
@@ -139,7 +140,7 @@ def setPlayoffQuarter(info):
             team1,
             team2,
             games_to_create,
-            17,
+            CONFERENCE_CHAMPIONSHIP_WEEK + 2,
             "Playoff quarterfinal",
             neutral_site=True,
         )[2]
@@ -200,14 +201,22 @@ def setPlayoffSemi(info):
         print(f"Seed #1 {teams[0].name} vs Seed #4 {teams[3].name}")
         print(f"Seed #2 {teams[1].name} vs Seed #3 {teams[2].name}")
 
-        playoff.left_semi = schedule_playoff_game(teams[0], teams[3], 16)
-        playoff.right_semi = schedule_playoff_game(teams[1], teams[2], 16)
-    elif playoff_teams == 12:
         playoff.left_semi = schedule_playoff_game(
-            playoff.left_quarter_1.winner, playoff.left_quarter_2.winner, 18
+            teams[0], teams[3], CONFERENCE_CHAMPIONSHIP_WEEK + 1
         )
         playoff.right_semi = schedule_playoff_game(
-            playoff.right_quarter_1.winner, playoff.right_quarter_2.winner, 18
+            teams[1], teams[2], CONFERENCE_CHAMPIONSHIP_WEEK + 1
+        )
+    elif playoff_teams == 12:
+        playoff.left_semi = schedule_playoff_game(
+            playoff.left_quarter_1.winner,
+            playoff.left_quarter_2.winner,
+            CONFERENCE_CHAMPIONSHIP_WEEK + 3,
+        )
+        playoff.right_semi = schedule_playoff_game(
+            playoff.right_quarter_1.winner,
+            playoff.right_quarter_2.winner,
+            CONFERENCE_CHAMPIONSHIP_WEEK + 3,
         )
 
     Games.objects.bulk_create(games_to_create)
@@ -226,7 +235,16 @@ def scheduleGame(
     away_team=None,
     neutral_site=False,
 ):
-    diff = abs(team.rating - opponent.rating)
+    rating_a = team.rating
+    rating_b = opponent.rating
+
+    if not neutral_site:
+        if home_team == team:
+            rating_a += HOME_FIELD_ADVANTAGE
+        elif home_team == opponent:
+            rating_b += HOME_FIELD_ADVANTAGE
+
+    diff = abs(rating_a - rating_b)
     if not odds_list:
         odds = info.odds.get(diff=diff)
     elif isinstance(odds_list, dict):
@@ -253,7 +271,7 @@ def scheduleGame(
 
     is_teamA_favorite = True  # Default to true
 
-    if opponent.rating > team.rating:
+    if rating_b > rating_a:
         is_teamA_favorite = False
 
     if neutral_site:
@@ -332,7 +350,11 @@ def setNatty(info):
     playoff = info.playoff
     playoff.refresh_from_db()
     games_to_create = []
-    week_mapping = {2: 16, 4: 17, 12: 19}
+    week_mapping = {
+        2: CONFERENCE_CHAMPIONSHIP_WEEK + 1,
+        4: CONFERENCE_CHAMPIONSHIP_WEEK + 2,
+        12: CONFERENCE_CHAMPIONSHIP_WEEK + 4,
+    }
     
     # Get playoff teams from settings
     playoff_teams = info.settings.playoff_teams

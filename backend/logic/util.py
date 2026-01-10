@@ -433,27 +433,6 @@ def get_recruiting_points(prestige):
     return prestige * 100
 
 
-REGULAR_SEASON_WEEKS = 14
-REGULAR_SEASON_GAMES = 12
-CONFERENCE_CHAMPIONSHIP_WEEK = REGULAR_SEASON_WEEKS + 1
-
-
-def get_last_week(playoff_teams):
-    """Calculate the last week based on playoff format"""
-    base_weeks = CONFERENCE_CHAMPIONSHIP_WEEK
-
-    if playoff_teams == 2:
-        return base_weeks + 1  # Week 14 (BCS Championship)
-    elif playoff_teams == 4:
-        return base_weeks + 2  # Weeks 14-15 (Semifinals + Championship)
-    elif playoff_teams == 12:
-        return (
-            base_weeks + 4
-        )  # Weeks 14-17 (First Round + Quarters + Semis + Championship)
-    else:
-        raise ValueError(f"Unsupported playoff format: {playoff_teams}")
-
-
 def load_year_data(year):
     """Load year-specific data with team metadata"""
     # Load year-specific data
