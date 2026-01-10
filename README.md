@@ -340,6 +340,19 @@ The simulation engine (`backend/logic/sim/sim.py`) uses:
 
 ---
 
+## Betting Odds Precompute
+
+Season initialization can skip runtime betting simulations by using precomputed odds.
+
+Generate the odds JSON locally:
+```bash
+python backend/scripts/generate_betting_odds.py
+```
+
+This writes `backend/data/betting_odds.json` (max diff 100), which is required during season setup. Gaps larger than 100 reuse the 100 diff odds.
+
+---
+
 ## Contributing
 
 This is a personal project, but suggestions and feedback are welcome!
@@ -349,4 +362,3 @@ This is a personal project, but suggestions and feedback are welcome!
 ## License
 
 This project is for personal use only.
-

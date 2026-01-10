@@ -1,8 +1,11 @@
 import random
+import time
 from collections import Counter
 from api.models import *
+from django.db.models import Case, When, Value, F
 from .constants.player_constants import *
 from .player_generation import load_names, create_player
+from logic.util import time_section
 
 
 def create_freshmen(info):
@@ -43,11 +46,19 @@ def progress_ratings(info):
     Returns:
         List of progressed players with their change values
     """
+    overall_start = time.time()
+    players_start = time.time()
     players = info.players.filter(active=True)
-    progressed_players = []
+    time_section(players_start, "    • progress_ratings: Active players query")
+    exclude_start = time.time()
+    progressed_team_players = []
     to_update = []
 
-    for player in players.exclude(year="sr"):
+    eligible_players = list(players.exclude(year="sr"))
+    time_section(exclude_start, "    • progress_ratings: Eligible players loaded")
+
+    loop_start = time.time()
+    for player in eligible_players:
         old_rating = player.rating
 
         if player.year == "fr":
@@ -63,10 +74,15 @@ def progress_ratings(info):
             player.change = 0
 
         to_update.append(player)
-        progressed_players.append(player)
+        if player.team_id == info.team_id:
+            progressed_team_players.append(player)
+    time_section(loop_start, "    • progress_ratings: Progress loop")
 
+    update_start = time.time()
     Players.objects.bulk_update(to_update, ["rating"])
-    return [p for p in progressed_players if p.team == info.team and p.year != "sr"]
+    time_section(update_start, "    • progress_ratings: Bulk update")
+    time_section(overall_start, "  • Progress ratings total")
+    return progressed_team_players
 
 
 def progress_years(info):
@@ -80,21 +96,16 @@ def progress_years(info):
     Returns:
         List of progressed players
     """
-    players = info.players.filter(active=True)
-    to_update = []
-
-    for player in players.exclude(year="sr"):
-        if player.year == "fr":
-            player.year = "so"
-        elif player.year == "so":
-            player.year = "jr"
-        elif player.year == "jr":
-            player.year = "sr"
-
-        to_update.append(player)
-
-    Players.objects.bulk_update(to_update, ["year"])
-    return [p for p in to_update if p.team == info.team and p.year != "sr"]
+    players = info.players.filter(active=True).exclude(year="sr")
+    players.update(
+        year=Case(
+            When(year="fr", then=Value("so")),
+            When(year="so", then=Value("jr")),
+            When(year="jr", then=Value("sr")),
+            default=F("year"),
+        )
+    )
+    return list(info.team.players.filter(active=True).exclude(year="sr"))
 
 
 def fill_roster(team, loaded_names, players_to_create):
@@ -186,6 +197,7 @@ def calculate_team_ratings_from_players(players_data):
 
 def calculate_team_ratings(info):
     """Calculate team ratings for all teams"""
+    overall_start = time.time()
     teams = info.teams.prefetch_related("players").all()
 
     for team in teams:
@@ -201,42 +213,31 @@ def calculate_team_ratings(info):
         team.rating = team_ratings["overall"]
 
     Teams.objects.bulk_update(teams, ["offense", "defense", "rating"])
+    time_section(overall_start, "  • calculate_team_ratings total")
 
 
 def set_starters(info):
     """Set starters for all teams - optimized version"""
+    overall_start = time.time()
     # Reset all starters to False in one database operation
     info.players.filter(active=True).update(starter=False)
 
-    # Process each team individually to reduce memory usage
-    teams = info.teams.all()
-    players_to_update = []
+    players = (
+        info.players.filter(active=True, pos__in=ROSTER.keys())
+        .order_by("team_id", "pos", "-rating")
+        .values_list("id", "team_id", "pos")
+    )
+    starter_ids = []
 
-    for team in teams:
-        # Get players for this team only, grouped by position
-        team_players = team.players.filter(active=True).select_related("team")
-
-        # Group by position for this team
-        players_by_position = {}
-        for player in team_players:
-            if player.pos not in players_by_position:
-                players_by_position[player.pos] = []
-            players_by_position[player.pos].append(player)
-
-        # Set starters for each position on this team
-        for position, players_in_position in players_by_position.items():
-            if position in ROSTER:
-                # Sort by rating (highest first) and take top N players
-                sorted_players = sorted(
-                    players_in_position, key=lambda x: x.rating, reverse=True
-                )
-                starter_count = ROSTER[position]["starters"]
-
-                # Mark top players as starters
-                for player in sorted_players[:starter_count]:
-                    player.starter = True
-                    players_to_update.append(player)
+    starter_counts = {}
+    for player_id, team_id, pos in players.iterator():
+        key = (team_id, pos)
+        if starter_counts.get(key, 0) >= ROSTER[pos]["starters"]:
+            continue
+        starter_counts[key] = starter_counts.get(key, 0) + 1
+        starter_ids.append(player_id)
 
     # Bulk update only the players that changed
-    if players_to_update:
-        Players.objects.bulk_update(players_to_update, ["starter"])
+    if starter_ids:
+        Players.objects.filter(id__in=starter_ids).update(starter=True)
+    time_section(overall_start, "  • set_starters total")

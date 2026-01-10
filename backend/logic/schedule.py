@@ -418,7 +418,7 @@ def fillSchedules(info):
     init_start = time.time()
     teams = list(info.teams.all())
     conferences = list(info.conferences.all())
-    games = info.games.filter(year=info.currentYear)
+    games = list(info.games.filter(year=info.currentYear).select_related("teamA", "teamB"))
     odds_list = info.odds.all()
 
     random.shuffle(teams)
@@ -427,9 +427,11 @@ def fillSchedules(info):
     scheduled_games = {team.name: set() for team in teams}
     games_to_create = []
 
+    scheduled_by_week = {}
     for game in games:
         scheduled_games[game.teamA.name].add(game.teamB.name)
         scheduled_games[game.teamB.name].add(game.teamA.name)
+        scheduled_by_week.setdefault(game.weekPlayed, []).append(game)
     time_section(init_start, "  • Data structures initialized")
 
     # Phase 2: Non-conference scheduling
@@ -512,45 +514,29 @@ def fillSchedules(info):
     print("PHASE 4: WEEK ASSIGNMENT")
     teams = sorted(teams, key=lambda team: team.prestige, reverse=True)
 
-    all_games = info.games.filter(year=info.currentYear)
+    team_to_games = {team.id: [] for team in teams}
+    for game in games_to_create:
+        team_to_games[game.teamA_id].append(game)
+        team_to_games[game.teamB_id].append(game)
 
     for currentWeek in range(1, 13):
-        already_scheduled = all_games.filter(weekPlayed=currentWeek)
-
+        already_scheduled = scheduled_by_week.get(currentWeek, [])
         for game in already_scheduled:
-            for team in teams:
-                if team == game.teamA or team == game.teamB:
-                    team.gamesPlayed += 1
+            game.teamA.gamesPlayed += 1
+            game.teamB.gamesPlayed += 1
 
         for team in teams:
             if team.gamesPlayed < currentWeek:
-                filtered_games = [
-                    game
-                    for game in games_to_create
-                    if (game.teamA == team or game.teamB == team)
-                    and game.weekPlayed == 0
-                ]
-
-                for game in filtered_games:
+                for game in team_to_games.get(team.id, []):
                     if team.gamesPlayed >= currentWeek:
                         break
-                    for opponent in teams:
-                        if game.teamA == team:
-                            if (
-                                opponent.gamesPlayed < currentWeek
-                                and opponent == game.teamB
-                            ):
-                                game.weekPlayed = currentWeek
-                                team.gamesPlayed += 1
-                                opponent.gamesPlayed += 1
-                        elif game.teamB == team:
-                            if (
-                                opponent.gamesPlayed < currentWeek
-                                and opponent == game.teamA
-                            ):
-                                game.weekPlayed = currentWeek
-                                team.gamesPlayed += 1
-                                opponent.gamesPlayed += 1
+                    if game.weekPlayed != 0:
+                        continue
+                    opponent = game.teamB if game.teamA == team else game.teamA
+                    if opponent.gamesPlayed < currentWeek:
+                        game.weekPlayed = currentWeek
+                        team.gamesPlayed += 1
+                        opponent.gamesPlayed += 1
     time_section(assign_weeks_start, "  • Games assigned to weeks")
 
     # Phase 5: Database persistence

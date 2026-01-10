@@ -187,6 +187,7 @@ def simDrive(
     plays_to_create=None,
     starters=None,
 ):
+    use_play_objects = plays_to_create is not None
     # Calculate drive number and points needed
     drive_index = driveNum // 2 if driveNum % 2 == 0 else (driveNum - 1) // 2
     needed = points_needed(lead, drive_index)
@@ -208,27 +209,29 @@ def simDrive(
     # Simulate plays until drive ends
     while not drive.result:
         for down in range(1, 5):
-            # Create play object (always use Django model, even for fake games)
-            play = Plays(
-                info=info,
-                game=game,
-                drive=drive,
-                offense=offense,
-                defense=defense,
-                startingFP=fieldPosition,
-                down=down,
-                scoreA=game.scoreA,
-                scoreB=game.scoreB,
-            )
+            play = None
+            if use_play_objects:
+                play = Plays(
+                    info=info,
+                    game=game,
+                    drive=drive,
+                    offense=offense,
+                    defense=defense,
+                    startingFP=fieldPosition,
+                    down=down,
+                    scoreA=game.scoreA,
+                    scoreB=game.scoreB,
+                )
 
             # Set yards needed for first down
             if down == 1:
                 yardsLeft = 100 - fieldPosition if fieldPosition >= 90 else 10
 
-            play.yardsLeft = yardsLeft
+            if play is not None:
+                play.yardsLeft = yardsLeft
 
             # Set play header only for database Play objects (not in-memory Play class)
-            if info:
+            if play is not None and info:
                 set_play_header(play)
 
             # Handle 4th down decisions
@@ -236,58 +239,73 @@ def simDrive(
                 decision = decide_fourth_down(fieldPosition, yardsLeft, needed)
 
                 if decision == "field_goal":
-                    play.playType = "field goal"
-                    play.yardsGained = 0
+                    if play is not None:
+                        play.playType = "field goal"
+                        play.yardsGained = 0
 
                     if fieldGoal(fieldPosition):
-                        play.result = "made field goal"
+                        play_result = "made field goal"
                         drive.result = "made field goal"
                         drive.points = 3
                         update_drive_score_after(game, drive)
                     else:
-                        play.result = "missed field goal"
+                        play_result = "missed field goal"
                         drive.result = "missed field goal"
                         drive.points = 0
-                    
+
+                    if play is not None:
+                        play.result = play_result
                     # Format play text if starters are available
-                    if starters and info:
+                    if play is not None and starters and info:
                         format_play_text(play, starters)
-                    
-                    plays_to_create.append(play)
-                    return drive, 20 if play.result == "made field goal" else 100 - fieldPosition
+
+                    if play is not None:
+                        plays_to_create.append(play)
+                    return (
+                        drive,
+                        20
+                        if play_result == "made field goal"
+                        else 100 - fieldPosition,
+                    )
 
                 elif decision == "punt":
-                    play.playType = "punt"
-                    play.result = "punt"
-                    play.yardsGained = 0
+                    if play is not None:
+                        play.playType = "punt"
+                        play.result = "punt"
+                        play.yardsGained = 0
                     drive.result = "punt"
                     drive.points = 0
-                    
+
                     # Format play text if starters are available
-                    if starters and info:
+                    if play is not None and starters and info:
                         format_play_text(play, starters)
-                    
-                    plays_to_create.append(play)
+
+                    if play is not None:
+                        plays_to_create.append(play)
                     return drive, 100 - (fieldPosition + 40)
 
             if random.random() < 0.5:
-                play.playType = "run"
+                play_type = "run"
                 result = simRun(fieldPosition, offense, defense)
             else:
-                play.playType = "pass"
+                play_type = "pass"
                 result = simPass(fieldPosition, offense, defense)
 
-            play.yardsGained = result["yards"]
-            play.result = result["outcome"]
+            if play is not None:
+                play.playType = play_type
+                play.yardsGained = result["yards"]
+                play.result = result["outcome"]
             fieldPosition += result["yards"]
             yardsLeft -= result["yards"]
-            play.yardsLeft = yardsLeft
+            if play is not None:
+                play.yardsLeft = yardsLeft
 
             # Format play text if starters are available
-            if starters and info:
+            if play is not None and starters and info:
                 format_play_text(play, starters)
 
-            plays_to_create.append(play)
+            if play is not None:
+                plays_to_create.append(play)
 
             # Update play and field position
             if result["outcome"] == "touchdown":
@@ -309,7 +327,7 @@ def simDrive(
             elif down == 4 and yardsLeft > 0:
                 drive.result = "turnover on downs"
                 return drive, 100 - fieldPosition
-            
+
             # Check for first down - if yardsLeft <= 0, reset to 1st down
             if yardsLeft <= 0:
                 # First down achieved, reset to 1st down and recalculate yardsLeft
