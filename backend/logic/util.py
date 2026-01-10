@@ -425,9 +425,14 @@ def get_recruiting_points(prestige):
     return prestige * 100
 
 
+REGULAR_SEASON_WEEKS = 14
+REGULAR_SEASON_GAMES = 12
+CONFERENCE_CHAMPIONSHIP_WEEK = REGULAR_SEASON_WEEKS + 1
+
+
 def get_last_week(playoff_teams):
     """Calculate the last week based on playoff format"""
-    base_weeks = 13  # Regular season (1-12) + Conf Championships (13)
+    base_weeks = CONFERENCE_CHAMPIONSHIP_WEEK
 
     if playoff_teams == 2:
         return base_weeks + 1  # Week 14 (BCS Championship)

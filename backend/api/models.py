@@ -146,6 +146,19 @@ class Games(models.Model):
     teamB = models.ForeignKey(
         Teams, on_delete=models.CASCADE, related_name="games_as_teamB"
     )
+    homeTeam = models.ForeignKey(
+        Teams,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="games_as_home",
+    )
+    awayTeam = models.ForeignKey(
+        Teams,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="games_as_away",
+    )
+    neutralSite = models.BooleanField(default=False)
     winner = models.ForeignKey(
         Teams, on_delete=models.CASCADE, null=True, related_name="games_as_winner"
     )

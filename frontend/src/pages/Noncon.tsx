@@ -26,7 +26,17 @@ interface NonConData {
     info: Info;
     team: Team;
     schedule: ScheduleGame[];
+    pending_rivalries: PendingRivalry[];
     conferences: Conference[];
+}
+
+interface PendingRivalry {
+    id: number;
+    teamA: string;
+    teamB: string;
+    name: string | null;
+    homeTeam: string | null;
+    awayTeam: string | null;
 }
 
 export const NonCon = () => {
@@ -145,52 +155,101 @@ export const NonCon = () => {
                             {data.team.nonConfLimit}
                         </Typography>
                         <Typography>
-                            Here is where you can schedule non-conference games. If you advance to season, the remaining non-conference games will be scheduled automatically. 
-                            Your team's rivalry games are already scheduled. These games are guaranteed to happen every year.
+                            Schedule your non-conference games here. If you advance to the
+                            season, the remaining slots will be filled automatically.
+                            Rivalry games are guaranteed and may be fixed to specific weeks.
                         </Typography>
                     </Box>
                 </Stack>
 
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Week</TableCell>
-                            <TableCell>Opponent</TableCell>
-                            <TableCell>Label</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {data.schedule.map((game) => (
-                            <TableRow key={game.weekPlayed}>
-                                <TableCell>Week {game.weekPlayed}</TableCell>
-                                <TableCell>
-                                    {game.opponent && (
-                                        <Stack direction="row" spacing={2} alignItems="center">
-                                            {game.opponent.ranking && (
-                                                <Typography>#{game.opponent.ranking}</Typography>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: { xs: "column", md: "row" },
+                        gap: 3,
+                    }}
+                >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Week</TableCell>
+                                    <TableCell>Opponent</TableCell>
+                                    <TableCell>Label</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {data.schedule.map((game) => (
+                                    <TableRow key={game.weekPlayed}>
+                                        <TableCell>Week {game.weekPlayed}</TableCell>
+                                        <TableCell>
+                                            {game.opponent && (
+                                                <Stack direction="row" spacing={2} alignItems="center">
+                                                    {game.opponent.ranking && (
+                                                        <Typography>#{game.opponent.ranking}</Typography>
+                                                    )}
+                                                    <TeamLogo name={game.opponent.name} size={40} />
+                                                    <TeamLink name={game.opponent.name} onTeamClick={handleTeamClick} />
+                                                </Stack>
                                             )}
-                                            <TeamLogo name={game.opponent.name} size={40} />
-                                            <TeamLink name={game.opponent.name} onTeamClick={handleTeamClick} />
-                                        </Stack>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {!game.opponent &&
-                                        data.team.nonConfGames < data.team.nonConfLimit ? (
-                                        <Button
-                                            variant="contained"
-                                            onClick={() => handleOpenModal(game.weekPlayed)}
-                                        >
-                                            Schedule Game
-                                        </Button>
-                                    ) : (
-                                        game.label
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                                        </TableCell>
+                                        <TableCell>
+                                            {!game.opponent &&
+                                                data.team.nonConfGames < data.team.nonConfLimit ? (
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() => handleOpenModal(game.weekPlayed)}
+                                                >
+                                                    Schedule Game
+                                                </Button>
+                                            ) : (
+                                                game.label
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </Box>
+
+                    <Box
+                        sx={{
+                            width: { xs: "100%", md: 320 },
+                            flexShrink: 0,
+                            border: "1px solid",
+                            borderColor: "divider",
+                            borderRadius: 2,
+                            p: 2,
+                            height: "fit-content",
+                            backgroundColor: "background.paper",
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ mb: 1 }}>
+                            Pending Rivalries
+                        </Typography>
+                        {data.pending_rivalries.length === 0 ? (
+                            <Typography color="text.secondary">
+                                All rivalry games are placed in the schedule.
+                            </Typography>
+                        ) : (
+                            <Stack spacing={1.5}>
+                                {data.pending_rivalries.map((rivalry) => (
+                                    <Box key={rivalry.id}>
+                                        <Typography variant="subtitle2">
+                                            {rivalry.teamA} vs {rivalry.teamB}
+                                        </Typography>
+                                        <Typography color="text.secondary" variant="body2">
+                                            {rivalry.name || "Rivalry game"} •{" "}
+                                            {rivalry.homeTeam && rivalry.awayTeam
+                                                ? `${rivalry.homeTeam} home`
+                                                : "Home/away TBD"}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Stack>
+                        )}
+                    </Box>
+                </Box>
 
                 <Dialog open={modalOpen} onClose={handleCloseModal}>
                     <DialogTitle>Schedule Non-Conference Game</DialogTitle>
