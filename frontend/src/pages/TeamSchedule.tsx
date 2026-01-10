@@ -115,6 +115,7 @@ const TeamSchedule = () => {
                                     '& th': { color: 'white', fontWeight: 'bold' }
                                 }}>
                                     <TableCell>Week</TableCell>
+                                    <TableCell align="center">Loc</TableCell>
                                     <TableCell>Opponent</TableCell>
                                     <TableCell align="center">Rating</TableCell>
                                     <TableCell align="center">Record</TableCell>
@@ -137,6 +138,30 @@ const TeamSchedule = () => {
                                     }}
                                 >
                                     <TableCell>{game.weekPlayed}</TableCell>
+                                    <TableCell align="center">
+                                        {game.location ? (
+                                            <Chip
+                                                label={
+                                                    game.location === "Home"
+                                                        ? "H"
+                                                        : game.location === "Away"
+                                                        ? "A"
+                                                        : "N"
+                                                }
+                                                size="small"
+                                                color={
+                                                    game.location === "Home"
+                                                        ? "success"
+                                                        : game.location === "Away"
+                                                        ? "warning"
+                                                        : "default"
+                                                }
+                                                sx={{ fontWeight: "bold" }}
+                                            />
+                                        ) : (
+                                            "-"
+                                        )}
+                                    </TableCell>
                                     <TableCell>
                                         <Stack direction="row" spacing={1} alignItems="center">
                                             <TeamLogo name={game.opponent.name} size={30} />

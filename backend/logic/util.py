@@ -180,6 +180,13 @@ def get_schedule_game(team, game):
             )
         )
 
+    if game.neutralSite:
+        location = "Neutral"
+    elif game.homeTeam_id and game.awayTeam_id:
+        location = "Home" if game.homeTeam == team else "Away"
+    else:
+        location = "Home" if is_team_a else "Away"
+
     return {
         "id": game.id,
         "weekPlayed": game.weekPlayed,
@@ -194,6 +201,7 @@ def get_schedule_game(team, game):
         "spread": spread,
         "moneyline": moneyline,
         "score": score,
+        "location": location,
     }
 
 
@@ -474,6 +482,9 @@ def load_year_data(year):
             "floor": team_metadata["floor"],
             "colorPrimary": team_metadata["colorPrimary"],
             "colorSecondary": team_metadata["colorSecondary"],
+            "city": team_metadata.get("city"),
+            "state": team_metadata.get("state"),
+            "stadium": team_metadata.get("stadium"),
         }
 
     # Process conferences

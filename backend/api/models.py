@@ -44,6 +44,9 @@ class Teams(models.Model):
     mascot = models.CharField(max_length=50)
     colorPrimary = models.CharField(max_length=7)
     colorSecondary = models.CharField(max_length=7)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    state = models.CharField(max_length=100, null=True, blank=True)
+    stadium = models.CharField(max_length=150, null=True, blank=True)
     conference = models.ForeignKey(
         "Conferences", on_delete=models.CASCADE, related_name="teams", null=True
     )

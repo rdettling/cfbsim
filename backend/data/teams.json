@@ -6,7 +6,10 @@
             "ceiling": 7,
             "floor": 5,
             "colorPrimary": "#9E1B32",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Tuscaloosa",
+            "state": "Alabama",
+            "stadium": "Bryant-Denny Stadium"
         },
         "Georgia": {
             "mascot": "Bulldogs",
@@ -14,7 +17,10 @@
             "ceiling": 7,
             "floor": 5,
             "colorPrimary": "#BA0C2F",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Athens",
+            "state": "Georgia",
+            "stadium": "Sanford Stadium"
         },
         "LSU": {
             "mascot": "Tigers",
@@ -22,7 +28,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#461D7C",
-            "colorSecondary": "#FDD023"
+            "colorSecondary": "#FDD023",
+            "city": "Baton Rouge",
+            "state": "Louisiana",
+            "stadium": "Death Valley"
         },
         "Texas A&M": {
             "mascot": "Aggies",
@@ -30,7 +39,10 @@
             "ceiling": 6,
             "floor": 4,
             "colorPrimary": "#500000",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "College Station",
+            "state": "Texas",
+            "stadium": "Kyle Field"
         },
         "Florida": {
             "mascot": "Gators",
@@ -38,7 +50,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#0021A5",
-            "colorSecondary": "#FA4616"
+            "colorSecondary": "#FA4616",
+            "city": "Gainesville",
+            "state": "Florida",
+            "stadium": "Ben Hill Griffin Stadium"
         },
         "Kentucky": {
             "mascot": "Wildcats",
@@ -46,7 +61,10 @@
             "ceiling": 5,
             "floor": 3,
             "colorPrimary": "#0033A0",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Lexington",
+            "state": "Kentucky",
+            "stadium": "Commonwealth Stadium"
         },
         "Tennessee": {
             "mascot": "Volunteers",
@@ -54,7 +72,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#FF8200",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Knoxville",
+            "state": "Tennessee",
+            "stadium": "Neyland Stadium"
         },
         "Auburn": {
             "mascot": "Tigers",
@@ -62,7 +83,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#0C2340",
-            "colorSecondary": "#E87722"
+            "colorSecondary": "#E87722",
+            "city": "Auburn",
+            "state": "Alabama",
+            "stadium": "Jordan-Hare Stadium"
         },
         "Arkansas": {
             "mascot": "Razorbacks",
@@ -70,7 +94,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#9D2235",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Fayetteville",
+            "state": "Arkansas",
+            "stadium": "Razorback Stadium"
         },
         "Mississippi State": {
             "mascot": "Bulldogs",
@@ -78,7 +105,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#660000",
-            "colorSecondary": "#CCCCCC"
+            "colorSecondary": "#CCCCCC",
+            "city": "Starkville",
+            "state": "Mississippi",
+            "stadium": "Davis Wade Stadium"
         },
         "Texas": {
             "mascot": "Longhorns",
@@ -86,7 +116,10 @@
             "ceiling": 7,
             "floor": 5,
             "colorPrimary": "#BF5700",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Austin",
+            "state": "Texas",
+            "stadium": "Darrell K. Royal - Texas Memorial Stadium"
         },
         "Oklahoma": {
             "mascot": "Sooners",
@@ -94,7 +127,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#841617",
-            "colorSecondary": "#FDF9D8"
+            "colorSecondary": "#FDF9D8",
+            "city": "Norman",
+            "state": "Oklahoma",
+            "stadium": "Gaylord Family - Oklahoma Memorial Stadium"
         },
         "Vanderbilt": {
             "mascot": "Commodores",
@@ -102,7 +138,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#866D4B",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Nashville",
+            "state": "Tennessee",
+            "stadium": "Vanderbilt Stadium"
         },
         "South Carolina": {
             "mascot": "Gamecocks",
@@ -110,7 +149,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#73000A",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Columbia",
+            "state": "South Carolina",
+            "stadium": "Williams-Brice Stadium"
         },
         "Ole Miss": {
             "mascot": "Rebels",
@@ -118,7 +160,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#CE1126",
-            "colorSecondary": "#006BA6"
+            "colorSecondary": "#006BA6",
+            "city": "Oxford",
+            "state": "Mississippi",
+            "stadium": "Vaught-Hemingway Stadium"
         },
         "Missouri": {
             "mascot": "Tigers",
@@ -126,7 +171,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#000000",
-            "colorSecondary": "#F1B82D"
+            "colorSecondary": "#F1B82D",
+            "city": "Columbia",
+            "state": "Missouri",
+            "stadium": "Faurot Field at Memorial Stadium"
         },
         "Purdue": {
             "mascot": "Boilermakers",
@@ -134,7 +182,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#CEB888",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "West Lafayette",
+            "state": "Indiana",
+            "stadium": "Ross–Ade Stadium"
         },
         "Iowa": {
             "mascot": "Hawkeyes",
@@ -142,7 +193,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#FFCD00",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Iowa City",
+            "state": "Iowa",
+            "stadium": "Kinnick Stadium"
         },
         "Illinois": {
             "mascot": "Fighting Illini",
@@ -150,7 +204,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#13294B",
-            "colorSecondary": "#E84A27"
+            "colorSecondary": "#E84A27",
+            "city": "Champaign",
+            "state": "Illinois",
+            "stadium": "Memorial Stadium"
         },
         "Michigan": {
             "mascot": "Wolverines",
@@ -158,7 +215,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#00274C",
-            "colorSecondary": "#FFCB05"
+            "colorSecondary": "#FFCB05",
+            "city": "Ann Arbor",
+            "state": "Michigan",
+            "stadium": "Michigan Stadium"
         },
         "Ohio State": {
             "mascot": "Buckeyes",
@@ -166,7 +226,10 @@
             "ceiling": 7,
             "floor": 5,
             "colorPrimary": "#BB0000",
-            "colorSecondary": "#666666"
+            "colorSecondary": "#666666",
+            "city": "Columbus",
+            "state": "Ohio",
+            "stadium": "Ohio Stadium"
         },
         "UCLA": {
             "mascot": "Bruins",
@@ -174,7 +237,10 @@
             "ceiling": 5,
             "floor": 3,
             "colorPrimary": "#2D68C4",
-            "colorSecondary": "#F2A900"
+            "colorSecondary": "#F2A900",
+            "city": "Los Angeles",
+            "state": "California",
+            "stadium": "Los Angeles Memorial Coliseum"
         },
         "USC": {
             "mascot": "Trojans",
@@ -182,7 +248,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#990000",
-            "colorSecondary": "#FFC72C"
+            "colorSecondary": "#FFC72C",
+            "city": "Los Angeles",
+            "state": "California",
+            "stadium": "Los Angeles Memorial Coliseum"
         },
         "Michigan State": {
             "mascot": "Spartans",
@@ -190,7 +259,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#18453B",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "East Lansing",
+            "state": "Michigan",
+            "stadium": "Spartan Stadium"
         },
         "Wisconsin": {
             "mascot": "Badgers",
@@ -198,7 +270,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#C5050C",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Madison",
+            "state": "Wisconsin",
+            "stadium": "Camp Randall Stadium"
         },
         "Washington": {
             "mascot": "Huskies",
@@ -206,7 +281,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#4B2E83",
-            "colorSecondary": "#B7A57A"
+            "colorSecondary": "#B7A57A",
+            "city": "Seattle",
+            "state": "Washington",
+            "stadium": "Husky Stadium"
         },
         "Oregon": {
             "mascot": "Ducks",
@@ -214,7 +292,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#154733",
-            "colorSecondary": "#FEE123"
+            "colorSecondary": "#FEE123",
+            "city": "Eugene",
+            "state": "Oregon",
+            "stadium": "Autzen Stadium"
         },
         "Indiana": {
             "mascot": "Hoosiers",
@@ -222,7 +303,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#990000",
-            "colorSecondary": "#EEEDEB"
+            "colorSecondary": "#EEEDEB",
+            "city": "Bloomington",
+            "state": "Indiana",
+            "stadium": "Memorial Stadium"
         },
         "Maryland": {
             "mascot": "Terrapins",
@@ -230,7 +314,10 @@
             "ceiling": 5,
             "floor": 3,
             "colorPrimary": "#E03A3E",
-            "colorSecondary": "#FFD520"
+            "colorSecondary": "#FFD520",
+            "city": "College Park",
+            "state": "Maryland",
+            "stadium": "Capital One Field at Maryland Stadium"
         },
         "Northwestern": {
             "mascot": "Wildcats",
@@ -238,7 +325,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#4E2A84",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Evanston",
+            "state": "Illinois",
+            "stadium": "Ryan Field"
         },
         "Rutgers": {
             "mascot": "Scarlet Knights",
@@ -246,7 +336,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#CC0033",
-            "colorSecondary": "#5F6A72"
+            "colorSecondary": "#5F6A72",
+            "city": "Piscataway",
+            "state": "New Jersey",
+            "stadium": "SHI Stadium"
         },
         "Penn State": {
             "mascot": "Nittany Lions",
@@ -254,7 +347,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#041E42",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "State College",
+            "state": "Pennsylvania",
+            "stadium": "Beaver Stadium"
         },
         "Minnesota": {
             "mascot": "Golden Gophers",
@@ -262,7 +358,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#7A0019",
-            "colorSecondary": "#FFCC33"
+            "colorSecondary": "#FFCC33",
+            "city": "Minneapolis",
+            "state": "Minnesota",
+            "stadium": "TCF Bank Stadium"
         },
         "Nebraska": {
             "mascot": "Cornhuskers",
@@ -270,7 +369,10 @@
             "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#E41C38",
-            "colorSecondary": "#FDF2D9"
+            "colorSecondary": "#FDF2D9",
+            "city": "Lincoln",
+            "state": "Nebraska",
+            "stadium": "Memorial Stadium"
         },
         "Clemson": {
             "mascot": "Tigers",
@@ -278,7 +380,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#F56600",
-            "colorSecondary": "#522D80"
+            "colorSecondary": "#522D80",
+            "city": "Clemson",
+            "state": "South Carolina",
+            "stadium": "Memorial Stadium"
         },
         "Florida State": {
             "mascot": "Seminoles",
@@ -286,7 +391,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#782F40",
-            "colorSecondary": "#CEB888"
+            "colorSecondary": "#CEB888",
+            "city": "Tallahassee",
+            "state": "Florida",
+            "stadium": "Doak Campbell Stadium"
         },
         "Stanford": {
             "mascot": "Cardinal",
@@ -294,7 +402,10 @@
             "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#8C1515",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Stanford",
+            "state": "California",
+            "stadium": "Stanford Stadium"
         },
         "Miami": {
             "mascot": "Hurricanes",
@@ -302,7 +413,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#F47321",
-            "colorSecondary": "#005030"
+            "colorSecondary": "#005030",
+            "city": "Miami",
+            "state": "Florida",
+            "stadium": "Hard Rock Stadium"
         },
         "Virginia Tech": {
             "mascot": "Hokies",
@@ -310,7 +424,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#630031",
-            "colorSecondary": "#CF4420"
+            "colorSecondary": "#CF4420",
+            "city": "Blacksburg",
+            "state": "Virginia",
+            "stadium": "Lane Stadium"
         },
         "Georgia Tech": {
             "mascot": "Yellow Jackets",
@@ -318,7 +435,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#B3A369",
-            "colorSecondary": "#003057"
+            "colorSecondary": "#003057",
+            "city": "Atlanta",
+            "state": "Georgia",
+            "stadium": "Bobby Dodd Stadium"
         },
         "North Carolina": {
             "mascot": "Tar Heels",
@@ -326,7 +446,10 @@
             "ceiling": 5,
             "floor": 3,
             "colorPrimary": "#7BAFD4",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Chapel Hill",
+            "state": "North Carolina",
+            "stadium": "Kenan Stadium"
         },
         "Southern Methodist": {
             "mascot": "Mustangs",
@@ -334,7 +457,10 @@
             "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#0033A0",
-            "colorSecondary": "#C8102E"
+            "colorSecondary": "#C8102E",
+            "city": "Dallas",
+            "state": "Texas",
+            "stadium": "Gerald J. Ford Stadium"
         },
         "California": {
             "mascot": "Golden Bears",
@@ -342,7 +468,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#003262",
-            "colorSecondary": "#FDB515"
+            "colorSecondary": "#FDB515",
+            "city": "Berkeley",
+            "state": "California",
+            "stadium": "California Memorial Stadium"
         },
         "Pittsburgh": {
             "mascot": "Panthers",
@@ -350,7 +479,10 @@
             "ceiling": 5,
             "floor": 3,
             "colorPrimary": "#003594",
-            "colorSecondary": "#FFB81C"
+            "colorSecondary": "#FFB81C",
+            "city": "Pittsburgh",
+            "state": "Pennsylvania",
+            "stadium": "Heinz Field"
         },
         "Virginia": {
             "mascot": "Cavaliers",
@@ -358,7 +490,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#232D4B",
-            "colorSecondary": "#F84C1E"
+            "colorSecondary": "#F84C1E",
+            "city": "Charlottesville",
+            "state": "Virginia",
+            "stadium": "Scott Stadium"
         },
         "NC State": {
             "mascot": "Wolfpack",
@@ -366,7 +501,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#CC0000",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Raleigh",
+            "state": "North Carolina",
+            "stadium": "Carter-Finley Stadium"
         },
         "Wake Forest": {
             "mascot": "Demon Deacons",
@@ -374,7 +512,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#9E7E38",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Winston-Salem",
+            "state": "North Carolina",
+            "stadium": "Credit Union Stadium"
         },
         "Syracuse": {
             "mascot": "Orange",
@@ -382,7 +523,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#F76900",
-            "colorSecondary": "#000E54"
+            "colorSecondary": "#000E54",
+            "city": "Syracuse",
+            "state": "New York",
+            "stadium": "JMA Wireless Dome"
         },
         "Louisville": {
             "mascot": "Cardinals",
@@ -390,7 +534,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#AD0000",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Louisville",
+            "state": "Kentucky",
+            "stadium": "Cardinal Stadium"
         },
         "Duke": {
             "mascot": "Blue Devils",
@@ -398,7 +545,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#003087",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Durham",
+            "state": "North Carolina",
+            "stadium": "Duke Stadium"
         },
         "Boston College": {
             "mascot": "Eagles",
@@ -406,7 +556,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#98002E",
-            "colorSecondary": "#BC9B6A"
+            "colorSecondary": "#BC9B6A",
+            "city": "Chestnut Hill",
+            "state": "Massachusetts",
+            "stadium": "Alumni Stadium"
         },
         "Kansas": {
             "mascot": "Jayhawks",
@@ -414,7 +567,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#0051BA",
-            "colorSecondary": "#E8000D"
+            "colorSecondary": "#E8000D",
+            "city": "Lawrence",
+            "state": "Kansas",
+            "stadium": "David Booth Kansas Memorial Stadium"
         },
         "BYU": {
             "mascot": "Cougars",
@@ -422,7 +578,10 @@
             "ceiling": 5,
             "floor": 3,
             "colorPrimary": "#002E5D",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Provo",
+            "state": "Utah",
+            "stadium": "LaVell Edwards Stadium"
         },
         "Houston": {
             "mascot": "Cougars",
@@ -430,7 +589,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#C8102E",
-            "colorSecondary": "#B2B4B2"
+            "colorSecondary": "#B2B4B2",
+            "city": "Houston",
+            "state": "Texas",
+            "stadium": "TDECU Stadium"
         },
         "Colorado": {
             "mascot": "Buffaloes",
@@ -438,7 +600,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#CFB87C",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Boulder",
+            "state": "Colorado",
+            "stadium": "Folsom Field"
         },
         "Arizona State": {
             "mascot": "Sun Devils",
@@ -446,7 +611,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#8C1D40",
-            "colorSecondary": "#FFC627"
+            "colorSecondary": "#FFC627",
+            "city": "Tempe",
+            "state": "Arizona",
+            "stadium": "Sun Devil Stadium"
         },
         "Utah": {
             "mascot": "Utes",
@@ -454,7 +622,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#CC0000",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Salt Lake City",
+            "state": "Utah",
+            "stadium": "Rice-Eccles Stadium"
         },
         "Baylor": {
             "mascot": "Bears",
@@ -462,7 +633,10 @@
             "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#154734",
-            "colorSecondary": "#FFB81C"
+            "colorSecondary": "#FFB81C",
+            "city": "Waco",
+            "state": "Texas",
+            "stadium": "McLane Stadium"
         },
         "Texas Tech": {
             "mascot": "Red Raiders",
@@ -470,7 +644,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#CC0000",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Lubbock",
+            "state": "Texas",
+            "stadium": "Jones AT&T Stadium"
         },
         "Cincinnati": {
             "mascot": "Bearcats",
@@ -478,7 +655,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#E00122",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Cincinnati",
+            "state": "Ohio",
+            "stadium": "Nippert Stadium"
         },
         "Central Florida": {
             "mascot": "Knights",
@@ -486,7 +666,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#BA9B37",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Orlando",
+            "state": "Florida",
+            "stadium": "Acrisure Bounce House Stadium"
         },
         "Texas Christian": {
             "mascot": "Horned Frogs",
@@ -494,7 +677,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#4D1979",
-            "colorSecondary": "#A3A9AC"
+            "colorSecondary": "#A3A9AC",
+            "city": "Fort Worth",
+            "state": "Texas",
+            "stadium": "Amon G. Carter Stadium"
         },
         "Oklahoma State": {
             "mascot": "Cowboys",
@@ -502,7 +688,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#FF7300",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Stillwater",
+            "state": "Oklahoma",
+            "stadium": "Boone Pickens Stadium"
         },
         "Arizona": {
             "mascot": "Wildcats",
@@ -510,7 +699,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#CC0033",
-            "colorSecondary": "#003366"
+            "colorSecondary": "#003366",
+            "city": "Tucson",
+            "state": "Arizona",
+            "stadium": "Arizona Stadium"
         },
         "Iowa State": {
             "mascot": "Cyclones",
@@ -518,7 +710,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#C8102E",
-            "colorSecondary": "#F1BE48"
+            "colorSecondary": "#F1BE48",
+            "city": "Ames",
+            "state": "Iowa",
+            "stadium": "Jack Trice Stadium"
         },
         "Kansas State": {
             "mascot": "Wildcats",
@@ -526,7 +721,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#512888",
-            "colorSecondary": "#D1D1D1"
+            "colorSecondary": "#D1D1D1",
+            "city": "Manhattan",
+            "state": "Kansas",
+            "stadium": "Bill Snyder Family Stadium"
         },
         "West Virginia": {
             "mascot": "Mountaineers",
@@ -534,7 +732,10 @@
             "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#002855",
-            "colorSecondary": "#EAAA00"
+            "colorSecondary": "#EAAA00",
+            "city": "Morgantown",
+            "state": "West Virginia",
+            "stadium": "Mountaineer Field at Milan Puskar Stadium"
         },
         "Florida Atlantic": {
             "mascot": "Owls",
@@ -542,7 +743,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#003366",
-            "colorSecondary": "#CC0000"
+            "colorSecondary": "#CC0000",
+            "city": "Boca Raton",
+            "state": "Florida",
+            "stadium": "FAU Stadium"
         },
         "Charlotte": {
             "mascot": "49ers",
@@ -550,7 +754,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#046A38",
-            "colorSecondary": "#B9975B"
+            "colorSecondary": "#B9975B",
+            "city": "Charlotte",
+            "state": "North Carolina",
+            "stadium": "Memorial Stadium"
         },
         "Texas San Antonio": {
             "mascot": "Roadrunners",
@@ -558,7 +765,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#F15A22",
-            "colorSecondary": "#0C2340"
+            "colorSecondary": "#0C2340",
+            "city": "San Antonio",
+            "state": "Texas",
+            "stadium": "Alamodome"
         },
         "East Carolina": {
             "mascot": "Pirates",
@@ -566,7 +776,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#592A8A",
-            "colorSecondary": "#FDC82F"
+            "colorSecondary": "#FDC82F",
+            "city": "Greenville",
+            "state": "North Carolina",
+            "stadium": "Ficklen Stadium"
         },
         "Rice": {
             "mascot": "Owls",
@@ -574,7 +787,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#00205B",
-            "colorSecondary": "#C1C6C8"
+            "colorSecondary": "#C1C6C8",
+            "city": "Houston",
+            "state": "Texas",
+            "stadium": "TDECU Stadium"
         },
         "Memphis": {
             "mascot": "Tigers",
@@ -582,7 +798,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#003087",
-            "colorSecondary": "#898D8D"
+            "colorSecondary": "#898D8D",
+            "city": "Memphis",
+            "state": "Tennessee",
+            "stadium": "Liberty Bowl Memorial Stadium"
         },
         "Navy": {
             "mascot": "Midshipmen",
@@ -590,7 +809,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#00205B",
-            "colorSecondary": "#C5B783"
+            "colorSecondary": "#C5B783",
+            "city": "Annapolis",
+            "state": "Maryland",
+            "stadium": "Naval Academy Stadium"
         },
         "Army": {
             "mascot": "Black Knights",
@@ -598,7 +820,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#D4BF91",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "West Point",
+            "state": "New York",
+            "stadium": "Army Stadium"
         },
         "North Texas": {
             "mascot": "Mean Green",
@@ -606,7 +831,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#00853E",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Denton",
+            "state": "Texas",
+            "stadium": "Apogee Stadium"
         },
         "South Florida": {
             "mascot": "Bulls",
@@ -614,7 +842,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#006747",
-            "colorSecondary": "#CFC493"
+            "colorSecondary": "#CFC493",
+            "city": "Tampa",
+            "state": "Florida",
+            "stadium": "Raymond James Stadium"
         },
         "Temple": {
             "mascot": "Owls",
@@ -622,7 +853,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#9D2235",
-            "colorSecondary": "#C1C6C8"
+            "colorSecondary": "#C1C6C8",
+            "city": "Philadelphia",
+            "state": "Pennsylvania",
+            "stadium": "Lincoln Financial Field"
         },
         "Alabama Birmingham": {
             "mascot": "Blazers",
@@ -630,7 +864,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#006341",
-            "colorSecondary": "#CC8A00"
+            "colorSecondary": "#CC8A00",
+            "city": "Birmingham",
+            "state": "Alabama",
+            "stadium": "Legion Field"
         },
         "Tulane": {
             "mascot": "Green Wave",
@@ -638,7 +875,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#006747",
-            "colorSecondary": "#418FDE"
+            "colorSecondary": "#418FDE",
+            "city": "New Orleans",
+            "state": "Louisiana",
+            "stadium": "Yulman Stadium"
         },
         "Tulsa": {
             "mascot": "Golden Hurricane",
@@ -646,7 +886,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#002D72",
-            "colorSecondary": "#C8102E"
+            "colorSecondary": "#C8102E",
+            "city": "Tulsa",
+            "state": "Oklahoma",
+            "stadium": "H.A. Chapman Stadium"
         },
         "Washington State": {
             "mascot": "Cougars",
@@ -654,7 +897,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#981E32",
-            "colorSecondary": "#5E6A71"
+            "colorSecondary": "#5E6A71",
+            "city": "Pullman",
+            "state": "Washington",
+            "stadium": "Martin Stadium"
         },
         "Oregon State": {
             "mascot": "Beavers",
@@ -662,7 +908,10 @@
             "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#DC4405",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Corvallis",
+            "state": "Oregon",
+            "stadium": "Reser Stadium"
         },
         "Boise State": {
             "mascot": "Broncos",
@@ -670,7 +919,10 @@
             "ceiling": 5,
             "floor": 3,
             "colorPrimary": "#0033A0",
-            "colorSecondary": "#D64309"
+            "colorSecondary": "#D64309",
+            "city": "Boise",
+            "state": "Idaho",
+            "stadium": "Albertsons Stadium"
         },
         "Fresno State": {
             "mascot": "Bulldogs",
@@ -678,7 +930,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#DB0032",
-            "colorSecondary": "#002E6D"
+            "colorSecondary": "#002E6D",
+            "city": "Fresno",
+            "state": "California",
+            "stadium": "Chadwick Stadium"
         },
         "Nevada": {
             "mascot": "Wolfpack",
@@ -686,7 +941,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#003366",
-            "colorSecondary": "#807F84"
+            "colorSecondary": "#807F84",
+            "city": "Reno",
+            "state": "Nevada",
+            "stadium": "Condoleezza Rice Stadium"
         },
         "San Diego State": {
             "mascot": "Aztecs",
@@ -694,7 +952,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#A6192E",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "San Diego",
+            "state": "California",
+            "stadium": "SDCCU Stadium"
         },
         "UNLV": {
             "mascot": "Rebels",
@@ -702,7 +963,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#CF0A2C",
-            "colorSecondary": "#CAC8C8"
+            "colorSecondary": "#CAC8C8",
+            "city": "Las Vegas",
+            "state": "Nevada",
+            "stadium": "Allegiant Stadium"
         },
         "Wyoming": {
             "mascot": "Cowboys",
@@ -710,7 +974,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#492F24",
-            "colorSecondary": "#FFC425"
+            "colorSecondary": "#FFC425",
+            "city": "Laramie",
+            "state": "Wyoming",
+            "stadium": "War Memorial Stadium"
         },
         "Air Force": {
             "mascot": "Falcons",
@@ -718,7 +985,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#003087",
-            "colorSecondary": "#8A8D8F"
+            "colorSecondary": "#8A8D8F",
+            "city": "Colorado Springs",
+            "state": "Colorado",
+            "stadium": "Falcon Stadium"
         },
         "Colorado State": {
             "mascot": "Rams",
@@ -726,7 +996,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#1E4D2B",
-            "colorSecondary": "#C8C372"
+            "colorSecondary": "#C8C372",
+            "city": "Fort Collins",
+            "state": "Colorado",
+            "stadium": "Canvas Stadium"
         },
         "Hawaii": {
             "mascot": "Rainbow Warriors",
@@ -734,7 +1007,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#024731",
-            "colorSecondary": "#C8C8C8"
+            "colorSecondary": "#C8C8C8",
+            "city": "Honolulu",
+            "state": "Hawaii",
+            "stadium": "Rainbow Warrior Stadium"
         },
         "New Mexico": {
             "mascot": "Lobos",
@@ -742,7 +1018,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#BA0C2F",
-            "colorSecondary": "#63666A"
+            "colorSecondary": "#63666A",
+            "city": "Albuquerque",
+            "state": "New Mexico",
+            "stadium": "University Stadium"
         },
         "San Jose State": {
             "mascot": "Spartans",
@@ -750,7 +1029,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#0055A2",
-            "colorSecondary": "#E5A823"
+            "colorSecondary": "#E5A823",
+            "city": "San Jose",
+            "state": "California",
+            "stadium": "Spartan Stadium"
         },
         "Utah State": {
             "mascot": "Aggies",
@@ -758,7 +1040,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#00263A",
-            "colorSecondary": "#8A8D8F"
+            "colorSecondary": "#8A8D8F",
+            "city": "Logan",
+            "state": "Utah",
+            "stadium": "Aggie Memorial Stadium"
         },
         "Appalachian State": {
             "mascot": "Mountaineers",
@@ -766,7 +1051,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#222222",
-            "colorSecondary": "#FFCC00"
+            "colorSecondary": "#FFCC00",
+            "city": "Boone",
+            "state": "North Carolina",
+            "stadium": " Kidd Brewer Stadium"
         },
         "Coastal Carolina": {
             "mascot": "Chanticleers",
@@ -774,7 +1062,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#006F71",
-            "colorSecondary": "#A27752"
+            "colorSecondary": "#A27752",
+            "city": "Conway",
+            "state": "South Carolina",
+            "stadium": "CCU Stadium"
         },
         "Georgia Southern": {
             "mascot": "Eagles",
@@ -782,7 +1073,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#011E41",
-            "colorSecondary": "#A3AAAE"
+            "colorSecondary": "#A3AAAE",
+            "city": "Statesboro",
+            "state": "Georgia",
+            "stadium": "Georgia Southern Stadium"
         },
         "Georgia State": {
             "mascot": "Panthers",
@@ -790,7 +1084,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#0039A6",
-            "colorSecondary": "#C60C30"
+            "colorSecondary": "#C60C30",
+            "city": "Atlanta",
+            "state": "Georgia",
+            "stadium": "Georgia State Stadium"
         },
         "James Madison": {
             "mascot": "Dukes",
@@ -798,7 +1095,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#450084",
-            "colorSecondary": "#CBB677"
+            "colorSecondary": "#CBB677",
+            "city": "Harrisonburg",
+            "state": "Virginia",
+            "stadium": "JMU Stadium"
         },
         "Marshall": {
             "mascot": "Thundering Herd",
@@ -806,7 +1106,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#00B140",
-            "colorSecondary": "#A2AAAD"
+            "colorSecondary": "#A2AAAD",
+            "city": "Huntington",
+            "state": "West Virginia",
+            "stadium": "Marshall Stadium"
         },
         "Old Dominion": {
             "mascot": "Monarchs",
@@ -814,7 +1117,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#003087",
-            "colorSecondary": "#7C878E"
+            "colorSecondary": "#7C878E",
+            "city": "Norfolk",
+            "state": "Virginia",
+            "stadium": "ODU Stadium"
         },
         "Arkansas State": {
             "mascot": "Red Wolves",
@@ -822,7 +1128,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#CC092F",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Jonesboro",
+            "state": "Arkansas",
+            "stadium": "ASU Stadium"
         },
         "Louisiana": {
             "mascot": "Ragin' Cajuns",
@@ -830,7 +1139,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#CE181E",
-            "colorSecondary": "#0A0203"
+            "colorSecondary": "#0A0203",
+            "city": "Lafayette",
+            "state": "Louisiana",
+            "stadium": "ULL Stadium"
         },
         "Louisiana Monroe": {
             "mascot": "Warhawks",
@@ -838,7 +1150,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#840029",
-            "colorSecondary": "#FDB913"
+            "colorSecondary": "#FDB913",
+            "city": "Monroe",
+            "state": "Louisiana",
+            "stadium": "ULM Stadium"
         },
         "South Alabama": {
             "mascot": "Jaguars",
@@ -846,7 +1161,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#00205B",
-            "colorSecondary": "#BF0D3E"
+            "colorSecondary": "#BF0D3E",
+            "city": "Mobile",
+            "state": "Alabama",
+            "stadium": "USA Stadium"
         },
         "Southern Miss": {
             "mascot": "Golden Eagles",
@@ -854,7 +1172,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#000000",
-            "colorSecondary": "#FFAB00"
+            "colorSecondary": "#FFAB00",
+            "city": "Hattiesburg",
+            "state": "Mississippi",
+            "stadium": "Southern Miss Stadium"
         },
         "Texas State": {
             "mascot": "Bobcats",
@@ -862,7 +1183,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#501214",
-            "colorSecondary": "#8D734A"
+            "colorSecondary": "#8D734A",
+            "city": "San Marcos",
+            "state": "Texas",
+            "stadium": "Texas State Stadium"
         },
         "Troy": {
             "mascot": "Trojans",
@@ -870,7 +1194,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#8A2432",
-            "colorSecondary": "#B3B5B8"
+            "colorSecondary": "#B3B5B8",
+            "city": "Troy",
+            "state": "Alabama",
+            "stadium": "Troy Stadium"
         },
         "Buffalo": {
             "mascot": "Bulls",
@@ -878,7 +1205,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#005BBB",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Buffalo",
+            "state": "New York",
+            "stadium": "Buffalo Stadium"
         },
         "Ohio": {
             "mascot": "Bobcats",
@@ -886,7 +1216,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#00694E",
-            "colorSecondary": "#CDA077"
+            "colorSecondary": "#CDA077",
+            "city": "Athens",
+            "state": "Ohio",
+            "stadium": "Ohio Stadium"
         },
         "Bowling Green": {
             "mascot": "Falcons",
@@ -894,7 +1227,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#FE5000",
-            "colorSecondary": "#4F2C1D"
+            "colorSecondary": "#4F2C1D",
+            "city": "Bowling Green",
+            "state": "Ohio",
+            "stadium": "Bowling Green Stadium"
         },
         "Kent State": {
             "mascot": "Golden Flashes",
@@ -902,7 +1238,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#002664",
-            "colorSecondary": "#EAAB00"
+            "colorSecondary": "#EAAB00",
+            "city": "Kent",
+            "state": "Ohio",
+            "stadium": "Kent Stadium"
         },
         "Miami Ohio": {
             "mascot": "RedHawks",
@@ -910,7 +1249,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#B61E2E",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Oxford",
+            "state": "Ohio",
+            "stadium": "Miami Stadium"
         },
         "Akron": {
             "mascot": "Zips",
@@ -918,7 +1260,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#041E42",
-            "colorSecondary": "#A89968"
+            "colorSecondary": "#A89968",
+            "city": "Akron",
+            "state": "Ohio",
+            "stadium": "Akron Stadium"
         },
         "Toledo": {
             "mascot": "Rockets",
@@ -926,7 +1271,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#15397F",
-            "colorSecondary": "#FFDA00"
+            "colorSecondary": "#FFDA00",
+            "city": "Toledo",
+            "state": "Ohio",
+            "stadium": "Toledo Stadium"
         },
         "Ball State": {
             "mascot": "Cardinals",
@@ -934,7 +1282,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#BA0C2F",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Muncie",
+            "state": "Indiana",
+            "stadium": "Ball State Stadium"
         },
         "Western Michigan": {
             "mascot": "Broncos",
@@ -942,7 +1293,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#6C4023",
-            "colorSecondary": "#B5A167"
+            "colorSecondary": "#B5A167",
+            "city": "Kalamazoo",
+            "state": "Michigan",
+            "stadium": "Western Michigan Stadium"
         },
         "Eastern Michigan": {
             "mascot": "Eagles",
@@ -950,7 +1304,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#006633",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Ypsilanti",
+            "state": "Michigan",
+            "stadium": "Eastern Michigan Stadium"
         },
         "Central Michigan": {
             "mascot": "Chippewas",
@@ -958,7 +1315,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#6A0032",
-            "colorSecondary": "#FFC82E"
+            "colorSecondary": "#FFC82E",
+            "city": "Mount Pleasant",
+            "state": "Michigan",
+            "stadium": "Central Michigan Stadium"
         },
         "Northern Illinois": {
             "mascot": "Huskies",
@@ -966,7 +1326,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#BA0C2F",
-            "colorSecondary": "#8A8D8F"
+            "colorSecondary": "#8A8D8F",
+            "city": "DeKalb",
+            "state": "Illinois",
+            "stadium": "Northern Illinois Stadium"
         },
         "Western Kentucky": {
             "mascot": "Hilltoppers",
@@ -974,7 +1337,10 @@
             "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#C60C30",
-            "colorSecondary": "#1E1E1E"
+            "colorSecondary": "#1E1E1E",
+            "city": "Bowling Green",
+            "state": "Kentucky",
+            "stadium": "Western Kentucky Stadium"
         },
         "Kennesaw State": {
             "mascot": "Owls",
@@ -982,7 +1348,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#FDBB30",
-            "colorSecondary": "#0B1315"
+            "colorSecondary": "#0B1315",
+            "city": "Kennesaw",
+            "state": "Georgia",
+            "stadium": "Kennesaw State Stadium"
         },
         "Florida International": {
             "mascot": "Golden Panthers",
@@ -990,7 +1359,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#081E3F",
-            "colorSecondary": "#B6862C"
+            "colorSecondary": "#B6862C",
+            "city": "Miami",
+            "state": "Florida",
+            "stadium": "FIU Stadium"
         },
         "Middle Tennessee State": {
             "mascot": "Blue Raiders",
@@ -998,7 +1370,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#0066CC",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Murfreesboro",
+            "state": "Tennessee",
+            "stadium": "MTSU Stadium"
         },
         "Liberty": {
             "mascot": "Flames",
@@ -1006,7 +1381,10 @@
             "ceiling": 4,
             "floor": 2,
             "colorPrimary": "#002D62",
-            "colorSecondary": "#C41230"
+            "colorSecondary": "#C41230",
+            "city": "Lynchburg",
+            "state": "Virginia",
+            "stadium": "Liberty Stadium"
         },
         "New Mexico State": {
             "mascot": "Aggies",
@@ -1014,7 +1392,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#861F41",
-            "colorSecondary": "#97999B"
+            "colorSecondary": "#97999B",
+            "city": "Las Cruces",
+            "state": "New Mexico",
+            "stadium": "NMSU Stadium"
         },
         "Texas El Paso": {
             "mascot": "Miners",
@@ -1022,7 +1403,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#041E42",
-            "colorSecondary": "#FF8200"
+            "colorSecondary": "#FF8200",
+            "city": "El Paso",
+            "state": "Texas",
+            "stadium": "UTEP Stadium"
         },
         "Louisiana Tech": {
             "mascot": "Bulldogs",
@@ -1030,7 +1414,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#002F8B",
-            "colorSecondary": "#E31B23"
+            "colorSecondary": "#E31B23",
+            "city": "Ruston",
+            "state": "Louisiana",
+            "stadium": "Louisiana Tech Stadium"
         },
         "Jacksonville State": {
             "mascot": "Gamecocks",
@@ -1038,7 +1425,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#CC0000",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Jacksonville",
+            "state": "Alabama",
+            "stadium": "Jacksonville State Stadium"
         },
         "Sam Houston State": {
             "mascot": "Bearkats",
@@ -1046,7 +1436,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#FE5100",
-            "colorSecondary": "#FFFFFF"
+            "colorSecondary": "#FFFFFF",
+            "city": "Huntsville",
+            "state": "Texas",
+            "stadium": "Sam Houston State Stadium"
         },
         "Notre Dame": {
             "mascot": "Fighting Irish",
@@ -1054,7 +1447,10 @@
             "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#0C2340",
-            "colorSecondary": "#AE9142"
+            "colorSecondary": "#AE9142",
+            "city": "Notre Dame",
+            "state": "Indiana",
+            "stadium": "Notre Dame Stadium"
         },
         "Connecticut": {
             "mascot": "Huskies",
@@ -1062,7 +1458,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#000E2F",
-            "colorSecondary": "#E4002B"
+            "colorSecondary": "#E4002B",
+            "city": "Storrs",
+            "state": "Connecticut",
+            "stadium": "UConn Stadium"
         },
         "Massachusetts": {
             "mascot": "Minutemen",
@@ -1070,7 +1469,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#971B2F",
-            "colorSecondary": "#B1B3B3"
+            "colorSecondary": "#B1B3B3",
+            "city": "Amherst",
+            "state": "Massachusetts",
+            "stadium": "Minuteman Stadium"
         },
         "Idaho": {
             "mascot": "Vandals",
@@ -1078,7 +1480,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#B3A369",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Moscow",
+            "state": "Idaho",
+            "stadium": "Kibbie Dome"
         },
         "Missouri State": {
             "mascot": "Bears",
@@ -1086,7 +1491,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#5E0009",
-            "colorSecondary": "#000000"
+            "colorSecondary": "#000000",
+            "city": "Springfield",
+            "state": "Missouri",
+            "stadium": "Missouri State Stadium"
         },
         "Delaware": {
             "mascot": "Blue Hens",
@@ -1094,7 +1502,10 @@
             "ceiling": 3,
             "floor": 1,
             "colorPrimary": "#00539F",
-            "colorSecondary": "#FFDD31"
+            "colorSecondary": "#FFDD31",
+            "city": "Newark",
+            "state": "Delaware",
+            "stadium": "Delaware Stadium"
         }
     }
 } 

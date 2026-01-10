@@ -6,11 +6,6 @@ import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents'
 import { useDataFetching } from '../hooks/useDataFetching';
 import {
     Typography,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
     Button,
     Dialog,
     DialogTitle,
@@ -18,7 +13,12 @@ import {
     Select,
     MenuItem,
     Stack,
-    Box
+    Box,
+    Card,
+    CardContent,
+    Chip,
+    Divider,
+    GlobalStyles
 } from "@mui/material";
 import { PageLayout } from '../components/PageLayout';
 
@@ -128,6 +128,10 @@ export const NonCon = () => {
         setTeamInfoModalOpen(true);
     };
 
+    const scheduledWeeks = data?.schedule.filter((game) => game.opponent).length || 0;
+    const totalWeeks = data?.schedule.length || 0;
+    const byeWeeks = totalWeeks - scheduledWeeks;
+
     return (
         <PageLayout 
             loading={loading} 
@@ -142,23 +146,53 @@ export const NonCon = () => {
         >
             {data && (
                 <>
+                <GlobalStyles
+                    styles={{
+                        "@import":
+                            "url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap')",
+                    }}
+                />
                 <Stack
                     direction="row"
                     justifyContent="space-between"
                     alignItems="center"
                     sx={{ mb: 3 }}
                 >
-                    <Box>
-                        <Typography variant="h4">{data.team.name}</Typography>
-                        <Typography>
-                            Non-Conference Games Scheduled: {data.team.nonConfGames} /{" "}
-                            {data.team.nonConfLimit}
+                    <Box
+                        sx={{
+                            flex: 1,
+                            p: 3,
+                            borderRadius: 3,
+                            background:
+                                "linear-gradient(135deg, #f4efe6 0%, #dbe8f7 100%)",
+                            border: "1px solid",
+                            borderColor: "divider",
+                            fontFamily: "'Space Grotesk', sans-serif",
+                        }}
+                    >
+                        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                            {data.team.name}
                         </Typography>
-                        <Typography>
-                            Schedule your non-conference games here. If you advance to the
-                            season, the remaining slots will be filled automatically.
-                            Rivalry games are guaranteed and may be fixed to specific weeks.
+                        <Typography sx={{ mt: 0.5, color: "text.secondary" }}>
+                            Build your non-conference slate. The remaining slots will
+                            auto-fill when you advance the season.
                         </Typography>
+                        <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
+                            <Chip
+                                label={`Non-Conf: ${data.team.nonConfGames}/${data.team.nonConfLimit}`}
+                                color="primary"
+                                sx={{ fontWeight: 600 }}
+                            />
+                            <Chip
+                                label={`Weeks Scheduled: ${scheduledWeeks}/${totalWeeks}`}
+                                sx={{ fontWeight: 600 }}
+                            />
+                            <Chip
+                                label={`Bye Weeks: ${byeWeeks}`}
+                                color="success"
+                                sx={{ fontWeight: 600 }}
+                            />
+                        </Stack>
                     </Box>
                 </Stack>
 
@@ -170,46 +204,105 @@ export const NonCon = () => {
                     }}
                 >
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Week</TableCell>
-                                    <TableCell>Opponent</TableCell>
-                                    <TableCell>Label</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {data.schedule.map((game) => (
-                                    <TableRow key={game.weekPlayed}>
-                                        <TableCell>Week {game.weekPlayed}</TableCell>
-                                        <TableCell>
-                                            {game.opponent && (
-                                                <Stack direction="row" spacing={2} alignItems="center">
-                                                    {game.opponent.ranking && (
-                                                        <Typography>#{game.opponent.ranking}</Typography>
-                                                    )}
-                                                    <TeamLogo name={game.opponent.name} size={40} />
-                                                    <TeamLink name={game.opponent.name} onTeamClick={handleTeamClick} />
-                                                </Stack>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            {!game.opponent &&
-                                                data.team.nonConfGames < data.team.nonConfLimit ? (
-                                                <Button
-                                                    variant="contained"
-                                                    onClick={() => handleOpenModal(game.weekPlayed)}
+                        <Stack spacing={2}>
+                            {data.schedule.map((game) => (
+                                <Card
+                                    key={game.weekPlayed}
+                                    sx={{
+                                        borderRadius: 3,
+                                        border: "1px solid",
+                                        borderColor: "divider",
+                                    }}
+                                >
+                                    <CardContent>
+                                        <Stack
+                                            direction={{ xs: "column", sm: "row" }}
+                                            spacing={2}
+                                            alignItems={{ xs: "flex-start", sm: "center" }}
+                                            justifyContent="space-between"
+                                        >
+                                            <Stack spacing={1} sx={{ minWidth: 220 }}>
+                                                <Typography
+                                                    variant="overline"
+                                                    sx={{ letterSpacing: 1.5 }}
                                                 >
-                                                    Schedule Game
-                                                </Button>
-                                            ) : (
-                                                game.label
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                                    Week {game.weekPlayed}
+                                                </Typography>
+                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                                        {game.opponent ? "Game Scheduled" : "Open Week"}
+                                                    </Typography>
+                                                    {game.opponent && game.location && (
+                                                        <Chip
+                                                            label={game.location}
+                                                            size="small"
+                                                            color={
+                                                                game.location === "Home"
+                                                                    ? "success"
+                                                                    : game.location === "Away"
+                                                                    ? "warning"
+                                                                    : "default"
+                                                            }
+                                                            sx={{ fontWeight: 600 }}
+                                                        />
+                                                    )}
+                                                </Stack>
+                                                {game.label && (
+                                                    <Typography color="text.secondary" variant="body2">
+                                                        {game.label}
+                                                    </Typography>
+                                                )}
+                                            </Stack>
+
+                                            <Box sx={{ flex: 1 }}>
+                                                {game.opponent ? (
+                                                    <Stack
+                                                        direction="row"
+                                                        spacing={2}
+                                                        alignItems="center"
+                                                    >
+                                                        {game.opponent.ranking && (
+                                                            <Chip
+                                                                label={`#${game.opponent.ranking}`}
+                                                                size="small"
+                                                                sx={{ fontWeight: 600 }}
+                                                            />
+                                                        )}
+                                                        <TeamLogo name={game.opponent.name} size={42} />
+                                                        <TeamLink
+                                                            name={game.opponent.name}
+                                                            onTeamClick={handleTeamClick}
+                                                        />
+                                                    </Stack>
+                                                ) : (
+                                                    <Typography color="text.secondary">
+                                                        Slot available for non-conference scheduling.
+                                                    </Typography>
+                                                )}
+                                            </Box>
+
+                                            <Box>
+                                                {!game.opponent &&
+                                                data.team.nonConfGames < data.team.nonConfLimit ? (
+                                                    <Button
+                                                        variant="contained"
+                                                        onClick={() => handleOpenModal(game.weekPlayed)}
+                                                    >
+                                                        Schedule Game
+                                                    </Button>
+                                                ) : (
+                                                    <Chip
+                                                        label={game.opponent ? "Locked" : "Auto-fill"}
+                                                        variant="outlined"
+                                                        sx={{ fontWeight: 600 }}
+                                                    />
+                                                )}
+                                            </Box>
+                                        </Stack>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Stack>
                     </Box>
 
                     <Box
@@ -224,12 +317,16 @@ export const NonCon = () => {
                             backgroundColor: "background.paper",
                         }}
                     >
-                        <Typography variant="h6" sx={{ mb: 1 }}>
-                            Pending Rivalries
+                        <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
+                            Your Pending Rivalries
+                        </Typography>
+                        <Typography color="text.secondary" variant="body2" sx={{ mb: 2 }}>
+                            These rivalry games will be placed once the full schedule
+                            is generated.
                         </Typography>
                         {data.pending_rivalries.length === 0 ? (
                             <Typography color="text.secondary">
-                                All rivalry games are placed in the schedule.
+                                All rivalry games are already placed.
                             </Typography>
                         ) : (
                             <Stack spacing={1.5}>
@@ -244,6 +341,7 @@ export const NonCon = () => {
                                                 ? `${rivalry.homeTeam} home`
                                                 : "Home/away TBD"}
                                         </Typography>
+                                        <Divider sx={{ mt: 1.5 }} />
                                     </Box>
                                 ))}
                             </Stack>

@@ -90,6 +90,7 @@ export interface ScheduleGame {
     spread: string;
     moneyline: string;
     id: string;
+    location?: "Home" | "Away" | "Neutral";
 }
 
 export interface Game {

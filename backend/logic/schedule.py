@@ -651,12 +651,31 @@ def fillSchedules(info):
                 if not available_weeks:
                     failed = True
                     break
-                options.append((len(available_weeks), random.random(), game, available_weeks))
+                is_non_conf = game.teamA.conference_id != game.teamB.conference_id
+                non_conf_priority = 0 if is_non_conf else 1
+                options.append(
+                    (
+                        len(available_weeks),
+                        non_conf_priority,
+                        random.random(),
+                        game,
+                        available_weeks,
+                    )
+                )
             if failed:
                 break
-            options.sort(key=lambda item: item[0:2])
-            _, _, game, available_weeks = options[0]
-            week = min(available_weeks, key=lambda w: week_load.get(w, 0))
+            options.sort(key=lambda item: item[0:3])
+            _, _, _, game, available_weeks = options[0]
+            if game.teamA.conference_id != game.teamB.conference_id:
+                week = min(
+                    available_weeks,
+                    key=lambda w: (week_load.get(w, 0), w),
+                )
+            else:
+                week = min(
+                    available_weeks,
+                    key=lambda w: (week_load.get(w, 0), -w),
+                )
             game.weekPlayed = week
             team_weeks[game.teamA_id].add(week)
             team_weeks[game.teamB_id].add(week)

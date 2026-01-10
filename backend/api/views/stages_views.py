@@ -23,6 +23,7 @@ from logic.season import (
     refresh_season_data,
 )
 from logic.awards import finalize_awards
+from django.db.models import Q
 
 
 @api_view(["GET"])
@@ -309,7 +310,9 @@ def noncon(request):
         }
         for game in info.games.filter(
             year=info.currentYear, weekPlayed=0, name__isnull=False
-        ).select_related("teamA", "teamB", "homeTeam", "awayTeam")
+        )
+        .filter(Q(teamA=info.team) | Q(teamB=info.team))
+        .select_related("teamA", "teamB", "homeTeam", "awayTeam")
     ]
 
     response_data = {
