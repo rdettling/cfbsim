@@ -1,4 +1,5 @@
 from .schedule import set_rivalries, fillSchedules
+from logic.constants.schedule_constants import LAST_WEEK_BY_PLAYOFF_TEAMS
 from api.models import *
 from .player_generation import load_names
 from .roster_management import (
@@ -13,7 +14,7 @@ from .betting import load_precomputed_odds
 from django.db import transaction
 import os
 import json
-from .util import get_recruiting_points, get_last_week, load_year_data, time_section
+from .util import get_recruiting_points, load_year_data, time_section
 import time
 
 
@@ -148,8 +149,7 @@ def refresh_playoff(info, data, update_format=False):
     
     # Use settings for lastWeek calculation
     playoff_teams = info.settings.playoff_teams
-   
-    info.lastWeek = get_last_week(playoff_teams)
+    info.lastWeek = LAST_WEEK_BY_PLAYOFF_TEAMS[playoff_teams]
 
     # Clear all playoff game references (set to None)
     info.playoff.seed_1 = None
@@ -646,7 +646,7 @@ def init(
         final_playoff_autobids = 0
         final_conf_champ_top_4 = False
 
-    calculated_last_week = get_last_week(final_playoff_teams)
+    calculated_last_week = LAST_WEEK_BY_PLAYOFF_TEAMS[final_playoff_teams]
     time_section(config_start, "  • Data loaded and playoff configuration set")
 
     # Phase 2: Create core objects
@@ -705,6 +705,9 @@ def init(
                 mascot=team_data["mascot"],
                 colorPrimary=team_data["colorPrimary"],
                 colorSecondary=team_data["colorSecondary"],
+                city=team_data.get("city"),
+                state=team_data.get("state"),
+                stadium=team_data.get("stadium"),
                 conference=conference,
                 confLimit=conf_data["confGames"],
                 nonConfLimit=12 - conf_data["confGames"],
@@ -724,6 +727,9 @@ def init(
             mascot=team_data["mascot"],
             colorPrimary=team_data["colorPrimary"],
             colorSecondary=team_data["colorSecondary"],
+            city=team_data.get("city"),
+            state=team_data.get("state"),
+            stadium=team_data.get("stadium"),
             conference=None,
             confLimit=0,
             nonConfLimit=12,

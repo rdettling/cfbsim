@@ -2,7 +2,12 @@ from ..models import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..serializers import *
-from logic.util import get_schedule_game, calculate_recruiting_rankings, time_section
+from logic.util import (
+    get_schedule_game,
+    calculate_recruiting_rankings,
+    time_section,
+)
+from logic.constants.schedule_constants import REGULAR_SEASON_WEEKS
 from logic.roster_management import progress_ratings
 import uuid
 import time
@@ -18,6 +23,7 @@ from logic.season import (
     refresh_season_data,
 )
 from logic.awards import finalize_awards
+from django.db.models import Q
 
 
 @api_view(["GET"])
@@ -289,14 +295,31 @@ def noncon(request):
             if week in games_by_week
             else {"weekPlayed": week, "opponent": None}
         )
-        for week in range(1, 13)
+        for week in range(1, REGULAR_SEASON_WEEKS + 1)
         for games_by_week in [{game.weekPlayed: game for game in games}]
+    ]
+
+    pending_rivalries = [
+        {
+            "id": game.id,
+            "teamA": game.teamA.name,
+            "teamB": game.teamB.name,
+            "name": game.name,
+            "homeTeam": game.homeTeam.name if game.homeTeam else None,
+            "awayTeam": game.awayTeam.name if game.awayTeam else None,
+        }
+        for game in info.games.filter(
+            year=info.currentYear, weekPlayed=0, name__isnull=False
+        )
+        .filter(Q(teamA=info.team) | Q(teamB=info.team))
+        .select_related("teamA", "teamB", "homeTeam", "awayTeam")
     ]
 
     response_data = {
         "info": InfoSerializer(info).data,
         "team": TeamsSerializer(info.team).data,
         "schedule": schedule,
+        "pending_rivalries": pending_rivalries,
         "conferences": ConferencesSerializer(
             info.conferences.all().order_by("confName"), many=True
         ).data,

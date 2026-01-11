@@ -1,0 +1,825 @@
+{
+  "year": 2002,
+  "teams": [
+    {
+      "team": "Ohio State",
+      "conference": "Big Ten",
+      "rank": 1,
+      "wins": 14,
+      "losses": 0
+    },
+    {
+      "team": "Miami",
+      "conference": "Big East",
+      "rank": 2,
+      "wins": 12,
+      "losses": 1
+    },
+    {
+      "team": "Georgia",
+      "conference": "SEC",
+      "rank": 3,
+      "wins": 13,
+      "losses": 1
+    },
+    {
+      "team": "USC",
+      "conference": "Pac-10",
+      "rank": 4,
+      "wins": 11,
+      "losses": 2
+    },
+    {
+      "team": "Oklahoma",
+      "conference": "Big 12",
+      "rank": 5,
+      "wins": 12,
+      "losses": 2
+    },
+    {
+      "team": "Texas",
+      "conference": "Big 12",
+      "rank": 6,
+      "wins": 11,
+      "losses": 2
+    },
+    {
+      "team": "Kansas State",
+      "conference": "Big 12",
+      "rank": 7,
+      "wins": 11,
+      "losses": 2
+    },
+    {
+      "team": "Iowa",
+      "conference": "Big Ten",
+      "rank": 8,
+      "wins": 11,
+      "losses": 2
+    },
+    {
+      "team": "Michigan",
+      "conference": "Big Ten",
+      "rank": 9,
+      "wins": 10,
+      "losses": 3
+    },
+    {
+      "team": "Washington State",
+      "conference": "Pac-10",
+      "rank": 10,
+      "wins": 10,
+      "losses": 3
+    },
+    {
+      "team": "Alabama",
+      "conference": "SEC",
+      "rank": 11,
+      "wins": 10,
+      "losses": 3
+    },
+    {
+      "team": "NC State",
+      "conference": "ACC",
+      "rank": 12,
+      "wins": 11,
+      "losses": 3
+    },
+    {
+      "team": "Maryland",
+      "conference": "ACC",
+      "rank": 13,
+      "wins": 11,
+      "losses": 3
+    },
+    {
+      "team": "Auburn",
+      "conference": "SEC",
+      "rank": 14,
+      "wins": 9,
+      "losses": 4
+    },
+    {
+      "team": "Boise State",
+      "conference": "WAC",
+      "rank": 15,
+      "wins": 12,
+      "losses": 1
+    },
+    {
+      "team": "Penn State",
+      "conference": "Big Ten",
+      "rank": 16,
+      "wins": 9,
+      "losses": 4
+    },
+    {
+      "team": "Notre Dame",
+      "conference": "Independent",
+      "rank": 17,
+      "wins": 10,
+      "losses": 3
+    },
+    {
+      "team": "Virginia Tech",
+      "conference": "Big East",
+      "rank": 18,
+      "wins": 10,
+      "losses": 4
+    },
+    {
+      "team": "Pittsburgh",
+      "conference": "Big East",
+      "rank": 19,
+      "wins": 9,
+      "losses": 4
+    },
+    {
+      "team": "Colorado",
+      "conference": "Big 12",
+      "rank": 20,
+      "wins": 9,
+      "losses": 5
+    },
+    {
+      "team": "Florida State",
+      "conference": "ACC",
+      "rank": 21,
+      "wins": 9,
+      "losses": 5
+    },
+    {
+      "team": "Virginia",
+      "conference": "ACC",
+      "rank": 22,
+      "wins": 9,
+      "losses": 5
+    },
+    {
+      "team": "Texas Christian",
+      "conference": "CUSA",
+      "rank": 23,
+      "wins": 10,
+      "losses": 2
+    },
+    {
+      "team": "Marshall",
+      "conference": "MAC",
+      "rank": 24,
+      "wins": 11,
+      "losses": 2
+    },
+    {
+      "team": "West Virginia",
+      "conference": "Big East",
+      "rank": 25,
+      "wins": 9,
+      "losses": 4
+    },
+    {
+      "team": "Arkansas",
+      "conference": "SEC",
+      "rank": 26,
+      "wins": 9,
+      "losses": 5
+    },
+    {
+      "team": "California",
+      "conference": "Pac-10",
+      "rank": 27,
+      "wins": 7,
+      "losses": 5
+    },
+    {
+      "team": "Texas Tech",
+      "conference": "Big 12",
+      "rank": 28,
+      "wins": 9,
+      "losses": 5
+    },
+    {
+      "team": "Oregon State",
+      "conference": "Pac-10",
+      "rank": 29,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Boston College",
+      "conference": "Big East",
+      "rank": 30,
+      "wins": 9,
+      "losses": 4
+    },
+    {
+      "team": "UCLA",
+      "conference": "Pac-10",
+      "rank": 31,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Florida",
+      "conference": "SEC",
+      "rank": 32,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Wisconsin",
+      "conference": "Big Ten",
+      "rank": 33,
+      "wins": 8,
+      "losses": 6
+    },
+    {
+      "team": "Washington",
+      "conference": "Pac-10",
+      "rank": 34,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "LSU",
+      "conference": "SEC",
+      "rank": 35,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Purdue",
+      "conference": "Big Ten",
+      "rank": 36,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Tennessee",
+      "conference": "SEC",
+      "rank": 37,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "South Florida",
+      "conference": "Independent",
+      "rank": 38,
+      "wins": 9,
+      "losses": 2
+    },
+    {
+      "team": "Texas A&M",
+      "conference": "Big 12",
+      "rank": 39,
+      "wins": 6,
+      "losses": 6
+    },
+    {
+      "team": "Iowa State",
+      "conference": "Big 12",
+      "rank": 40,
+      "wins": 7,
+      "losses": 7
+    },
+    {
+      "team": "Colorado State",
+      "conference": "MWC",
+      "rank": 41,
+      "wins": 10,
+      "losses": 4
+    },
+    {
+      "team": "Arizona State",
+      "conference": "Pac-10",
+      "rank": 42,
+      "wins": 8,
+      "losses": 6
+    },
+    {
+      "team": "Minnesota",
+      "conference": "Big Ten",
+      "rank": 43,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Oklahoma State",
+      "conference": "Big 12",
+      "rank": 44,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Wake Forest",
+      "conference": "ACC",
+      "rank": 45,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Georgia Tech",
+      "conference": "ACC",
+      "rank": 46,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Oregon",
+      "conference": "Pac-10",
+      "rank": 47,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Ole Miss",
+      "conference": "SEC",
+      "rank": 48,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Clemson",
+      "conference": "ACC",
+      "rank": 49,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Kentucky",
+      "conference": "SEC",
+      "rank": 50,
+      "wins": 7,
+      "losses": 5
+    },
+    {
+      "team": "Nebraska",
+      "conference": "Big 12",
+      "rank": 51,
+      "wins": 7,
+      "losses": 7
+    },
+    {
+      "team": "Missouri",
+      "conference": "Big 12",
+      "rank": 52,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "Toledo",
+      "conference": "MAC",
+      "rank": 53,
+      "wins": 9,
+      "losses": 5
+    },
+    {
+      "team": "Air Force",
+      "conference": "MWC",
+      "rank": 54,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Cincinnati",
+      "conference": "CUSA",
+      "rank": 55,
+      "wins": 7,
+      "losses": 7
+    },
+    {
+      "team": "Bowling Green",
+      "conference": "MAC",
+      "rank": 56,
+      "wins": 9,
+      "losses": 3
+    },
+    {
+      "team": "Hawaii",
+      "conference": "WAC",
+      "rank": 57,
+      "wins": 10,
+      "losses": 4
+    },
+    {
+      "team": "Illinois",
+      "conference": "Big Ten",
+      "rank": 58,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "Tulane",
+      "conference": "CUSA",
+      "rank": 59,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "South Carolina",
+      "conference": "SEC",
+      "rank": 60,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "Louisville",
+      "conference": "CUSA",
+      "rank": 61,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Fresno State",
+      "conference": "WAC",
+      "rank": 62,
+      "wins": 9,
+      "losses": 5
+    },
+    {
+      "team": "North Texas",
+      "conference": "Sun Belt",
+      "rank": 63,
+      "wins": 8,
+      "losses": 5
+    },
+    {
+      "team": "Central Florida",
+      "conference": "MAC",
+      "rank": 64,
+      "wins": 7,
+      "losses": 5
+    },
+    {
+      "team": "Miami Ohio",
+      "conference": "MAC",
+      "rank": 65,
+      "wins": 7,
+      "losses": 5
+    },
+    {
+      "team": "Southern Miss",
+      "conference": "CUSA",
+      "rank": 66,
+      "wins": 7,
+      "losses": 6
+    },
+    {
+      "team": "Northern Illinois",
+      "conference": "MAC",
+      "rank": 67,
+      "wins": 8,
+      "losses": 4
+    },
+    {
+      "team": "Connecticut",
+      "conference": "Independent",
+      "rank": 68,
+      "wins": 6,
+      "losses": 6
+    },
+    {
+      "team": "Utah",
+      "conference": "MWC",
+      "rank": 69,
+      "wins": 5,
+      "losses": 6
+    },
+    {
+      "team": "Michigan State",
+      "conference": "Big Ten",
+      "rank": 70,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Arizona",
+      "conference": "Pac-10",
+      "rank": 71,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "New Mexico",
+      "conference": "MWC",
+      "rank": 72,
+      "wins": 7,
+      "losses": 7
+    },
+    {
+      "team": "Stanford",
+      "conference": "Pac-10",
+      "rank": 73,
+      "wins": 2,
+      "losses": 9
+    },
+    {
+      "team": "Syracuse",
+      "conference": "Big East",
+      "rank": 74,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "New Mexico State",
+      "conference": "Sun Belt",
+      "rank": 75,
+      "wins": 7,
+      "losses": 5
+    },
+    {
+      "team": "Temple",
+      "conference": "Big East",
+      "rank": 76,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "North Carolina",
+      "conference": "ACC",
+      "rank": 77,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "BYU",
+      "conference": "MWC",
+      "rank": 78,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "Nevada",
+      "conference": "WAC",
+      "rank": 79,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "UNLV",
+      "conference": "MWC",
+      "rank": 80,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "Western Michigan",
+      "conference": "MAC",
+      "rank": 81,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Duke",
+      "conference": "ACC",
+      "rank": 82,
+      "wins": 2,
+      "losses": 10
+    },
+    {
+      "team": "San Jose State",
+      "conference": "WAC",
+      "rank": 83,
+      "wins": 6,
+      "losses": 7
+    },
+    {
+      "team": "East Carolina",
+      "conference": "CUSA",
+      "rank": 84,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Mississippi State",
+      "conference": "SEC",
+      "rank": 85,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Vanderbilt",
+      "conference": "SEC",
+      "rank": 86,
+      "wins": 2,
+      "losses": 10
+    },
+    {
+      "team": "San Diego State",
+      "conference": "MWC",
+      "rank": 87,
+      "wins": 4,
+      "losses": 9
+    },
+    {
+      "team": "Memphis",
+      "conference": "CUSA",
+      "rank": 88,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Houston",
+      "conference": "CUSA",
+      "rank": 89,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "Northwestern",
+      "conference": "Big Ten",
+      "rank": 90,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Ball State",
+      "conference": "MAC",
+      "rank": 91,
+      "wins": 6,
+      "losses": 6
+    },
+    {
+      "team": "Alabama Birmingham",
+      "conference": "CUSA",
+      "rank": 92,
+      "wins": 5,
+      "losses": 7
+    },
+    {
+      "team": "Middle Tennessee State",
+      "conference": "Sun Belt",
+      "rank": 93,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Akron",
+      "conference": "MAC",
+      "rank": 94,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Rice",
+      "conference": "WAC",
+      "rank": 95,
+      "wins": 4,
+      "losses": 7
+    },
+    {
+      "team": "Troy",
+      "conference": "Independent",
+      "rank": 96,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Indiana",
+      "conference": "Big Ten",
+      "rank": 97,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Arkansas State",
+      "conference": "Sun Belt",
+      "rank": 98,
+      "wins": 6,
+      "losses": 7
+    },
+    {
+      "team": "Ohio",
+      "conference": "MAC",
+      "rank": 99,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Baylor",
+      "conference": "Big 12",
+      "rank": 100,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Louisiana Tech",
+      "conference": "WAC",
+      "rank": 101,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Central Michigan",
+      "conference": "MAC",
+      "rank": 102,
+      "wins": 4,
+      "losses": 8
+    },
+    {
+      "team": "Utah State",
+      "conference": "Independent",
+      "rank": 103,
+      "wins": 4,
+      "losses": 7
+    },
+    {
+      "team": "Navy",
+      "conference": "Independent",
+      "rank": 104,
+      "wins": 2,
+      "losses": 10
+    },
+    {
+      "team": "Wyoming",
+      "conference": "MWC",
+      "rank": 105,
+      "wins": 2,
+      "losses": 10
+    },
+    {
+      "team": "Idaho",
+      "conference": "Sun Belt",
+      "rank": 106,
+      "wins": 2,
+      "losses": 10
+    },
+    {
+      "team": "Louisiana",
+      "conference": "Sun Belt",
+      "rank": 107,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Louisiana Monroe",
+      "conference": "Sun Belt",
+      "rank": 108,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Kansas",
+      "conference": "Big 12",
+      "rank": 109,
+      "wins": 2,
+      "losses": 10
+    },
+    {
+      "team": "Southern Methodist",
+      "conference": "WAC",
+      "rank": 110,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Kent State",
+      "conference": "MAC",
+      "rank": 111,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Rutgers",
+      "conference": "Big East",
+      "rank": 112,
+      "wins": 1,
+      "losses": 11
+    },
+    {
+      "team": "Texas El Paso",
+      "conference": "WAC",
+      "rank": 113,
+      "wins": 2,
+      "losses": 10
+    },
+    {
+      "team": "Tulsa",
+      "conference": "WAC",
+      "rank": 114,
+      "wins": 1,
+      "losses": 11
+    },
+    {
+      "team": "Buffalo",
+      "conference": "MAC",
+      "rank": 115,
+      "wins": 1,
+      "losses": 11
+    },
+    {
+      "team": "Eastern Michigan",
+      "conference": "MAC",
+      "rank": 116,
+      "wins": 3,
+      "losses": 9
+    },
+    {
+      "team": "Army",
+      "conference": "CUSA",
+      "rank": 117,
+      "wins": 1,
+      "losses": 11
+    }
+  ],
+  "total_teams": 117
+}

@@ -180,6 +180,13 @@ def get_schedule_game(team, game):
             )
         )
 
+    if game.neutralSite:
+        location = "Neutral"
+    elif game.homeTeam_id and game.awayTeam_id:
+        location = "Home" if game.homeTeam == team else "Away"
+    else:
+        location = "Home" if is_team_a else "Away"
+
     return {
         "id": game.id,
         "weekPlayed": game.weekPlayed,
@@ -194,6 +201,7 @@ def get_schedule_game(team, game):
         "spread": spread,
         "moneyline": moneyline,
         "score": score,
+        "location": location,
     }
 
 
@@ -425,22 +433,6 @@ def get_recruiting_points(prestige):
     return prestige * 100
 
 
-def get_last_week(playoff_teams):
-    """Calculate the last week based on playoff format"""
-    base_weeks = 13  # Regular season (1-12) + Conf Championships (13)
-
-    if playoff_teams == 2:
-        return base_weeks + 1  # Week 14 (BCS Championship)
-    elif playoff_teams == 4:
-        return base_weeks + 2  # Weeks 14-15 (Semifinals + Championship)
-    elif playoff_teams == 12:
-        return (
-            base_weeks + 4
-        )  # Weeks 14-17 (First Round + Quarters + Semis + Championship)
-    else:
-        raise ValueError(f"Unsupported playoff format: {playoff_teams}")
-
-
 def load_year_data(year):
     """Load year-specific data with team metadata"""
     # Load year-specific data
@@ -469,6 +461,9 @@ def load_year_data(year):
             "floor": team_metadata["floor"],
             "colorPrimary": team_metadata["colorPrimary"],
             "colorSecondary": team_metadata["colorSecondary"],
+            "city": team_metadata.get("city"),
+            "state": team_metadata.get("state"),
+            "stadium": team_metadata.get("stadium"),
         }
 
     # Process conferences

@@ -53,21 +53,23 @@ const Home = () => {
   const [playoffTeams, setPlayoffTeams] = useState<number>(12);
   const [playoffAutobids, setPlayoffAutobids] = useState<number>(5);
   const [playoffConfChampTop4, setPlayoffConfChampTop4] = useState<boolean>(true);
+  const [launchData, setLaunchData] = useState<LaunchProps | null>(null);
   const navigate = useNavigate();
   const pendingFetch = useRef(false);
 
   const { data, loading, error } = useDataFetching({
     fetchFunction: () => apiService.getHome<LaunchProps>(""),
+    onDataChange: (response) => setLaunchData(response),
     autoRefreshOnGameChange: false
   });
 
   // Initialize data when it loads
-  if (data && !selectedYear && data.selected_year) {
-    setSelectedYear(data.selected_year);
-    if (data.preview?.playoff) {
-      setPlayoffTeams(data.preview.playoff.teams);
-      setPlayoffAutobids(data.preview.playoff.conf_champ_autobids || 0);
-      setPlayoffConfChampTop4(data.preview.playoff.conf_champ_top_4 || false);
+  if (launchData && !selectedYear && launchData.selected_year) {
+    setSelectedYear(launchData.selected_year);
+    if (launchData.preview?.playoff) {
+      setPlayoffTeams(launchData.preview.playoff.teams);
+      setPlayoffAutobids(launchData.preview.playoff.conf_champ_autobids || 0);
+      setPlayoffConfChampTop4(launchData.preview.playoff.conf_champ_top_4 || false);
     }
   }
 
@@ -161,6 +163,7 @@ const Home = () => {
 
     try {
       const responseData = await apiService.getHome<LaunchProps>(newYear);
+      setLaunchData(responseData);
       // Update the data manually since we're not using DataPage for this specific fetch
       if (responseData.preview?.playoff) {
         setPlayoffTeams(responseData.preview.playoff.teams);
@@ -182,8 +185,8 @@ const Home = () => {
   const getLoadGameLink = (info: Info) =>
     STAGES.find((stage) => stage.id === info.stage)?.path || "/";
 
-  const filteredTeams = data ? getFilteredTeams(data) : [];
-  const conferenceOptions = data ? getConferenceOptions(data) : [];
+  const filteredTeams = launchData ? getFilteredTeams(launchData) : [];
+  const conferenceOptions = launchData ? getConferenceOptions(launchData) : [];
 
   return (
     <PageLayout 
@@ -225,7 +228,7 @@ const Home = () => {
                 size="small"
                 sx={{ mb: 3 }}
               >
-                {data?.years?.map((year: string) => (
+                {launchData?.years?.map((year: string) => (
                   <MenuItem key={year} value={year}>
                     {year} Season
                   </MenuItem>
@@ -233,7 +236,7 @@ const Home = () => {
               </Select>
 
               {/* Playoff Configuration */}
-              {selectedYear && data?.preview && (
+              {selectedYear && launchData?.preview && (
                 <>
                   <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
                     2. Playoff Format
@@ -267,7 +270,7 @@ const Home = () => {
                         sx={{ mb: 2 }}
                       >
                         {Array.from(
-                          { length: Object.keys(data.preview?.conferences || {}).length + 1 },
+                          { length: Object.keys(launchData.preview?.conferences || {}).length + 1 },
                           (_, i) => (
                             <MenuItem 
                               key={i} 
@@ -301,7 +304,7 @@ const Home = () => {
           </Grid>
 
           {/* Right Panel: Team Selection */}
-          {selectedYear && data?.preview && (
+          {selectedYear && launchData?.preview && (
             <Grid item xs={12} lg={8}>
               <Paper sx={{ height: "75vh", display: "flex", flexDirection: "column" }}>
                 {/* Header */}
@@ -446,7 +449,7 @@ const Home = () => {
       )}
 
       {/* Load Game Tab */}
-      {activeTab === 1 && data?.info && (
+      {activeTab === 1 && launchData?.info && (
         <Paper sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
           <Typography variant="h5" sx={{ mb: 2, color: "primary.main" }}>
             Continue Your Journey
@@ -465,13 +468,13 @@ const Home = () => {
             </TableHead>
             <TableBody>
               <TableRow>
-                <TableCell>{data.info.currentYear}</TableCell>
+                <TableCell>{launchData.info.currentYear}</TableCell>
                 <TableCell>
                   <Chip
                     label={
-                      data.info.stage === "season"
-                        ? `Season (Week ${data.info.currentWeek})`
-                        : data.info.stage
+                      launchData.info.stage === "season"
+                        ? `Season (Week ${launchData.info.currentWeek})`
+                        : launchData.info.stage
                     }
                     size="small"
                     color="primary"
@@ -479,15 +482,15 @@ const Home = () => {
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <TeamLogo name={data.info.team} size={24} />
-                    {data.info.team}
+                    <TeamLogo name={launchData.info.team} size={24} />
+                    {launchData.info.team}
                   </Box>
                 </TableCell>
               </TableRow>
             </TableBody>
           </Table>
 
-          <Button variant="contained" size="large" href={getLoadGameLink(data.info)} fullWidth>
+          <Button variant="contained" size="large" href={getLoadGameLink(launchData.info)} fullWidth>
             Continue Game
           </Button>
         </Paper>

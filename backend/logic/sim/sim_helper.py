@@ -110,7 +110,7 @@ def update_rankings(info):
     # Skip ranking updates for certain playoff weeks
     # Get playoff teams from settings
     playoff_teams = info.settings.playoff_teams
-    skip_weeks = {4: [14], 12: [14, 15, 16]}.get(playoff_teams, [])
+    skip_weeks = {4: [16], 12: [16, 17, 18]}.get(playoff_teams, [])
 
     if info.currentWeek not in skip_weeks:
         # Phase 1: Calculate poll scores
@@ -231,14 +231,14 @@ def handle_special_weeks(info):
 
     # Map of playoff formats to special actions by week
     special_actions = {
-        2: {12: setConferenceChampionships, 13: setNatty},
-        4: {12: setConferenceChampionships, 13: setPlayoffSemi, 14: setNatty},
+        2: {14: setConferenceChampionships, 15: setNatty},
+        4: {14: setConferenceChampionships, 15: setPlayoffSemi, 16: setNatty},
         12: {
-            12: setConferenceChampionships,
-            13: setPlayoffR1,
-            14: setPlayoffQuarter,
-            15: setPlayoffSemi,
-            16: setNatty,
+            14: setConferenceChampionships,
+            15: setPlayoffR1,
+            16: setPlayoffQuarter,
+            17: setPlayoffSemi,
+            18: setNatty,
         },
     }
 
