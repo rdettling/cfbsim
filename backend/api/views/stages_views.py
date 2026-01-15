@@ -8,7 +8,7 @@ from logic.util import (
     time_section,
 )
 from logic.constants.schedule_constants import REGULAR_SEASON_WEEKS
-from logic.roster_management import progress_ratings
+from logic.roster_management import preview_progression
 import uuid
 import time
 from logic.season import (
@@ -124,12 +124,10 @@ def update_realignment_settings(request):
 
 @api_view(["GET"])
 def roster_progression(request):
-    overall_start = time.time()
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
     # Transition from realignment to progression stage
-    # Apply realignment and playoff changes (increments year)
     if info.stage == "realignment":
         transition_start = time.time()
         apply_realignment_and_playoff(info)
@@ -138,33 +136,15 @@ def roster_progression(request):
         time_section(transition_start, "  • Realignment applied")
 
     # Always calculate changes without actually progressing players
-    progressed = progress_ratings(info)
+    leaving_players, progressed = preview_progression(info)
 
-    leaving_start = time.time()
-    leaving_players = info.team.players.filter(year="sr", active=True)
-    time_section(leaving_start, "  • Leaving players queried")
-
-    serialize_start = time.time()
-    team_data = TeamsSerializer(info.team).data
-    info_data = InfoSerializer(info).data
-    progressed_data = PlayersSerializer(progressed, many=True).data
-    leaving_data = PlayersSerializer(leaving_players, many=True).data
-    conferences_data = ConferencesSerializer(
-        info.conferences.all().order_by("confName"), many=True
-    ).data
-    time_section(serialize_start, "  • Serialization")
-
-    payload = {
-        "team": team_data,
-        "info": info_data,
-        "progressed": progressed_data,
-        "leaving": leaving_data,
-        "conferences": conferences_data,
-    }
-
-    time_section(overall_start, "ROSTER PROGRESSION TOTAL")
-    return Response(payload)
-
+    return Response({
+        "team": TeamsSerializer(info.team).data,
+        "info": InfoSerializer(info),
+        "progressed": progressed,
+        "leaving": leaving_players,
+        "conferences": info.conferences.all().order_by("confName"),
+    })
 
 @api_view(["GET"])
 def recruiting_summary(request):

@@ -1,140 +1,302 @@
+import json
 import random
 import time
-from collections import Counter
-from api.models import *
-from django.db.models import Case, When, Value, F
-from .constants.player_constants import *
-from .player_generation import load_names, create_player
+from api.models import Players, Teams
+from django.db.models import Case, When, Value
+from .constants.player_constants import (
+    DEFENSIVE_WEIGHTS,
+    DEFENSE_WEIGHT,
+    OFFENSE_WEIGHT,
+    OFFENSIVE_WEIGHTS,
+    RANDOM_VARIANCE_RANGE,
+    RECRUIT_CLASS_YEARS,
+    RECRUIT_POSITION_NEED_BIAS,
+    RECRUIT_PRESTIGE_BIAS,
+    RECRUIT_STAR_COUNTS,
+    ROSTER,
+)
+from .player_generation import (
+    load_names,
+    create_player_from_recruit,
+    generate_player_ratings,
+    generateName,
+)
 from logic.util import time_section
 
 
 def create_freshmen(info):
     """Create freshmen for all teams"""
-    players_to_create = []
-    loaded_names = load_names()
-
-    for team in info.teams.all():
-        if team.rating:
-            fill_roster(team, loaded_names, players_to_create)
-        else:
-            init_roster(team, loaded_names, players_to_create)
-
-    Players.objects.bulk_create(players_to_create)
-    return players_to_create
+    teams = list(info.teams.all())
+    if teams and not info.players.filter(active=True).exists():
+        init_rosters_from_recruiting(info, teams)
+    return []
 
 
-def remove_seniors(info):
-    """Mark seniors as inactive instead of deleting them"""
-    players = info.players.all()
-    graduating_seniors = players.filter(year="sr", active=True)
-    graduating_seniors_list = list(graduating_seniors)
-
-    # Set seniors to inactive and remove starter status
-    graduating_seniors.update(active=False, starter=False)
-
-    print(f"Marked {len(graduating_seniors_list)} seniors as inactive")
-
-
-def progress_ratings(info):
+def preview_progression(info):
     """
-    Update player ratings to next year's rating without changing years.
-    Used for roster progression page to show rating improvements.
-
-    Args:
-        info: Info object
-
-    Returns:
-        List of progressed players with their change values
+    Preview seniors leaving and next-year ratings without saving changes.
+    Returns: (leaving_players, progressed_payload)
     """
     overall_start = time.time()
-    players_start = time.time()
-    players = info.players.filter(active=True)
-    time_section(players_start, "    • progress_ratings: Active players query")
-    exclude_start = time.time()
-    progressed_team_players = []
-    to_update = []
+    leaving_players = list(info.team.players.filter(year="sr", active=True))
+    candidates = list(info.team.players.filter(active=True).exclude(year="sr"))
+    progressed = []
 
-    eligible_players = list(players.exclude(year="sr"))
-    time_section(exclude_start, "    • progress_ratings: Eligible players loaded")
-
-    loop_start = time.time()
-    for player in eligible_players:
-        old_rating = player.rating
-
+    for player in candidates:
         if player.year == "fr":
-            player.rating = player.rating_so
-            player.change = player.rating - player.rating_fr
+            next_year = "so"
+            next_rating = player.rating_so
         elif player.year == "so":
-            player.rating = player.rating_jr
-            player.change = player.rating - player.rating_so
-        elif player.year == "jr":
-            player.rating = player.rating_sr
-            player.change = player.rating - player.rating_jr
+            next_year = "jr"
+            next_rating = player.rating_jr
         else:
-            player.change = 0
+            next_year = "sr"
+            next_rating = player.rating_sr
 
-        to_update.append(player)
-        if player.team_id == info.team_id:
-            progressed_team_players.append(player)
-    time_section(loop_start, "    • progress_ratings: Progress loop")
-
-    update_start = time.time()
-    Players.objects.bulk_update(to_update, ["rating"])
-    time_section(update_start, "    • progress_ratings: Bulk update")
-    time_section(overall_start, "  • Progress ratings total")
-    return progressed_team_players
-
-
-def progress_years(info):
-    """
-    Progress players to the next year (fr->so, so->jr, jr->sr).
-    Used for recruiting summary stage when transitioning seasons.
-
-    Args:
-        info: Info object
-
-    Returns:
-        List of progressed players
-    """
-    players = info.players.filter(active=True).exclude(year="sr")
-    players.update(
-        year=Case(
-            When(year="fr", then=Value("so")),
-            When(year="so", then=Value("jr")),
-            When(year="jr", then=Value("sr")),
-            default=F("year"),
+        progressed.append(
+            {
+                "id": player.id,
+                "first": player.first,
+                "last": player.last,
+                "pos": player.pos,
+                "year": player.year,
+                "rating": player.rating,
+                "next_year": next_year,
+                "next_rating": next_rating,
+                "stars": player.stars,
+                "development_trait": player.development_trait,
+            }
         )
-    )
-    return list(info.team.players.filter(active=True).exclude(year="sr"))
+
+    time_section(overall_start, "  • Progression preview total")
+    return leaving_players, progressed
 
 
-def fill_roster(team, loaded_names, players_to_create):
-    """Fill missing players for an existing team"""
-    player_counts = Counter(
-        team.players.filter(active=True).values_list("pos", flat=True)
-    )
+def apply_progression(info):
+    """
+    Apply roster progression: remove seniors, advance years, and update ratings.
+    """
+    overall_start = time.time()
 
-    for position, position_config in ROSTER.items():
-        current_count = player_counts.get(position, 0)
-        needed = max(0, position_config["total"] - current_count)
+    seniors = info.players.filter(year="sr", active=True)
+    seniors.update(active=False, starter=False)
 
-        for _ in range(needed):
-            player = create_player(team, position, "fr", loaded_names)
-            players_to_create.append(player)
+    players = list(info.players.filter(active=True))
+    to_update = []
+    for player in players:
+        if player.year == "fr":
+            player.year = "so"
+            player.rating = player.rating_so
+        elif player.year == "so":
+            player.year = "jr"
+            player.rating = player.rating_jr
+        elif player.year == "jr":
+            player.year = "sr"
+            player.rating = player.rating_sr
+        else:
+            continue
+        to_update.append(player)
+
+    if to_update:
+        Players.objects.bulk_update(to_update, ["year", "rating"])
+
+    time_section(overall_start, "  • Progression applied")
 
 
-def init_roster(team, loaded_names, players_to_create):
-    """Initialize a complete roster for a new team"""
-    years = ["fr", "so", "jr", "sr"]
+def init_rosters_from_recruiting(info, teams):
+    """Initialize full rosters by simulating multiple recruiting cycles."""
+    loaded_names = load_names()
+    state_weights = _load_state_weights()
 
-    for position, position_config in ROSTER.items():
-        for i in range(position_config["total"]):
-            year = random.choice(years)
-            player = create_player(team, position, year, loaded_names)
-            players_to_create.append(player)
+    for cycle in range(RECRUIT_CLASS_YEARS):
+        if cycle > 0:
+            info.players.filter(active=True).exclude(year="sr").update(
+                year=Case(
+                    When(year="fr", then=Value("so")),
+                    When(year="so", then=Value("jr")),
+                    When(year="jr", then=Value("sr")),
+                    default=F("year"),
+                )
+            )
+
+        recruits = _generate_recruit_pool(loaded_names, state_weights)
+        roster_counts = _get_roster_counts(info, teams)
+        team_needs = _build_team_needs(teams, roster_counts)
+        class_assignments = _assign_recruits_to_teams(
+            teams, recruits, team_needs, loaded_names, state_weights
+        )
+
+        players_to_create = []
+        for team_id, team_recruits in class_assignments.items():
+            team = next(team for team in teams if team.id == team_id)
+            for recruit in team_recruits:
+                players_to_create.append(
+                    create_player_from_recruit(team, recruit, "fr")
+                )
+
+        if players_to_create:
+            Players.objects.bulk_create(players_to_create)
+            cut_rosters(info)
 
 
-def calculate_team_ratings_from_players(players_data):
+def _load_state_weights():
+    with open("data/states.json", "r") as states_file:
+        state_data = json.load(states_file)
+    states = list(state_data.keys())
+    weights = list(state_data.values())
+    return states, weights
+
+
+def _get_roster_counts(info, teams):
+    roster_counts = {team.id: {pos: 0 for pos in ROSTER} for team in teams}
+    for team_id, pos in (
+        info.players.filter(active=True)
+        .values_list("team_id", "pos")
+        .iterator()
+    ):
+        if team_id in roster_counts and pos in roster_counts[team_id]:
+            roster_counts[team_id][pos] += 1
+    return roster_counts
+
+
+def _build_team_needs(teams, roster_counts):
+    team_needs = {}
+    for team in teams:
+        needs = {}
+        counts = roster_counts.get(team.id, {})
+        for pos, config in ROSTER.items():
+            needs[pos] = max(0, config["total"] - counts.get(pos, 0))
+        team_needs[team.id] = needs
+    return team_needs
+
+
+def _generate_recruit_pool(loaded_names, state_weights):
+    recruits = []
+    states, weights = state_weights
+    positions = list(ROSTER.keys())
+    position_weights = [ROSTER[pos]["total"] for pos in positions]
+
+    for stars, count in RECRUIT_STAR_COUNTS.items():
+        for _ in range(count):
+            pos = random.choices(positions, weights=position_weights, k=1)[0]
+            first, last = generateName(pos, loaded_names)
+            rating_fr, rating_so, rating_jr, rating_sr, development_trait = (
+                generate_player_ratings(stars)
+            )
+            state = random.choices(states, weights=weights, k=1)[0]
+            recruits.append(
+                {
+                    "first": first,
+                    "last": last,
+                    "pos": pos,
+                    "stars": stars,
+                    "state": state,
+                    "rating_fr": rating_fr,
+                    "rating_so": rating_so,
+                    "rating_jr": rating_jr,
+                    "rating_sr": rating_sr,
+                    "development_trait": development_trait,
+                }
+            )
+    return recruits
+
+
+def _assign_recruits_to_teams(
+    teams, recruits, team_needs, loaded_names, state_weights
+):
+    roster_total = sum(position["total"] for position in ROSTER.values())
+    class_size = roster_total // RECRUIT_CLASS_YEARS
+    class_assignments = {team.id: [] for team in teams}
+    class_remaining = {team.id: class_size for team in teams}
+    position_remaining = {team.id: dict(team_needs[team.id]) for team in teams}
+
+    recruits.sort(key=lambda r: (r["stars"], r["rating_fr"]), reverse=True)
+
+    for recruit in recruits:
+        candidates = [
+            team
+            for team in teams
+            if class_remaining[team.id] > 0
+            and team.prestige >= recruit["stars"]
+        ]
+        if not candidates:
+            break
+
+        weights = []
+        for team in candidates:
+            need_bonus = position_remaining[team.id][recruit["pos"]] * RECRUIT_POSITION_NEED_BIAS
+            score = (team.prestige**2 * RECRUIT_PRESTIGE_BIAS) + need_bonus
+            score += random.uniform(0, 5)
+            weights.append(max(score, 1))
+
+        chosen_team = random.choices(candidates, weights=weights, k=1)[0]
+        class_assignments[chosen_team.id].append(recruit)
+        class_remaining[chosen_team.id] -= 1
+        if position_remaining[chosen_team.id][recruit["pos"]] > 0:
+            position_remaining[chosen_team.id][recruit["pos"]] -= 1
+
+    for team in teams:
+        while class_remaining[team.id] > 0:
+            needs = position_remaining[team.id]
+            need_positions = [pos for pos, remaining in needs.items() if remaining > 0]
+            if need_positions:
+                pos = max(need_positions, key=lambda p: needs[p])
+                position_remaining[team.id][pos] -= 1
+            else:
+                pos = random.choices(
+                    list(ROSTER.keys()),
+                    weights=[ROSTER[key]["total"] for key in ROSTER],
+                    k=1,
+                )[0]
+
+            first, last = generateName(pos, loaded_names)
+            rating_fr, rating_so, rating_jr, rating_sr, development_trait = (
+                generate_player_ratings(1)
+            )
+            states, weights = state_weights
+            state = random.choices(states, weights=weights, k=1)[0]
+            class_assignments[team.id].append(
+                {
+                    "first": first,
+                    "last": last,
+                    "pos": pos,
+                    "stars": 1,
+                    "state": state,
+                    "rating_fr": rating_fr,
+                    "rating_so": rating_so,
+                    "rating_jr": rating_jr,
+                    "rating_sr": rating_sr,
+                    "development_trait": development_trait,
+                }
+            )
+            class_remaining[team.id] -= 1
+
+    return class_assignments
+
+
+def cut_rosters(info):
+    """Cut rosters down to positional limits based on projected ratings."""
+    players = list(info.players.filter(active=True))
+    cuts = []
+
+    for team in info.teams.all():
+        team_players = [p for p in players if p.team_id == team.id]
+        for pos, config in ROSTER.items():
+            pos_players = [p for p in team_players if p.pos == pos]
+            if len(pos_players) <= config["total"]:
+                continue
+            pos_players.sort(
+                key=lambda p: (p.rating_sr, p.rating, p.year),
+                reverse=True,
+            )
+            for player in pos_players[config["total"] :]:
+                cuts.append(player.id)
+
+    if cuts:
+        Players.objects.filter(id__in=cuts).update(active=False, starter=False)
+
+
+def _calculate_team_ratings_from_players(players_data):
     """Calculate team ratings from a list of player data"""
     starters = [p for p in players_data if p["starter"]]
 
@@ -195,18 +357,24 @@ def calculate_team_ratings_from_players(players_data):
     }
 
 
-def calculate_team_ratings(info):
-    """Calculate team ratings for all teams"""
+def calculate_team_ratings(info=None, players_data=None):
+    """Calculate team ratings from either player data or all teams in info."""
+    if players_data is not None:
+        return _calculate_team_ratings_from_players(players_data)
+
+    if info is None:
+        raise ValueError("calculate_team_ratings requires info or players_data.")
+
     overall_start = time.time()
     teams = info.teams.prefetch_related("players").all()
 
     for team in teams:
         starters = team.players.filter(starter=True, active=True)
-        players_data = [
+        team_players = [
             {"pos": player.pos, "rating": player.rating, "starter": player.starter}
             for player in starters
         ]
-        team_ratings = calculate_team_ratings_from_players(players_data)
+        team_ratings = _calculate_team_ratings_from_players(team_players)
 
         team.offense = team_ratings["offense"]
         team.defense = team_ratings["defense"]

@@ -1,14 +1,12 @@
 from .schedule import set_rivalries, fillSchedules
 from logic.constants.schedule_constants import LAST_WEEK_BY_PLAYOFF_TEAMS
 from api.models import *
-from .player_generation import load_names
 from .roster_management import (
-    remove_seniors,
     create_freshmen,
     set_starters,
     calculate_team_ratings,
-    init_roster,
-    progress_years,
+    apply_progression,
+    cut_rosters,
 )
 from .betting import load_precomputed_odds
 from django.db import transaction
@@ -106,17 +104,17 @@ def init_history_data(info, start_year):
         History.objects.bulk_create(history_records)
 
 
-def transition_rosters(info):
-    """Part 1: Remove seniors and add freshmen (called by recruiting summary)"""
-    overall_start = time.time()
-    remove_seniors(info)
-    progress_years(info)
-    create_freshmen(info)
+# def transition_rosters(info):
+#     """Part 1: Remove seniors and add freshmen (called by recruiting summary)"""
+#     overall_start = time.time()
+#     apply_progression(info)
+#     create_freshmen(info)
+#     cut_rosters(info)
 
-    # Set starters and calculate ratings
-    set_starters(info)
-    calculate_team_ratings(info)
-    time_section(overall_start, "  • transition_rosters total")
+#     # Set starters and calculate ratings
+#     set_starters(info)
+#     calculate_team_ratings(info=info)
+#     time_section(overall_start, "  • transition_rosters total")
 
 
 def refresh_playoff(info, data, update_format=False):
@@ -755,13 +753,7 @@ def init(
     # Phase 5: Create players
     player_start = time.time()
     print("PHASE 5: PLAYER CREATION")
-    players_to_create = []
-    loaded_names = load_names()
-
-    for team in info.teams.all():
-        init_roster(team, loaded_names, players_to_create)
-
-    Players.objects.bulk_create(players_to_create)
+    create_freshmen(info)
     time_section(player_start, "  • Players created")
 
     # Phase 6: Team setup and ratings
@@ -775,7 +767,7 @@ def init(
 
     # Calculate team ratings
     rating_start = time.time()
-    calculate_team_ratings(info)
+    calculate_team_ratings(info=info)
     time_section(rating_start, "  • Team ratings calculated")
 
     # Phase 7: Create betting odds

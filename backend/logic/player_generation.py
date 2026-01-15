@@ -1,7 +1,12 @@
 import json
 import random
-from api.models import *
-from .constants.player_constants import *
+from api.models import Players
+from .constants.player_constants import (
+    BASE_DEVELOPMENT,
+    DEVELOPMENT_STD_DEV,
+    RATING_STD_DEV,
+    STARS_BASE,
+)
 
 
 def load_names():
@@ -24,70 +29,35 @@ def load_names():
     return processed_names
 
 
-def generate_player_ratings(prestige):
-    """
-    Generate player ratings for all years using the new star-based system.
-    Returns: (fr, so, jr, sr) ratings
-    """
-    # Determine player's star rating based on prestige tier
-    star_distribution = STARS_PRESTIGE[prestige]
-    star_rating = random.choices(
-        list(star_distribution.keys()), weights=list(star_distribution.values())
-    )[0]
-
-    # Get base rating for this star level
-    base_rating = STARS_BASE[star_rating]
-
-    # Add variance using normal distribution with standard deviation
+def _build_ratings(base_rating):
     variance = random.gauss(0, RATING_STD_DEV)
-    fr_rating = base_rating + variance
+    fr_rating = max(1, base_rating + variance)
 
-    # Ensure freshman rating doesn't go below 1
-    fr_rating = max(1, fr_rating)
-
-    # Randomly assign development trait (1-5, equal chance)
     development_trait = random.randint(1, 5)
+    growth = BASE_DEVELOPMENT + development_trait + random.gauss(0, DEVELOPMENT_STD_DEV)
 
-    # Calculate progression for each year independently using normal distribution
-    so_rating = fr_rating
-    jr_rating = fr_rating
-    sr_rating = fr_rating
+    so_rating = fr_rating + (growth * 0.6)
+    jr_rating = fr_rating + (growth * 0.9)
+    sr_rating = fr_rating + (growth * 1.1)
 
-    # Get base progression for this development trait
-    base_progression = BASE_DEVELOPMENT + development_trait
-
-    # Sophomore year progression
-    so_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
-    so_rating += so_progression
-    # Ensure sophomore rating is at least as high as freshman rating
-    so_rating = max(so_rating, fr_rating)
-
-    # Junior year progression
-    jr_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
-    jr_rating = so_rating + jr_progression
-    # Ensure junior rating is at least as high as sophomore rating
-    jr_rating = max(jr_rating, so_rating)
-
-    # Senior year progression
-    sr_progression = random.gauss(base_progression, DEVELOPMENT_STD_DEV)
-    sr_rating = jr_rating + sr_progression
-    # Ensure senior rating is at least as high as junior rating
-    sr_rating = max(sr_rating, jr_rating)
-
-    # Cap all ratings at 99
     fr_rating = min(fr_rating, 99)
-    so_rating = min(so_rating, 99)
-    jr_rating = min(jr_rating, 99)
-    sr_rating = min(sr_rating, 99)
+    so_rating = min(max(so_rating, fr_rating), 99)
+    jr_rating = min(max(jr_rating, so_rating), 99)
+    sr_rating = min(max(sr_rating, jr_rating), 99)
 
     return (
         round(fr_rating),
         round(so_rating),
         round(jr_rating),
         round(sr_rating),
-        star_rating,
         development_trait,
     )
+
+
+def generate_player_ratings(star_rating):
+    """Generate player ratings based on a fixed star rating."""
+    fr, so, jr, sr, development_trait = _build_ratings(STARS_BASE[star_rating])
+    return fr, so, jr, sr, development_trait
 
 
 def generateName(position, names):
@@ -117,7 +87,7 @@ def generateName(position, names):
     return (first, last)
 
 
-def create_player(team, position, year, loaded_names):
+def create_player(team, position, year, star_rating, loaded_names):
     """
     Create a single player for a team.
 
@@ -131,19 +101,11 @@ def create_player(team, position, year, loaded_names):
         Players object (not saved to database)
     """
     first, last = generateName(position, loaded_names)
-    fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(
-        team.prestige
-    )
+    fr, so, jr, sr, development_trait = generate_player_ratings(star_rating)
 
     # Get rating for the specified year
-    if year == "fr":
-        rating = fr
-    elif year == "so":
-        rating = so
-    elif year == "jr":
-        rating = jr
-    elif year == "sr":
-        rating = sr
+    rating_map = {"fr": fr, "so": so, "jr": jr, "sr": sr}
+    rating = rating_map.get(year, sr)
 
     return Players(
         info=team.info,
@@ -159,5 +121,33 @@ def create_player(team, position, year, loaded_names):
         rating_sr=sr,
         stars=star_rating,
         development_trait=development_trait,
+        starter=False,
+    )
+
+
+def create_player_from_recruit(team, recruit, year):
+    """Create a player from a recruit dict for the specified year."""
+    rating_map = {
+        "fr": recruit["rating_fr"],
+        "so": recruit["rating_so"],
+        "jr": recruit["rating_jr"],
+        "sr": recruit["rating_sr"],
+    }
+    rating = rating_map.get(year, recruit["rating_sr"])
+
+    return Players(
+        info=team.info,
+        team=team,
+        first=recruit["first"],
+        last=recruit["last"],
+        year=year,
+        pos=recruit["pos"],
+        rating=rating,
+        rating_fr=recruit["rating_fr"],
+        rating_so=recruit["rating_so"],
+        rating_jr=recruit["rating_jr"],
+        rating_sr=recruit["rating_sr"],
+        stars=recruit["stars"],
+        development_trait=recruit["development_trait"],
         starter=False,
     )

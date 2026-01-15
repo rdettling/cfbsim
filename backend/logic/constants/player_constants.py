@@ -2,58 +2,6 @@
 
 STARS_BASE = {1: 15, 2: 30, 3: 45, 4: 60, 5: 75}
 
-STARS_PRESTIGE = {
-    1: {
-        1: 70,
-        2: 25,
-        3: 5,
-        4: 0,
-        5: 0,
-    },
-    2: {
-        1: 40,
-        2: 35,
-        3: 15,
-        4: 0,
-        5: 0,
-    },
-    3: {
-        1: 30,
-        2: 40,
-        3: 30,
-        4: 0,
-        5: 0,
-    },
-    4: {
-        1: 0,
-        2: 20,
-        3: 70,
-        4: 10,
-        5: 0,
-    },
-    5: {
-        1: 0,
-        2: 0,
-        3: 67,
-        4: 30,
-        5: 3,
-    },
-    6: {
-        1: 0,
-        2: 0,
-        3: 40,
-        4: 55,
-        5: 5,
-    },
-    7: {
-        1: 0,
-        2: 0,
-        3: 10,
-        4: 75,
-        5: 15,
-    },
-}
-
 BASE_DEVELOPMENT = 4  # Base development all players get per year
 
 RATING_STD_DEV = 6
@@ -73,6 +21,17 @@ ROSTER = {
     "k": {"starters": 1, "total": 2},
     "p": {"starters": 1, "total": 2},
 }
+
+RECRUIT_CLASS_YEARS = 4
+
+RECRUIT_STAR_COUNTS = {
+    5: 32,
+    4: 340,
+    3: 2000,
+    2: 500,
+}
+RECRUIT_PRESTIGE_BIAS = 12
+RECRUIT_POSITION_NEED_BIAS = 4
 
 # === Team Rating Calculation Constants ===
 

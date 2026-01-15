@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import unittest
 from django.test import TestCase
 from logic.player_generation import generate_player_ratings
-from logic.roster_management import calculate_team_ratings_from_players
+from logic.roster_management import calculate_team_ratings
 from backend.logic.constants.player_constants import *
 
 
@@ -24,9 +24,8 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
     for pos, position_config in ROSTER.items():
         for _ in range(position_config["starters"]):
             # Generate player ratings
-            fr, so, jr, sr, star_rating, development_trait = generate_player_ratings(
-                prestige_tier
-            )
+            star_rating = max(1, min(5, round(prestige_tier * 5 / 7)))
+            fr, so, jr, sr, development_trait = generate_player_ratings(star_rating)
 
             # Randomly assign player year (1-4)
             player_year = random.randint(1, 4)
@@ -54,7 +53,7 @@ def simulate_team(prestige_tier: int) -> Tuple[float, float]:
             total_players += 1
 
     # Calculate team ratings using the actual logic
-    team_ratings = calculate_team_ratings_from_players(players_data)
+    team_ratings = calculate_team_ratings(players_data=players_data)
     average_stars = total_stars / total_players
 
     # Clamp to 0–100
@@ -181,9 +180,10 @@ def test_individual_player_creation():
 
         # Create 5 sample players
         for i in range(5):
-            fr, so, jr, sr, stars, dev_trait = generate_player_ratings(prestige)
+            star_rating = max(1, min(5, round(prestige * 5 / 7)))
+            fr, so, jr, sr, dev_trait = generate_player_ratings(star_rating)
             print(
-                f"Player {i+1}: {stars}★, Dev {dev_trait}, Ratings: Fr:{fr} So:{so} Jr:{jr} Sr:{sr}"
+                f"Player {i+1}: {star_rating}★, Dev {dev_trait}, Ratings: Fr:{fr} So:{so} Jr:{jr} Sr:{sr}"
             )
 
 
