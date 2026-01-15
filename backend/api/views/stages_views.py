@@ -155,6 +155,7 @@ def recruiting_summary(request):
     # Transition from progression to recruiting_summary stage
     if info.stage == "progression":
         transition_start = time.time()
+        apply_progression(info)
         recruiting_cycle(info, list(info.teams.all()))
         info.stage = "recruiting_summary"
         info.save()
