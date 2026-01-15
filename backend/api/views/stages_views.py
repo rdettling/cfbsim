@@ -8,11 +8,10 @@ from logic.util import (
     time_section,
 )
 from logic.constants.schedule_constants import REGULAR_SEASON_WEEKS
-from logic.roster_management import preview_progression
+from logic.roster_management import preview_progression, apply_progression, recruiting_cycle
 import uuid
 import time
 from logic.season import (
-    transition_rosters,
     update_history,
     calculate_prestige_changes,
     get_prestige_avg_ranks,
@@ -156,7 +155,7 @@ def recruiting_summary(request):
     # Transition from progression to recruiting_summary stage
     if info.stage == "progression":
         transition_start = time.time()
-        transition_rosters(info)
+        recruiting_cycle(info, list(info.teams.all()))
         info.stage = "recruiting_summary"
         info.save()
         time_section(transition_start, "  • Rosters transitioned")

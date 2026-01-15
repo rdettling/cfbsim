@@ -2,7 +2,6 @@ import json
 import random
 import time
 from api.models import Players, Teams
-from django.db.models import Case, When, Value
 from .constants.player_constants import (
     DEFENSIVE_WEIGHTS,
     DEFENSE_WEIGHT,
@@ -22,14 +21,6 @@ from .player_generation import (
     generateName,
 )
 from logic.util import time_section
-
-
-def create_freshmen(info):
-    """Create freshmen for all teams"""
-    teams = list(info.teams.all())
-    if teams and not info.players.filter(active=True).exists():
-        init_rosters_from_recruiting(info, teams)
-    return []
 
 
 def preview_progression(info):
@@ -103,40 +94,38 @@ def apply_progression(info):
     time_section(overall_start, "  • Progression applied")
 
 
-def init_rosters_from_recruiting(info, teams):
-    """Initialize full rosters by simulating multiple recruiting cycles."""
+def recruiting_cycle(info, teams):
+    """Generate recruits and assign freshmen to teams."""
     loaded_names = load_names()
     state_weights = _load_state_weights()
+    recruits = _generate_recruit_pool(loaded_names, state_weights)
+    roster_counts = _get_roster_counts(info, teams)
+    team_needs = _build_team_needs(teams, roster_counts)
+    class_assignments = _assign_recruits_to_teams(
+        teams, recruits, team_needs, loaded_names, state_weights
+    )
 
-    for cycle in range(RECRUIT_CLASS_YEARS):
-        if cycle > 0:
-            info.players.filter(active=True).exclude(year="sr").update(
-                year=Case(
-                    When(year="fr", then=Value("so")),
-                    When(year="so", then=Value("jr")),
-                    When(year="jr", then=Value("sr")),
-                    default=F("year"),
-                )
-            )
+    players_to_create = []
+    for team_id, team_recruits in class_assignments.items():
+        team = next(team for team in teams if team.id == team_id)
+        for recruit in team_recruits:
+            players_to_create.append(create_player_from_recruit(team, recruit, "fr"))
 
-        recruits = _generate_recruit_pool(loaded_names, state_weights)
-        roster_counts = _get_roster_counts(info, teams)
-        team_needs = _build_team_needs(teams, roster_counts)
-        class_assignments = _assign_recruits_to_teams(
-            teams, recruits, team_needs, loaded_names, state_weights
-        )
+    if players_to_create:
+        Players.objects.bulk_create(players_to_create)
 
-        players_to_create = []
-        for team_id, team_recruits in class_assignments.items():
-            team = next(team for team in teams if team.id == team_id)
-            for recruit in team_recruits:
-                players_to_create.append(
-                    create_player_from_recruit(team, recruit, "fr")
-                )
 
-        if players_to_create:
-            Players.objects.bulk_create(players_to_create)
-            cut_rosters(info)
+def init_rosters(info):
+    """Initialize full rosters by simulating recruiting cycles."""
+    teams = list(info.teams.all())
+
+    recruiting_cycle(info, teams)
+    cut_rosters(info)
+
+    for _ in range(RECRUIT_CLASS_YEARS - 1):
+        apply_progression(info)
+        recruiting_cycle(info, teams)
+        cut_rosters(info)
 
 
 def _load_state_weights():
