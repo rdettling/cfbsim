@@ -23,7 +23,7 @@ from logic.roster_management import (
     _assign_recruits_to_teams,
     _generate_recruit_pool,
     _load_state_weights,
-    calculate_team_ratings,
+    calculate_single_team_rating,
 )
 
 
@@ -111,7 +111,7 @@ def simulate_team_overall(prestige, runs=10, teams_per_prestige=10):
                 )
 
         starters = select_starters(roster)
-        ratings = calculate_team_ratings(players_data=starters)
+        ratings = calculate_single_team_rating(players_data=starters)
         results.append(ratings["overall"])
 
     return results

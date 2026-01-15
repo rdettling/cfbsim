@@ -120,12 +120,12 @@ def init_rosters(info):
     teams = list(info.teams.all())
 
     recruiting_cycle(info, teams)
-    cut_rosters(info)
+    apply_roster_cuts(info)
 
     for _ in range(RECRUIT_CLASS_YEARS - 1):
         apply_progression(info)
         recruiting_cycle(info, teams)
-        cut_rosters(info)
+        apply_roster_cuts(info)
 
 
 def _load_state_weights():
@@ -263,7 +263,25 @@ def _assign_recruits_to_teams(
     return class_assignments
 
 
-def cut_rosters(info):
+def preview_roster_cuts(info):
+    """Preview roster cuts for the user's team based on projected ratings."""
+    players = list(info.team.players.filter(active=True))
+    cuts = []
+
+    for pos, config in ROSTER.items():
+        pos_players = [p for p in players if p.pos == pos]
+        if len(pos_players) <= config["total"]:
+            continue
+        pos_players.sort(
+            key=lambda p: (p.rating_sr, p.rating, p.year),
+            reverse=True,
+        )
+        cuts.extend(pos_players[config["total"] :])
+
+    return cuts
+
+
+def apply_roster_cuts(info):
     """Cut rosters down to positional limits based on projected ratings."""
     players = list(info.players.filter(active=True))
     cuts = []
@@ -285,7 +303,7 @@ def cut_rosters(info):
         Players.objects.filter(id__in=cuts).update(active=False, starter=False)
 
 
-def _calculate_team_ratings_from_players(players_data):
+def calculate_single_team_rating(players_data):
     """Calculate team ratings from a list of player data"""
     starters = [p for p in players_data if p["starter"]]
 
@@ -346,15 +364,8 @@ def _calculate_team_ratings_from_players(players_data):
     }
 
 
-def calculate_team_ratings(info=None, players_data=None):
-    """Calculate team ratings from either player data or all teams in info."""
-    if players_data is not None:
-        return _calculate_team_ratings_from_players(players_data)
-
-    if info is None:
-        raise ValueError("calculate_team_ratings requires info or players_data.")
-
-    overall_start = time.time()
+def calculate_all_team_ratings(info):
+    """Calculate team ratings for all teams in info."""
     teams = info.teams.prefetch_related("players").all()
 
     for team in teams:
@@ -363,19 +374,16 @@ def calculate_team_ratings(info=None, players_data=None):
             {"pos": player.pos, "rating": player.rating, "starter": player.starter}
             for player in starters
         ]
-        team_ratings = _calculate_team_ratings_from_players(team_players)
+        team_ratings = calculate_single_team_rating(team_players)
 
         team.offense = team_ratings["offense"]
         team.defense = team_ratings["defense"]
         team.rating = team_ratings["overall"]
 
     Teams.objects.bulk_update(teams, ["offense", "defense", "rating"])
-    time_section(overall_start, "  • calculate_team_ratings total")
 
 
 def set_starters(info):
-    """Set starters for all teams - optimized version"""
-    overall_start = time.time()
     # Reset all starters to False in one database operation
     info.players.filter(active=True).update(starter=False)
 
@@ -397,4 +405,3 @@ def set_starters(info):
     # Bulk update only the players that changed
     if starter_ids:
         Players.objects.filter(id__in=starter_ids).update(starter=True)
-    time_section(overall_start, "  • set_starters total")

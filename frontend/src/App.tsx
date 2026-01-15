@@ -20,6 +20,7 @@ import RatingsStats from "./pages/RatingsStats";
 import SeasonSummary from "./pages/SeasonSummary";
 import RosterProgression from "./pages/RosterProgression";
 import RecruitingSummary from "./pages/RecruitingSummary";
+import RosterCuts from "./pages/RosterCuts";
 import SettingsPage from "./pages/Settings";
 import Realignment from "./pages/Realignment";
 import Awards from "./pages/Awards";
@@ -55,6 +56,7 @@ const App = () => {
             <Route path="/realignment" element={<Realignment />} />
             <Route path="/roster_progression" element={<RosterProgression />} />
             <Route path="/recruiting_summary" element={<RecruitingSummary />} />
+            <Route path="/roster_cuts" element={<RosterCuts />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/awards" element={<Awards />} />
           </Routes>

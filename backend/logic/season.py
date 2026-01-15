@@ -3,11 +3,8 @@ from logic.constants.schedule_constants import LAST_WEEK_BY_PLAYOFF_TEAMS
 from api.models import *
 from .roster_management import (
     init_rosters,
-    recruiting_cycle,
     set_starters,
-    calculate_team_ratings,
-    apply_progression,
-    cut_rosters,
+    calculate_all_team_ratings,
 )
 from .betting import load_precomputed_odds
 from django.db import transaction
@@ -245,10 +242,7 @@ def refresh_season_data(info):
         info.drives.all().delete()
 
         # Initialize rankings
-        initialize_rankings(info)
         print(f"Initialize rankings {time.time() - start} seconds")
-
-        set_rivalries(info)
 
 
 def update_history(info):
@@ -742,9 +736,9 @@ def init(
 
     # Phase 5: Create players
     player_start = time.time()
-    print("PHASE 5: PLAYER CREATION")
+    print("PHASE 5: ROSTERS CREATION")
     init_rosters(info)
-    time_section(player_start, "  • Players created")
+    time_section(player_start, "  • Rosters created")
 
     # Phase 6: Team setup and ratings
     setup_start = time.time()
@@ -757,7 +751,7 @@ def init(
 
     # Calculate team ratings
     rating_start = time.time()
-    calculate_team_ratings(info=info)
+    calculate_all_team_ratings(info)
     time_section(rating_start, "  • Team ratings calculated")
 
     # Phase 7: Create betting odds

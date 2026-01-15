@@ -8,7 +8,15 @@ from logic.util import (
     time_section,
 )
 from logic.constants.schedule_constants import REGULAR_SEASON_WEEKS
-from logic.roster_management import preview_progression, apply_progression, recruiting_cycle
+from logic.roster_management import (
+    preview_progression,
+    apply_progression,
+    recruiting_cycle,
+    preview_roster_cuts,
+    apply_roster_cuts,
+    set_starters,
+    calculate_all_team_ratings,
+)
 import uuid
 import time
 from logic.season import (
@@ -20,6 +28,8 @@ from logic.season import (
     init,
     apply_realignment_and_playoff,
     refresh_season_data,
+    set_rivalries,
+    initialize_rankings,
 )
 from logic.awards import finalize_awards
 from django.db.models import Q
@@ -139,27 +149,26 @@ def roster_progression(request):
 
     return Response({
         "team": TeamsSerializer(info.team).data,
-        "info": InfoSerializer(info),
+        "info": InfoSerializer(info).data,
         "progressed": progressed,
-        "leaving": leaving_players,
-        "conferences": info.conferences.all().order_by("confName"),
+        "leaving": PlayersSerializer(leaving_players, many=True).data,
+        "conferences": ConferencesSerializer(
+            info.conferences.all().order_by("confName"), many=True
+        ).data,
     })
 
 @api_view(["GET"])
 def recruiting_summary(request):
     """API endpoint for recruiting summary data"""
-    overall_start = time.time()
     user_id = request.headers.get("X-User-ID")
     info = Info.objects.get(user_id=user_id)
 
     # Transition from progression to recruiting_summary stage
     if info.stage == "progression":
-        transition_start = time.time()
         apply_progression(info)
         recruiting_cycle(info, list(info.teams.all()))
         info.stage = "recruiting_summary"
         info.save()
-        time_section(transition_start, "  • Rosters transitioned")
 
     # Get all freshmen players and group by team
     freshmen = info.players.filter(year="fr").select_related("team", "team__conference")
@@ -187,16 +196,13 @@ def recruiting_summary(request):
     # Calculate team recruiting rankings
     team_rankings = calculate_recruiting_rankings(freshmen_by_team)
 
-    info_data = InfoSerializer(info).data
-    team_data = TeamsSerializer(info.team).data
-    conferences_data = ConferencesSerializer(
-        info.conferences.all().order_by("confName"), many=True
-    ).data
-
-    payload = {
-        "info": info_data,
-        "team": team_data,
-        "conferences": conferences_data,
+    return Response(
+        {
+        "info": InfoSerializer(info).data,
+        "team": TeamsSerializer(info.team).data,
+        "conferences": ConferencesSerializer(
+            info.conferences.all().order_by("confName"), many=True
+        ).data,
         "team_rankings": team_rankings,
         "summary_stats": {
             "total_freshmen": len(freshmen),
@@ -209,11 +215,34 @@ def recruiting_summary(request):
             "min_rating": min(player.rating for player in freshmen) if freshmen else 0,
         },
     }
-
-    time_section(overall_start, "RECRUITING SUMMARY TOTAL")
-    return Response(
-        payload
     )
+
+
+@api_view(["GET"])
+def roster_cuts(request):
+    """API endpoint for roster cuts preview data"""
+    user_id = request.headers.get("X-User-ID")
+    info = Info.objects.get(user_id=user_id)
+
+    if info.stage == "recruiting_summary":
+        info.stage = "roster_cuts"
+        info.save()
+
+    cuts = preview_roster_cuts(info)
+
+    return Response(
+        {
+            "info": InfoSerializer(info).data,
+            "team": TeamsSerializer(info.team).data,
+            "cuts": PlayersSerializer(cuts, many=True).data,
+            "conferences": ConferencesSerializer(
+                info.conferences.all().order_by("confName"), many=True
+            ).data,
+        }
+    )
+
+
+
 
 
 @api_view(["GET"])
@@ -254,10 +283,14 @@ def noncon(request):
     else:
         info = Info.objects.get(user_id=user_id)
         
-        # Transition from recruiting_summary to preseason
-        if info.stage == "recruiting_summary":
-            # Refresh season data (clear counters, plays, drives, init rankings, set rivalries)
+        # Transition from roster_cuts to preseason
+        if info.stage == "roster_cuts":
+            apply_roster_cuts(info)
             refresh_season_data(info)
+            set_starters(info)
+            calculate_all_team_ratings(info)
+            initialize_rankings(info)
+            set_rivalries(info)
             info.stage = "preseason"
             info.save()
 
