@@ -117,6 +117,8 @@ def recruiting_cycle(info, teams, team_needs_override=None):
     if players_to_create:
         Players.objects.bulk_create(players_to_create)
 
+    _log_position_shortages(info, teams, "after recruiting_cycle")
+
 
 def init_rosters(info):
     """Initialize full rosters by simulating recruiting cycles."""
@@ -124,11 +126,27 @@ def init_rosters(info):
     class_targets = _build_class_targets(teams)
     recruiting_cycle(info, teams, team_needs_override=class_targets)
     apply_roster_cuts(info)
+    _log_position_shortages(info, teams, "after init_rosters cut")
 
     for _ in range(RECRUIT_CLASS_YEARS - 1):
-        apply_progression(info)
+        players = list(info.players.filter(active=True))
+        to_update = []
+        for player in players:
+            if player.year == "fr":
+                player.year = "so"
+                player.rating = player.rating_so
+            elif player.year == "so":
+                player.year = "jr"
+                player.rating = player.rating_jr
+            elif player.year == "jr":
+                player.year = "sr"
+                player.rating = player.rating_sr
+            to_update.append(player)
+        if to_update:
+            Players.objects.bulk_update(to_update, ["year", "rating"])
         recruiting_cycle(info, teams, team_needs_override=class_targets)
         apply_roster_cuts(info)
+        _log_position_shortages(info, teams, "after init_rosters loop cut")
 
 
 def _load_state_weights():
@@ -163,21 +181,19 @@ def _build_team_needs(teams, roster_counts):
 
 
 def _build_class_targets(teams):
-    roster_total = sum(position["total"] for position in ROSTER.values())
-    class_size = roster_total // RECRUIT_CLASS_YEARS
-    raw_targets = {
-        pos: data["total"] / RECRUIT_CLASS_YEARS for pos, data in ROSTER.items()
-    }
-    base_targets = {pos: int(raw_targets[pos]) for pos in raw_targets}
-    remaining = class_size - sum(base_targets.values())
-    if remaining > 0:
-        fractions = sorted(
-            raw_targets.items(),
-            key=lambda item: (item[1] - int(item[1])),
-            reverse=True,
-        )
-        for pos, _ in fractions[:remaining]:
-            base_targets[pos] += 1
+    base_targets = {}
+    for pos, config in ROSTER.items():
+        per_cycle = config["total"] / RECRUIT_CLASS_YEARS
+        base_targets[pos] = int(per_cycle) if per_cycle.is_integer() else int(per_cycle) + 1
+
+    min_positions = [
+        pos
+        for pos, config in ROSTER.items()
+        if config["total"] > 0 and config["total"] <= RECRUIT_CLASS_YEARS
+    ]
+    for pos in min_positions:
+        if base_targets.get(pos, 0) == 0:
+            base_targets[pos] = 1
     return {team.id: dict(base_targets) for team in teams}
 
 
@@ -241,7 +257,7 @@ def _assign_recruits_to_teams(
                 and team.prestige >= recruit["stars"]
             ]
         if not candidates:
-            break
+            continue
 
         weights = []
         for team in candidates:
@@ -335,6 +351,24 @@ def apply_roster_cuts(info):
 
     if cuts:
         Players.objects.filter(id__in=cuts).update(active=False, starter=False)
+
+    _log_position_shortages(info, list(info.teams.all()), "after apply_roster_cuts")
+
+
+def _log_position_shortages(info, teams, label):
+    shortages = []
+    for team in teams:
+        counts = {
+            pos: info.players.filter(active=True, team_id=team.id, pos=pos).count()
+            for pos in ROSTER
+        }
+        for pos, config in ROSTER.items():
+            if counts[pos] < config["total"]:
+                shortages.append(
+                    f"{team.name}:{pos} {counts[pos]}/{config['total']}"
+                )
+    if shortages:
+        print(f"Roster shortages {label}: {', '.join(shortages[:20])}")
 
 
 def calculate_single_team_rating(players_data):
