@@ -94,13 +94,16 @@ def apply_progression(info):
     time_section(overall_start, "  • Progression applied")
 
 
-def recruiting_cycle(info, teams):
+def recruiting_cycle(info, teams, team_needs_override=None):
     """Generate recruits and assign freshmen to teams."""
     loaded_names = load_names()
     state_weights = _load_state_weights()
     recruits = _generate_recruit_pool(loaded_names, state_weights)
-    roster_counts = _get_roster_counts(info, teams)
-    team_needs = _build_team_needs(teams, roster_counts)
+    if team_needs_override is None:
+        roster_counts = _get_roster_counts(info, teams)
+        team_needs = _build_team_needs(teams, roster_counts)
+    else:
+        team_needs = team_needs_override
     class_assignments = _assign_recruits_to_teams(
         teams, recruits, team_needs, loaded_names, state_weights
     )
@@ -118,13 +121,13 @@ def recruiting_cycle(info, teams):
 def init_rosters(info):
     """Initialize full rosters by simulating recruiting cycles."""
     teams = list(info.teams.all())
-
-    recruiting_cycle(info, teams)
+    class_targets = _build_class_targets(teams)
+    recruiting_cycle(info, teams, team_needs_override=class_targets)
     apply_roster_cuts(info)
 
     for _ in range(RECRUIT_CLASS_YEARS - 1):
         apply_progression(info)
-        recruiting_cycle(info, teams)
+        recruiting_cycle(info, teams, team_needs_override=class_targets)
         apply_roster_cuts(info)
 
 
@@ -157,6 +160,25 @@ def _build_team_needs(teams, roster_counts):
             needs[pos] = max(0, config["total"] - counts.get(pos, 0))
         team_needs[team.id] = needs
     return team_needs
+
+
+def _build_class_targets(teams):
+    roster_total = sum(position["total"] for position in ROSTER.values())
+    class_size = roster_total // RECRUIT_CLASS_YEARS
+    raw_targets = {
+        pos: data["total"] / RECRUIT_CLASS_YEARS for pos, data in ROSTER.items()
+    }
+    base_targets = {pos: int(raw_targets[pos]) for pos in raw_targets}
+    remaining = class_size - sum(base_targets.values())
+    if remaining > 0:
+        fractions = sorted(
+            raw_targets.items(),
+            key=lambda item: (item[1] - int(item[1])),
+            reverse=True,
+        )
+        for pos, _ in fractions[:remaining]:
+            base_targets[pos] += 1
+    return {team.id: dict(base_targets) for team in teams}
 
 
 def _generate_recruit_pool(loaded_names, state_weights):
@@ -193,27 +215,39 @@ def _generate_recruit_pool(loaded_names, state_weights):
 def _assign_recruits_to_teams(
     teams, recruits, team_needs, loaded_names, state_weights
 ):
-    roster_total = sum(position["total"] for position in ROSTER.values())
-    class_size = roster_total // RECRUIT_CLASS_YEARS
     class_assignments = {team.id: [] for team in teams}
-    class_remaining = {team.id: class_size for team in teams}
     position_remaining = {team.id: dict(team_needs[team.id]) for team in teams}
+    class_remaining = {
+        team.id: sum(position_remaining[team.id].values()) for team in teams
+    }
 
     recruits.sort(key=lambda r: (r["stars"], r["rating_fr"]), reverse=True)
 
     for recruit in recruits:
-        candidates = [
+        need_candidates = [
             team
             for team in teams
             if class_remaining[team.id] > 0
             and team.prestige >= recruit["stars"]
+            and position_remaining[team.id][recruit["pos"]] > 0
         ]
+        if need_candidates:
+            candidates = need_candidates
+        else:
+            candidates = [
+                team
+                for team in teams
+                if class_remaining[team.id] > 0
+                and team.prestige >= recruit["stars"]
+            ]
         if not candidates:
             break
 
         weights = []
         for team in candidates:
-            need_bonus = position_remaining[team.id][recruit["pos"]] * RECRUIT_POSITION_NEED_BIAS
+            need_bonus = (
+                position_remaining[team.id][recruit["pos"]] * RECRUIT_POSITION_NEED_BIAS
+            )
             score = (team.prestige**2 * RECRUIT_PRESTIGE_BIAS) + need_bonus
             score += random.uniform(0, 5)
             weights.append(max(score, 1))

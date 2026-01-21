@@ -183,7 +183,7 @@ def apply_realignment_and_playoff(info):
         # Realignment (respects auto_realignment setting)
         start = time.time()
         realignment(info, data)
-        print(f"Realignment {time.time() - start} seconds")
+        time_section(start, "  • Realignment")
 
         # Update playoff format and refresh playoff games (respects auto_update_postseason_format setting)
         start = time.time()
@@ -193,9 +193,7 @@ def apply_realignment_and_playoff(info):
             update_format = True  # Default behavior
         
         refresh_playoff(info, data, update_format=update_format)
-        print(
-            f"Updated playoff format and cleared game references {time.time() - start} seconds"
-        )
+        time_section(start, "  • Updated playoff format and cleared game references")
 
 
 def refresh_season_data(info):
@@ -235,14 +233,14 @@ def refresh_season_data(info):
                 "poll_score",
             ],
         )
-        print(f"Reset game counters {time.time() - start} seconds")
+        time_section(start, "  • Reset game counters")
 
         # Clear plays and drives
         info.plays.all().delete()
         info.drives.all().delete()
 
         # Initialize rankings
-        print(f"Initialize rankings {time.time() - start} seconds")
+        time_section(start, "  • Initialize rankings")
 
 
 def update_history(info):
