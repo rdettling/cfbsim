@@ -1,6 +1,7 @@
 import json
 import random
 import time
+from collections import deque
 from api.models import Players, Teams
 from .constants.player_constants import (
     DEFENSIVE_WEIGHTS,
@@ -117,17 +118,12 @@ def recruiting_cycle(info, teams, team_needs_override=None):
     if players_to_create:
         Players.objects.bulk_create(players_to_create)
 
-    _log_position_shortages(info, teams, "after recruiting_cycle")
-
 
 def init_rosters(info):
     """Initialize full rosters by simulating recruiting cycles."""
     teams = list(info.teams.all())
     class_targets = _build_class_targets(teams)
     recruiting_cycle(info, teams, team_needs_override=class_targets)
-    apply_roster_cuts(info)
-    _log_position_shortages(info, teams, "after init_rosters cut")
-
     for _ in range(RECRUIT_CLASS_YEARS - 1):
         players = list(info.players.filter(active=True))
         to_update = []
@@ -145,8 +141,7 @@ def init_rosters(info):
         if to_update:
             Players.objects.bulk_update(to_update, ["year", "rating"])
         recruiting_cycle(info, teams, team_needs_override=class_targets)
-        apply_roster_cuts(info)
-        _log_position_shortages(info, teams, "after init_rosters loop cut")
+    apply_roster_cuts(info)
 
 
 def _load_state_weights():
@@ -228,52 +223,93 @@ def _generate_recruit_pool(loaded_names, state_weights):
     return recruits
 
 
+def _match_recruits_for_position(recruits, teams, position_needs, pos):
+    assignments = {team.id: [] for team in teams}
+    capacities = {team.id: position_needs[team.id][pos] for team in teams}
+    recruit_prefs = {}
+    recruit_pref_index = {}
+    queue = deque()
+
+    for recruit in recruits:
+        eligible = [
+            team
+            for team in teams
+            if capacities[team.id] > 0 and team.prestige >= recruit["stars"]
+        ]
+        if not eligible:
+            continue
+        scores = []
+        for team in eligible:
+            score = (team.prestige**2 * RECRUIT_PRESTIGE_BIAS) + random.uniform(0, 5)
+            scores.append((score, team.id))
+        scores.sort(reverse=True)
+        recruit_prefs[recruit["rid"]] = [team_id for _, team_id in scores]
+        recruit_pref_index[recruit["rid"]] = 0
+        queue.append(recruit)
+
+    while queue:
+        recruit = queue.popleft()
+        prefs = recruit_prefs.get(recruit["rid"])
+        if not prefs:
+            continue
+        pref_index = recruit_pref_index[recruit["rid"]]
+        if pref_index >= len(prefs):
+            continue
+        team_id = prefs[pref_index]
+        recruit_pref_index[recruit["rid"]] = pref_index + 1
+
+        team_list = assignments[team_id]
+        if len(team_list) < capacities[team_id]:
+            team_list.append(recruit)
+            continue
+
+        new_score = (recruit["stars"] * 100) + recruit["rating_fr"]
+        worst_index = None
+        worst_score = None
+        for idx, current in enumerate(team_list):
+            score = (current["stars"] * 100) + current["rating_fr"]
+            if worst_score is None or score < worst_score:
+                worst_score = score
+                worst_index = idx
+
+        if new_score > worst_score:
+            replaced = team_list[worst_index]
+            team_list[worst_index] = recruit
+            queue.append(replaced)
+        else:
+            queue.append(recruit)
+
+    return assignments
+
+
 def _assign_recruits_to_teams(
     teams, recruits, team_needs, loaded_names, state_weights
 ):
     class_assignments = {team.id: [] for team in teams}
     position_remaining = {team.id: dict(team_needs[team.id]) for team in teams}
+
+    for rid, recruit in enumerate(recruits):
+        recruit["rid"] = rid
+
+    recruits_by_pos = {pos: [] for pos in ROSTER}
+    for recruit in recruits:
+        recruits_by_pos[recruit["pos"]].append(recruit)
+
+    for pos, pos_recruits in recruits_by_pos.items():
+        if not pos_recruits:
+            continue
+        pos_assignments = _match_recruits_for_position(
+            pos_recruits, teams, position_remaining, pos
+        )
+        for team_id, recruits_for_team in pos_assignments.items():
+            if not recruits_for_team:
+                continue
+            class_assignments[team_id].extend(recruits_for_team)
+            position_remaining[team_id][pos] -= len(recruits_for_team)
+
     class_remaining = {
         team.id: sum(position_remaining[team.id].values()) for team in teams
     }
-
-    recruits.sort(key=lambda r: (r["stars"], r["rating_fr"]), reverse=True)
-
-    for recruit in recruits:
-        need_candidates = [
-            team
-            for team in teams
-            if class_remaining[team.id] > 0
-            and team.prestige >= recruit["stars"]
-            and position_remaining[team.id][recruit["pos"]] > 0
-        ]
-        if need_candidates:
-            candidates = need_candidates
-        else:
-            candidates = [
-                team
-                for team in teams
-                if class_remaining[team.id] > 0
-                and team.prestige >= recruit["stars"]
-            ]
-        if not candidates:
-            continue
-
-        weights = []
-        for team in candidates:
-            need_bonus = (
-                position_remaining[team.id][recruit["pos"]] * RECRUIT_POSITION_NEED_BIAS
-            )
-            score = (team.prestige**2 * RECRUIT_PRESTIGE_BIAS) + need_bonus
-            score += random.uniform(0, 5)
-            weights.append(max(score, 1))
-
-        chosen_team = random.choices(candidates, weights=weights, k=1)[0]
-        class_assignments[chosen_team.id].append(recruit)
-        class_remaining[chosen_team.id] -= 1
-        if position_remaining[chosen_team.id][recruit["pos"]] > 0:
-            position_remaining[chosen_team.id][recruit["pos"]] -= 1
-
     for team in teams:
         while class_remaining[team.id] > 0:
             needs = position_remaining[team.id]
