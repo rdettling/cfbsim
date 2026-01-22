@@ -11,8 +11,14 @@ import { useDataFetching } from '../hooks/useDataFetching';
 import { TeamInfoModal } from '../components/TeamComponents';
 import { PageLayout } from '../components/PageLayout';
 
-interface ProgressedPlayer extends Player {
-    change: number;
+interface ProgressedPlayer {
+    id: number;
+    first: string;
+    last: string;
+    pos: string;
+    rating: number;
+    next_year: string;
+    next_rating: number;
 }
 
 interface RosterProgressionData {
@@ -44,7 +50,7 @@ const StatCard = ({ title, value, color, gradient }: StatCardProps) => (
 );
 
 interface PlayerTableProps {
-    players: (Player | ProgressedPlayer)[];
+    players: Array<Player | ProgressedPlayer>;
     title: string;
     color: 'success' | 'warning';
     showChange?: boolean;
@@ -110,7 +116,7 @@ const PlayerTable = ({ players, title, color, showChange = false, positionFilter
                                         {showChange && (
                                             <TableCell>
                                                 <Chip 
-                                                    label={(player as ProgressedPlayer).year?.toUpperCase() || ''} 
+                                                    label={(player as ProgressedPlayer).next_year?.toUpperCase() || ''} 
                                                     size="small"
                                                     color="primary"
                                                     variant="outlined"
@@ -127,9 +133,9 @@ const PlayerTable = ({ players, title, color, showChange = false, positionFilter
                                         </TableCell>
                                         <TableCell sx={{ fontWeight: 'bold', color: showChange ? 'inherit' : `${color}.main` }}>
                                             {player.rating}
-                                            {showChange && (player as ProgressedPlayer).change !== undefined && (
+                                            {showChange && (player as ProgressedPlayer).next_rating !== undefined && (
                                                 <Box component="span" sx={{ color: 'success.main', ml: 1, fontWeight: 'normal' }}>
-                                                    (+{(player as ProgressedPlayer).change})
+                                                    (+{(player as ProgressedPlayer).next_rating - player.rating})
                                                 </Box>
                                             )}
                                         </TableCell>
@@ -172,10 +178,10 @@ const RosterProgression = () => {
     const totalProgressed = data?.progressed.length || 0;
     const totalLeaving = data?.leaving.length || 0;
     const avgRatingChange = totalProgressed > 0 && data
-        ? Math.round(data.progressed.reduce((sum: number, player: ProgressedPlayer) => sum + player.change, 0) / totalProgressed)
+        ? Math.round(data.progressed.reduce((sum: number, player: ProgressedPlayer) => sum + (player.next_rating - player.rating), 0) / totalProgressed)
         : 0;
     const maxRatingChange = totalProgressed > 0 && data
-        ? Math.max(...data.progressed.map((player: ProgressedPlayer) => player.change))
+        ? Math.max(...data.progressed.map((player: ProgressedPlayer) => player.next_rating - player.rating))
         : 0;
 
     const statCards = [

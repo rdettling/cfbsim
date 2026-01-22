@@ -186,6 +186,10 @@ export const apiService = {
     // Recruiting summary
     getRecruitingSummary: <T>() => 
         request<T>('get', '/api/recruiting_summary/'),
+
+    // Roster cuts
+    getRosterCuts: <T>() =>
+        request<T>('get', '/api/roster_cuts/'),
     
     // Realignment
     getRealignment: <T>() => 
