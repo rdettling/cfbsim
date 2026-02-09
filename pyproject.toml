@@ -1,0 +1,31 @@
+[project]
+name = "cfbsim"
+version = "0.1.0"
+description = "CFBSim.net backend"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4",
+    "dj-database-url",
+    "django",
+    "django-cors-headers",
+    "djangorestframework",
+    "gunicorn",
+    "psycopg2-binary",
+    "python-dotenv",
+    "requests",
+    "whitenoise",
+]
+
+[tool.deptry]
+known_first_party = ["api", "logic", "recruit", "cfbsim", "tests", "start"]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+]
+
+[dependency-groups]
+dev = [
+    "deptry>=0.24.0",
+]

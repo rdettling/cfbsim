@@ -166,24 +166,21 @@ Comprehensive TypeScript interfaces for:
 - Python 3.13+
 - Node.js 18+
 - npm or yarn
+- uv
 
 ### Backend Setup
 ```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
 # Install dependencies
-pip install -r requirements.txt
+uv sync
 
 # Run migrations
-python manage.py migrate
+uv run python manage.py migrate
 
 # Create superuser (optional)
-python manage.py createsuperuser
+uv run python manage.py createsuperuser
 
 # Run development server
-python manage.py runserver
+uv run python manage.py runserver
 ```
 
 ### Frontend Setup
