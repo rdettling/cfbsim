@@ -23,6 +23,10 @@ from .player_generation import (
 )
 from logic.util import time_section
 
+SQLITE_MAX_VARS = 999
+BULK_UPDATE_FIELDS = 3  # pk + 2 fields ("year", "rating")
+BULK_UPDATE_BATCH_SIZE = SQLITE_MAX_VARS // BULK_UPDATE_FIELDS
+
 
 def preview_progression(info):
     """
@@ -90,7 +94,9 @@ def apply_progression(info):
         to_update.append(player)
 
     if to_update:
-        Players.objects.bulk_update(to_update, ["year", "rating"])
+        Players.objects.bulk_update(
+            to_update, ["year", "rating"], batch_size=BULK_UPDATE_BATCH_SIZE
+        )
 
     time_section(overall_start, "  • Progression applied")
 
@@ -139,7 +145,9 @@ def init_rosters(info):
                 player.rating = player.rating_sr
             to_update.append(player)
         if to_update:
-            Players.objects.bulk_update(to_update, ["year", "rating"])
+            Players.objects.bulk_update(
+                to_update, ["year", "rating"], batch_size=BULK_UPDATE_BATCH_SIZE
+            )
         recruiting_cycle(info, teams, team_needs_override=class_targets)
     apply_roster_cuts(info)
 

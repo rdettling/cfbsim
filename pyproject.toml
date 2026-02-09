@@ -1,0 +1,43 @@
+[project]
+name = "cfbsim"
+version = "0.1.0"
+description = "CFBSim.net backend"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "annotated-types",
+    "anyio",
+    "asgiref",
+    "beautifulsoup4",
+    "black",
+    "certifi",
+    "click",
+    "dj-database-url",
+    "django",
+    "django-cors-headers",
+    "djangorestframework",
+    "gunicorn",
+    "h11",
+    "httpcore",
+    "httpx",
+    "idna",
+    "mypy-extensions",
+    "ollama",
+    "packaging",
+    "pathspec",
+    "platformdirs",
+    "psycopg2-binary",
+    "pydantic",
+    "pydantic-core",
+    "python-dotenv",
+    "requests",
+    "sniffio",
+    "sqlparse",
+    "typing-extensions",
+    "whitenoise",
+]
+
+[dependency-groups]
+dev = [
+    "deptry>=0.24.0",
+]
