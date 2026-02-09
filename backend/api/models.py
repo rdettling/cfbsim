@@ -88,6 +88,13 @@ class Players(models.Model):
         default=True
     )  # True for current roster, False for graduated players
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["team", "pos", "rating"]),
+            models.Index(fields=["team", "pos", "active"]),
+            models.Index(fields=["active", "pos"]),
+        ]
+
 
 class History(models.Model):
     info = models.ForeignKey(Info, on_delete=models.CASCADE, related_name="years")

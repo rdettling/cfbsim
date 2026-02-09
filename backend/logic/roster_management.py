@@ -101,19 +101,37 @@ def apply_progression(info):
     time_section(overall_start, "  • Progression applied")
 
 
-def recruiting_cycle(info, teams, team_needs_override=None):
+def recruiting_cycle(
+    info,
+    teams,
+    team_needs_override=None,
+    loaded_names=None,
+    state_weights=None,
+):
     """Generate recruits and assign freshmen to teams."""
-    loaded_names = load_names()
-    state_weights = _load_state_weights()
+    cycle_start = time.time()
+    if loaded_names is None:
+        load_start = time.time()
+        loaded_names = load_names()
+        time_section(load_start, "    • Loaded names")
+    if state_weights is None:
+        load_start = time.time()
+        state_weights = _load_state_weights()
+        time_section(load_start, "    • Loaded state weights")
+
+    recruit_start = time.time()
     recruits = _generate_recruit_pool(loaded_names, state_weights)
+    time_section(recruit_start, "    • Recruit pool generated")
     if team_needs_override is None:
         roster_counts = _get_roster_counts(info, teams)
         team_needs = _build_team_needs(teams, roster_counts)
     else:
         team_needs = team_needs_override
+    assign_start = time.time()
     class_assignments = _assign_recruits_to_teams(
         teams, recruits, team_needs, loaded_names, state_weights
     )
+    time_section(assign_start, "    • Recruits assigned")
 
     players_to_create = []
     for team_id, team_recruits in class_assignments.items():
@@ -122,15 +140,32 @@ def recruiting_cycle(info, teams, team_needs_override=None):
             players_to_create.append(create_player_from_recruit(team, recruit, "fr"))
 
     if players_to_create:
-        Players.objects.bulk_create(players_to_create)
+        create_start = time.time()
+        Players.objects.bulk_create(players_to_create, batch_size=1000)
+        time_section(create_start, "    • Players bulk-created")
+
+    time_section(cycle_start, "  • Recruiting cycle total")
 
 
 def init_rosters(info):
     """Initialize full rosters by simulating recruiting cycles."""
+    init_start = time.time()
     teams = list(info.teams.all())
     class_targets = _build_class_targets(teams)
-    recruiting_cycle(info, teams, team_needs_override=class_targets)
+    cache_start = time.time()
+    loaded_names = load_names()
+    state_weights = _load_state_weights()
+    time_section(cache_start, "  • Cached name/state data")
+
+    recruiting_cycle(
+        info,
+        teams,
+        team_needs_override=class_targets,
+        loaded_names=loaded_names,
+        state_weights=state_weights,
+    )
     for _ in range(RECRUIT_CLASS_YEARS - 1):
+        progress_start = time.time()
         players = list(info.players.filter(active=True))
         to_update = []
         for player in players:
@@ -148,8 +183,18 @@ def init_rosters(info):
             Players.objects.bulk_update(
                 to_update, ["year", "rating"], batch_size=BULK_UPDATE_BATCH_SIZE
             )
-        recruiting_cycle(info, teams, team_needs_override=class_targets)
+        time_section(progress_start, "  • Class progression updated")
+        recruiting_cycle(
+            info,
+            teams,
+            team_needs_override=class_targets,
+            loaded_names=loaded_names,
+            state_weights=state_weights,
+        )
+    cuts_start = time.time()
     apply_roster_cuts(info)
+    time_section(cuts_start, "  • Roster cuts applied")
+    time_section(init_start, "  • Rosters init total")
 
 
 def _load_state_weights():
