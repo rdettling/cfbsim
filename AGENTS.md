@@ -28,6 +28,33 @@ Frontend React app:
 - `frontend/` Vite + React app
 - `frontend/src/` pages, components, services
 
+## What This App Does
+
+College football season simulator with an API-backed web UI. Core loop:
+1. Initialize year data, teams, conferences, and rosters.
+2. Generate schedules, simulate games, track standings and rankings.
+3. Advance weeks through regular season, conference championships, and playoffs.
+4. Apply offseason progression, recruiting, and realignment between seasons.
+
+## Key Flows (Backend)
+
+- Season lifecycle: `backend/logic/season.py`
+  - Initializes history and settings.
+  - Refreshes season data and rankings.
+  - Applies realignment and playoff format changes between years.
+- Scheduling and playoffs: `backend/logic/schedule.py`
+  - Builds schedules, rivalries, and playoff brackets (2/4/12 team formats).
+- Game simulation: `backend/logic/sim/sim.py`
+  - Drive/play simulation, overtime, scoring, and play text generation.
+- Rosters and recruiting: `backend/logic/roster_management.py`
+  - Recruiting cycles, progression, roster cuts, team rating calculation.
+- Stats and awards: `backend/logic/stats.py`, `backend/logic/awards.py`
+
+## API Entry Points
+
+- Routes are defined in `backend/api/urls.py`.
+- Views in `backend/api/views/` call into `backend/logic/`.
+
 ## Environment
 
 - Python: `.python-version` (3.13)
