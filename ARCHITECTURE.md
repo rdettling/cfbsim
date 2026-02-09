@@ -80,3 +80,9 @@ Main endpoints live under `backend/api/urls.py`. Examples:
 - `GET /api/playoff/`
 - `GET /api/game/:id/`
 - `GET /api/summary/`
+
+## Docs Map
+
+- `README.md` for high-level overview and pointers
+- `DEV_SETUP.md` for setup and run commands
+- `AGENTS.md` for Codex/agent context
