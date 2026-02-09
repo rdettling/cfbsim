@@ -38,11 +38,7 @@ The backend expects data in `backend/data/`:
 - `ratings/*.json`
 - `years/*.json`
 
-## Simulation Notes
-
-- New seasons depend on the data files above.
-- Play-by-play and drives can be persisted during simulation for game logs.
-
 ## Useful Scripts
 
 - `uv run python backend/scripts/generate_betting_odds.py`
+Writes `backend/data/betting_odds.json` used during season setup.
