@@ -7,9 +7,10 @@ interface PageLayoutProps {
     loading: boolean;
     error: string | null;
     navbarData?: {
-        team?: Team | null;
-        info?: Info | null;
-        conferences?: Conference[];
+        team: Team;
+        currentStage: string;
+        info: Info & { lastWeek: number };
+        conferences: Conference[];
     };
     containerMaxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
     children: ReactNode;
@@ -51,6 +52,7 @@ export const PageLayout = ({
             {navbarData && (
                 <Navbar
                     team={navbarData.team}
+                    currentStage={navbarData.currentStage}
                     info={navbarData.info}
                     conferences={navbarData.conferences}
                 />
