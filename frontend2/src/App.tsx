@@ -15,6 +15,7 @@ import SeasonSummary from './pages/SeasonSummary';
 import Game from './pages/Game';
 import TeamStats from './pages/TeamStats';
 import IndividualStats from './pages/IndividualStats';
+import Player from './pages/Player';
 
 const App = () => {
   return (
@@ -34,6 +35,7 @@ const App = () => {
         <Route path="/awards" element={<Awards />} />
         <Route path="/summary" element={<SeasonSummary />} />
         <Route path="/game/:id" element={<Game />} />
+        <Route path="/players/:playerId" element={<Player />} />
         <Route path="/stats/team" element={<TeamStats />} />
         <Route path="/stats/individual" element={<IndividualStats />} />
       </Routes>

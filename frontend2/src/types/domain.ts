@@ -48,6 +48,7 @@ export interface Team {
 export interface Info {
   currentWeek: number;
   currentYear: number;
+  startYear?: number;
   stage: string;
   team: string;
   lastWeek: number;

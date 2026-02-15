@@ -26,3 +26,15 @@ export interface TeamsData {
 }
 
 export type ConferencesData = Record<string, string>;
+
+export interface RatingsData {
+  year: number;
+  total_teams: number;
+  teams: Array<{
+    team: string;
+    conference: string;
+    rank: number;
+    wins: number;
+    losses: number;
+  }>;
+}

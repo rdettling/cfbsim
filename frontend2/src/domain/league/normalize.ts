@@ -7,6 +7,10 @@ export const normalizeLeague = (league: LeagueState) => {
     delete (league as Record<string, unknown>).schedule;
     changed = true;
   }
+  if (!league.info.startYear) {
+    league.info.startYear = league.info.currentYear;
+    changed = true;
+  }
   if (ensureLeaguePostseasonState(league)) {
     changed = true;
   }

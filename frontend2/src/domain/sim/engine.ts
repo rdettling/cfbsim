@@ -662,12 +662,14 @@ export const createGameLogsFromPlays = (
   return logs;
 };
 
+type BestPerformance = { first: string; last: string; stat_value: number; stat_type: string };
+
 const getBestPerformance = (
   logs: GameLogRecord[],
   playersById: Map<number, PlayerRecord>,
   winningTeamId: number
-) => {
-  let best: { first: string; last: string; stat_value: number; stat_type: string } | null = null;
+): BestPerformance | null => {
+  let best: BestPerformance | null = null;
   let bestScore = 0;
 
   logs.forEach(log => {
@@ -750,7 +752,7 @@ export const generateHeadlines = async (
       headlineTemplate = headlinesData.close[Math.floor(Math.random() * headlinesData.close.length)];
     } else {
       const logs = gameLogsByGameId.get(game.id);
-      const performance = logs ? getBestPerformance(logs, playersById, winner.id) : null;
+      const performance: BestPerformance | null = logs ? getBestPerformance(logs, playersById, winner.id) : null;
       if (performance && headlinesData.individual?.length) {
         headlineTemplate = headlinesData.individual[Math.floor(Math.random() * headlinesData.individual.length)];
         headlineTemplate = headlineTemplate

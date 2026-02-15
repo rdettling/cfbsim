@@ -20,11 +20,15 @@ export const getBaseData = async <T,>(key: string, url: string): Promise<T> => {
 
 export const getYearsIndex = () =>
   getBaseData<{ years: string[] }>('years:index', '/data/years/index.json');
+export const getRatingsIndex = () =>
+  getBaseData<{ years: string[] }>('ratings:index', '/data/ratings/index.json');
 export const getTeamsData = () => getBaseData<any>('teams', '/data/teams.json');
 export const getConferencesData = () =>
   getBaseData<any>('conferences', '/data/conferences.json');
 export const getYearData = (year: string) =>
   getBaseData<any>(`years:${year}`, `/data/years/${year}.json`);
+export const getRatingsData = (year: string) =>
+  getBaseData<any>(`ratings:${year}`, `/data/ratings/ratings_${year}.json`);
 export const getRivalriesData = () =>
   getBaseData<{ rivalries: [string, string, number | null, string | null][] }>(
     'rivalries',

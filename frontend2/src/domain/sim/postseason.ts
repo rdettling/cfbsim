@@ -147,7 +147,11 @@ const getPlayoffTeamOrder = async (
   return [...byes, ...seededRest, ...nonPlayoffTeams];
 };
 
-const setConferenceChampionships = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
+const setConferenceChampionships = async (
+  league: LeagueState,
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
+  weekOverride?: number
+) => {
   const gamesToCreate: GameRecord[] = [];
   league.conferences.forEach(conference => {
     if (conference.confName === 'Independent') return;
@@ -163,7 +167,7 @@ const setConferenceChampionships = async (league: LeagueState, oddsContext: Awai
       league,
       teamA,
       teamB,
-      CONFERENCE_CHAMPIONSHIP_WEEK,
+      weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK,
       `${conference.confName} championship`,
       oddsContext,
       { neutralSite: true }
@@ -177,7 +181,11 @@ const setConferenceChampionships = async (league: LeagueState, oddsContext: Awai
   }
 };
 
-const setPlayoffR1 = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
+const setPlayoffR1 = async (
+  league: LeagueState,
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
+  weekOverride?: number
+) => {
   if (!league.playoff) {
     league.playoff = { seeds: [] };
   }
@@ -196,7 +204,7 @@ const setPlayoffR1 = async (league: LeagueState, oddsContext: Awaited<ReturnType
 
   league.playoff.seeds = seeds.map(team => team.id);
 
-  const week = CONFERENCE_CHAMPIONSHIP_WEEK + 1;
+  const week = weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK + 1;
   const gamesToCreate = [
     createGameRecord(league, seeds[7], seeds[8], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
     createGameRecord(league, seeds[4], seeds[11], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
@@ -212,7 +220,11 @@ const setPlayoffR1 = async (league: LeagueState, oddsContext: Awaited<ReturnType
   await saveGames(gamesToCreate);
 };
 
-const setPlayoffQuarter = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
+const setPlayoffQuarter = async (
+  league: LeagueState,
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
+  weekOverride?: number
+) => {
   if (!league.playoff) return;
   if (league.playoff.left_quarter_1 || league.playoff.left_quarter_2 || league.playoff.right_quarter_1 || league.playoff.right_quarter_2) {
     return;
@@ -236,7 +248,7 @@ const setPlayoffQuarter = async (league: LeagueState, oddsContext: Awaited<Retur
   const winners = r1Games.map(game => teamsById.get(game!.winnerId!)).filter(Boolean) as Team[];
   if (winners.length < 4) return;
 
-  const week = CONFERENCE_CHAMPIONSHIP_WEEK + 2;
+  const week = weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK + 2;
   const gamesToCreate = [
     createGameRecord(league, seeds[0], winners[0], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
     createGameRecord(league, seeds[3], winners[1], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
@@ -252,7 +264,11 @@ const setPlayoffQuarter = async (league: LeagueState, oddsContext: Awaited<Retur
   await saveGames(gamesToCreate);
 };
 
-const setPlayoffSemi = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
+const setPlayoffSemi = async (
+  league: LeagueState,
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
+  weekOverride?: number
+) => {
   if (!league.playoff) {
     league.playoff = { seeds: [] };
   }
@@ -261,9 +277,9 @@ const setPlayoffSemi = async (league: LeagueState, oddsContext: Awaited<ReturnTy
   }
 
   const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
-  const week = playoffTeams === 4
+  const week = weekOverride ?? (playoffTeams === 4
     ? CONFERENCE_CHAMPIONSHIP_WEEK + 1
-    : CONFERENCE_CHAMPIONSHIP_WEEK + 3;
+    : CONFERENCE_CHAMPIONSHIP_WEEK + 3);
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const gamesToCreate: GameRecord[] = [];
@@ -307,7 +323,11 @@ const setPlayoffSemi = async (league: LeagueState, oddsContext: Awaited<ReturnTy
   }
 };
 
-const setNatty = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
+const setNatty = async (
+  league: LeagueState,
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
+  weekOverride?: number
+) => {
   if (!league.playoff) {
     league.playoff = { seeds: [] };
   }
@@ -316,11 +336,11 @@ const setNatty = async (league: LeagueState, oddsContext: Awaited<ReturnType<typ
   }
 
   const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
-  const week = playoffTeams === 2
+  const week = weekOverride ?? (playoffTeams === 2
     ? CONFERENCE_CHAMPIONSHIP_WEEK + 1
     : playoffTeams === 4
       ? CONFERENCE_CHAMPIONSHIP_WEEK + 2
-      : CONFERENCE_CHAMPIONSHIP_WEEK + 4;
+      : CONFERENCE_CHAMPIONSHIP_WEEK + 4);
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   let teamA: Team | null = null;
@@ -371,5 +391,61 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
   const action = specialActions[playoffTeams]?.[league.info.currentWeek];
   if (action) {
     await action(league, oddsContext);
+    return;
+  }
+
+  const currentWeek = league.info.currentWeek;
+  if (playoffTeams === 12 && league.playoff) {
+    const r1Ids = [
+      league.playoff.left_r1_1,
+      league.playoff.left_r1_2,
+      league.playoff.right_r1_1,
+      league.playoff.right_r1_2,
+    ];
+    const quarterIds = [
+      league.playoff.left_quarter_1,
+      league.playoff.left_quarter_2,
+      league.playoff.right_quarter_1,
+      league.playoff.right_quarter_2,
+    ];
+    const semiIds = [league.playoff.left_semi, league.playoff.right_semi];
+
+    if (!quarterIds.some(Boolean)) {
+      const r1Games = await Promise.all(r1Ids.map(id => (id ? getGameById(id) : null)));
+      if (r1Games.every(game => game?.winnerId)) {
+        await setPlayoffQuarter(league, oddsContext, currentWeek);
+      }
+      return;
+    }
+
+    if (!semiIds.some(Boolean)) {
+      const qGames = await Promise.all(quarterIds.map(id => (id ? getGameById(id) : null)));
+      if (qGames.every(game => game?.winnerId)) {
+        await setPlayoffSemi(league, oddsContext, currentWeek);
+      }
+      return;
+    }
+
+    if (!league.playoff.natty) {
+      const sGames = await Promise.all(semiIds.map(id => (id ? getGameById(id) : null)));
+      if (sGames.every(game => game?.winnerId)) {
+        await setNatty(league, oddsContext, currentWeek);
+      }
+    }
+    return;
+  }
+
+  if (playoffTeams === 4 && league.playoff) {
+    if (!league.playoff.left_semi && !league.playoff.right_semi) return;
+    if (!league.playoff.natty) {
+      const semiGames = await Promise.all([
+        league.playoff.left_semi ? getGameById(league.playoff.left_semi) : null,
+        league.playoff.right_semi ? getGameById(league.playoff.right_semi) : null,
+      ]);
+      if (semiGames.every(game => game?.winnerId)) {
+        await setNatty(league, oddsContext, currentWeek);
+      }
+    }
+    return;
   }
 };
