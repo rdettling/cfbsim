@@ -1,5 +1,5 @@
 import { Box, Typography, Chip, Paper, List, ListItem, Link as MuiLink, Stack } from '@mui/material';
-import { TeamLogo, ConfLogo } from '../team/TeamComponents';
+import { TeamLogo } from '../team/TeamComponents';
 
 export const PlayoffSettings = ({
   settings,
@@ -48,191 +48,6 @@ export const PlayoffSettings = ({
   </Box>
 );
 
-export const PlayoffTeamsList = ({
-  teams,
-  onTeamClick,
-}: {
-  teams: Array<{
-    name: string;
-    seed: number;
-    ranking: number;
-    conference: string;
-    record: string;
-    is_autobid: boolean;
-  }>;
-  onTeamClick: (name: string) => void;
-}) => (
-  <Paper sx={{ p: 2.5, borderRadius: 2, boxShadow: 1 }}>
-    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 1.5, fontSize: '1.1rem' }}>
-      Playoff Teams
-    </Typography>
-    <List dense sx={{ py: 0 }}>
-      {teams.slice(0, 12).map((team, index) => (
-        <ListItem
-          key={`${team.name}-${index}`}
-          sx={{
-            py: 0.75,
-            px: 0,
-            borderBottom: index < 11 ? '1px solid #f0f0f0' : 'none',
-            '&:last-child': { borderBottom: 'none' },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 'bold',
-                minWidth: 28,
-                color: index < 4 ? 'primary.main' : 'text.primary',
-                fontSize: '0.9rem',
-              }}
-            >
-              #{team.seed}
-            </Typography>
-            <TeamLogo name={team.name} size={22} />
-            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <MuiLink
-                component="button"
-                onClick={() => onTeamClick(team.name)}
-                sx={{
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  fontWeight: 'bold',
-                  color: 'text.primary',
-                  fontSize: '0.9rem',
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                {team.name}
-              </MuiLink>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
-                {team.record} • Rank #{team.ranking}
-              </Typography>
-            </Box>
-            {team.is_autobid && (
-              <Chip label="Auto" color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.7rem', height: 22 }} />
-            )}
-          </Box>
-        </ListItem>
-      ))}
-    </List>
-  </Paper>
-);
-
-export const BubbleTeamsList = ({
-  teams,
-  onTeamClick,
-}: {
-  teams: Array<{ name: string; ranking: number; conference: string; record: string }>;
-  onTeamClick: (name: string) => void;
-}) => (
-  <Paper sx={{ p: 2.5, borderRadius: 2, boxShadow: 1 }}>
-    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 1.5, fontSize: '1.1rem' }}>
-      Bubble Teams
-    </Typography>
-    <List dense sx={{ py: 0 }}>
-      {teams.map((team, index) => (
-        <ListItem
-          key={`${team.name}-${index}`}
-          sx={{
-            py: 0.75,
-            px: 0,
-            borderBottom: index < teams.length - 1 ? '1px solid #f0f0f0' : 'none',
-            '&:last-child': { borderBottom: 'none' },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-            <Typography variant="body2" sx={{ minWidth: 28, fontWeight: 'bold', fontSize: '0.9rem' }}>
-              #{team.ranking}
-            </Typography>
-            <TeamLogo name={team.name} size={22} />
-            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <MuiLink
-                component="button"
-                onClick={() => onTeamClick(team.name)}
-                sx={{
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  fontWeight: 'bold',
-                  color: 'text.primary',
-                  fontSize: '0.9rem',
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                {team.name}
-              </MuiLink>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
-                {team.record} • {team.conference}
-              </Typography>
-            </Box>
-          </Box>
-        </ListItem>
-      ))}
-    </List>
-  </Paper>
-);
-
-export const ConferenceChampionsList = ({
-  champions,
-  onTeamClick,
-}: {
-  champions: Array<{ name: string; ranking: number; conference: string; record: string; seed: number | null }>;
-  onTeamClick: (name: string) => void;
-}) => (
-  <Paper sx={{ p: 2.5, borderRadius: 2, boxShadow: 1 }}>
-    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 1.5, fontSize: '1.1rem' }}>
-      Conference Champions
-    </Typography>
-    <List dense sx={{ py: 0 }}>
-      {champions.map((team, index) => (
-        <ListItem
-          key={`${team.name}-${index}`}
-          sx={{
-            py: 0.75,
-            px: 0,
-            borderBottom: index < champions.length - 1 ? '1px solid #f0f0f0' : 'none',
-            '&:last-child': { borderBottom: 'none' },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-            <Typography variant="body2" sx={{ minWidth: 28, fontWeight: 'bold', fontSize: '0.9rem' }}>
-              #{team.ranking}
-            </Typography>
-            <TeamLogo name={team.name} size={22} />
-            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <MuiLink
-                component="button"
-                onClick={() => onTeamClick(team.name)}
-                sx={{
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  fontWeight: 'bold',
-                  color: 'text.primary',
-                  fontSize: '0.9rem',
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                {team.name}
-              </MuiLink>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
-                {team.record}
-              </Typography>
-            </Box>
-            <ConfLogo name={team.conference} size={22} />
-            {team.seed && (
-              <Chip
-                label={team.seed <= 4 ? `Seed #${team.seed}` : 'Playoff'}
-                color={team.seed <= 4 ? 'primary' : 'success'}
-                size="small"
-                sx={{ fontWeight: 'bold', fontSize: '0.7rem', height: 22 }}
-              />
-            )}
-          </Box>
-        </ListItem>
-      ))}
-    </List>
-  </Paper>
-);
 
 export const BowlGamesList = ({
   games,
@@ -408,5 +223,176 @@ export const BowlGamesList = ({
         </Box>
       ))}
     </Stack>
+  </Paper>
+);
+
+
+export const RankingResumeList = ({
+  teams,
+  onTeamClick,
+}: {
+  teams: Array<{
+    name: string;
+    ranking: number;
+    conference: string;
+    record: string;
+    rating: number;
+    ranked_wins: number;
+    losses: number;
+    sor_rank: number;
+    is_champ: boolean;
+  }>;
+  onTeamClick: (name: string) => void;
+}) => (
+  <Paper sx={{ p: 3, borderRadius: 2.5, boxShadow: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+      <Box>
+        <Typography variant="overline" sx={{ letterSpacing: 2, fontWeight: 700, color: 'text.secondary' }}>
+          Committee Snapshot
+        </Typography>
+        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+          Top 10 Resume Board
+        </Typography>
+      </Box>
+      <Typography variant="caption" color="text.secondary">
+        Rankings drive selection
+      </Typography>
+    </Box>
+    <Box
+      sx={{
+        display: { xs: 'none', lg: 'grid' },
+        gridTemplateColumns: '2fr 3fr 1fr',
+        gap: 2,
+        px: 1.5,
+        mb: 1,
+      }}
+    >
+      <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: 1 }}>
+        Team
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: 1 }}>
+        Resume
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: 1, textAlign: 'right' }}>
+        Status
+      </Typography>
+    </Box>
+
+    <List dense sx={{ py: 0 }}>
+      {teams.map((team, index) => {
+        const isIn = team.ranking <= 4;
+        return (
+          <ListItem
+            key={`${team.name}-${index}`}
+            sx={{
+              py: 1.1,
+              px: 1.5,
+              borderBottom: index < teams.length - 1 ? '1px solid #f0f0f0' : 'none',
+              borderLeft: isIn ? '3px solid #1f5fbf' : '3px solid transparent',
+              backgroundColor: isIn ? '#f7faff' : 'transparent',
+              '&:hover': { backgroundColor: isIn ? '#f0f5ff' : '#fafafa' },
+            }}
+          >
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', lg: '2fr 3fr 1fr' },
+                gap: 2,
+                width: '100%',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    minWidth: 34,
+                    fontWeight: 800,
+                    color: isIn ? 'primary.main' : 'text.primary',
+                  }}
+                >
+                  #{team.ranking}
+                </Typography>
+                <TeamLogo name={team.name} size={26} />
+                <Box sx={{ minWidth: 0 }}>
+                  <MuiLink
+                    component="button"
+                    onClick={() => onTeamClick(team.name)}
+                    sx={{
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      fontWeight: 800,
+                      color: 'text.primary',
+                      '&:hover': { color: 'primary.main' },
+                    }}
+                  >
+                    {team.name}
+                  </MuiLink>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {team.record} • {team.conference}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', md: 'repeat(4, minmax(90px, 1fr))' },
+                  gap: 1.5,
+                  alignItems: 'center',
+                }}
+              >
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Rating
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    {team.rating}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    SOR
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    #{team.sor_rank}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Ranked Wins
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    {team.ranked_wins}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Losses
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {team.losses}
+                    </Typography>
+                  </Box>
+                  {team.is_champ && (
+                    <Chip label="Conf Champ" color="success" size="small" sx={{ fontWeight: 700, height: 22 }} />
+                  )}
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', lg: 'flex-end' } }}>
+                <Chip
+                  label={isIn ? 'In' : 'Out'}
+                  color={isIn ? 'primary' : 'default'}
+                  size="small"
+                  sx={{ fontWeight: 700 }}
+                />
+              </Box>
+            </Box>
+          </ListItem>
+        );
+      })}
+    </List>
   </Paper>
 );

@@ -1,4 +1,4 @@
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, Divider } from '@mui/material';
 import { Matchup, Championship } from './BracketElements';
 
 const FourTeamPlayoff = ({
@@ -11,62 +11,79 @@ const FourTeamPlayoff = ({
   onTeamClick: (name: string) => void;
 }) => {
   return (
-    <Box>
-      <Paper sx={{ p: 4, borderRadius: 2, overflow: 'auto' }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
-          4-Team Playoff Bracket
+    <Paper
+      sx={{
+        p: 4,
+        borderRadius: 2.5,
+        overflow: 'auto',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f7f8fb 100%)',
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box>
+          <Typography variant="overline" sx={{ letterSpacing: 2, fontWeight: 700, color: 'text.secondary' }}>
+            College Football Playoff
+          </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800 }}>
+            4‑Team Bracket
+          </Typography>
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          Winners advance to the title game
         </Typography>
+      </Box>
 
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 8,
-            minWidth: 1000,
-          }}
-        >
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center', color: '#1976d2', fontSize: '1rem' }}>
-              Semifinal
-            </Typography>
+      <Divider sx={{ mb: 3 }} />
 
-            <Matchup
-              matchup={bracket?.semifinals?.[0] || {
-                team1: playoffTeams[0]?.name,
-                team2: playoffTeams[3]?.name,
-                seed1: 1,
-                seed2: 4,
-              }}
-              direction="left"
-              onTeamClick={onTeamClick}
-            />
-          </Box>
-
-          <Championship
-            championship={bracket?.championship || { team1: 'TBD', team2: 'TBD' }}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', lg: '1fr auto 1fr' },
+          gap: 4,
+          alignItems: 'center',
+          minWidth: 900,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="overline" sx={{ letterSpacing: 2, fontWeight: 700, color: 'text.secondary' }}>
+            Semifinal
+          </Typography>
+          <Matchup
+            matchup={bracket?.semifinals?.[0] || {
+              team1: playoffTeams[0]?.name,
+              team2: playoffTeams[3]?.name,
+              seed1: 1,
+              seed2: 4,
+            }}
+            direction="left"
             onTeamClick={onTeamClick}
           />
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center', color: '#1976d2', fontSize: '1rem' }}>
-              Semifinal
-            </Typography>
-
-            <Matchup
-              matchup={bracket?.semifinals?.[1] || {
-                team1: playoffTeams[1]?.name,
-                team2: playoffTeams[2]?.name,
-                seed1: 2,
-                seed2: 3,
-              }}
-              direction="right"
-              onTeamClick={onTeamClick}
-            />
-          </Box>
         </Box>
-      </Paper>
-    </Box>
+
+        <Championship
+          championship={bracket?.championship || { team1: 'TBD', team2: 'TBD' }}
+          onTeamClick={onTeamClick}
+        />
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="overline" sx={{ letterSpacing: 2, fontWeight: 700, color: 'text.secondary' }}>
+            Semifinal
+          </Typography>
+          <Matchup
+            matchup={bracket?.semifinals?.[1] || {
+              team1: playoffTeams[1]?.name,
+              team2: playoffTeams[2]?.name,
+              seed1: 2,
+              seed2: 3,
+            }}
+            direction="right"
+            onTeamClick={onTeamClick}
+          />
+        </Box>
+      </Box>
+    </Paper>
   );
 };
 

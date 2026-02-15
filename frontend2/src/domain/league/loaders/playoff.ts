@@ -22,6 +22,18 @@ type BubbleTeamEntry = {
   record: string;
 };
 
+type ResumeTeamEntry = {
+  name: string;
+  ranking: number;
+  conference: string;
+  record: string;
+  rating: number;
+  ranked_wins: number;
+  losses: number;
+  sor_rank: number;
+  is_champ: boolean;
+};
+
 type ConferenceChampionEntry = {
   name: string;
   ranking: number;
@@ -77,6 +89,13 @@ const AT_LARGE_BOWLS = [
   "Duke's Mayo Bowl",
   'ReliaQuest Bowl',
 ] as const;
+
+const ALL_BOWLS = new Set<string>([...NY6_BOWLS, ...AT_LARGE_BOWLS].map(name => name.toLowerCase()));
+
+const isBowlName = (name?: string | null) => {
+  if (!name) return false;
+  return ALL_BOWLS.has(name.toLowerCase());
+};
 
 const ROTATION_SEMIS: Array<[typeof NY6_BOWLS[number], typeof NY6_BOWLS[number]]> = [
   ['Rose Bowl', 'Sugar Bowl'],
@@ -522,9 +541,10 @@ export const loadPlayoff = async () => {
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const championIds = new Set(champions.map(team => team.id));
   const championNames = new Set(champions.map(team => team.name));
-  const bowl_games: BowlGameEntry[] = (await getAllGames())
+  const allGames = await getAllGames();
+  const bowl_games: BowlGameEntry[] = allGames
     .filter(game => game.year === league.info.currentYear)
-    .filter(game => game.name && game.name.includes('Bowl'))
+    .filter(game => isBowlName(game.name))
     .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
     .map(game => {
       const teamA = teamsById.get(game.teamAId);
@@ -587,6 +607,50 @@ export const loadPlayoff = async () => {
     is_projection: true,
   }));
 
+  const rankedWinsByTeam = new Map<number, number>();
+  allGames
+    .filter(game => game.year === league.info.currentYear)
+    .filter(game => game.winnerId)
+    .forEach(game => {
+      const winnerId = game.winnerId!;
+      const opponentId = game.teamAId === winnerId ? game.teamBId : game.teamAId;
+      const opponent = teamsById.get(opponentId);
+      if (!opponent) return;
+      if (opponent.ranking <= 25) {
+        rankedWinsByTeam.set(winnerId, (rankedWinsByTeam.get(winnerId) ?? 0) + 1);
+      }
+    });
+
+  const sorRankById = new Map<number, number>();
+  const sorSorted = league.teams
+    .slice()
+    .sort((a, b) => {
+      const aGames = Math.max(1, a.totalWins + a.totalLosses);
+      const bGames = Math.max(1, b.totalWins + b.totalLosses);
+      const aSor = a.strength_of_record / aGames;
+      const bSor = b.strength_of_record / bGames;
+      return bSor - aSor;
+    });
+  sorSorted.forEach((team, index) => {
+    sorRankById.set(team.id, index + 1);
+  });
+
+  const resume_teams: ResumeTeamEntry[] = league.teams
+    .slice()
+    .sort((a, b) => a.ranking - b.ranking)
+    .slice(0, 10)
+    .map(team => ({
+      name: team.name,
+      ranking: team.ranking,
+      conference: team.conference ?? 'Independent',
+      record: formatRecord(team),
+      rating: team.rating,
+      ranked_wins: rankedWinsByTeam.get(team.id) ?? 0,
+      losses: team.totalLosses,
+      sor_rank: sorRankById.get(team.id) ?? team.ranking,
+      is_champ: championNames.has(team.name),
+    }));
+
   return {
     info: league.info,
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
@@ -603,6 +667,7 @@ export const loadPlayoff = async () => {
     bracket,
     bowl_games: bowl_games.sort(sortBowls),
     bowl_projections: bowl_projections.sort(sortBowls),
+    resume_teams,
     is_projection: isProjection,
   };
 };
