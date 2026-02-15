@@ -1,0 +1,184 @@
+:root {
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+  color: #1b1b1f;
+  background: #f2f0ea;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #ffffff 0%, #f2f0ea 55%, #e6e1d8 100%);
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.app__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.app__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 12px;
+  color: #6b6a64;
+  margin: 0 0 8px;
+}
+
+h1 {
+  font-size: 36px;
+  margin: 0 0 8px;
+}
+
+.app__subtitle {
+  margin: 0;
+  color: #4c4b46;
+  max-width: 520px;
+}
+
+.app__controls {
+  display: grid;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.app__controls label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #6b6a64;
+}
+
+select {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #c9c5bb;
+  font-size: 16px;
+  background: #fff;
+}
+
+.app__error,
+.app__loading {
+  padding: 16px 20px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+
+.app__error {
+  background: #ffe6e4;
+  color: #b42318;
+}
+
+.app__loading {
+  background: #f1f3ff;
+  color: #2d3a8c;
+}
+
+.app__main {
+  display: grid;
+  gap: 24px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 16px 30px rgba(28, 28, 31, 0.08);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #6b6a64;
+}
+
+.stat-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.conference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.conference {
+  border: 1px solid #eee8de;
+  border-radius: 16px;
+  padding: 16px;
+  background: #fbfaf7;
+}
+
+.conference h3 {
+  margin: 0 0 4px;
+}
+
+.conference ul {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+
+.conference li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e3ddd0;
+}
+
+.conference li:last-child {
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #23221e;
+  color: #fff;
+  font-size: 12px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag {
+  background: #f2efe8;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  h1 {
+    font-size: 28px;
+  }
+}
