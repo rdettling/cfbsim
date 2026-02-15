@@ -37,8 +37,8 @@ export interface Team {
     movement: number;
     poll_score?: number;
     strength_of_record?: number;
-    last_game: ScheduleGame;
-    next_game: ScheduleGame;
+    last_game: ScheduleGame | null;
+    next_game: ScheduleGame | null;
     // Game preview stats (optional - only present in game preview)
     stats?: {
         offensive_ypg: {
@@ -83,7 +83,7 @@ export interface ScheduleGame {
         rating: number;
         ranking: number;
         record: string;
-    };
+    } | null;
     label?: string;
     result: string;
     score: string;

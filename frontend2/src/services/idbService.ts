@@ -1,27 +1,51 @@
-import { openDb } from '../db';
-import type { InfoRecord } from '../db/schema';
+type YearsIndex = { years: string[] };
 
-interface YearsIndex {
-  years: string[];
+type YearData = {
+  playoff: {
+    teams: number;
+    conf_champ_autobids?: number;
+    conf_champ_top_4?: boolean;
+  };
+  conferences: Record<
+    string,
+    {
+      games: number;
+      teams: Record<string, number>;
+    }
+  >;
+  Independent?: Record<string, number>;
+};
+
+type TeamsData = {
+  teams: Record<
+    string,
+    {
+      mascot: string;
+      abbreviation: string;
+      ceiling: number;
+      floor: number;
+      colorPrimary: string;
+      colorSecondary: string;
+      city?: string;
+      state?: string;
+      stadium?: string;
+    }
+  >;
+};
+
+type ConferencesData = Record<string, string>;
+
+interface LeagueState {
+  info: any;
+  teams: any[];
+  conferences: any[];
+  schedule: any[];
+  pending_rivalries: any[];
 }
 
-const getUserId = (): string | null => {
-  return localStorage.getItem('user_id');
-};
+const LEAGUE_KEY = 'cfbsim_frontend2_league';
 
-const readBaseData = async <T>(key: string, fetcher: () => Promise<T>): Promise<T> => {
-  const db = await openDb();
-  const cached = await db.get('baseData', key);
-  if (cached) {
-    return cached.value as T;
-  }
-
-  const value = await fetcher();
-  await db.put('baseData', { key, value });
-  return value;
-};
-
-const fetchJson = async <T>(url: string): Promise<T> => {
+const fetchJson = async <T,>(url: string): Promise<T> => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load ${url}: ${response.status}`);
@@ -30,29 +54,20 @@ const fetchJson = async <T>(url: string): Promise<T> => {
 };
 
 const getYearsList = async (): Promise<string[]> => {
-  const index = await readBaseData<YearsIndex>('years:index', () =>
-    fetchJson<YearsIndex>('/data/years/index.json')
-  );
+  const index = await fetchJson<YearsIndex>('/data/years/index.json');
   return index.years;
 };
 
-const getTeamsData = async (): Promise<Record<string, any>> => {
-  const data = await readBaseData<{ teams: Record<string, any> }>('teams', () =>
-    fetchJson<{ teams: Record<string, any> }>('/data/teams.json')
-  );
-  return data.teams;
+const getTeamsData = async (): Promise<TeamsData> => {
+  return fetchJson<TeamsData>('/data/teams.json');
 };
 
-const getConferencesData = async (): Promise<Record<string, string>> => {
-  return readBaseData<Record<string, string>>('conferences', () =>
-    fetchJson<Record<string, string>>('/data/conferences.json')
-  );
+const getConferencesData = async (): Promise<ConferencesData> => {
+  return fetchJson<ConferencesData>('/data/conferences.json');
 };
 
-const getYearData = async (year: string): Promise<any> => {
-  return readBaseData<any>(`years:${year}`, () =>
-    fetchJson<any>(`/data/years/${year}.json`)
-  );
+const getYearData = async (year: string): Promise<YearData> => {
+  return fetchJson<YearData>(`/data/years/${year}.json`);
 };
 
 const buildPreviewData = async (year: string) => {
@@ -63,7 +78,7 @@ const buildPreviewData = async (year: string) => {
   ]);
 
   const addTeamMetadata = (teamName: string, prestige: number) => {
-    const meta = teamsData[teamName];
+    const meta = teamsData.teams[teamName];
     return {
       name: teamName,
       prestige,
@@ -106,35 +121,202 @@ const buildPreviewData = async (year: string) => {
   };
 };
 
-const serializeInfo = async (info: InfoRecord | null) => {
-  if (!info) return null;
-  const db = await openDb();
-  const team = info.team_id ? await db.get('teams', info.team_id) : null;
+const loadLeague = (): LeagueState | null => {
+  const raw = localStorage.getItem(LEAGUE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as LeagueState;
+  } catch {
+    return null;
+  }
+};
 
-  return {
-    ...info,
-    team: team ? team.name : null,
-    colorPrimary: team ? team.colorPrimary : null,
-    colorSecondary: team ? team.colorSecondary : null,
+const saveLeague = (league: LeagueState) => {
+  localStorage.setItem(LEAGUE_KEY, JSON.stringify(league));
+};
+
+const buildTeamsAndConferences = async (year: string) => {
+  const [yearData, teamsData, conferencesData] = await Promise.all([
+    getYearData(year),
+    getTeamsData(),
+    getConferencesData(),
+  ]);
+
+  const teams: any[] = [];
+  const conferences: any[] = [];
+  let teamId = 1;
+  let conferenceId = 1;
+
+  const makeTeam = (teamName: string, prestige: number, conferenceName: string | null, confGames: number) => {
+    const meta = teamsData.teams[teamName];
+    const team = {
+      id: teamId,
+      name: teamName,
+      abbreviation: meta.abbreviation,
+      nonConfGames: 0,
+      nonConfLimit: 12 - confGames,
+      prestige,
+      prestige_change: 0,
+      ceiling: meta.ceiling,
+      floor: meta.floor,
+      mascot: meta.mascot,
+      ranking: 0,
+      offense: 90,
+      defense: 90,
+      colorPrimary: meta.colorPrimary,
+      colorSecondary: meta.colorSecondary,
+      conference: conferenceName ?? 'Independent',
+      confName: conferenceName ?? 'Independent',
+      confWins: 0,
+      confLosses: 0,
+      rating: 90,
+      totalWins: 0,
+      totalLosses: 0,
+      record: '0-0 (0-0)',
+      movement: 0,
+      poll_score: 0,
+      strength_of_record: 0,
+      last_game: null,
+      next_game: null,
+    };
+    teamId += 1;
+    return team;
   };
+
+  Object.entries(yearData.conferences).forEach(([confName, confData]) => {
+    const confTeams: any[] = [];
+    Object.entries(confData.teams).forEach(([teamName, prestige]) => {
+      const team = makeTeam(teamName, prestige as number, confName, confData.games);
+      teams.push(team);
+      confTeams.push(team);
+    });
+
+    conferences.push({
+      id: conferenceId,
+      confName,
+      confFullName: conferencesData[confName] ?? confName,
+      confGames: confData.games,
+      info: '',
+      championship: null,
+      teams: confTeams,
+    });
+    conferenceId += 1;
+  });
+
+  const independents = yearData.Independent ?? {};
+  if (Object.keys(independents).length) {
+    const confTeams: any[] = [];
+    Object.entries(independents).forEach(([teamName, prestige]) => {
+      const team = makeTeam(teamName, prestige as number, null, 0);
+      teams.push(team);
+      confTeams.push(team);
+    });
+
+    conferences.push({
+      id: conferenceId,
+      confName: 'Independent',
+      confFullName: 'Independent',
+      confGames: 0,
+      info: '',
+      championship: null,
+      teams: confTeams,
+    });
+  }
+
+  teams
+    .sort((a, b) => b.prestige - a.prestige)
+    .forEach((team, index) => {
+      team.ranking = index + 1;
+    });
+
+  return { teams, conferences };
+};
+
+const createLeague = async (teamName: string, year: string) => {
+  const { teams, conferences } = await buildTeamsAndConferences(year);
+  const userTeam = teams.find(team => team.name === teamName) ?? teams[0];
+
+  const schedule = Array.from({ length: 14 }, (_, index) => ({
+    weekPlayed: index + 1,
+    opponent: null,
+    result: '',
+    score: '',
+    spread: '',
+    moneyline: '',
+    id: '',
+  }));
+
+  const info = {
+    currentWeek: 1,
+    currentYear: Number(year),
+    stage: 'preseason',
+    team: userTeam?.name ?? '',
+    lastWeek: 14,
+    colorPrimary: userTeam?.colorPrimary,
+    colorSecondary: userTeam?.colorSecondary,
+  };
+
+  const league: LeagueState = {
+    info,
+    teams,
+    conferences,
+    schedule,
+    pending_rivalries: [],
+  };
+
+  saveLeague(league);
+  localStorage.setItem('user_id', crypto.randomUUID());
+  return league;
 };
 
 export const idbService = {
   getHome: async <T>(year?: string): Promise<T> => {
-    const userId = getUserId();
-    const db = await openDb();
-    const info = userId ? await db.get('info', userId) : null;
-
     const years = await getYearsList();
     const selectedYear = year || years[0] || null;
     const preview = selectedYear ? await buildPreviewData(selectedYear) : null;
+    const league = loadLeague();
 
     return {
-      info: await serializeInfo(info),
+      info: league?.info ?? null,
       years,
       preview,
       selected_year: selectedYear,
     } as T;
+  },
+
+  getNonCon: async <T>(): Promise<T> => {
+    const league = loadLeague();
+    if (!league) {
+      throw new Error('No league found. Start a new game from the Home page.');
+    }
+    const team = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
+    return {
+      info: league.info,
+      team,
+      schedule: league.schedule,
+      pending_rivalries: league.pending_rivalries,
+      conferences: league.conferences,
+    } as T;
+  },
+
+  get: async <T>(endpoint: string, params?: Record<string, any>): Promise<T> => {
+    if (endpoint.startsWith('/api/noncon')) {
+      if (params?.team && params?.year) {
+        const league = await createLeague(params.team, params.year);
+        const team = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
+        return {
+          info: league.info,
+          team,
+          schedule: league.schedule,
+          pending_rivalries: league.pending_rivalries,
+          conferences: league.conferences,
+          user_id: localStorage.getItem('user_id'),
+        } as T;
+      }
+      return idbService.getNonCon<T>();
+    }
+
+    throw new Error(`Endpoint not implemented in frontend2: ${endpoint}`);
   },
 };
 
