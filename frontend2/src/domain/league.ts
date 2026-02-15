@@ -1,4 +1,4 @@
-import type { Conference, Info, ScheduleGame, Team } from './types';
+import type { Conference, Info, ScheduleGame, Team, Settings } from './types';
 import { getYearsIndex } from '../db/baseData';
 import { getAllGames } from '../db/simRepo';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
@@ -44,6 +44,7 @@ interface LeagueState {
   pending_rivalries: NonConData['pending_rivalries'];
   scheduleBuilt?: boolean;
   simInitialized?: boolean;
+  settings?: Settings;
   idCounters?: {
     game: number;
     drive: number;
@@ -52,6 +53,22 @@ interface LeagueState {
     player: number;
   };
 }
+
+const DEFAULT_SETTINGS: Settings = {
+  playoff_teams: 12,
+  playoff_autobids: 6,
+  playoff_conf_champ_top_4: true,
+  auto_realignment: true,
+  auto_update_postseason_format: true,
+};
+
+const ensureSettings = (league: LeagueState) => {
+  if (!league.settings) {
+    league.settings = { ...DEFAULT_SETTINGS };
+    return true;
+  }
+  return false;
+};
 
 export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
   const yearsIndex = await getYearsIndex();
@@ -91,6 +108,7 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
     pending_rivalries: [],
     scheduleBuilt: false,
     simInitialized: false,
+    settings: { ...DEFAULT_SETTINGS },
     idCounters: {
       game: 1,
       drive: 1,
@@ -460,6 +478,189 @@ const buildScheduleGameForTeam = (
   } as const;
 };
 
+const sortStandings = (teams: Team[]) => {
+  return teams.slice().sort((a, b) => {
+    const aConfGames = a.confWins + a.confLosses;
+    const bConfGames = b.confWins + b.confLosses;
+    const aConfPct = aConfGames ? a.confWins / aConfGames : 0;
+    const bConfPct = bConfGames ? b.confWins / bConfGames : 0;
+    if (bConfPct !== aConfPct) return bConfPct - aConfPct;
+    if (b.confWins !== a.confWins) return b.confWins - a.confWins;
+    if (a.confLosses !== b.confLosses) return a.confLosses - b.confLosses;
+    if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
+    if (a.totalLosses !== b.totalLosses) return a.totalLosses - b.totalLosses;
+    return a.ranking - b.ranking;
+  });
+};
+
+export const loadStandings = async (conferenceName: string) => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  await ensureRosters(league);
+  await saveLeague(league);
+
+  const normalized = conferenceName.toLowerCase();
+  const isIndependent = normalized === 'independent';
+  const conference = isIndependent
+    ? null
+    : league.conferences.find(conf => conf.confName.toLowerCase() === normalized) ?? null;
+
+  const teams = isIndependent
+    ? league.teams.filter(team => team.conference === 'Independent')
+    : league.teams.filter(team => team.conference === conference?.confName);
+
+  const games = await getAllGames();
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+
+  const rankedTeams = sortStandings(teams).map(team => {
+    const lastWeek = league.info.currentWeek - 1;
+    const currentWeek = league.info.currentWeek;
+    const lastGameRecord = games.find(
+      game =>
+        game.weekPlayed === lastWeek &&
+        (game.teamAId === team.id || game.teamBId === team.id)
+    );
+    const nextGameRecord = games.find(
+      game =>
+        game.weekPlayed === currentWeek &&
+        (game.teamAId === team.id || game.teamBId === team.id)
+    );
+
+    const last_game =
+      lastGameRecord && lastGameRecord.winnerId
+        ? buildScheduleGameForTeam(team, lastGameRecord, teamsById)
+        : null;
+    const next_game = nextGameRecord
+      ? buildScheduleGameForTeam(team, nextGameRecord, teamsById)
+      : null;
+
+    return {
+      ...team,
+      last_game,
+      next_game,
+    };
+  });
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    conference: conference?.confName ?? 'Independent',
+    teams: rankedTeams,
+    conferences: league.conferences,
+  };
+};
+
+export const loadWeekSchedule = async (week: number) => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  await ensureRosters(league);
+  await saveLeague(league);
+
+  const games = await getAllGames();
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const weekGames = games
+    .filter(game => game.weekPlayed === week)
+    .map(game => {
+      const teamA = teamsById.get(game.teamAId)!;
+      const teamB = teamsById.get(game.teamBId)!;
+      return {
+        id: game.id,
+        label: game.baseLabel,
+        base_label: game.baseLabel,
+        teamA,
+        teamB,
+        rankATOG: game.rankATOG,
+        rankBTOG: game.rankBTOG,
+        scoreA: game.scoreA ?? undefined,
+        scoreB: game.scoreB ?? undefined,
+        spreadA: game.spreadA,
+        spreadB: game.spreadB,
+        winner: Boolean(game.winnerId),
+        overtime: game.overtime,
+        watchability: game.watchability ?? 0,
+      };
+    })
+    .sort((a, b) => b.watchability - a.watchability);
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    games: weekGames,
+    conferences: league.conferences,
+  };
+};
+
+export const loadTeamRoster = async (teamName?: string) => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  await ensureRosters(league);
+  await saveLeague(league);
+
+  const team =
+    (teamName ? league.teams.find(entry => entry.name === teamName) : null) ??
+    league.teams.find(entry => entry.name === league.info.team) ??
+    league.teams[0];
+
+  const roster = (await getAllPlayers()).filter(
+    player => player.active && player.teamId === team.id
+  );
+
+  const positions = Array.from(
+    new Set(roster.map(player => player.pos))
+  ).sort((a, b) => a.localeCompare(b));
+
+  return {
+    info: league.info,
+    team,
+    roster,
+    positions,
+    conferences: league.conferences,
+    teams: league.teams.map(entry => entry.name).sort((a, b) => a.localeCompare(b)),
+  };
+};
+
+export const loadTeamHistory = async (teamName?: string) => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  const team =
+    (teamName ? league.teams.find(entry => entry.name === teamName) : null) ??
+    league.teams.find(entry => entry.name === league.info.team) ??
+    league.teams[0];
+
+  const years = [
+    {
+      year: league.info.currentYear,
+      prestige: team.prestige,
+      rating: team.rating,
+      conference: team.conference,
+      wins: team.totalWins,
+      losses: team.totalLosses,
+      rank: team.ranking,
+      has_games: true,
+    },
+  ];
+
+  return {
+    info: league.info,
+    team,
+    years,
+    conferences: league.conferences,
+    teams: league.teams.map(entry => entry.name).sort((a, b) => a.localeCompare(b)),
+  };
+};
+
 export const loadRankings = async () => {
   const league = await loadLeague<LeagueState>();
   if (!league) {
@@ -510,6 +711,56 @@ export const loadRankings = async () => {
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     rankings,
     conferences: league.conferences,
+  };
+};
+
+export const loadSettings = async () => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  const changed = ensureSettings(league);
+  if (changed) {
+    await saveLeague(league);
+  }
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    conferences: league.conferences,
+    settings: league.settings ?? { ...DEFAULT_SETTINGS },
+  };
+};
+
+export const loadAwards = async () => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    conferences: league.conferences,
+    favorites: [],
+    final: [],
+  };
+};
+
+export const loadSeasonSummary = async () => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    conferences: league.conferences,
+    champion: null,
+    awards: [],
+    teams: league.teams,
   };
 };
 
