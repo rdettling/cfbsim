@@ -30,5 +30,13 @@ export const useDomainData = <T>({ fetcher, deps = [], onData }: UseDomainDataOp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      run();
+    };
+    window.addEventListener('pageDataRefresh', handleRefresh);
+    return () => window.removeEventListener('pageDataRefresh', handleRefresh);
+  }, [run]);
+
   return { data, loading, error, refetch: run };
 };

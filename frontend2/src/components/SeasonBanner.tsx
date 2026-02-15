@@ -46,7 +46,7 @@ const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#fffff
         setIsSimulating(true);
         try {
             await advanceWeeks(destWeek);
-            window.location.reload();
+            window.dispatchEvent(new Event('pageDataRefresh'));
         } catch (error) {
             console.error('Error simulating weeks:', error);
         } finally {
