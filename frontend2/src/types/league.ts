@@ -1,4 +1,4 @@
-import type { Conference, Info, ScheduleGame, Team, Settings, PreviewData } from './domain';
+import type { Conference, Info, Team, Settings, PreviewData } from './domain';
 
 export interface LaunchProps {
   years: string[];

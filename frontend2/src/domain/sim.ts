@@ -19,7 +19,7 @@ import {
   saveGames,
   savePlays,
 } from '../db/simRepo';
-import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../db/db';
+import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../types/db';
 import type { Drive, Play, GameData } from '../types/game';
 import { ensureRosters } from './roster';
 import { CONFERENCE_CHAMPIONSHIP_WEEK, ensureLeaguePostseasonState } from './league/postseason';

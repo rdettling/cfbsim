@@ -1,5 +1,5 @@
 import type { Team } from './domain';
-import type { DriveRecord, PlayRecord, PlayerRecord } from '../db/db';
+import type { DriveRecord, PlayRecord, PlayerRecord } from './db';
 
 export interface SimGame {
   id: number;

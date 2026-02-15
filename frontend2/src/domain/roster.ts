@@ -3,7 +3,7 @@ import type { LeagueState } from '../types/league';
 import type { Recruit } from '../types/roster';
 import { getNamesData, getStatesData } from '../db/baseData';
 import { savePlayers, getPlayersByTeam, clearPlayers } from '../db/simRepo';
-import type { PlayerRecord } from '../db/db';
+import type { PlayerRecord } from '../types/db';
 
 const STARS_BASE: Record<number, number> = { 1: 15, 2: 30, 3: 45, 4: 60, 5: 75 };
 const BASE_DEVELOPMENT = 4;

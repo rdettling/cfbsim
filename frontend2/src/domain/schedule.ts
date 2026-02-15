@@ -2,7 +2,7 @@ import type { ScheduleGame, Team } from '../types/domain';
 import type { FullGame } from '../types/schedule';
 import type { NonConData } from '../types/league';
 import { getRivalriesData } from '../db/baseData';
-import type { GameRecord } from '../db/db';
+import type { GameRecord } from '../types/db';
 
 const REGULAR_SEASON_WEEKS = 14;
 const REGULAR_SEASON_GAMES = 12;

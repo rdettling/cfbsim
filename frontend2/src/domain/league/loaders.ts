@@ -23,7 +23,7 @@ import {
 import { buildDriveResponse, initializeSimData } from '../sim';
 import { DEFAULT_SETTINGS, ensureSettings, type LaunchProps, type LeagueState, type NonConData } from '../../types/league';
 import { ensureLeaguePostseasonState, getLastWeekByPlayoffTeams } from './postseason';
-import type { GameRecord } from '../../db/db';
+import type { GameRecord } from '../../types/db';
 
 const HOME_FIELD_ADVANTAGE = 4;
 
@@ -124,21 +124,25 @@ const loadLeagueOrThrow = async () => {
   return league;
 };
 
+const loadLeagueOptional = async () => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) return null;
+  if ('schedule' in league) {
+    delete (league as Record<string, unknown>).schedule;
+  }
+  const changed = ensureLeaguePostseasonState(league);
+  if (changed) {
+    await saveLeague(league);
+  }
+  return league;
+};
+
 export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
   const yearsIndex = await getYearsIndex();
   const years = yearsIndex.years;
   const selectedYear = year || years[0] || null;
   const preview = selectedYear ? await buildPreviewData(selectedYear) : null;
-  const league = await loadLeague<LeagueState>();
-  if (league) {
-    if ('schedule' in league) {
-      delete (league as Record<string, unknown>).schedule;
-    }
-    const changed = ensureLeaguePostseasonState(league);
-    if (changed) {
-      await saveLeague(league);
-    }
-  }
+  const league = await loadLeagueOptional();
 
   return {
     info: league?.info ?? null,
@@ -874,10 +878,7 @@ export const loadAwards = async () => {
 };
 
 export const loadSeasonSummary = async () => {
-  const league = await loadLeague<LeagueState>();
-  if (!league) {
-    throw new Error('No league found. Start a new game from the Home page.');
-  }
+  const league = await loadLeagueOrThrow();
 
   return {
     info: league.info,
@@ -890,13 +891,13 @@ export const loadSeasonSummary = async () => {
 };
 
 export const getTeamInfo = async (teamName: string): Promise<Team | null> => {
-  const league = await loadLeague<LeagueState>();
+  const league = await loadLeagueOptional();
   if (!league) return null;
   return league.teams.find(team => team.name === teamName) ?? null;
 };
 
 export const listAvailableTeams = async (week: number): Promise<string[]> => {
-  const league = await loadLeague<LeagueState>();
+  const league = await loadLeagueOptional();
   if (!league) return [];
 
   const userTeam = league.teams.find(team => team.name === league.info.team);
