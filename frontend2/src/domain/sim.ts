@@ -1,8 +1,9 @@
-import type { Team, Info, ScheduleGame } from '../types/domain';
+import type { Team, Info } from '../types/domain';
 import type { FullGame } from '../types/schedule';
 import type { LeagueState } from '../types/league';
+import { DEFAULT_SETTINGS } from '../types/league';
 import type { SimGame, SimDrive, StartersCache } from '../types/sim';
-import { fillUserSchedule } from './schedule';
+import { fillUserSchedule, buildUserScheduleFromGames } from './schedule';
 import { getBettingOddsData, getHeadlinesData } from '../db/baseData';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
 import {
@@ -21,6 +22,7 @@ import {
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../db/db';
 import type { Drive, Play, GameData } from '../types/game';
 import { ensureRosters } from './roster';
+import { CONFERENCE_CHAMPIONSHIP_WEEK, ensureLeaguePostseasonState } from './league/postseason';
 
 const DRIVES_PER_TEAM = 12;
 const OT_START_YARD_LINE = 75;
@@ -625,7 +627,23 @@ const updateTeamRecords = (games: SimGame[]) => {
   });
 };
 
-const updateRankings = (info: Info, teams: Team[], weekGames: SimGame[]) => {
+const updateRankings = (
+  info: Info,
+  teams: Team[],
+  weekGames: SimGame[],
+  settings?: LeagueState['settings']
+) => {
+  const playoffTeams = settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const skipWeeks =
+    playoffTeams === 4
+      ? [16]
+      : playoffTeams === 12
+        ? [16, 17, 18]
+        : [];
+  if (skipWeeks.includes(info.currentWeek)) {
+    return;
+  }
+
   const teamGames = new Map<number, SimGame>();
   weekGames.forEach(game => {
     teamGames.set(game.teamA.id, game);
@@ -670,6 +688,29 @@ const buildWatchability = (game: GameRecord, numTeams: number) => {
   return Math.round((watchability / maxPossible) * 1000) / 10;
 };
 
+type OddsContext = {
+  oddsMap: Record<
+    string,
+    {
+      favSpread: string;
+      udSpread: string;
+      favWinProb: number;
+      udWinProb: number;
+      favMoneyline: string;
+      udMoneyline: string;
+    }
+  >;
+  maxDiff: number;
+};
+
+const loadOddsContext = async (): Promise<OddsContext> => {
+  const oddsData = await getBettingOddsData();
+  return {
+    oddsMap: oddsData.odds ?? {},
+    maxDiff: oddsData.max_diff ?? 100,
+  };
+};
+
 const buildBaseLabel = (team: Team, opponent: Team, name?: string | null) => {
   if (name) return name;
   const teamConf = team.conference;
@@ -684,6 +725,395 @@ const buildBaseLabel = (team: Team, opponent: Team, name?: string | null) => {
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
   teamA.conference !== 'Independent' && teamA.conference === teamB.conference;
+
+const updateTeamGameCounts = (teamA: Team, teamB: Team) => {
+  if (isConferenceGame(teamA, teamB)) {
+    teamA.confGames += 1;
+    teamB.confGames += 1;
+  } else {
+    teamA.nonConfGames += 1;
+    teamB.nonConfGames += 1;
+  }
+};
+
+const createGameRecord = (
+  league: LeagueState,
+  teamA: Team,
+  teamB: Team,
+  weekPlayed: number,
+  name: string,
+  oddsContext: OddsContext,
+  options?: { neutralSite?: boolean; homeTeam?: Team | null; awayTeam?: Team | null }
+) => {
+  const neutralSite = options?.neutralSite ?? true;
+  const homeTeam = neutralSite ? null : options?.homeTeam ?? teamA;
+  const awayTeam = neutralSite ? null : options?.awayTeam ?? teamB;
+
+  let ratingA = teamA.rating;
+  let ratingB = teamB.rating;
+  if (!neutralSite && homeTeam) {
+    if (homeTeam.id === teamA.id) ratingA += HOME_FIELD_ADVANTAGE;
+    if (homeTeam.id === teamB.id) ratingB += HOME_FIELD_ADVANTAGE;
+  }
+
+  const diff = Math.min(
+    oddsContext.maxDiff,
+    Math.abs(Math.round(ratingA - ratingB))
+  );
+  const odds =
+    oddsContext.oddsMap[String(diff)] ??
+    oddsContext.oddsMap[String(oddsContext.maxDiff)] ?? {
+      favSpread: '-1.5',
+      udSpread: '+1.5',
+      favWinProb: 0.6,
+      udWinProb: 0.4,
+      favMoneyline: '-120',
+      udMoneyline: '+120',
+    };
+
+  const isTeamAFav = ratingA >= ratingB;
+  const record: GameRecord = {
+    id: nextId(league, 'game'),
+    teamAId: teamA.id,
+    teamBId: teamB.id,
+    homeTeamId: homeTeam?.id ?? null,
+    awayTeamId: awayTeam?.id ?? null,
+    neutralSite,
+    winnerId: null,
+    baseLabel: buildBaseLabel(teamA, teamB, name),
+    name,
+    spreadA: isTeamAFav ? odds.favSpread : odds.udSpread,
+    spreadB: isTeamAFav ? odds.udSpread : odds.favSpread,
+    moneylineA: isTeamAFav ? odds.favMoneyline : odds.udMoneyline,
+    moneylineB: isTeamAFav ? odds.udMoneyline : odds.favMoneyline,
+    winProbA: isTeamAFav ? odds.favWinProb : odds.udWinProb,
+    winProbB: isTeamAFav ? odds.udWinProb : odds.favWinProb,
+    weekPlayed,
+    year: league.info.currentYear,
+    rankATOG: teamA.ranking,
+    rankBTOG: teamB.ranking,
+    resultA: null,
+    resultB: null,
+    overtime: 0,
+    scoreA: null,
+    scoreB: null,
+    headline: null,
+    watchability: null,
+  };
+  record.watchability = buildWatchability(record, league.teams.length);
+  updateTeamGameCounts(teamA, teamB);
+  return record;
+};
+
+const sortConferenceTeams = (teams: Team[]) => {
+  return teams.slice().sort((a, b) => {
+    const aGames = a.confWins + a.confLosses;
+    const bGames = b.confWins + b.confLosses;
+    const aPct = aGames ? a.confWins / aGames : 0;
+    const bPct = bGames ? b.confWins / bGames : 0;
+    if (bPct !== aPct) return bPct - aPct;
+    if (b.confWins !== a.confWins) return b.confWins - a.confWins;
+    if (a.ranking !== b.ranking) return a.ranking - b.ranking;
+    if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
+    return a.totalLosses - b.totalLosses;
+  });
+};
+
+const getConferenceChampion = async (
+  league: LeagueState,
+  conferenceName: string,
+  teamsById: Map<number, Team>
+) => {
+  const conference = league.conferences.find(conf => conf.confName === conferenceName);
+  if (!conference || conference.confName === 'Independent') return null;
+
+  if (conference.championship) {
+    const game = await getGameById(conference.championship);
+    if (game?.winnerId) {
+      return teamsById.get(game.winnerId) ?? null;
+    }
+  }
+
+  const conferenceTeams = league.teams.filter(team => team.conference === conferenceName);
+  const sorted = sortConferenceTeams(conferenceTeams);
+  return sorted[0] ?? null;
+};
+
+const getPlayoffTeamOrder = async (
+  league: LeagueState,
+  teamsById: Map<number, Team>
+) => {
+  const playoffAutobids = league.settings?.playoff_autobids ?? DEFAULT_SETTINGS.playoff_autobids ?? 0;
+  const playoffConfChampTop4 = league.settings?.playoff_conf_champ_top_4 ?? DEFAULT_SETTINGS.playoff_conf_champ_top_4 ?? false;
+
+  const conferenceNames = league.conferences
+    .map(conf => conf.confName)
+    .filter(confName => confName !== 'Independent');
+
+  const champions: Team[] = [];
+  for (const confName of conferenceNames) {
+    const champion = await getConferenceChampion(league, confName, teamsById);
+    if (champion) champions.push(champion);
+  }
+
+  champions.sort((a, b) => a.ranking - b.ranking);
+
+  const autobids = champions.slice(0, playoffAutobids);
+  const autobidIds = new Set(autobids.map(team => team.id));
+  const wildCards = league.teams
+    .filter(team => !autobidIds.has(team.id))
+    .sort((a, b) => a.ranking - b.ranking);
+
+  const cutoff = 8 - (playoffAutobids - 4);
+  const nonPlayoffTeams = wildCards.slice(cutoff);
+  const wildCardPool = wildCards.slice(0, cutoff);
+
+  let byes: Team[] = [];
+  let remainingAutobids: Team[] = [];
+  let remainingWildCards: Team[] = [];
+
+  if (playoffConfChampTop4) {
+    byes = autobids.slice(0, 4);
+    remainingAutobids = autobids.slice(4);
+    remainingWildCards = wildCardPool.slice();
+  } else {
+    const allCandidates = [...autobids, ...wildCardPool].sort((a, b) => a.ranking - b.ranking);
+    byes = allCandidates.slice(0, 4);
+    const byeIds = new Set(byes.map(team => team.id));
+    remainingAutobids = autobids.filter(team => !byeIds.has(team.id));
+    remainingWildCards = wildCardPool.filter(team => !byeIds.has(team.id));
+  }
+
+  const seededRest = [...remainingWildCards, ...remainingAutobids].sort((a, b) => a.ranking - b.ranking);
+  return [...byes, ...seededRest, ...nonPlayoffTeams];
+};
+
+const setConferenceChampionships = async (league: LeagueState, oddsContext: OddsContext) => {
+  const gamesToCreate: GameRecord[] = [];
+  league.conferences.forEach(conference => {
+    if (conference.confName === 'Independent') return;
+    if (conference.championship) return;
+
+    const conferenceTeams = league.teams.filter(team => team.conference === conference.confName);
+    const sortedTeams = sortConferenceTeams(conferenceTeams);
+    const teamA = sortedTeams[0];
+    const teamB = sortedTeams[1];
+    if (!teamA || !teamB) return;
+
+    const game = createGameRecord(
+      league,
+      teamA,
+      teamB,
+      CONFERENCE_CHAMPIONSHIP_WEEK,
+      `${conference.confName} championship`,
+      oddsContext,
+      { neutralSite: true }
+    );
+    conference.championship = game.id;
+    gamesToCreate.push(game);
+  });
+
+  if (gamesToCreate.length) {
+    await saveGames(gamesToCreate);
+  }
+};
+
+const setPlayoffR1 = async (league: LeagueState, oddsContext: OddsContext) => {
+  if (!league.playoff) {
+    league.playoff = { seeds: [] };
+  }
+  if (league.playoff.left_r1_1 || league.playoff.left_r1_2 || league.playoff.right_r1_1 || league.playoff.right_r1_2) {
+    return;
+  }
+
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const teams = await getPlayoffTeamOrder(league, teamsById);
+  const seeds = teams.slice(0, 12);
+  if (seeds.length < 12) return;
+
+  seeds.forEach((team, index) => {
+    team.ranking = index + 1;
+  });
+
+  league.playoff.seeds = seeds.map(team => team.id);
+
+  const week = CONFERENCE_CHAMPIONSHIP_WEEK + 1;
+  const gamesToCreate = [
+    createGameRecord(league, seeds[7], seeds[8], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[4], seeds[11], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[6], seeds[9], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[5], seeds[10], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
+  ];
+
+  league.playoff.left_r1_1 = gamesToCreate[0].id;
+  league.playoff.left_r1_2 = gamesToCreate[1].id;
+  league.playoff.right_r1_1 = gamesToCreate[2].id;
+  league.playoff.right_r1_2 = gamesToCreate[3].id;
+
+  await saveGames(gamesToCreate);
+};
+
+const setPlayoffQuarter = async (league: LeagueState, oddsContext: OddsContext) => {
+  if (!league.playoff) return;
+  if (league.playoff.left_quarter_1 || league.playoff.left_quarter_2 || league.playoff.right_quarter_1 || league.playoff.right_quarter_2) {
+    return;
+  }
+
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const seeds = (league.playoff.seeds ?? [])
+    .map(id => teamsById.get(id))
+    .filter(Boolean) as Team[];
+  if (seeds.length < 4) return;
+
+  const r1Ids = [
+    league.playoff.left_r1_1,
+    league.playoff.left_r1_2,
+    league.playoff.right_r1_1,
+    league.playoff.right_r1_2,
+  ];
+  const r1Games = await Promise.all(r1Ids.map(id => (id ? getGameById(id) : null)));
+  if (r1Games.some(game => !game?.winnerId)) return;
+
+  const winners = r1Games.map(game => teamsById.get(game!.winnerId!)).filter(Boolean) as Team[];
+  if (winners.length < 4) return;
+
+  const week = CONFERENCE_CHAMPIONSHIP_WEEK + 2;
+  const gamesToCreate = [
+    createGameRecord(league, seeds[0], winners[0], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[3], winners[1], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[1], winners[2], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[2], winners[3], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
+  ];
+
+  league.playoff.left_quarter_1 = gamesToCreate[0].id;
+  league.playoff.left_quarter_2 = gamesToCreate[1].id;
+  league.playoff.right_quarter_1 = gamesToCreate[2].id;
+  league.playoff.right_quarter_2 = gamesToCreate[3].id;
+
+  await saveGames(gamesToCreate);
+};
+
+const setPlayoffSemi = async (league: LeagueState, oddsContext: OddsContext) => {
+  if (!league.playoff) {
+    league.playoff = { seeds: [] };
+  }
+  if (league.playoff.left_semi || league.playoff.right_semi) {
+    return;
+  }
+
+  const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const week = playoffTeams === 4
+    ? CONFERENCE_CHAMPIONSHIP_WEEK + 1
+    : CONFERENCE_CHAMPIONSHIP_WEEK + 3;
+
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const gamesToCreate: GameRecord[] = [];
+
+  if (playoffTeams === 4) {
+    const seeds = league.teams
+      .slice()
+      .sort((a, b) => a.ranking - b.ranking)
+      .slice(0, 4);
+    if (seeds.length < 4) return;
+    league.playoff.seeds = seeds.map(team => team.id);
+
+    gamesToCreate.push(
+      createGameRecord(league, seeds[0], seeds[3], week, 'Playoff semifinal', oddsContext, { neutralSite: true }),
+      createGameRecord(league, seeds[1], seeds[2], week, 'Playoff semifinal', oddsContext, { neutralSite: true })
+    );
+  } else {
+    const quarterIds = [
+      league.playoff.left_quarter_1,
+      league.playoff.left_quarter_2,
+      league.playoff.right_quarter_1,
+      league.playoff.right_quarter_2,
+    ];
+    const quarterGames = await Promise.all(quarterIds.map(id => (id ? getGameById(id) : null)));
+    if (quarterGames.some(game => !game?.winnerId)) return;
+
+    const winners = quarterGames.map(game => teamsById.get(game!.winnerId!)).filter(Boolean) as Team[];
+    if (winners.length < 4) return;
+
+    gamesToCreate.push(
+      createGameRecord(league, winners[0], winners[1], week, 'Playoff semifinal', oddsContext, { neutralSite: true }),
+      createGameRecord(league, winners[2], winners[3], week, 'Playoff semifinal', oddsContext, { neutralSite: true })
+    );
+  }
+
+  league.playoff.left_semi = gamesToCreate[0]?.id;
+  league.playoff.right_semi = gamesToCreate[1]?.id;
+
+  if (gamesToCreate.length) {
+    await saveGames(gamesToCreate);
+  }
+};
+
+const setNatty = async (league: LeagueState, oddsContext: OddsContext) => {
+  if (!league.playoff) {
+    league.playoff = { seeds: [] };
+  }
+  if (league.playoff.natty) {
+    return;
+  }
+
+  const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const week = playoffTeams === 2
+    ? CONFERENCE_CHAMPIONSHIP_WEEK + 1
+    : playoffTeams === 4
+      ? CONFERENCE_CHAMPIONSHIP_WEEK + 2
+      : CONFERENCE_CHAMPIONSHIP_WEEK + 4;
+
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  let teamA: Team | null = null;
+  let teamB: Team | null = null;
+
+  if (playoffTeams === 2) {
+    const seeds = league.teams
+      .slice()
+      .sort((a, b) => a.ranking - b.ranking)
+      .slice(0, 2);
+    league.playoff.seeds = seeds.map(team => team.id);
+    [teamA, teamB] = seeds;
+  } else {
+    const leftSemi = league.playoff.left_semi ? await getGameById(league.playoff.left_semi) : null;
+    const rightSemi = league.playoff.right_semi ? await getGameById(league.playoff.right_semi) : null;
+    if (!leftSemi?.winnerId || !rightSemi?.winnerId) return;
+    teamA = teamsById.get(leftSemi.winnerId) ?? null;
+    teamB = teamsById.get(rightSemi.winnerId) ?? null;
+  }
+
+  if (!teamA || !teamB) return;
+  const game = createGameRecord(league, teamA, teamB, week, 'National Championship', oddsContext, { neutralSite: true });
+  league.playoff.natty = game.id;
+  await saveGames([game]);
+};
+
+const handleSpecialWeeks = async (league: LeagueState, oddsContext: OddsContext) => {
+  const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const specialActions: Record<number, Record<number, (league: LeagueState, oddsContext: OddsContext) => Promise<void>>> = {
+    2: {
+      14: setConferenceChampionships,
+      15: setNatty,
+    },
+    4: {
+      14: setConferenceChampionships,
+      15: setPlayoffSemi,
+      16: setNatty,
+    },
+    12: {
+      14: setConferenceChampionships,
+      15: setPlayoffR1,
+      16: setPlayoffQuarter,
+      17: setPlayoffSemi,
+      18: setNatty,
+    },
+  };
+
+  const action = specialActions[playoffTeams]?.[league.info.currentWeek];
+  if (action) {
+    await action(league, oddsContext);
+  }
+};
 
 const hydrateGame = (game: GameRecord, teamsById: Map<number, Team>): SimGame => ({
   id: game.id,
@@ -976,36 +1406,6 @@ const generateHeadlines = async (
   });
 };
 
-const updateUserScheduleFromGame = (schedule: ScheduleGame[], game: SimGame, userTeam: Team) => {
-  if (game.weekPlayed <= 0 || game.weekPlayed > schedule.length) return;
-  if (game.teamA.id !== userTeam.id && game.teamB.id !== userTeam.id) return;
-
-  const slot = schedule[game.weekPlayed - 1];
-  if (!slot) return;
-
-  const isTeamA = game.teamA.id === userTeam.id;
-  const userScore = isTeamA ? game.scoreA : game.scoreB;
-  const oppScore = isTeamA ? game.scoreB : game.scoreA;
-  slot.score = `${userScore}-${oppScore}`;
-  slot.result = isTeamA ? (game.resultA ?? '') : (game.resultB ?? '');
-  slot.spread = isTeamA ? game.spreadA : game.spreadB;
-  slot.moneyline = isTeamA ? game.moneylineA : game.moneylineB;
-};
-
-const updateUserSchedulePreviewFromRecord = (
-  schedule: ScheduleGame[],
-  game: GameRecord,
-  userTeam: Team
-) => {
-  if (game.weekPlayed <= 0 || game.weekPlayed > schedule.length) return;
-  if (game.teamAId !== userTeam.id && game.teamBId !== userTeam.id) return;
-  const slot = schedule[game.weekPlayed - 1];
-  if (!slot) return;
-  const isTeamA = game.teamAId === userTeam.id;
-  slot.spread = isTeamA ? game.spreadA : game.spreadB;
-  slot.moneyline = isTeamA ? game.moneylineA : game.moneylineB;
-};
-
 const buildStartersCache = async (teams: Team[]) => {
   const byTeamPos = new Map<string, PlayerRecord[]>();
   for (const team of teams) {
@@ -1029,6 +1429,11 @@ const loadPlayersMap = async (teams: Team[]) => {
   return map;
 };
 
+const stripLegacySchedule = (league: LeagueState) => {
+  if ('schedule' in league) {
+    delete (league as Record<string, unknown>).schedule;
+  }
+};
 
 export const initializeSimData = async (league: LeagueState, fullGames: FullGame[]) => {
   const counters = normalizeCounters(league);
@@ -1092,11 +1497,6 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
     counters.game += 1;
   });
 
-  const userTeam = league.teams.find(team => team.name === league.info.team);
-  if (userTeam) {
-    gameRecords.forEach(game => updateUserSchedulePreviewFromRecord(league.schedule, game, userTeam));
-  }
-
   await saveGames(gameRecords);
 
   league.simInitialized = true;
@@ -1106,6 +1506,7 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
 export const getGamesToLiveSim = async () => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
+  stripLegacySchedule(league);
   const games = await getGamesByWeek(league.info.currentWeek);
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
@@ -1142,6 +1543,7 @@ export const getGamesToLiveSim = async () => {
 export const liveSimGame = async (gameId: number) => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
+  stripLegacySchedule(league);
   const record = await getGameById(gameId);
   if (!record) throw new Error('Game not found.');
 
@@ -1189,7 +1591,6 @@ export const liveSimGame = async (gameId: number) => {
   await savePlays(playRecords);
   await saveGameLogs(logs);
 
-  if (userTeam) updateUserScheduleFromGame(league.schedule, simGameObj, userTeam);
   league.teams.forEach(team => (team.record = formatRecord(team)));
   await saveLeague(league);
 
@@ -1207,10 +1608,18 @@ export const liveSimGame = async (gameId: number) => {
 export const advanceWeeks = async (destWeek: number) => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
-  if (!league.scheduleBuilt) throw new Error('Schedule not built yet.');
-  if (!league.simInitialized) {
+  stripLegacySchedule(league);
+  const changed = ensureLeaguePostseasonState(league);
+  if (changed) {
+    await saveLeague(league);
+  }
+  if (!league.scheduleBuilt || !league.simInitialized) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const fullGames = fillUserSchedule(league.schedule, userTeam, league.teams);
+    const existingGames = await getAllGames();
+    const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
+    const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
+    league.info.stage = 'season';
+    league.scheduleBuilt = true;
     await initializeSimData(league, fullGames);
   }
 
@@ -1218,6 +1627,7 @@ export const advanceWeeks = async (destWeek: number) => {
   const starters = await buildStartersCache(league.teams);
   const playersById = await loadPlayersMap(league.teams);
   const userTeam = league.teams.find(team => team.name === league.info.team);
+  const oddsContext = await loadOddsContext();
 
   const drivesToSave: DriveRecord[] = [];
   const playsToSave: PlayRecord[] = [];
@@ -1258,10 +1668,8 @@ export const advanceWeeks = async (destWeek: number) => {
         const gameRecord = unplayed.find(game => game.id === simGameObj.id);
         if (gameRecord) gameRecord.headline = simGameObj.headline;
       });
-      if (userTeam) {
-        simGames.forEach(game => updateUserScheduleFromGame(league.schedule, game, userTeam));
-      }
-      updateRankings(league.info, league.teams, simGames);
+      updateRankings(league.info, league.teams, simGames, league.settings);
+      await handleSpecialWeeks(league, oddsContext);
 
       const futureGames = await getAllGames();
       const updatedById = new Map(unplayed.map(game => [game.id, game]));

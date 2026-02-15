@@ -2,12 +2,13 @@ import type { ScheduleGame, Team } from '../types/domain';
 import type { FullGame } from '../types/schedule';
 import type { NonConData } from '../types/league';
 import { getRivalriesData } from '../db/baseData';
+import type { GameRecord } from '../db/db';
 
 const REGULAR_SEASON_WEEKS = 14;
 const REGULAR_SEASON_GAMES = 12;
 
-export const buildSchedule = (): ScheduleGame[] =>
-  Array.from({ length: REGULAR_SEASON_WEEKS }, (_, index) => ({
+export const buildSchedule = (weeks = REGULAR_SEASON_WEEKS): ScheduleGame[] =>
+  Array.from({ length: weeks }, (_, index) => ({
     weekPlayed: index + 1,
     opponent: null,
     result: '',
@@ -16,6 +17,60 @@ export const buildSchedule = (): ScheduleGame[] =>
     moneyline: '',
     id: '',
   }));
+
+export const buildUserScheduleFromGames = (
+  userTeam: Team,
+  teams: Team[],
+  games: GameRecord[],
+  weeks = REGULAR_SEASON_WEEKS
+): ScheduleGame[] => {
+  const schedule = buildSchedule(weeks);
+  const teamsById = new Map(teams.map(team => [team.id, team]));
+
+  games.forEach(game => {
+    if (!game.weekPlayed || game.weekPlayed < 1 || game.weekPlayed > weeks) return;
+    if (game.teamAId !== userTeam.id && game.teamBId !== userTeam.id) return;
+
+    const slot = schedule[game.weekPlayed - 1];
+    if (!slot) return;
+
+    const opponentId = game.teamAId === userTeam.id ? game.teamBId : game.teamAId;
+    const opponent = teamsById.get(opponentId);
+    if (!opponent) return;
+
+    const isTeamA = game.teamAId === userTeam.id;
+    const scoreA = game.scoreA ?? 0;
+    const scoreB = game.scoreB ?? 0;
+    if (game.winnerId) {
+      const userScore = isTeamA ? scoreA : scoreB;
+      const oppScore = isTeamA ? scoreB : scoreA;
+      slot.score = `${userScore}-${oppScore}`;
+      slot.result = game.winnerId === userTeam.id ? 'W' : 'L';
+    }
+    slot.spread = isTeamA ? game.spreadA : game.spreadB;
+    slot.moneyline = isTeamA ? game.moneylineA : game.moneylineB;
+
+    slot.opponent = {
+      name: opponent.name,
+      rating: opponent.rating,
+      ranking: opponent.ranking,
+      record: opponent.record,
+    };
+
+    const label = game.name ?? game.baseLabel ?? buildLabel(userTeam, opponent);
+    slot.label = label;
+    slot.location = game.neutralSite
+      ? 'Neutral'
+      : game.homeTeamId === userTeam.id
+        ? 'Home'
+        : game.awayTeamId === userTeam.id
+          ? 'Away'
+          : undefined;
+    slot.id = `${game.id}`;
+  });
+
+  return schedule;
+};
 
 export const applyRivalriesToSchedule = async (
   schedule: ScheduleGame[],
@@ -127,12 +182,12 @@ const buildOpponentCard = (team: Team) => ({
   record: team.record,
 });
 
-const buildLabel = (userTeam: Team, opponent: Team) => {
+function buildLabel(userTeam: Team, opponent: Team) {
   if (isConferenceGame(userTeam, opponent)) {
     return `C (${userTeam.conference})`;
   }
   return opponent.conference ? `NC (${opponent.conference})` : 'NC (Ind)';
-};
+}
 
 const resetTeamScheduleCounts = (teams: Team[]) => {
   teams.forEach(team => {

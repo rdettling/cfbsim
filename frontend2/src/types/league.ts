@@ -22,15 +22,30 @@ export interface NonConData {
   conferences: Conference[];
 }
 
+export interface PlayoffState {
+  seeds: number[];
+  left_r1_1?: number;
+  left_r1_2?: number;
+  right_r1_1?: number;
+  right_r1_2?: number;
+  left_quarter_1?: number;
+  left_quarter_2?: number;
+  right_quarter_1?: number;
+  right_quarter_2?: number;
+  left_semi?: number;
+  right_semi?: number;
+  natty?: number;
+}
+
 export interface LeagueState {
   info: Info;
   teams: Team[];
   conferences: Conference[];
-  schedule: ScheduleGame[];
   pending_rivalries: NonConData['pending_rivalries'];
   scheduleBuilt?: boolean;
   simInitialized?: boolean;
   settings?: Settings;
+  playoff?: PlayoffState;
   idCounters?: {
     game: number;
     drive: number;
