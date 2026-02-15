@@ -20,6 +20,7 @@ import Realignment from './pages/Realignment';
 import RosterProgression from './pages/RosterProgression';
 import RecruitingSummary from './pages/RecruitingSummary';
 import RosterCuts from './pages/RosterCuts';
+import Playoff from './pages/Playoff';
 
 const App = () => {
   return (
@@ -43,6 +44,7 @@ const App = () => {
         <Route path="/roster_progression" element={<RosterProgression />} />
         <Route path="/recruiting_summary" element={<RecruitingSummary />} />
         <Route path="/roster_cuts" element={<RosterCuts />} />
+        <Route path="/playoff" element={<Playoff />} />
         <Route path="/game/:id" element={<Game />} />
         <Route path="/players/:playerId" element={<Player />} />
         <Route path="/stats/team" element={<TeamStats />} />

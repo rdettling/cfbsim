@@ -3,6 +3,7 @@ import type { loadAwards, loadSeasonSummary, loadRealignment, loadRosterProgress
 import type { loadRankings, loadSettings } from '../domain/league/loaders';
 import type { loadRatingsStats, loadStandings } from '../domain/league/loaders/stats';
 import type { loadTeamRoster, loadTeamHistory, loadPlayer, getTeamInfo } from '../domain/league/loaders/team';
+import type { loadPlayoff } from '../domain/league/loaders/playoff';
 import type { loadIndividualStats } from '../domain/league/stats';
 
 export type HomePageData = Awaited<ReturnType<typeof loadHomeData>>;
@@ -28,3 +29,4 @@ export type TeamInfoData = Awaited<ReturnType<typeof getTeamInfo>>;
 export type AvailableTeamsData = Awaited<ReturnType<typeof listAvailableTeams>>;
 export type StartNewLeagueData = Awaited<ReturnType<typeof startNewLeague>>;
 export type IndividualStatsPageData = Awaited<ReturnType<typeof loadIndividualStats>>;
+export type PlayoffPageData = Awaited<ReturnType<typeof loadPlayoff>>;
