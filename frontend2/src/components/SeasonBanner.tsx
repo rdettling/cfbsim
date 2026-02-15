@@ -4,6 +4,7 @@ import { ROUTES } from '../constants/routes';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingDialog from './LoadingDialog';
+import { advanceWeeks } from '../domain/sim';
 
 interface SeasonBannerProps {
     info: Info & { lastWeek: number };
@@ -41,11 +42,11 @@ const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#fffff
 
     const handleAdvance = async (destWeek: number) => {
         setAnchorEl(null);
-        setSimulationMessage(`Simulating Week ${info.currentWeek}`);
+        setSimulationMessage(`Simulating to Week ${destWeek}`);
         setIsSimulating(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            window.dispatchEvent(new Event('pageDataRefresh'));
+            await advanceWeeks(destWeek);
+            window.location.reload();
         } catch (error) {
             console.error('Error simulating weeks:', error);
         } finally {

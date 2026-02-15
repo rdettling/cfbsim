@@ -30,13 +30,17 @@ export interface Team {
   confName?: string;
   confWins: number;
   confLosses: number;
+  nonConfWins: number;
+  nonConfLosses: number;
   rating: number;
   totalWins: number;
   totalLosses: number;
+  gamesPlayed: number;
   record: string;
   movement: number;
-  poll_score?: number;
-  strength_of_record?: number;
+  poll_score: number;
+  strength_of_record: number;
+  last_rank?: number;
   last_game: ScheduleGame | null;
   next_game: ScheduleGame | null;
 }

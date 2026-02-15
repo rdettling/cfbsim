@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { TeamLogo } from './TeamComponents';
+import { getGamesToLiveSim } from '../domain/sim';
 
 interface Game {
     id: number;
@@ -51,9 +52,9 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
     const fetchGames = async () => {
         setLoading(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            setGames([]);
-            setWeek(0);
+            const response = await getGamesToLiveSim();
+            setGames(response.games);
+            setWeek(response.week);
         } catch (error) {
             console.error('Error fetching games:', error);
         } finally {

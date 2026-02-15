@@ -12,6 +12,7 @@ import GameHeader from "./GameHeader";
 import GameControls from "./GameControls";
 import { Play, Drive, GameData } from "../types/game";
 import { useState, useEffect } from "react";
+import { liveSimGame } from "../domain/sim";
 
 interface LiveSimModalProps {
     open: boolean;
@@ -52,8 +53,8 @@ const LiveSimModal = ({
         if (!gameId) return;
         
         try {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            handleRegularResponse({ drives: [], game: null });
+            const response = await liveSimGame(gameId);
+            handleRegularResponse(response);
         } catch (error) {
             console.error('❌ Error starting simulation:', error);
         }

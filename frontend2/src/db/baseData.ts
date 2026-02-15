@@ -30,3 +30,26 @@ export const getRivalriesData = () =>
     'rivalries',
     '/data/rivalries.json'
   );
+export const getHeadlinesData = () =>
+  getBaseData<Record<string, string[]>>('headlines', '/data/headlines.json');
+export const getNamesData = () =>
+  getBaseData<Record<string, { first: Array<{ name: string; weight: number }>; last: Array<{ name: string; weight: number }> }>>(
+    'names',
+    '/data/names.json'
+  );
+export const getBettingOddsData = () =>
+  getBaseData<{
+    generated_at?: string;
+    max_diff?: number;
+    odds: Record<
+      string,
+      {
+        favSpread: string;
+        udSpread: string;
+        favWinProb: number;
+        udWinProb: number;
+        favMoneyline: string;
+        udMoneyline: string;
+      }
+    >;
+  }>('betting_odds', '/data/betting_odds.json');

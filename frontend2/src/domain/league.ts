@@ -1,6 +1,7 @@
 import type { Conference, Info, ScheduleGame, Team } from './types';
 import { getYearsIndex } from '../db/baseData';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
+import { clearSimData } from '../db/simRepo';
 import { buildPreviewData, buildTeamsAndConferences, type PreviewData } from './baseData';
 import {
   buildSchedule,
@@ -9,6 +10,7 @@ import {
   listAvailableTeams as listTeamsForWeek,
   scheduleNonConGame as scheduleGameForWeek,
 } from './schedule';
+import { initializeSimData } from './sim';
 
 export interface LaunchProps {
   years: string[];
@@ -39,6 +41,14 @@ interface LeagueState {
   schedule: ScheduleGame[];
   pending_rivalries: NonConData['pending_rivalries'];
   scheduleBuilt?: boolean;
+  simInitialized?: boolean;
+  idCounters?: {
+    game: number;
+    drive: number;
+    play: number;
+    gameLog: number;
+    player: number;
+  };
 }
 
 export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
@@ -57,6 +67,7 @@ export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
 };
 
 export const startNewLeague = async (teamName: string, year: string): Promise<NonConData> => {
+  await clearSimData();
   const { teams, conferences } = await buildTeamsAndConferences(year);
   const userTeam = teams.find(team => team.name === teamName) ?? teams[0];
 
@@ -77,6 +88,14 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
     schedule: buildSchedule(),
     pending_rivalries: [],
     scheduleBuilt: false,
+    simInitialized: false,
+    idCounters: {
+      game: 1,
+      drive: 1,
+      play: 1,
+      gameLog: 1,
+      player: 1,
+    },
   };
 
   league.pending_rivalries = await applyRivalriesToSchedule(
@@ -119,10 +138,10 @@ export const loadDashboard = async () => {
 
   if (!league.scheduleBuilt) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    fillUserSchedule(league.schedule, userTeam, league.teams);
+    const fullGames = fillUserSchedule(league.schedule, userTeam, league.teams);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
-    await saveLeague(league);
+    await initializeSimData(league, fullGames);
   }
 
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];

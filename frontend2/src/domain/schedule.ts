@@ -5,7 +5,7 @@ import type { NonConData } from './league';
 const REGULAR_SEASON_WEEKS = 14;
 const REGULAR_SEASON_GAMES = 12;
 
-interface FullGame {
+export interface FullGame {
   teamA: Team;
   teamB: Team;
   weekPlayed: number;
@@ -149,7 +149,11 @@ const resetTeamScheduleCounts = (teams: Team[]) => {
   });
 };
 
-export const fillUserSchedule = (schedule: ScheduleGame[], userTeam: Team, teams: Team[]) => {
+export const fillUserSchedule = (
+  schedule: ScheduleGame[],
+  userTeam: Team,
+  teams: Team[]
+): FullGame[] => {
   resetTeamScheduleCounts(teams);
   const teamByName = new Map(teams.map(team => [team.name, team]));
   const scheduledOpponents = new Map<number, Set<number>>(
@@ -483,6 +487,8 @@ export const fillUserSchedule = (schedule: ScheduleGame[], userTeam: Team, teams
         ? existingId
         : `${game.teamA.name}-vs-${game.teamB.name}-week-${game.weekPlayed}`;
   });
+
+  return games;
 };
 
 export const listAvailableTeams = (
