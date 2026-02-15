@@ -391,10 +391,10 @@ const recruitingCycle = async (
   league: LeagueState,
   teams: Team[],
   players: PlayerRecord[],
-  classTargets: Record<number, Record<string, number>>,
   names: { black: { first: string[]; last: string[] }; white: { first: string[]; last: string[] } },
   states: string[],
-  stateWeights: number[]
+  stateWeights: number[],
+  classTargets?: Record<number, Record<string, number>>
 ) => {
   const rosterCounts = getRosterCounts(players, teams);
   const teamNeeds = buildTeamNeeds(teams, rosterCounts);
@@ -539,7 +539,7 @@ export const runRecruitingCycle = async (
     stateWeights.push(1);
   }
 
-  await recruitingCycle(league, teams, players, undefined, names, states, stateWeights);
+  await recruitingCycle(league, teams, players, names, states, stateWeights);
 };
 
 export const previewRosterCuts = (players: PlayerRecord[], teamId: number) => {
@@ -575,7 +575,7 @@ export const initializeRosters = async (league: LeagueState) => {
   const players: PlayerRecord[] = [];
   const classTargets = buildClassTargets(teams);
 
-  await recruitingCycle(league, teams, players, classTargets, names, states, stateWeights);
+  await recruitingCycle(league, teams, players, names, states, stateWeights, classTargets);
   for (let cycle = 0; cycle < RECRUIT_CLASS_YEARS - 1; cycle += 1) {
     players.forEach(player => {
       if (!player.active) return;
@@ -590,7 +590,7 @@ export const initializeRosters = async (league: LeagueState) => {
         player.rating = player.rating_sr;
       }
     });
-    await recruitingCycle(league, teams, players, classTargets, names, states, stateWeights);
+    await recruitingCycle(league, teams, players, names, states, stateWeights, classTargets);
   }
 
   applyRosterCuts(teams, players);

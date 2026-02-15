@@ -91,20 +91,16 @@ const Realignment = () => {
 
   if (loading) {
     return (
-      <PageLayout>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
-          <Typography>Loading...</Typography>
-        </Box>
+      <PageLayout loading={loading} error={null}>
+        {null}
       </PageLayout>
     );
   }
 
   if (error || !data || !settings) {
     return (
-      <PageLayout>
-        <Alert severity="error">
-          {error || 'Failed to load realignment data'}
-        </Alert>
+      <PageLayout loading={false} error={error || 'Failed to load realignment data'}>
+        {null}
       </PageLayout>
     );
   }
