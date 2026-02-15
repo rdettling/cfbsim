@@ -38,6 +38,7 @@ export const NonCon = () => {
     const isFromHome = location.state?.fromHome === true;
     const teamFromHome = location.state?.team;
     const yearFromHome = location.state?.year;
+    const playoffFromHome = location.state?.playoff;
 
     const fetchData = async () => {
         try {
@@ -46,7 +47,11 @@ export const NonCon = () => {
             // Only pass team and year parameters on first load from home page
             if (isFirstLoad && isFromHome && teamFromHome && yearFromHome) {
                 console.log("Creating league with team and year:", teamFromHome, yearFromHome);
-                const responseData = await startNewLeague(teamFromHome, yearFromHome);
+                const responseData = await startNewLeague(
+                    teamFromHome,
+                    yearFromHome,
+                    playoffFromHome
+                );
                 
                 // Clear location state after first load to prevent reusing parameters on refresh
                 setIsFirstLoad(false);

@@ -121,6 +121,11 @@ const Home = () => {
           fromHome: true,
           team: team.name,
           year: selectedYear,
+          playoff: {
+            teams: playoffTeams,
+            autobids: playoffAutobids,
+            conf_champ_top_4: playoffConfChampTop4,
+          },
         },
       });
     } catch (error) {

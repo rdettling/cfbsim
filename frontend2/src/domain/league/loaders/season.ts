@@ -1,5 +1,6 @@
 import type { Info, Team } from '../../../types/domain';
 import type { LaunchProps, LeagueState, NonConData } from '../../../types/league';
+import type { YearData } from '../../../types/baseData';
 import type { GameRecord } from '../../../types/db';
 import { getHistoryData, getYearsIndex, getRatingsData, getYearData } from '../../../db/baseData';
 import { saveLeague } from '../../../db/leagueRepo';
@@ -66,11 +67,40 @@ export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
   };
 };
 
-export const startNewLeague = async (teamName: string, year: string): Promise<NonConData> => {
+type PlayoffInitSettings = {
+  teams: number;
+  autobids?: number;
+  conf_champ_top_4?: boolean;
+};
+
+export const startNewLeague = async (
+  teamName: string,
+  year: string,
+  playoffSettings?: PlayoffInitSettings
+): Promise<NonConData> => {
   await clearAllSimData();
-  const { teams, conferences } = await buildTeamsAndConferences(year);
+  const [yearData, teamsAndConferences] = await Promise.all([
+    getYearData(year),
+    buildTeamsAndConferences(year),
+  ]);
+  const { teams, conferences } = teamsAndConferences;
   const userTeam = teams.find(team => team.name === teamName) ?? teams[0];
   const startYear = Number(year);
+  const typedYearData = yearData as YearData;
+  const yearPlayoff = typedYearData.playoff ?? null;
+  const resolvedPlayoffTeams =
+    playoffSettings?.teams ?? yearPlayoff?.teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const resolvedPlayoffAutobids =
+    playoffSettings?.autobids ??
+    yearPlayoff?.conf_champ_autobids ??
+    (resolvedPlayoffTeams === 12 ? DEFAULT_SETTINGS.playoff_autobids : undefined);
+  const resolvedPlayoffTop4 =
+    playoffSettings?.conf_champ_top_4 ??
+    yearPlayoff?.conf_champ_top_4 ??
+    (resolvedPlayoffTeams === 12 ? DEFAULT_SETTINGS.playoff_conf_champ_top_4 : false);
+  const normalizedPlayoffAutobids =
+    resolvedPlayoffTeams === 12 ? resolvedPlayoffAutobids : undefined;
+  const normalizedPlayoffTop4 = resolvedPlayoffTeams === 12 ? resolvedPlayoffTop4 : false;
 
   const info: Info = {
     currentWeek: 1,
@@ -78,7 +108,7 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
     startYear,
     stage: 'preseason',
     team: userTeam?.name ?? '',
-    lastWeek: getLastWeekByPlayoffTeams(DEFAULT_SETTINGS.playoff_teams),
+    lastWeek: getLastWeekByPlayoffTeams(resolvedPlayoffTeams),
     colorPrimary: userTeam?.colorPrimary,
     colorSecondary: userTeam?.colorSecondary,
   };
@@ -90,7 +120,12 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
     pending_rivalries: [],
     scheduleBuilt: false,
     simInitialized: false,
-    settings: { ...DEFAULT_SETTINGS },
+    settings: {
+      ...DEFAULT_SETTINGS,
+      playoff_teams: resolvedPlayoffTeams,
+      playoff_autobids: normalizedPlayoffAutobids,
+      playoff_conf_champ_top_4: normalizedPlayoffTop4,
+    },
     playoff: { seeds: [] },
     idCounters: {
       game: 1,
