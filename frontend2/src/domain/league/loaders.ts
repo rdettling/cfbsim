@@ -1,8 +1,9 @@
 import type { Conference, Info, ScheduleGame, Team } from '../../types/domain';
-import { getYearsIndex, getRatingsData, getYearData, getHistoryData } from '../../db/baseData';
+import { getYearsIndex, getRatingsData, getYearData, getHistoryData, getTeamsData, getConferencesData } from '../../db/baseData';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
   clearAllSimData,
+  clearSimArtifacts,
   getAllGames,
   getAllPlayers,  
   getGameById,
@@ -10,8 +11,19 @@ import {
   getPlaysByGame,
   getAllGameLogs,
   saveGames,
+  savePlayers,
 } from '../../db/simRepo';
-import { initializeRosters, ensureRosters, POSITION_ORDER } from '../roster';
+import {
+  initializeRosters,
+  ensureRosters,
+  POSITION_ORDER,
+  applyProgression,
+  runRecruitingCycle,
+  previewRosterCuts,
+  applyRosterCuts,
+  setStarters,
+  recalculateTeamRatings,
+} from '../roster';
 import { buildPreviewData, buildTeamsAndConferences } from '../baseData';
 import {
   buildSchedule,
@@ -26,10 +38,11 @@ import { DEFAULT_SETTINGS, ensureSettings, type LaunchProps, type LeagueState, t
 import { getLastWeekByPlayoffTeams } from './postseason';
 import { normalizeLeague } from './normalize';
 import type { GameRecord, GameLogRecord, PlayerRecord } from '../../types/db';
-import type { RatingsData, YearData, HistoryData } from '../../types/baseData';
+import type { RatingsData, YearData, HistoryData, ConferencesData, TeamsData } from '../../types/baseData';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { buildBaseLabel } from '../gameHelpers';
 import { buildAwards } from './awards';
+import type { Settings } from '../../types/domain';
 
 const createNonConGameRecord = async (
   league: LeagueState,
@@ -212,6 +225,74 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
 
 export const loadNonCon = async (): Promise<NonConData> => {
   const league = await loadLeagueOrThrow();
+
+  if (league.info.stage === 'roster_cuts') {
+    const players = await getAllPlayers();
+    applyRosterCuts(league.teams, players);
+    setStarters(league.teams, players);
+    recalculateTeamRatings(league.teams, players);
+
+    league.teams.forEach(team => {
+      team.nonConfGames = 0;
+      team.confGames = 0;
+      team.nonConfWins = 0;
+      team.nonConfLosses = 0;
+      team.confWins = 0;
+      team.confLosses = 0;
+      team.totalWins = 0;
+      team.totalLosses = 0;
+      team.gamesPlayed = 0;
+      team.strength_of_record = 0;
+      team.poll_score = 0;
+      team.record = '0-0 (0-0)';
+      team.movement = 0;
+      team.last_game = null;
+      team.next_game = null;
+    });
+
+    await clearSimArtifacts();
+    league.scheduleBuilt = false;
+    league.simInitialized = false;
+    league.idCounters = {
+      game: 1,
+      drive: 1,
+      play: 1,
+      gameLog: 1,
+      player: league.idCounters?.player ?? 1,
+    };
+
+    const schedule = buildSchedule();
+    const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
+    league.pending_rivalries = await applyRivalriesToSchedule(schedule, userTeam, league.teams);
+
+    const created = await Promise.all(
+      schedule
+        .filter(slot => slot.opponent)
+        .map(slot => {
+          const opponent = league.teams.find(team => team.name === slot.opponent?.name);
+          if (!opponent) return null;
+          userTeam.nonConfGames += 1;
+          opponent.nonConfGames += 1;
+          return createNonConGameRecord(
+            league,
+            userTeam,
+            opponent,
+            slot.weekPlayed,
+            slot.label ?? null,
+            { neutralSite: true }
+          );
+        })
+    );
+    const gamesToSave = created.filter(Boolean) as GameRecord[];
+    if (gamesToSave.length) {
+      await saveGames(gamesToSave);
+    }
+
+    league.info.stage = 'preseason';
+    await savePlayers(players);
+    await saveLeague(league);
+  }
+
   const team = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
   const schedule = await getUserSchedule(league);
   return {
@@ -952,6 +1033,523 @@ export const loadSeasonSummary = async () => {
     awards: [],
     teams: league.teams,
   };
+};
+
+export const loadRealignment = async () => {
+  const league = await loadLeagueOrThrow();
+
+  const changed = ensureSettings(league);
+  if (changed) {
+    await saveLeague(league);
+  }
+
+  if (league.info.stage === 'summary') {
+    league.info.stage = 'realignment';
+    await saveLeague(league);
+  }
+
+  const nextYear = league.info.currentYear + 1;
+  let realignment: Record<string, { old: string; new: string }> = {};
+  let playoff_changes: Record<string, { old: any; new: any }> = {};
+
+  try {
+    const yearData = (await getYearData(String(nextYear))) as YearData;
+
+    const teamDict: Record<string, { old: string; new?: string }> = {};
+    league.teams.forEach(team => {
+      teamDict[team.name] = { old: team.conference || 'Independent' };
+    });
+
+    Object.entries(yearData.conferences ?? {}).forEach(([confName, confData]) => {
+      Object.keys(confData.teams || {}).forEach(teamName => {
+        if (teamDict[teamName]) {
+          teamDict[teamName].new = confName;
+        } else {
+          teamDict[teamName] = { old: 'FCS', new: confName };
+        }
+      });
+    });
+
+    Object.keys(yearData.Independent ?? {}).forEach(teamName => {
+      if (teamDict[teamName]) {
+        teamDict[teamName].new = 'Independent';
+      } else {
+        teamDict[teamName] = { old: 'FCS', new: 'Independent' };
+      }
+    });
+
+    realignment = Object.fromEntries(
+      Object.entries(teamDict)
+        .filter(([, confs]) => confs.new && confs.old !== confs.new)
+        .map(([teamName, confs]) => [teamName, { old: confs.old, new: confs.new! }])
+    );
+
+    const playoffConfig = yearData.playoff ?? {};
+    const current = league.settings ?? { ...DEFAULT_SETTINGS };
+    let nextTeams = playoffConfig.teams ?? current.playoff_teams;
+    let nextAutobids = playoffConfig.conf_champ_autobids ?? 0;
+    let nextTop4 = playoffConfig.conf_champ_top_4 ?? false;
+
+    if (nextTeams === 2 || nextTeams === 4) {
+      nextAutobids = 0;
+      nextTop4 = false;
+    }
+
+    if (current.playoff_teams !== nextTeams) {
+      playoff_changes.teams = { old: current.playoff_teams, new: nextTeams };
+    }
+    if ((current.playoff_autobids ?? 0) !== nextAutobids) {
+      playoff_changes.autobids = { old: current.playoff_autobids ?? 0, new: nextAutobids };
+    }
+    if ((current.playoff_conf_champ_top_4 ?? false) !== nextTop4) {
+      playoff_changes.conf_champ_top_4 = {
+        old: current.playoff_conf_champ_top_4 ?? false,
+        new: nextTop4,
+      };
+    }
+  } catch {
+    realignment = {};
+    playoff_changes = {};
+  }
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    conferences: league.conferences,
+    settings: league.settings ?? { ...DEFAULT_SETTINGS },
+    realignment,
+    playoff_changes,
+  };
+};
+
+export const loadRosterProgression = async () => {
+  const league = await loadLeagueOrThrow();
+
+  if (league.info.stage === 'realignment') {
+    await applyRealignmentAndPlayoff(league);
+    league.info.stage = 'progression';
+  }
+
+  await ensureRosters(league);
+  await saveLeague(league);
+
+  const team = league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0];
+  const players = await getAllPlayers();
+  const teamPlayers = players.filter(player => player.active && player.teamId === team.id);
+
+  const leaving = teamPlayers.filter(player => player.year === 'sr');
+  const progressed = teamPlayers
+    .filter(player => player.year !== 'sr')
+    .map(player => {
+      let next_year: PlayerRecord['year'] = 'sr';
+      let next_rating = player.rating_sr;
+
+      if (player.year === 'fr') {
+        next_year = 'so';
+        next_rating = player.rating_so;
+      } else if (player.year === 'so') {
+        next_year = 'jr';
+        next_rating = player.rating_jr;
+      }
+
+      return {
+        id: player.id,
+        first: player.first,
+        last: player.last,
+        pos: player.pos,
+        year: player.year,
+        rating: player.rating,
+        next_year,
+        next_rating,
+        stars: player.stars,
+        development_trait: player.development_trait,
+      };
+    });
+
+  return {
+    info: league.info,
+    team,
+    leaving,
+    progressed,
+    conferences: league.conferences,
+  };
+};
+
+export const loadRecruitingSummary = async () => {
+  const league = await loadLeagueOrThrow();
+
+  await ensureRosters(league);
+  const players = await getAllPlayers();
+
+  if (league.info.stage === 'progression') {
+    applyProgression(players);
+    await runRecruitingCycle(league, league.teams, players);
+    league.info.stage = 'recruiting_summary';
+    await savePlayers(players);
+    await saveLeague(league);
+  }
+
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const freshmen = players.filter(player => player.active && player.year === 'fr');
+
+  const freshmenByTeam: Record<string, { team: Team; players: FreshmanPlayer[] }> = {};
+  freshmen.forEach(player => {
+    const team = teamsById.get(player.teamId);
+    if (!team) return;
+    if (!freshmenByTeam[team.name]) {
+      freshmenByTeam[team.name] = { team, players: [] };
+    }
+    freshmenByTeam[team.name].players.push({
+      id: player.id,
+      first: player.first,
+      last: player.last,
+      pos: player.pos,
+      rating: player.rating,
+      stars: player.stars,
+    });
+  });
+
+  const team_rankings = calculateRecruitingRankings(freshmenByTeam);
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    conferences: league.conferences,
+    team_rankings,
+    summary_stats: {
+      total_freshmen: freshmen.length,
+      avg_rating: freshmen.length
+        ? Math.round((freshmen.reduce((sum, player) => sum + player.rating, 0) / freshmen.length) * 10) / 10
+        : 0,
+      max_rating: freshmen.length ? Math.max(...freshmen.map(player => player.rating)) : 0,
+      min_rating: freshmen.length ? Math.min(...freshmen.map(player => player.rating)) : 0,
+    },
+  };
+};
+
+export const loadRosterCuts = async () => {
+  const league = await loadLeagueOrThrow();
+  await ensureRosters(league);
+
+  if (league.info.stage === 'recruiting_summary') {
+    league.info.stage = 'roster_cuts';
+    await saveLeague(league);
+  }
+
+  const team = league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0];
+  const players = await getAllPlayers();
+  const cuts = previewRosterCuts(players, team.id);
+
+  return {
+    info: league.info,
+    team,
+    cuts,
+    conferences: league.conferences,
+  };
+};
+
+export const updateRealignmentSettings = async (settings: Settings) => {
+  const league = await loadLeagueOrThrow();
+  league.settings = { ...league.settings, ...settings };
+  await saveLeague(league);
+};
+
+const getClosestYearForData = (years: string[], targetYear: number, startYear?: number) => {
+  const numericYears = years
+    .map(entry => Number(entry))
+    .filter(year => !Number.isNaN(year))
+    .sort((a, b) => a - b);
+
+  if (!numericYears.length) return targetYear;
+
+  const lowerBound = startYear ?? numericYears[0];
+  const candidates = numericYears.filter(year => year <= targetYear && year >= lowerBound);
+  if (candidates.length) return candidates[candidates.length - 1];
+
+  const fallback = numericYears.filter(year => year <= targetYear);
+  if (fallback.length) return fallback[fallback.length - 1];
+
+  return numericYears[0];
+};
+
+const applyRealignment = (
+  league: LeagueState,
+  yearData: YearData,
+  teamsData: TeamsData,
+  conferencesData: ConferencesData
+) => {
+  if (league.settings && league.settings.auto_realignment === false) return;
+
+  const teamsByName = new Map(league.teams.map(team => [team.name, team]));
+  const conferencesByName = new Map(league.conferences.map(conf => [conf.confName, conf]));
+  const assignedTeams = new Set<string>();
+
+  let nextTeamId = league.teams.reduce((max, team) => Math.max(max, team.id), 0) + 1;
+  let nextConfId = league.conferences.reduce((max, conf) => Math.max(max, conf.id), 0) + 1;
+
+  const ensureTeam = (teamName: string, prestige: number, confName: string, confGames: number) => {
+    const existing = teamsByName.get(teamName);
+    if (existing) {
+      existing.conference = confName;
+      existing.confName = confName;
+      existing.confLimit = confGames;
+      existing.nonConfLimit = 12 - confGames;
+      return existing;
+    }
+
+    const meta = teamsData.teams?.[teamName];
+    if (!meta) return null;
+
+    const team: Team = {
+      id: nextTeamId,
+      name: teamName,
+      abbreviation: meta.abbreviation,
+      confGames: 0,
+      confLimit: confGames,
+      nonConfGames: 0,
+      nonConfLimit: 12 - confGames,
+      prestige,
+      prestige_change: 0,
+      ceiling: meta.ceiling,
+      floor: meta.floor,
+      mascot: meta.mascot,
+      ranking: league.teams.length + 1,
+      offense: 90,
+      defense: 90,
+      colorPrimary: meta.colorPrimary,
+      colorSecondary: meta.colorSecondary,
+      conference: confName,
+      confName,
+      confWins: 0,
+      confLosses: 0,
+      nonConfWins: 0,
+      nonConfLosses: 0,
+      rating: 90,
+      totalWins: 0,
+      totalLosses: 0,
+      gamesPlayed: 0,
+      record: '0-0 (0-0)',
+      movement: 0,
+      poll_score: 0,
+      strength_of_record: 0,
+      last_game: null,
+      next_game: null,
+    };
+
+    nextTeamId += 1;
+    league.teams.push(team);
+    teamsByName.set(teamName, team);
+    return team;
+  };
+
+  const conferences: Conference[] = [];
+
+  Object.entries(yearData.conferences ?? {}).forEach(([confName, confData]) => {
+    const confTeams: Team[] = [];
+    Object.entries(confData.teams ?? {}).forEach(([teamName, prestige]) => {
+      const team = ensureTeam(teamName, Number(prestige), confName, confData.games);
+      if (!team) return;
+      confTeams.push(team);
+      assignedTeams.add(teamName);
+    });
+
+    const existing = conferencesByName.get(confName);
+    conferences.push({
+      id: existing?.id ?? nextConfId++,
+      confName,
+      confFullName: conferencesData[confName] ?? confName,
+      confGames: confData.games,
+      info: existing?.info ?? '',
+      championship: null,
+      teams: confTeams,
+    });
+  });
+
+  const independents = yearData.Independent ?? {};
+  if (Object.keys(independents).length) {
+    const confName = 'Independent';
+    const confTeams: Team[] = [];
+    Object.entries(independents).forEach(([teamName, prestige]) => {
+      const team = ensureTeam(teamName, Number(prestige), confName, 0);
+      if (!team) return;
+      confTeams.push(team);
+      assignedTeams.add(teamName);
+    });
+
+    const existing = conferencesByName.get(confName);
+    conferences.push({
+      id: existing?.id ?? nextConfId++,
+      confName,
+      confFullName: conferencesData[confName] ?? confName,
+      confGames: 0,
+      info: existing?.info ?? '',
+      championship: null,
+      teams: confTeams,
+    });
+  }
+
+  const unassignedTeams = league.teams.filter(team => !assignedTeams.has(team.name));
+  if (unassignedTeams.length) {
+    const grouped: Record<string, Team[]> = {};
+    unassignedTeams.forEach(team => {
+      const confName = team.conference || 'Independent';
+      if (!grouped[confName]) grouped[confName] = [];
+      grouped[confName].push(team);
+    });
+
+    Object.entries(grouped).forEach(([confName, confTeams]) => {
+      const existing = conferences.find(conf => conf.confName === confName);
+      if (existing) {
+        existing.teams.push(...confTeams);
+        return;
+      }
+      const fallback = conferencesByName.get(confName);
+      conferences.push({
+        id: fallback?.id ?? nextConfId++,
+        confName,
+        confFullName: conferencesData[confName] ?? confName,
+        confGames: fallback?.confGames ?? 0,
+        info: fallback?.info ?? '',
+        championship: null,
+        teams: confTeams,
+      });
+    });
+  }
+
+  league.conferences = conferences;
+};
+
+const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFormat: boolean) => {
+  if (!league.settings) {
+    league.settings = { ...DEFAULT_SETTINGS };
+  }
+
+  if (updateFormat) {
+    const playoffConfig = yearData.playoff ?? { teams: league.settings.playoff_teams };
+    let nextTeams = playoffConfig.teams ?? league.settings.playoff_teams;
+    let nextAutobids = playoffConfig.conf_champ_autobids ?? 0;
+    let nextTop4 = playoffConfig.conf_champ_top_4 ?? false;
+
+    if (nextTeams === 2 || nextTeams === 4) {
+      nextAutobids = 0;
+      nextTop4 = false;
+    }
+
+    league.settings.playoff_teams = nextTeams;
+    league.settings.playoff_autobids = nextAutobids;
+    league.settings.playoff_conf_champ_top_4 = nextTop4;
+  }
+
+  league.info.lastWeek = getLastWeekByPlayoffTeams(league.settings.playoff_teams);
+  league.playoff = { seeds: [] };
+};
+
+const applyRealignmentAndPlayoff = async (league: LeagueState) => {
+  ensureSettings(league);
+
+  league.info.currentYear += 1;
+  league.info.currentWeek = 1;
+
+  const yearsIndex = await getYearsIndex();
+  const dataYear = getClosestYearForData(
+    yearsIndex.years,
+    league.info.currentYear,
+    league.info.startYear
+  );
+
+  const [yearData, teamsData, conferencesData] = await Promise.all([
+    getYearData(String(dataYear)),
+    getTeamsData(),
+    getConferencesData(),
+  ]);
+
+  const typedYearData = yearData as YearData;
+  const typedTeamsData = teamsData as TeamsData;
+  const typedConferencesData = conferencesData as ConferencesData;
+
+  applyRealignment(league, typedYearData, typedTeamsData, typedConferencesData);
+
+  const updateFormat = league.settings?.auto_update_postseason_format ?? true;
+  refreshPlayoffFormat(league, typedYearData, updateFormat);
+};
+
+type FreshmanPlayer = {
+  id: number;
+  first: string;
+  last: string;
+  pos: string;
+  rating: number;
+  stars: number;
+};
+
+const calculateRecruitingRankings = (
+  freshmenByTeam: Record<string, { team: Team; players: FreshmanPlayer[] }>,
+  qualityFocus = 0.92
+) => {
+  const teamRankings: Array<{
+    team_name: string;
+    team: Team;
+    players: FreshmanPlayer[];
+    total_points: number;
+    avg_stars: number;
+    player_count: number;
+    five_stars: number;
+    four_stars: number;
+    three_stars: number;
+    two_stars: number;
+    one_stars: number;
+    weighted_score: number;
+  }> = [];
+
+  Object.entries(freshmenByTeam).forEach(([teamName, teamData]) => {
+    const players = teamData.players;
+    if (!players.length) return;
+
+    const total_points = players.reduce((sum, player) => sum + player.rating, 0);
+    const avg_stars = players.reduce((sum, player) => sum + player.stars, 0) / players.length;
+    const player_count = players.length;
+
+    const five_stars = players.filter(player => player.stars === 5).length;
+    const four_stars = players.filter(player => player.stars === 4).length;
+    const three_stars = players.filter(player => player.stars === 3).length;
+    const two_stars = players.filter(player => player.stars === 2).length;
+    const one_stars = players.filter(player => player.stars === 1).length;
+
+    const quantityWeight = 1.0 - qualityFocus;
+    const weighted_score = (qualityFocus * avg_stars) + (quantityWeight * player_count);
+
+    teamRankings.push({
+      team_name: teamName,
+      team: teamData.team,
+      players,
+      total_points,
+      avg_stars: Math.round(avg_stars * 100) / 100,
+      player_count,
+      five_stars,
+      four_stars,
+      three_stars,
+      two_stars,
+      one_stars,
+      weighted_score: Math.round(weighted_score * 10) / 10,
+    });
+  });
+
+  teamRankings.sort((a, b) => {
+    if (b.weighted_score !== a.weighted_score) return b.weighted_score - a.weighted_score;
+    return b.total_points - a.total_points;
+  });
+
+  if (teamRankings.length) {
+    const maxScore = teamRankings[0].weighted_score;
+    const minScore = teamRankings[teamRankings.length - 1].weighted_score;
+    const range = maxScore - minScore;
+    teamRankings.forEach(entry => {
+      const scaled = range > 0 ? ((entry.weighted_score - minScore) / range) * 100 : 100;
+      entry.weighted_score = Math.round(scaled * 10) / 10;
+    });
+  }
+
+  return teamRankings;
 };
 
 const average = (total: number, attempts: number, decimals = 1) => {

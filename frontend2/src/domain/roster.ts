@@ -411,7 +411,7 @@ const recruitingCycle = async (
   });
 };
 
-const applyRosterCuts = (teams: Team[], players: PlayerRecord[]) => {
+export const applyRosterCuts = (teams: Team[], players: PlayerRecord[]) => {
   const yearOrder: Record<string, number> = { fr: 1, so: 2, jr: 3, sr: 4 };
   const cuts = new Set<number>();
 
@@ -437,7 +437,7 @@ const applyRosterCuts = (teams: Team[], players: PlayerRecord[]) => {
   });
 };
 
-const setStarters = (teams: Team[], players: PlayerRecord[]) => {
+export const setStarters = (teams: Team[], players: PlayerRecord[]) => {
   players.forEach(player => {
     if (player.active) player.starter = false;
   });
@@ -485,6 +485,80 @@ const calculateSingleTeamRating = (players: PlayerRecord[]) => {
 
   const overall = offense * OFFENSE_WEIGHT + defense * DEFENSE_WEIGHT;
   return { offense: Math.round(offense), defense: Math.round(defense), overall: Math.round(overall) };
+};
+
+export const recalculateTeamRatings = (teams: Team[], players: PlayerRecord[]) => {
+  teams.forEach(team => {
+    const teamPlayers = players.filter(player => player.active && player.teamId === team.id);
+    const ratings = calculateSingleTeamRating(teamPlayers);
+    team.offense = ratings.offense;
+    team.defense = ratings.defense;
+    team.rating = ratings.overall;
+  });
+
+  const sorted = [...teams].sort((a, b) => b.rating - a.rating);
+  sorted.forEach((team, index) => {
+    team.ranking = index + 1;
+    team.last_rank = index + 1;
+  });
+};
+
+export const applyProgression = (players: PlayerRecord[]) => {
+  players.forEach(player => {
+    if (!player.active) return;
+    if (player.year === 'sr') {
+      player.active = false;
+      player.starter = false;
+      return;
+    }
+
+    if (player.year === 'fr') {
+      player.year = 'so';
+      player.rating = player.rating_so;
+    } else if (player.year === 'so') {
+      player.year = 'jr';
+      player.rating = player.rating_jr;
+    } else if (player.year === 'jr') {
+      player.year = 'sr';
+      player.rating = player.rating_sr;
+    }
+  });
+};
+
+export const runRecruitingCycle = async (
+  league: LeagueState,
+  teams: Team[],
+  players: PlayerRecord[]
+) => {
+  const names = await loadNames();
+  const statesData = await getStatesData();
+  const states = Object.keys(statesData);
+  const stateWeights = states.map(state => statesData[state]);
+  if (!states.length) {
+    states.push('Unknown');
+    stateWeights.push(1);
+  }
+
+  await recruitingCycle(league, teams, players, undefined, names, states, stateWeights);
+};
+
+export const previewRosterCuts = (players: PlayerRecord[], teamId: number) => {
+  const yearOrder: Record<PlayerRecord['year'], number> = { fr: 1, so: 2, jr: 3, sr: 4 };
+  const cuts: PlayerRecord[] = [];
+  const activePlayers = players.filter(player => player.active && player.teamId === teamId);
+
+  Object.entries(ROSTER).forEach(([pos, config]) => {
+    const posPlayers = activePlayers.filter(player => player.pos === pos);
+    if (posPlayers.length <= config.total) return;
+    posPlayers.sort((a, b) => {
+      if (b.rating_sr !== a.rating_sr) return b.rating_sr - a.rating_sr;
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return (yearOrder[b.year] ?? 0) - (yearOrder[a.year] ?? 0);
+    });
+    cuts.push(...posPlayers.slice(config.total));
+  });
+
+  return cuts;
 };
 
 export const initializeRosters = async (league: LeagueState) => {

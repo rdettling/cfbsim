@@ -173,6 +173,7 @@ export const liveSimGame = async (gameId: number) => {
   await saveDrives(driveRecords);
   await savePlays(playRecords);
   await saveGameLogs(logs);
+  await handleSpecialWeeks(league, await loadOddsContext());
 
   league.teams.forEach(team => (team.record = formatRecord(team)));
   await saveLeague(league);
@@ -250,7 +251,6 @@ export const advanceWeeks = async (destWeek: number) => {
         if (gameRecord) gameRecord.headline = simGameObj.headline;
       });
       updateRankings(league.info, league.teams, simGames, league.settings);
-      await handleSpecialWeeks(league, oddsContext);
 
       const futureGames = await getAllGames();
       const updatedById = new Map(unplayed.map(game => [game.id, game]));
@@ -268,6 +268,7 @@ export const advanceWeeks = async (destWeek: number) => {
       });
 
       await saveGames(futureGames);
+      await handleSpecialWeeks(league, oddsContext);
     }
 
     league.info.currentWeek += 1;

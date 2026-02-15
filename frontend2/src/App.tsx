@@ -16,6 +16,10 @@ import Game from './pages/Game';
 import TeamStats from './pages/TeamStats';
 import IndividualStats from './pages/IndividualStats';
 import Player from './pages/Player';
+import Realignment from './pages/Realignment';
+import RosterProgression from './pages/RosterProgression';
+import RecruitingSummary from './pages/RecruitingSummary';
+import RosterCuts from './pages/RosterCuts';
 
 const App = () => {
   return (
@@ -34,6 +38,10 @@ const App = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/awards" element={<Awards />} />
         <Route path="/summary" element={<SeasonSummary />} />
+        <Route path="/realignment" element={<Realignment />} />
+        <Route path="/roster_progression" element={<RosterProgression />} />
+        <Route path="/recruiting_summary" element={<RecruitingSummary />} />
+        <Route path="/roster_cuts" element={<RosterCuts />} />
         <Route path="/game/:id" element={<Game />} />
         <Route path="/players/:playerId" element={<Player />} />
         <Route path="/stats/team" element={<TeamStats />} />

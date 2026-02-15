@@ -2,7 +2,7 @@ import type { Team } from '../../types/domain';
 import type { LeagueState } from '../../types/league';
 import type { GameRecord } from '../../types/db';
 import { DEFAULT_SETTINGS } from '../../types/league';
-import { CONFERENCE_CHAMPIONSHIP_WEEK } from '../league/postseason';
+import { CONFERENCE_CHAMPIONSHIP_WEEK, REGULAR_SEASON_WEEKS } from '../league/postseason';
 import { buildBaseLabel } from '../gameHelpers';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
@@ -367,31 +367,42 @@ const setNatty = async (
   await saveGames([game]);
 };
 
+const ensureSummaryStage = async (league: LeagueState) => {
+  if (league.info.stage === 'summary') return;
+  if (!league.playoff?.natty) return;
+  const natty = await getGameById(league.playoff.natty);
+  if (natty?.winnerId) {
+    league.info.stage = 'summary';
+  }
+};
+
 export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
   const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const baseWeek = REGULAR_SEASON_WEEKS;
   const ccWeek = CONFERENCE_CHAMPIONSHIP_WEEK;
   const specialActions: Record<number, Record<number, (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => Promise<void>>> = {
     2: {
-      [ccWeek]: setConferenceChampionships,
-      [ccWeek + 1]: setNatty,
+      [baseWeek]: setConferenceChampionships,
+      [ccWeek]: setNatty,
     },
     4: {
-      [ccWeek]: setConferenceChampionships,
-      [ccWeek + 1]: setPlayoffSemi,
-      [ccWeek + 2]: setNatty,
+      [baseWeek]: setConferenceChampionships,
+      [ccWeek]: setPlayoffSemi,
+      [ccWeek + 1]: setNatty,
     },
     12: {
-      [ccWeek]: setConferenceChampionships,
-      [ccWeek + 1]: setPlayoffR1,
-      [ccWeek + 2]: setPlayoffQuarter,
-      [ccWeek + 3]: setPlayoffSemi,
-      [ccWeek + 4]: setNatty,
+      [baseWeek]: setConferenceChampionships,
+      [ccWeek]: setPlayoffR1,
+      [ccWeek + 1]: setPlayoffQuarter,
+      [ccWeek + 2]: setPlayoffSemi,
+      [ccWeek + 3]: setNatty,
     },
   };
 
   const action = specialActions[playoffTeams]?.[league.info.currentWeek];
   if (action) {
     await action(league, oddsContext);
+    await ensureSummaryStage(league);
     return;
   }
 
@@ -416,6 +427,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
       if (r1Games.every(game => game?.winnerId)) {
         await setPlayoffQuarter(league, oddsContext, currentWeek);
       }
+      await ensureSummaryStage(league);
       return;
     }
 
@@ -424,6 +436,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
       if (qGames.every(game => game?.winnerId)) {
         await setPlayoffSemi(league, oddsContext, currentWeek);
       }
+      await ensureSummaryStage(league);
       return;
     }
 
@@ -433,6 +446,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
         await setNatty(league, oddsContext, currentWeek);
       }
     }
+    await ensureSummaryStage(league);
     return;
   }
 
@@ -447,6 +461,9 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
         await setNatty(league, oddsContext, currentWeek);
       }
     }
+    await ensureSummaryStage(league);
     return;
   }
+
+  await ensureSummaryStage(league);
 };
