@@ -142,7 +142,9 @@ const TeamHistory = () => {
                         {year.has_games ? (
                           <Link
                             component="button"
-                            onClick={() => navigate(`/${teamName || data.team.name}/schedule`)}
+                            onClick={() =>
+                              navigate(`/${teamName || data.team.name}/schedule/${year.year}`)
+                            }
                             sx={{
                               cursor: 'pointer',
                               textDecoration: 'none',

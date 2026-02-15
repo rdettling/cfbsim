@@ -23,18 +23,30 @@ import TeamHeader from '../components/team/TeamHeader';
 import { PageLayout } from '../components/layout/PageLayout';
 
 const TeamSchedule = () => {
-  const { teamName } = useParams();
+  const { teamName, year } = useParams();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
 
+  const parsedYear = year ? Number(year) : undefined;
+  const selectedYear = parsedYear && !Number.isNaN(parsedYear) ? parsedYear : undefined;
   const { data, loading, error } = useDomainData<TeamSchedulePageData>({
-    fetcher: () => loadTeamSchedule(teamName),
-    deps: [teamName],
+    fetcher: () => loadTeamSchedule(teamName, selectedYear),
+    deps: [teamName, year],
   });
 
   const handleTeamChange = (team: string) => {
-    navigate(`/${team}/schedule`);
+    if (selectedYear) {
+      navigate(`/${team}/schedule/${selectedYear}`);
+    } else {
+      navigate(`/${team}/schedule`);
+    }
+  };
+
+  const handleYearChange = (newYear: number) => {
+    const targetTeam = teamName ?? data?.team.name ?? '';
+    if (!targetTeam) return;
+    navigate(`/${targetTeam}/schedule/${newYear}`);
   };
 
   const resultStyles = {
@@ -67,17 +79,35 @@ const TeamSchedule = () => {
           />
 
           <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                mb: 2,
-                pb: 1,
-                borderBottom: '2px solid',
-                borderColor: data.team.colorPrimary || 'primary.main',
-              }}
-            >
-              Season Schedule
-            </Typography>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: data.team.colorPrimary || 'primary.main',
+                }}
+              >
+                {data.selected_year ?? data.info.currentYear} Season Schedule
+              </Typography>
+              {data.years.length > 0 && (
+                <Box>
+                  <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+                    Year
+                  </Typography>
+                  <select
+                    value={data.selected_year ?? data.info.currentYear}
+                    onChange={event => handleYearChange(Number(event.target.value))}
+                  >
+                    {data.years.map((yearOption: number) => (
+                      <option key={yearOption} value={yearOption}>
+                        {yearOption}
+                      </option>
+                    ))}
+                  </select>
+                </Box>
+              )}
+            </Stack>
           </Box>
 
           <TableContainer component={Paper} elevation={3} sx={{ mb: 4 }}>
@@ -179,15 +209,21 @@ const TeamSchedule = () => {
                           ) : (
                             <Chip label="Preview" size="small" variant="outlined" />
                           )}
-                          <Button
-                            component={RouterLink}
-                            to={`/game/${game.id}`}
-                            variant="text"
-                            size="small"
-                            sx={{ fontWeight: 600 }}
-                          >
-                            {game.result ? 'Summary' : 'Preview'}
-                          </Button>
+                          {data.selected_year === data.info.currentYear ? (
+                            <Button
+                              component={RouterLink}
+                              to={`/game/${game.id}`}
+                              variant="text"
+                              size="small"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {game.result ? 'Summary' : 'Preview'}
+                            </Button>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">
+                              Archive
+                            </Typography>
+                          )}
                         </Stack>
                       ) : (
                         <Button variant="outlined" size="small" disabled>

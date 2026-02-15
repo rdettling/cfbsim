@@ -13,7 +13,7 @@ export const loadRankings = async () => {
   await ensureRosters(league);
   await saveLeague(league);
 
-  const games = await getAllGames();
+  const games = (await getAllGames()).filter(game => game.year === league.info.currentYear);
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
   const rankings = league.teams

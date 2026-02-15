@@ -29,6 +29,7 @@ const App = () => {
         <Route path="/noncon" element={<NonCon />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/:teamName/schedule" element={<TeamSchedule />} />
+        <Route path="/:teamName/schedule/:year" element={<TeamSchedule />} />
         <Route path="/:teamName/roster" element={<Roster />} />
         <Route path="/:teamName/history" element={<TeamHistory />} />
         <Route path="/stats/ratings" element={<RatingsStats />} />

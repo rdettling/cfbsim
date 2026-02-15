@@ -1,7 +1,7 @@
 import type { Settings, Team } from '../../../types/domain';
 import type { PlayerRecord } from '../../../types/db';
 import type { YearData } from '../../../types/baseData';
-import { getHistoryData, getPrestigeConfig, getTeamsData, getYearData } from '../../../db/baseData';
+import { getHistoryData, getPrestigeConfig, getTeamsData, getYearData, setHistoryData } from '../../../db/baseData';
 import { saveLeague } from '../../../db/leagueRepo';
 import { getAllGames, getAllGameLogs, getAllPlayers, savePlayers, getGameById } from '../../../db/simRepo';
 import { buildAwards } from '../awards';
@@ -10,6 +10,7 @@ import { loadLeagueOrThrow } from '../leagueStore';
 import { advanceToProgression, advanceToRecruitingSummary, advanceToRosterCuts } from '../stages';
 import { calculateRecruitingRankings } from '../offseason';
 import { applyPrestigeChanges, calculatePrestigeChanges, getPrestigeAvgRanks } from '../prestige';
+import { updateHistoryForSeason } from '../history';
 import { previewRosterCuts, ensureRosters } from '../../roster';
 
 export const loadAwards = async () => {
@@ -77,6 +78,14 @@ export const loadSeasonSummary = async () => {
           prestigeConfig
         )
       : getPrestigeAvgRanks(league, historyData);
+
+  const shouldUpdateHistory = league.info.stage === 'summary';
+  const updatedHistory = shouldUpdateHistory
+    ? updateHistoryForSeason(league, historyData)
+    : historyData;
+  if (shouldUpdateHistory) {
+    await setHistoryData(updatedHistory);
+  }
 
   const teamsWithAvgRanks = league.teams.map(team => ({
     ...team,

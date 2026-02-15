@@ -5,7 +5,6 @@ import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord } from '../../t
 import { fillUserSchedule, buildUserScheduleFromGames } from '../schedule';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
-  clearSimArtifacts,
   getGameById,
   getGamesByWeek,
   getAllGames,
@@ -15,6 +14,7 @@ import {
   saveGameLogs,
   saveGames,
   savePlays,
+  clearNonGameArtifacts,
 } from '../../db/simRepo';
 import { ensureRosters } from '../roster';
 import { buildOddsFields, loadOddsContext } from '../odds';
@@ -38,7 +38,7 @@ import { normalizeCounters } from './ids';
 export const initializeSimData = async (league: LeagueState, fullGames: FullGame[]) => {
   const counters = normalizeCounters(league);
   await ensureRosters(league);
-  await clearSimArtifacts();
+  await clearNonGameArtifacts();
   const oddsContext = await loadOddsContext();
 
   const gameRecords: GameRecord[] = [];
@@ -87,7 +87,9 @@ export const getGamesToLiveSim = async () => {
   if (changed) {
     await saveLeague(league);
   }
-  const games = await getGamesByWeek(league.info.currentWeek);
+  const games = (await getGamesByWeek(league.info.currentWeek)).filter(
+    game => game.year === league.info.currentYear
+  );
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
   const unplayed = games.filter(game => !game.winnerId);
@@ -198,7 +200,9 @@ export const advanceWeeks = async (destWeek: number) => {
   }
   if (!league.scheduleBuilt || !league.simInitialized) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const existingGames = await getAllGames();
+    const existingGames = (await getAllGames()).filter(
+      game => game.year === league.info.currentYear
+    );
     const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
     league.info.stage = 'season';
@@ -216,7 +220,9 @@ export const advanceWeeks = async (destWeek: number) => {
   const oddsContext = await loadOddsContext();
 
   while (league.info.currentWeek < destWeek) {
-    const weekGames = await getGamesByWeek(league.info.currentWeek);
+    const weekGames = (await getGamesByWeek(league.info.currentWeek)).filter(
+      game => game.year === league.info.currentYear
+    );
     const unplayed = weekGames.filter(game => !game.winnerId);
     const simGames: SimGame[] = [];
     const gameLogsByGame = new Map<number, GameLogRecord[]>();

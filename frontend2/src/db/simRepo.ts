@@ -13,6 +13,17 @@ export const clearSimArtifacts = async () => {
   ]);
 };
 
+export const clearNonGameArtifacts = async () => {
+  const db = await getDb();
+  const tx = db.transaction(['drives', 'plays', 'gameLogs'], 'readwrite');
+  await Promise.all([
+    tx.objectStore('drives').clear(),
+    tx.objectStore('plays').clear(),
+    tx.objectStore('gameLogs').clear(),
+    tx.done,
+  ]);
+};
+
 export const clearAllSimData = async () => {
   const db = await getDb();
   const tx = db.transaction(['games', 'drives', 'plays', 'gameLogs', 'players'], 'readwrite');

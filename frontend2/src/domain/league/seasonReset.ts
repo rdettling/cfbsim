@@ -4,7 +4,7 @@ import type { GameRecord } from '../../types/db';
 import { buildSchedule, applyRivalriesToSchedule } from '../schedule';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
-import { clearSimArtifacts } from '../../db/simRepo';
+import { clearNonGameArtifacts } from '../../db/simRepo';
 
 export const createNonConGameRecord = async (
   league: LeagueState,
@@ -72,16 +72,12 @@ export const resetSeasonData = async (league: LeagueState) => {
     team.next_game = null;
   });
 
-  await clearSimArtifacts();
+  await clearNonGameArtifacts();
   league.scheduleBuilt = false;
   league.simInitialized = false;
-  league.idCounters = {
-    game: 1,
-    drive: 1,
-    play: 1,
-    gameLog: 1,
-    player: league.idCounters?.player ?? 1,
-  };
+  if (!league.idCounters) {
+    league.idCounters = { game: 1, drive: 1, play: 1, gameLog: 1, player: 1 };
+  }
 
   const schedule = buildSchedule();
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];

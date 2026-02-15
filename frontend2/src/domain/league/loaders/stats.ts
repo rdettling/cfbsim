@@ -153,7 +153,7 @@ export const loadStandings = async (conferenceName: string) => {
     ? league.teams.filter(team => team.conference === 'Independent')
     : league.teams.filter(team => team.conference === conference?.confName);
 
-  const games = await getAllGames();
+  const games = (await getAllGames()).filter(game => game.year === league.info.currentYear);
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
   const rankedTeams = sortStandings(teams).map(team => {

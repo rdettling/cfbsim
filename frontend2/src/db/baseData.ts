@@ -29,6 +29,11 @@ export const getRatingsData = (year: string) =>
   getBaseData<any>(`ratings:${year}`, `/data/ratings/ratings_${year}.json`);
 export const getHistoryData = () =>
   getBaseData<any>('history', '/data/history.json');
+export const setHistoryData = async (value: any) => {
+  const db = await getDb();
+  await db.put('baseData', { key: 'history', value });
+  return value;
+};
 export const getPrestigeConfig = () =>
   getBaseData<Record<string, number>>('prestige_config', '/data/prestige_config.json');
 export const getRivalriesData = () =>

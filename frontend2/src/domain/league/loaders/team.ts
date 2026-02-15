@@ -50,7 +50,7 @@ export const loadTeamHistory = async (teamName?: string) => {
     league.teams.find(entry => entry.name === league.info.team) ??
     league.teams[0];
 
-  const startYear = league.info.startYear ?? league.info.currentYear;
+  const cutoffYear = league.info.currentYear;
   let historicalRows: Array<{
     year: number;
     prestige: number;
@@ -69,7 +69,7 @@ export const loadTeamHistory = async (teamName?: string) => {
       Object.entries(historyData.conf_index).map(([name, id]) => [id, name])
     );
     historicalRows = teamHistory
-      .filter(entry => entry[0] < startYear)
+      .filter(entry => entry[0] <= cutoffYear)
       .sort((a, b) => b[0] - a[0])
       .map(entry => ({
         year: entry[0],
@@ -85,7 +85,7 @@ export const loadTeamHistory = async (teamName?: string) => {
     const yearsIndex = await getYearsIndex();
     const historicalYears = yearsIndex.years
       .map(entry => Number(entry))
-      .filter(year => year < startYear)
+      .filter(year => year <= cutoffYear)
       .sort((a, b) => b - a);
 
     const computed = await Promise.all(

@@ -1,7 +1,7 @@
 import type { Info, Team } from '../../../types/domain';
 import type { LaunchProps, LeagueState, NonConData } from '../../../types/league';
 import type { GameRecord } from '../../../types/db';
-import { getYearsIndex, getRatingsData, getYearData } from '../../../db/baseData';
+import { getHistoryData, getYearsIndex, getRatingsData, getYearData } from '../../../db/baseData';
 import { saveLeague } from '../../../db/leagueRepo';
 import {
   clearAllSimData,
@@ -207,10 +207,11 @@ export const loadDashboard = async () => {
   };
 };
 
-export const loadTeamSchedule = async (teamName?: string) => {
+export const loadTeamSchedule = async (teamName?: string, yearParam?: number) => {
   const league = await loadLeagueOrThrow();
+  const selectedYear = yearParam ?? league.info.currentYear;
 
-  if (!league.scheduleBuilt) {
+  if (!league.scheduleBuilt && selectedYear === league.info.currentYear) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
     const schedule = await getUserSchedule(league);
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
@@ -226,7 +227,9 @@ export const loadTeamSchedule = async (teamName?: string) => {
 
   const games = await getAllGames();
   const teamGames = games.filter(
-    game => game.teamAId === team.id || game.teamBId === team.id
+    game =>
+      game.year === selectedYear &&
+      (game.teamAId === team.id || game.teamBId === team.id)
   );
   const gamesByWeek = new Map<number, (typeof teamGames)[number]>();
   teamGames.forEach(game => {
@@ -311,12 +314,20 @@ export const loadTeamSchedule = async (teamName?: string) => {
     };
   });
 
+  const historyData = await getHistoryData().catch(() => null);
+  const historyYears = historyData?.years ?? [];
+  const years = Array.from(new Set([league.info.currentYear, ...historyYears]))
+    .filter(Boolean)
+    .sort((a, b) => b - a);
+
   return {
     info: league.info,
     team,
     schedule,
     teams: league.teams.map(entry => entry.name).sort((a, b) => a.localeCompare(b)),
     conferences: league.conferences,
+    years,
+    selected_year: selectedYear,
   };
 };
 
@@ -329,7 +340,7 @@ export const loadWeekSchedule = async (week: number) => {
   const games = await getAllGames();
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const weekGames = games
-    .filter(game => game.weekPlayed === week)
+    .filter(game => game.weekPlayed === week && game.year === league.info.currentYear)
     .map(game => {
       const teamA = teamsById.get(game.teamAId)!;
       const teamB = teamsById.get(game.teamBId)!;
