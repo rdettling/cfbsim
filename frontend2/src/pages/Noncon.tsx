@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { dataService, ROUTES } from "../services/data";
+import { ROUTES } from "../services/data";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { useDataFetching } from '../hooks/useDataFetching';
+import { loadNonCon, startNewLeague } from "../domain/league";
 import {
     Typography,
     Button,
@@ -61,11 +62,8 @@ export const NonCon = () => {
             
             // Only pass team and year parameters on first load from home page
             if (isFirstLoad && isFromHome && teamFromHome && yearFromHome) {
-                console.log("Fetching with team and year:", teamFromHome, yearFromHome);
-                const responseData = await dataService.get<NonConData>('/api/noncon', {
-                    team: teamFromHome,
-                    year: yearFromHome
-                });
+                console.log("Creating league with team and year:", teamFromHome, yearFromHome);
+                const responseData = await startNewLeague(teamFromHome, yearFromHome);
                 
                 // Clear location state after first load to prevent reusing parameters on refresh
                 setIsFirstLoad(false);
@@ -75,7 +73,7 @@ export const NonCon = () => {
             } else {
                 // Regular fetch without parameters
                 console.log("Fetching existing game data");
-                const responseData = await dataService.getNonCon<NonConData>();
+                const responseData = await loadNonCon();
                 console.log("Received data:", responseData);
                 return responseData;
             }
@@ -94,13 +92,8 @@ export const NonCon = () => {
 
     const handleScheduleGame = async () => {
         try {
-            await dataService.post('/api/schedulenc/', {
-                opponent: selectedOpponent,
-                week: selectedWeek,
-            });
+            console.warn("Scheduling is not implemented yet in frontend2.");
             handleCloseModal();
-            // Trigger page data refresh to update the schedule
-            window.dispatchEvent(new Event('pageDataRefresh'));
         } catch (error) {
             console.error("Error scheduling game:", error);
         }
@@ -108,8 +101,8 @@ export const NonCon = () => {
 
     const handleOpenModal = async (week: number) => {
         try {
-            const teams = await dataService.get<string[]>(`/api/fetchteams/`, { week });
-            setAvailableTeams(teams);
+            console.warn("Available teams list is not implemented yet in frontend2.");
+            setAvailableTeams([]);
             setSelectedWeek(week);
             setModalOpen(true);
         } catch (error) {

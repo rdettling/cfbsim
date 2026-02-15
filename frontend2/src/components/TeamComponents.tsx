@@ -1,7 +1,7 @@
 import { Box, Link as MuiLink, Modal, Typography, Paper, Chip, Button, Stack, Divider } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { dataService } from '../services/data';
 import { Link as RouterLink } from 'react-router-dom';
+import { getTeamInfo } from '../domain/league';
 
 interface TeamLinkProps {
     name: string;
@@ -28,10 +28,6 @@ interface TeamInfo {
     totalLosses: number;
     ranking: number;
     conference: string;
-}
-
-interface TeamInfoResponse {
-    team: TeamInfo;
 }
 
 interface TeamInfoModalProps {
@@ -107,8 +103,8 @@ export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) =
         if (!open || !teamName) return;
 
         setLoading(true);
-        dataService.get<TeamInfoResponse>('/api/team_info/', { team_name: teamName })
-            .then(response => setTeamInfo(response.team))
+        getTeamInfo(teamName)
+            .then(team => team && setTeamInfo(team as TeamInfo))
             .catch(error => console.error('Error fetching team info:', error))
             .finally(() => setLoading(false));
     }, [teamName, open]);

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { dataService, ROUTES } from "../services/data";
+import { ROUTES } from "../services/data";
 import { Team, Info } from "../interfaces";
 import { STAGES } from "../constants/stages";
 import {
@@ -23,6 +23,7 @@ import {
 import { TeamLogo, ConfLogo } from "../components/TeamComponents";
 import { useDataFetching } from "../hooks/useDataFetching";
 import { PageLayout } from "../components/PageLayout";
+import { loadHomeData } from "../domain/league";
 
 interface PreviewData {
   conferences: Record<string, {
@@ -58,7 +59,7 @@ const Home = () => {
   const pendingFetch = useRef(false);
 
   const { data, loading, error } = useDataFetching({
-    fetchFunction: () => dataService.getHome<LaunchProps>(""),
+    fetchFunction: () => loadHomeData(),
     onDataChange: (response) => setLaunchData(response),
     autoRefreshOnGameChange: false
   });
@@ -138,15 +139,12 @@ const Home = () => {
   // Helper function to start new game
   const handleStartGame = async (team: any) => {
     try {
-      const response = await dataService.get(`/api/noncon/`, {
-        team: team.name,
-        year: selectedYear,
-        playoff_teams: playoffTeams.toString(),
-        playoff_autobids: playoffAutobids.toString(),
-        playoff_conf_champ_top_4: playoffConfChampTop4.toString(),
-      });
       navigate(ROUTES.NONCON, {
-        state: { fromHome: true, initialData: response },
+        state: {
+          fromHome: true,
+          team: team.name,
+          year: selectedYear,
+        },
       });
     } catch (error) {
       console.error("Error starting new game:", error);
@@ -162,7 +160,7 @@ const Home = () => {
     pendingFetch.current = true;
 
     try {
-      const responseData = await dataService.getHome<LaunchProps>(newYear);
+      const responseData = await loadHomeData(newYear);
       setLaunchData(responseData);
       // Update the data manually since we're not using DataPage for this specific fetch
       if (responseData.preview?.playoff) {

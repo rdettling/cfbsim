@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { Box, Container, CircularProgress, Alert } from '@mui/material';
-import Navbar from './Navbar';
 import { Team, Info, Conference } from '../interfaces';
 
 interface PageLayoutProps {
@@ -49,15 +48,6 @@ export const PageLayout = ({
     // Main content
     return (
         <>
-            {navbarData && (
-                <Navbar
-                    team={navbarData.team}
-                    currentStage={navbarData.currentStage}
-                    info={navbarData.info}
-                    conferences={navbarData.conferences}
-                />
-            )}
-            
             {containerMaxWidth !== false ? (
                 <Container maxWidth={containerMaxWidth} sx={{ py: 4 }}>
                     {children}
@@ -70,4 +60,3 @@ export const PageLayout = ({
 };
 
 export default PageLayout;
-
