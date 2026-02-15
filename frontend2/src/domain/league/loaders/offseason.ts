@@ -1,14 +1,15 @@
 import type { Settings, Team } from '../../../types/domain';
 import type { PlayerRecord } from '../../../types/db';
 import type { YearData } from '../../../types/baseData';
-import { getYearData } from '../../../db/baseData';
+import { getHistoryData, getPrestigeConfig, getTeamsData, getYearData } from '../../../db/baseData';
 import { saveLeague } from '../../../db/leagueRepo';
-import { getAllGames, getAllGameLogs, getAllPlayers, savePlayers } from '../../../db/simRepo';
+import { getAllGames, getAllGameLogs, getAllPlayers, savePlayers, getGameById } from '../../../db/simRepo';
 import { buildAwards } from '../awards';
 import { DEFAULT_SETTINGS, ensureSettings } from '../../../types/league';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { advanceToProgression, advanceToRecruitingSummary, advanceToRosterCuts } from '../stages';
 import { calculateRecruitingRankings } from '../offseason';
+import { applyPrestigeChanges, calculatePrestigeChanges, getPrestigeAvgRanks } from '../prestige';
 import { previewRosterCuts, ensureRosters } from '../../roster';
 
 export const loadAwards = async () => {
@@ -39,13 +40,59 @@ export const loadAwards = async () => {
 export const loadSeasonSummary = async () => {
   const league = await loadLeagueOrThrow();
 
+  await ensureRosters(league);
+  await saveLeague(league);
+
+  const [players, gameLogs, games, historyData, teamsData, prestigeConfig] = await Promise.all([
+    getAllPlayers(),
+    getAllGameLogs(),
+    getAllGames(),
+    getHistoryData(),
+    getTeamsData(),
+    getPrestigeConfig(),
+  ]);
+
+  const playedGameIds = new Set(
+    games.filter(game => game.year === league.info.currentYear && game.winnerId !== null).map(game => game.id)
+  );
+  const yearLogs = gameLogs.filter(log => playedGameIds.has(log.gameId));
+  const { final } = buildAwards(league, players, yearLogs);
+
+  let champion: Team | null = null;
+  if (league.playoff?.natty) {
+    const nattyGame =
+      games.find(game => game.id === league.playoff?.natty) ??
+      (await getGameById(league.playoff.natty));
+    if (nattyGame?.winnerId) {
+      champion = league.teams.find(team => team.id === nattyGame.winnerId) ?? null;
+    }
+  }
+
+  const avgRanks =
+    league.info.stage === 'summary'
+      ? calculatePrestigeChanges(
+          league,
+          historyData,
+          teamsData,
+          prestigeConfig
+        )
+      : getPrestigeAvgRanks(league, historyData);
+
+  const teamsWithAvgRanks = league.teams.map(team => ({
+    ...team,
+    avg_rank_before: avgRanks[team.name]?.before ?? null,
+    avg_rank_after: avgRanks[team.name]?.after ?? null,
+  }));
+
+  await saveLeague(league);
+
   return {
     info: league.info,
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     conferences: league.conferences,
-    champion: null,
-    awards: [],
-    teams: league.teams,
+    champion,
+    awards: final,
+    teams: teamsWithAvgRanks,
   };
 };
 
@@ -58,6 +105,7 @@ export const loadRealignment = async () => {
   }
 
   if (league.info.stage === 'summary') {
+    applyPrestigeChanges(league);
     league.info.stage = 'realignment';
     await saveLeague(league);
   }

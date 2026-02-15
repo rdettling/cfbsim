@@ -45,3 +45,5 @@ export interface HistoryData {
   conf_index: Record<string, number>;
   teams: Record<string, number[][]>;
 }
+
+export type PrestigeConfig = Record<string, number>;

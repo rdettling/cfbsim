@@ -21,6 +21,7 @@ The active frontend loads data from `frontend2/public/data/` (cached to IndexedD
 - `ratings/index.json` and `ratings/*.json`
 - `history.json` (generated)
 - `betting_odds.json` (generated)
+- `prestige_config.json`
 
 ## Legacy Setup (Optional)
 

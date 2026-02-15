@@ -29,6 +29,8 @@ export const getRatingsData = (year: string) =>
   getBaseData<any>(`ratings:${year}`, `/data/ratings/ratings_${year}.json`);
 export const getHistoryData = () =>
   getBaseData<any>('history', '/data/history.json');
+export const getPrestigeConfig = () =>
+  getBaseData<Record<string, number>>('prestige_config', '/data/prestige_config.json');
 export const getRivalriesData = () =>
   getBaseData<{ rivalries: [string, string, number | null, string | null][] }>(
     'rivalries',
