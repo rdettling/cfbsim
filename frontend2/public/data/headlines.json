@@ -12,16 +12,19 @@
         "<winner> makes statement with <score> destruction of <loser>"
     ],
     "close": [
+        "<winner> defeats <loser> <score>",
+        "<winner> outlasts <loser> in close battle <score>",
+        "<winner> secures hard-fought <score> win against <loser>",
+        "<winner> comes through late to defeat <loser> <score>",
+        "<winner> survives late rally to beat <loser> <score>"
+    ],
+    "close_dramatic": [
         "<winner> narrowly defeats <loser> <score>",
         "<winner> edges <loser> in thriller <score>",
-        "<winner> survives late rally to beat <loser> <score>",
         "<winner> escapes with <score> win over <loser>",
         "<winner> holds on for dramatic <score> victory against <loser>",
         "<winner> squeaks past <loser> <score>",
-        "<winner> prevails in nail-biter over <loser> <score>",
-        "<winner> outlasts <loser> in close battle <score>",
-        "<winner> secures hard-fought <score> win against <loser>",
-        "<winner> comes through in clutch to defeat <loser> <score>"
+        "<winner> prevails in nail-biter over <loser> <score>"
     ],
     "upset": [
         "<winner> upsets <loser> <score> as <spread> underdogs",
@@ -57,6 +60,13 @@
         "<winner> outlasts <loser> in <score> overtime",
         "<winner> secures victory in sudden-death overtime <score>",
         "<winner> wins in double-overtime <score>"
+    ],
+    "standard": [
+        "<winner> beats <loser> <score>",
+        "<winner> tops <loser> <score>",
+        "<winner> defeats <loser> <score>",
+        "<winner> wins <score> over <loser>",
+        "<winner> handles <loser> <score>"
     ],
     "postseason": [
         "<winner> punches ticket with <score> win over <loser>",

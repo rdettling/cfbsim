@@ -731,6 +731,7 @@ export const generateHeadlines = async (
   playersById: Map<number, PlayerRecord>
 ) => {
   const headlinesData = await getHeadlinesData();
+
   games.forEach(game => {
     const winner = game.winner?.id === game.teamA.id ? game.teamA : game.teamB;
     const loser = winner.id === game.teamA.id ? game.teamB : game.teamA;
@@ -789,7 +790,8 @@ export const generateHeadlines = async (
       headlineTemplate = pickTemplate('blowout', 'close');
     } else if (isClose) {
       tone = 'close';
-      headlineTemplate = pickTemplate('close', 'close');
+      const closeKey = margin <= 3 ? 'close_dramatic' : 'close';
+      headlineTemplate = pickTemplate(closeKey, 'close');
     } else if (bothTop10) {
       tone = 'top10';
       headlineTemplate = pickTemplate('top10', 'close');
@@ -800,8 +802,8 @@ export const generateHeadlines = async (
       tone = 'ranked';
       headlineTemplate = pickTemplate('ranked', 'close');
     } else {
-      tone = 'close';
-      headlineTemplate = pickTemplate('close', 'close');
+      tone = 'standard';
+      headlineTemplate = pickTemplate('standard', 'close');
     }
 
     const logs = gameLogsByGameId.get(game.id);
