@@ -36,8 +36,10 @@ interface TeamInfoModalProps {
     onClose: () => void;
 }
 
-const isProduction = () => window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-const getBasePath = () => isProduction() ? '/static' : '';
+const getBasePath = () => {
+    const base = import.meta.env.BASE_URL ?? '/';
+    return base.endsWith('/') ? base.slice(0, -1) : base;
+};
 
 const Logo = ({ type, name, size = 30 }: LogoProps & { type: 'teams' | 'conferences' }) => {
     const [hasError, setHasError] = useState(false);

@@ -1,5 +1,6 @@
 import type { Conference, Info, ScheduleGame, Team } from './types';
 import { getYearsIndex } from '../db/baseData';
+import { getAllGames } from '../db/simRepo';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
 import { clearAllSimData } from '../db/simRepo';
 import { initializeRosters } from './roster';
@@ -167,6 +168,106 @@ export const loadDashboard = async () => {
     top_10: top10,
     top_games: [],
     conferences: league.conferences,
+  };
+};
+
+export const loadTeamSchedule = async (teamName?: string) => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  if (!league.scheduleBuilt) {
+    const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
+    const fullGames = fillUserSchedule(league.schedule, userTeam, league.teams);
+    league.info.stage = 'season';
+    league.scheduleBuilt = true;
+    await initializeSimData(league, fullGames);
+  }
+
+  const team =
+    (teamName ? league.teams.find(entry => entry.name === teamName) : null) ??
+    league.teams.find(entry => entry.name === league.info.team) ??
+    league.teams[0];
+
+  const games = await getAllGames();
+  const teamGames = games.filter(
+    game => game.teamAId === team.id || game.teamBId === team.id
+  );
+  const gamesByWeek = new Map<number, (typeof teamGames)[number]>();
+  teamGames.forEach(game => {
+    if (game.weekPlayed && game.weekPlayed > 0) {
+      gamesByWeek.set(game.weekPlayed, game);
+    }
+  });
+
+  const totalWeeks = league.info.lastWeek || league.schedule.length || 14;
+  const schedule = Array.from({ length: totalWeeks }, (_, index) => {
+    const week = index + 1;
+    const game = gamesByWeek.get(week);
+    if (!game) {
+      return {
+        weekPlayed: week,
+        opponent: null,
+        result: '',
+        score: '',
+        spread: '',
+        moneyline: '',
+        id: '',
+      };
+    }
+
+    const opponentId = game.teamAId === team.id ? game.teamBId : game.teamAId;
+    const opponent = league.teams.find(entry => entry.id === opponentId);
+    const isHome = game.homeTeamId === team.id;
+    const isAway = game.awayTeamId === team.id;
+    const location = game.neutralSite
+      ? 'Neutral'
+      : isHome
+        ? 'Home'
+        : isAway
+          ? 'Away'
+          : undefined;
+
+    const isTeamA = game.teamAId === team.id;
+    const scoreA = game.scoreA ?? 0;
+    const scoreB = game.scoreB ?? 0;
+    const score = game.winnerId
+      ? isTeamA
+        ? `${scoreA}-${scoreB}`
+        : `${scoreB}-${scoreA}`
+      : '';
+
+    return {
+      weekPlayed: week,
+      opponent: opponent
+        ? {
+            name: opponent.name,
+            rating: opponent.rating,
+            ranking: opponent.ranking,
+            record: opponent.record,
+          }
+        : null,
+      label: game.baseLabel,
+      result: game.winnerId
+        ? game.winnerId === team.id
+          ? 'W'
+          : 'L'
+        : '',
+      score,
+      spread: isTeamA ? game.spreadA : game.spreadB,
+      moneyline: isTeamA ? game.moneylineA : game.moneylineB,
+      id: `${game.id}`,
+      location,
+    };
+  });
+
+  return {
+    info: league.info,
+    team,
+    games: schedule,
+    conferences: league.conferences,
+    teams: league.teams.map(entry => entry.name).sort((a, b) => a.localeCompare(b)),
   };
 };
 
