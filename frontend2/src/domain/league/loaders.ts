@@ -1,5 +1,5 @@
 import type { Conference, Info, ScheduleGame, Team } from '../../types/domain';
-import { getYearsIndex, getBettingOddsData } from '../../db/baseData';
+import { getYearsIndex } from '../../db/baseData';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
   clearAllSimData,
@@ -22,10 +22,10 @@ import {
 } from '../schedule';
 import { buildDriveResponse, initializeSimData } from '../sim';
 import { DEFAULT_SETTINGS, ensureSettings, type LaunchProps, type LeagueState, type NonConData } from '../../types/league';
-import { ensureLeaguePostseasonState, getLastWeekByPlayoffTeams } from './postseason';
+import { getLastWeekByPlayoffTeams } from './postseason';
+import { normalizeLeague } from './normalize';
 import type { GameRecord } from '../../types/db';
-
-const HOME_FIELD_ADVANTAGE = 4;
+import { buildOddsFields, loadOddsContext } from '../odds';
 
 const buildBaseLabel = (team: Team, opponent: Team, name?: string | null) => {
   if (name) return name;
@@ -47,31 +47,13 @@ const createNonConGameRecord = async (
   name?: string | null,
   options?: { neutralSite?: boolean; homeTeam?: Team | null; awayTeam?: Team | null }
 ): Promise<GameRecord> => {
-  const oddsData = await getBettingOddsData();
-  const oddsMap = oddsData.odds ?? {};
-  const maxDiff = oddsData.max_diff ?? 100;
+  const oddsContext = await loadOddsContext();
 
   const neutralSite = options?.neutralSite ?? false;
   const homeTeam = neutralSite ? null : options?.homeTeam ?? teamA;
   const awayTeam = neutralSite ? null : options?.awayTeam ?? teamB;
 
-  let ratingA = teamA.rating;
-  let ratingB = teamB.rating;
-  if (!neutralSite && homeTeam) {
-    if (homeTeam.id === teamA.id) ratingA += HOME_FIELD_ADVANTAGE;
-    if (homeTeam.id === teamB.id) ratingB += HOME_FIELD_ADVANTAGE;
-  }
-
-  const diff = Math.min(maxDiff, Math.abs(Math.round(ratingA - ratingB)));
-  const odds = oddsMap[String(diff)] ?? oddsMap[String(maxDiff)] ?? {
-    favSpread: '-1.5',
-    udSpread: '+1.5',
-    favWinProb: 0.6,
-    udWinProb: 0.4,
-    favMoneyline: '-120',
-    udMoneyline: '+120',
-  };
-  const isTeamAFav = ratingA >= ratingB;
+  const oddsFields = buildOddsFields(teamA, teamB, homeTeam, neutralSite, oddsContext);
 
   if (!league.idCounters) {
     league.idCounters = { game: 1, drive: 1, play: 1, gameLog: 1, player: 1 };
@@ -89,12 +71,7 @@ const createNonConGameRecord = async (
     winnerId: null,
     baseLabel: buildBaseLabel(teamA, teamB, name ?? null),
     name: name ?? null,
-    spreadA: isTeamAFav ? odds.favSpread : odds.udSpread,
-    spreadB: isTeamAFav ? odds.udSpread : odds.favSpread,
-    moneylineA: isTeamAFav ? odds.favMoneyline : odds.udMoneyline,
-    moneylineB: isTeamAFav ? odds.udMoneyline : odds.favMoneyline,
-    winProbA: isTeamAFav ? odds.favWinProb : odds.udWinProb,
-    winProbB: isTeamAFav ? odds.udWinProb : odds.favWinProb,
+    ...oddsFields,
     weekPlayed,
     year: league.info.currentYear,
     rankATOG: teamA.ranking,
@@ -114,27 +91,23 @@ const loadLeagueOrThrow = async () => {
   if (!league) {
     throw new Error('No league found. Start a new game from the Home page.');
   }
-  if ('schedule' in league) {
-    delete (league as Record<string, unknown>).schedule;
-  }
-  const changed = ensureLeaguePostseasonState(league);
-  if (changed) {
-    await saveLeague(league);
-  }
+  const changed = normalizeLeague(league);
+  if (changed) await saveLeague(league);
   return league;
 };
 
 const loadLeagueOptional = async () => {
   const league = await loadLeague<LeagueState>();
   if (!league) return null;
-  if ('schedule' in league) {
-    delete (league as Record<string, unknown>).schedule;
-  }
-  const changed = ensureLeaguePostseasonState(league);
-  if (changed) {
-    await saveLeague(league);
-  }
+  const changed = normalizeLeague(league);
+  if (changed) await saveLeague(league);
   return league;
+};
+
+const getUserSchedule = async (league: LeagueState, weeks?: number) => {
+  const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
+  const games = await getAllGames();
+  return buildUserScheduleFromGames(userTeam, league.teams, games, weeks);
 };
 
 export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
@@ -232,8 +205,7 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
 export const loadNonCon = async (): Promise<NonConData> => {
   const league = await loadLeagueOrThrow();
   const team = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-  const games = await getAllGames();
-  const schedule = buildUserScheduleFromGames(team, league.teams, games);
+  const schedule = await getUserSchedule(league);
   return {
     info: league.info,
     team,
@@ -248,8 +220,7 @@ export const loadDashboard = async () => {
 
   if (!league.scheduleBuilt) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const existingGames = await getAllGames();
-    const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
+    const schedule = await getUserSchedule(league);
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
@@ -263,12 +234,7 @@ export const loadDashboard = async () => {
 
   const top10 = [...league.teams].sort((a, b) => a.ranking - b.ranking).slice(0, 10);
 
-  const schedule = buildUserScheduleFromGames(
-    userTeam,
-    league.teams,
-    await getAllGames(),
-    league.info.lastWeek || 14
-  );
+  const schedule = await getUserSchedule(league, league.info.lastWeek || 14);
   const currentWeekIndex = Math.max(league.info.currentWeek - 1, 0);
   const prevGame = currentWeekIndex > 0 ? schedule[currentWeekIndex - 1] : null;
   const currGame = schedule[currentWeekIndex] ?? null;
@@ -290,8 +256,7 @@ export const loadTeamSchedule = async (teamName?: string) => {
 
   if (!league.scheduleBuilt) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const existingGames = await getAllGames();
-    const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
+    const schedule = await getUserSchedule(league);
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
@@ -903,8 +868,7 @@ export const listAvailableTeams = async (week: number): Promise<string[]> => {
   const userTeam = league.teams.find(team => team.name === league.info.team);
   if (!userTeam) return [];
 
-  const games = await getAllGames();
-  const schedule = buildUserScheduleFromGames(userTeam, league.teams, games);
+  const schedule = await getUserSchedule(league);
   return listTeamsForWeek(schedule, userTeam, league.teams, week);
 };
 
@@ -915,8 +879,7 @@ export const scheduleNonConGame = async (opponentName: string, week: number): Pr
   const opponent = league.teams.find(team => team.name === opponentName);
   if (!userTeam || !opponent) return;
 
-  const games = await getAllGames();
-  const schedule = buildUserScheduleFromGames(userTeam, league.teams, games);
+  const schedule = await getUserSchedule(league);
   if (schedule[week - 1]?.opponent) return;
   scheduleGameForWeek(schedule, userTeam, opponent, week);
 

@@ -4,7 +4,7 @@ import type { LeagueState } from '../types/league';
 import { DEFAULT_SETTINGS } from '../types/league';
 import type { SimGame, SimDrive, StartersCache } from '../types/sim';
 import { fillUserSchedule, buildUserScheduleFromGames } from './schedule';
-import { getBettingOddsData, getHeadlinesData } from '../db/baseData';
+import { getHeadlinesData } from '../db/baseData';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
 import {
   clearSimArtifacts,
@@ -22,12 +22,12 @@ import {
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../types/db';
 import type { Drive, Play, GameData } from '../types/game';
 import { ensureRosters } from './roster';
-import { CONFERENCE_CHAMPIONSHIP_WEEK, ensureLeaguePostseasonState } from './league/postseason';
+import { CONFERENCE_CHAMPIONSHIP_WEEK } from './league/postseason';
+import { buildOddsFields, loadOddsContext, HOME_FIELD_ADVANTAGE } from './odds';
+import { normalizeLeague } from './league/normalize';
 
 const DRIVES_PER_TEAM = 12;
 const OT_START_YARD_LINE = 75;
-const HOME_FIELD_ADVANTAGE = 4;
-
 const WIN_FACTOR = 1.5;
 const LOSS_FACTOR = 1.08;
 
@@ -688,29 +688,6 @@ const buildWatchability = (game: GameRecord, numTeams: number) => {
   return Math.round((watchability / maxPossible) * 1000) / 10;
 };
 
-type OddsContext = {
-  oddsMap: Record<
-    string,
-    {
-      favSpread: string;
-      udSpread: string;
-      favWinProb: number;
-      udWinProb: number;
-      favMoneyline: string;
-      udMoneyline: string;
-    }
-  >;
-  maxDiff: number;
-};
-
-const loadOddsContext = async (): Promise<OddsContext> => {
-  const oddsData = await getBettingOddsData();
-  return {
-    oddsMap: oddsData.odds ?? {},
-    maxDiff: oddsData.max_diff ?? 100,
-  };
-};
-
 const buildBaseLabel = (team: Team, opponent: Team, name?: string | null) => {
   if (name) return name;
   const teamConf = team.conference;
@@ -742,36 +719,13 @@ const createGameRecord = (
   teamB: Team,
   weekPlayed: number,
   name: string,
-  oddsContext: OddsContext,
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
   options?: { neutralSite?: boolean; homeTeam?: Team | null; awayTeam?: Team | null }
 ) => {
   const neutralSite = options?.neutralSite ?? true;
   const homeTeam = neutralSite ? null : options?.homeTeam ?? teamA;
   const awayTeam = neutralSite ? null : options?.awayTeam ?? teamB;
-
-  let ratingA = teamA.rating;
-  let ratingB = teamB.rating;
-  if (!neutralSite && homeTeam) {
-    if (homeTeam.id === teamA.id) ratingA += HOME_FIELD_ADVANTAGE;
-    if (homeTeam.id === teamB.id) ratingB += HOME_FIELD_ADVANTAGE;
-  }
-
-  const diff = Math.min(
-    oddsContext.maxDiff,
-    Math.abs(Math.round(ratingA - ratingB))
-  );
-  const odds =
-    oddsContext.oddsMap[String(diff)] ??
-    oddsContext.oddsMap[String(oddsContext.maxDiff)] ?? {
-      favSpread: '-1.5',
-      udSpread: '+1.5',
-      favWinProb: 0.6,
-      udWinProb: 0.4,
-      favMoneyline: '-120',
-      udMoneyline: '+120',
-    };
-
-  const isTeamAFav = ratingA >= ratingB;
+  const oddsFields = buildOddsFields(teamA, teamB, homeTeam, neutralSite, oddsContext);
   const record: GameRecord = {
     id: nextId(league, 'game'),
     teamAId: teamA.id,
@@ -782,12 +736,7 @@ const createGameRecord = (
     winnerId: null,
     baseLabel: buildBaseLabel(teamA, teamB, name),
     name,
-    spreadA: isTeamAFav ? odds.favSpread : odds.udSpread,
-    spreadB: isTeamAFav ? odds.udSpread : odds.favSpread,
-    moneylineA: isTeamAFav ? odds.favMoneyline : odds.udMoneyline,
-    moneylineB: isTeamAFav ? odds.udMoneyline : odds.favMoneyline,
-    winProbA: isTeamAFav ? odds.favWinProb : odds.udWinProb,
-    winProbB: isTeamAFav ? odds.udWinProb : odds.favWinProb,
+    ...oddsFields,
     weekPlayed,
     year: league.info.currentYear,
     rankATOG: teamA.ranking,
@@ -1429,41 +1378,17 @@ const loadPlayersMap = async (teams: Team[]) => {
   return map;
 };
 
-const stripLegacySchedule = (league: LeagueState) => {
-  if ('schedule' in league) {
-    delete (league as Record<string, unknown>).schedule;
-  }
-};
-
 export const initializeSimData = async (league: LeagueState, fullGames: FullGame[]) => {
   const counters = normalizeCounters(league);
   await ensureRosters(league);
   await clearSimArtifacts();
-
-  const oddsData = await getBettingOddsData();
-  const oddsMap = oddsData.odds ?? {};
-  const maxDiff = oddsData.max_diff ?? 100;
+  const oddsContext = await loadOddsContext();
 
   const gameRecords: GameRecord[] = [];
   fullGames.forEach(game => {
     const homeTeam = game.homeTeam;
     const awayTeam = game.awayTeam;
-    let ratingA = game.teamA.rating;
-    let ratingB = game.teamB.rating;
-    if (homeTeam) {
-      if (homeTeam.id === game.teamA.id) ratingA += HOME_FIELD_ADVANTAGE;
-      if (homeTeam.id === game.teamB.id) ratingB += HOME_FIELD_ADVANTAGE;
-    }
-    const diff = Math.min(maxDiff, Math.abs(Math.round(ratingA - ratingB)));
-    const odds = oddsMap[String(diff)] ?? oddsMap[String(maxDiff)] ?? {
-      favSpread: '-1.5',
-      udSpread: '+1.5',
-      favWinProb: 0.6,
-      udWinProb: 0.4,
-      favMoneyline: '-120',
-      udMoneyline: '+120',
-    };
-    const isTeamAFav = ratingA >= ratingB;
+    const oddsFields = buildOddsFields(game.teamA, game.teamB, homeTeam ?? null, false, oddsContext);
     const record: GameRecord = {
       id: counters.game,
       teamAId: game.teamA.id,
@@ -1474,12 +1399,7 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
       winnerId: null,
       baseLabel: buildBaseLabel(game.teamA, game.teamB, game.name),
       name: game.name ?? null,
-      spreadA: isTeamAFav ? odds.favSpread : odds.udSpread,
-      spreadB: isTeamAFav ? odds.udSpread : odds.favSpread,
-      moneylineA: isTeamAFav ? odds.favMoneyline : odds.udMoneyline,
-      moneylineB: isTeamAFav ? odds.udMoneyline : odds.favMoneyline,
-      winProbA: isTeamAFav ? odds.favWinProb : odds.udWinProb,
-      winProbB: isTeamAFav ? odds.udWinProb : odds.favWinProb,
+      ...oddsFields,
       weekPlayed: game.weekPlayed,
       year: league.info.currentYear,
       rankATOG: game.teamA.ranking,
@@ -1506,7 +1426,10 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
 export const getGamesToLiveSim = async () => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
-  stripLegacySchedule(league);
+  const changed = normalizeLeague(league);
+  if (changed) {
+    await saveLeague(league);
+  }
   const games = await getGamesByWeek(league.info.currentWeek);
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
@@ -1543,7 +1466,10 @@ export const getGamesToLiveSim = async () => {
 export const liveSimGame = async (gameId: number) => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
-  stripLegacySchedule(league);
+  const changed = normalizeLeague(league);
+  if (changed) {
+    await saveLeague(league);
+  }
   const record = await getGameById(gameId);
   if (!record) throw new Error('Game not found.');
 
@@ -1608,8 +1534,7 @@ export const liveSimGame = async (gameId: number) => {
 export const advanceWeeks = async (destWeek: number) => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
-  stripLegacySchedule(league);
-  const changed = ensureLeaguePostseasonState(league);
+  const changed = normalizeLeague(league);
   if (changed) {
     await saveLeague(league);
   }
