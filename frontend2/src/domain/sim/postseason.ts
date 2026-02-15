@@ -3,7 +3,7 @@ import type { LeagueState } from '../../types/league';
 import type { GameRecord } from '../../types/db';
 import { DEFAULT_SETTINGS } from '../../types/league';
 import { CONFERENCE_CHAMPIONSHIP_WEEK, REGULAR_SEASON_WEEKS } from '../league/postseason';
-import { buildBaseLabel } from '../gameHelpers';
+import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
 import { buildWatchability } from './games';

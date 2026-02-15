@@ -17,7 +17,6 @@ import { loadRatingsStats } from '../domain/league';
 import type { RatingsStatsPageData } from '../types/pages';
 import { TeamInfoModal } from '../components/team/TeamComponents';
 import { PageLayout } from '../components/layout/PageLayout';
-import type { RatingsStatsData } from '../types/stats';
 
 const RatingsStats = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -136,7 +135,7 @@ const RatingsStats = () => {
                             '3★',
                             '2★',
                             '1★',
-                          ].map((header) => (
+                          ].map(header => (
                             <TableCell
                               key={header}
                               align={header !== 'Prestige Tier' ? 'center' : 'left'}
@@ -151,11 +150,7 @@ const RatingsStats = () => {
                         {data.prestige_stars_table
                           .slice()
                           .reverse()
-                          .map((row) => {
-                            const teamCount =
-                              data.team_counts_by_prestige.find(
-                                (entry) => entry.prestige === row.prestige
-                              )?.team_count || 0;
+                          .map(row => {
                             return (
                               <TableRowStyled key={row.prestige}>
                                 <TableCell>
@@ -172,7 +167,7 @@ const RatingsStats = () => {
                                 </TableCell>
                                 <TableCell align="center">
                                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                    {teamCount}
+                                    {row.team_count}
                                   </Typography>
                                 </TableCell>
                                 <TableCell
@@ -185,7 +180,7 @@ const RatingsStats = () => {
                                   align="center"
                                   sx={{ fontWeight: 600, color: 'secondary.main' }}
                                 >
-                                  {row.avg_stars}
+                                  {row.average_stars}
                                 </TableCell>
                                 <TableCell
                                   align="center"
@@ -245,39 +240,42 @@ const RatingsStats = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {[5, 4, 3, 2, 1].map((star) => (
-                          <TableRowStyled key={star}>
-                            <TableCell>{renderStars(star)}</TableCell>
-                            <TableCell align="center">
-                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                {data.total_star_counts.counts[star].toLocaleString()}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="center">
-                              <Typography
-                                variant="h6"
-                                sx={{ fontWeight: 600, color: 'primary.main' }}
-                              >
-                                {data.total_star_counts.avg_ratings[star]}
-                              </Typography>
-                            </TableCell>
-                            {[
-                              'avg_ratings_fr',
-                              'avg_ratings_so',
-                              'avg_ratings_jr',
-                              'avg_ratings_sr',
-                            ].map((ratingKey) => (
-                              <TableCell key={ratingKey} align="center">
-                                <Typography
-                                  variant="h6"
-                                  sx={{ fontWeight: 600, color: 'info.main' }}
-                                >
-                                  {(data.total_star_counts as any)[ratingKey][star]}
+                        {[5, 4, 3, 2, 1].map(star => {
+                          const starKey = star as 1 | 2 | 3 | 4 | 5;
+                          return (
+                            <TableRowStyled key={star}>
+                              <TableCell>{renderStars(star)}</TableCell>
+                              <TableCell align="center">
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {data.total_star_counts.counts[starKey].toLocaleString()}
                                 </Typography>
                               </TableCell>
-                            ))}
-                          </TableRowStyled>
-                        ))}
+                              <TableCell align="center">
+                                <Typography
+                                  variant="h6"
+                                  sx={{ fontWeight: 600, color: 'primary.main' }}
+                                >
+                                  {data.total_star_counts.avg_ratings[starKey]}
+                                </Typography>
+                              </TableCell>
+                              {[
+                                'avg_ratings_fr',
+                                'avg_ratings_so',
+                                'avg_ratings_jr',
+                                'avg_ratings_sr',
+                              ].map(ratingKey => (
+                                <TableCell key={ratingKey} align="center">
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: 600, color: 'info.main' }}
+                                  >
+                                    {(data.total_star_counts as any)[ratingKey][starKey]}
+                                  </Typography>
+                                </TableCell>
+                              ))}
+                            </TableRowStyled>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </StatsTable>
@@ -303,7 +301,7 @@ const RatingsStats = () => {
                     <Table size="small">
                       <TableHead>
                         <TableRow sx={{ bgcolor: 'grey.50' }}>
-                          {['Rank', 'Team', 'Rating', 'Prestige'].map((header) => (
+                          {['Rank', 'Team', 'Rating', 'Prestige'].map(header => (
                             <TableCell
                               key={header}
                               align={header !== 'Team' ? 'center' : 'left'}

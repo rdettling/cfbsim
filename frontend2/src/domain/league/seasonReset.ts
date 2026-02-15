@@ -2,7 +2,7 @@ import type { LeagueState } from '../../types/league';
 import type { ScheduleGame, Team } from '../../types/domain';
 import type { GameRecord } from '../../types/db';
 import { buildSchedule, applyRivalriesToSchedule } from '../schedule';
-import { buildBaseLabel } from '../gameHelpers';
+import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { clearSimArtifacts } from '../../db/simRepo';
 

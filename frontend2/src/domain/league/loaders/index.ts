@@ -4,7 +4,7 @@ import { ensureRosters } from '../../roster';
 import { ensureSettings, DEFAULT_SETTINGS } from '../../../types/league';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { saveLeague } from '../../../db/leagueRepo';
-import { buildScheduleGameForTeam } from './utils';
+import { buildScheduleGameForTeam } from '../utils/schedule';
 // loadLeagueOrThrow / loadLeagueOptional live in leagueStore.ts
 
 export const loadRankings = async () => {

@@ -9,6 +9,7 @@
 1. `cd frontend2`
 2. `npm install`
 3. `npm run dev`
+4. Optional: `npm run typecheck`
 
 ## Data Requirements (Frontend2)
 
@@ -17,6 +18,9 @@ The active frontend loads data from `frontend2/public/data/` (cached to IndexedD
 - `conferences.json`
 - `years/index.json` and `years/*.json`
 - `rivalries.json`
+- `ratings/index.json` and `ratings/*.json`
+- `history.json` (generated)
+- `betting_odds.json` (generated)
 
 ## Legacy Setup (Optional)
 

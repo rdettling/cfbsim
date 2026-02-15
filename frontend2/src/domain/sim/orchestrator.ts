@@ -19,7 +19,7 @@ import {
 import { ensureRosters } from '../roster';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { normalizeLeague } from '../league/normalize';
-import { buildBaseLabel } from '../gameHelpers';
+import { buildBaseLabel } from '../utils/gameLabels';
 import { buildWatchability } from './games';
 import {
   simGame,

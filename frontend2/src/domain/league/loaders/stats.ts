@@ -3,7 +3,7 @@ import { saveLeague } from '../../../db/leagueRepo';
 import { ensureRosters } from '../../roster';
 import { loadLeagueOrThrow } from '../leagueStore';
 import type { Team } from '../../../types/domain';
-import { buildScheduleGameForTeam } from './utils';
+import { buildScheduleGameForTeam } from '../utils/schedule';
 
 const sortStandings = (teams: Team[]) => {
   return teams.slice().sort((a, b) => {
@@ -87,9 +87,7 @@ export const loadRatingsStats = async () => {
     },
   };
 
-  const team_counts_by_prestige = Array.from(
-    new Set(teams.map(team => team.prestige))
-  )
+  const team_counts_by_prestige = Array.from(new Set(teams.map(team => team.prestige)))
     .sort((a, b) => a - b)
     .map(prestige => ({
       prestige,
@@ -101,8 +99,12 @@ export const loadRatingsStats = async () => {
     const teamIds = new Set(prestigeTeams.map(team => team.id));
     const prestigePlayers = players.filter(player => teamIds.has(player.teamId));
     const totalPlayers = prestigePlayers.length || 1;
-    const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const starCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let starSum = 0;
+    const teamRatingSum = prestigeTeams.reduce((sum, team) => sum + team.rating, 0);
+    const teamRatingAvg = prestigeTeams.length
+      ? Math.round((teamRatingSum / prestigeTeams.length) * 10) / 10
+      : 0;
 
     prestigePlayers.forEach(player => {
       const star = Math.min(5, Math.max(1, player.stars || 1));
@@ -114,11 +116,14 @@ export const loadRatingsStats = async () => {
       prestige: entry.prestige,
       team_count: entry.team_count,
       average_stars: totalPlayers ? Math.round((starSum / totalPlayers) * 100) / 100 : 0,
-      one_star_pct: Math.round((starCounts[1] / totalPlayers) * 1000) / 10,
-      two_star_pct: Math.round((starCounts[2] / totalPlayers) * 1000) / 10,
-      three_star_pct: Math.round((starCounts[3] / totalPlayers) * 1000) / 10,
-      four_star_pct: Math.round((starCounts[4] / totalPlayers) * 1000) / 10,
-      five_star_pct: Math.round((starCounts[5] / totalPlayers) * 1000) / 10,
+      avg_rating: teamRatingAvg,
+      star_percentages: {
+        1: Math.round((starCounts[1] / totalPlayers) * 1000) / 10,
+        2: Math.round((starCounts[2] / totalPlayers) * 1000) / 10,
+        3: Math.round((starCounts[3] / totalPlayers) * 1000) / 10,
+        4: Math.round((starCounts[4] / totalPlayers) * 1000) / 10,
+        5: Math.round((starCounts[5] / totalPlayers) * 1000) / 10,
+      },
     };
   });
 
@@ -128,6 +133,7 @@ export const loadRatingsStats = async () => {
     total_star_counts,
     prestige_stars_table,
     conferences: league.conferences,
+    teams: league.teams.slice().sort((a, b) => b.rating - a.rating),
   };
 };
 

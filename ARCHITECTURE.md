@@ -19,6 +19,14 @@ High-level flow:
 3. Schedules, games, plays, drives, game logs, and rosters are generated client‑side.
 4. Pages load from domain functions and read/write IndexedDB.
 
+## Domain Layout (Frontend2)
+
+- `domain/league/` league lifecycle, rankings, postseason, offseason, awards
+- `domain/league/loaders/` page data loaders (return plain JSON)
+- `domain/league/utils/` shared helpers for league logic
+- `domain/sim/` play-by-play engine + sim orchestration
+- `domain/` (root) shared utilities (roster, schedule, odds)
+
 ## Legacy Backend (Optional)
 
 Key modules:
@@ -36,7 +44,7 @@ High-level flow:
 
 ## Season Lifecycle (Frontend2)
 
-Core steps (see `frontend2/src/domain/sim.ts` and `frontend2/src/domain/league.ts`):
+Core steps (see `frontend2/src/domain/sim/` and `frontend2/src/domain/league/`):
 1. Initialize league state from base data.
 2. Generate schedules and initialize sim records in IndexedDB.
 3. Advance weeks, sim games, update rankings and records.
@@ -44,7 +52,7 @@ Core steps (see `frontend2/src/domain/sim.ts` and `frontend2/src/domain/league.t
 
 ## Simulation Engine (Frontend2)
 
-Gameplay is simulated at the drive/play level in `frontend2/src/domain/sim.ts`:
+Gameplay is simulated at the drive/play level in `frontend2/src/domain/sim/`:
 - Runs and passes are generated from rating-based distributions.
 - 4th-down logic decides punt/FG/go-for-it.
 - Overtime simulates alternating possessions.
@@ -65,14 +73,21 @@ Gameplay is simulated at the drive/play level in `frontend2/src/domain/sim.ts`:
 
 ## Rankings, Stats, Awards (Frontend2)
 
-Rankings and stats are updated during sim and persisted in IndexedDB. Awards are being ported from the legacy pipeline.
+Rankings, stats, and awards are updated during sim and persisted in IndexedDB.
 
 ## Data
 
-Frontend2 relies on JSON files under `frontend2/public/data/` for teams, conferences, and year data.
+Frontend2 relies on JSON files under `frontend2/public/data/` for teams, conferences, years, ratings, and generated history/odds.
 
 ## Docs Map
 
 - `README.md` for high-level overview and pointers
 - `DEV_SETUP.md` for setup and run commands
 - `AGENTS.md` for Codex/agent context
+
+## AI Contribution Guardrails
+
+- Put new logic in the correct folder (domain, loaders, utils) before creating a new file.
+- Reuse existing helpers; only create a new helper if it’s used in 2+ places.
+- Keep types centralized under `src/types`.
+- After structural changes, run `npm run typecheck`.

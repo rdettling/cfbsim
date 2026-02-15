@@ -7,7 +7,7 @@ import { saveLeague } from '../../../db/leagueRepo';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
 import { ensureRosters, POSITION_ORDER } from '../../roster';
 import { buildAwards } from '../awards';
-import { buildScheduleGameForTeam } from './utils';
+import { buildScheduleGameForTeam } from '../utils/schedule';
 import { average, percentage } from '../utils/statMath';
 
 
