@@ -128,6 +128,7 @@ export const NonCon = () => {
         <PageLayout 
             loading={loading} 
             error={error}
+            navbarData={data ? { team: data.team, info: data.info, conferences: data.conferences } : undefined}
             containerMaxWidth="lg"
         >
             {data && (

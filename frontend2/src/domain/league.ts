@@ -1,5 +1,5 @@
 import type { Conference, Info, ScheduleGame, Team } from './types';
-import { getConferencesData, getTeamsData, getYearData, getYearsIndex } from '../db/baseData';
+import { getConferencesData, getRivalriesData, getTeamsData, getYearData, getYearsIndex } from '../db/baseData';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
 
 export interface PreviewData {
@@ -50,15 +50,47 @@ interface LeagueState {
   pending_rivalries: NonConData['pending_rivalries'];
 }
 
+interface YearData {
+  playoff: {
+    teams: number;
+    conf_champ_autobids?: number;
+    conf_champ_top_4?: boolean;
+  };
+  conferences: Record<string, { games: number; teams: Record<string, number> }>;
+  Independent?: Record<string, number>;
+}
+
+interface TeamsData {
+  teams: Record<
+    string,
+    {
+      mascot: string;
+      abbreviation: string;
+      ceiling: number;
+      floor: number;
+      colorPrimary: string;
+      colorSecondary: string;
+      city?: string;
+      state?: string;
+      stadium?: string;
+    }
+  >;
+}
+
+type ConferencesData = Record<string, string>;
+
 const buildPreviewData = async (year: string): Promise<PreviewData> => {
   const [yearData, teamsData, conferencesData] = await Promise.all([
     getYearData(year),
     getTeamsData(),
     getConferencesData(),
   ]);
+  const typedYearData = yearData as YearData;
+  const typedTeamsData = teamsData as TeamsData;
+  const typedConferencesData = conferencesData as ConferencesData;
 
   const addTeamMetadata = (teamName: string, prestige: number): Team => {
-    const meta = teamsData.teams[teamName];
+    const meta = typedTeamsData.teams[teamName];
     return {
       id: 0,
       name: teamName,
@@ -92,7 +124,7 @@ const buildPreviewData = async (year: string): Promise<PreviewData> => {
   };
 
   const conferences: PreviewData['conferences'] = {};
-  Object.entries(yearData.conferences || {}).forEach(([confName, confData]) => {
+  Object.entries(typedYearData.conferences || {}).forEach(([confName, confData]) => {
     const teams = Object.entries(confData.teams || {}).map(
       ([teamName, prestige]) => addTeamMetadata(teamName, prestige as number)
     );
@@ -101,21 +133,21 @@ const buildPreviewData = async (year: string): Promise<PreviewData> => {
     conferences[confName] = {
       ...confData,
       confName,
-      confFullName: conferencesData[confName] ?? confName,
+      confFullName: typedConferencesData[confName] ?? confName,
       confGames: confData.games,
       teams,
     };
   });
 
-  const independents = Object.entries(yearData.Independent || {}).map(
+  const independents = Object.entries(typedYearData.Independent || {}).map(
     ([teamName, prestige]) => addTeamMetadata(teamName, prestige as number)
   );
 
   return {
     playoff: {
-      teams: yearData.playoff.teams,
-      conf_champ_autobids: yearData.playoff.conf_champ_autobids ?? 0,
-      conf_champ_top_4: yearData.playoff.conf_champ_top_4 ?? false,
+      teams: typedYearData.playoff.teams,
+      conf_champ_autobids: typedYearData.playoff.conf_champ_autobids ?? 0,
+      conf_champ_top_4: typedYearData.playoff.conf_champ_top_4 ?? false,
     },
     conferences,
     independents,
@@ -128,6 +160,9 @@ const buildTeamsAndConferences = async (year: string) => {
     getTeamsData(),
     getConferencesData(),
   ]);
+  const typedYearData = yearData as YearData;
+  const typedTeamsData = teamsData as TeamsData;
+  const typedConferencesData = conferencesData as ConferencesData;
 
   const teams: Team[] = [];
   const conferences: Conference[] = [];
@@ -140,7 +175,7 @@ const buildTeamsAndConferences = async (year: string) => {
     conferenceName: string | null,
     confGames: number
   ): Team => {
-    const meta = teamsData.teams[teamName];
+    const meta = typedTeamsData.teams[teamName];
     const team: Team = {
       id: teamId,
       name: teamName,
@@ -175,7 +210,7 @@ const buildTeamsAndConferences = async (year: string) => {
     return team;
   };
 
-  Object.entries(yearData.conferences).forEach(([confName, confData]) => {
+  Object.entries(typedYearData.conferences).forEach(([confName, confData]) => {
     const confTeams: Team[] = [];
     Object.entries(confData.teams).forEach(([teamName, prestige]) => {
       const team = makeTeam(teamName, prestige as number, confName, confData.games);
@@ -186,7 +221,7 @@ const buildTeamsAndConferences = async (year: string) => {
     conferences.push({
       id: conferenceId,
       confName,
-      confFullName: conferencesData[confName] ?? confName,
+      confFullName: typedConferencesData[confName] ?? confName,
       confGames: confData.games,
       info: '',
       championship: null,
@@ -195,7 +230,7 @@ const buildTeamsAndConferences = async (year: string) => {
     conferenceId += 1;
   });
 
-  const independents = yearData.Independent ?? {};
+  const independents = typedYearData.Independent ?? {};
   if (Object.keys(independents).length) {
     const confTeams: Team[] = [];
     Object.entries(independents).forEach(([teamName, prestige]) => {
@@ -235,6 +270,52 @@ const buildSchedule = (): ScheduleGame[] =>
     id: '',
   }));
 
+const applyRivalriesToSchedule = async (
+  schedule: ScheduleGame[],
+  userTeam: Team,
+  teams: Team[]
+): Promise<NonConData['pending_rivalries']> => {
+  const rivalries = await getRivalriesData();
+  let pendingId = 1;
+  const pending: NonConData['pending_rivalries'] = [];
+
+  const teamByName = new Map(teams.map(team => [team.name, team]));
+
+  rivalries.rivalries.forEach(([teamA, teamB, week, name]) => {
+    if (teamA !== userTeam.name && teamB !== userTeam.name) return;
+    const opponentName = teamA === userTeam.name ? teamB : teamA;
+    const opponent = teamByName.get(opponentName);
+    if (!opponent) return;
+
+    if (week) {
+      const slot = schedule[week - 1];
+      if (!slot.opponent) {
+        slot.opponent = {
+          name: opponent.name,
+          rating: opponent.rating,
+          ranking: opponent.ranking,
+          record: opponent.record,
+        };
+        slot.label = name ?? 'Rivalry';
+        slot.id = `${userTeam.name}-vs-${opponent.name}-week-${week}`;
+      }
+      return;
+    }
+
+    pending.push({
+      id: pendingId,
+      teamA,
+      teamB,
+      name: name ?? null,
+      homeTeam: null,
+      awayTeam: null,
+    });
+    pendingId += 1;
+  });
+
+  return pending;
+};
+
 export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
   const yearsIndex = await getYearsIndex();
   const years = yearsIndex.years;
@@ -271,6 +352,12 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
     schedule: buildSchedule(),
     pending_rivalries: [],
   };
+
+  league.pending_rivalries = await applyRivalriesToSchedule(
+    league.schedule,
+    userTeam,
+    teams
+  );
 
   await saveLeague(league);
 

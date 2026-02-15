@@ -1,9 +1,16 @@
 import { ReactNode } from 'react';
 import { Box, Container, CircularProgress, Alert } from '@mui/material';
+import Navbar from './Navbar';
+import type { Info, Team, Conference } from '../domain/types';
 
 interface PageLayoutProps {
     loading: boolean;
     error: string | null;
+    navbarData?: {
+        team?: Team | null;
+        info?: Info | null;
+        conferences?: Conference[];
+    };
     containerMaxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
     children: ReactNode;
 }
@@ -20,6 +27,7 @@ interface PageLayoutProps {
 export const PageLayout = ({ 
     loading, 
     error, 
+    navbarData,
     containerMaxWidth = 'lg',
     children 
 }: PageLayoutProps) => {
@@ -40,6 +48,13 @@ export const PageLayout = ({
     // Main content
     return (
         <>
+            {navbarData && (
+                <Navbar
+                    team={navbarData.team}
+                    info={navbarData.info}
+                    conferences={navbarData.conferences}
+                />
+            )}
             {containerMaxWidth !== false ? (
                 <Container maxWidth={containerMaxWidth} sx={{ py: 4 }}>
                     {children}

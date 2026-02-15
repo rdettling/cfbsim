@@ -25,3 +25,8 @@ export const getConferencesData = () =>
   getBaseData<any>('conferences', '/data/conferences.json');
 export const getYearData = (year: string) =>
   getBaseData<any>(`years:${year}`, `/data/years/${year}.json`);
+export const getRivalriesData = () =>
+  getBaseData<{ rivalries: [string, string, number | null, string | null][] }>(
+    'rivalries',
+    '/data/rivalries.json'
+  );
