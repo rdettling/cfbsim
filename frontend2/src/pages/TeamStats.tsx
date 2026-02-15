@@ -19,7 +19,7 @@ import {
 import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import { TeamInfoModal, TeamLogo } from '../components/team/TeamComponents';
 import { PageLayout } from '../components/layout/PageLayout';
-import type { TeamStatsPageData, TeamStatsType, TeamStatsSortConfig, TeamStatsColumnConfig } from '../types/stats';
+import type { TeamStatsType, TeamStatsSortConfig, TeamStatsColumnConfig } from '../types/stats';
 
 // Column configuration for the stats table
 const COLUMN_CONFIG: TeamStatsColumnConfig[] = [
@@ -55,6 +55,8 @@ const TABLE_SECTIONS = [
     { label: 'Turnovers', colSpan: 3 }
 ];
 
+type TeamStatsData = Awaited<ReturnType<typeof loadTeamStats>>;
+
 const TeamStats = () => {
     const [tabValue, setTabValue] = useState(0);
     const [modalOpen, setModalOpen] = useState(false);
@@ -64,7 +66,7 @@ const TeamStats = () => {
         direction: 'desc'
     });
 
-    const { data, loading, error } = useDomainData<TeamStatsPageData>({
+    const { data, loading, error } = useDomainData<TeamStatsData>({
         fetcher: loadTeamStats,
         deps: [],
     });
@@ -80,6 +82,30 @@ const TeamStats = () => {
             direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc'
         }));
     };
+
+    const fillStats = (stats: Partial<TeamStatsType>): TeamStatsType => ({
+        games: 0,
+        ppg: 0,
+        pass_cpg: 0,
+        pass_apg: 0,
+        comp_percent: 0,
+        pass_ypg: 0,
+        pass_tdpg: 0,
+        rush_apg: 0,
+        rush_ypg: 0,
+        rush_ypc: 0,
+        rush_tdpg: 0,
+        playspg: 0,
+        yardspg: 0,
+        ypp: 0,
+        first_downs_pass: 0,
+        first_downs_rush: 0,
+        first_downs_total: 0,
+        fumbles: 0,
+        interceptions: 0,
+        turnovers: 0,
+        ...stats,
+    });
 
     // Sort and rank the stats
     const sortedStats = useMemo(() => {
@@ -115,7 +141,7 @@ const TeamStats = () => {
 
         // Add averages row
         const averagesRow: TeamStatsType & { rank: number } = {
-            ...currentAverages,
+            ...fillStats(currentAverages as Partial<TeamStatsType>),
             rank: 0  // Always first position
         };
 
@@ -130,7 +156,7 @@ const TeamStats = () => {
         return sortConfig.direction === 'desc' ? <ArrowDownward /> : <ArrowUpward />;
     };
 
-    const renderSortableHeader = (column: ColumnConfig) => {
+    const renderSortableHeader = (column: TeamStatsColumnConfig) => {
         if (!column.sortable) {
             return (
                 <TableCell 

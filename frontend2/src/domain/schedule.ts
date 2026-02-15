@@ -524,9 +524,9 @@ export const fillUserSchedule = (
     const existingId = existingIdsByWeek.get(game.weekPlayed);
     slot.label = existingLabel ?? game.name ?? buildLabel(userTeam, opponent);
     slot.location =
-      game.homeTeam.id === userTeam.id
+      game.homeTeam?.id === userTeam.id
         ? 'Home'
-        : game.awayTeam.id === userTeam.id
+        : game.awayTeam?.id === userTeam.id
           ? 'Away'
           : 'Neutral';
     slot.id =

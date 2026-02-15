@@ -100,7 +100,7 @@ const TeamSchedule = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.games.map((game: ScheduleGame) => (
+                {data.games.map((game) => (
                   <TableRow
                     key={game.weekPlayed}
                     sx={{

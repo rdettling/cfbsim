@@ -1,4 +1,5 @@
-import { getDb, type GameRecord, type DriveRecord, type PlayRecord, type GameLogRecord, type PlayerRecord } from './db';
+import { getDb } from './db';
+import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../types/db';
 
 export const clearSimArtifacts = async () => {
   const db = await getDb();

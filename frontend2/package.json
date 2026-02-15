@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:history": "tsx scripts/generate_history.ts",
+    "generate:odds": "tsx scripts/generate_betting_odds.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -21,8 +24,10 @@
   "devDependencies": {
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
+    "@types/node": "^22.13.1",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.3",
+    "tsx": "^4.19.2",
     "vite": "^6.1.0"
   }
 }

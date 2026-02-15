@@ -20,6 +20,17 @@ import { useDomainData } from '../domain/hooks';
 import { loadTeamHistory } from '../domain/league';
 import { PageLayout } from '../components/layout/PageLayout';
 
+type YearHistory = {
+  year: number;
+  prestige: number;
+  rating: number | null;
+  conference: string;
+  wins: number;
+  losses: number;
+  rank: number;
+  has_games: boolean;
+};
+
 const TeamHistory = () => {
   const { teamName } = useParams();
   const navigate = useNavigate();

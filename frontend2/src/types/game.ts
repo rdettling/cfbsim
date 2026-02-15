@@ -33,11 +33,15 @@ export interface GameData {
     id: number;
     name: string;
     record: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
   };
   teamB: {
     id: number;
     name: string;
     record: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
   };
   scoreA: number;
   scoreB: number;

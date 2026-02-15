@@ -851,8 +851,20 @@ export const buildGameData = (game: GameRecord, teamsById: Map<number, Team>): G
     id: game.id,
     base_label: game.baseLabel,
     headline: game.headline,
-    teamA: { id: teamA.id, name: teamA.name, record: teamA.record },
-    teamB: { id: teamB.id, name: teamB.name, record: teamB.record },
+    teamA: {
+      id: teamA.id,
+      name: teamA.name,
+      record: teamA.record,
+      colorPrimary: teamA.colorPrimary,
+      colorSecondary: teamA.colorSecondary,
+    },
+    teamB: {
+      id: teamB.id,
+      name: teamB.name,
+      record: teamB.record,
+      colorPrimary: teamB.colorPrimary,
+      colorSecondary: teamB.colorSecondary,
+    },
     scoreA: game.scoreA ?? 0,
     scoreB: game.scoreB ?? 0,
   };

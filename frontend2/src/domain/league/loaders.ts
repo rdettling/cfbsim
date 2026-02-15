@@ -1,5 +1,5 @@
 import type { Conference, Info, ScheduleGame, Team } from '../../types/domain';
-import { getYearsIndex, getRatingsIndex, getRatingsData, getYearData } from '../../db/baseData';
+import { getYearsIndex, getRatingsData, getYearData, getHistoryData } from '../../db/baseData';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
   clearAllSimData,
@@ -26,7 +26,7 @@ import { DEFAULT_SETTINGS, ensureSettings, type LaunchProps, type LeagueState, t
 import { getLastWeekByPlayoffTeams } from './postseason';
 import { normalizeLeague } from './normalize';
 import type { GameRecord, GameLogRecord, PlayerRecord } from '../../types/db';
-import type { RatingsData, YearData } from '../../types/baseData';
+import type { RatingsData, YearData, HistoryData } from '../../types/baseData';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { buildBaseLabel } from '../gameHelpers';
 import { buildAwards } from './awards';
@@ -118,8 +118,8 @@ export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
 };
 
 const primeHistoryData = async (startYear: number) => {
-  const ratingsIndex = await getRatingsIndex();
-  const years = ratingsIndex.years
+  const yearsIndex = await getYearsIndex();
+  const years = yearsIndex.years
     .map(entry => Number(entry))
     .filter(year => year < startYear);
 
@@ -441,7 +441,7 @@ export const loadRatingsStats = async () => {
     const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let starSum = 0;
     prestigePlayers.forEach(player => {
-      const star = Math.min(5, Math.max(1, player.stars || 1));
+      const star = Math.min(5, Math.max(1, player.stars || 1)) as 1 | 2 | 3 | 4 | 5;
       starCounts[star] += 1;
       starSum += star;
     });
@@ -753,43 +753,77 @@ export const loadTeamHistory = async (teamName?: string) => {
     league.teams[0];
 
   const startYear = league.info.startYear ?? league.info.currentYear;
-  const ratingsIndex = await getRatingsIndex();
-  const historicalYears = ratingsIndex.years
-    .map(entry => Number(entry))
-    .filter(year => year < startYear)
-    .sort((a, b) => b - a);
+  let historicalRows: Array<{
+    year: number;
+    prestige: number;
+    rating: number | null;
+    conference: string;
+    wins: number;
+    losses: number;
+    rank: number;
+    has_games: boolean;
+  }> = [];
 
-  const historicalRows = await Promise.all(
-    historicalYears.map(async year => {
-      const ratingsData = (await getRatingsData(String(year))) as RatingsData;
-      const yearData = (await getYearData(String(year))) as YearData;
-      const teamEntry = ratingsData.teams.find(entry => entry.team === team.name);
-      if (!teamEntry) return null;
-
-      let prestige: number | null = null;
-      Object.values(yearData.conferences ?? {}).some(confData => {
-        if (team.name in confData.teams) {
-          prestige = confData.teams[team.name];
-          return true;
-        }
-        return false;
-      });
-      if (prestige == null && yearData.Independent && team.name in yearData.Independent) {
-        prestige = yearData.Independent[team.name];
-      }
-
-      return {
-        year,
-        prestige: prestige ?? team.prestige,
+  try {
+    const historyData = (await getHistoryData()) as HistoryData;
+    const teamHistory = historyData.teams[team.name] ?? [];
+    const confById = new Map(
+      Object.entries(historyData.conf_index).map(([name, id]) => [id, name])
+    );
+    historicalRows = teamHistory
+      .filter(entry => entry[0] < startYear)
+      .sort((a, b) => b[0] - a[0])
+      .map(entry => ({
+        year: entry[0],
+        prestige: (entry[5] ?? team.prestige) as number,
         rating: null,
-        conference: teamEntry.conference ?? 'Independent',
-        wins: teamEntry.wins ?? 0,
-        losses: teamEntry.losses ?? 0,
-        rank: teamEntry.rank ?? 0,
+        conference: confById.get(entry[1]) ?? 'Independent',
+        wins: entry[3] ?? 0,
+        losses: entry[4] ?? 0,
+        rank: entry[2] ?? 0,
         has_games: false,
-      };
-    })
-  );
+      }));
+  } catch (error) {
+    const yearsIndex = await getYearsIndex();
+    const historicalYears = yearsIndex.years
+      .map(entry => Number(entry))
+      .filter(year => year < startYear)
+      .sort((a, b) => b - a);
+
+    const computed = await Promise.all(
+      historicalYears.map(async year => {
+        const ratingsData = (await getRatingsData(String(year))) as RatingsData;
+        const yearData = (await getYearData(String(year))) as YearData;
+        const teamEntry = ratingsData.teams.find(entry => entry.team === team.name);
+        if (!teamEntry) return null;
+
+        let prestige: number | null = null;
+        Object.values(yearData.conferences ?? {}).some(confData => {
+          if (team.name in confData.teams) {
+            prestige = confData.teams[team.name];
+            return true;
+          }
+          return false;
+        });
+        if (prestige == null && yearData.Independent && team.name in yearData.Independent) {
+          prestige = yearData.Independent[team.name];
+        }
+
+        return {
+          year,
+          prestige: prestige ?? team.prestige,
+          rating: null,
+          conference: teamEntry.conference ?? 'Independent',
+          wins: teamEntry.wins ?? 0,
+          losses: teamEntry.losses ?? 0,
+          rank: teamEntry.rank ?? 0,
+          has_games: false,
+        };
+      })
+    );
+    historicalRows = computed.filter(Boolean) as typeof historicalRows;
+    console.warn('History data preload missing, using ratings fallback.', error);
+  }
 
   const years = [
     {
@@ -802,7 +836,7 @@ export const loadTeamHistory = async (teamName?: string) => {
       rank: team.ranking,
       has_games: true,
     },
-    ...historicalRows.filter(Boolean),
+    ...historicalRows,
   ];
 
   return {

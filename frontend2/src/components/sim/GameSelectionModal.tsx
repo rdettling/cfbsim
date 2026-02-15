@@ -40,7 +40,7 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
         }
     };
 
-    const handleGameClick = (game: Game) => {
+    const handleGameClick = (game: GameSelectionModalGame) => {
         onGameSelect(game.id, game.is_user_game || false);
         onClose();
     };

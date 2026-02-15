@@ -569,14 +569,18 @@ export const buildAwards = (
   const finals: typeof favorites = [];
   PRIORITY_ORDER.forEach(slug => {
     const candidates = candidatesBySlug[slug] ?? [];
-    let firstCandidate = candidates[0];
+    let firstCandidate: (typeof candidates)[number] | undefined = candidates[0];
     if (firstCandidate && blockedPlayers.has(firstCandidate.player.id)) {
       firstCandidate = candidates.find(candidate => !blockedPlayers.has(candidate.player.id));
     }
     if (firstCandidate) {
       blockedPlayers.add(firstCandidate.player.id);
     }
-    const ordered = [firstCandidate, ...candidates.filter(candidate => candidate !== firstCandidate)];
+    const ordered: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+    if (firstCandidate) {
+      ordered.push(firstCandidate);
+    }
+    ordered.push(...candidates.filter(candidate => candidate !== firstCandidate));
     finals.push(buildAwardEntry(slug, ordered, true));
   });
 

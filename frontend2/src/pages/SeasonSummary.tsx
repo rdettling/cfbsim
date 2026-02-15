@@ -20,6 +20,23 @@ import {
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 type SeasonSummaryData = Awaited<ReturnType<typeof loadSeasonSummary>>;
+type SummaryChampion = SeasonSummaryData['team'];
+type SummaryAward = {
+  category_slug: string;
+  category_name: string;
+  first_place: {
+    id: number;
+    first: string;
+    last: string;
+    pos: string;
+    team_name: string;
+  } | null;
+  first_stats: Record<string, any> | null;
+};
+type SummaryTeam = SeasonSummaryData['teams'][number] & {
+  avg_rank_before?: number | null;
+  avg_rank_after?: number | null;
+};
 
 const SeasonSummary = () => {
   const [selectedTeam, setSelectedTeam] = useState<string>('');
@@ -35,9 +52,10 @@ const SeasonSummary = () => {
     setModalOpen(true);
   };
 
-  const champion = data?.champion ?? null;
-  const awards = data?.awards ?? [];
-  const prestigeChanges = (data?.teams ?? [])
+  const champion = (data?.champion ?? null) as SummaryChampion | null;
+  const awards = (data?.awards ?? []) as SummaryAward[];
+  const prestigeChanges = (data?.teams ?? []) as SummaryTeam[];
+  const orderedPrestigeChanges = prestigeChanges
     .filter((team) => (team.prestige_change ?? 0) !== 0)
     .slice()
     .sort((a, b) => {
@@ -235,7 +253,7 @@ const SeasonSummary = () => {
                     </Typography>
                   </Box>
                   <Box sx={{ mt: 1.5, flex: 1, overflow: 'auto' }}>
-                    {prestigeChanges.length > 0 ? (
+                    {orderedPrestigeChanges.length > 0 ? (
                       <TableContainer component={Paper} variant="outlined">
                         <Table size="small" stickyHeader>
                           <TableHead>
@@ -247,7 +265,7 @@ const SeasonSummary = () => {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {prestigeChanges.map((team) => {
+                            {orderedPrestigeChanges.map((team) => {
                               const change = team.prestige_change ?? 0;
                               const changeLabel = change > 0 ? `+${change}` : `${change}`;
                               const chipColor =

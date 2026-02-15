@@ -22,6 +22,7 @@ import TeamHeader from '../components/team/TeamHeader';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamRoster } from '../domain/league';
 import { PageLayout } from '../components/layout/PageLayout';
+import type { PlayerRecord } from '../types/db';
 
 const Roster = () => {
   const { teamName } = useParams();
@@ -103,7 +104,7 @@ const Roster = () => {
                 {data.positions
                   .filter((position: string) => positionFilter === '' || positionFilter === position)
                   .map((position: string) => {
-                    const playersInPosition = data.roster.filter((player: Player) => player.pos === position);
+                    const playersInPosition = data.roster.filter((player: PlayerRecord) => player.pos === position);
                     return playersInPosition.length > 0 ? (
                       <React.Fragment key={`pos-${position}`}>
                         <TableRow>
@@ -117,7 +118,7 @@ const Roster = () => {
                             {position}
                           </TableCell>
                         </TableRow>
-                        {playersInPosition.map((player: Player) => (
+                        {playersInPosition.map((player: PlayerRecord) => (
                           <TableRow
                             key={`player-${player.id}`}
                             sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}

@@ -38,3 +38,10 @@ export interface RatingsData {
     losses: number;
   }>;
 }
+
+export interface HistoryData {
+  generated_at: string;
+  years: number[];
+  conf_index: Record<string, number>;
+  teams: Record<string, number[][]>;
+}

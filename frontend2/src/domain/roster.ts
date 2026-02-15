@@ -69,7 +69,9 @@ const weightedChoice = <T,>(items: Array<{ item: T; weight: number }>) => {
 };
 
 const normalizeCounters = (league: LeagueState) => {
-  if (!league.idCounters) league.idCounters = { player: 1 };
+  if (!league.idCounters) {
+    league.idCounters = { game: 1, drive: 1, play: 1, gameLog: 1, player: 1 };
+  }
   if (!league.idCounters.player) league.idCounters.player = 1;
   return league.idCounters;
 };

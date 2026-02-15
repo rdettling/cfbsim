@@ -14,6 +14,8 @@ import { loadDashboard } from '../domain/league';
 const GameCard = ({ game, type, onTeamClick }: DashboardGameCardProps) => {
     // Check if game has been played (either from last week or live-simmed this week)
     const isCompleted = game.result !== null && game.result !== undefined;
+    const opponent = game.opponent;
+    if (!opponent) return null;
     
     return (
         <Card elevation={3} sx={{ 
@@ -31,17 +33,17 @@ const GameCard = ({ game, type, onTeamClick }: DashboardGameCardProps) => {
                 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <TeamLogo name={game.opponent.name} size={40} />
+                        <TeamLogo name={opponent.name} size={40} />
                         <Box>
                             <MuiLink
                                 component="button"
-                                onClick={() => onTeamClick(game.opponent.name)}
+                                onClick={() => onTeamClick(opponent.name)}
                                 sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' }}
                             >
-                                {game.opponent.ranking > 0 ? `#${game.opponent.ranking} ` : ''}{game.opponent.name}
+                                {opponent.ranking > 0 ? `#${opponent.ranking} ` : ''}{opponent.name}
                             </MuiLink>
                             <Typography variant="body2" color="text.secondary">
-                                {game.opponent.record}
+                                {opponent.record}
                             </Typography>
                         </Box>
                     </Box>
@@ -131,6 +133,7 @@ const Dashboard = () => {
     };
 
     const confName = data?.team.conference;
+    const topGames = (data?.top_games ?? []) as Array<{ id: number; headline: string }>;
 
     return (
         <PageLayout 
@@ -250,9 +253,9 @@ const Dashboard = () => {
                                 <Box sx={{ bgcolor: 'success.main', color: 'white', p: 2 }}>
                                     <Typography variant="h5" align="center">Headlines</Typography>
                                 </Box>
-                                {data.top_games.length > 0 ? (
+                                {topGames.length > 0 ? (
                                     <Box sx={{ p: 2 }}>
-                                        {data.top_games.map((game) => (
+                                        {topGames.map((game) => (
                                             <Box 
                                                 key={game.id}
                                                 sx={{ 
