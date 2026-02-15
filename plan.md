@@ -1,49 +1,88 @@
-# IndexedDB Migration Plan
+# Frontend2 Migration Context (2026-02-15)
 
-## Decisions
-- Target: full client-side, offline-first. Start with a hybrid phase if it reduces risk.
-- Schema changes: wipe-and-recreate (no migrations).
-- DB library: use `idb` for a small, clean wrapper around IndexedDB.
-- UI: keep existing screens; only change data access as needed.
-- Performance focus: eliminate backend write amplification (e.g., per-play persistence during week sim).
+## Goal
+Rebuild frontend from scratch in `frontend2/` with clean architecture:
+- No backend API calls.
+- IndexedDB-first persistence.
+- UI copied page-by-page from old `frontend/` and then adapted.
+- Start with Home + Non-Con + Dashboard flow; expand iteratively.
 
-## Phases
-1. **Inventory + Schema Design**
-   - Map Django models and required persisted state to IndexedDB stores.
-   - Separate “derived” data from “source of truth” data.
-   - Define store keys, indices, and denormalization strategy for fast reads.
+## Current State (Implemented)
+- `frontend2/` is a minimal Vite React TS app (hand-rolled, no `npm create`).
+- Pages implemented: `Home`, `Noncon`, `Dashboard`.
+- Domain/data architecture:
+  - `src/db/`: IndexedDB + base data caching
+  - `src/domain/`: domain logic + types + hooks
+  - `src/pages/`: UI screens
+  - `src/components/`: shared UI copied from old app (Navbar + banners + live sim UI etc.)
+  - `src/constants/`: routes + stages
 
-2. **Client DB Foundation**
-   - Add `idb` and a `db` module with `openDb()`.
-   - Implement wipe-on-schema-mismatch: if expected stores are missing, delete DB and recreate.
-   - Add a small repository layer (e.g., `leagueRepo`, `scheduleRepo`, `statsRepo`).
+### Core Flow
+1. Home loads base data from `frontend2/public/data` (years, teams, conferences) via IndexedDB caching.
+2. Clicking Start Game creates a new league in IndexedDB.
+3. Rivalry games are placed for the user team before Non-Con page (using `rivalries.json`).
+4. Non-Con page lets you schedule non-conference games (now implemented).
+5. Dashboard builds the rest of the schedule on first load (simple filler for now) and flips stage to `season`.
 
-3. **Hybrid Bridge (Optional, Transitional)**
-   - Keep backend as source-of-truth for initial load.
-   - Implement import: fetch initial league state from API and write to IndexedDB.
-   - Route reads in the frontend to IndexedDB first.
+## Key Files
+### Domain
+- `frontend2/src/domain/league.ts`
+  - Public API used by pages: `loadHomeData`, `startNewLeague`, `loadNonCon`, `loadDashboard`, `listAvailableTeams`, `scheduleNonConGame`, `getTeamInfo`.
+- `frontend2/src/domain/baseData.ts`
+  - Builds preview data; builds teams/conferences from base JSON.
+- `frontend2/src/domain/schedule.ts`
+  - `buildSchedule`, `applyRivalriesToSchedule`, `fillUserSchedule`, `listAvailableTeams`, `scheduleNonConGame`.
+- `frontend2/src/domain/types.ts` (minimal domain types used by pages/components).
+- `frontend2/src/domain/hooks.ts` (`useDomainData`).
 
-4. **Move Sim Core Client-Side**
-   - Extract sim logic from `backend/logic` into TS modules in `frontend/` (or shared package).
-   - Replace server sim endpoints with local simulation calls.
-   - Persist only required outputs per step; avoid per-play storage unless explicitly requested.
+### Data (IndexedDB)
+- `frontend2/src/db/db.ts` (IDB setup)
+- `frontend2/src/db/baseData.ts` (cache base JSON in IDB; `getRivalriesData` added)
+- `frontend2/src/db/leagueRepo.ts` (save/load league blob)
 
-5. **Performance + Storage Strategy**
-   - Default to storing summaries; optional “store play-by-play” setting.
-   - Batch writes and use large transactions to reduce overhead.
-   - Add quota checks (`navigator.storage.estimate()`) and persistence request.
+### Pages
+- `frontend2/src/pages/Home.tsx`
+  - Uses `loadHomeData`.
+- `frontend2/src/pages/Noncon.tsx`
+  - Uses `startNewLeague`, `loadNonCon`, `listAvailableTeams`, `scheduleNonConGame`.
+- `frontend2/src/pages/Dashboard.tsx`
+  - Copied from old app, refactored to use `loadDashboard`.
 
-6. **Offline-First**
-   - Cache base data locally (teams, ratings, years).
-   - Ensure full season sim and UI work without network after first load.
+### Components (copied from old app)
+- `Navbar.tsx`, `SeasonBanner.tsx`, `NonSeasonBanner.tsx`, `GameSelectionModal.tsx`, `LiveSimModal.tsx`, `LoadingDialog.tsx`
+- `DriveSummary.tsx`, `FootballField.tsx`, `GameHeader.tsx`, `GameControls.tsx`
+- `TeamComponents.tsx`, `PageLayout.tsx`
 
-7. **Backend Removal / Minimal Backend**
-   - Remove reliance on server for gameplay.
-   - Optionally keep backend for hosting static data or future cloud sync.
+Notes:
+- Navbar is the full old UI; backend calls removed or stubbed.
+- LiveSim and Season sim actions are stubbed (no backend).
+- `PageLayout` expects `navbarData` with `team`, `info`, `conferences`, `currentStage`.
 
-## Deliverables
-- IndexedDB schema + repository layer.
-- Client-side sim pipeline.
-- Offline-capable UI.
-- Optional toggle to persist play-by-play vs summary-only.
+## Public Data (copied into frontend2/public/data)
+- `teams.json`, `conferences.json`, `years/*.json`, `years/index.json`, `rivalries.json`.
+- (Other base files can be added later as needed.)
 
+## How to Run
+```
+cd frontend2
+npm install
+npm run dev
+```
+
+## Known Simplifications
+- All teams are 90 overall (rating/offense/defense).
+- Schedule filling on Dashboard is minimal (non-conference only, no full backend scheduling).
+- Rivalries only placed for user team (not all teams).
+- No real sim, no stats, no backend endpoints.
+
+## Next Steps (Suggested)
+1. Expand schedule generation to match backend `fillSchedules` (conference games, home/away balancing, etc.).
+2. Implement remaining pages one-by-one by copying UI and wiring to domain functions.
+3. Decide whether to store schedule per-team or full league schedule.
+4. Expand domain types to match eventual IDB schema (1:1).
+
+## Important Preferences / Constraints
+- Always copy old UI file first, then adapt for new architecture.
+- Keep code clean, minimal, and modular.
+- No backend calls; use IDB.
+- Navbar should look identical to old app, even if actions are stubbed.

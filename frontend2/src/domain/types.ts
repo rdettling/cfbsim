@@ -12,6 +12,8 @@ export interface Team {
   id: number;
   name: string;
   abbreviation: string;
+  confGames: number;
+  confLimit: number;
   nonConfGames: number;
   nonConfLimit: number;
   prestige: number;
