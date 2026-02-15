@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadStandings } from '../domain/league';
-import type { Team, Info, Conference } from '../domain/types';
+import type { Team, Info, Conference } from '../types/domain';
 import { TeamInfoModal, TeamLink, TeamLogo, ConfLogo } from '../components/team/TeamComponents';
 import { InlineLastWeek, InlineThisWeek } from '../components/team/InlineGameComponents';
 import { PageLayout } from '../components/layout/PageLayout';

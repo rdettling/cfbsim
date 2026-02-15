@@ -1,4 +1,4 @@
-import type { Info, Team } from './types';
+import type { Info, Team } from '../types/domain';
 import { getNamesData, getStatesData } from '../db/baseData';
 import { savePlayers, getPlayersByTeam, clearPlayers } from '../db/simRepo';
 import type { PlayerRecord } from '../db/db';

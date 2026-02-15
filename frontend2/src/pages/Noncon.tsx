@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
-import { Conference, Team, Info, ScheduleGame } from "../domain/types";
+import { Conference, Team, Info, ScheduleGame } from "../types/domain";
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadNonCon, startNewLeague, listAvailableTeams, scheduleNonConGame } from "../domain/league";

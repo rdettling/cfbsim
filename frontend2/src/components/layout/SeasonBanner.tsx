@@ -1,5 +1,5 @@
 import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
-import { Info } from '../../domain/types';
+import { Info } from '../../types/domain';
 import { ROUTES } from '../../constants/routes';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';

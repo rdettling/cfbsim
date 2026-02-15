@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamSchedule } from '../domain/league';
-import type { Conference, Info, ScheduleGame, Team } from '../domain/types';
+import type { Conference, Info, ScheduleGame, Team } from '../types/domain';
 import { TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import TeamHeader from '../components/team/TeamHeader';
 import { PageLayout } from '../components/layout/PageLayout';

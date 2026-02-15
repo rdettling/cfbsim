@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Box, Container, CircularProgress, Alert } from '@mui/material';
 import Navbar from './Navbar';
-import type { Info, Team, Conference } from '../../domain/types';
+import type { Info, Team, Conference } from '../../types/domain';
 
 interface PageLayoutProps {
     loading: boolean;

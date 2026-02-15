@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
-import { Team, Info } from "../domain/types";
+import { Team, Info } from "../types/domain";
 import { STAGES } from "../constants/stages";
 import {
   Typography,

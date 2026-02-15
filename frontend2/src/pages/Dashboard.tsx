@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Team, Info, ScheduleGame, Conference } from '../domain/types';
+import { Team, Info, ScheduleGame, Conference } from '../types/domain';
 import { TeamInfoModal, ConfLogo, TeamLogo } from '../components/team/TeamComponents';
 import {
     Typography, Card, CardContent, Table,

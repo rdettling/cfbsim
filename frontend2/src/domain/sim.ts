@@ -1,4 +1,4 @@
-import type { Team, Info, ScheduleGame } from './types';
+import type { Team, Info, ScheduleGame } from '../types/domain';
 import type { FullGame } from './schedule';
 import { fillUserSchedule } from './schedule';
 import { getBettingOddsData, getHeadlinesData } from '../db/baseData';

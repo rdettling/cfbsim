@@ -1,4 +1,4 @@
-import type { ScheduleGame, Team } from './types';
+import type { ScheduleGame, Team } from '../types/domain';
 import { getRivalriesData } from '../db/baseData';
 import type { NonConData } from './league';
 

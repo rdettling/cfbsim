@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useState } from 'react';
-import { Conference, Team, Info } from '../../domain/types';
+import { Conference, Team, Info } from '../../types/domain';
 import { TeamLogo } from '../team/TeamComponents';
 import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';

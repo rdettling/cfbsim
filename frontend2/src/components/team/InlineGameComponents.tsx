@@ -1,6 +1,6 @@
 import { Box, Typography, Link as MuiLink } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import type { Team } from '../../domain/types';
+import type { Team } from '../../types/domain';
 import { TeamLink, TeamLogo } from './TeamComponents';
 
 interface BaseGameComponentProps {

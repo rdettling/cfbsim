@@ -1,4 +1,4 @@
-import type { Conference, Team } from './types';
+import type { Conference, Team } from '../types/domain';
 import { getConferencesData, getTeamsData, getYearData } from '../db/baseData';
 
 export interface YearData {
