@@ -122,6 +122,11 @@ const GameResult = ({ data }: GameResultProps) => {
                         <Typography variant="body1" align="center" sx={{ fontStyle: 'italic' }}>
                             {game.headline}
                         </Typography>
+                        {game.headline_subtitle && (
+                            <Typography variant="caption" align="center" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                {game.headline_subtitle}
+                            </Typography>
+                        )}
                     </Box>
                 )}
             </Paper>

@@ -156,6 +156,9 @@ export const liveSimGame = async (gameId: number) => {
   const playRecords = simDrives.flatMap(drive => drive.plays);
   const logs = createGameLogsFromPlays(league, simGameObj, playRecords, starters);
 
+  updateTeamRecords([simGameObj]);
+  await generateHeadlines([simGameObj], new Map([[simGameObj.id, logs]]), playersById);
+
   const updatedRecord: GameRecord = {
     ...record,
     scoreA: simGameObj.scoreA,
@@ -165,12 +168,10 @@ export const liveSimGame = async (gameId: number) => {
     resultB: simGameObj.resultB,
     overtime: simGameObj.overtime,
     headline: simGameObj.headline ?? null,
+    headline_subtitle: simGameObj.headline_subtitle ?? null,
+    headline_tags: simGameObj.headline_tags ?? null,
+    headline_tone: simGameObj.headline_tone ?? null,
   };
-
-  updateTeamRecords([simGameObj]);
-  await generateHeadlines([simGameObj], new Map([[simGameObj.id, logs]]), playersById);
-
-  updatedRecord.headline = simGameObj.headline;
   await saveGames([updatedRecord]);
   await saveDrives(driveRecords);
   await savePlays(playRecords);
@@ -254,7 +255,12 @@ export const advanceWeeks = async (destWeek: number) => {
       await generateHeadlines(simGames, gameLogsByGame, playersById);
       simGames.forEach(simGameObj => {
         const gameRecord = unplayed.find(game => game.id === simGameObj.id);
-        if (gameRecord) gameRecord.headline = simGameObj.headline;
+        if (gameRecord) {
+          gameRecord.headline = simGameObj.headline ?? null;
+          gameRecord.headline_subtitle = simGameObj.headline_subtitle ?? null;
+          gameRecord.headline_tags = simGameObj.headline_tags ?? null;
+          gameRecord.headline_tone = simGameObj.headline_tone ?? null;
+        }
       });
       updateRankings(league.info, league.teams, simGames, league.settings);
 

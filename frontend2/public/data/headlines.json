@@ -57,6 +57,34 @@
         "<winner> outlasts <loser> in <score> overtime",
         "<winner> secures victory in sudden-death overtime <score>",
         "<winner> wins in double-overtime <score>"
+    ],
+    "postseason": [
+        "<winner> punches ticket with <score> win over <loser>",
+        "<winner> advances after <score> victory vs <loser>",
+        "<winner> claims postseason win in <score> triumph over <loser>",
+        "<winner> marches on with <score> win against <loser>",
+        "<winner> survives to advance with <score> victory"
+    ],
+    "rivalry": [
+        "<winner> wins rivalry showdown <score>",
+        "<winner> takes the rivalry with <score> win over <loser>",
+        "<winner> claims bragging rights in <score> rivalry win",
+        "<winner> edges <loser> in rivalry clash <score>",
+        "<winner> defends turf in rivalry win <score>"
+    ],
+    "top10": [
+        "Top-10 clash: <winner> tops <loser> <score>",
+        "<winner> outlasts <loser> in Top-10 showdown <score>",
+        "<winner> wins marquee Top-10 matchup <score>",
+        "No. <winner_rank> <winner> beats No. <loser_rank> <loser> <score>",
+        "<winner> prevails in heavyweight battle <score>"
+    ],
+    "ranked": [
+        "<winner> knocks off ranked <loser> <score>",
+        "<winner> handles ranked opponent in <score> win",
+        "<winner> defeats ranked <loser> <score>",
+        "<winner> earns statement win vs ranked <loser> <score>",
+        "<winner> takes down ranked <loser> <score>"
     ]
     
 }

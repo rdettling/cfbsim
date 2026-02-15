@@ -738,38 +738,99 @@ export const generateHeadlines = async (
     const loserScore = winner.id === game.teamA.id ? game.scoreB : game.scoreA;
     const winProb = winner.id === game.teamA.id ? game.winProbA : game.winProbB;
     const score = `${winnerScore}-${loserScore}`;
+    const margin = Math.abs(winnerScore - loserScore);
+
+    const winnerRank = winner.id === game.teamA.id ? game.rankATOG : game.rankBTOG;
+    const loserRank = loser.id === game.teamA.id ? game.rankATOG : game.rankBTOG;
+    const bothTop10 = winnerRank > 0 && winnerRank <= 10 && loserRank > 0 && loserRank <= 10;
+    const anyRanked = (winnerRank > 0 && winnerRank <= 25) || (loserRank > 0 && loserRank <= 25);
+    const isRivalry = (game.name ?? game.baseLabel).toLowerCase().includes('rivalry');
+    const isPostseason = /(playoff|championship|semifinal|quarterfinal|final)/i.test(
+      game.name ?? game.baseLabel
+    );
+    const isUpset = winProb < 0.1;
+    const isOvertime = game.overtime > 0;
+    const isBlowout = margin >= 21;
+    const isClose = margin <= 7;
+
+    const tags: string[] = [];
+    if (isPostseason) tags.push('postseason');
+    if (isRivalry) tags.push('rivalry');
+    if (bothTop10) tags.push('top10');
+    if (anyRanked) tags.push('ranked');
+    if (isUpset) tags.push('upset');
+    if (isOvertime) tags.push('overtime');
+    if (isBlowout) tags.push('blowout');
+    if (isClose) tags.push('close');
 
     let headlineTemplate = '';
-    if (game.overtime > 0) {
-      headlineTemplate = headlinesData.overtime[Math.floor(Math.random() * headlinesData.overtime.length)];
-    } else if (winProb < 0.1) {
-      headlineTemplate = headlinesData.upset[Math.floor(Math.random() * headlinesData.upset.length)];
+    let tone = 'default';
+    const pickTemplate = (key: string, fallbackKey: string) => {
+      const list = (headlinesData as Record<string, string[]>)[key];
+      const fallback = (headlinesData as Record<string, string[]>)[fallbackKey] ?? [];
+      const pool = list?.length ? list : fallback;
+      if (!pool.length) return '';
+      return pool[Math.floor(Math.random() * pool.length)];
+    };
+
+    if (isPostseason) {
+      tone = 'postseason';
+      headlineTemplate = pickTemplate('postseason', 'close');
+    } else if (isUpset) {
+      tone = 'upset';
+      headlineTemplate = pickTemplate('upset', 'close');
       const spread = winner.id === game.teamA.id ? game.spreadB : game.spreadA;
       headlineTemplate = headlineTemplate.replace('<spread>', spread);
-    } else if (winnerScore > loserScore + 20) {
-      headlineTemplate = headlinesData.blowout[Math.floor(Math.random() * headlinesData.blowout.length)];
-    } else if (winnerScore < loserScore + 10) {
-      headlineTemplate = headlinesData.close[Math.floor(Math.random() * headlinesData.close.length)];
+    } else if (isOvertime) {
+      tone = 'overtime';
+      headlineTemplate = pickTemplate('overtime', 'close');
+    } else if (isBlowout) {
+      tone = 'blowout';
+      headlineTemplate = pickTemplate('blowout', 'close');
+    } else if (isClose) {
+      tone = 'close';
+      headlineTemplate = pickTemplate('close', 'close');
+    } else if (bothTop10) {
+      tone = 'top10';
+      headlineTemplate = pickTemplate('top10', 'close');
+    } else if (isRivalry) {
+      tone = 'rivalry';
+      headlineTemplate = pickTemplate('rivalry', 'close');
+    } else if (anyRanked) {
+      tone = 'ranked';
+      headlineTemplate = pickTemplate('ranked', 'close');
     } else {
-      const logs = gameLogsByGameId.get(game.id);
-      const performance: BestPerformance | null = logs ? getBestPerformance(logs, playersById, winner.id) : null;
-      if (performance && headlinesData.individual?.length) {
-        headlineTemplate = headlinesData.individual[Math.floor(Math.random() * headlinesData.individual.length)];
-        headlineTemplate = headlineTemplate
-          .replace('<player>', `${performance.first} ${performance.last}`)
-          .replace('<stat_value>', `${performance.stat_value}`)
-          .replace('<stat_type>', performance.stat_type);
-      } else {
-        headlineTemplate = headlinesData.close[Math.floor(Math.random() * headlinesData.close.length)];
-      }
+      tone = 'close';
+      headlineTemplate = pickTemplate('close', 'close');
     }
 
+    const logs = gameLogsByGameId.get(game.id);
+    const performance: BestPerformance | null = logs ? getBestPerformance(logs, playersById, winner.id) : null;
+    let subtitle: string | null = null;
+    if (performance) {
+      subtitle = `${performance.first} ${performance.last}: ${performance.stat_value} ${performance.stat_type}`;
+    } else if (isUpset) {
+      const spread = winner.id === game.teamA.id ? game.spreadB : game.spreadA;
+      subtitle = `${winner.name} entered as ${spread} underdogs.`;
+    } else if (isOvertime) {
+      subtitle = game.overtime > 1 ? `Went to ${game.overtime} OT.` : 'Went to overtime.';
+    } else if (isBlowout) {
+      subtitle = `Won by ${margin}.`;
+    }
+
+    const winnerRankText = winnerRank > 0 ? `${winnerRank}` : 'NR';
+    const loserRankText = loserRank > 0 ? `${loserRank}` : 'NR';
     const headline = headlineTemplate
       .replace('<winner>', winner.name)
       .replace('<loser>', loser.name)
       .replace('<score>', score)
-      .replace('<mascot>', winner.mascot);
+      .replace('<mascot>', winner.mascot)
+      .replace('<winner_rank>', winnerRankText)
+      .replace('<loser_rank>', loserRankText);
     game.headline = headline;
+    game.headline_subtitle = subtitle;
+    game.headline_tags = tags.length ? tags : undefined;
+    game.headline_tone = tone;
   });
 };
 
@@ -851,6 +912,8 @@ export const buildGameData = (game: GameRecord, teamsById: Map<number, Team>): G
     id: game.id,
     base_label: game.baseLabel,
     headline: game.headline,
+    headline_subtitle: game.headline_subtitle ?? null,
+    headline_tags: game.headline_tags ?? null,
     teamA: {
       id: teamA.id,
       name: teamA.name,
@@ -896,5 +959,8 @@ export const hydrateGame = (game: GameRecord, teamsById: Map<number, Team>): Sim
   scoreA: game.scoreA ?? 0,
   scoreB: game.scoreB ?? 0,
   headline: game.headline,
+  headline_subtitle: game.headline_subtitle ?? null,
+  headline_tags: game.headline_tags ?? null,
+  headline_tone: game.headline_tone ?? null,
   watchability: game.watchability,
 });

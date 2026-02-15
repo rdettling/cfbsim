@@ -31,9 +31,10 @@ import { createNonConGameRecord } from '../seasonReset';
 import { advanceToPreseason } from '../stages';
 import { ensureRosters } from '../../roster';
 
-const getUserSchedule = async (league: LeagueState, weeks?: number) => {
+const getUserSchedule = async (league: LeagueState, weeks?: number, year?: number) => {
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-  const games = await getAllGames();
+  const targetYear = year ?? league.info.currentYear;
+  const games = (await getAllGames()).filter(game => game.year === targetYear);
   return buildUserScheduleFromGames(userTeam, league.teams, games, weeks);
 };
 
@@ -161,7 +162,7 @@ export const loadNonCon = async (): Promise<NonConData> => {
   }
 
   const team = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-  const schedule = await getUserSchedule(league);
+  const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
   return {
     info: league.info,
     team,
@@ -176,7 +177,7 @@ export const loadDashboard = async () => {
 
   if (!league.scheduleBuilt) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const schedule = await getUserSchedule(league);
+    const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
@@ -190,10 +191,29 @@ export const loadDashboard = async () => {
 
   const top10 = [...league.teams].sort((a, b) => a.ranking - b.ranking).slice(0, 10);
 
-  const schedule = await getUserSchedule(league, league.info.lastWeek || 14);
+  const schedule = await getUserSchedule(league, league.info.lastWeek || 14, league.info.currentYear);
   const currentWeekIndex = Math.max(league.info.currentWeek - 1, 0);
   const prevGame = currentWeekIndex > 0 ? schedule[currentWeekIndex - 1] : null;
   const currGame = schedule[currentWeekIndex] ?? null;
+
+  const lastWeek = Math.max(league.info.currentWeek - 1, 1);
+  const games = await getAllGames();
+  const top_games = games
+    .filter(
+      game =>
+        game.year === league.info.currentYear &&
+        game.weekPlayed === lastWeek &&
+        game.winnerId !== null &&
+        game.headline
+    )
+    .sort((a, b) => (b.watchability ?? 0) - (a.watchability ?? 0))
+    .slice(0, 5)
+    .map(game => ({
+      id: game.id,
+      headline: game.headline ?? '',
+      subtitle: game.headline_subtitle ?? null,
+      tags: game.headline_tags ?? [],
+    }));
 
   return {
     info: league.info,
@@ -202,7 +222,7 @@ export const loadDashboard = async () => {
     team: userTeam,
     confTeams,
     top_10: top10,
-    top_games: [],
+    top_games,
     conferences: league.conferences,
   };
 };
@@ -213,7 +233,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
 
   if (!league.scheduleBuilt && selectedYear === league.info.currentYear) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const schedule = await getUserSchedule(league);
+    const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
@@ -410,6 +430,8 @@ export const loadGame = async (gameId: number) => {
     resultB: record.resultB ?? '',
     overtime: record.overtime ?? 0,
     headline: record.headline ?? null,
+    headline_subtitle: record.headline_subtitle ?? null,
+    headline_tags: record.headline_tags ?? null,
   };
 
   const drives = record.winnerId
@@ -436,7 +458,7 @@ export const listAvailableTeams = async (week: number): Promise<string[]> => {
   const userTeam = league.teams.find(team => team.name === league.info.team);
   if (!userTeam) return [];
 
-  const schedule = await getUserSchedule(league);
+  const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
   return listTeamsForWeek(schedule, userTeam, league.teams, week);
 };
 
@@ -447,7 +469,7 @@ export const scheduleNonConGame = async (opponentName: string, week: number): Pr
   const opponent = league.teams.find(team => team.name === opponentName);
   if (!userTeam || !opponent) return;
 
-  const schedule = await getUserSchedule(league);
+  const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
   if (schedule[week - 1]?.opponent) return;
   scheduleGameForWeek(schedule, userTeam, opponent, week);
 

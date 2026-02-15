@@ -29,6 +29,8 @@ export interface GameData {
   id: number;
   base_label: string;
   headline?: string | null;
+  headline_subtitle?: string | null;
+  headline_tags?: string[] | null;
   teamA: {
     id: number;
     name: string;

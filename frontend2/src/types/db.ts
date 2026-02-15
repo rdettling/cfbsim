@@ -24,6 +24,9 @@ export interface GameRecord {
   scoreA: number | null;
   scoreB: number | null;
   headline: string | null;
+  headline_subtitle?: string | null;
+  headline_tags?: string[] | null;
+  headline_tone?: string | null;
   watchability: number | null;
 }
 

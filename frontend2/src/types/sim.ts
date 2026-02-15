@@ -27,6 +27,9 @@ export interface SimGame {
   scoreA: number;
   scoreB: number;
   headline: string | null;
+  headline_subtitle?: string | null;
+  headline_tags?: string[] | null;
+  headline_tone?: string | null;
   watchability: number | null;
 }
 

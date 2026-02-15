@@ -133,7 +133,12 @@ const Dashboard = () => {
     };
 
     const confName = data?.team.conference;
-    const topGames = (data?.top_games ?? []) as Array<{ id: number; headline: string }>;
+    const topGames = (data?.top_games ?? []) as Array<{
+        id: number;
+        headline: string;
+        subtitle?: string | null;
+        tags?: string[];
+    }>;
 
     return (
         <PageLayout 
@@ -268,20 +273,33 @@ const Dashboard = () => {
                                                 }}
                                             >
                                                 <Typography variant="body2" sx={{ mr: 1 }}>•</Typography>
-                                                <Typography 
-                                                    variant="body2"
-                                                    component="a"
-                                                    href={`/game/${game.id}`}
-                                                    sx={{ 
-                                                        cursor: 'pointer', 
-                                                        textDecoration: 'none',
-                                                        '&:hover': { textDecoration: 'underline' },
-                                                        flex: 1,
-                                                        color: 'primary.main'
-                                                    }}
-                                                >
-                                                    {game.headline}
-                                                </Typography>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Typography 
+                                                        variant="body2"
+                                                        component="a"
+                                                        href={`/game/${game.id}`}
+                                                        sx={{ 
+                                                            cursor: 'pointer', 
+                                                            textDecoration: 'none',
+                                                            '&:hover': { textDecoration: 'underline' },
+                                                            color: 'primary.main'
+                                                        }}
+                                                    >
+                                                        {game.headline}
+                                                    </Typography>
+                                                    {game.subtitle && (
+                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                                                            {game.subtitle}
+                                                        </Typography>
+                                                    )}
+                                                    {game.tags && game.tags.length > 0 && (
+                                                        <Box sx={{ mt: 0.5, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                                            {game.tags.slice(0, 3).map(tag => (
+                                                                <Chip key={tag} label={tag} size="small" variant="outlined" />
+                                                            ))}
+                                                        </Box>
+                                                    )}
+                                                </Box>
                                             </Box>
                                         ))}
                                     </Box>

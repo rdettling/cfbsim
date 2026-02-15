@@ -107,6 +107,11 @@ const GameHeader = ({
                         <Typography variant="body1" sx={{ mt: 1, fontWeight: 'medium' }}>
                             {gameData.headline}
                         </Typography>
+                        {gameData.headline_subtitle && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                                {gameData.headline_subtitle}
+                            </Typography>
+                        )}
                     </Link>
                 )}
                 
