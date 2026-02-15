@@ -1,100 +1,95 @@
 {
-    "blowout": [
-        "<winner> dominates <loser> <score>",
-        "<winner> crushes <loser> in <score> rout",
-        "<winner> steamrolls <loser> <score>",
-        "<winner> demolishes <loser> <score>",
-        "<winner> runs away with <score> victory over <loser>",
-        "<winner> overwhelms <loser> <score>",
-        "<winner> dismantles <loser> defense in <score> blowout",
-        "<winner> shows no mercy in <score> thrashing of <loser>",
-        "<winner> puts on a clinic against <loser> <score>",
-        "<winner> makes statement with <score> destruction of <loser>"
-    ],
-    "close": [
-        "<winner> defeats <loser> <score>",
-        "<winner> outlasts <loser> in close battle <score>",
-        "<winner> secures hard-fought <score> win against <loser>",
-        "<winner> comes through late to defeat <loser> <score>",
-        "<winner> survives late rally to beat <loser> <score>"
-    ],
-    "close_dramatic": [
-        "<winner> narrowly defeats <loser> <score>",
-        "<winner> edges <loser> in thriller <score>",
-        "<winner> escapes with <score> win over <loser>",
-        "<winner> holds on for dramatic <score> victory against <loser>",
-        "<winner> squeaks past <loser> <score>",
-        "<winner> prevails in nail-biter over <loser> <score>"
-    ],
-    "upset": [
-        "<winner> upsets <loser> <score> as <spread> underdogs",
-        "<winner> stuns <loser> with shocking <score> upset",
-        "<winner> pulls off <spread>-point upset over <loser> <score>",
-        "<winner> defies odds with <score> upset of <loser>",
-        "<winner> shocks <loser> in <score> stunner",
-        "Underdog <winner> topples <loser> <score>",
-        "<winner> delivers <score> upset, knocking off favored <loser>",
-        "<winner> orchestrates <score> upset against heavily favored <loser>",
-        "<winner> rewrites script with <score> upset over <loser>",
-        "Cinderella story: <winner> upsets <loser> <score>"
-    ],
-    "individual": [
-        "<player> leads <winner> to victory with <stat_value> <stat_type>",
-        "<player> goes off vs <loser> with <stat_value> <stat_type>",
-        "<player>'s <stat_value> <stat_type> leads <winner> to victory",
-        "<mascot>'s <player> puts up <stat_value> <stat_type> in <score> win",
-        "<player> explodes for <stat_value> <stat_type> as <winner> tops <loser>",
-        "<player> dominates with <stat_value> <stat_type> in win over <loser>",
-        "<player> shines with career-high <stat_value> <stat_type> against <loser>",
-        "<player> powers <winner> with impressive <stat_value> <stat_type>",
-        "Unstoppable <player> records <stat_value> <stat_type> in <winner> victory",
-        "<player> carries <winner> with stellar <stat_value> <stat_type> performance",
-        "<player> showcases talent with <stat_value> <stat_type> as <winner> wins",
-        "<player>'s <stat_value> <stat_type> proves too much for <loser>",
-        "Record day: <player> notches <stat_value> <stat_type> in <winner> win",
-        "<player> steals the show with <stat_value> <stat_type> against <loser>"
-    ],
-    "overtime": [
-        "<winner> wins in overtime <score>",
-        "<winner> prevails in thrilling overtime <score>",
-        "<winner> outlasts <loser> in <score> overtime",
-        "<winner> secures victory in sudden-death overtime <score>",
-        "<winner> wins in double-overtime <score>"
-    ],
-    "standard": [
-        "<winner> beats <loser> <score>",
-        "<winner> tops <loser> <score>",
-        "<winner> defeats <loser> <score>",
-        "<winner> wins <score> over <loser>",
-        "<winner> handles <loser> <score>"
-    ],
-    "postseason": [
-        "<winner> punches ticket with <score> win over <loser>",
-        "<winner> advances after <score> victory vs <loser>",
-        "<winner> claims postseason win in <score> triumph over <loser>",
-        "<winner> marches on with <score> win against <loser>",
-        "<winner> survives to advance with <score> victory"
-    ],
-    "rivalry": [
-        "<winner> wins rivalry showdown <score>",
-        "<winner> takes the rivalry with <score> win over <loser>",
-        "<winner> claims bragging rights in <score> rivalry win",
-        "<winner> edges <loser> in rivalry clash <score>",
-        "<winner> defends turf in rivalry win <score>"
-    ],
-    "top10": [
-        "Top-10 clash: <winner> tops <loser> <score>",
-        "<winner> outlasts <loser> in Top-10 showdown <score>",
-        "<winner> wins marquee Top-10 matchup <score>",
-        "No. <winner_rank> <winner> beats No. <loser_rank> <loser> <score>",
-        "<winner> prevails in heavyweight battle <score>"
-    ],
-    "ranked": [
-        "<winner> knocks off ranked <loser> <score>",
-        "<winner> handles ranked opponent in <score> win",
-        "<winner> defeats ranked <loser> <score>",
-        "<winner> earns statement win vs ranked <loser> <score>",
-        "<winner> takes down ranked <loser> <score>"
-    ]
-    
+  "blowout": [
+    "<winner> dominates <loser> <score>",
+    "<winner> crushes <loser> in <score> rout",
+    "<winner> steamrolls <loser> <score>",
+    "<winner> demolishes <loser> <score>",
+    "<winner> runs away with <score> victory over <loser>",
+    "<winner> overwhelms <loser> <score>",
+    "<winner> dismantles <loser> defense in <score> blowout",
+    "<winner> shows no mercy in <score> thrashing of <loser>",
+    "<winner> puts on a clinic against <loser> <score>",
+    "<winner> makes statement with <score> destruction of <loser>"
+  ],
+  "dramatic": [
+    "<winner> narrowly defeats <loser> <score>",
+    "<winner> edges <loser> in thriller <score>",
+    "<winner> escapes with <score> win over <loser>",
+    "<winner> holds on for dramatic <score> victory against <loser>",
+    "<winner> prevails in nail-biter over <loser> <score>",
+    "<winner> squeaks past <loser> <score>"
+  ],
+  "tight": [
+    "<winner> outlasts <loser> in close battle <score>",
+    "<winner> secures hard-fought <score> win against <loser>",
+    "<winner> comes through late to defeat <loser> <score>",
+    "<winner> survives late rally to beat <loser> <score>",
+    "<winner> earns a close <score> win over <loser>"
+  ],
+  "solid": [
+    "<winner> beats <loser> <score>",
+    "<winner> tops <loser> <score>",
+    "<winner> defeats <loser> <score>",
+    "<winner> wins <score> over <loser>",
+    "<winner> handles <loser> <score>"
+  ],
+  "overtime": [
+    "<winner> wins in overtime <score>",
+    "<winner> prevails in thrilling overtime <score>",
+    "<winner> outlasts <loser> in <score> overtime",
+    "<winner> secures victory in sudden-death overtime <score>",
+    "<winner> wins in double-overtime <score>"
+  ],
+  "upset": [
+    "<winner> upsets <loser> <score> as <spread> underdogs",
+    "<winner> stuns <loser> with shocking <score> upset",
+    "<winner> pulls off <spread>-point upset over <loser> <score>",
+    "<winner> defies odds with <score> upset of <loser>",
+    "Underdog <winner> topples <loser> <score>",
+    "<winner> delivers <score> upset, knocking off favored <loser>"
+  ],
+  "postseason": [
+    "<winner> punches ticket with <score> win over <loser>",
+    "<winner> advances after <score> victory vs <loser>",
+    "<winner> claims postseason win in <score> triumph over <loser>",
+    "<winner> marches on with <score> win against <loser>",
+    "<winner> survives to advance with <score> victory"
+  ],
+  "rivalry": [
+    "<winner> wins rivalry showdown <score>",
+    "<winner> takes the rivalry with <score> win over <loser>",
+    "<winner> claims bragging rights in <score> rivalry win",
+    "<winner> edges <loser> in rivalry clash <score>",
+    "<winner> defends turf in rivalry win <score>"
+  ],
+  "top10": [
+    "Top-10 clash: <winner> tops <loser> <score>",
+    "<winner> outlasts <loser> in Top-10 showdown <score>",
+    "<winner> wins marquee Top-10 matchup <score>",
+    "No. <winner_rank> <winner> beats No. <loser_rank> <loser> <score>",
+    "<winner> prevails in heavyweight battle <score>"
+  ],
+  "ranked": [
+    "<winner> knocks off ranked <loser> <score>",
+    "<winner> handles ranked opponent in <score> win",
+    "<winner> defeats ranked <loser> <score>",
+    "<winner> earns statement win vs ranked <loser> <score>",
+    "<winner> takes down ranked <loser> <score>"
+  ],
+  "individual": [
+    "<player> leads <winner> to victory with <stat_value> <stat_type>",
+    "<player> goes off vs <loser> with <stat_value> <stat_type>",
+    "<player>'s <stat_value> <stat_type> leads <winner> to victory",
+    "<mascot>'s <player> puts up <stat_value> <stat_type> in <score> win",
+    "<player> explodes for <stat_value> <stat_type> as <winner> tops <loser>",
+    "<player> dominates with <stat_value> <stat_type> in win over <loser>",
+    "<player> shines with career-high <stat_value> <stat_type> against <loser>",
+    "<player> powers <winner> with impressive <stat_value> <stat_type>",
+    "Unstoppable <player> records <stat_value> <stat_type> in <winner> victory",
+    "<player> carries <winner> with stellar <stat_value> <stat_type> performance",
+    "<player> showcases talent with <stat_value> <stat_type> as <winner> wins",
+    "<player>'s <stat_value> <stat_type> proves too much for <loser>",
+    "Record day: <player> notches <stat_value> <stat_type> in <winner> win",
+    "<player> steals the show with <stat_value> <stat_type> against <loser>"
+  ]
 }

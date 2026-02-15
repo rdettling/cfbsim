@@ -749,10 +749,14 @@ export const generateHeadlines = async (
     const isPostseason = /(playoff|championship|semifinal|quarterfinal|final)/i.test(
       game.name ?? game.baseLabel
     );
-    const isUpset = winProb < 0.1;
+    const isUpset =
+      winProb < 0.15 ||
+      (loserRank > 0 &&
+        (winnerRank === 0 || (winnerRank > 0 && winnerRank - loserRank >= 10)));
     const isOvertime = game.overtime > 0;
     const isBlowout = margin >= 21;
-    const isClose = margin <= 7;
+    const isTight = margin <= 7;
+    const isDramatic = isOvertime || margin <= 3;
 
     const tags: string[] = [];
     if (isPostseason) tags.push('postseason');
@@ -762,10 +766,17 @@ export const generateHeadlines = async (
     if (isUpset) tags.push('upset');
     if (isOvertime) tags.push('overtime');
     if (isBlowout) tags.push('blowout');
-    if (isClose) tags.push('close');
+    if (isDramatic) {
+      tags.push('dramatic');
+    } else if (isTight) {
+      tags.push('tight');
+    } else if (!isBlowout) {
+      tags.push('solid');
+    }
 
+    const band = isBlowout ? 'blowout' : isDramatic ? 'dramatic' : isTight ? 'tight' : 'solid';
     let headlineTemplate = '';
-    let tone = 'default';
+    let tone = band;
     const pickTemplate = (key: string, fallbackKey: string) => {
       const list = (headlinesData as Record<string, string[]>)[key];
       const fallback = (headlinesData as Record<string, string[]>)[fallbackKey] ?? [];
@@ -774,36 +785,32 @@ export const generateHeadlines = async (
       return pool[Math.floor(Math.random() * pool.length)];
     };
 
-    if (isPostseason) {
-      tone = 'postseason';
-      headlineTemplate = pickTemplate('postseason', 'close');
-    } else if (isUpset) {
-      tone = 'upset';
-      headlineTemplate = pickTemplate('upset', 'close');
+    const contextKey = isOvertime
+      ? 'overtime'
+      : isPostseason
+        ? 'postseason'
+        : isRivalry
+          ? 'rivalry'
+          : bothTop10
+            ? 'top10'
+            : isUpset
+              ? 'upset'
+              : anyRanked
+                ? 'ranked'
+                : null;
+
+    const contextBandKey = contextKey ? `${contextKey}_${band}` : null;
+    const preferredKey = contextBandKey && (headlinesData as Record<string, string[]>)[contextBandKey]?.length
+      ? contextBandKey
+      : contextKey && (headlinesData as Record<string, string[]>)[contextKey]?.length
+        ? contextKey
+        : band;
+
+    tone = contextKey ?? band;
+    headlineTemplate = pickTemplate(preferredKey, band);
+    if (contextKey === 'upset') {
       const spread = winner.id === game.teamA.id ? game.spreadB : game.spreadA;
       headlineTemplate = headlineTemplate.replace('<spread>', spread);
-    } else if (isOvertime) {
-      tone = 'overtime';
-      headlineTemplate = pickTemplate('overtime', 'close');
-    } else if (isBlowout) {
-      tone = 'blowout';
-      headlineTemplate = pickTemplate('blowout', 'close');
-    } else if (isClose) {
-      tone = 'close';
-      const closeKey = margin <= 3 ? 'close_dramatic' : 'close';
-      headlineTemplate = pickTemplate(closeKey, 'close');
-    } else if (bothTop10) {
-      tone = 'top10';
-      headlineTemplate = pickTemplate('top10', 'close');
-    } else if (isRivalry) {
-      tone = 'rivalry';
-      headlineTemplate = pickTemplate('rivalry', 'close');
-    } else if (anyRanked) {
-      tone = 'ranked';
-      headlineTemplate = pickTemplate('ranked', 'close');
-    } else {
-      tone = 'standard';
-      headlineTemplate = pickTemplate('standard', 'close');
     }
 
     const logs = gameLogsByGameId.get(game.id);
