@@ -5,15 +5,17 @@ import { getNamesData, getStatesData } from '../db/baseData';
 import { savePlayers, getPlayersByTeam, clearPlayers } from '../db/simRepo';
 import type { PlayerRecord } from '../types/db';
 
-const STARS_BASE: Record<number, number> = { 1: 15, 2: 30, 3: 45, 4: 60, 5: 75 };
+const STARS_BASE: Record<number, number> = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70 };
 const BASE_DEVELOPMENT = 4;
-const RATING_STD_DEV = 6;
+const RATING_STD_DEV = 5;
 const DEVELOPMENT_STD_DEV = 4;
 const RANDOM_VARIANCE_RANGE: [number, number] = [5, 9];
 
 const RECRUIT_CLASS_YEARS = 4;
 const RECRUIT_STAR_COUNTS: Record<number, number> = { 5: 32, 4: 340, 3: 2000, 2: 500 };
-const RECRUIT_PRESTIGE_BIAS = 12;
+const RECRUIT_PRESTIGE_BIAS = 8;
+const RECRUIT_PRESTIGE_EXPONENT = 1.25;
+const RECRUIT_RANDOMNESS = 20;
 
 const OFFENSE_WEIGHT = 0.6;
 const DEFENSE_WEIGHT = 0.4;
@@ -240,7 +242,9 @@ const matchRecruitsForPosition = (recruits: Recruit[], teams: Team[], positionNe
     if (!eligible.length) return;
     const scores = eligible.map(team => ({
       teamId: team.id,
-      score: team.prestige ** 2 * RECRUIT_PRESTIGE_BIAS + Math.random() * 5,
+      score:
+        team.prestige ** RECRUIT_PRESTIGE_EXPONENT * RECRUIT_PRESTIGE_BIAS +
+        Math.random() * RECRUIT_RANDOMNESS,
     }));
     scores.sort((a, b) => b.score - a.score);
     recruitPrefs[recruit.rid ?? 0] = scores.map(score => score.teamId);
@@ -480,8 +484,8 @@ const calculateSingleTeamRating = (players: PlayerRecord[]) => {
     }
   }
 
-  offense += Math.random() * (RANDOM_VARIANCE_RANGE[1] - RANDOM_VARIANCE_RANGE[0]) + RANDOM_VARIANCE_RANGE[0];
-  defense += Math.random() * (RANDOM_VARIANCE_RANGE[1] - RANDOM_VARIANCE_RANGE[0]) + RANDOM_VARIANCE_RANGE[0];
+  offense += gaussian(0, 3);
+  defense += gaussian(0, 3);
 
   const overall = offense * OFFENSE_WEIGHT + defense * DEFENSE_WEIGHT;
   return { offense: Math.round(offense), defense: Math.round(defense), overall: Math.round(overall) };
