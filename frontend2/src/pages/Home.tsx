@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../services/data";
-import { Team, Info } from "../interfaces";
+import { ROUTES } from "../constants/routes";
+import { Team, Info } from "../domain/types";
 import { STAGES } from "../constants/stages";
 import {
   Typography,
@@ -21,9 +21,9 @@ import {
   Grid,
 } from "@mui/material";
 import { TeamLogo, ConfLogo } from "../components/TeamComponents";
-import { useDataFetching } from "../hooks/useDataFetching";
+import { useDomainData } from "../domain/hooks";
 import { PageLayout } from "../components/PageLayout";
-import { loadHomeData } from "../domain/league";
+import { loadHomeData, type LaunchProps } from "../domain/league";
 
 interface PreviewData {
   conferences: Record<string, {
@@ -40,13 +40,6 @@ interface PreviewData {
   };
 }
 
-interface LaunchProps {
-  years: string[];
-  info: Info | null;
-  preview: PreviewData | null;
-  selected_year?: string;
-}
-
 const Home = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [selectedYear, setSelectedYear] = useState<string>("");
@@ -58,10 +51,9 @@ const Home = () => {
   const navigate = useNavigate();
   const pendingFetch = useRef(false);
 
-  const { data, loading, error } = useDataFetching({
-    fetchFunction: () => loadHomeData(),
-    onDataChange: (response) => setLaunchData(response),
-    autoRefreshOnGameChange: false
+  const { data, loading, error } = useDomainData({
+    fetcher: () => loadHomeData(),
+    onData: (response) => setLaunchData(response),
   });
 
   // Initialize data when it loads

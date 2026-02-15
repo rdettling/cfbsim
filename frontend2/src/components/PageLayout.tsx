@@ -1,16 +1,9 @@
 import { ReactNode } from 'react';
 import { Box, Container, CircularProgress, Alert } from '@mui/material';
-import { Team, Info, Conference } from '../interfaces';
 
 interface PageLayoutProps {
     loading: boolean;
     error: string | null;
-    navbarData?: {
-        team: Team;
-        currentStage: string;
-        info: Info & { lastWeek?: number };
-        conferences: Conference[];
-    };
     containerMaxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
     children: ReactNode;
 }
@@ -27,7 +20,6 @@ interface PageLayoutProps {
 export const PageLayout = ({ 
     loading, 
     error, 
-    navbarData, 
     containerMaxWidth = 'lg',
     children 
 }: PageLayoutProps) => {

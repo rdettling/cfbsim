@@ -1,6 +1,6 @@
-import type { Conference, Info, ScheduleGame, Team } from '../interfaces';
-import { getConferencesData, getTeamsData, getYearData, getYearsIndex } from '../data/baseData';
-import { loadLeague, saveLeague } from '../data/leagueRepo';
+import type { Conference, Info, ScheduleGame, Team } from './types';
+import { getConferencesData, getTeamsData, getYearData, getYearsIndex } from '../db/baseData';
+import { loadLeague, saveLeague } from '../db/leagueRepo';
 
 export interface PreviewData {
   conferences: Record<

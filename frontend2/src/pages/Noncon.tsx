@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ROUTES } from "../services/data";
-import { Conference, Team, Info, ScheduleGame } from "../interfaces";
+import { ROUTES } from "../constants/routes";
+import { Conference, Team, Info, ScheduleGame } from "../domain/types";
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
-import { useDataFetching } from '../hooks/useDataFetching';
+import { useDomainData } from '../domain/hooks';
 import { loadNonCon, startNewLeague } from "../domain/league";
 import {
     Typography,
@@ -83,9 +83,8 @@ export const NonCon = () => {
         }
     };
 
-    const { data, loading, error } = useDataFetching({
-        fetchFunction: fetchData,
-        autoRefreshOnGameChange: true
+    const { data, loading, error } = useDomainData({
+        fetcher: fetchData,
     });
 
     // Mark initial load as complete after first render
@@ -129,12 +128,6 @@ export const NonCon = () => {
         <PageLayout 
             loading={loading} 
             error={error}
-            navbarData={data ? {
-                team: data.team,
-                currentStage: data.info.stage,
-                info: data.info,
-                conferences: data.conferences
-            } : undefined}
             containerMaxWidth="lg"
         >
             {data && (
