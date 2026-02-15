@@ -2,25 +2,7 @@ import { Stack, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import LoadingDialog from '../sim/LoadingDialog';
-
-interface NonSeasonBannerProps {
-    currentStage: {
-        id: string;
-        label: string;
-        path: string;
-        next: string;
-        season: boolean;
-    };
-    nextStage: {
-        id: string;
-        label: string;
-        path: string;
-        next: string;
-        season: boolean;
-    };
-    primaryColor?: string;
-    secondaryColor?: string;
-}
+import type { NonSeasonBannerProps } from '../../types/components';
 
 const NonSeasonBanner = ({ currentStage, nextStage, primaryColor = '#1976d2', secondaryColor = '#ffffff' }: NonSeasonBannerProps) => {
     const navigate = useNavigate();

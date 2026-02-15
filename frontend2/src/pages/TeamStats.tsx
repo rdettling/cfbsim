@@ -19,55 +19,10 @@ import {
 import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import { TeamInfoModal, TeamLogo } from '../components/team/TeamComponents';
 import { PageLayout } from '../components/layout/PageLayout';
-
-interface TeamStatsType {
-    games: number;
-    ppg: number;
-    pass_cpg: number;
-    pass_apg: number;
-    comp_percent: number;
-    pass_ypg: number;
-    pass_tdpg: number;
-    rush_apg: number;
-    rush_ypg: number;
-    rush_ypc: number;
-    rush_tdpg: number;
-    playspg: number;
-    yardspg: number;
-    ypp: number;
-    first_downs_pass: number;
-    first_downs_rush: number;
-    first_downs_total: number;
-    fumbles: number;
-    interceptions: number;
-    turnovers: number;
-}
-
-interface TeamStatsData {
-    info: any;
-    offense: Record<string, TeamStatsType>;
-    defense: Record<string, TeamStatsType>;
-    offense_averages: TeamStatsType;
-    defense_averages: TeamStatsType;
-    team: any;
-    conferences: any[];
-}
-
-interface SortConfig {
-    field: keyof TeamStatsType;
-    direction: 'asc' | 'desc';
-}
-
-interface ColumnConfig {
-    key: keyof TeamStatsType;
-    label: string;
-    width: string;
-    sortable: boolean;
-    defaultDirection?: 'asc' | 'desc';
-}
+import type { TeamStatsPageData, TeamStatsType, TeamStatsSortConfig, TeamStatsColumnConfig } from '../types/stats';
 
 // Column configuration for the stats table
-const COLUMN_CONFIG: ColumnConfig[] = [
+const COLUMN_CONFIG: TeamStatsColumnConfig[] = [
     { key: 'games', label: 'Games', width: '60px', sortable: true, defaultDirection: 'desc' },
     { key: 'ppg', label: 'PPG', width: '60px', sortable: true, defaultDirection: 'desc' },
     { key: 'pass_cpg', label: 'CMP', width: '50px', sortable: true, defaultDirection: 'desc' },
@@ -104,12 +59,12 @@ const TeamStats = () => {
     const [tabValue, setTabValue] = useState(0);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
-    const [sortConfig, setSortConfig] = useState<SortConfig>({
+    const [sortConfig, setSortConfig] = useState<TeamStatsSortConfig>({
         field: 'ppg',
         direction: 'desc'
     });
 
-    const { data, loading, error } = useDomainData<TeamStatsData>({
+    const { data, loading, error } = useDomainData<TeamStatsPageData>({
         fetcher: loadTeamStats,
         deps: [],
     });

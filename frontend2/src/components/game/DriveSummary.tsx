@@ -13,41 +13,8 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { TeamLogo } from '../team/TeamComponents';
-
-interface Play {
-    id: number;
-    down: number;
-    yardsLeft: number;
-    startingFP: number;
-    playType: string;
-    yardsGained: number;
-    text: string;
-    header: string;
-    result: string;
-    scoreA: number;
-    scoreB: number;
-}
-
-interface Drive {
-    driveNum: number;
-    offense: string;
-    defense: string;
-    startingFP: number;
-    result: string;
-    points: number;
-    yards?: number;
-    plays?: Play[];
-    scoreAAfter?: number;
-    scoreBAfter?: number;
-}
-
-interface DriveSummaryProps {
-    drives: Drive[];
-    currentPlayIndex?: number;
-    totalPlays?: number;
-    isGameComplete?: boolean;
-    variant?: 'modal' | 'page';
-}
+import type { Drive } from '../../types/game';
+import type { DriveSummaryProps } from '../../types/components';
 
 const DriveSummary = ({ 
     drives, 

@@ -8,25 +8,9 @@ import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Link as MuiLink
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
+import type { IndividualPlayerData, IndividualStatsPageData } from '../types/stats';
 
-interface PlayerData {
-    id: number;
-    first: string;
-    last: string;
-    pos: string;
-    team: string;
-    gamesPlayed: number;
-    stats: Record<string, number>;
-}
-
-interface StatsData {
-    info: any;
-    team: any;
-    conferences: any[];
-    stats: Record<string, Record<string, PlayerData>>;
-}
-
-const StatsTable = ({ stats, sortBy }: { stats: Record<string, PlayerData>, sortBy: string }) => {
+const StatsTable = ({ stats, sortBy }: { stats: Record<string, IndividualPlayerData>, sortBy: string }) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState('');
 
@@ -76,7 +60,7 @@ const StatsTable = ({ stats, sortBy }: { stats: Record<string, PlayerData>, sort
 const IndividualStats = () => {
     const [tabValue, setTabValue] = useState(0);
 
-    const { data, loading, error } = useDomainData<StatsData>({
+    const { data, loading, error } = useDomainData<IndividualStatsPageData>({
         fetcher: loadIndividualStats,
         deps: [],
     });

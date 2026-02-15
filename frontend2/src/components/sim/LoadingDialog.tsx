@@ -1,9 +1,6 @@
 import { Dialog, DialogContent, CircularProgress, Typography } from '@mui/material';
 
-interface LoadingDialogProps {
-    open: boolean;
-    message: string;
-}
+import type { LoadingDialogProps } from '../../types/components';
 
 const LoadingDialog = ({ open, message }: LoadingDialogProps) => {
     return (

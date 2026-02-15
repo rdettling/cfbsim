@@ -14,32 +14,10 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { TeamLogo } from '../team/TeamComponents';
 import { getGamesToLiveSim } from '../../domain/sim';
-
-interface Game {
-    id: number;
-    teamA: {
-        name: string;
-        ranking: number;
-        record: string;
-    };
-    teamB: {
-        name: string;
-        ranking: number;
-        record: string;
-    };
-    label: string;
-    watchability: number;
-    is_user_game?: boolean;
-}
-
-interface GameSelectionModalProps {
-    open: boolean;
-    onClose: () => void;
-    onGameSelect: (gameId: number, isUserGame: boolean) => void;
-}
+import type { GameSelectionModalProps, GameSelectionModalGame } from '../../types/components';
 
 const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalProps) => {
-    const [games, setGames] = useState<Game[]>([]);
+    const [games, setGames] = useState<GameSelectionModalGame[]>([]);
     const [loading, setLoading] = useState(false);
     const [week, setWeek] = useState<number>(0);
 

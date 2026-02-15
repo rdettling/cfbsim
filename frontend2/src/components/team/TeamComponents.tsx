@@ -2,46 +2,22 @@ import { Box, Link as MuiLink, Modal, Typography, Paper, Chip, Button, Stack, Di
 import { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { getTeamInfo } from '../../domain/league';
-
-interface TeamLinkProps {
-    name: string;
-    onTeamClick: (name: string) => void;
-}
-
-interface LogoProps {
-    name: string;
-    size?: number;
-}
-
-interface TeamInfo {
-    id: number;
-    name: string;
-    prestige: number;
-    rating: number;
-    offense: number;
-    defense: number;
-    mascot: string;
-    colorPrimary: string;
-    confWins: number;
-    confLosses: number;
-    totalWins: number;
-    totalLosses: number;
-    ranking: number;
-    conference: string;
-}
-
-interface TeamInfoModalProps {
-    teamName: string;
-    open: boolean;
-    onClose: () => void;
-}
+import type {
+    LogoProps,
+    TeamInfo,
+    TeamInfoModalProps,
+    TeamLinkProps,
+    StatItemProps,
+    ActionButtonProps,
+    LogoWithTypeProps,
+} from '../../types/components';
 
 const getBasePath = () => {
     const base = import.meta.env.BASE_URL ?? '/';
     return base.endsWith('/') ? base.slice(0, -1) : base;
 };
 
-const Logo = ({ type, name, size = 30 }: LogoProps & { type: 'teams' | 'conferences' }) => {
+const Logo = ({ type, name, size = 30 }: LogoWithTypeProps) => {
     const [hasError, setHasError] = useState(false);
     const logoPath = `${getBasePath()}/logos/${type}/${name}.png`;
 
@@ -76,7 +52,7 @@ export const TeamLink = ({ name, onTeamClick }: TeamLinkProps) => (
 );
 
 // Stat item component to reduce repetition
-const StatItem = ({ label, value }: { label: string, value: string | number }) => (
+const StatItem = ({ label, value }: StatItemProps) => (
     <Box width="50%">
         <Typography variant="body2" color="text.secondary">{label}</Typography>
         <Typography variant="h6">{value}</Typography>
@@ -84,7 +60,7 @@ const StatItem = ({ label, value }: { label: string, value: string | number }) =
 );
 
 // Action button component to reduce repetition
-const ActionButton = ({ to, icon, label, color }: { to: string, icon: string, label: string, color: string }) => (
+const ActionButton = ({ to, icon, label, color }: ActionButtonProps) => (
     <Button 
         component={RouterLink} 
         to={to}

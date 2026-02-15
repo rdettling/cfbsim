@@ -1,5 +1,7 @@
 import type { Team, Info, ScheduleGame } from '../types/domain';
-import type { FullGame } from './schedule';
+import type { FullGame } from '../types/schedule';
+import type { LeagueState } from '../types/league';
+import type { SimGame, SimDrive, StartersCache } from '../types/sim';
 import { fillUserSchedule } from './schedule';
 import { getBettingOddsData, getHeadlinesData } from '../db/baseData';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
@@ -50,62 +52,6 @@ const RUN_POSITIVE_POWER = 4.2;
 const POLL_INERTIA_WIN_BONUS = 172;
 const POLL_INERTIA_LOSS_PENALTY = 157;
 const RANKING_TOTAL_WEEKS = 14;
-
-interface LeagueState {
-  info: Info;
-  teams: Team[];
-  conferences: unknown[];
-  schedule: ScheduleGame[];
-  pending_rivalries: unknown[];
-  scheduleBuilt?: boolean;
-  simInitialized?: boolean;
-  idCounters?: {
-    game: number;
-    drive: number;
-    play: number;
-    gameLog: number;
-    player: number;
-  };
-}
-
-interface SimGame {
-  id: number;
-  teamA: Team;
-  teamB: Team;
-  homeTeam: Team | null;
-  awayTeam: Team | null;
-  neutralSite: boolean;
-  winner: Team | null;
-  baseLabel: string;
-  name: string | null;
-  spreadA: string;
-  spreadB: string;
-  moneylineA: string;
-  moneylineB: string;
-  winProbA: number;
-  winProbB: number;
-  weekPlayed: number;
-  year: number;
-  rankATOG: number;
-  rankBTOG: number;
-  resultA: string | null;
-  resultB: string | null;
-  overtime: number;
-  scoreA: number;
-  scoreB: number;
-  headline: string | null;
-  watchability: number | null;
-}
-
-interface SimDrive {
-  record: DriveRecord;
-  plays: PlayRecord[];
-  nextFieldPosition: number;
-}
-
-interface StartersCache {
-  byTeamPos: Map<string, PlayerRecord[]>;
-}
 
 const normalizeCounters = (league: LeagueState) => {
   if (!league.idCounters) {

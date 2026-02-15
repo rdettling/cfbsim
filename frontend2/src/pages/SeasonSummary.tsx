@@ -19,42 +19,13 @@ import {
   Link as MuiLink,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-
-interface AwardSnapshot {
-  category_slug: string;
-  category_name: string;
-  first_place: {
-    id: number;
-    first: string;
-    last: string;
-    pos: string;
-    team_name: string;
-  } | null;
-  first_stats: Record<string, any> | null;
-}
-
-interface SummaryTeam {
-  name: string;
-  prestige: number;
-  prestige_change?: number;
-  avg_rank_before?: number | null;
-  avg_rank_after?: number | null;
-}
-
-interface SummaryData {
-  info: any;
-  team: any;
-  conferences: any[];
-  champion: any | null;
-  awards: AwardSnapshot[];
-  teams: SummaryTeam[];
-}
+type SeasonSummaryData = Awaited<ReturnType<typeof loadSeasonSummary>>;
 
 const SeasonSummary = () => {
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data, loading, error } = useDomainData<SummaryData>({
+  const { data, loading, error } = useDomainData<SeasonSummaryData>({
     fetcher: loadSeasonSummary,
     deps: [],
   });

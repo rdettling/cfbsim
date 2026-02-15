@@ -79,3 +79,21 @@ export interface Settings {
   auto_realignment: boolean;
   auto_update_postseason_format: boolean;
 }
+
+export interface PreviewData {
+  conferences: Record<
+    string,
+    {
+      confName: string;
+      confFullName: string;
+      confGames: number;
+      teams: Team[];
+    }
+  >;
+  independents: Team[];
+  playoff: {
+    teams: number;
+    conf_champ_autobids: number;
+    conf_champ_top_4: boolean;
+  };
+}

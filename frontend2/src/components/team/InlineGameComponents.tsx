@@ -1,15 +1,7 @@
 import { Box, Typography, Link as MuiLink } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import type { Team } from '../../types/domain';
 import { TeamLink, TeamLogo } from './TeamComponents';
-
-interface BaseGameComponentProps {
-  team: Team & {
-    last_game?: any;
-    next_game?: any;
-  };
-  onTeamClick: (name: string) => void;
-}
+import type { BaseGameComponentProps } from '../../types/components';
 
 const TeamInfo = ({
   teamName,

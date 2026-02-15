@@ -1,4 +1,6 @@
 import type { Info, Team } from '../types/domain';
+import type { LeagueState } from '../types/league';
+import type { Recruit } from '../types/roster';
 import { getNamesData, getStatesData } from '../db/baseData';
 import { savePlayers, getPlayersByTeam, clearPlayers } from '../db/simRepo';
 import type { PlayerRecord } from '../db/db';
@@ -44,28 +46,6 @@ const ROSTER: Record<string, { starters: number; total: number }> = {
   k: { starters: 1, total: 2 },
   p: { starters: 1, total: 2 },
 };
-
-interface LeagueState {
-  info: Info;
-  teams: Team[];
-  idCounters?: {
-    player: number;
-  };
-}
-
-interface Recruit {
-  rid?: number;
-  first: string;
-  last: string;
-  pos: string;
-  stars: number;
-  state: string;
-  rating_fr: number;
-  rating_so: number;
-  rating_jr: number;
-  rating_sr: number;
-  development_trait: number;
-}
 
 const gaussian = (mean: number, stdDev: number) => {
   let u = 0;

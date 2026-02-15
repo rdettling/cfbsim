@@ -20,30 +20,11 @@ import { useDomainData } from '../domain/hooks';
 import { loadTeamHistory } from '../domain/league';
 import { PageLayout } from '../components/layout/PageLayout';
 
-interface YearHistory {
-  year: number;
-  prestige: number;
-  rating: number;
-  conference: string;
-  wins: number;
-  losses: number;
-  rank: number;
-  has_games: boolean;
-}
-
-interface HistoryData {
-  info: any;
-  team: any;
-  years: YearHistory[];
-  conferences: any[];
-  teams: string[];
-}
-
 const TeamHistory = () => {
   const { teamName } = useParams();
   const navigate = useNavigate();
 
-  const { data, loading, error } = useDomainData<HistoryData>({
+  const { data, loading, error } = useDomainData({
     fetcher: () => loadTeamHistory(teamName),
     deps: [teamName],
   });

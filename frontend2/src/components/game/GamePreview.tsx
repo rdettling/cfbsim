@@ -10,23 +10,7 @@ import {
     Chip,
 } from '@mui/material';
 import { TeamInfoModal, TeamLogo, TeamLink } from '../team/TeamComponents';
-
-interface GamePreviewProps {
-    game: {
-        id: number;
-        label: string;
-        weekPlayed: number;
-        year: number;
-        teamA: any;
-        teamB: any;
-        rankATOG: number;
-        rankBTOG: number;
-        spreadA?: string;
-        spreadB?: string;
-        moneylineA?: string;
-        moneylineB?: string;
-    };
-}
+import type { GamePreviewProps } from '../../types/components';
 
 const GamePreview = ({ game }: GamePreviewProps) => {
     const [modalOpen, setModalOpen] = useState(false);

@@ -1,20 +1,6 @@
-import { ReactNode } from 'react';
 import { Box, Container, CircularProgress, Alert } from '@mui/material';
 import Navbar from './Navbar';
-import type { Info, Team, Conference } from '../../types/domain';
-
-interface PageLayoutProps {
-    loading: boolean;
-    error: string | null;
-    navbarData?: {
-        team: Team;
-        currentStage: string;
-        info: Info & { lastWeek: number };
-        conferences: Conference[];
-    };
-    containerMaxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
-    children: ReactNode;
-}
+import type { PageLayoutProps } from '../../types/components';
 
 /**
  * PageLayout - A reusable layout component that handles:

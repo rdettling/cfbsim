@@ -3,20 +3,7 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
-
-interface GameControlsProps {
-    isInteractive: boolean;
-    isGameComplete: boolean;
-    isPlaybackComplete: boolean;
-    startInteractiveSimulation: () => void;
-    handleNextPlay: () => void;
-    handleNextDrive: () => void;
-    handleSimToEnd: () => void;
-    // Decision props
-    decisionPrompt?: any;
-    handleDecision?: (decision: string) => void;
-    submittingDecision?: boolean;
-}
+import type { GameControlsProps } from '../../types/components';
 
 const GameControls = ({
     isInteractive,

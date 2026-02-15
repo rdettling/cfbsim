@@ -3,37 +3,8 @@ import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadAwards } from '../domain/league';
 import { TeamLogo } from '../components/team/TeamComponents';
-
-interface AwardPlayer {
-  id: number;
-  first: string;
-  last: string;
-  pos: string;
-  team_name: string;
-}
-
-interface AwardSnapshot {
-  category_slug: string;
-  category_name: string;
-  category_description: string;
-  first_place: AwardPlayer | null;
-  second_place: AwardPlayer | null;
-  third_place: AwardPlayer | null;
-  first_score: number | null;
-  second_score: number | null;
-  third_score: number | null;
-  first_stats: Record<string, any> | null;
-  second_stats: Record<string, any> | null;
-  third_stats: Record<string, any> | null;
-}
-
-interface AwardsPageData {
-  info: any;
-  team: any;
-  conferences: any[];
-  favorites: AwardSnapshot[];
-  final: AwardSnapshot[];
-}
+type AwardsPageData = Awaited<ReturnType<typeof loadAwards>>;
+type AwardPlayer = AwardsPageData['favorites'][number]['first_place'];
 
 const RANK_LABELS = ['1st Favorite', '2nd Favorite', '3rd Favorite'];
 
@@ -46,7 +17,7 @@ const AwardRow = ({
   stats,
 }: {
   label: string;
-  player: AwardSnapshot['first_place'];
+  player: AwardPlayer | null;
   score: number | null;
   stats: Record<string, any> | null;
 }) => (
@@ -101,7 +72,7 @@ const AwardCard = ({
   highlightLabel,
   highlightColor,
 }: {
-  award: AwardSnapshot;
+  award: AwardsPageData['favorites'][number];
   highlightLabel: string;
   highlightColor: 'primary' | 'success';
 }) => {

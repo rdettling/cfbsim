@@ -16,28 +16,7 @@ import { useDomainData } from '../domain/hooks';
 import { loadRatingsStats } from '../domain/league';
 import { TeamInfoModal } from '../components/team/TeamComponents';
 import { PageLayout } from '../components/layout/PageLayout';
-
-interface RatingsStatsData {
-  info: any;
-  team: any;
-  conferences: any[];
-  prestige_stars_table: Array<{
-    prestige: number;
-    avg_rating: number;
-    avg_stars: number;
-    star_percentages: Record<number, number>;
-  }>;
-  team_counts_by_prestige: Array<{ prestige: number; team_count: number }>;
-  total_star_counts: {
-    counts: Record<number, number>;
-    avg_ratings: Record<number, number>;
-    avg_ratings_fr: Record<number, number>;
-    avg_ratings_so: Record<number, number>;
-    avg_ratings_jr: Record<number, number>;
-    avg_ratings_sr: Record<number, number>;
-  };
-  teams: Array<{ name: string; rating: number; prestige: number }>;
-}
+import type { RatingsStatsData } from '../types/stats';
 
 const RatingsStats = () => {
   const [modalOpen, setModalOpen] = useState(false);

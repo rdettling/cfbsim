@@ -13,21 +13,8 @@ import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadSettings } from '../domain/league';
 
-interface SettingsData {
-  settings: {
-    playoff_teams: number;
-    playoff_autobids?: number;
-    playoff_conf_champ_top_4?: boolean;
-    auto_realignment: boolean;
-    auto_update_postseason_format: boolean;
-  };
-  team: any;
-  info: any;
-  conferences: any[];
-}
-
 const SettingsPage = () => {
-  const { data, loading, error } = useDomainData<SettingsData>({
+  const { data, loading, error } = useDomainData({
     fetcher: loadSettings,
     deps: [],
   });

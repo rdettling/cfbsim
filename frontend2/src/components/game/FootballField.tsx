@@ -1,18 +1,5 @@
 import { Box, Typography } from '@mui/material';
-
-interface FootballFieldProps {
-    currentYardLine: number;
-    teamA: string;
-    teamB: string;
-    isTeamAOnOffense: boolean;
-    down: number;
-    yardsToGo: number;
-    previousPlayYards?: number;  // Yards gained (positive) or lost (negative) on previous play
-    teamAColorPrimary?: string;
-    teamAColorSecondary?: string;
-    teamBColorPrimary?: string;
-    teamBColorSecondary?: string;
-}
+import type { FootballFieldProps } from '../../types/components';
 
 const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, yardsToGo, previousPlayYards, teamAColorPrimary, teamAColorSecondary, teamBColorPrimary, teamBColorSecondary }: FootballFieldProps) => {
     // Field dimensions based on yards

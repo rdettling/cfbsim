@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-
-interface UseDomainDataOptions<T> {
-  fetcher: () => Promise<T>;
-  deps?: any[];
-  onData?: (data: T) => void;
-}
+import type { UseDomainDataOptions } from '../types/hooks';
 
 export const useDomainData = <T>({ fetcher, deps = [], onData }: UseDomainDataOptions<T>) => {
   const [data, setData] = useState<T | null>(null);

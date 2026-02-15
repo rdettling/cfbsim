@@ -1,12 +1,6 @@
 import { Box, Paper, Stack, Typography, Select, MenuItem } from '@mui/material';
-import type { Team } from '../../types/domain';
+import type { TeamHeaderProps } from '../../types/components';
 import { TeamLogo } from './TeamComponents';
-
-interface TeamHeaderProps {
-  team: Team;
-  teams: string[];
-  onTeamChange: (team: string) => void;
-}
 
 const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
   return (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Team, Info, ScheduleGame, Conference } from '../types/domain';
+import type { DashboardGameCardProps, DashboardTeamRowProps } from '../types/components';
 import { TeamInfoModal, ConfLogo, TeamLogo } from '../components/team/TeamComponents';
 import {
     Typography, Card, CardContent, Table,
@@ -10,34 +10,8 @@ import { useDomainData } from '../domain/hooks';
 import { PageLayout } from '../components/layout/PageLayout';
 import { loadDashboard } from '../domain/league';
 
-interface DashboardData {
-    info: Info;
-    prev_game: ScheduleGame | null;
-    curr_game: ScheduleGame | null;
-    team: Team;
-    confTeams: Team[];
-    top_10: Team[];
-    top_games: Array<{ id: number; headline: string }>;
-    conferences: Conference[];
-}
-
-// Types for component props
-interface GameCardProps {
-    game: ScheduleGame;
-    type: 'prev' | 'curr';
-    onTeamClick: (name: string) => void;
-}
-
-interface TeamRowProps {
-    team: Team;
-    showRating?: boolean;
-    rank?: number;
-    highlight?: boolean;
-    onTeamClick: (name: string) => void;
-}
-
 // Game card with clickable team name
-const GameCard = ({ game, type, onTeamClick }: GameCardProps) => {
+const GameCard = ({ game, type, onTeamClick }: DashboardGameCardProps) => {
     // Check if game has been played (either from last week or live-simmed this week)
     const isCompleted = game.result !== null && game.result !== undefined;
     
@@ -110,7 +84,7 @@ const GameCard = ({ game, type, onTeamClick }: GameCardProps) => {
 };
 
 // Team row with clickable team name
-const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClick }: TeamRowProps) => (
+const TeamRow = ({ team, showRating = false, rank, highlight = false, onTeamClick }: DashboardTeamRowProps) => (
     <TableRow 
         sx={{
             bgcolor: highlight ? 'rgba(25, 118, 210, 0.08)' : 'inherit',

@@ -14,37 +14,13 @@ import { useDomainData } from '../domain/hooks';
 import { loadWeekSchedule } from '../domain/league';
 import { PageLayout } from '../components/layout/PageLayout';
 
-interface Game {
-  id: number;
-  label: string;
-  base_label?: string;
-  teamA: any;
-  teamB: any;
-  rankATOG: number;
-  rankBTOG: number;
-  scoreA?: number;
-  scoreB?: number;
-  spreadA?: string;
-  spreadB?: string;
-  winner: boolean;
-  overtime?: number;
-  watchability: number;
-}
-
-interface WeekScheduleData {
-  info: any;
-  team: any;
-  games: Game[];
-  conferences: any[];
-}
-
 export default function WeekSchedule() {
   const { week } = useParams();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
 
-  const { data, loading, error } = useDomainData<WeekScheduleData>({
+  const { data, loading, error } = useDomainData({
     fetcher: () => {
       const currentWeek = window.location.pathname.split('/').pop();
       if (!currentWeek) throw new Error('Week number is required');

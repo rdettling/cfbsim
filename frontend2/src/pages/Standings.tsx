@@ -13,25 +13,16 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadStandings } from '../domain/league';
-import type { Team, Info, Conference } from '../types/domain';
 import { TeamInfoModal, TeamLink, TeamLogo, ConfLogo } from '../components/team/TeamComponents';
 import { InlineLastWeek, InlineThisWeek } from '../components/team/InlineGameComponents';
 import { PageLayout } from '../components/layout/PageLayout';
-
-interface StandingsData {
-  info: Info;
-  team: Team;
-  conference: string;
-  teams: Team[];
-  conferences: Conference[];
-}
 
 const StandingsTable = ({
   data,
   conference_name,
   onTeamClick,
 }: {
-  data: StandingsData;
+  data: Awaited<ReturnType<typeof loadStandings>>;
   conference_name: string | undefined;
   onTeamClick: (name: string) => void;
 }) => (
@@ -200,7 +191,7 @@ const Standings = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
 
-  const { data, loading, error } = useDomainData<StandingsData>({
+  const { data, loading, error } = useDomainData({
     fetcher: () => {
       if (!conference_name) throw new Error('No conference specified');
       return loadStandings(conference_name);

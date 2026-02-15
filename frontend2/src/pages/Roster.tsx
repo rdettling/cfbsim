@@ -23,31 +23,12 @@ import { useDomainData } from '../domain/hooks';
 import { loadTeamRoster } from '../domain/league';
 import { PageLayout } from '../components/layout/PageLayout';
 
-interface Player {
-  id: number;
-  first: string;
-  last: string;
-  rating: number;
-  year: string;
-  pos: string;
-  starter: boolean;
-}
-
-interface RosterData {
-  info: any;
-  team: any;
-  roster: Player[];
-  positions: string[];
-  conferences: any[];
-  teams: string[];
-}
-
 const Roster = () => {
   const { teamName } = useParams();
   const navigate = useNavigate();
   const [positionFilter, setPositionFilter] = useState('');
 
-  const { data, loading, error } = useDomainData<RosterData>({
+  const { data, loading, error } = useDomainData({
     fetcher: () => loadTeamRoster(teamName),
     deps: [teamName],
   });

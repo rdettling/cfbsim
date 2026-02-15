@@ -13,12 +13,7 @@ import GameControls from "../game/GameControls";
 import { Play, Drive, GameData } from "../../types/game";
 import { useState, useEffect } from "react";
 import { liveSimGame } from "../../domain/sim";
-
-interface LiveSimModalProps {
-    open: boolean;
-    onClose: () => void;
-    gameId: number | null;
-}
+import type { LiveSimModalProps } from '../../types/components';
 
 const LiveSimModal = ({
     open,

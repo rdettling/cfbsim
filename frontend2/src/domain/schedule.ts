@@ -1,18 +1,10 @@
 import type { ScheduleGame, Team } from '../types/domain';
+import type { FullGame } from '../types/schedule';
+import type { NonConData } from '../types/league';
 import { getRivalriesData } from '../db/baseData';
-import type { NonConData } from './league';
 
 const REGULAR_SEASON_WEEKS = 14;
 const REGULAR_SEASON_GAMES = 12;
-
-export interface FullGame {
-  teamA: Team;
-  teamB: Team;
-  weekPlayed: number;
-  homeTeam: Team;
-  awayTeam: Team;
-  name?: string | null;
-}
 
 export const buildSchedule = (): ScheduleGame[] =>
   Array.from({ length: REGULAR_SEASON_WEEKS }, (_, index) => ({

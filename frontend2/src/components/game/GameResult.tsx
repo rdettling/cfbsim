@@ -11,13 +11,7 @@ import {
 } from '@mui/material';
 import { TeamLogo, TeamLink, TeamInfoModal } from '../team/TeamComponents';
 import DriveSummary from './DriveSummary';
-
-interface GameResultProps {
-    data: {
-        game: any;
-        drives?: any[];
-    };
-}
+import type { GameResultProps } from '../../types/components';
 
 // Helper component for team header in game result
 const TeamHeader = ({ 

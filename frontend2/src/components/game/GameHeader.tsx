@@ -1,16 +1,6 @@
 import { Box, Typography, Link } from '@mui/material';
 import { TeamLogo } from '../team/TeamComponents';
-import { GameData, Play, Drive } from '../../types/game';
-
-interface GameHeaderProps {
-    gameData: GameData;
-    currentPlay: Play | null;
-    isTeamAOnOffense: boolean;
-    plays: Play[];
-    isPlaybackComplete: boolean;
-    lastPlayText?: string;
-    currentDrive?: Drive | null;
-}
+import type { GameHeaderProps } from '../../types/components';
 
 const GameHeader = ({ 
     gameData, 

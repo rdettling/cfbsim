@@ -1,16 +1,10 @@
 import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
-import { Info } from '../../types/domain';
 import { ROUTES } from '../../constants/routes';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingDialog from '../sim/LoadingDialog';
 import { advanceWeeks } from '../../domain/sim';
-
-interface SeasonBannerProps {
-    info: Info & { lastWeek: number };
-    primaryColor?: string;
-    secondaryColor?: string;
-}
+import type { SeasonBannerProps } from '../../types/components';
 
 const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#ffffff' }: SeasonBannerProps) => {
     const navigate = useNavigate();

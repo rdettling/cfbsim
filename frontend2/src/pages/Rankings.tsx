@@ -14,24 +14,16 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadRankings } from '../domain/league';
-import type { Team, Info, Conference } from '../types/domain';
 import { TeamInfoModal, TeamLink, TeamLogo } from '../components/team/TeamComponents';
 import { InlineLastWeek, InlineThisWeek } from '../components/team/InlineGameComponents';
 import { PageLayout } from '../components/layout/PageLayout';
-
-interface RankingsData {
-  info: Info;
-  team: Team;
-  rankings: Team[];
-  conferences: Conference[];
-}
 
 const Rankings = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [showAllTeams, setShowAllTeams] = useState(false);
 
-  const { data, loading, error } = useDomainData<RankingsData>({
+  const { data, loading, error } = useDomainData({
     fetcher: () => loadRankings(),
   });
 

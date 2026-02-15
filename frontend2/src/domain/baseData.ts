@@ -1,52 +1,6 @@
-import type { Conference, Team } from '../types/domain';
+import type { Conference, Team, PreviewData } from '../types/domain';
+import type { YearData, TeamsData, ConferencesData } from '../types/baseData';
 import { getConferencesData, getTeamsData, getYearData } from '../db/baseData';
-
-export interface YearData {
-  playoff: {
-    teams: number;
-    conf_champ_autobids?: number;
-    conf_champ_top_4?: boolean;
-  };
-  conferences: Record<string, { games: number; teams: Record<string, number> }>;
-  Independent?: Record<string, number>;
-}
-
-interface TeamsData {
-  teams: Record<
-    string,
-    {
-      mascot: string;
-      abbreviation: string;
-      ceiling: number;
-      floor: number;
-      colorPrimary: string;
-      colorSecondary: string;
-      city?: string;
-      state?: string;
-      stadium?: string;
-    }
-  >;
-}
-
-type ConferencesData = Record<string, string>;
-
-export interface PreviewData {
-  conferences: Record<
-    string,
-    {
-      confName: string;
-      confFullName: string;
-      confGames: number;
-      teams: Team[];
-    }
-  >;
-  independents: Team[];
-  playoff: {
-    teams: number;
-    conf_champ_autobids: number;
-    conf_champ_top_4: boolean;
-  };
-}
 
 export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   const [yearData, teamsData, conferencesData] = await Promise.all([

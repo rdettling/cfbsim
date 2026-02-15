@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
-import { Team, Info } from "../types/domain";
+import type { PreviewData } from "../types/domain";
 import { STAGES } from "../constants/stages";
 import {
   Typography,
@@ -24,21 +24,6 @@ import { TeamLogo, ConfLogo } from "../components/team/TeamComponents";
 import { useDomainData } from "../domain/hooks";
 import { PageLayout } from "../components/layout/PageLayout";
 import { loadHomeData, type LaunchProps } from "../domain/league";
-
-interface PreviewData {
-  conferences: Record<string, {
-    confName: string;
-    confFullName: string;
-    confGames: number;
-    teams: Team[];
-  }>;
-  independents: Team[];
-  playoff: {
-    teams: number;
-    conf_champ_autobids: number;
-    conf_champ_top_4: boolean;
-  };
-}
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -89,7 +74,7 @@ const Home = () => {
       }));
     }
 
-    const confData = data.preview.conferences[selectedConference as keyof typeof data.preview.conferences] as any;
+    const confData = data.preview.conferences[selectedConference as keyof typeof data.preview.conferences] as PreviewData['conferences'][string];
     return confData
       ? confData.teams.map((team: any) => ({ ...team, confName: selectedConference }))
       : [];

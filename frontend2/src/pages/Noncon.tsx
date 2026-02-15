@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
-import { Conference, Team, Info, ScheduleGame } from "../types/domain";
+import type { NonConData } from "../types/league";
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadNonCon, startNewLeague, listAvailableTeams, scheduleNonConGame } from "../domain/league";
@@ -22,23 +22,6 @@ import {
     GlobalStyles
 } from "@mui/material";
 import { PageLayout } from '../components/layout/PageLayout';
-
-interface NonConData {
-    info: Info;
-    team: Team;
-    schedule: ScheduleGame[];
-    pending_rivalries: PendingRivalry[];
-    conferences: Conference[];
-}
-
-interface PendingRivalry {
-    id: number;
-    teamA: string;
-    teamB: string;
-    name: string | null;
-    homeTeam: string | null;
-    awayTeam: string | null;
-}
 
 export const NonCon = () => {
     const location = useLocation();

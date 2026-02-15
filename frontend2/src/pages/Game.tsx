@@ -5,18 +5,10 @@ import GamePreview from '../components/game/GamePreview';
 import GameResult from '../components/game/GameResult';
 import { PageLayout } from '../components/layout/PageLayout';
 
-interface GamePageData {
-  info: any;
-  team: any;
-  conferences: any[];
-  game: any;
-  drives?: any[];
-}
-
 const Game = () => {
     const { id } = useParams<{ id: string }>();
 
-    const { data, loading, error } = useDomainData<GamePageData>({
+    const { data, loading, error } = useDomainData({
         fetcher: () => {
             if (!id) throw new Error('No game ID provided');
             const gameId = Number(id);

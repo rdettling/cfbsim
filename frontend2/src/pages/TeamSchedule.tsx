@@ -17,18 +17,10 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamSchedule } from '../domain/league';
-import type { Conference, Info, ScheduleGame, Team } from '../types/domain';
+import type { ScheduleGame } from '../types/domain';
 import { TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import TeamHeader from '../components/team/TeamHeader';
 import { PageLayout } from '../components/layout/PageLayout';
-
-interface ScheduleData {
-  info: Info;
-  team: Team;
-  games: ScheduleGame[];
-  conferences: Conference[];
-  teams: string[];
-}
 
 const TeamSchedule = () => {
   const { teamName } = useParams();
@@ -36,7 +28,7 @@ const TeamSchedule = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
 
-  const { data, loading, error } = useDomainData<ScheduleData>({
+  const { data, loading, error } = useDomainData({
     fetcher: () => loadTeamSchedule(teamName),
     deps: [teamName],
   });
