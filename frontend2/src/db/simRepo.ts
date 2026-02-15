@@ -101,6 +101,11 @@ export const getPlayersByTeam = async (teamId: number) => {
   return db.getAllFromIndex('players', 'teamId', teamId);
 };
 
+export const getAllPlayers = async () => {
+  const db = await getDb();
+  return db.getAll('players');
+};
+
 export const getDrivesByGame = async (gameId: number) => {
   const db = await getDb();
   return db.getAllFromIndex('drives', 'gameId', gameId);

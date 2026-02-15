@@ -2,8 +2,8 @@ import type { Conference, Info, ScheduleGame, Team } from './types';
 import { getYearsIndex } from '../db/baseData';
 import { getAllGames } from '../db/simRepo';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
-import { clearAllSimData } from '../db/simRepo';
-import { initializeRosters } from './roster';
+import { clearAllSimData, getAllGames, getAllPlayers } from '../db/simRepo';
+import { initializeRosters, ensureRosters } from './roster';
 import { buildPreviewData, buildTeamsAndConferences, type PreviewData } from './baseData';
 import {
   buildSchedule,
@@ -268,6 +268,248 @@ export const loadTeamSchedule = async (teamName?: string) => {
     games: schedule,
     conferences: league.conferences,
     teams: league.teams.map(entry => entry.name).sort((a, b) => a.localeCompare(b)),
+  };
+};
+
+export const loadRatingsStats = async () => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  await ensureRosters(league);
+  await saveLeague(league);
+
+  const players = (await getAllPlayers()).filter(player => player.active);
+  const teams = league.teams;
+
+  const totalCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatings: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsFr: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsSo: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsJr: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsSr: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+  players.forEach(player => {
+    const star = Math.min(5, Math.max(1, player.stars || 1));
+    totalCounts[star] += 1;
+    totalRatings[star] += player.rating;
+    totalRatingsFr[star] += player.rating_fr;
+    totalRatingsSo[star] += player.rating_so;
+    totalRatingsJr[star] += player.rating_jr;
+    totalRatingsSr[star] += player.rating_sr;
+  });
+
+  const avg = (sum: number, count: number) => (count ? Math.round(sum / count) : 0);
+
+  const total_star_counts = {
+    counts: totalCounts,
+    avg_ratings: {
+      1: avg(totalRatings[1], totalCounts[1]),
+      2: avg(totalRatings[2], totalCounts[2]),
+      3: avg(totalRatings[3], totalCounts[3]),
+      4: avg(totalRatings[4], totalCounts[4]),
+      5: avg(totalRatings[5], totalCounts[5]),
+    },
+    avg_ratings_fr: {
+      1: avg(totalRatingsFr[1], totalCounts[1]),
+      2: avg(totalRatingsFr[2], totalCounts[2]),
+      3: avg(totalRatingsFr[3], totalCounts[3]),
+      4: avg(totalRatingsFr[4], totalCounts[4]),
+      5: avg(totalRatingsFr[5], totalCounts[5]),
+    },
+    avg_ratings_so: {
+      1: avg(totalRatingsSo[1], totalCounts[1]),
+      2: avg(totalRatingsSo[2], totalCounts[2]),
+      3: avg(totalRatingsSo[3], totalCounts[3]),
+      4: avg(totalRatingsSo[4], totalCounts[4]),
+      5: avg(totalRatingsSo[5], totalCounts[5]),
+    },
+    avg_ratings_jr: {
+      1: avg(totalRatingsJr[1], totalCounts[1]),
+      2: avg(totalRatingsJr[2], totalCounts[2]),
+      3: avg(totalRatingsJr[3], totalCounts[3]),
+      4: avg(totalRatingsJr[4], totalCounts[4]),
+      5: avg(totalRatingsJr[5], totalCounts[5]),
+    },
+    avg_ratings_sr: {
+      1: avg(totalRatingsSr[1], totalCounts[1]),
+      2: avg(totalRatingsSr[2], totalCounts[2]),
+      3: avg(totalRatingsSr[3], totalCounts[3]),
+      4: avg(totalRatingsSr[4], totalCounts[4]),
+      5: avg(totalRatingsSr[5], totalCounts[5]),
+    },
+  };
+
+  const team_counts_by_prestige = Array.from(
+    new Set(teams.map(team => team.prestige))
+  )
+    .sort((a, b) => a - b)
+    .map(prestige => ({
+      prestige,
+      team_count: teams.filter(team => team.prestige === prestige).length,
+    }));
+
+  const prestige_stars_table = team_counts_by_prestige.map(entry => {
+    const prestigeTeams = teams.filter(team => team.prestige === entry.prestige);
+    const teamIds = new Set(prestigeTeams.map(team => team.id));
+    const prestigePlayers = players.filter(player => teamIds.has(player.teamId));
+    const totalPlayers = prestigePlayers.length || 1;
+    const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let starSum = 0;
+    prestigePlayers.forEach(player => {
+      const star = Math.min(5, Math.max(1, player.stars || 1));
+      starCounts[star] += 1;
+      starSum += star;
+    });
+
+    const avg_rating = prestigeTeams.length
+      ? Math.round(
+          prestigeTeams.reduce((sum, team) => sum + team.rating, 0) / prestigeTeams.length
+        )
+      : 0;
+
+    return {
+      prestige: entry.prestige,
+      avg_rating,
+      avg_stars: totalPlayers ? Math.round((starSum / totalPlayers) * 10) / 10 : 0,
+      star_percentages: {
+        5: Math.round((starCounts[5] / totalPlayers) * 100),
+        4: Math.round((starCounts[4] / totalPlayers) * 100),
+        3: Math.round((starCounts[3] / totalPlayers) * 100),
+        2: Math.round((starCounts[2] / totalPlayers) * 100),
+        1: Math.round((starCounts[1] / totalPlayers) * 100),
+      },
+    };
+  });
+
+  const sortedTeams = [...teams].sort((a, b) => b.rating - a.rating);
+
+  return {
+    info: league.info,
+    team: teams.find(entry => entry.name === league.info.team) ?? teams[0],
+    conferences: league.conferences,
+    prestige_stars_table,
+    team_counts_by_prestige,
+    total_star_counts,
+    teams: sortedTeams,
+  };
+};
+
+const buildScheduleGameForTeam = (
+  team: Team,
+  game: {
+    id: number;
+    teamAId: number;
+    teamBId: number;
+    homeTeamId: number | null;
+    awayTeamId: number | null;
+    neutralSite: boolean;
+    baseLabel: string;
+    spreadA: string;
+    spreadB: string;
+    moneylineA: string;
+    moneylineB: string;
+    weekPlayed: number;
+    rankATOG: number;
+    rankBTOG: number;
+    resultA: string | null;
+    resultB: string | null;
+    scoreA: number | null;
+    scoreB: number | null;
+    winnerId: number | null;
+  },
+  teamsById: Map<number, Team>
+) => {
+  const isTeamA = game.teamAId === team.id;
+  const opponentId = isTeamA ? game.teamBId : game.teamAId;
+  const opponent = teamsById.get(opponentId);
+  if (!opponent) return null;
+
+  const scoreA = game.scoreA ?? 0;
+  const scoreB = game.scoreB ?? 0;
+  const score = game.winnerId
+    ? isTeamA
+      ? `${scoreA}-${scoreB}`
+      : `${scoreB}-${scoreA}`
+    : '';
+
+  const location = game.neutralSite
+    ? 'Neutral'
+    : game.homeTeamId === team.id
+      ? 'Home'
+      : game.awayTeamId === team.id
+        ? 'Away'
+        : undefined;
+
+  return {
+    weekPlayed: game.weekPlayed,
+    opponent: {
+      name: opponent.name,
+      rating: opponent.rating,
+      ranking: opponent.ranking,
+      record: opponent.record,
+    },
+    label: game.baseLabel,
+    result: isTeamA ? game.resultA ?? '' : game.resultB ?? '',
+    score,
+    spread: isTeamA ? game.spreadA : game.spreadB,
+    moneyline: isTeamA ? game.moneylineA : game.moneylineB,
+    id: `${game.id}`,
+    location,
+  } as const;
+};
+
+export const loadRankings = async () => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) {
+    throw new Error('No league found. Start a new game from the Home page.');
+  }
+
+  await ensureRosters(league);
+  await saveLeague(league);
+
+  const games = await getAllGames();
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+
+  const rankings = league.teams
+    .slice()
+    .sort((a, b) => a.ranking - b.ranking)
+    .map(team => {
+      const lastWeek = league.info.currentWeek - 1;
+      const currentWeek = league.info.currentWeek;
+      const lastGameRecord = games.find(
+        game =>
+          game.weekPlayed === lastWeek &&
+          (game.teamAId === team.id || game.teamBId === team.id)
+      );
+      const nextGameRecord = games.find(
+        game =>
+          game.weekPlayed === currentWeek &&
+          (game.teamAId === team.id || game.teamBId === team.id)
+      );
+
+      const last_game =
+        lastGameRecord && lastGameRecord.winnerId
+          ? buildScheduleGameForTeam(team, lastGameRecord, teamsById)
+          : null;
+      const next_game = nextGameRecord
+        ? buildScheduleGameForTeam(team, nextGameRecord, teamsById)
+        : null;
+
+      return {
+        ...team,
+        movement: team.last_rank ? team.last_rank - team.ranking : 0,
+        last_game,
+        next_game,
+      };
+    });
+
+  return {
+    info: league.info,
+    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
+    rankings,
+    conferences: league.conferences,
   };
 };
 
