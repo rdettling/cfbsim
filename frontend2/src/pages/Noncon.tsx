@@ -4,7 +4,7 @@ import { ROUTES } from "../constants/routes";
 import { Conference, Team, Info, ScheduleGame } from "../domain/types";
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { useDomainData } from '../domain/hooks';
-import { loadNonCon, startNewLeague } from "../domain/league";
+import { loadNonCon, startNewLeague, listAvailableTeams, scheduleNonConGame } from "../domain/league";
 import {
     Typography,
     Button,
@@ -83,7 +83,7 @@ export const NonCon = () => {
         }
     };
 
-    const { data, loading, error } = useDomainData({
+    const { data, loading, error, refetch } = useDomainData({
         fetcher: fetchData,
     });
 
@@ -91,8 +91,10 @@ export const NonCon = () => {
 
     const handleScheduleGame = async () => {
         try {
-            console.warn("Scheduling is not implemented yet in frontend2.");
+            if (selectedWeek == null) return;
+            await scheduleNonConGame(selectedOpponent, selectedWeek);
             handleCloseModal();
+            refetch();
         } catch (error) {
             console.error("Error scheduling game:", error);
         }
@@ -100,8 +102,8 @@ export const NonCon = () => {
 
     const handleOpenModal = async (week: number) => {
         try {
-            console.warn("Available teams list is not implemented yet in frontend2.");
-            setAvailableTeams([]);
+            const teams = await listAvailableTeams(week);
+            setAvailableTeams(teams);
             setSelectedWeek(week);
             setModalOpen(true);
         } catch (error) {

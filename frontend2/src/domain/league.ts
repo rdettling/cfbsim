@@ -390,3 +390,73 @@ export const getTeamInfo = async (teamName: string): Promise<Team | null> => {
   if (!league) return null;
   return league.teams.find(team => team.name === teamName) ?? null;
 };
+
+export const listAvailableTeams = async (week: number): Promise<string[]> => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) return [];
+
+  const userTeam = league.teams.find(team => team.name === league.info.team);
+  if (!userTeam) return [];
+
+  const weekIndex = week - 1;
+  const weekSlot = league.schedule[weekIndex];
+  if (!weekSlot || weekSlot.opponent) return [];
+
+  const scheduledTeamIds = new Set<string>();
+  league.schedule.forEach(slot => {
+    if (slot.opponent) {
+      scheduledTeamIds.add(slot.opponent.name);
+    }
+  });
+
+  const alreadyPlayed = new Set<string>();
+  league.schedule.forEach(slot => {
+    if (slot.opponent) {
+      alreadyPlayed.add(slot.opponent.name);
+    }
+  });
+
+  return league.teams
+    .filter(team => team.name !== userTeam.name)
+    .filter(team => team.nonConfGames < team.nonConfLimit)
+    .filter(team => !scheduledTeamIds.has(team.name))
+    .filter(team => !alreadyPlayed.has(team.name))
+    .filter(team => team.conference !== userTeam.conference)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(team => team.name);
+};
+
+export const scheduleNonConGame = async (
+  opponentName: string,
+  week: number
+): Promise<void> => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) throw new Error('No league found. Start a new game from the Home page.');
+
+  const userTeam = league.teams.find(team => team.name === league.info.team);
+  const opponent = league.teams.find(team => team.name === opponentName);
+  if (!userTeam || !opponent) return;
+
+  const weekIndex = week - 1;
+  const slot = league.schedule[weekIndex];
+  if (!slot || slot.opponent) return;
+
+  slot.opponent = {
+    name: opponent.name,
+    rating: opponent.rating,
+    ranking: opponent.ranking,
+    record: opponent.record,
+  };
+  slot.label = userTeam.conference === opponent.conference
+    ? `C (${userTeam.conference})`
+    : opponent.conference
+      ? `NC (${opponent.conference})`
+      : 'NC (Ind)';
+  slot.location = 'Home';
+  slot.id = `${userTeam.name}-vs-${opponent.name}-week-${week}`;
+
+  userTeam.nonConfGames += 1;
+  opponent.nonConfGames += 1;
+
+  await saveLeague(league);
+};
