@@ -91,7 +91,7 @@ const GameResult = ({ data }: GameResultProps) => {
 
                 {/* Final Score */}
                 <Grid container spacing={3} alignItems="center">
-                    <Grid item xs={12} md={5}>
+                    <Grid size={{ xs: 12, md: 5 }}>
                         <TeamHeader 
                             team={game.teamA} 
                             rank={game.rankATOG} 
@@ -100,12 +100,12 @@ const GameResult = ({ data }: GameResultProps) => {
                             onTeamClick={handleTeamClick}
                         />
                     </Grid>
-                    <Grid item xs={12} md={2}>
+                    <Grid size={{ xs: 12, md: 2 }}>
                         <Typography variant="h3" align="center" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
                             FINAL
                         </Typography>
                     </Grid>
-                    <Grid item xs={12} md={5}>
+                    <Grid size={{ xs: 12, md: 5 }}>
                         <TeamHeader 
                             team={game.teamB} 
                             rank={game.rankBTOG} 
@@ -129,7 +129,7 @@ const GameResult = ({ data }: GameResultProps) => {
             <Grid container spacing={3}>
                 {/* Drives Summary */}
                 {drives.length > 0 && (
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <DriveSummary 
                             drives={drives}
                             variant="page"
@@ -138,7 +138,7 @@ const GameResult = ({ data }: GameResultProps) => {
                 )}
 
                 {!drives.length && (
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Card elevation={2}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>

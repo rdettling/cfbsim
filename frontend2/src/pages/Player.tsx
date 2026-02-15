@@ -4,7 +4,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
   Box,
   Table,
   TableBody,
@@ -18,6 +17,7 @@ import {
   Paper,
   Link,
   Chip,
+  Grid,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
@@ -60,7 +60,7 @@ const PlayerHeader = ({
     <Card elevation={3} sx={{ mb: 3 }}>
       <CardContent>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={9}>
+          <Grid size={{ xs: 12, md: 9 }}>
             <Typography variant="h3" fontWeight="bold" gutterBottom>
               {player.first} {player.last}
             </Typography>
@@ -125,7 +125,7 @@ const PlayerHeader = ({
               </TableBody>
             </Table>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Paper
               elevation={2}
               sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}

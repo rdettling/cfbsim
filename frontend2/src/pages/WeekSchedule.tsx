@@ -130,7 +130,7 @@ export default function WeekSchedule() {
 
           <Grid container spacing={2}>
             {data.games.map((game) => (
-              <Grid item xs={12} sm={6} lg={4} key={game.id}>
+              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={game.id}>
                 <Card
                   sx={{
                     borderRadius: 2,

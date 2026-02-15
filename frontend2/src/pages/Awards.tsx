@@ -1,4 +1,4 @@
-import { Box, Grid, Paper, Typography, Chip, Stack, Link as MuiLink } from '@mui/material';
+import { Box, Paper, Typography, Chip, Stack, Link as MuiLink, Grid } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadAwards } from '../domain/league';
@@ -177,7 +177,7 @@ const Awards = () => {
           {data.favorites.length > 0 && (
             <Grid container spacing={3}>
               {data.favorites.map((award) => (
-                <Grid item xs={12} md={6} key={`${award.category_slug}-fav`}>
+                <Grid size={{ xs: 12, md: 6 }} key={`${award.category_slug}-fav`}>
                   <AwardCard award={award} highlightLabel="Live Favorites" highlightColor="primary" />
                 </Grid>
               ))}
@@ -191,7 +191,7 @@ const Awards = () => {
               </Typography>
               <Grid container spacing={3}>
                 {data.final.map((award) => (
-                  <Grid item xs={12} md={6} key={`${award.category_slug}-final`}>
+                  <Grid size={{ xs: 12, md: 6 }} key={`${award.category_slug}-final`}>
                     <AwardCard award={award} highlightLabel="Final Winner" highlightColor="success" />
                   </Grid>
                 ))}

@@ -190,7 +190,7 @@ const Home = () => {
       {activeTab === 0 && (
         <Grid container spacing={2} sx={{ maxHeight: "80vh" }}>
           {/* Left Panel: Configuration */}
-          <Grid item xs={12} lg={4}>
+          <Grid size={{ xs: 12, lg: 4 }}>
             <Paper sx={{ p: 2, height: "fit-content" }}>
               {/* Year Selection */}
               <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
@@ -280,7 +280,7 @@ const Home = () => {
 
           {/* Right Panel: Team Selection */}
           {selectedYear && launchData?.preview && (
-            <Grid item xs={12} lg={8}>
+            <Grid size={{ xs: 12, lg: 8 }}>
               <Paper sx={{ height: "75vh", display: "flex", flexDirection: "column" }}>
                 {/* Header */}
                 <Box sx={{ p: 2, bgcolor: "primary.main", color: "white" }}>

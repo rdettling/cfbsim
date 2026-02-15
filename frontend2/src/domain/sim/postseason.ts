@@ -369,22 +369,23 @@ const setNatty = async (
 
 export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
   const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const ccWeek = CONFERENCE_CHAMPIONSHIP_WEEK;
   const specialActions: Record<number, Record<number, (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => Promise<void>>> = {
     2: {
-      14: setConferenceChampionships,
-      15: setNatty,
+      [ccWeek]: setConferenceChampionships,
+      [ccWeek + 1]: setNatty,
     },
     4: {
-      14: setConferenceChampionships,
-      15: setPlayoffSemi,
-      16: setNatty,
+      [ccWeek]: setConferenceChampionships,
+      [ccWeek + 1]: setPlayoffSemi,
+      [ccWeek + 2]: setNatty,
     },
     12: {
-      14: setConferenceChampionships,
-      15: setPlayoffR1,
-      16: setPlayoffQuarter,
-      17: setPlayoffSemi,
-      18: setNatty,
+      [ccWeek]: setConferenceChampionships,
+      [ccWeek + 1]: setPlayoffR1,
+      [ccWeek + 2]: setPlayoffQuarter,
+      [ccWeek + 3]: setPlayoffSemi,
+      [ccWeek + 4]: setNatty,
     },
   };
 

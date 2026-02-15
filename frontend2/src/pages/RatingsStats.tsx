@@ -114,9 +114,9 @@ const RatingsStats = () => {
       {data && (
         <>
           <Grid container spacing={4}>
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Grid container spacing={4}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <StatsTable
                     title="Star Distribution by Prestige Tier"
                     subtitle="Percentage breakdown of player star ratings within each prestige tier"
@@ -215,7 +215,7 @@ const RatingsStats = () => {
                   </StatsTable>
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <StatsTable
                     title="Total Players by Star Rating"
                     subtitle="Overall distribution with year-specific average ratings"
@@ -284,7 +284,7 @@ const RatingsStats = () => {
               </Grid>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper
                 elevation={3}
                 sx={{ borderRadius: 3, overflow: 'hidden', height: 'fit-content', position: 'sticky', top: 20 }}

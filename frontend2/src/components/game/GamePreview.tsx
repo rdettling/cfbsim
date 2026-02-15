@@ -84,11 +84,11 @@ const GamePreview = ({ game }: GamePreviewProps) => {
                 {/* Team Matchup */}
                 <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
                     <Grid container spacing={4} alignItems="center">
-                        <Grid item xs={12} md={5}>
+                        <Grid size={{ xs: 12, md: 5 }}>
                             {renderTeamInfo(game.teamA, game.rankATOG, String(game.moneylineA || ""))}
                         </Grid>
 
-                        <Grid item xs={12} md={2}>
+                        <Grid size={{ xs: 12, md: 2 }}>
                             <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                                     VS
@@ -104,7 +104,7 @@ const GamePreview = ({ game }: GamePreviewProps) => {
                             </Box>
                         </Grid>
 
-                        <Grid item xs={12} md={5}>
+                        <Grid size={{ xs: 12, md: 5 }}>
                             {renderTeamInfo(game.teamB, game.rankBTOG, String(game.moneylineB || ""), true)}
                         </Grid>
                     </Grid>
@@ -113,7 +113,7 @@ const GamePreview = ({ game }: GamePreviewProps) => {
 
             {/* Content Cards */}
             <Grid container spacing={4}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Card elevation={2}>
                         <CardContent>
                             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main', mb: 2 }}>

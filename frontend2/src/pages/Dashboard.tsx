@@ -152,10 +152,10 @@ const Dashboard = () => {
                         {/* Team Header with Conference Logo */}
                         <Paper elevation={2} sx={{ mb: 4, p: 3, borderRadius: 2 }}>
                             <Grid container spacing={2} alignItems="center">
-                                <Grid item xs={12} md={1}>
+                                <Grid size={{ xs: 12, md: 1 }}>
                                     <TeamLogo name={data.team.name} size={80} />
                                 </Grid>
-                                <Grid item xs={12} md={9}>
+                                <Grid size={{ xs: 12, md: 9 }}>
                                     <Typography variant="h3" fontWeight="bold" gutterBottom>
                                         {data.team.ranking > 0 && `#${data.team.ranking} `}{data.team.name} {data.team.mascot}
                                     </Typography>
@@ -166,7 +166,7 @@ const Dashboard = () => {
                                     </Typography>
                                 </Grid>
                                 {confName && (
-                                    <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Grid size={{ xs: 12, md: 2 }} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                         <Box sx={{ textAlign: 'center' }}>
                                             <ConfLogo name={confName} size={60} />
                                             <Typography variant="subtitle1" sx={{ mt: 1 }}>{confName}</Typography>
