@@ -1,6 +1,6 @@
 # CFBSim.net
 
-College football season simulator with an API‑backed web UI. Inspired by Basketball GM.
+College football season simulator. The active frontend is a standalone Vite + React app backed by IndexedDB (no backend API). The legacy full‑stack app is preserved under `legacy/`.
 
 ## Read This First
 
@@ -10,15 +10,15 @@ College football season simulator with an API‑backed web UI. Inspired by Baske
 
 ## What It Does
 
-- Simulates full college football seasons with recruiting, progression, realignment, and playoffs.
-- Provides a REST API for a Vite + React frontend.
+- Simulates full college football seasons (scheduling, games, rankings, rosters).
+- Runs entirely in the browser in the new architecture.
+- Legacy Django API remains available under `legacy/` if needed.
 
 ## Tech Stack
 
-- Backend: Django + Django REST Framework
-- Frontend: React + Vite
-- Database: SQLite (dev), Postgres (prod)
-- Deployment: Heroku
+- Frontend (active): React + Vite + IndexedDB (`frontend2/`)
+- Legacy backend: Django + Django REST Framework (`legacy/backend/`)
+- Legacy frontend: React + Vite (`legacy/frontend/`)
 
 ## License
 

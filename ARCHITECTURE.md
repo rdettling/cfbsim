@@ -2,84 +2,74 @@
 
 ## Overview
 
-The backend is a Django app that serves a REST API and runs a simulation engine for a college football season. The frontend is a Vite + React app that consumes the API.
+The active architecture is a standalone Vite + React app under `frontend2/`. It runs the simulation entirely in the browser and persists state to IndexedDB. The legacy full‑stack app (Django API + old frontend) is preserved under `legacy/`.
 
-## Backend
+## Frontend2 (Active)
 
 Key modules:
-- `backend/cfbsim/` project config, settings, URLs
-- `backend/api/` API endpoints, serializers, view logic
-- `backend/logic/` simulation engine, scheduling, progression
-- `backend/logic/sim/` game simulation core
-- `backend/recruit/` legacy Django app (kept for compatibility)
-- `backend/data/` static data inputs
+- `frontend2/src/domain/` simulation logic, scheduling, rosters
+- `frontend2/src/db/` IndexedDB schema + repositories
+- `frontend2/src/pages/` UI screens
+- `frontend2/src/components/` shared UI components
+- `frontend2/public/data/` base JSON inputs
+
+High-level flow:
+1. Base data is loaded from `frontend2/public/data/` and cached in IndexedDB.
+2. A new league is created in IndexedDB on start.
+3. Schedules, games, plays, drives, game logs, and rosters are generated client‑side.
+4. Pages load from domain functions and read/write IndexedDB.
+
+## Legacy Backend (Optional)
+
+Key modules:
+- `legacy/backend/cfbsim/` project config, settings, URLs
+- `legacy/backend/api/` API endpoints, serializers, view logic
+- `legacy/backend/logic/` simulation engine, scheduling, progression
+- `legacy/backend/logic/sim/` game simulation core
+- `legacy/backend/recruit/` legacy Django app (kept for compatibility)
+- `legacy/backend/data/` static data inputs
 
 High-level flow:
 1. API endpoints in `backend/api/` call into `backend/logic/`.
 2. Simulation state is persisted via Django models in `backend/api/models.py`.
 3. Frontend consumes API responses to render views.
 
-## Season Lifecycle (Backend)
+## Season Lifecycle (Frontend2)
 
-Core steps (see `backend/logic/season.py`):
-1. Initialize history and settings from `backend/data/`.
-2. Reset counters, clear plays/drives, and initialize rankings.
-3. Generate schedules and start the season.
-4. Advance weeks, sim games, and update rankings.
-5. Run conference championships and playoffs.
-6. Apply roster progression, recruiting, realignment, and playoff format updates.
+Core steps (see `frontend2/src/domain/sim.ts` and `frontend2/src/domain/league.ts`):
+1. Initialize league state from base data.
+2. Generate schedules and initialize sim records in IndexedDB.
+3. Advance weeks, sim games, update rankings and records.
+4. Persist games, drives, plays, and game logs in IndexedDB.
 
-## Simulation Engine
+## Simulation Engine (Frontend2)
 
-Gameplay is simulated at the drive/play level in `backend/logic/sim/sim.py`:
+Gameplay is simulated at the drive/play level in `frontend2/src/domain/sim.ts`:
 - Runs and passes are generated from rating-based distributions.
 - 4th-down logic decides punt/FG/go-for-it.
 - Overtime simulates alternating possessions.
 - Plays and drives are optionally persisted for game logs.
 
-## Scheduling and Playoffs
+## Scheduling (Frontend2)
 
-`backend/logic/schedule.py` builds:
+`frontend2/src/domain/schedule.ts` builds:
 - Regular season schedules and rivalry games.
-- Conference championships.
-- Playoff brackets for 2-, 4-, and 12-team formats.
+- Week assignment and home/away balancing.
 
-## Rosters, Recruiting, and Progression
+## Rosters (Frontend2)
 
-`backend/logic/roster_management.py` handles:
+`frontend2/src/domain/roster.ts` handles:
 - Recruiting cycles and class assignment.
 - Yearly progression and roster cuts.
 - Team rating calculations from player ratings.
 
-## Rankings, Stats, Awards
+## Rankings, Stats, Awards (Frontend2)
 
-- Rankings and prestige updates: `backend/logic/season.py`
-- Stats aggregation: `backend/logic/stats.py`
-- Awards pipeline: `backend/logic/awards.py`
-
-## Frontend
-
-Key modules:
-- `frontend/src/pages/` page-level screens
-- `frontend/src/components/` shared UI components
-- `frontend/src/services/api.ts` API client
-
-Tooling:
-- Vite + React
+Rankings and stats are updated during sim and persisted in IndexedDB. Awards are being ported from the legacy pipeline.
 
 ## Data
 
-Simulation relies on JSON files under `backend/data/` for teams, conferences, and ratings. These must exist for season initialization.
-
-## API Surface (Backend)
-
-Main endpoints live under `backend/api/urls.py`. Examples:
-- `GET /api/home/`
-- `GET /api/dashboard/`
-- `GET /api/standings/:conference/`
-- `GET /api/playoff/`
-- `GET /api/game/:id/`
-- `GET /api/summary/`
+Frontend2 relies on JSON files under `frontend2/public/data/` for teams, conferences, and year data.
 
 ## Docs Map
 

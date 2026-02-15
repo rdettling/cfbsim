@@ -2,43 +2,40 @@
 
 ## Prereqs
 
-- Python 3.13 (managed by `.python-version`)
 - Node.js 18+
-- `uv`
 
-## Backend Setup
+## Frontend2 Setup (Active App)
 
-1. `uv sync`
-2. `uv run python backend/manage.py migrate`
-3. `uv run python backend/manage.py runserver`
+1. `cd frontend2`
+2. `npm install`
+3. `npm run dev`
+
+## Data Requirements (Frontend2)
+
+The active frontend loads data from `frontend2/public/data/` (cached to IndexedDB on first run):
+- `teams.json`
+- `conferences.json`
+- `years/index.json` and `years/*.json`
+- `rivalries.json`
+
+## Legacy Setup (Optional)
+
+If you want to run the old Django API + legacy frontend, see `legacy/`:
+
+### Legacy Backend
+
+1. `cd legacy`
+2. `uv sync`
+3. `uv run python backend/manage.py migrate`
+4. `uv run python backend/manage.py runserver`
 
 Optional:
 1. `uv run python backend/manage.py createsuperuser`
 
-## Environment Variables
+Environment variables are loaded from `legacy/.env` by `legacy/backend/cfbsim/settings.py`.
 
-Loaded from `.env` at the repo root by `backend/cfbsim/settings.py`.
-- `DJANGO_ENV` (default: `development`)
-- `DJANGO_ALLOWED_HOSTS` (space-separated)
-- `SECRET_KEY` (auto-generated for dev if missing)
-- `HEROKU_POSTGRESQL_CYAN_URL` (production DB)
-- `SSL_REQUIRE` (DB SSL)
+### Legacy Frontend
 
-## Frontend Setup
-
-1. `cd frontend`
+1. `cd legacy/frontend`
 2. `npm install`
 3. `npm run dev`
-
-## Data Requirements
-
-The backend expects data in `backend/data/`:
-- `teams.json`
-- `conferences.json`
-- `ratings/*.json`
-- `years/*.json`
-
-## Useful Scripts
-
-- `uv run python backend/scripts/generate_betting_odds.py`
-Writes `backend/data/betting_odds.json` used during season setup.
