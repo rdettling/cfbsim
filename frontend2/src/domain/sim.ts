@@ -1344,7 +1344,7 @@ export const advanceWeeks = async (destWeek: number) => {
   await saveLeague(league);
 };
 
-const buildDriveResponse = (
+export const buildDriveResponse = (
   drives: DriveRecord[],
   plays: PlayRecord[],
   teamsById: Map<number, Team>

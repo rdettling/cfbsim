@@ -12,6 +12,9 @@ import TeamHistory from './pages/TeamHistory';
 import SettingsPage from './pages/Settings';
 import Awards from './pages/Awards';
 import SeasonSummary from './pages/SeasonSummary';
+import Game from './pages/Game';
+import TeamStats from './pages/TeamStats';
+import IndividualStats from './pages/IndividualStats';
 
 const App = () => {
   return (
@@ -30,6 +33,9 @@ const App = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/awards" element={<Awards />} />
         <Route path="/summary" element={<SeasonSummary />} />
+        <Route path="/game/:id" element={<Game />} />
+        <Route path="/stats/team" element={<TeamStats />} />
+        <Route path="/stats/individual" element={<IndividualStats />} />
       </Routes>
     </BrowserRouter>
   );

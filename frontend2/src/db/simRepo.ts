@@ -106,6 +106,16 @@ export const getAllPlayers = async () => {
   return db.getAll('players');
 };
 
+export const getAllPlays = async () => {
+  const db = await getDb();
+  return db.getAll('plays');
+};
+
+export const getAllGameLogs = async () => {
+  const db = await getDb();
+  return db.getAll('gameLogs');
+};
+
 export const getDrivesByGame = async (gameId: number) => {
   const db = await getDb();
   return db.getAllFromIndex('drives', 'gameId', gameId);

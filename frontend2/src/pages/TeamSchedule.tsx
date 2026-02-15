@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useState } from 'react';
 import {
   Table,
@@ -174,14 +174,29 @@ const TeamSchedule = () => {
                     <TableCell align="center">{game.opponent?.record ?? '-'}</TableCell>
                     <TableCell align="center">{game.spread || '-'}</TableCell>
                     <TableCell align="center">
-                      {game.result ? (
-                        <Chip
-                          label={`${game.result}: ${game.score}`}
-                          color={game.result === 'W' ? 'success' : 'error'}
-                          variant="outlined"
-                          size="small"
-                          sx={{ fontWeight: 'bold' }}
-                        />
+                      {game.id ? (
+                        <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
+                          {game.result ? (
+                            <Chip
+                              label={`${game.result}: ${game.score}`}
+                              color={game.result === 'W' ? 'success' : 'error'}
+                              variant="outlined"
+                              size="small"
+                              sx={{ fontWeight: 'bold' }}
+                            />
+                          ) : (
+                            <Chip label="Preview" size="small" variant="outlined" />
+                          )}
+                          <Button
+                            component={RouterLink}
+                            to={`/game/${game.id}`}
+                            variant="text"
+                            size="small"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {game.result ? 'Summary' : 'Preview'}
+                          </Button>
+                        </Stack>
                       ) : (
                         <Button variant="outlined" size="small" disabled>
                           Preview

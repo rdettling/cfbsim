@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Typography,
   Box,
-  Link as MuiLink,
   Button,
   Grid,
   Card,
@@ -255,7 +254,7 @@ export default function WeekSchedule() {
                             }`
                           : game.base_label || 'VS'}
                       </Typography>
-                      <Button component={MuiLink} href={`/game/${game.id}`} size="small" variant="outlined" sx={{ fontSize: '0.75rem' }}>
+                      <Button component={RouterLink} to={`/game/${game.id}`} size="small" variant="outlined" sx={{ fontSize: '0.75rem' }}>
                         {game.winner ? 'Summary' : 'Preview'}
                       </Button>
                     </Box>
