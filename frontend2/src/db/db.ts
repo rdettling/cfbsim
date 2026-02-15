@@ -97,9 +97,17 @@ export interface PlayerRecord {
   teamId: number;
   first: string;
   last: string;
+  year: 'fr' | 'so' | 'jr' | 'sr';
   pos: string;
   rating: number;
+  rating_fr: number;
+  rating_so: number;
+  rating_jr: number;
+  rating_sr: number;
+  stars: number;
+  development_trait: number;
   starter: boolean;
+  active: boolean;
 }
 
 export interface Frontend2DB extends DBSchema {

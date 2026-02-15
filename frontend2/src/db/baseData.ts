@@ -37,6 +37,8 @@ export const getNamesData = () =>
     'names',
     '/data/names.json'
   );
+export const getStatesData = () =>
+  getBaseData<Record<string, number>>('states', '/data/states.json');
 export const getBettingOddsData = () =>
   getBaseData<{
     generated_at?: string;

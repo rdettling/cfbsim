@@ -1,7 +1,8 @@
 import type { Conference, Info, ScheduleGame, Team } from './types';
 import { getYearsIndex } from '../db/baseData';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
-import { clearSimData } from '../db/simRepo';
+import { clearAllSimData } from '../db/simRepo';
+import { initializeRosters } from './roster';
 import { buildPreviewData, buildTeamsAndConferences, type PreviewData } from './baseData';
 import {
   buildSchedule,
@@ -67,7 +68,7 @@ export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
 };
 
 export const startNewLeague = async (teamName: string, year: string): Promise<NonConData> => {
-  await clearSimData();
+  await clearAllSimData();
   const { teams, conferences } = await buildTeamsAndConferences(year);
   const userTeam = teams.find(team => team.name === teamName) ?? teams[0];
 
@@ -97,6 +98,8 @@ export const startNewLeague = async (teamName: string, year: string): Promise<No
       player: 1,
     },
   };
+
+  await initializeRosters(league);
 
   league.pending_rivalries = await applyRivalriesToSchedule(
     league.schedule,

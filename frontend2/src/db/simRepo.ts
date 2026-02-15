@@ -1,6 +1,18 @@
 import { getDb, type GameRecord, type DriveRecord, type PlayRecord, type GameLogRecord, type PlayerRecord } from './db';
 
-export const clearSimData = async () => {
+export const clearSimArtifacts = async () => {
+  const db = await getDb();
+  const tx = db.transaction(['games', 'drives', 'plays', 'gameLogs'], 'readwrite');
+  await Promise.all([
+    tx.objectStore('games').clear(),
+    tx.objectStore('drives').clear(),
+    tx.objectStore('plays').clear(),
+    tx.objectStore('gameLogs').clear(),
+    tx.done,
+  ]);
+};
+
+export const clearAllSimData = async () => {
   const db = await getDb();
   const tx = db.transaction(['games', 'drives', 'plays', 'gameLogs', 'players'], 'readwrite');
   await Promise.all([
@@ -11,6 +23,13 @@ export const clearSimData = async () => {
     tx.objectStore('players').clear(),
     tx.done,
   ]);
+};
+
+export const clearPlayers = async () => {
+  const db = await getDb();
+  const tx = db.transaction('players', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
 };
 
 export const saveGames = async (games: GameRecord[]) => {

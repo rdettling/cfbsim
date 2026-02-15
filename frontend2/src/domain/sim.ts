@@ -1,9 +1,10 @@
 import type { Team, Info, ScheduleGame } from './types';
 import type { FullGame } from './schedule';
-import { getBettingOddsData, getHeadlinesData, getNamesData } from '../db/baseData';
+import { fillUserSchedule } from './schedule';
+import { getBettingOddsData, getHeadlinesData } from '../db/baseData';
 import { loadLeague, saveLeague } from '../db/leagueRepo';
 import {
-  clearSimData,
+  clearSimArtifacts,
   getGameById,
   getGamesByWeek,
   getAllGames,
@@ -13,11 +14,11 @@ import {
   saveDrives,
   saveGameLogs,
   saveGames,
-  savePlayers,
   savePlays,
 } from '../db/simRepo';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../db/db';
 import type { Drive, Play, GameData } from '../types/game';
+import { ensureRosters } from './roster';
 
 const DRIVES_PER_TEAM = 12;
 const OT_START_YARD_LINE = 75;
@@ -1063,7 +1064,7 @@ const buildStartersCache = async (teams: Team[]) => {
   const byTeamPos = new Map<string, PlayerRecord[]>();
   for (const team of teams) {
     const players = await getPlayersByTeam(team.id);
-    players.forEach(player => {
+    players.filter(player => player.active && player.starter).forEach(player => {
       const key = `${team.id}:${player.pos}`;
       const list = byTeamPos.get(key) ?? [];
       list.push(player);
@@ -1082,61 +1083,11 @@ const loadPlayersMap = async (teams: Team[]) => {
   return map;
 };
 
-const buildPlayerPool = async () => {
-  const names = await getNamesData();
-  const allFirst: Array<{ name: string; weight: number }> = [];
-  const allLast: Array<{ name: string; weight: number }> = [];
-  Object.values(names).forEach(group => {
-    allFirst.push(...(group.first ?? []));
-    allLast.push(...(group.last ?? []));
-  });
-  return { first: allFirst, last: allLast };
-};
-
-const pickName = (pool: Array<{ name: string; weight: number }>) => {
-  if (!pool.length) return 'Player';
-  return (
-    weightedChoice(pool.map(item => ({ item: item.name, weight: item.weight }))) ?? 'Player'
-  );
-};
-
-const createStartersForTeam = (
-  league: LeagueState,
-  team: Team,
-  pool: { first: Array<{ name: string; weight: number }>; last: Array<{ name: string; weight: number }> }
-) => {
-  const positions: Array<[string, number]> = [
-    ['qb', 1],
-    ['rb', 2],
-    ['wr', 3],
-    ['te', 1],
-    ['k', 1],
-    ['p', 1],
-    ['dl', 2],
-    ['lb', 2],
-    ['cb', 2],
-    ['s', 2],
-  ];
-  const players: PlayerRecord[] = [];
-  positions.forEach(([pos, count]) => {
-    for (let i = 0; i < count; i += 1) {
-      players.push({
-        id: nextId(league, 'player'),
-        teamId: team.id,
-        first: pickName(pool.first),
-        last: pickName(pool.last),
-        pos,
-        rating: Math.max(50, Math.round(team.rating + (Math.random() * 10 - 5))),
-        starter: true,
-      });
-    }
-  });
-  return players;
-};
 
 export const initializeSimData = async (league: LeagueState, fullGames: FullGame[]) => {
   const counters = normalizeCounters(league);
-  await clearSimData();
+  await ensureRosters(league);
+  await clearSimArtifacts();
 
   const oddsData = await getBettingOddsData();
   const oddsMap = oddsData.odds ?? {};
@@ -1195,19 +1146,12 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
     counters.game += 1;
   });
 
-  const pool = await buildPlayerPool();
-  const players: PlayerRecord[] = [];
-  league.teams.forEach(team => {
-    players.push(...createStartersForTeam(league, team, pool));
-  });
-
   const userTeam = league.teams.find(team => team.name === league.info.team);
   if (userTeam) {
     gameRecords.forEach(game => updateUserSchedulePreviewFromRecord(league.schedule, game, userTeam));
   }
 
   await saveGames(gameRecords);
-  await savePlayers(players);
 
   league.simInitialized = true;
   await saveLeague(league);
@@ -1318,7 +1262,11 @@ export const advanceWeeks = async (destWeek: number) => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
   if (!league.scheduleBuilt) throw new Error('Schedule not built yet.');
-  if (!league.simInitialized) throw new Error('Sim data not initialized.');
+  if (!league.simInitialized) {
+    const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
+    const fullGames = fillUserSchedule(league.schedule, userTeam, league.teams);
+    await initializeSimData(league, fullGames);
+  }
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const starters = await buildStartersCache(league.teams);
