@@ -25,6 +25,7 @@ import { useDomainData } from '../domain/hooks';
 import { loadRealignment, updateRealignmentSettings } from '../domain/league';
 import { TeamLogo, TeamLink } from '../components/team/TeamComponents';
 import type { Settings } from '../types/domain';
+import type { RealignmentPageData } from '../types/pages';
 
 type RealignmentData = Record<string, { old: string; new: string }>;
 type PlayoffChanges = {
@@ -32,8 +33,6 @@ type PlayoffChanges = {
   autobids?: { old: number; new: number };
   conf_champ_top_4?: { old: boolean; new: boolean };
 };
-
-type RealignmentPageData = Awaited<ReturnType<typeof loadRealignment>>;
 
 const Realignment = () => {
   const navigate = useNavigate();

@@ -27,8 +27,7 @@ import { useDomainData } from '../domain/hooks';
 import { loadRecruitingSummary } from '../domain/league';
 import { ConfLogo, TeamInfoModal, TeamLink, TeamLogo } from '../components/team/TeamComponents';
 import type { Team } from '../types/domain';
-
-type RecruitingSummaryData = Awaited<ReturnType<typeof loadRecruitingSummary>>;
+import type { RecruitingSummaryPageData } from '../types/pages';
 
 interface FreshmanPlayer {
   id: number;
@@ -122,7 +121,7 @@ const RecruitingSummary = () => {
   const [selectedTeamRecruits, setSelectedTeamRecruits] = useState<{ team: Team; players: FreshmanPlayer[] } | null>(null);
   const [showAllTeams, setShowAllTeams] = useState(false);
 
-  const { data, loading, error } = useDomainData<RecruitingSummaryData>({
+  const { data, loading, error } = useDomainData<RecruitingSummaryPageData>({
     fetcher: loadRecruitingSummary,
     deps: [],
   });

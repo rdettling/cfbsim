@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadStandings } from '../domain/league';
+import type { StandingsPageData } from '../types/pages';
 import { TeamInfoModal, TeamLink, TeamLogo, ConfLogo } from '../components/team/TeamComponents';
 import { InlineLastWeek, InlineThisWeek } from '../components/team/InlineGameComponents';
 import { PageLayout } from '../components/layout/PageLayout';
@@ -22,7 +23,7 @@ const StandingsTable = ({
   conference_name,
   onTeamClick,
 }: {
-  data: Awaited<ReturnType<typeof loadStandings>>;
+  data: StandingsPageData;
   conference_name: string | undefined;
   onTeamClick: (name: string) => void;
 }) => (

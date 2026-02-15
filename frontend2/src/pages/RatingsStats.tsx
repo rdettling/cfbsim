@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadRatingsStats } from '../domain/league';
+import type { RatingsStatsPageData } from '../types/pages';
 import { TeamInfoModal } from '../components/team/TeamComponents';
 import { PageLayout } from '../components/layout/PageLayout';
 import type { RatingsStatsData } from '../types/stats';
@@ -22,7 +23,7 @@ const RatingsStats = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
 
-  const { data, loading, error } = useDomainData<RatingsStatsData>({
+  const { data, loading, error } = useDomainData<RatingsStatsPageData>({
     fetcher: () => loadRatingsStats(),
   });
 

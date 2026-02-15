@@ -2,8 +2,8 @@ import { Box, Paper, Typography, Chip, Stack, Link as MuiLink, Grid } from '@mui
 import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadAwards } from '../domain/league';
+import type { AwardsPageData } from '../types/pages';
 import { TeamLogo } from '../components/team/TeamComponents';
-type AwardsPageData = Awaited<ReturnType<typeof loadAwards>>;
 type AwardPlayer = AwardsPageData['favorites'][number]['first_place'];
 
 const RANK_LABELS = ['1st Favorite', '2nd Favorite', '3rd Favorite'];

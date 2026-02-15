@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDomainData } from '../domain/hooks';
 import { loadSeasonSummary } from '../domain/league';
+import type { SeasonSummaryPageData } from '../types/pages';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import {
   Typography,
@@ -19,8 +20,7 @@ import {
   Link as MuiLink,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-type SeasonSummaryData = Awaited<ReturnType<typeof loadSeasonSummary>>;
-type SummaryChampion = SeasonSummaryData['team'];
+type SummaryChampion = SeasonSummaryPageData['team'];
 type SummaryAward = {
   category_slug: string;
   category_name: string;
@@ -33,7 +33,7 @@ type SummaryAward = {
   } | null;
   first_stats: Record<string, any> | null;
 };
-type SummaryTeam = SeasonSummaryData['teams'][number] & {
+type SummaryTeam = SeasonSummaryPageData['teams'][number] & {
   avg_rank_before?: number | null;
   avg_rank_after?: number | null;
 };
@@ -42,7 +42,7 @@ const SeasonSummary = () => {
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data, loading, error } = useDomainData<SeasonSummaryData>({
+  const { data, loading, error } = useDomainData<SeasonSummaryPageData>({
     fetcher: loadSeasonSummary,
     deps: [],
   });

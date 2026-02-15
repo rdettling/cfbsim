@@ -22,11 +22,11 @@ import {
 import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadPlayer } from '../domain/league';
+import type { PlayerPageData as PlayerPageDataType } from '../types/pages';
 import { TeamInfoModal, TeamLogo, TeamLink } from '../components/team/TeamComponents';
 
-type PlayerPageData = Awaited<ReturnType<typeof loadPlayer>>;
-type PlayerData = PlayerPageData['player'];
-type AwardsEntry = PlayerPageData['awards'][number];
+type PlayerData = PlayerPageDataType['player'];
+type AwardsEntry = PlayerPageDataType['awards'][number];
 
 type GameLog = {
   game: {
@@ -46,6 +46,13 @@ type GameLog = {
   };
   [key: string]: any;
 };
+
+const formatStatLabel = (key: string) =>
+  key
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 
 const PlayerHeader = ({
   player,
@@ -157,13 +164,6 @@ const CareerStats = ({
     key => !['class', 'rating'].includes(key)
   );
 
-  const formatStatLabel = (key: string) =>
-    key
-      .replace(/_/g, ' ')
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-
   return (
     <Card elevation={2} sx={{ mb: 3 }}>
       <CardContent>
@@ -257,13 +257,6 @@ const GameLogs = ({
 
     const firstLog = gameLogs[0];
     const statKeys = Object.keys(firstLog).filter(key => key !== 'game');
-
-    const formatStatLabel = (key: string) =>
-      key
-        .replace(/_/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
 
     return (
       <Box sx={{ overflowX: 'auto' }}>
@@ -393,7 +386,7 @@ const Player = () => {
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
-  const { data, loading, error } = useDomainData<PlayerPageData>({
+  const { data, loading, error } = useDomainData<PlayerPageDataType>({
     fetcher: () => {
       if (!playerId) throw new Error('No player ID provided');
       return loadPlayer(playerId);

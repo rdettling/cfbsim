@@ -1,6 +1,7 @@
 import type { LeagueState } from '../../types/league';
 import type { PlayerRecord, GameLogRecord } from '../../types/db';
 import type { Team } from '../../types/domain';
+import { average } from './utils/statMath';
 
 const AWARD_DEFINITIONS = [
   {
@@ -63,12 +64,6 @@ const PRIORITY_ORDER = [
 ];
 
 const DEFENSIVE_POSITIONS = new Set(['dl', 'lb', 'cb', 's', 'de']);
-
-const average = (total: number, attempts: number, decimals = 1) => {
-  if (!attempts) return 0;
-  const factor = 10 ** decimals;
-  return Math.round((total / attempts) * factor) / factor;
-};
 
 const passerRating = (
   completions: number,

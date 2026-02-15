@@ -17,11 +17,10 @@ import { Link as RouterLink } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadRosterCuts } from '../domain/league';
-
-type RosterCutsData = Awaited<ReturnType<typeof loadRosterCuts>>;
+import type { RosterCutsPageData } from '../types/pages';
 
 const RosterCuts = () => {
-  const { data, loading, error } = useDomainData<RosterCutsData>({
+  const { data, loading, error } = useDomainData<RosterCutsPageData>({
     fetcher: loadRosterCuts,
     deps: [],
   });

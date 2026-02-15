@@ -8,19 +8,9 @@ import {
 } from '../../db/simRepo';
 import { ensureRosters } from '../roster';
 import type { LeagueState } from '../../types/league';
+import { average, percentage } from './utils/statMath';
 
 const MIN_YARDS = 100;
-
-const average = (total: number, attempts: number, decimals = 1) => {
-  if (!attempts) return 0;
-  const factor = 10 ** decimals;
-  return Math.round((total / attempts) * factor) / factor;
-};
-
-const percentage = (completions: number, attempts: number) => {
-  if (!attempts) return 0;
-  return Math.round((completions / attempts) * 1000) / 10;
-};
 
 const passerRating = (
   completions: number,

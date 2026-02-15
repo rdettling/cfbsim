@@ -23,10 +23,9 @@ import {
 import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadRosterProgression } from '../domain/league';
+import type { RosterProgressionPageData } from '../types/pages';
 import { POSITION_ORDER } from '../domain/roster';
 import type { PlayerRecord } from '../types/db';
-
-type RosterProgressionData = Awaited<ReturnType<typeof loadRosterProgression>>;
 
 interface ProgressedPlayer {
   id: number;
@@ -170,7 +169,7 @@ const PlayerTable = ({ players, title, color, showChange = false, positionFilter
 const RosterProgression = () => {
   const [positionFilter, setPositionFilter] = useState<string>('');
 
-  const { data, loading, error } = useDomainData<RosterProgressionData>({
+  const { data, loading, error } = useDomainData<RosterProgressionPageData>({
     fetcher: loadRosterProgression,
     deps: [],
   });

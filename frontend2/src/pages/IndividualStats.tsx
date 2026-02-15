@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDomainData } from '../domain/hooks';
 import { loadIndividualStats } from '../domain/league';
+import type { IndividualStatsPageData } from '../types/pages';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { Link as RouterLink } from 'react-router-dom';
 import {
@@ -8,7 +9,7 @@ import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Link as MuiLink
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import type { IndividualPlayerData, IndividualStatsPageData } from '../types/stats';
+import type { IndividualPlayerData } from '../types/stats';
 
 const StatsTable = ({ stats, sortBy }: { stats: Record<string, IndividualPlayerData>, sortBy: string }) => {
     const [modalOpen, setModalOpen] = useState(false);
