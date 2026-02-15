@@ -10,7 +10,7 @@ import DriveSummary from "./DriveSummary";
 import FootballField from "./FootballField";
 import GameHeader from "./GameHeader";
 import GameControls from "./GameControls";
-import { apiService } from "../services/api";
+import { dataService } from "../services/data";
 import { Play, Drive, GameData } from "../types/game";
 import { useState, useEffect } from "react";
 
@@ -53,7 +53,7 @@ const LiveSimModal = ({
         if (!gameId) return;
         
         try {
-            const response = await apiService.liveSimGame(gameId) as any;
+            const response = await dataService.liveSimGame(gameId) as any;
             handleRegularResponse(response);
         } catch (error) {
             console.error('❌ Error starting simulation:', error);

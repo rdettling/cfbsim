@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import type { Team, Info, Conference, TeamStats as TeamStatsType } from '../interfaces';
 import {
     Table,
@@ -88,7 +88,7 @@ const TeamStats = () => {
     });
 
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getTeamStatsList<TeamStatsData>(),
+        fetchFunction: () => dataService.getTeamStatsList<TeamStatsData>(),
         autoRefreshOnGameChange: true
     });
 

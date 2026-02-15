@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService, getPlayerRoute } from '../services/api';
+import { dataService, getPlayerRoute } from '../services/data';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Typography, Box,
@@ -115,7 +115,7 @@ const RecruitingSummary = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const responseData = await apiService.getRecruitingSummary<RecruitingSummaryData>();
+                const responseData = await dataService.getRecruitingSummary<RecruitingSummaryData>();
                 setData(responseData);
             } catch (error) {
                 setError('Failed to load recruiting summary data');

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamInfoModal } from '../components/TeamComponents';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
@@ -190,7 +190,7 @@ const Standings = () => {
     const { data, loading, error } = useDataFetching({
         fetchFunction: () => {
             if (!conference_name) throw new Error('No conference specified');
-            return apiService.getConferenceStandings<StandingsData>(conference_name);
+            return dataService.getConferenceStandings<StandingsData>(conference_name);
         },
         dependencies: [conference_name],
         autoRefreshOnGameChange: true

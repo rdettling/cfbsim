@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { Link as RouterLink } from 'react-router-dom';
@@ -78,7 +78,7 @@ const IndividualStats = () => {
     const [tabValue, setTabValue] = useState(0);
 
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getIndividualStatsList<StatsData>(),
+        fetchFunction: () => dataService.getIndividualStatsList<StatsData>(),
         autoRefreshOnGameChange: true
     });
 

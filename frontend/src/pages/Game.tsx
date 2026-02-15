@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { GamePreviewData } from '../interfaces';
 import { useDataFetching } from '../hooks/useDataFetching';
 import GamePreview from '../components/GamePreview';
@@ -12,7 +12,7 @@ const Game = () => {
     const { data, loading, error } = useDataFetching({
         fetchFunction: () => {
             if (!id) throw new Error('No game ID provided');
-            return apiService.getGame<GamePreviewData>(id);
+            return dataService.getGame<GamePreviewData>(id);
         },
         dependencies: [id],
         autoRefreshOnGameChange: true

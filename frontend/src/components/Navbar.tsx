@@ -8,7 +8,7 @@ import { TeamLogo } from './TeamComponents';
 import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';
 import { STAGES } from '../constants/stages';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import GameSelectionModal from './GameSelectionModal';
 import LiveSimModal from './LiveSimModal';
 
@@ -139,7 +139,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     {currentStage === 'season' && (
                         <Button 
                             color="inherit" 
-                            onClick={navigateWithApi('/dashboard', apiService.getDashboard)}
+                            onClick={navigateWithApi('/dashboard', dataService.getDashboard)}
                             sx={{
                                 px: 2,
                                 py: 1,
@@ -210,7 +210,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
 
                     <Button 
                         color="inherit" 
-                        onClick={navigateWithApi('/rankings', apiService.getRankings)}
+                        onClick={navigateWithApi('/rankings', dataService.getRankings)}
                         sx={{
                             px: 2,
                             py: 1,
@@ -228,7 +228,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     
                     <Button 
                         color="inherit" 
-                        onClick={navigateWithApi('/playoff', apiService.getPlayoff)}
+                        onClick={navigateWithApi('/playoff', dataService.getPlayoff)}
                         sx={{
                             px: 2,
                             py: 1,
@@ -383,7 +383,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     {/* Home Button - Icon Only */}
                     <Button 
                         color="inherit" 
-                        onClick={navigateWithApi('/', () => apiService.getHome())}
+                        onClick={navigateWithApi('/', () => dataService.getHome())}
                         sx={{
                             minWidth: 'auto',
                             width: 40,

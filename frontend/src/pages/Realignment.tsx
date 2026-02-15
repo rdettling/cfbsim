@@ -21,7 +21,7 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
-import { apiService, ROUTES } from "../services/api";
+import { dataService, ROUTES } from "../services/data";
 import { Settings, Team, Info, Conference } from "../interfaces";
 import { PageLayout } from "../components/PageLayout";
 import { useDataFetching } from "../hooks/useDataFetching";
@@ -57,7 +57,7 @@ const Realignment = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data, loading, error } = useDataFetching<RealignmentPageData>({
-    fetchFunction: () => apiService.getRealignment<RealignmentPageData>(),
+    fetchFunction: () => dataService.getRealignment<RealignmentPageData>(),
     autoRefreshOnGameChange: false,
   });
 
@@ -90,7 +90,7 @@ const Realignment = () => {
     setSaveError(null);
 
     try {
-      await apiService.updateRealignmentSettings(settings);
+      await dataService.updateRealignmentSettings(settings);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {

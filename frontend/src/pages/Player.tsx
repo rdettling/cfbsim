@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import type { Player } from '../interfaces';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamInfoModal, TeamLogo } from '../components/TeamComponents';
@@ -391,7 +391,7 @@ const Player = () => {
     const { data, loading, error } = useDataFetching({
         fetchFunction: () => {
             if (!playerId) throw new Error('No player ID provided');
-            return apiService.getPlayer<PlayerData>(playerId);
+            return dataService.getPlayer<PlayerData>(playerId);
         },
         dependencies: [playerId],
         autoRefreshOnGameChange: true

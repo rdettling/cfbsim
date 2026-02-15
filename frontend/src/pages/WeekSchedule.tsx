@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Team, Info, Conference } from '../interfaces';
 import {
     Typography,
@@ -54,7 +54,7 @@ export default function WeekSchedule() {
             const weekNum = parseInt(currentWeek, 10);
             if (isNaN(weekNum)) throw new Error('Invalid week number');
             console.log('🔍 WeekSchedule: Fetching data for week', weekNum);
-            return apiService.getWeekSchedule<WeekScheduleData>(weekNum);
+            return dataService.getWeekSchedule<WeekScheduleData>(weekNum);
         },
         dependencies: [week],
         autoRefreshOnGameChange: true // Enable auto-refresh for the week we're viewing

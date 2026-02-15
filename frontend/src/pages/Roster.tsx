@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { apiService, getTeamRosterRoute, getPlayerRoute } from '../services/api';
+import { dataService, getTeamRosterRoute, getPlayerRoute } from '../services/data';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Table,
@@ -41,7 +41,7 @@ const Roster = () => {
     const { data, loading, error } = useDataFetching({
         fetchFunction: () => {
             if (!teamName) throw new Error('No team name provided');
-            return apiService.getTeamRoster<RosterData>(teamName);
+            return dataService.getTeamRoster<RosterData>(teamName);
         },
         dependencies: [teamName],
         autoRefreshOnGameChange: true

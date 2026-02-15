@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiService, ROUTES } from "../services/api";
+import { dataService, ROUTES } from "../services/data";
 import { Team, Info } from "../interfaces";
 import { STAGES } from "../constants/stages";
 import {
@@ -58,7 +58,7 @@ const Home = () => {
   const pendingFetch = useRef(false);
 
   const { data, loading, error } = useDataFetching({
-    fetchFunction: () => apiService.getHome<LaunchProps>(""),
+    fetchFunction: () => dataService.getHome<LaunchProps>(""),
     onDataChange: (response) => setLaunchData(response),
     autoRefreshOnGameChange: false
   });
@@ -138,7 +138,7 @@ const Home = () => {
   // Helper function to start new game
   const handleStartGame = async (team: any) => {
     try {
-      const response = await apiService.get(`/api/noncon/`, {
+      const response = await dataService.get(`/api/noncon/`, {
         team: team.name,
         year: selectedYear,
         playoff_teams: playoffTeams.toString(),
@@ -162,7 +162,7 @@ const Home = () => {
     pendingFetch.current = true;
 
     try {
-      const responseData = await apiService.getHome<LaunchProps>(newYear);
+      const responseData = await dataService.getHome<LaunchProps>(newYear);
       setLaunchData(responseData);
       // Update the data manually since we're not using DataPage for this specific fetch
       if (responseData.preview?.playoff) {

@@ -11,7 +11,7 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { apiService } from "../services/api";
+import { dataService } from "../services/data";
 import { Settings, Team, Info, Conference } from "../interfaces";
 import { PageLayout } from "../components/PageLayout";
 import { useDataFetching } from "../hooks/useDataFetching";
@@ -29,12 +29,12 @@ const SettingsPage = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data: settingsData, loading: settingsLoading, error: settingsError } = useDataFetching<Settings>({
-    fetchFunction: () => apiService.getSettings<Settings>(),
+    fetchFunction: () => dataService.getSettings<Settings>(),
     autoRefreshOnGameChange: false,
   });
 
   const { data: navbarData, loading: navbarLoading, error: navbarError } = useDataFetching<DashboardData>({
-    fetchFunction: () => apiService.getDashboard<DashboardData>(),
+    fetchFunction: () => dataService.getDashboard<DashboardData>(),
     autoRefreshOnGameChange: false,
   });
 

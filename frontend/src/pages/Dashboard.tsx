@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Team, Info, ScheduleGame, Conference } from '../interfaces';
 import { TeamInfoModal, ConfLogo, TeamLogo } from '../components/TeamComponents';
 import {
@@ -148,7 +148,7 @@ const Dashboard = () => {
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getDashboard<DashboardData>(),
+        fetchFunction: () => dataService.getDashboard<DashboardData>(),
         autoRefreshOnGameChange: true
     });
 

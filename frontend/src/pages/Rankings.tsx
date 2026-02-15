@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Team, Info, Conference } from '../interfaces';
 import { TeamInfoModal } from '../components/TeamComponents';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
@@ -33,7 +33,7 @@ const Rankings = () => {
     const [showAllTeams, setShowAllTeams] = useState(false);
 
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getRankings<RankingsData>(),
+        fetchFunction: () => dataService.getRankings<RankingsData>(),
         autoRefreshOnGameChange: true
     });
 

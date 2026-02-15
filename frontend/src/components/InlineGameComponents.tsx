@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 import { Team } from '../interfaces';
 import { TeamLogo, TeamLink } from './TeamComponents';
-import { getGameRoute } from '../services/api';
+import { getGameRoute } from '../services/data';
 
 // Common props for both components
 interface BaseGameComponentProps {

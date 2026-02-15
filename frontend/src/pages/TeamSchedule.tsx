@@ -1,6 +1,6 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
-import { apiService, getTeamScheduleRoute, getGameRoute } from '../services/api';
+import { dataService, getTeamScheduleRoute, getGameRoute } from '../services/data';
 import { Team, ScheduleGame, Info, Conference } from '../interfaces';
 import {
     Table,
@@ -45,7 +45,7 @@ const TeamSchedule = () => {
     const { data, loading, error } = useDataFetching({
         fetchFunction: () => {
             if (!teamName) throw new Error('No team name provided');
-            return apiService.getTeamSchedule<ScheduleData>(teamName, year || undefined);
+            return dataService.getTeamSchedule<ScheduleData>(teamName, year || undefined);
         },
         dependencies: [teamName, year],
         autoRefreshOnGameChange: true

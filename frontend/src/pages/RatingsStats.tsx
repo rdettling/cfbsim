@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { RatingsStatsData } from '../interfaces';
 import { TeamInfoModal } from '../components/TeamComponents';
 import {
@@ -17,7 +17,7 @@ const RatingsStats = () => {
 
     const fetchRatingsStats = async () => {
         try {
-            const responseData = await apiService.getRatingsStats<RatingsStatsData>();
+            const responseData = await dataService.getRatingsStats<RatingsStatsData>();
             setData(responseData);
         } catch (error) {
             setError('Failed to load ratings statistics');

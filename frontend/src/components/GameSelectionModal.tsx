@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { TeamLogo } from './TeamComponents';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 
 interface Game {
     id: number;
@@ -52,7 +52,7 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
     const fetchGames = async () => {
         setLoading(true);
         try {
-            const response = await apiService.getLiveSimGames() as any;
+            const response = await dataService.getLiveSimGames() as any;
             setGames(response.games);
             setWeek(response.week);
         } catch (error) {

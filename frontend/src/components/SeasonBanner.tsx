@@ -1,9 +1,9 @@
 import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { Info } from '../interfaces';
-import { ROUTES } from '../services/api';
+import { ROUTES } from '../services/data';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import LoadingDialog from './LoadingDialog';
 
 interface SeasonBannerProps {
@@ -45,7 +45,7 @@ const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#fffff
         setSimulationMessage(`Simulating Week ${info.currentWeek}`);
         setIsSimulating(true);
         try {
-            await apiService.get(`/api/sim/${destWeek}/`);
+            await dataService.get(`/api/sim/${destWeek}/`);
             window.dispatchEvent(new Event('pageDataRefresh'));
         } catch (error) {
             console.error('Error simulating weeks:', error);

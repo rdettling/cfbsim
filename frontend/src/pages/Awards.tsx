@@ -1,7 +1,7 @@
 import { Box, Grid, Paper, Typography, Chip, Stack, Link as MuiLink } from '@mui/material';
 import { PageLayout } from '../components/PageLayout';
 import { useDataFetching } from '../hooks/useDataFetching';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import type { AwardsPageData, AwardSnapshot } from '../interfaces';
 import { TeamLogo } from '../components/TeamComponents';
 
@@ -138,7 +138,7 @@ const AwardCard = ({
 
 const Awards = () => {
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getAwards<AwardsPageData>(),
+        fetchFunction: () => dataService.getAwards<AwardsPageData>(),
         autoRefreshOnGameChange: true
     });
 

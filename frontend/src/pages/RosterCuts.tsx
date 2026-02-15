@@ -1,4 +1,4 @@
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Typography,
@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { useDataFetching } from '../hooks/useDataFetching';
 import { PageLayout } from '../components/PageLayout';
-import { getPlayerRoute } from '../services/api';
+import { getPlayerRoute } from '../services/data';
 
 interface RosterCutsData {
     info: Info & { lastWeek: number };
@@ -27,7 +27,7 @@ interface RosterCutsData {
 
 const RosterCuts = () => {
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getRosterCuts<RosterCutsData>(),
+        fetchFunction: () => dataService.getRosterCuts<RosterCutsData>(),
         autoRefreshOnGameChange: true
     });
 

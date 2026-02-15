@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { apiService, ROUTES } from "../services/api";
+import { dataService, ROUTES } from "../services/data";
 import { Conference, Team, Info, ScheduleGame } from "../interfaces";
 import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
 import { useDataFetching } from '../hooks/useDataFetching';
@@ -62,7 +62,7 @@ export const NonCon = () => {
             // Only pass team and year parameters on first load from home page
             if (isFirstLoad && isFromHome && teamFromHome && yearFromHome) {
                 console.log("Fetching with team and year:", teamFromHome, yearFromHome);
-                const responseData = await apiService.get<NonConData>('/api/noncon', {
+                const responseData = await dataService.get<NonConData>('/api/noncon', {
                     team: teamFromHome,
                     year: yearFromHome
                 });
@@ -75,7 +75,7 @@ export const NonCon = () => {
             } else {
                 // Regular fetch without parameters
                 console.log("Fetching existing game data");
-                const responseData = await apiService.getNonCon<NonConData>();
+                const responseData = await dataService.getNonCon<NonConData>();
                 console.log("Received data:", responseData);
                 return responseData;
             }
@@ -94,7 +94,7 @@ export const NonCon = () => {
 
     const handleScheduleGame = async () => {
         try {
-            await apiService.post('/api/schedulenc/', {
+            await dataService.post('/api/schedulenc/', {
                 opponent: selectedOpponent,
                 week: selectedWeek,
             });
@@ -108,7 +108,7 @@ export const NonCon = () => {
 
     const handleOpenModal = async (week: number) => {
         try {
-            const teams = await apiService.get<string[]>(`/api/fetchteams/`, { week });
+            const teams = await dataService.get<string[]>(`/api/fetchteams/`, { week });
             setAvailableTeams(teams);
             setSelectedWeek(week);
             setModalOpen(true);

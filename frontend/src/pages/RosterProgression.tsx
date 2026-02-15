@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiService, getPlayerRoute } from '../services/api';
+import { dataService, getPlayerRoute } from '../services/data';
 import { Team, Info, Conference, Player } from '../interfaces';
 import {
     Typography, Box,
@@ -170,7 +170,7 @@ const RosterProgression = () => {
     const [positionFilter, setPositionFilter] = useState<string>('');
 
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getRosterProgression<RosterProgressionData>(),
+        fetchFunction: () => dataService.getRosterProgression<RosterProgressionData>(),
         autoRefreshOnGameChange: true
     });
 

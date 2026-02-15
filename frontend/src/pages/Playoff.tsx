@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Grid, Alert } from '@mui/material';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { PlayoffTeam, BubbleTeam, ConferenceChampion, Team, Info, Conference } from '../interfaces';
 import { TeamInfoModal } from '../components/TeamComponents';
 import { useDataFetching } from '../hooks/useDataFetching';
@@ -31,7 +31,7 @@ const Playoff = () => {
     const [selectedTeam, setSelectedTeam] = useState<string>('');
 
     const { data, loading, error } = useDataFetching({
-        fetchFunction: () => apiService.getPlayoff<PlayoffData>(),
+        fetchFunction: () => dataService.getPlayoff<PlayoffData>(),
         autoRefreshOnGameChange: true
     });
     

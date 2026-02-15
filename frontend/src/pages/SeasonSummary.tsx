@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Team, Info, Conference, AwardSnapshot } from '../interfaces';
 import { TeamLink, TeamLogo } from '../components/TeamComponents';
 import {
@@ -40,7 +40,7 @@ const SeasonSummary = () => {
     useEffect(() => {
         const fetchSummary = async () => {
             try {
-                const responseData = await apiService.getSeasonSummary<SummaryData>();
+                const responseData = await dataService.getSeasonSummary<SummaryData>();
                 setData(responseData);
             } catch (error) {
                 setError('Failed to load season summary');

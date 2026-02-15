@@ -1,6 +1,6 @@
 import { Box, Link as MuiLink, Modal, Typography, Paper, Chip, Button, Stack, Divider } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
+import { dataService } from '../services/data';
 import { Link as RouterLink } from 'react-router-dom';
 
 interface TeamLinkProps {
@@ -107,7 +107,7 @@ export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) =
         if (!open || !teamName) return;
 
         setLoading(true);
-        apiService.get<TeamInfoResponse>('/api/team_info/', { team_name: teamName })
+        dataService.get<TeamInfoResponse>('/api/team_info/', { team_name: teamName })
             .then(response => setTeamInfo(response.team))
             .catch(error => console.error('Error fetching team info:', error))
             .finally(() => setLoading(false));

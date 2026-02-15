@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { apiService, getTeamHistoryRoute, getTeamScheduleRoute } from "../services/api";
+import { dataService, getTeamHistoryRoute, getTeamScheduleRoute } from "../services/data";
 import { Team, Info, Conference } from "../interfaces";
 import {
     Table,
@@ -50,7 +50,7 @@ const TeamHistory = () => {
     const { data, loading, error } = useDataFetching({
         fetchFunction: () => {
             if (!teamName) throw new Error('No team name provided');
-            return apiService.getTeamHistory<HistoryData>(teamName);
+            return dataService.getTeamHistory<HistoryData>(teamName);
         },
         dependencies: [teamName],
         autoRefreshOnGameChange: true
