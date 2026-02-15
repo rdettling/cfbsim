@@ -7,7 +7,7 @@ import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
 import { buildWatchability } from './games';
-import { getGameById, saveGames } from '../../db/simRepo';
+import { getGameById, getGamesByWeek, saveGames } from '../../db/simRepo';
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
   teamA.conference !== 'Independent' && teamA.conference === teamB.conference;
@@ -20,6 +20,145 @@ const updateTeamGameCounts = (teamA: Team, teamB: Team) => {
     teamA.nonConfGames += 1;
     teamB.nonConfGames += 1;
   }
+};
+
+const NY6_BOWLS = [
+  'Rose Bowl',
+  'Sugar Bowl',
+  'Orange Bowl',
+  'Cotton Bowl',
+  'Fiesta Bowl',
+  'Peach Bowl',
+] as const;
+
+const AT_LARGE_BOWLS = [
+  'Alamo Bowl',
+  'Citrus Bowl',
+  'Holiday Bowl',
+  'Gator Bowl',
+  'Sun Bowl',
+  'Liberty Bowl',
+  'Las Vegas Bowl',
+  'Music City Bowl',
+  'Texas Bowl',
+  'Pinstripe Bowl',
+  'Camping World Bowl',
+  'Cheez-It Bowl',
+  'Outback Bowl',
+  "Duke's Mayo Bowl",
+  'ReliaQuest Bowl',
+] as const;
+
+const ROTATION_SEMIS: Array<[typeof NY6_BOWLS[number], typeof NY6_BOWLS[number]]> = [
+  ['Rose Bowl', 'Sugar Bowl'],
+  ['Orange Bowl', 'Cotton Bowl'],
+  ['Fiesta Bowl', 'Peach Bowl'],
+];
+
+const getNy6PlayoffHosts = (year: number, playoffTeams: number) => {
+  if (playoffTeams === 2) {
+    return { semis: [] as string[], quarters: [] as string[] };
+  }
+  const rotationIndex = Math.abs(year) % ROTATION_SEMIS.length;
+  const semis = ROTATION_SEMIS[rotationIndex].slice();
+  if (playoffTeams === 4) {
+    return { semis, quarters: [] as string[] };
+  }
+  const quarters = NY6_BOWLS.filter(bowl => !semis.includes(bowl));
+  return { semis, quarters };
+};
+
+const pickBestTeam = (
+  teams: Team[],
+  usedIds: Set<number>,
+  predicate: (team: Team) => boolean
+) => {
+  const team = teams.find(entry => !usedIds.has(entry.id) && predicate(entry));
+  if (!team) return null;
+  usedIds.add(team.id);
+  return team;
+};
+
+const buildBowlMatchups = (
+  league: LeagueState,
+  playoffTeamIds: Set<number>,
+  ny6Available: string[]
+) => {
+  const eligible = league.teams
+    .filter(team => !playoffTeamIds.has(team.id) && team.totalWins >= 6)
+    .slice()
+    .sort((a, b) => a.ranking - b.ranking);
+  const usedIds = new Set<number>();
+
+  const takeBest = () => pickBestTeam(eligible, usedIds, () => true);
+  const takeConf = (confName: string) =>
+    pickBestTeam(eligible, usedIds, team => team.conference === confName);
+
+  const matchups: Array<{ name: string; teamA: Team; teamB: Team }> = [];
+
+  if (ny6Available.includes('Rose Bowl')) {
+    const teamA = takeConf('Big Ten') ?? takeBest();
+    const teamB = takeConf('Pac-12') ?? takeBest();
+    if (teamA && teamB) matchups.push({ name: 'Rose Bowl', teamA, teamB });
+  }
+
+  if (ny6Available.includes('Sugar Bowl')) {
+    const teamA = takeConf('SEC') ?? takeBest();
+    const teamB = takeConf('Big 12') ?? takeBest();
+    if (teamA && teamB) matchups.push({ name: 'Sugar Bowl', teamA, teamB });
+  }
+
+  if (ny6Available.includes('Orange Bowl')) {
+    const teamA = takeConf('ACC') ?? takeBest();
+    const teamB = takeBest();
+    if (teamA && teamB) matchups.push({ name: 'Orange Bowl', teamA, teamB });
+  }
+
+  const atLargeNy6 = ['Cotton Bowl', 'Fiesta Bowl', 'Peach Bowl'];
+  atLargeNy6.forEach(bowl => {
+    if (!ny6Available.includes(bowl)) return;
+    const teamA = takeBest();
+    const teamB = takeBest();
+    if (teamA && teamB) matchups.push({ name: bowl, teamA, teamB });
+  });
+
+  for (const bowl of AT_LARGE_BOWLS) {
+    const teamA = takeBest();
+    const teamB = takeBest();
+    if (!teamA || !teamB) break;
+    matchups.push({ name: bowl, teamA, teamB });
+  }
+
+  return matchups;
+};
+
+const setBowls = async (
+  league: LeagueState,
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
+  weekOverride?: number
+) => {
+  const playoffTeams = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const week = weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK + 1;
+  const existing = (await getGamesByWeek(week)).filter(
+    game => game.year === league.info.currentYear
+  );
+  if (existing.some(game => game.name?.includes('Bowl'))) {
+    return;
+  }
+
+  const playoffTeamIds = new Set<number>(league.playoff?.seeds ?? []);
+  const hosts = getNy6PlayoffHosts(league.info.currentYear, playoffTeams);
+  const ny6Unavailable = new Set([...hosts.semis, ...hosts.quarters]);
+  const ny6Available = NY6_BOWLS.filter(bowl => !ny6Unavailable.has(bowl));
+
+  const matchups = buildBowlMatchups(league, playoffTeamIds, ny6Available);
+  if (!matchups.length) return;
+
+  const gamesToCreate = matchups.map(({ name, teamA, teamB }) =>
+    createGameRecord(league, teamA, teamB, week, name, oddsContext, { neutralSite: true })
+  );
+
+  await saveGames(gamesToCreate);
 };
 
 const createGameRecord = (
@@ -383,16 +522,25 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
   const specialActions: Record<number, Record<number, (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => Promise<void>>> = {
     2: {
       [baseWeek]: setConferenceChampionships,
-      [ccWeek]: setNatty,
+      [ccWeek]: async (leagueState, context) => {
+        await setNatty(leagueState, context);
+        await setBowls(leagueState, context, ccWeek + 1);
+      },
     },
     4: {
       [baseWeek]: setConferenceChampionships,
-      [ccWeek]: setPlayoffSemi,
+      [ccWeek]: async (leagueState, context) => {
+        await setPlayoffSemi(leagueState, context);
+        await setBowls(leagueState, context, ccWeek + 1);
+      },
       [ccWeek + 1]: setNatty,
     },
     12: {
       [baseWeek]: setConferenceChampionships,
-      [ccWeek]: setPlayoffR1,
+      [ccWeek]: async (leagueState, context) => {
+        await setPlayoffR1(leagueState, context);
+        await setBowls(leagueState, context, ccWeek + 1);
+      },
       [ccWeek + 1]: setPlayoffQuarter,
       [ccWeek + 2]: setPlayoffSemi,
       [ccWeek + 3]: setNatty,
@@ -404,6 +552,10 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
     await action(league, oddsContext);
     await ensureSummaryStage(league);
     return;
+  }
+
+  if (league.info.currentWeek >= ccWeek + 1) {
+    await setBowls(league, oddsContext, league.info.currentWeek);
   }
 
   const currentWeek = league.info.currentWeek;

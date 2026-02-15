@@ -30,6 +30,144 @@ type ConferenceChampionEntry = {
   seed: number | null;
 };
 
+type BowlGameEntry = {
+  id: number;
+  name: string;
+  week: number;
+  teamA: string;
+  teamB: string;
+  teamA_conf: string;
+  teamB_conf: string;
+  teamA_is_champ: boolean;
+  teamB_is_champ: boolean;
+  rankA: number;
+  rankB: number;
+  recordA: string;
+  recordB: string;
+  scoreA: number | null;
+  scoreB: number | null;
+  winner: string | null;
+  is_ny6: boolean;
+  is_projection: boolean;
+};
+
+const NY6_BOWLS = [
+  'Rose Bowl',
+  'Sugar Bowl',
+  'Orange Bowl',
+  'Cotton Bowl',
+  'Fiesta Bowl',
+  'Peach Bowl',
+] as const;
+
+const AT_LARGE_BOWLS = [
+  'Alamo Bowl',
+  'Citrus Bowl',
+  'Holiday Bowl',
+  'Gator Bowl',
+  'Sun Bowl',
+  'Liberty Bowl',
+  'Las Vegas Bowl',
+  'Music City Bowl',
+  'Texas Bowl',
+  'Pinstripe Bowl',
+  'Camping World Bowl',
+  'Cheez-It Bowl',
+  'Outback Bowl',
+  "Duke's Mayo Bowl",
+  'ReliaQuest Bowl',
+] as const;
+
+const ROTATION_SEMIS: Array<[typeof NY6_BOWLS[number], typeof NY6_BOWLS[number]]> = [
+  ['Rose Bowl', 'Sugar Bowl'],
+  ['Orange Bowl', 'Cotton Bowl'],
+  ['Fiesta Bowl', 'Peach Bowl'],
+];
+
+const getNy6PlayoffHosts = (year: number, playoffTeams: number) => {
+  if (playoffTeams === 2) {
+    return { semis: [] as string[], quarters: [] as string[] };
+  }
+  const rotationIndex = Math.abs(year) % ROTATION_SEMIS.length;
+  const semis = ROTATION_SEMIS[rotationIndex].slice();
+  if (playoffTeams === 4) {
+    return { semis, quarters: [] as string[] };
+  }
+  const quarters = NY6_BOWLS.filter(bowl => !semis.includes(bowl));
+  return { semis, quarters };
+};
+
+const pickBestTeam = (
+  teams: Team[],
+  usedIds: Set<number>,
+  predicate: (team: Team) => boolean
+) => {
+  const team = teams.find(entry => !usedIds.has(entry.id) && predicate(entry));
+  if (!team) return null;
+  usedIds.add(team.id);
+  return team;
+};
+
+const buildBowlProjections = (
+  league: LeagueState,
+  playoffTeamIds: Set<number>,
+  ny6Available: string[],
+  requireEligibility: boolean
+) => {
+  const eligible = league.teams
+    .filter(team => !playoffTeamIds.has(team.id))
+    .filter(team => !requireEligibility || team.totalWins >= 6)
+    .slice()
+    .sort((a, b) => a.ranking - b.ranking);
+  const usedIds = new Set<number>();
+
+  const takeBest = () => pickBestTeam(eligible, usedIds, () => true);
+  const takeConf = (confName: string) =>
+    pickBestTeam(eligible, usedIds, team => team.conference === confName);
+
+  const matchups: Array<{ name: string; teamA: Team; teamB: Team }> = [];
+
+  if (ny6Available.includes('Rose Bowl')) {
+    const teamA = takeConf('Big Ten') ?? takeBest();
+    const teamB = takeConf('Pac-12') ?? takeBest();
+    if (teamA && teamB) matchups.push({ name: 'Rose Bowl', teamA, teamB });
+  }
+
+  if (ny6Available.includes('Sugar Bowl')) {
+    const teamA = takeConf('SEC') ?? takeBest();
+    const teamB = takeConf('Big 12') ?? takeBest();
+    if (teamA && teamB) matchups.push({ name: 'Sugar Bowl', teamA, teamB });
+  }
+
+  if (ny6Available.includes('Orange Bowl')) {
+    const teamA = takeConf('ACC') ?? takeBest();
+    const teamB = takeBest();
+    if (teamA && teamB) matchups.push({ name: 'Orange Bowl', teamA, teamB });
+  }
+
+  const atLargeNy6 = ['Cotton Bowl', 'Fiesta Bowl', 'Peach Bowl'];
+  atLargeNy6.forEach(bowl => {
+    if (!ny6Available.includes(bowl)) return;
+    const teamA = takeBest();
+    const teamB = takeBest();
+    if (teamA && teamB) matchups.push({ name: bowl, teamA, teamB });
+  });
+
+  for (const bowl of AT_LARGE_BOWLS) {
+    const teamA = takeBest();
+    const teamB = takeBest();
+    if (!teamA || !teamB) break;
+    matchups.push({ name: bowl, teamA, teamB });
+  }
+
+  return matchups;
+};
+
+const sortBowls = (a: BowlGameEntry, b: BowlGameEntry) => {
+  if (a.is_ny6 !== b.is_ny6) return a.is_ny6 ? -1 : 1;
+  return a.name.localeCompare(b.name);
+};
+
 const formatRecord = (team: Team) =>
   `${team.totalWins}-${team.totalLosses} (${team.confWins}-${team.confLosses})`;
 
@@ -381,6 +519,74 @@ export const loadPlayoff = async () => {
 
   const bracket = await buildBracket(league, playoffTeams, isProjection);
 
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const championIds = new Set(champions.map(team => team.id));
+  const championNames = new Set(champions.map(team => team.name));
+  const bowl_games: BowlGameEntry[] = (await getAllGames())
+    .filter(game => game.year === league.info.currentYear)
+    .filter(game => game.name && game.name.includes('Bowl'))
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+    .map(game => {
+      const teamA = teamsById.get(game.teamAId);
+      const teamB = teamsById.get(game.teamBId);
+      const isNy6 = NY6_BOWLS.includes((game.name ?? '') as (typeof NY6_BOWLS)[number]);
+      return {
+        id: game.id,
+        name: game.name ?? 'Bowl',
+        week: game.weekPlayed,
+        teamA: teamA?.name ?? 'TBD',
+        teamB: teamB?.name ?? 'TBD',
+        teamA_conf: teamA?.conference ?? 'Independent',
+        teamB_conf: teamB?.conference ?? 'Independent',
+        teamA_is_champ: teamA ? championIds.has(teamA.id) : false,
+        teamB_is_champ: teamB ? championIds.has(teamB.id) : false,
+        rankA: teamA?.ranking ?? 0,
+        rankB: teamB?.ranking ?? 0,
+        recordA: teamA ? formatRecord(teamA) : '0-0 (0-0)',
+        recordB: teamB ? formatRecord(teamB) : '0-0 (0-0)',
+        scoreA: game.winnerId ? game.scoreA : null,
+        scoreB: game.winnerId ? game.scoreB : null,
+        winner: game.winnerId
+          ? game.winnerId === game.teamAId
+            ? teamA?.name ?? null
+            : teamB?.name ?? null
+          : null,
+        is_ny6: isNy6,
+        is_projection: false,
+      };
+    });
+
+  const hosts = getNy6PlayoffHosts(league.info.currentYear, format);
+  const ny6Unavailable = new Set([...hosts.semis, ...hosts.quarters]);
+  const ny6Available = NY6_BOWLS.filter(bowl => !ny6Unavailable.has(bowl));
+  const playoffTeamIds = new Set(playoffTeams.map(team => team.id));
+  const projectedMatchups = buildBowlProjections(
+    league,
+    playoffTeamIds,
+    ny6Available,
+    !isProjection
+  );
+  const bowl_projections: BowlGameEntry[] = projectedMatchups.map((matchup, index) => ({
+    id: -1 - index,
+    name: matchup.name,
+    week: REGULAR_SEASON_WEEKS + 2,
+    teamA: matchup.teamA.name,
+    teamB: matchup.teamB.name,
+    teamA_conf: matchup.teamA.conference ?? 'Independent',
+    teamB_conf: matchup.teamB.conference ?? 'Independent',
+    teamA_is_champ: championNames.has(matchup.teamA.name),
+    teamB_is_champ: championNames.has(matchup.teamB.name),
+    rankA: matchup.teamA.ranking,
+    rankB: matchup.teamB.ranking,
+    recordA: formatRecord(matchup.teamA),
+    recordB: formatRecord(matchup.teamB),
+    scoreA: null,
+    scoreB: null,
+    winner: null,
+    is_ny6: NY6_BOWLS.includes(matchup.name as (typeof NY6_BOWLS)[number]),
+    is_projection: true,
+  }));
+
   return {
     info: league.info,
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
@@ -395,6 +601,8 @@ export const loadPlayoff = async () => {
     bubble_teams,
     conference_champions,
     bracket,
+    bowl_games: bowl_games.sort(sortBowls),
+    bowl_projections: bowl_projections.sort(sortBowls),
     is_projection: isProjection,
   };
 };

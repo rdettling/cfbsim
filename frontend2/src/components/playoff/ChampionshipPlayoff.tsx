@@ -1,4 +1,4 @@
-import { Box, Typography, Paper, Grid, Chip } from '@mui/material';
+import { Box, Typography, Paper, Chip, Divider } from '@mui/material';
 import { TeamLogo } from '../team/TeamComponents';
 
 const ChampionshipPlayoff = ({
@@ -25,140 +25,115 @@ const ChampionshipPlayoff = ({
   };
 
   return (
-    <Grid container spacing={4}>
-      <Grid size={{ xs: 12, lg: 8 }}>
-        <Paper
-          onClick={handleGameClick}
-          sx={{
-            p: 4,
-            textAlign: 'center',
-            cursor: hasGameId ? 'pointer' : 'default',
-            transition: 'all 0.2s',
-            '&:hover': hasGameId
-              ? {
-                  boxShadow: 4,
-                  borderColor: '#1976d2',
-                }
-              : {},
-          }}
-        >
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
+    <Paper
+      onClick={handleGameClick}
+      sx={{
+        p: { xs: 2.5, md: 3 },
+        borderRadius: 2.5,
+        cursor: hasGameId ? 'pointer' : 'default',
+        transition: 'all 0.2s',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f6f7fb 100%)',
+        border: '1px solid',
+        borderColor: 'divider',
+        '&:hover': hasGameId
+          ? {
+              boxShadow: 5,
+              borderColor: 'primary.main',
+            }
+          : {},
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box>
+          <Typography variant="overline" sx={{ letterSpacing: 2, fontWeight: 700, color: 'text.secondary' }}>
             National Championship
-            {hasResults && winner && (
-              <Typography
-                component="span"
-                sx={{
-                  display: 'block',
-                  fontSize: '1rem',
-                  color: 'text.secondary',
-                  fontWeight: 'normal',
-                  mt: 1,
-                }}
-              >
-                Champion: {winner}
-              </Typography>
-            )}
           </Typography>
+          {hasResults && winner && (
+            <Typography variant="body2" color="text.secondary">
+              Champion: {winner}
+            </Typography>
+          )}
+        </Box>
+        <Chip label="Title Game" size="small" sx={{ fontWeight: 700 }} />
+      </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, mb: 4 }}>
-            <Box sx={{ textAlign: 'center', flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-                <TeamLogo name={team1?.name} size={40} />
-                <Typography
-                  onClick={e => {
-                    e.stopPropagation();
-                    onTeamClick(team1?.name || '');
-                  }}
-                  sx={{
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    color: 'text.primary',
-                    fontSize: '1.5rem',
-                    '&:hover': { color: 'primary.main' },
-                  }}
-                >
-                  #{team1?.seed} {team1?.name}
-                </Typography>
-              </Box>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                {team1?.record}
-                {hasResults && championship?.score1 !== null && (
-                  <Typography
-                    component="span"
-                    sx={{
-                      display: 'block',
-                      fontWeight: winner === team1?.name ? 'bold' : 'normal',
-                      color: winner === team1?.name ? 'primary.main' : 'text.secondary',
-                      fontSize: '1.2rem',
-                      mt: 0.5,
-                    }}
-                  >
-                    {championship.score1}
-                  </Typography>
-                )}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Rank: #{team1?.ranking}
-              </Typography>
-              {team1?.is_autobid && <Chip label="Automatic Bid" color="primary" size="small" sx={{ mt: 1 }} />}
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
-                VS
-              </Typography>
-              {hasResults && (
-                <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                  {championship.score1} - {championship.score2}
-                </Typography>
-              )}
-            </Box>
-
-            <Box sx={{ textAlign: 'center', flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-                <TeamLogo name={team2?.name} size={40} />
-                <Typography
-                  onClick={e => {
-                    e.stopPropagation();
-                    onTeamClick(team2?.name || '');
-                  }}
-                  sx={{
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    color: 'text.primary',
-                    fontSize: '1.5rem',
-                    '&:hover': { color: 'primary.main' },
-                  }}
-                >
-                  #{team2?.seed} {team2?.name}
-                </Typography>
-              </Box>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                {team2?.record}
-                {hasResults && championship?.score2 !== null && (
-                  <Typography
-                    component="span"
-                    sx={{
-                      display: 'block',
-                      fontWeight: winner === team2?.name ? 'bold' : 'normal',
-                      color: winner === team2?.name ? 'primary.main' : 'text.secondary',
-                      fontSize: '1.2rem',
-                      mt: 0.5,
-                    }}
-                  >
-                    {championship.score2}
-                  </Typography>
-                )}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Rank: #{team2?.ranking}
-              </Typography>
-              {team2?.is_autobid && <Chip label="Automatic Bid" color="primary" size="small" sx={{ mt: 1 }} />}
-            </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '1fr auto 1fr' },
+          gap: { xs: 2, md: 3 },
+          alignItems: 'center',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TeamLogo name={team1?.name} size={56} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              onClick={e => {
+                e.stopPropagation();
+                onTeamClick(team1?.name || '');
+              }}
+              sx={{
+                cursor: 'pointer',
+                fontWeight: 800,
+                color: 'text.primary',
+                fontSize: '1.25rem',
+                '&:hover': { color: 'primary.main' },
+              }}
+            >
+              #{team1?.seed} {team1?.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {team1?.record} • Rank #{team1?.ranking}
+            </Typography>
+            {team1?.is_autobid && (
+              <Chip label="Auto Bid" color="primary" size="small" sx={{ mt: 1, fontWeight: 700 }} />
+            )}
           </Box>
-        </Paper>
-      </Grid>
-    </Grid>
+        </Box>
+
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.secondary' }}>
+            VS
+          </Typography>
+          {hasResults && (
+            <>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                {championship.score1} - {championship.score2}
+              </Typography>
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+          <Box sx={{ minWidth: 0, textAlign: { xs: 'left', md: 'right' } }}>
+            <Typography
+              onClick={e => {
+                e.stopPropagation();
+                onTeamClick(team2?.name || '');
+              }}
+              sx={{
+                cursor: 'pointer',
+                fontWeight: 800,
+                color: 'text.primary',
+                fontSize: '1.25rem',
+                '&:hover': { color: 'primary.main' },
+              }}
+            >
+              #{team2?.seed} {team2?.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {team2?.record} • Rank #{team2?.ranking}
+            </Typography>
+            {team2?.is_autobid && (
+              <Chip label="Auto Bid" color="primary" size="small" sx={{ mt: 1, fontWeight: 700 }} />
+            )}
+          </Box>
+          <TeamLogo name={team2?.name} size={56} />
+        </Box>
+      </Box>
+    </Paper>
   );
 };
 
