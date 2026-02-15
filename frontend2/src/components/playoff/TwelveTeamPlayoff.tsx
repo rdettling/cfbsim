@@ -1,5 +1,5 @@
 import { Box, Typography, Paper } from '@mui/material';
-import { BracketRound, Championship } from './PlayoffComponents';
+import { BracketRound, Championship } from './BracketElements';
 
 const TwelveTeamPlayoff = ({
   bracket,

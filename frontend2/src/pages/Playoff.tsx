@@ -13,7 +13,7 @@ import {
   BubbleTeamsList,
   ConferenceChampionsList,
   BowlGamesList,
-} from '../components/playoff/PlayoffComponents';
+} from '../components/playoff/PostseasonLists';
 
 const Playoff = () => {
   const [modalOpen, setModalOpen] = useState(false);
