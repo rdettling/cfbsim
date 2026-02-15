@@ -1,9 +1,9 @@
 import { useParams } from 'react-router-dom';
 import { useDomainData } from '../domain/hooks';
 import { loadGame } from '../domain/league';
-import GamePreview from '../components/GamePreview';
-import GameResult from '../components/GameResult';
-import { PageLayout } from '../components/PageLayout';
+import GamePreview from '../components/game/GamePreview';
+import GameResult from '../components/game/GameResult';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface GamePageData {
   info: any;

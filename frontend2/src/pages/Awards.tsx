@@ -1,8 +1,8 @@
 import { Box, Grid, Paper, Typography, Chip, Stack, Link as MuiLink } from '@mui/material';
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
 import { loadAwards } from '../domain/league';
-import { TeamLogo } from '../components/TeamComponents';
+import { TeamLogo } from '../components/team/TeamComponents';
 
 interface AwardPlayer {
   id: number;

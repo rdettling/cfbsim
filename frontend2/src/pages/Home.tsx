@@ -20,9 +20,9 @@ import {
   Chip,
   Grid,
 } from "@mui/material";
-import { TeamLogo, ConfLogo } from "../components/TeamComponents";
+import { TeamLogo, ConfLogo } from "../components/team/TeamComponents";
 import { useDomainData } from "../domain/hooks";
-import { PageLayout } from "../components/PageLayout";
+import { PageLayout } from "../components/layout/PageLayout";
 import { loadHomeData, type LaunchProps } from "../domain/league";
 
 interface PreviewData {

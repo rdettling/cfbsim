@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
 import { Conference, Team, Info, ScheduleGame } from "../domain/types";
-import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { TeamLink, TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadNonCon, startNewLeague, listAvailableTeams, scheduleNonConGame } from "../domain/league";
 import {
@@ -21,7 +21,7 @@ import {
     Divider,
     GlobalStyles
 } from "@mui/material";
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface NonConData {
     info: Info;

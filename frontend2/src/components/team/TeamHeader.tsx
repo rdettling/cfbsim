@@ -1,5 +1,5 @@
 import { Box, Paper, Stack, Typography, Select, MenuItem } from '@mui/material';
-import type { Team } from '../domain/types';
+import type { Team } from '../../domain/types';
 import { TeamLogo } from './TeamComponents';
 
 interface TeamHeaderProps {

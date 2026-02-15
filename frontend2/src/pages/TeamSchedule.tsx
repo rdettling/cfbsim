@@ -18,9 +18,9 @@ import {
 import { useDomainData } from '../domain/hooks';
 import { loadTeamSchedule } from '../domain/league';
 import type { Conference, Info, ScheduleGame, Team } from '../domain/types';
-import { TeamLogo, TeamInfoModal } from '../components/TeamComponents';
-import TeamHeader from '../components/TeamHeader';
-import { PageLayout } from '../components/PageLayout';
+import { TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
+import TeamHeader from '../components/team/TeamHeader';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface ScheduleData {
   info: Info;

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useDomainData } from '../domain/hooks';
 import { loadIndividualStats } from '../domain/league';
-import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { TeamLink, TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { Link as RouterLink } from 'react-router-dom';
 import {
     Box, Tabs, Tab,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Link as MuiLink
 } from '@mui/material';
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface PlayerData {
     id: number;

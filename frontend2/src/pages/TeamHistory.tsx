@@ -14,11 +14,11 @@ import {
   Stack,
 } from '@mui/material';
 import { Schedule } from '@mui/icons-material';
-import TeamHeader from '../components/TeamHeader';
-import { ConfLogo } from '../components/TeamComponents';
+import TeamHeader from '../components/team/TeamHeader';
+import { ConfLogo } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamHistory } from '../domain/league';
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface YearHistory {
   year: number;

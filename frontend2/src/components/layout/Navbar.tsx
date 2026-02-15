@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useState } from 'react';
-import { Conference, Team, Info } from '../domain/types';
-import { TeamLogo } from './TeamComponents';
+import { Conference, Team, Info } from '../../domain/types';
+import { TeamLogo } from '../team/TeamComponents';
 import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';
-import { STAGES } from '../constants/stages';
-import GameSelectionModal from './GameSelectionModal';
-import LiveSimModal from './LiveSimModal';
+import { STAGES } from '../../constants/stages';
+import GameSelectionModal from '../sim/GameSelectionModal';
+import LiveSimModal from '../sim/LiveSimModal';
 
 interface NavbarProps {
     team: Team;

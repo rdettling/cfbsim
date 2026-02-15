@@ -9,7 +9,7 @@ import {
     CardContent,
     Chip,
 } from '@mui/material';
-import { TeamLogo, TeamLink, TeamInfoModal } from './TeamComponents';
+import { TeamLogo, TeamLink, TeamInfoModal } from '../team/TeamComponents';
 import DriveSummary from './DriveSummary';
 
 interface GameResultProps {

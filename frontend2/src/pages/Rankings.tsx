@@ -15,9 +15,9 @@ import {
 import { useDomainData } from '../domain/hooks';
 import { loadRankings } from '../domain/league';
 import type { Team, Info, Conference } from '../domain/types';
-import { TeamInfoModal, TeamLink, TeamLogo } from '../components/TeamComponents';
-import { InlineLastWeek, InlineThisWeek } from '../components/InlineGameComponents';
-import { PageLayout } from '../components/PageLayout';
+import { TeamInfoModal, TeamLink, TeamLogo } from '../components/team/TeamComponents';
+import { InlineLastWeek, InlineThisWeek } from '../components/team/InlineGameComponents';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface RankingsData {
   info: Info;

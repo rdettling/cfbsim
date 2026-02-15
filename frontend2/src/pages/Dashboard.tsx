@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Team, Info, ScheduleGame, Conference } from '../domain/types';
-import { TeamInfoModal, ConfLogo, TeamLogo } from '../components/TeamComponents';
+import { TeamInfoModal, ConfLogo, TeamLogo } from '../components/team/TeamComponents';
 import {
     Typography, Card, CardContent, Table,
     TableBody, TableCell, TableContainer, TableHead, Chip,
     TableRow, Paper, Box, Link as MuiLink, Button, Grid
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 import { loadDashboard } from '../domain/league';
 
 interface DashboardData {

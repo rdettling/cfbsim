@@ -1,6 +1,6 @@
 import { Box, Typography, Link } from '@mui/material';
-import { TeamLogo } from './TeamComponents';
-import { GameData, Play, Drive } from '../types/game';
+import { TeamLogo } from '../team/TeamComponents';
+import { GameData, Play, Drive } from '../../types/game';
 
 interface GameHeaderProps {
     gameData: GameData;

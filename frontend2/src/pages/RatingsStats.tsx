@@ -14,8 +14,8 @@ import {
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadRatingsStats } from '../domain/league';
-import { TeamInfoModal } from '../components/TeamComponents';
-import { PageLayout } from '../components/PageLayout';
+import { TeamInfoModal } from '../components/team/TeamComponents';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface RatingsStatsData {
   info: any;

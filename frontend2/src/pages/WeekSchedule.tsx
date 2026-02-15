@@ -9,10 +9,10 @@ import {
   CardContent,
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import { TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadWeekSchedule } from '../domain/league';
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface Game {
   id: number;

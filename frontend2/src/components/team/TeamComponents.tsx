@@ -1,7 +1,7 @@
 import { Box, Link as MuiLink, Modal, Typography, Paper, Chip, Button, Stack, Divider } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { getTeamInfo } from '../domain/league';
+import { getTeamInfo } from '../../domain/league';
 
 interface TeamLinkProps {
     name: string;

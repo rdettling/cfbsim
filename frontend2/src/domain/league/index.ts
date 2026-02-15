@@ -1,6 +1,6 @@
-import type { Conference, Info, ScheduleGame, Team, Settings } from './types';
-import { getYearsIndex } from '../db/baseData';
-import { loadLeague, saveLeague } from '../db/leagueRepo';
+import type { Conference, Info, ScheduleGame, Team, Settings } from '../types';
+import { getYearsIndex } from '../../db/baseData';
+import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
   clearAllSimData,
   getAllGames,
@@ -10,17 +10,17 @@ import {
   getGameById,
   getDrivesByGame,
   getPlaysByGame,
-} from '../db/simRepo';
-import { initializeRosters, ensureRosters } from './roster';
-import { buildPreviewData, buildTeamsAndConferences, type PreviewData } from './baseData';
+} from '../../db/simRepo';
+import { initializeRosters, ensureRosters } from '../roster';
+import { buildPreviewData, buildTeamsAndConferences, type PreviewData } from '../baseData';
 import {
   buildSchedule,
   applyRivalriesToSchedule,
   fillUserSchedule,
   listAvailableTeams as listTeamsForWeek,
   scheduleNonConGame as scheduleGameForWeek,
-} from './schedule';
-import { buildDriveResponse, initializeSimData } from './sim';
+} from '../schedule';
+import { buildDriveResponse, initializeSimData } from '../sim';
 
 export interface LaunchProps {
   years: string[];

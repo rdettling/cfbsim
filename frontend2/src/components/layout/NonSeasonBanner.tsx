@@ -1,7 +1,7 @@
 import { Stack, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import LoadingDialog from './LoadingDialog';
+import LoadingDialog from '../sim/LoadingDialog';
 
 interface NonSeasonBannerProps {
     currentStage: {

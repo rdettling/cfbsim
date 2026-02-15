@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDomainData } from '../domain/hooks';
 import { loadSeasonSummary } from '../domain/league';
-import { TeamLink, TeamLogo, TeamInfoModal } from '../components/TeamComponents';
+import { TeamLink, TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import {
   Typography,
   Table,
@@ -18,7 +18,7 @@ import {
   Stack,
   Link as MuiLink,
 } from '@mui/material';
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface AwardSnapshot {
   category_slug: string;

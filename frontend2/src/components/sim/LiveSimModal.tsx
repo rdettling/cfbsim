@@ -6,13 +6,13 @@ import {
     IconButton,
 } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
-import DriveSummary from "./DriveSummary";
-import FootballField from "./FootballField";
-import GameHeader from "./GameHeader";
-import GameControls from "./GameControls";
-import { Play, Drive, GameData } from "../types/game";
+import DriveSummary from "../game/DriveSummary";
+import FootballField from "../game/FootballField";
+import GameHeader from "../game/GameHeader";
+import GameControls from "../game/GameControls";
+import { Play, Drive, GameData } from "../../types/game";
 import { useState, useEffect } from "react";
-import { liveSimGame } from "../domain/sim";
+import { liveSimGame } from "../../domain/sim";
 
 interface LiveSimModalProps {
     open: boolean;

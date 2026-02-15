@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { TeamLogo } from './TeamComponents';
+import { TeamLogo } from '../team/TeamComponents';
 
 interface Play {
     id: number;

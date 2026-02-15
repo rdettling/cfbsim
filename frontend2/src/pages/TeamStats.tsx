@@ -17,8 +17,8 @@ import {
     Chip
 } from '@mui/material';
 import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
-import { TeamInfoModal, TeamLogo } from '../components/TeamComponents';
-import { PageLayout } from '../components/PageLayout';
+import { TeamInfoModal, TeamLogo } from '../components/team/TeamComponents';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface TeamStatsType {
     games: number;

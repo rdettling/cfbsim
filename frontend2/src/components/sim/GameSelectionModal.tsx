@@ -12,8 +12,8 @@ import {
     IconButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { TeamLogo } from './TeamComponents';
-import { getGamesToLiveSim } from '../domain/sim';
+import { TeamLogo } from '../team/TeamComponents';
+import { getGamesToLiveSim } from '../../domain/sim';
 
 interface Game {
     id: number;

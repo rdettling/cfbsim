@@ -18,10 +18,10 @@ import {
   Chip,
   Typography,
 } from '@mui/material';
-import TeamHeader from '../components/TeamHeader';
+import TeamHeader from '../components/team/TeamHeader';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamRoster } from '../domain/league';
-import { PageLayout } from '../components/PageLayout';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface Player {
   id: number;

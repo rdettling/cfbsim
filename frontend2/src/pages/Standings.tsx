@@ -14,9 +14,9 @@ import {
 import { useDomainData } from '../domain/hooks';
 import { loadStandings } from '../domain/league';
 import type { Team, Info, Conference } from '../domain/types';
-import { TeamInfoModal, TeamLink, TeamLogo, ConfLogo } from '../components/TeamComponents';
-import { InlineLastWeek, InlineThisWeek } from '../components/InlineGameComponents';
-import { PageLayout } from '../components/PageLayout';
+import { TeamInfoModal, TeamLink, TeamLogo, ConfLogo } from '../components/team/TeamComponents';
+import { InlineLastWeek, InlineThisWeek } from '../components/team/InlineGameComponents';
+import { PageLayout } from '../components/layout/PageLayout';
 
 interface StandingsData {
   info: Info;
