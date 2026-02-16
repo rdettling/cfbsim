@@ -3,20 +3,12 @@ import type { FootballFieldProps } from '../../types/components';
 
 const FootballField = ({
     currentYardLine,
-    teamA,
-    teamB,
-    homeTeamName,
-    homeTeamMascot,
-    homeTeamColorPrimary,
-    homeTeamColorSecondary,
-    isTeamAOnOffense,
+    homeTeam,
+    awayTeam,
+    isOffenseLeftToRight,
     down,
     yardsToGo,
-    previousPlayYards,
-    teamAColorPrimary,
-    teamAColorSecondary,
-    teamBColorPrimary,
-    teamBColorSecondary
+    previousPlayYards
 }: FootballFieldProps) => {
     // Field dimensions based on yards
     const PIXELS_PER_YARD = 5;
@@ -35,21 +27,21 @@ const FootballField = ({
     // Helper function to convert yard line to pixel position
     const yardToPixels = (yard: number): number => endZoneWidth + (yard * PIXELS_PER_YARD);
     
-    // Calculate positions - flip field based on offense team
-    const displayYardLine = isTeamAOnOffense ? currentYardLine : 100 - currentYardLine;
+    // Calculate positions - flip field based on offense direction
+    const displayYardLine = isOffenseLeftToRight ? currentYardLine : 100 - currentYardLine;
     const ballPosition = yardToPixels(displayYardLine);
     
     // Calculate first down line - both teams go forward from their current position
     const firstDownYardLine = Math.min(100, currentYardLine + yardsToGo);
     
     // For display, we need to flip the first down line when Team B is on offense
-    const displayFirstDownYardLine = isTeamAOnOffense ? firstDownYardLine : 100 - firstDownYardLine;
+    const displayFirstDownYardLine = isOffenseLeftToRight ? firstDownYardLine : 100 - firstDownYardLine;
     const firstDownPosition = yardToPixels(displayFirstDownYardLine);
     
     // Calculate previous play zone - flip based on offense team
     const previousPlayZone = previousPlayYards && previousPlayYards !== 0 ? {
         left: Math.min(
-            yardToPixels(Math.max(0, Math.min(100, displayYardLine - previousPlayYards * (isTeamAOnOffense ? 1 : -1)))),
+            yardToPixels(Math.max(0, Math.min(100, displayYardLine - previousPlayYards * (isOffenseLeftToRight ? 1 : -1)))),
             ballPosition
         ),
         width: Math.abs(previousPlayYards * PIXELS_PER_YARD),
@@ -68,11 +60,11 @@ const FootballField = ({
         <Box sx={{ position: 'absolute', left, top: 0, bottom: 0, width, bgcolor: color, zIndex, ...(shadow && { boxShadow: shadow }) }} />
     );
 
-    const endZonePrimary = homeTeamColorPrimary || teamAColorPrimary || teamBColorPrimary || 'primary.main';
-    const endZoneSecondary = homeTeamColorSecondary || teamAColorSecondary || teamBColorSecondary || 'white';
-    const endZoneLeftText = homeTeamName || teamA;
-    const endZoneRightText = homeTeamMascot || teamA;
-    const midfieldLogoName = homeTeamName || teamA;
+    const endZonePrimary = homeTeam.colorPrimary || awayTeam.colorPrimary || 'primary.main';
+    const endZoneSecondary = homeTeam.colorSecondary || awayTeam.colorSecondary || 'white';
+    const endZoneLeftText = homeTeam.name;
+    const endZoneRightText = homeTeam.mascot || homeTeam.name;
+    const midfieldLogoName = homeTeam.name;
 
     return (
         <Box sx={{ 

@@ -15,6 +15,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { TeamLogo } from '../team/TeamComponents';
 import type { Drive } from '../../types/game';
 import type { DriveSummaryProps } from '../../types/components';
+import { resolveHomeAwayScores } from '../../domain/utils/gameDisplay';
 
 const DriveSummary = ({ 
     drives, 
@@ -22,7 +23,9 @@ const DriveSummary = ({
     totalPlays: _totalPlays = 0,
     isGameComplete = false,
     variant = 'page',
-    includeCurrentDrive = false
+    includeCurrentDrive = false,
+    currentScore,
+    gameData
 }: DriveSummaryProps) => {
     const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
 
@@ -109,6 +112,15 @@ const DriveSummary = ({
                         displayDrives.map((drive, idx) => {
                             const isExpanded = expandedDrives.has(drive.driveNum);
                             const hasPlays = drive.plays && drive.plays.length > 0;
+                            const isCurrentDrive = includeCurrentDrive
+                                && !isGameComplete
+                                && variant === 'modal'
+                                && idx === displayDrives.length - 1;
+                            const scoreA = isCurrentDrive && currentScore ? currentScore.scoreA : drive.scoreAAfter;
+                            const scoreB = isCurrentDrive && currentScore ? currentScore.scoreB : drive.scoreBAfter;
+                            const resolvedScore = gameData
+                                ? resolveHomeAwayScores(gameData, scoreA, scoreB)
+                                : { awayScore: scoreA ?? 0, homeScore: scoreB ?? 0 };
                             
                             return (
                                 <Card 
@@ -191,13 +203,13 @@ const DriveSummary = ({
                                                 <Typography variant="caption" color="text.secondary">
                                                     {drive.plays?.length || 0} plays{drive.yards !== undefined ? `, ${drive.yards} yards` : ''}
                                                 </Typography>
-                                                {drive.scoreAAfter !== undefined && drive.scoreBAfter !== undefined && (
+                                                {scoreA !== undefined && scoreB !== undefined && (
                                                     <Typography 
                                                         variant="caption" 
                                                         color="text.secondary"
                                                         sx={{ fontWeight: 'medium' }}
                                                     >
-                                                        {drive.scoreAAfter}-{drive.scoreBAfter}
+                                                        {resolvedScore.awayScore}-{resolvedScore.homeScore}
                                                     </Typography>
                                                 )}
                                             </Box>

@@ -49,6 +49,17 @@ export const resolveTeamSide = (game: GameSideFields, teamId: number) => {
   };
 };
 
+export const resolveHomeAwayScores = <T extends { id: number }>(
+  game: GameHomeAway<T>,
+  scoreA: number | null | undefined,
+  scoreB: number | null | undefined
+) => {
+  const { home, away } = resolveHomeAway(game);
+  const awayScore = away.id === game.teamA.id ? (scoreA ?? 0) : (scoreB ?? 0);
+  const homeScore = home.id === game.teamA.id ? (scoreA ?? 0) : (scoreB ?? 0);
+  return { awayScore, homeScore };
+};
+
 export const formatMatchup = (homeName: string, awayName: string, neutral: boolean) =>
   neutral ? `${awayName} vs ${homeName}` : `${awayName} at ${homeName}`;
 

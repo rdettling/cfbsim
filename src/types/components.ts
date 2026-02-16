@@ -205,24 +205,37 @@ export interface DriveSummaryProps {
   isGameComplete?: boolean;
   variant?: 'modal' | 'page';
   includeCurrentDrive?: boolean;
+  currentScore?: {
+    scoreA: number;
+    scoreB: number;
+  };
+  gameData?: {
+    teamA: { id: number };
+    teamB: { id: number };
+    homeTeamId?: number | null;
+    awayTeamId?: number | null;
+    neutralSite?: boolean;
+  };
 }
 
 export interface FootballFieldProps {
   currentYardLine: number;
-  teamA: string;
-  teamB: string;
-  homeTeamName?: string;
-  homeTeamMascot?: string;
-  homeTeamColorPrimary?: string;
-  homeTeamColorSecondary?: string;
-  isTeamAOnOffense: boolean;
+  homeTeam: {
+    name: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
+  };
+  awayTeam: {
+    name: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
+  };
+  isOffenseLeftToRight: boolean;
   down: number;
   yardsToGo: number;
   previousPlayYards?: number;
-  teamAColorPrimary?: string;
-  teamAColorSecondary?: string;
-  teamBColorPrimary?: string;
-  teamBColorSecondary?: string;
 }
 
 export interface GameControlsProps {

@@ -142,6 +142,7 @@ const GameResult = ({ data }: GameResultProps) => {
                         <DriveSummary 
                             drives={drives}
                             variant="page"
+                            gameData={game}
                         />
                     </Grid>
                 )}

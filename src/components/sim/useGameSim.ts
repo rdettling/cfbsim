@@ -31,6 +31,7 @@ export type InteractiveSimState = {
   displayPlay: Play | null;
   displayDrive: Drive | null;
   isTeamAOnOffense: boolean;
+  openingIsTeamA: boolean;
   fieldPosition: number;
   previousPlayYards: number;
   lastPlayText: string;
@@ -523,6 +524,7 @@ export const useGameSim = ({
       displayDrive,
       isUserOffenseNow,
       isTeamAOnOffense,
+      openingIsTeamA: context?.openingIsTeamA ?? true,
       fieldPosition,
       previousPlayYards,
       lastPlayText: lastPlay?.text ?? '',
@@ -542,6 +544,7 @@ export const useGameSim = ({
       displayPlay: derived.displayPlay,
       displayDrive: derived.displayDrive,
       isTeamAOnOffense: derived.isTeamAOnOffense,
+      openingIsTeamA: derived.openingIsTeamA,
       fieldPosition: derived.fieldPosition,
       previousPlayYards: derived.previousPlayYards,
       lastPlayText: derived.lastPlayText,

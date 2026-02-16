@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { TeamLogo } from '../team/TeamComponents';
 import type { GameScoreStripProps } from '../../types/components';
-import { resolveHomeAway } from '../../domain/utils/gameDisplay';
+import { resolveHomeAway, resolveHomeAwayScores } from '../../domain/utils/gameDisplay';
 
 const GameScoreStrip = ({
   gameData,
@@ -21,13 +21,28 @@ const GameScoreStrip = ({
 
   const scoreText = (() => {
     if (currentPlay) {
-      return `${currentPlay.scoreA} - ${currentPlay.scoreB}`;
+      const { awayScore, homeScore } = resolveHomeAwayScores(
+        gameData,
+        currentPlay.scoreA,
+        currentPlay.scoreB
+      );
+      return `${awayScore} - ${homeScore}`;
     }
     if (isPlaybackComplete && plays.length > 0) {
       const lastPlay = plays[plays.length - 1];
-      return `${lastPlay.scoreA} - ${lastPlay.scoreB}`;
+      const { awayScore, homeScore } = resolveHomeAwayScores(
+        gameData,
+        lastPlay.scoreA,
+        lastPlay.scoreB
+      );
+      return `${awayScore} - ${homeScore}`;
     }
-    return `${gameData.scoreA} - ${gameData.scoreB}`;
+    const { awayScore, homeScore } = resolveHomeAwayScores(
+      gameData,
+      gameData.scoreA,
+      gameData.scoreB
+    );
+    return `${awayScore} - ${homeScore}`;
   })();
 
   const { home, away } = resolveHomeAway({

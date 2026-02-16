@@ -13,6 +13,7 @@ import GameControls from "../game/GameControls";
 import { useEffect } from "react";
 import { useGameSim } from './useGameSim';
 import type { GameSimModalProps } from '../../types/components';
+import { resolveHomeAway } from '../../domain/utils/gameDisplay';
 
 const GameSimModal = ({
     open,
@@ -51,9 +52,12 @@ const GameSimModal = ({
         );
     }
 
-    const homeTeam = state.gameData.homeTeamId
-        ? (state.gameData.homeTeamId === state.gameData.teamA.id ? state.gameData.teamA : state.gameData.teamB)
-        : state.gameData.teamA;
+    const { home: homeTeam, away: awayTeam } = resolveHomeAway({
+        teamA: state.gameData.teamA,
+        teamB: state.gameData.teamB,
+        homeTeamId: state.gameData.homeTeamId ?? null,
+        awayTeamId: state.gameData.awayTeamId ?? null,
+    });
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
@@ -89,20 +93,12 @@ const GameSimModal = ({
                             <Box sx={{ background: 'rgba(255,255,255,0.9)', borderRadius: 3, p: 2, boxShadow: '0 12px 26px rgba(15, 23, 42, 0.08)' }}>
                                 <FootballField 
                                     currentYardLine={state.fieldPosition}
-                                    teamA={state.gameData.teamA.name}
-                                    teamB={state.gameData.teamB.name}
-                                    homeTeamName={homeTeam.name}
-                                    homeTeamMascot={homeTeam.mascot}
-                                    homeTeamColorPrimary={homeTeam.colorPrimary}
-                                    homeTeamColorSecondary={homeTeam.colorSecondary}
-                                    isTeamAOnOffense={state.isTeamAOnOffense}
+                                    homeTeam={homeTeam}
+                                    awayTeam={awayTeam}
+                                    isOffenseLeftToRight={state.isTeamAOnOffense === state.openingIsTeamA}
                                     down={state.displayPlay?.down ?? 1}
                                     yardsToGo={state.displayPlay?.yardsLeft ?? 10}
                                     previousPlayYards={state.previousPlayYards}
-                                    teamAColorPrimary={state.gameData.teamA.colorPrimary}
-                                    teamAColorSecondary={state.gameData.teamA.colorSecondary}
-                                    teamBColorPrimary={state.gameData.teamB.colorPrimary}
-                                    teamBColorSecondary={state.gameData.teamB.colorSecondary}
                                 />
                             </Box>
 
@@ -169,6 +165,11 @@ const GameSimModal = ({
                                     currentPlayIndex={state.currentPlayIndex}
                                     variant="modal"
                                     includeCurrentDrive
+                                    currentScore={{
+                                        scoreA: state.gameData.scoreA,
+                                        scoreB: state.gameData.scoreB
+                                    }}
+                                    gameData={state.gameData}
                                 />
                             </Box>
                         </Box>
