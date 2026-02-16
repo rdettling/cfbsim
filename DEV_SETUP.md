@@ -6,14 +6,14 @@
 
 ## Frontend2 Setup (Active App)
 
-1. `cd frontend2`
+1. `cd` to the repo root
 2. `npm install`
 3. `npm run dev`
 4. Optional: `npm run typecheck`
 
 ## Data Requirements (Frontend2)
 
-The active frontend loads data from `frontend2/public/data/` (cached to IndexedDB on first run):
+The active frontend loads data from `public/data/` (cached to IndexedDB on first run):
 - `teams.json`
 - `conferences.json`
 - `years/index.json` and `years/*.json`

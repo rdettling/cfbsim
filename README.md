@@ -1,19 +1,40 @@
-# CFBSim.net
+# Frontend Two – Page Pattern
 
-College football season simulator. The active app is a standalone Vite + React frontend backed by IndexedDB (no backend API). The legacy full‑stack app is preserved under `legacy/`.
+## Goals
+- No backend endpoints.
+- IndexedDB-first persistence.
+- Pages are thin; domain layer owns logic.
 
-## Read This First
+## Architecture
+- `src/db/`: IndexedDB + base data caching
+- `src/domain/`: business logic, domain types, and hooks
+- `src/pages/`: UI screens
+- `src/components/`: shared UI pieces
+- `src/constants/`: shared constants (routes, stages)
 
-- Project setup: `DEV_SETUP.md`
-- System design & data flow: `ARCHITECTURE.md`
-- Codex/agent context: `AGENTS.md`
+## Page Pattern
+1. Fetch domain data with `useDomainData`.
+2. Keep page state local (UI-only state).
+3. Call domain functions for mutations.
 
-## Tech Stack
+### Example
+```tsx
+const { data, loading, error } = useDomainData({
+  fetcher: () => loadHomeData(),
+});
 
-- Active app: React + Vite + IndexedDB (`frontend2/`)
-- Legacy backend: Django + DRF (`legacy/backend/`)
-- Legacy frontend: React + Vite (`legacy/frontend/`)
+return (
+  <PageLayout loading={loading} error={error}>
+    {/* render UI */}
+  </PageLayout>
+);
+```
 
-## License
+## Domain Functions
+- `loadHomeData()`
+- `startNewLeague(team, year)`
+- `loadNonCon()`
+- `getTeamInfo(teamName)`
 
-Personal use only.
+Add new pages by first copying the old page UI, then replacing any API calls
+with domain functions.
