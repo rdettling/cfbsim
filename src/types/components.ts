@@ -124,7 +124,7 @@ export interface DashboardTeamRowProps {
   onTeamClick: (name: string) => void;
 }
 
-export interface LiveSimModalProps {
+export interface GameSimModalProps {
   open: boolean;
   onClose: () => void;
   gameId: number | null;

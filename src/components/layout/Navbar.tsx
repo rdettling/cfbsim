@@ -8,7 +8,7 @@ import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';
 import { STAGES } from '../../constants/stages';
 import GameSelectionModal from '../sim/GameSelectionModal';
-import LiveSimModal from '../sim/LiveSimModal';
+import GameSimModal from '../sim/GameSimModal';
 import type { NavbarProps } from '../../types/components';
 
 const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
@@ -238,7 +238,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     onClose={() => setGameSelectionOpen(false)}
                     onGameSelect={handleGameSelect}
                 />
-                <LiveSimModal
+                <GameSimModal
                     open={liveSimOpen}
                     onClose={handleLiveSimClose}
                     gameId={selectedGameId}

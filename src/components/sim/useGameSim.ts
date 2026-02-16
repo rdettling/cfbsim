@@ -84,7 +84,7 @@ const resolveDecision = (decision: string) => {
   return 'run';
 };
 
-export const useInteractiveSim = ({
+export const useGameSim = ({
   gameId,
   allowUserDecision,
 }: {

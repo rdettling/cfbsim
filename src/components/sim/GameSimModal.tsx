@@ -11,16 +11,16 @@ import FootballField from "../game/FootballField";
 import GameScoreStrip from "../game/GameScoreStrip";
 import GameControls from "../game/GameControls";
 import { useEffect } from "react";
-import { useInteractiveSim } from './useInteractiveSim';
-import type { LiveSimModalProps } from '../../types/components';
+import { useGameSim } from './useGameSim';
+import type { GameSimModalProps } from '../../types/components';
 
-const LiveSimModal = ({
+const GameSimModal = ({
     open,
     onClose,
     gameId,
     isUserGame,
-}: LiveSimModalProps) => {
-    const sim = useInteractiveSim({ gameId, allowUserDecision: isUserGame });
+}: GameSimModalProps) => {
+    const sim = useGameSim({ gameId, allowUserDecision: isUserGame });
     const { state, actions } = sim;
 
     useEffect(() => {
@@ -179,4 +179,4 @@ const LiveSimModal = ({
     );
 };
 
-export default LiveSimModal;
+export default GameSimModal;
