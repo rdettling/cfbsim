@@ -1,4 +1,5 @@
 import { Box, Button, Typography } from '@mui/material';
+import type { ReactNode } from 'react';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
@@ -17,7 +18,7 @@ const GameControls = ({
     handleDecision,
     submittingDecision = false
 }: GameControlsProps) => {
-    let decisionSection: JSX.Element | null = null;
+    let decisionSection: ReactNode = null;
     if (decisionPrompt && handleDecision) {
         const { type, down, yards_left, field_position } = decisionPrompt;
 

@@ -2,6 +2,8 @@ import type { FullGame } from '../../types/schedule';
 import type { LeagueState } from '../../types/league';
 import type { SimGame, StartersCache } from '../../types/sim';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
+import type { GameData, Drive } from '../../types/game';
+import type { Team } from '../../types/domain';
 import { fillUserSchedule, buildUserScheduleFromGames } from '../schedule';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
@@ -192,7 +194,29 @@ export const liveSimGame = async (gameId: number) => {
   };
 };
 
-export const prepareInteractiveLiveGame = async (gameId: number) => {
+export type PreparedInteractiveLiveGameComplete = {
+  status: 'complete';
+  drives: Drive[];
+  game: GameData;
+  is_user_game: boolean;
+};
+
+export type PreparedInteractiveLiveGameReady = {
+  status: 'ready';
+  league: LeagueState;
+  record: GameRecord;
+  teamsById: Map<number, Team>;
+  starters: StartersCache;
+  playersById: Map<number, PlayerRecord>;
+  simGame: SimGame;
+  preRecordA: string;
+  preRecordB: string;
+  is_user_game: boolean;
+};
+
+export type PreparedInteractiveLiveGame = PreparedInteractiveLiveGameComplete | PreparedInteractiveLiveGameReady;
+
+export const prepareInteractiveLiveGame = async (gameId: number): Promise<PreparedInteractiveLiveGame> => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
   const changed = normalizeLeague(league);
