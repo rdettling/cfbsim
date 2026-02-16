@@ -12,6 +12,7 @@ import {
 import { TeamLogo, TeamLink, TeamInfoModal } from '../team/TeamComponents';
 import DriveSummary from './DriveSummary';
 import type { GameResultProps } from '../../types/components';
+import { resolveHomeAway, resolveTeamSide, formatMatchup } from '../../domain/utils/gameDisplay';
 
 // Helper component for team header in game result
 const TeamHeader = ({ 
@@ -77,13 +78,16 @@ const GameResult = ({ data }: GameResultProps) => {
     };
 
     const { game, drives = [] } = data;
+    const { home, away, neutral } = resolveHomeAway(game);
+    const awaySide = resolveTeamSide(game, away.id);
+    const homeSide = resolveTeamSide(game, home.id);
 
     return (
         <Container maxWidth="lg" sx={{ py: 3 }}>
             {/* Game Header */}
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    {game.name || game.base_label}
+                    {game.name || formatMatchup(home.name, away.name, neutral)}
                 </Typography>
                 <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 3 }}>
                     Week {game.weekPlayed} • {game.year}{game.overtime && game.overtime > 0 ? ` • ${game.overtime}OT` : ''}
@@ -93,10 +97,10 @@ const GameResult = ({ data }: GameResultProps) => {
                 <Grid container spacing={3} alignItems="center">
                     <Grid size={{ xs: 12, md: 5 }}>
                         <TeamHeader 
-                            team={game.teamA} 
-                            rank={game.rankATOG} 
-                            score={game.scoreA || 0} 
-                            result={game.resultA || 'L'}
+                            team={away} 
+                            rank={awaySide.rank} 
+                            score={awaySide.score || 0} 
+                            result={awaySide.result || 'L'}
                             onTeamClick={handleTeamClick}
                         />
                     </Grid>
@@ -107,10 +111,10 @@ const GameResult = ({ data }: GameResultProps) => {
                     </Grid>
                     <Grid size={{ xs: 12, md: 5 }}>
                         <TeamHeader 
-                            team={game.teamB} 
-                            rank={game.rankBTOG} 
-                            score={game.scoreB || 0} 
-                            result={game.resultB || 'L'}
+                            team={home} 
+                            rank={homeSide.rank} 
+                            score={homeSide.score || 0} 
+                            result={homeSide.result || 'L'}
                             onTeamClick={handleTeamClick}
                         />
                     </Grid>

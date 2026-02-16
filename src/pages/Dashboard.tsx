@@ -9,6 +9,7 @@ import {
 import { useDomainData } from '../domain/hooks';
 import { PageLayout } from '../components/layout/PageLayout';
 import { loadDashboard } from '../domain/league';
+import { formatOpponentPrefix } from '../domain/utils/gameDisplay';
 
 // Game card with clickable team name
 const GameCard = ({ game, type, onTeamClick }: DashboardGameCardProps) => {
@@ -16,6 +17,7 @@ const GameCard = ({ game, type, onTeamClick }: DashboardGameCardProps) => {
     const isCompleted = game.result !== null && game.result !== undefined;
     const opponent = game.opponent;
     if (!opponent) return null;
+    const prefix = formatOpponentPrefix(game.location);
     
     return (
         <Card elevation={3} sx={{ 
@@ -40,7 +42,7 @@ const GameCard = ({ game, type, onTeamClick }: DashboardGameCardProps) => {
                                 onClick={() => onTeamClick(opponent.name)}
                                 sx={{ cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' }}
                             >
-                                {opponent.ranking > 0 ? `#${opponent.ranking} ` : ''}{opponent.name}
+                                {opponent.ranking > 0 ? `#${opponent.ranking} ` : ''}{prefix ? `${prefix} ` : ''}{opponent.name}
                             </MuiLink>
                             <Typography variant="body2" color="text.secondary">
                                 {opponent.record}

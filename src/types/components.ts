@@ -133,6 +133,11 @@ export interface LiveSimModalProps {
 
 export interface GameSelectionModalGame {
   id: number;
+  teamAId?: number;
+  teamBId?: number;
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
+  neutralSite?: boolean;
   teamA: {
     name: string;
     ranking: number;
@@ -165,8 +170,11 @@ export interface GamePreviewProps {
     label: string;
     weekPlayed: number;
     year: number;
-    teamA: any;
-    teamB: any;
+    homeTeamId?: number | null;
+    awayTeamId?: number | null;
+    neutralSite?: boolean;
+    teamA: Team;
+    teamB: Team;
     rankATOG: number;
     rankBTOG: number;
     spreadA?: string;
@@ -178,7 +186,14 @@ export interface GamePreviewProps {
 
 export interface GameResultProps {
   data: {
-    game: any;
+    game: {
+      teamA: Team;
+      teamB: Team;
+      homeTeamId?: number | null;
+      awayTeamId?: number | null;
+      neutralSite?: boolean;
+      [key: string]: any;
+    };
     drives?: Drive[];
   };
 }

@@ -2,6 +2,7 @@ import { Box, Typography, Link as MuiLink } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { TeamLink, TeamLogo } from './TeamComponents';
 import type { BaseGameComponentProps } from '../../types/components';
+import { formatOpponentPrefix } from '../../domain/utils/gameDisplay';
 
 const TeamInfo = ({
   teamName,
@@ -25,6 +26,7 @@ export const InlineLastWeek = ({ team, onTeamClick }: BaseGameComponentProps) =>
   if (!team.last_game) return null;
   const gameId = team.last_game.id;
   const scoreText = `(${team.last_game.score})`;
+  const prefix = formatOpponentPrefix(team.last_game.location);
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
       <Typography variant="body2">{team.last_game.result}</Typography>
@@ -37,7 +39,7 @@ export const InlineLastWeek = ({ team, onTeamClick }: BaseGameComponentProps) =>
           {scoreText}
         </Typography>
       )}
-      <Typography variant="body2">vs</Typography>
+      {prefix && <Typography variant="body2">{prefix}</Typography>}
       <TeamInfo
         teamName={team.last_game.opponent.name}
         ranking={team.last_game.opponent.ranking}
@@ -51,8 +53,10 @@ export const InlineThisWeek = ({ team, onTeamClick }: BaseGameComponentProps) =>
   if (!team.next_game) return null;
   const gameId = team.next_game.id;
   const spreadText = `(${team.next_game.spread})`;
+  const prefix = formatOpponentPrefix(team.next_game.location);
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+      {prefix && <Typography variant="body2">{prefix}</Typography>}
       <TeamInfo
         teamName={team.next_game.opponent.name}
         ranking={team.next_game.opponent.ranking}

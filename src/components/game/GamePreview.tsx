@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { TeamInfoModal, TeamLogo, TeamLink } from '../team/TeamComponents';
 import type { GamePreviewProps } from '../../types/components';
+import { resolveHomeAway, resolveTeamSide, formatMatchup } from '../../domain/utils/gameDisplay';
 
 const GamePreview = ({ game }: GamePreviewProps) => {
     const [modalOpen, setModalOpen] = useState(false);
@@ -66,16 +67,19 @@ const GamePreview = ({ game }: GamePreviewProps) => {
         );
     };
 
-    const spreadText = game.spreadA
-        ? `${game.teamA.abbreviation || game.teamA.name} ${game.spreadA}`
-        : `${game.teamB.abbreviation || game.teamB.name} ${game.spreadB ?? ''}`.trim();
+    const { home, away, neutral } = resolveHomeAway(game);
+    const awaySide = resolveTeamSide(game, away.id);
+    const homeSide = resolveTeamSide(game, home.id);
+    const spreadText = awaySide.spread
+        ? `${away.abbreviation || away.name} ${awaySide.spread}`
+        : `${home.abbreviation || home.name} ${homeSide.spread ?? ''}`.trim();
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
             {/* Header Section */}
             <Box sx={{ mb: 6 }}>
                 <Typography variant="h3" align="center" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    {game.label}
+                    {formatMatchup(home.name, away.name, neutral)}
                 </Typography>
                 <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 4 }}>
                     Week {game.weekPlayed} • {game.year}
@@ -85,13 +89,13 @@ const GamePreview = ({ game }: GamePreviewProps) => {
                 <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
                     <Grid container spacing={4} alignItems="center">
                         <Grid size={{ xs: 12, md: 5 }}>
-                            {renderTeamInfo(game.teamA, game.rankATOG, String(game.moneylineA || ""))}
+                            {renderTeamInfo(away, awaySide.rank, String(awaySide.moneyline || ""))}
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 2 }}>
                             <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                    VS
+                                    {neutral ? 'VS' : 'AT'}
                                 </Typography>
                                 <Box sx={{ mt: 2, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
                                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
@@ -105,7 +109,7 @@ const GamePreview = ({ game }: GamePreviewProps) => {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 5 }}>
-                            {renderTeamInfo(game.teamB, game.rankBTOG, String(game.moneylineB || ""), true)}
+                            {renderTeamInfo(home, homeSide.rank, String(homeSide.moneyline || ""), true)}
                         </Grid>
                     </Grid>
                 </Paper>

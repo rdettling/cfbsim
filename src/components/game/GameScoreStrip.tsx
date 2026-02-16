@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { TeamLogo } from '../team/TeamComponents';
 import type { GameScoreStripProps } from '../../types/components';
+import { resolveHomeAway } from '../../domain/utils/gameDisplay';
 
 const GameScoreStrip = ({
   gameData,
@@ -29,6 +30,16 @@ const GameScoreStrip = ({
     return `${gameData.scoreA} - ${gameData.scoreB}`;
   })();
 
+  const { home, away } = resolveHomeAway({
+    teamA: gameData.teamA,
+    teamB: gameData.teamB,
+    homeTeamId: gameData.homeTeamId ?? null,
+    awayTeamId: gameData.awayTeamId ?? null,
+  });
+
+  const isAwayOnOffense = away.id === gameData.teamA.id ? isTeamAOnOffense : !isTeamAOnOffense;
+  const isHomeOnOffense = !isAwayOnOffense;
+
   return (
     <Box
       sx={{
@@ -46,15 +57,15 @@ const GameScoreStrip = ({
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <TeamLogo name={gameData.teamA.name} size={44} />
+        <TeamLogo name={away.name} size={44} />
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', fontFamily: '"Space Grotesk", sans-serif' }}>
-              {gameData.teamA.name}
+              {away.name}
             </Typography>
-            {isTeamAOnOffense && <PossessionIndicator />}
+            {isAwayOnOffense && <PossessionIndicator />}
           </Box>
-          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{gameData.teamA.record}</Typography>
+          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{away.record}</Typography>
         </Box>
       </Box>
 
@@ -70,14 +81,14 @@ const GameScoreStrip = ({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'flex-end' }}>
         <Box sx={{ textAlign: 'right' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-            {!isTeamAOnOffense && <PossessionIndicator />}
+            {isHomeOnOffense && <PossessionIndicator />}
             <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', fontFamily: '"Space Grotesk", sans-serif' }}>
-              {gameData.teamB.name}
+              {home.name}
             </Typography>
           </Box>
-          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{gameData.teamB.record}</Typography>
+          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{home.record}</Typography>
         </Box>
-        <TeamLogo name={gameData.teamB.name} size={44} />
+        <TeamLogo name={home.name} size={44} />
       </Box>
     </Box>
   );

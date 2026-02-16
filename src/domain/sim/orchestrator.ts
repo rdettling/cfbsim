@@ -113,6 +113,11 @@ export const getGamesToLiveSim = async () => {
     const teamB = teamsById.get(game.teamBId)!;
     return {
       id: game.id,
+      teamAId: teamA.id,
+      teamBId: teamB.id,
+      homeTeamId: game.homeTeamId,
+      awayTeamId: game.awayTeamId,
+      neutralSite: game.neutralSite,
       teamA: { name: teamA.name, ranking: game.rankATOG, record: teamA.record },
       teamB: { name: teamB.name, ranking: game.rankBTOG, record: teamB.record },
       label: game.baseLabel,
