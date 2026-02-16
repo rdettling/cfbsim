@@ -295,6 +295,17 @@ const updateDriveScoreAfter = (game: SimGame, drive: DriveRecord, offense: Team)
 
 const startingYardsLeft = (fieldPosition: number) => (fieldPosition >= 90 ? 100 - fieldPosition : 10);
 
+export const isTeamAOpeningOffense = (game: SimGame) => {
+  if (game.neutralSite) return true;
+  if (game.awayTeam) {
+    return game.awayTeam.id === game.teamA.id;
+  }
+  if (game.homeTeam) {
+    return game.homeTeam.id !== game.teamA.id;
+  }
+  return true;
+};
+
 export const simDrive = (
   league: LeagueState,
   game: SimGame,
@@ -665,10 +676,11 @@ export const simGame = (
   game.overtime = 0;
   const totalDrives = DRIVES_PER_TEAM * 2;
   const drives: SimDrive[] = [];
+  const openingIsTeamA = isTeamAOpeningOffense(game);
 
   let fieldPosition = 20;
   for (let i = 0; i < totalDrives; i += 1) {
-    const isTeamA = i % 2 === 0;
+    const isTeamA = openingIsTeamA ? i % 2 === 0 : i % 2 !== 0;
     const offense = isTeamA ? game.teamA : game.teamB;
     const defense = isTeamA ? game.teamB : game.teamA;
     const lead = isTeamA ? game.scoreA - game.scoreB : game.scoreB - game.scoreA;

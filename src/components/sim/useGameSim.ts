@@ -10,6 +10,7 @@ import {
   finalizeGameResult,
   DRIVES_PER_TEAM,
   OT_START_YARD_LINE,
+  isTeamAOpeningOffense,
 } from '../../domain/sim/engine';
 import type { GameData, Play, Drive } from '../../types/game';
 import type { LeagueState } from '../../types/league';
@@ -50,6 +51,7 @@ type InteractiveContext = {
   fieldPosition: number;
   inOvertime: boolean;
   otPossession: number;
+  openingIsTeamA: boolean;
   currentDriveState: InteractiveDriveState | null;
   currentOffense: Team | null;
   currentDefense: Team | null;
@@ -246,7 +248,9 @@ export const useGameSim = ({
       context.simGame.overtime += 1;
     }
 
-    const isTeamA = context.inOvertime ? context.otPossession === 0 : context.driveNum % 2 === 0;
+    const isTeamA = context.inOvertime
+      ? context.otPossession === 0
+      : (context.openingIsTeamA ? context.driveNum % 2 === 0 : context.driveNum % 2 !== 0);
     const offense = isTeamA ? context.simGame.teamA : context.simGame.teamB;
     const defense = isTeamA ? context.simGame.teamB : context.simGame.teamA;
     const lead = isTeamA ? context.simGame.scoreA - context.simGame.scoreB : context.simGame.scoreB - context.simGame.scoreA;
@@ -330,6 +334,7 @@ export const useGameSim = ({
       fieldPosition: 20,
       inOvertime: false,
       otPossession: 0,
+      openingIsTeamA: isTeamAOpeningOffense(response.simGame),
       currentDriveState: null,
       currentOffense: null,
       currentDefense: null,
