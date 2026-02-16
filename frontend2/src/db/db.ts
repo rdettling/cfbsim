@@ -2,8 +2,7 @@ import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../types/db';
 
-export const DB_NAME = 'cfbsim_frontend2';
-export const DB_VERSION = 2;
+export const DB_NAME = 'cfbsim';
 
 export interface Frontend2DB extends DBSchema {
   baseData: {
@@ -50,7 +49,7 @@ let dbPromise: Promise<IDBPDatabase<Frontend2DB>> | null = null;
 
 export const getDb = () => {
   if (!dbPromise) {
-    dbPromise = openDB<Frontend2DB>(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<Frontend2DB>(DB_NAME, 1, {
       upgrade(db) {
         if (!db.objectStoreNames.contains('baseData')) {
           db.createObjectStore('baseData', { keyPath: 'key' });

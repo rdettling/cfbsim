@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "start": "serve -s dist",
     "preview": "vite preview",
     "generate:history": "tsx scripts/generate_history.ts",
     "generate:odds": "tsx scripts/generate_betting_odds.ts",
@@ -19,7 +20,8 @@
     "idb": "^8.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.5"
+    "react-router-dom": "^7.1.5",
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
