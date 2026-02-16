@@ -32,12 +32,15 @@ export interface GameData {
   headline?: string | null;
   headline_subtitle?: string | null;
   headline_tags?: string[] | null;
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
   teamA: {
     id: number;
     name: string;
     record: string;
     colorPrimary?: string;
     colorSecondary?: string;
+    mascot?: string;
   };
   teamB: {
     id: number;
@@ -45,6 +48,7 @@ export interface GameData {
     record: string;
     colorPrimary?: string;
     colorSecondary?: string;
+    mascot?: string;
   };
   scoreA: number;
   scoreB: number;

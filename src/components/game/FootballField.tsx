@@ -1,7 +1,23 @@
 import { Box, Typography } from '@mui/material';
 import type { FootballFieldProps } from '../../types/components';
 
-const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, yardsToGo, previousPlayYards, teamAColorPrimary, teamAColorSecondary, teamBColorPrimary, teamBColorSecondary }: FootballFieldProps) => {
+const FootballField = ({
+    currentYardLine,
+    teamA,
+    teamB,
+    homeTeamName,
+    homeTeamMascot,
+    homeTeamColorPrimary,
+    homeTeamColorSecondary,
+    isTeamAOnOffense,
+    down,
+    yardsToGo,
+    previousPlayYards,
+    teamAColorPrimary,
+    teamAColorSecondary,
+    teamBColorPrimary,
+    teamBColorSecondary
+}: FootballFieldProps) => {
     // Field dimensions based on yards
     const PIXELS_PER_YARD = 5;
     const END_ZONE_YARDS = 10;
@@ -52,6 +68,12 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
         <Box sx={{ position: 'absolute', left, top: 0, bottom: 0, width, bgcolor: color, zIndex, ...(shadow && { boxShadow: shadow }) }} />
     );
 
+    const endZonePrimary = homeTeamColorPrimary || teamAColorPrimary || teamBColorPrimary || 'primary.main';
+    const endZoneSecondary = homeTeamColorSecondary || teamAColorSecondary || teamBColorSecondary || 'white';
+    const endZoneLeftText = homeTeamName || teamA;
+    const endZoneRightText = homeTeamMascot || teamA;
+    const midfieldLogoName = homeTeamName || teamA;
+
     return (
         <Box sx={{ 
             width: '100%',
@@ -75,7 +97,7 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 <Box
                     sx={{
                         width: endZoneWidth,
-                        bgcolor: teamAColorPrimary || 'primary.main',
+                        bgcolor: endZonePrimary,
                         opacity: 0.95,
                         display: 'flex',
                         alignItems: 'center',
@@ -85,14 +107,14 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 >
                     <Typography
                         sx={{
-                            color: teamAColorSecondary || 'white',
+                            color: endZoneSecondary,
                             fontWeight: 'bold',
                             fontSize: END_ZONE_TEXT_SIZE,
                             transform: 'rotate(-90deg)',
                             whiteSpace: 'nowrap'
                         }}
                     >
-                        {teamA}
+                        {endZoneLeftText}
                     </Typography>
                 </Box>
 
@@ -107,8 +129,8 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 >
                     {/* Yard line markers */}
                     {yardLines.map((yard) => (
-                        <Box key={yard} sx={{ position: 'absolute', left: yard * PIXELS_PER_YARD, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box sx={{ width: 2, height: '100%', bgcolor: 'white', opacity: 0.75 }} />
+                        <Box key={yard} sx={{ position: 'absolute', left: yard * PIXELS_PER_YARD, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 3 }}>
+                            <Box sx={{ width: 2, height: '100%', bgcolor: 'white', opacity: 0.8 }} />
                             <Typography sx={{ position: 'absolute', top: 8, color: 'white', fontWeight: 700, fontSize: YARD_LINE_NUMBER_SIZE, textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}>
                                 {yard <= 50 ? yard : 100 - yard}
                             </Typography>
@@ -120,7 +142,7 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 <Box
                     sx={{
                         width: endZoneWidth,
-                        bgcolor: teamBColorPrimary || 'secondary.main',
+                        bgcolor: endZonePrimary,
                         opacity: 0.95,
                         display: 'flex',
                         alignItems: 'center',
@@ -129,15 +151,36 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 >
                     <Typography
                         sx={{
-                            color: teamBColorSecondary || 'white',
+                            color: endZoneSecondary,
                             fontWeight: 'bold',
                             fontSize: END_ZONE_TEXT_SIZE,
                             transform: 'rotate(90deg)',
                             whiteSpace: 'nowrap'
                         }}
                     >
-                        {teamB}
+                        {endZoneRightText}
                     </Typography>
+                </Box>
+
+                {/* Midfield Logo */}
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 112,
+                        height: 112,
+                        opacity: 1,
+                        zIndex: 4,
+                        pointerEvents: 'none'
+                    }}
+                >
+                    <img
+                        src={`/logos/teams/${midfieldLogoName}.png`}
+                        alt={midfieldLogoName}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
                 </Box>
 
                 {/* Down and Distance Display */}

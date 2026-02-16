@@ -1164,12 +1164,15 @@ export const buildGameData = (game: GameRecord, teamsById: Map<number, Team>): G
     headline: game.headline,
     headline_subtitle: game.headline_subtitle ?? null,
     headline_tags: game.headline_tags ?? null,
+    homeTeamId: game.homeTeamId,
+    awayTeamId: game.awayTeamId,
     teamA: {
       id: teamA.id,
       name: teamA.name,
       record: teamA.record,
       colorPrimary: teamA.colorPrimary,
       colorSecondary: teamA.colorSecondary,
+      mascot: teamA.mascot,
     },
     teamB: {
       id: teamB.id,
@@ -1177,6 +1180,7 @@ export const buildGameData = (game: GameRecord, teamsById: Map<number, Team>): G
       record: teamB.record,
       colorPrimary: teamB.colorPrimary,
       colorSecondary: teamB.colorSecondary,
+      mascot: teamB.mascot,
     },
     scoreA: game.scoreA ?? 0,
     scoreB: game.scoreB ?? 0,

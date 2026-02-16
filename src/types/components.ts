@@ -196,6 +196,10 @@ export interface FootballFieldProps {
   currentYardLine: number;
   teamA: string;
   teamB: string;
+  homeTeamName?: string;
+  homeTeamMascot?: string;
+  homeTeamColorPrimary?: string;
+  homeTeamColorSecondary?: string;
   isTeamAOnOffense: boolean;
   down: number;
   yardsToGo: number;

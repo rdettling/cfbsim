@@ -231,6 +231,10 @@ const LiveSimModal = ({
     const fieldYardsToGo = isUserGame ? (interactiveState.displayPlay?.yardsLeft ?? 10) : (currentPlay?.yardsLeft || 10);
     const fieldPreviousPlayYards = isUserGame ? interactiveState.previousPlayYards : previousPlayYards;
 
+    const homeTeam = displayData.homeTeamId
+        ? (displayData.homeTeamId === displayData.teamA.id ? displayData.teamA : displayData.teamB)
+        : displayData.teamA;
+
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
             <DialogContent sx={{ p: 0, height: "88vh", maxHeight: "88vh", position: 'relative', background: 'linear-gradient(180deg, #f7f2ea 0%, #eef2f7 60%, #e7eef2 100%)' }}>
@@ -267,6 +271,10 @@ const LiveSimModal = ({
                                     currentYardLine={fieldYardLine}
                                     teamA={displayData.teamA.name}
                                     teamB={displayData.teamB.name}
+                                    homeTeamName={homeTeam.name}
+                                    homeTeamMascot={homeTeam.mascot}
+                                    homeTeamColorPrimary={homeTeam.colorPrimary}
+                                    homeTeamColorSecondary={homeTeam.colorSecondary}
                                     isTeamAOnOffense={headerIsTeamAOnOffense}
                                     down={fieldDown}
                                     yardsToGo={fieldYardsToGo}
