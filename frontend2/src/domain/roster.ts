@@ -5,10 +5,8 @@ import { getNamesData, getStatesData } from '../db/baseData';
 import { savePlayers, getPlayersByTeam, clearPlayers } from '../db/simRepo';
 import type { PlayerRecord } from '../types/db';
 
-const STARS_BASE: Record<number, number> = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70 };
-const BASE_DEVELOPMENT = 4;
-const RATING_STD_DEV = 5;
-const DEVELOPMENT_STD_DEV = 4;
+const STARS_BASE: Record<number, number> = { 1: 40, 2: 55, 3: 68, 4: 82, 5: 92 };
+const STAR_STD_DEV: Record<number, number> = { 1: 6, 2: 6, 3: 5, 4: 4, 5: 4 };
 const RANDOM_VARIANCE_RANGE: [number, number] = [5, 9];
 
 const RECRUIT_CLASS_YEARS = 4;
@@ -85,28 +83,47 @@ const nextPlayerId = (league: LeagueState) => {
   return value;
 };
 
-const buildRatings = (baseRating: number) => {
-  const variance = gaussian(0, RATING_STD_DEV);
-  const fr = Math.max(1, baseRating + variance);
+const clampRating = (value: number) => Math.min(99, Math.max(30, Math.round(value)));
+
+const buildRatings = (stars: number) => {
+  const mean = STARS_BASE[stars] ?? STARS_BASE[1];
+  const stdDev = STAR_STD_DEV[stars] ?? 6;
+  let ceiling = gaussian(mean, stdDev);
+
+  if (stars === 5 && Math.random() < 0.03) {
+    ceiling += Math.random() * 10 + 6;
+  }
+
+  ceiling = clampRating(ceiling);
   const developmentTrait = Math.floor(Math.random() * 5) + 1;
-  const growth = BASE_DEVELOPMENT + developmentTrait + gaussian(0, DEVELOPMENT_STD_DEV);
-  const so = Math.min(Math.max(fr + growth * 0.6, fr), 99);
-  const jr = Math.min(Math.max(fr + growth * 0.9, so), 99);
-  const sr = Math.min(Math.max(fr + growth * 1.1, jr), 99);
+
+  const gapMean = 22 - stars * 1.5;
+  const gap = Math.max(8, gaussian(gapMean, 3));
+  const start = clampRating(ceiling - gap);
+
+  const baseCurve = [0.72, 0.85, 0.94, 1];
+  const devScale = 0.6 + developmentTrait * 0.08 + gaussian(0, 0.03);
+  const curve = baseCurve.map(value => Math.min(1, value * devScale));
+
+  const fr = start;
+  const so = clampRating(start + (ceiling - start) * curve[1] + gaussian(0, 1.5));
+  const jr = clampRating(start + (ceiling - start) * curve[2] + gaussian(0, 1.5));
+  const sr = clampRating(start + (ceiling - start) * curve[3] + gaussian(0, 1));
+
+  const soFixed = Math.max(so, fr);
+  const jrFixed = Math.max(jr, soFixed);
+  const srFixed = Math.max(sr, jrFixed);
 
   return {
-    fr: Math.min(Math.round(fr), 99),
-    so: Math.round(so),
-    jr: Math.round(jr),
-    sr: Math.round(sr),
+    fr,
+    so: soFixed,
+    jr: jrFixed,
+    sr: srFixed,
     developmentTrait,
   };
 };
 
-const generatePlayerRatings = (stars: number) => {
-  const base = STARS_BASE[stars] ?? STARS_BASE[1];
-  return buildRatings(base);
-};
+const generatePlayerRatings = (stars: number) => buildRatings(stars);
 
 const loadNames = async () => {
   const namesData = await getNamesData();
