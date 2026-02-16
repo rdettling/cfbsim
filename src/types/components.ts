@@ -218,7 +218,6 @@ export interface GameControlsProps {
     down: number;
     yards_left: number;
     field_position: number;
-    allow_sim_drive?: boolean;
   };
   handleDecision?: (decision: string) => void;
   submittingDecision?: boolean;

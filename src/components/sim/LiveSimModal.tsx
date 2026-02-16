@@ -18,7 +18,6 @@ import {
     finalizeGameSimulation,
 } from "../../domain/sim";
 import {
-    simDrive,
     startInteractiveDrive,
     stepInteractiveDrive,
     buildGameData,
@@ -74,7 +73,7 @@ const LiveSimModal = ({
     const interactiveContext = useRef<InteractiveContext | null>(null);
 
     // Calculate if playback is complete for regular sim
-    const isPlaybackComplete = currentPlayIndex >= plays.length;
+    const isPlaybackComplete = isUserGame ? isGameComplete : currentPlayIndex >= plays.length;
 
     // Mark game as complete when user has watched through all plays
     useEffect(() => {
@@ -182,13 +181,21 @@ const LiveSimModal = ({
         simLoop();
     };
 
-    const handleNextPlay = () => {
+    const handleNextPlay = async () => {
+        if (isUserGame) {
+            await simulateAutoPlays(1);
+            return;
+        }
         if (currentPlayIndex < plays.length) {
             setCurrentPlayIndex(prev => prev + 1);
         }
     };
 
-    const handleNextDrive = () => {
+    const handleNextDrive = async () => {
+        if (isUserGame) {
+            await simulateAutoDrive();
+            return;
+        }
         // Find the current drive
         let playCount = 0;
         for (let i = 0; i < drives.length; i++) {
@@ -208,7 +215,11 @@ const LiveSimModal = ({
         }
     };
 
-    const handleSimToEnd = () => {
+    const handleSimToEnd = async () => {
+        if (isUserGame) {
+            await simulateToEnd();
+            return;
+        }
         setCurrentPlayIndex(plays.length);
     };
 
@@ -226,11 +237,11 @@ const LiveSimModal = ({
         down: state.down,
         yards_left: state.yardsLeft,
         field_position: state.fieldPosition,
-        allow_sim_drive: true,
     }) as GameControlsProps['decisionPrompt'];
 
     const mapPlayRecord = (play: PlayRecord): Play => ({
         id: play.id,
+        driveId: play.driveId,
         down: play.down,
         yardsLeft: play.yardsLeft,
         startingFP: play.startingFP,
@@ -291,7 +302,7 @@ const LiveSimModal = ({
         }
     };
 
-    const advanceDriveCounters = () => {
+    const advanceDriveCounters = async () => {
         const context = interactiveContext.current;
         if (!context) return;
 
@@ -300,7 +311,7 @@ const LiveSimModal = ({
             context.driveNum += 1;
             if (context.otPossession >= 2) {
                 if (context.simGame.scoreA !== context.simGame.scoreB) {
-                    finishInteractiveGame();
+                    await finishInteractiveGame();
                     return;
                 }
                 context.otPossession = 0;
@@ -309,21 +320,7 @@ const LiveSimModal = ({
             context.driveNum += 1;
         }
 
-        advanceToNextDrive();
-    };
-
-    const applyDriveResult = (driveRecord: DriveRecord, playRecords: PlayRecord[], nextFieldPosition: number) => {
-        const context = interactiveContext.current;
-        if (!context) return;
-
-        addPlaysToDrive(driveRecord, playRecords, true);
-        playRecordsRef.current.push(...playRecords);
-        driveRecordsRef.current.push(driveRecord);
-
-        context.fieldPosition = nextFieldPosition;
-        setGameData(prev => prev ? { ...prev, scoreA: context.simGame.scoreA, scoreB: context.simGame.scoreB } : prev);
-
-        advanceDriveCounters();
+        await advanceToNextDrive();
     };
 
     const advanceToNextDrive = async () => {
@@ -338,7 +335,7 @@ const LiveSimModal = ({
                     context.simGame.overtime = 0;
                     context.driveNum = DRIVES_PER_TEAM * 2 + 1;
                 } else {
-                    finishInteractiveGame();
+                    await finishInteractiveGame();
                     return;
                 }
             }
@@ -361,25 +358,6 @@ const LiveSimModal = ({
         context.currentOffense = offense;
         context.currentDefense = defense;
 
-        const isUserOffense = context.userTeamId ? offense.id === context.userTeamId : false;
-        if (!isUserOffense) {
-            setDecisionPrompt(null);
-            const driveResult = simDrive(
-                context.league,
-                context.simGame,
-                fieldPosition,
-                lead,
-                offense,
-                defense,
-                context.driveNum,
-                context.starters
-            );
-            context.simGame.scoreA = driveResult.record.scoreAAfter;
-            context.simGame.scoreB = driveResult.record.scoreBAfter;
-            applyDriveResult(driveResult.record, driveResult.plays, driveResult.nextFieldPosition);
-            return;
-        }
-
         const driveState = startInteractiveDrive(
             context.league,
             context.simGame,
@@ -391,7 +369,8 @@ const LiveSimModal = ({
         );
         context.currentDriveState = driveState;
 
-        setDecisionPrompt(buildDecisionPrompt(driveState));
+        const isUserOffense = context.userTeamId ? offense.id === context.userTeamId : false;
+        setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
     };
 
     const finishInteractiveGame = async () => {
@@ -428,43 +407,6 @@ const LiveSimModal = ({
 
         setSubmittingDecision(true);
         try {
-            if (decision === 'sim_drive') {
-                let driveState = context.currentDriveState;
-                const playBuffer: PlayRecord[] = [];
-                let stepResult: ReturnType<typeof stepInteractiveDrive> | null = null;
-                let guard = 0;
-                while (guard < 200) {
-                    stepResult = stepInteractiveDrive(
-                        context.league,
-                        context.simGame,
-                        driveState,
-                        'auto',
-                        context.currentOffense,
-                        context.currentDefense,
-                        context.starters
-                    );
-                    playBuffer.push(stepResult.play);
-                    driveState = stepResult.state as InteractiveDriveState;
-                    if (stepResult.driveComplete) break;
-                    guard += 1;
-                }
-
-                context.currentDriveState = driveState;
-                addPlaysToDrive(driveState.drive, playBuffer, stepResult?.driveComplete ?? false);
-                playRecordsRef.current.push(...playBuffer);
-
-                if (stepResult?.driveComplete) {
-                    driveRecordsRef.current.push(driveState.drive);
-                    const nextFieldPosition = stepResult.nextFieldPosition ?? context.fieldPosition;
-                    context.fieldPosition = nextFieldPosition;
-                    setGameData(prev => prev ? { ...prev, scoreA: context.simGame.scoreA, scoreB: context.simGame.scoreB } : prev);
-                    advanceDriveCounters();
-                } else {
-                    setDecisionPrompt(buildDecisionPrompt(driveState));
-                }
-                return;
-            }
-
             const stepResult = stepInteractiveDrive(
                 context.league,
                 context.simGame,
@@ -484,13 +426,113 @@ const LiveSimModal = ({
                 const nextFieldPosition = stepResult.nextFieldPosition ?? context.fieldPosition;
                 context.fieldPosition = nextFieldPosition;
                 setGameData(prev => prev ? { ...prev, scoreA: context.simGame.scoreA, scoreB: context.simGame.scoreB } : prev);
-                advanceDriveCounters();
+                await advanceDriveCounters();
             } else {
-                setDecisionPrompt(buildDecisionPrompt(stepResult.state));
+                const isUserOffense = context.userTeamId ? context.currentOffense.id === context.userTeamId : false;
+                setDecisionPrompt(isUserOffense ? buildDecisionPrompt(stepResult.state) : null);
             }
         } finally {
             setSubmittingDecision(false);
         }
+    };
+
+    const simulateAutoPlays = async (count: number) => {
+        const context = interactiveContext.current;
+        if (!context || !context.currentDriveState || !context.currentOffense || !context.currentDefense) return;
+
+        let driveState = context.currentDriveState;
+        let remaining = count;
+        while (remaining > 0) {
+            const stepResult = stepInteractiveDrive(
+                context.league,
+                context.simGame,
+                driveState,
+                'auto',
+                context.currentOffense,
+                context.currentDefense,
+                context.starters
+            );
+
+            driveState = stepResult.state as InteractiveDriveState;
+            context.currentDriveState = driveState;
+            addPlaysToDrive(driveState.drive, [stepResult.play], stepResult.driveComplete);
+            playRecordsRef.current.push(stepResult.play);
+
+            if (stepResult.driveComplete) {
+                driveRecordsRef.current.push(driveState.drive);
+                const nextFieldPosition = stepResult.nextFieldPosition ?? context.fieldPosition;
+                context.fieldPosition = nextFieldPosition;
+                setGameData(prev => prev ? { ...prev, scoreA: context.simGame.scoreA, scoreB: context.simGame.scoreB } : prev);
+                await advanceDriveCounters();
+                return;
+            }
+
+            remaining -= 1;
+            if (remaining === 0) {
+                const isUserOffense = context.userTeamId ? context.currentOffense.id === context.userTeamId : false;
+                setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
+            }
+        }
+    };
+
+    const simulateAutoDrive = async () => {
+        const context = interactiveContext.current;
+        if (!context || !context.currentDriveState || !context.currentOffense || !context.currentDefense) return;
+
+        let driveState = context.currentDriveState;
+        const playBuffer: PlayRecord[] = [];
+        let stepResult: ReturnType<typeof stepInteractiveDrive> | null = null;
+        let guard = 0;
+        while (guard < 200) {
+            stepResult = stepInteractiveDrive(
+                context.league,
+                context.simGame,
+                driveState,
+                'auto',
+                context.currentOffense,
+                context.currentDefense,
+                context.starters
+            );
+            playBuffer.push(stepResult.play);
+            driveState = stepResult.state as InteractiveDriveState;
+            if (stepResult.driveComplete) break;
+            guard += 1;
+        }
+
+        context.currentDriveState = driveState;
+        addPlaysToDrive(driveState.drive, playBuffer, stepResult?.driveComplete ?? false);
+        playRecordsRef.current.push(...playBuffer);
+
+        if (stepResult?.driveComplete) {
+            driveRecordsRef.current.push(driveState.drive);
+            const nextFieldPosition = stepResult.nextFieldPosition ?? context.fieldPosition;
+            context.fieldPosition = nextFieldPosition;
+            setGameData(prev => prev ? { ...prev, scoreA: context.simGame.scoreA, scoreB: context.simGame.scoreB } : prev);
+            await advanceDriveCounters();
+        } else {
+            const isUserOffense = context.userTeamId ? context.currentOffense.id === context.userTeamId : false;
+            setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
+        }
+    };
+
+    const simulateToEnd = async () => {
+        const context = interactiveContext.current;
+        if (!context || !context.currentDriveState || !context.currentOffense || !context.currentDefense) return;
+
+        let guard = 0;
+        while (guard < 5000 && !isGameComplete) {
+            if (context.simGame.winner) break;
+            await simulateAutoDrive();
+            if (context.simGame.winner) break;
+            guard += 1;
+        }
+    };
+
+    const buildNextHeader = (fieldPosition: number, down: number, yardsLeft: number) => {
+        const location = fieldPosition <= 50 ? 'OWN' : 'OPP';
+        const yardLine = fieldPosition <= 50 ? fieldPosition : 100 - fieldPosition;
+        const downSuffix = down === 1 ? 'st' : down === 2 ? 'nd' : down === 3 ? 'rd' : 'th';
+        return `${down}${downSuffix} & ${yardsLeft} at ${location} ${yardLine}`;
     };
 
     // Simple regular sim data
@@ -516,9 +558,45 @@ const LiveSimModal = ({
     };
 
     const currentDrive = getCurrentDrive();
-    const isTeamAOnOffense = currentDrive
-        ? currentDrive.offense === gameData?.teamA.name
+    const interactiveState = interactiveContext.current?.currentDriveState;
+    const interactiveDrive = interactiveState ? {
+        driveNum: interactiveState.drive.driveNum,
+        offense: interactiveContext.current?.currentOffense?.name ?? '',
+        defense: interactiveContext.current?.currentDefense?.name ?? '',
+        startingFP: interactiveState.drive.startingFP,
+        result: interactiveState.drive.result,
+        points: interactiveState.drive.points,
+        scoreAAfter: interactiveState.drive.scoreAAfter,
+        scoreBAfter: interactiveState.drive.scoreBAfter,
+        plays: [],
+        yards: 0,
+    } : null;
+    const displayDrive = interactiveState ? interactiveDrive : currentDrive;
+    const isUserOffenseNow = isUserGame
+        && !!interactiveContext.current?.currentOffense
+        && interactiveContext.current?.currentOffense?.id === interactiveContext.current?.userTeamId;
+    const isTeamAOnOffense = displayDrive
+        ? displayDrive.offense === gameData?.teamA.name
         : interactiveContext.current?.currentOffense?.id === gameData?.teamA.id;
+    const displayPlay = isUserGame && interactiveState
+        ? {
+            id: currentPlay?.id ?? -1,
+            down: interactiveState.down,
+            yardsLeft: interactiveState.yardsLeft,
+            startingFP: interactiveState.fieldPosition,
+            playType: currentPlay?.playType ?? '',
+            yardsGained: currentPlay?.yardsGained ?? 0,
+            text: currentPlay?.text ?? '',
+            header: buildNextHeader(
+                interactiveState.fieldPosition,
+                interactiveState.down,
+                interactiveState.yardsLeft
+            ),
+            result: currentPlay?.result ?? '',
+            scoreA: gameData?.scoreA ?? 0,
+            scoreB: gameData?.scoreB ?? 0,
+        }
+        : currentPlay;
 
     // Set up the simulation data structure
     const simLoop = () => {
@@ -530,6 +608,10 @@ const LiveSimModal = ({
 
     // Get the last play text using simple double nested loops
     const getLastPlayText = () => {
+        if (isUserGame) {
+            const last = plays[plays.length - 1];
+            return last?.text ?? '';
+        }
         if (currentPlayIndex === 0) {
             return ''; // No previous play
         }
@@ -548,7 +630,7 @@ const LiveSimModal = ({
     };
 
     // Simple calculations
-    const fieldPosition = currentPlay?.startingFP
+    const fieldPosition = displayPlay?.startingFP
         || interactiveContext.current?.currentDriveState?.fieldPosition
         || 20;
 
@@ -567,7 +649,14 @@ const LiveSimModal = ({
         return false;
     };
 
-    const previousPlayYards = isFirstPlayOfDrive() ? 0 : (previousPlay?.yardsGained || 0);
+    const previousPlayYards = isUserGame && interactiveState
+        ? (() => {
+            const lastPlay = plays[plays.length - 1];
+            if (!lastPlay) return 0;
+            if (lastPlay.driveId && lastPlay.driveId !== interactiveState.drive.id) return 0;
+            return lastPlay.yardsGained || 0;
+        })()
+        : (isFirstPlayOfDrive() ? 0 : (previousPlay?.yardsGained || 0));
 
     const handleClose = () => {
         reset();
@@ -618,12 +707,12 @@ const LiveSimModal = ({
                         {/* Game Header */}
                         <GameHeader
                             gameData={gameData}
-                            currentPlay={currentPlay}
+                            currentPlay={displayPlay}
                             isTeamAOnOffense={isTeamAOnOffense}
                             plays={plays}
                             isPlaybackComplete={isPlaybackComplete}
                             lastPlayText={getLastPlayText()}
-                            currentDrive={currentDrive}
+                            currentDrive={displayDrive}
                         />
 
                         {/* Football Field */}
@@ -633,8 +722,8 @@ const LiveSimModal = ({
                                         teamA={gameData.teamA.name}
                                         teamB={gameData.teamB.name}
                                         isTeamAOnOffense={isTeamAOnOffense}
-                                down={currentPlay?.down || 1}
-                                yardsToGo={currentPlay?.yardsLeft || 10}
+                                down={displayPlay?.down || interactiveContext.current?.currentDriveState?.down || 1}
+                                yardsToGo={displayPlay?.yardsLeft || interactiveContext.current?.currentDriveState?.yardsLeft || 10}
                                         previousPlayYards={previousPlayYards}
                                         teamAColorPrimary={gameData.teamA.colorPrimary}
                                         teamAColorSecondary={gameData.teamA.colorSecondary}
@@ -652,8 +741,8 @@ const LiveSimModal = ({
                             handleNextPlay={handleNextPlay}
                             handleNextDrive={handleNextDrive}
                             handleSimToEnd={handleSimToEnd}
-                            decisionPrompt={decisionPrompt ?? undefined}
-                            handleDecision={decisionPrompt ? handleDecision : undefined}
+                            decisionPrompt={isUserOffenseNow ? decisionPrompt ?? undefined : undefined}
+                            handleDecision={isUserOffenseNow && decisionPrompt ? handleDecision : undefined}
                             submittingDecision={submittingDecision}
                         />
                         </Box>

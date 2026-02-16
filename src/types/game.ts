@@ -1,5 +1,6 @@
 export interface Play {
   id: number;
+  driveId?: number;
   down: number;
   yardsLeft: number;
   startingFP: number;

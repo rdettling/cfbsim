@@ -1127,6 +1127,7 @@ export const buildDriveResponse = (
         .sort((a, b) => a.id - b.id)
         .map(play => ({
         id: play.id,
+        driveId: play.driveId,
         down: play.down,
         yardsLeft: play.yardsLeft,
         startingFP: play.startingFP,

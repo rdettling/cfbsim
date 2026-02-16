@@ -17,15 +17,15 @@ const GameControls = ({
     handleDecision,
     submittingDecision = false
 }: GameControlsProps) => {
-    // Render decision buttons if we have a decision prompt
+    let decisionSection: JSX.Element | null = null;
     if (decisionPrompt && handleDecision) {
         const { type, down, yards_left, field_position } = decisionPrompt;
-        
+
         if (type === 'run_pass') {
             const location = field_position <= 50 ? 'OWN' : 'OPP';
             const yardLine = field_position <= 50 ? field_position : 100 - field_position;
-            
-            return (
+
+            decisionSection = (
                 <Box sx={{ 
                     borderTop: '1px solid',
                     borderColor: 'divider',
@@ -57,28 +57,16 @@ const GameControls = ({
                         >
                             PASS
                         </Button>
-                        {decisionPrompt.allow_sim_drive && (
-                            <Button
-                                variant="outlined"
-                                color="inherit"
-                                startIcon={<FastForwardIcon />}
-                                onClick={() => handleDecision('sim_drive')}
-                                disabled={submittingDecision}
-                                sx={{ minWidth: 140 }}
-                            >
-                                SIM DRIVE
-                            </Button>
-                        )}
                     </Box>
                 </Box>
             );
         }
-        
+
         if (type === 'fourth_down') {
             const location = field_position <= 50 ? 'OWN' : 'OPP';
             const yardLine = field_position <= 50 ? field_position : 100 - field_position;
-            
-            return (
+
+            decisionSection = (
                 <Box sx={{ 
                     borderTop: '1px solid',
                     borderColor: 'divider',
@@ -128,18 +116,6 @@ const GameControls = ({
                         >
                             FG
                         </Button>
-                        {decisionPrompt.allow_sim_drive && (
-                            <Button
-                                variant="outlined"
-                                color="inherit"
-                                startIcon={<FastForwardIcon />}
-                                onClick={() => handleDecision('sim_drive')}
-                                disabled={submittingDecision}
-                                size="small"
-                            >
-                                SIM DRIVE
-                            </Button>
-                        )}
                     </Box>
                 </Box>
             );
@@ -147,7 +123,47 @@ const GameControls = ({
     }
 
     if (isInteractive) {
-        return null;
+        return (
+            <Box>
+                {decisionSection}
+                <Box sx={{ 
+                    borderTop: decisionSection ? 'none' : '1px solid',
+                    borderColor: 'divider',
+                    p: 2,
+                    display: 'flex',
+                    gap: 2,
+                    justifyContent: 'center',
+                    flexWrap: 'wrap',
+                    backgroundColor: decisionSection ? 'grey.50' : 'transparent'
+                }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<SkipNextIcon />}
+                        onClick={handleNextPlay}
+                        disabled={isGameComplete || submittingDecision}
+                    >
+                        Sim Play
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<SkipNextIcon />}
+                        onClick={handleNextDrive}
+                        disabled={isGameComplete || submittingDecision}
+                    >
+                        Sim Drive
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<FastForwardIcon />}
+                        onClick={handleSimToEnd}
+                        disabled={isGameComplete || submittingDecision}
+                    >
+                        Sim to End of Game
+                    </Button>
+                </Box>
+            </Box>
+        );
     }
 
     // Regular game controls
