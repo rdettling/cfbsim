@@ -1,7 +1,11 @@
 {
   "private": true,
   "scripts": {
+    "install": "npm --prefix frontend2 install",
     "build": "npm --prefix frontend2 run build",
     "start": "npm --prefix frontend2 run start"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
