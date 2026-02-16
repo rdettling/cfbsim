@@ -45,7 +45,7 @@ const DriveSummary = ({
         for (const drive of drives) {
             const driveEndIndex = playCount + (drive.plays?.length || 0) - 1;
             // Include drive only if it's completely finished (all plays have been watched)
-            if (driveEndIndex < currentPlayIndex) {
+            if (driveEndIndex <= currentPlayIndex) {
                 completed.push(drive);
             } else {
                 break;
