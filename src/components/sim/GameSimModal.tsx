@@ -58,6 +58,20 @@ const GameSimModal = ({
         homeTeamId: state.gameData.homeTeamId ?? null,
         awayTeamId: state.gameData.awayTeamId ?? null,
     });
+    const awayIsTeamA = awayTeam.id === state.gameData.teamA.id;
+    const rawScoreA = state.displayPlay?.scoreA ?? state.gameData.scoreA;
+    const rawScoreB = state.displayPlay?.scoreB ?? state.gameData.scoreB;
+    const matchup = {
+        homeTeam,
+        awayTeam,
+        homeScore: awayIsTeamA ? rawScoreB : rawScoreA,
+        awayScore: awayIsTeamA ? rawScoreA : rawScoreB,
+        currentScoreA: rawScoreA,
+        currentScoreB: rawScoreB,
+        awayIsTeamA,
+        isAwayOnOffense: awayIsTeamA ? state.isTeamAOnOffense : !state.isTeamAOnOffense,
+        currentDriveNum: state.displayDrive?.driveNum ?? 0,
+    };
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
@@ -80,12 +94,8 @@ const GameSimModal = ({
 
                 <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2, p: 3, fontFamily: '"IBM Plex Sans", sans-serif' }}>
                     <GameScoreStrip
-                        gameData={state.gameData}
-                        currentPlay={state.displayPlay}
-                        isTeamAOnOffense={state.isTeamAOnOffense}
-                        plays={state.plays}
+                        matchup={matchup}
                         isPlaybackComplete={state.isPlaybackComplete}
-                        currentDrive={state.displayDrive}
                     />
 
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2.4fr 1fr' }, gap: 2, flex: 1, minHeight: 0 }}>
@@ -165,11 +175,7 @@ const GameSimModal = ({
                                     currentPlayIndex={state.currentPlayIndex}
                                     variant="modal"
                                     includeCurrentDrive
-                                    currentScore={{
-                                        scoreA: state.gameData.scoreA,
-                                        scoreB: state.gameData.scoreB
-                                    }}
-                                    gameData={state.gameData}
+                                    matchup={matchup}
                                 />
                             </Box>
                         </Box>

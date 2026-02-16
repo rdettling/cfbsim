@@ -1,15 +1,10 @@
 import { Box, Typography } from '@mui/material';
 import { TeamLogo } from '../team/TeamComponents';
 import type { GameScoreStripProps } from '../../types/components';
-import { resolveHomeAway, resolveHomeAwayScores } from '../../domain/utils/gameDisplay';
 
 const GameScoreStrip = ({
-  gameData,
-  currentPlay,
-  isTeamAOnOffense,
-  plays,
+  matchup,
   isPlaybackComplete,
-  currentDrive,
 }: GameScoreStripProps) => {
   const PossessionIndicator = () => (
     <img
@@ -19,41 +14,9 @@ const GameScoreStrip = ({
     />
   );
 
-  const scoreText = (() => {
-    if (currentPlay) {
-      const { awayScore, homeScore } = resolveHomeAwayScores(
-        gameData,
-        currentPlay.scoreA,
-        currentPlay.scoreB
-      );
-      return `${awayScore} - ${homeScore}`;
-    }
-    if (isPlaybackComplete && plays.length > 0) {
-      const lastPlay = plays[plays.length - 1];
-      const { awayScore, homeScore } = resolveHomeAwayScores(
-        gameData,
-        lastPlay.scoreA,
-        lastPlay.scoreB
-      );
-      return `${awayScore} - ${homeScore}`;
-    }
-    const { awayScore, homeScore } = resolveHomeAwayScores(
-      gameData,
-      gameData.scoreA,
-      gameData.scoreB
-    );
-    return `${awayScore} - ${homeScore}`;
-  })();
-
-  const { home, away } = resolveHomeAway({
-    teamA: gameData.teamA,
-    teamB: gameData.teamB,
-    homeTeamId: gameData.homeTeamId ?? null,
-    awayTeamId: gameData.awayTeamId ?? null,
-  });
-
-  const isAwayOnOffense = away.id === gameData.teamA.id ? isTeamAOnOffense : !isTeamAOnOffense;
-  const isHomeOnOffense = !isAwayOnOffense;
+  const scoreText = `${matchup.awayScore} - ${matchup.homeScore}`;
+  const isAwayOnOffense = matchup.isAwayOnOffense;
+  const isHomeOnOffense = !matchup.isAwayOnOffense;
 
   return (
     <Box
@@ -72,15 +35,15 @@ const GameScoreStrip = ({
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <TeamLogo name={away.name} size={44} />
+        <TeamLogo name={matchup.awayTeam.name} size={44} />
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', fontFamily: '"Space Grotesk", sans-serif' }}>
-              {away.name}
+              {matchup.awayTeam.name}
             </Typography>
             {isAwayOnOffense && <PossessionIndicator />}
           </Box>
-          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{away.record}</Typography>
+          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{matchup.awayTeam.record}</Typography>
         </Box>
       </Box>
 
@@ -89,7 +52,7 @@ const GameScoreStrip = ({
           {scoreText}
         </Typography>
         <Typography sx={{ fontSize: '0.9rem', opacity: 0.85 }}>
-          {isPlaybackComplete ? 'FINAL' : `Drive ${(currentDrive?.driveNum || 0) + 1}`}
+          {isPlaybackComplete ? 'FINAL' : `Drive ${matchup.currentDriveNum + 1}`}
         </Typography>
       </Box>
 
@@ -98,12 +61,12 @@ const GameScoreStrip = ({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
             {isHomeOnOffense && <PossessionIndicator />}
             <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', fontFamily: '"Space Grotesk", sans-serif' }}>
-              {home.name}
+              {matchup.homeTeam.name}
             </Typography>
           </Box>
-          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{home.record}</Typography>
+          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{matchup.homeTeam.record}</Typography>
         </Box>
-        <TeamLogo name={home.name} size={44} />
+        <TeamLogo name={matchup.homeTeam.name} size={44} />
       </Box>
     </Box>
   );

@@ -79,6 +79,18 @@ const GameResult = ({ data }: GameResultProps) => {
 
     const { game, drives = [] } = data;
     const { home, away, neutral } = resolveHomeAway(game);
+    const awayIsTeamA = away.id === game.teamA.id;
+    const matchup = {
+        homeTeam: home,
+        awayTeam: away,
+        homeScore: awayIsTeamA ? game.scoreB : game.scoreA,
+        awayScore: awayIsTeamA ? game.scoreA : game.scoreB,
+        currentScoreA: game.scoreA,
+        currentScoreB: game.scoreB,
+        awayIsTeamA,
+        isAwayOnOffense: false,
+        currentDriveNum: 0,
+    };
     const awaySide = resolveTeamSide(game, away.id);
     const homeSide = resolveTeamSide(game, home.id);
 
@@ -142,7 +154,7 @@ const GameResult = ({ data }: GameResultProps) => {
                         <DriveSummary 
                             drives={drives}
                             variant="page"
-                            gameData={game}
+                            matchup={matchup}
                         />
                     </Grid>
                 )}

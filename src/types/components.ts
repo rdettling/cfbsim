@@ -205,17 +205,31 @@ export interface DriveSummaryProps {
   isGameComplete?: boolean;
   variant?: 'modal' | 'page';
   includeCurrentDrive?: boolean;
-  currentScore?: {
-    scoreA: number;
-    scoreB: number;
+  matchup?: SimMatchup;
+}
+
+export interface SimMatchup {
+  homeTeam: {
+    name: string;
+    record: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
   };
-  gameData?: {
-    teamA: { id: number };
-    teamB: { id: number };
-    homeTeamId?: number | null;
-    awayTeamId?: number | null;
-    neutralSite?: boolean;
+  awayTeam: {
+    name: string;
+    record: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
   };
+  homeScore: number;
+  awayScore: number;
+  currentScoreA: number;
+  currentScoreB: number;
+  awayIsTeamA: boolean;
+  isAwayOnOffense: boolean;
+  currentDriveNum: number;
 }
 
 export interface FootballFieldProps {
@@ -264,10 +278,6 @@ export interface GameHeaderProps {
 }
 
 export interface GameScoreStripProps {
-  gameData: GameData;
-  currentPlay: Play | null;
-  isTeamAOnOffense: boolean;
-  plays: Play[];
+  matchup: SimMatchup;
   isPlaybackComplete: boolean;
-  currentDrive?: Drive | null;
 }

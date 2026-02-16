@@ -15,7 +15,6 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { TeamLogo } from '../team/TeamComponents';
 import type { Drive } from '../../types/game';
 import type { DriveSummaryProps } from '../../types/components';
-import { resolveHomeAwayScores } from '../../domain/utils/gameDisplay';
 
 const DriveSummary = ({ 
     drives, 
@@ -24,8 +23,7 @@ const DriveSummary = ({
     isGameComplete = false,
     variant = 'page',
     includeCurrentDrive = false,
-    currentScore,
-    gameData
+    matchup
 }: DriveSummaryProps) => {
     const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
 
@@ -116,10 +114,12 @@ const DriveSummary = ({
                                 && !isGameComplete
                                 && variant === 'modal'
                                 && idx === displayDrives.length - 1;
-                            const scoreA = isCurrentDrive && currentScore ? currentScore.scoreA : drive.scoreAAfter;
-                            const scoreB = isCurrentDrive && currentScore ? currentScore.scoreB : drive.scoreBAfter;
-                            const resolvedScore = gameData
-                                ? resolveHomeAwayScores(gameData, scoreA, scoreB)
+                            const scoreA = isCurrentDrive && matchup ? matchup.currentScoreA : drive.scoreAAfter;
+                            const scoreB = isCurrentDrive && matchup ? matchup.currentScoreB : drive.scoreBAfter;
+                            const resolvedScore = matchup
+                                ? (matchup.awayIsTeamA
+                                    ? { awayScore: scoreA ?? 0, homeScore: scoreB ?? 0 }
+                                    : { awayScore: scoreB ?? 0, homeScore: scoreA ?? 0 })
                                 : { awayScore: scoreA ?? 0, homeScore: scoreB ?? 0 };
                             
                             return (
