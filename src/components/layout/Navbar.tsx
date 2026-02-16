@@ -19,6 +19,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
     const [gameSelectionOpen, setGameSelectionOpen] = useState(false);
     const [liveSimOpen, setLiveSimOpen] = useState(false);
     const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
+    const [selectedIsUserGame, setSelectedIsUserGame] = useState(false);
 
     // Team colors with fallbacks
     const primaryColor = info.colorPrimary || team.colorPrimary || '#1976d2';
@@ -45,14 +46,16 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
         setGameSelectionOpen(true);
     };
 
-    const handleGameSelect = (gameId: number) => {
+    const handleGameSelect = (gameId: number, isUserGame: boolean) => {
         setSelectedGameId(gameId);
+        setSelectedIsUserGame(isUserGame);
         setLiveSimOpen(true);
     };
 
     const handleLiveSimClose = () => {
         setLiveSimOpen(false);
         setSelectedGameId(null);
+        setSelectedIsUserGame(false);
         // Refresh the page to show updated data
         window.location.reload();
     };
@@ -239,6 +242,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     open={liveSimOpen}
                     onClose={handleLiveSimClose}
                     gameId={selectedGameId}
+                    isUserGame={selectedIsUserGame}
                 />
 
                 {/* Right Section - Redesigned */}

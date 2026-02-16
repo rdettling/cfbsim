@@ -36,7 +36,7 @@ const GameControls = ({
                     <Typography variant="h6" fontWeight="bold" textAlign="center" sx={{ mb: 2 }}>
                         {down}st & {yards_left} at {location} {yardLine}
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
                         <Button
                             variant="contained"
                             color="secondary"
@@ -57,6 +57,18 @@ const GameControls = ({
                         >
                             PASS
                         </Button>
+                        {decisionPrompt.allow_sim_drive && (
+                            <Button
+                                variant="outlined"
+                                color="inherit"
+                                startIcon={<FastForwardIcon />}
+                                onClick={() => handleDecision('sim_drive')}
+                                disabled={submittingDecision}
+                                sx={{ minWidth: 140 }}
+                            >
+                                SIM DRIVE
+                            </Button>
+                        )}
                     </Box>
                 </Box>
             );
@@ -82,21 +94,21 @@ const GameControls = ({
                             variant="contained"
                             color="secondary"
                             startIcon={<DirectionsRunIcon />}
-                            onClick={() => handleDecision('go_run')}
+                            onClick={() => handleDecision('run')}
                             disabled={submittingDecision}
                             size="small"
                         >
-                            GO - RUN
+                            RUN
                         </Button>
                         <Button
                             variant="contained"
                             color="secondary"
                             startIcon={<SportsSoccerIcon />}
-                            onClick={() => handleDecision('go_pass')}
+                            onClick={() => handleDecision('pass')}
                             disabled={submittingDecision}
                             size="small"
                         >
-                            GO - PASS
+                            PASS
                         </Button>
                         <Button
                             variant="outlined"
@@ -116,10 +128,26 @@ const GameControls = ({
                         >
                             FG
                         </Button>
+                        {decisionPrompt.allow_sim_drive && (
+                            <Button
+                                variant="outlined"
+                                color="inherit"
+                                startIcon={<FastForwardIcon />}
+                                onClick={() => handleDecision('sim_drive')}
+                                disabled={submittingDecision}
+                                size="small"
+                            >
+                                SIM DRIVE
+                            </Button>
+                        )}
                     </Box>
                 </Box>
             );
         }
+    }
+
+    if (isInteractive) {
+        return null;
     }
 
     // Regular game controls

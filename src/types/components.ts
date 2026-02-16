@@ -128,6 +128,7 @@ export interface LiveSimModalProps {
   open: boolean;
   onClose: () => void;
   gameId: number | null;
+  isUserGame: boolean;
 }
 
 export interface GameSelectionModalGame {
@@ -212,7 +213,13 @@ export interface GameControlsProps {
   handleNextPlay: () => void;
   handleNextDrive: () => void;
   handleSimToEnd: () => void;
-  decisionPrompt?: any;
+  decisionPrompt?: {
+    type: 'run_pass' | 'fourth_down';
+    down: number;
+    yards_left: number;
+    field_position: number;
+    allow_sim_drive?: boolean;
+  };
   handleDecision?: (decision: string) => void;
   submittingDecision?: boolean;
 }

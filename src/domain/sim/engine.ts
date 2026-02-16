@@ -8,8 +8,8 @@ import { nextId } from './ids';
 import { getHeadlinesData } from '../../db/baseData';
 import { getPlayersByTeam } from '../../db/simRepo';
 
-const DRIVES_PER_TEAM = 12;
-const OT_START_YARD_LINE = 75;
+export const DRIVES_PER_TEAM = 12;
+export const OT_START_YARD_LINE = 75;
 
 const BASE_COMP_PERCENT = 0.62;
 const BASE_SACK_RATE = 0.07;
@@ -293,7 +293,9 @@ const updateDriveScoreAfter = (game: SimGame, drive: DriveRecord, offense: Team)
   }
 };
 
-const simDrive = (
+const startingYardsLeft = (fieldPosition: number) => (fieldPosition >= 90 ? 100 - fieldPosition : 10);
+
+export const simDrive = (
   league: LeagueState,
   game: SimGame,
   fieldPosition: number,
@@ -328,7 +330,7 @@ const simDrive = (
     for (let down = 1; down <= 4; down += 1) {
       const playId = nextId(league, 'play');
       if (down === 1) {
-        yardsLeft = fieldPosition >= 90 ? 100 - fieldPosition : 10;
+        yardsLeft = startingYardsLeft(fieldPosition);
       }
 
       const play: PlayRecord = {
@@ -431,13 +433,226 @@ const simDrive = (
 
       if (yardsLeft <= 0) {
         down = 0;
-        yardsLeft = fieldPosition >= 90 ? 100 - fieldPosition : 10;
+        yardsLeft = startingYardsLeft(fieldPosition);
         break;
       }
     }
   }
 
   return { record: drive, plays, nextFieldPosition: 20 };
+};
+
+export const startInteractiveDrive = (
+  league: LeagueState,
+  game: SimGame,
+  fieldPosition: number,
+  lead: number,
+  offense: Team,
+  defense: Team,
+  driveNum: number
+) => {
+  const driveIndex = driveNum % 2 === 0 ? driveNum / 2 : (driveNum - 1) / 2;
+  const needed = pointsNeeded(lead, driveIndex);
+  const driveId = nextId(league, 'drive');
+
+  const drive: DriveRecord = {
+    id: driveId,
+    gameId: game.id,
+    driveNum,
+    offenseId: offense.id,
+    defenseId: defense.id,
+    startingFP: fieldPosition,
+    result: '',
+    points: 0,
+    points_needed: needed,
+    scoreAAfter: game.scoreA,
+    scoreBAfter: game.scoreB,
+  };
+
+  return {
+    drive,
+    fieldPosition,
+    down: 1,
+    yardsLeft: startingYardsLeft(fieldPosition),
+  };
+};
+
+export const stepInteractiveDrive = (
+  league: LeagueState,
+  game: SimGame,
+  state: {
+    drive: DriveRecord;
+    fieldPosition: number;
+    down: number;
+    yardsLeft: number;
+  },
+  decision: 'run' | 'pass' | 'punt' | 'field_goal' | 'auto',
+  offense: Team,
+  defense: Team,
+  starters: StartersCache
+) => {
+  const playId = nextId(league, 'play');
+  const down = state.down;
+  const fieldPosition = state.fieldPosition;
+  const yardsLeft = down === 1 ? startingYardsLeft(fieldPosition) : state.yardsLeft;
+
+  const play: PlayRecord = {
+    id: playId,
+    gameId: game.id,
+    driveId: state.drive.id,
+    offenseId: offense.id,
+    defenseId: defense.id,
+    startingFP: fieldPosition,
+    down,
+    yardsLeft,
+    playType: '',
+    yardsGained: 0,
+    result: '',
+    text: '',
+    header: '',
+    scoreA: game.scoreA,
+    scoreB: game.scoreB,
+  };
+
+  setPlayHeader(play, offense, defense);
+
+  const resolveAutoDecision = () => {
+    if (down === 4) {
+      const auto = decideFourthDown(fieldPosition, yardsLeft, state.drive.points_needed);
+      if (auto === 'punt' || auto === 'field_goal') return auto;
+      return Math.random() < 0.5 ? 'run' : 'pass';
+    }
+    return Math.random() < 0.5 ? 'run' : 'pass';
+  };
+
+  const pickDecision = decision === 'auto' ? resolveAutoDecision() : decision;
+
+  if (down === 4 && (pickDecision === 'field_goal' || pickDecision === 'punt')) {
+    if (pickDecision === 'field_goal') {
+      play.playType = 'field goal';
+      play.yardsGained = 0;
+      if (fieldGoal(fieldPosition)) {
+        play.result = 'made field goal';
+        state.drive.result = 'made field goal';
+        state.drive.points = 3;
+        updateDriveScoreAfter(game, state.drive, offense);
+      } else {
+        play.result = 'missed field goal';
+        state.drive.result = 'missed field goal';
+      }
+      formatPlayText(play, offense, defense, starters);
+      if (state.drive.result === 'made field goal') {
+        game.scoreA = state.drive.scoreAAfter;
+        game.scoreB = state.drive.scoreBAfter;
+      }
+      return {
+        state,
+        play,
+        driveComplete: true,
+        nextFieldPosition: state.drive.result === 'made field goal' ? 20 : 100 - fieldPosition,
+      };
+    }
+
+    play.playType = 'punt';
+    play.result = 'punt';
+    play.yardsGained = 0;
+    state.drive.result = 'punt';
+    state.drive.points = 0;
+    formatPlayText(play, offense, defense, starters);
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 100 - (fieldPosition + 40),
+    };
+  }
+
+  const playType = pickDecision === 'pass' ? 'pass' : 'run';
+  const result = playType === 'run'
+    ? simRun(fieldPosition, offense, defense, game)
+    : simPass(fieldPosition, offense, defense, game);
+
+  play.playType = playType;
+  play.yardsGained = result.yards;
+  play.result = result.outcome;
+
+  let nextFieldPosition = fieldPosition + result.yards;
+  let nextYardsLeft = yardsLeft - result.yards;
+  play.yardsLeft = nextYardsLeft;
+
+  formatPlayText(play, offense, defense, starters);
+
+  if (result.outcome === 'touchdown') {
+    state.drive.result = 'touchdown';
+    state.drive.points = 7;
+    updateDriveScoreAfter(game, state.drive, offense);
+    game.scoreA = state.drive.scoreAAfter;
+    game.scoreB = state.drive.scoreBAfter;
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 20,
+    };
+  }
+  if (result.outcome === 'interception') {
+    state.drive.result = 'interception';
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 100 - nextFieldPosition,
+    };
+  }
+  if (result.outcome === 'fumble') {
+    state.drive.result = 'fumble';
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 100 - nextFieldPosition,
+    };
+  }
+  if (nextFieldPosition < 1) {
+    state.drive.result = 'safety';
+    state.drive.points = 0;
+    updateDriveScoreAfter(game, state.drive, offense);
+    game.scoreA = state.drive.scoreAAfter;
+    game.scoreB = state.drive.scoreBAfter;
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 20,
+    };
+  }
+  if (down === 4 && nextYardsLeft > 0) {
+    state.drive.result = 'turnover on downs';
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 100 - nextFieldPosition,
+    };
+  }
+
+  let nextDown = down + 1;
+  if (nextYardsLeft <= 0) {
+    nextDown = 1;
+    nextYardsLeft = startingYardsLeft(nextFieldPosition);
+  }
+
+  return {
+    state: {
+      ...state,
+      fieldPosition: nextFieldPosition,
+      down: nextDown,
+      yardsLeft: nextYardsLeft,
+    },
+    play,
+    driveComplete: false,
+    nextFieldPosition: null,
+  };
 };
 
 export const simGame = (
@@ -520,6 +735,18 @@ export const simGame = (
   }
 
   return drives;
+};
+
+export const finalizeGameResult = (game: SimGame) => {
+  if (game.scoreA > game.scoreB) {
+    game.winner = game.teamA;
+    game.resultA = 'W';
+    game.resultB = 'L';
+  } else {
+    game.winner = game.teamB;
+    game.resultA = 'L';
+    game.resultB = 'W';
+  }
 };
 
 export const createGameLogsFromPlays = (

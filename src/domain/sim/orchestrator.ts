@@ -1,7 +1,7 @@
 import type { FullGame } from '../../types/schedule';
 import type { LeagueState } from '../../types/league';
-import type { SimGame } from '../../types/sim';
-import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord } from '../../types/db';
+import type { SimGame, StartersCache } from '../../types/sim';
+import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
 import { fillUserSchedule, buildUserScheduleFromGames } from '../schedule';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
@@ -189,6 +189,114 @@ export const liveSimGame = async (gameId: number) => {
     drives: buildDriveResponse(driveRecords, playRecords, teamsById),
     game: gameData,
     is_user_game: userTeam ? (record.teamAId === userTeam.id || record.teamBId === userTeam.id) : false,
+  };
+};
+
+export const prepareInteractiveLiveGame = async (gameId: number) => {
+  const league = await loadLeague<LeagueState>();
+  if (!league) throw new Error('No league found. Start a new game.');
+  const changed = normalizeLeague(league);
+  if (changed) {
+    await saveLeague(league);
+  }
+  const record = await getGameById(gameId);
+  if (!record) throw new Error('Game not found.');
+
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const userTeam = league.teams.find(team => team.name === league.info.team);
+  const isUserGame = userTeam ? (record.teamAId === userTeam.id || record.teamBId === userTeam.id) : false;
+
+  if (record.winnerId) {
+    const drives = await getDrivesByGame(gameId);
+    const plays = await getPlaysByGame(gameId);
+    return {
+      status: 'complete',
+      drives: buildDriveResponse(drives, plays, teamsById),
+      game: buildGameData(record, teamsById),
+      is_user_game: isUserGame,
+    };
+  }
+
+  const preRecordA = teamsById.get(record.teamAId)?.record ?? '';
+  const preRecordB = teamsById.get(record.teamBId)?.record ?? '';
+
+  const starters = await buildStartersCache(league.teams);
+  const playersById = await loadPlayersMap(league.teams);
+  const simGameObj = hydrateGame(record, teamsById);
+
+  return {
+    status: 'ready',
+    league,
+    record,
+    teamsById,
+    starters,
+    playersById,
+    simGame: simGameObj,
+    preRecordA,
+    preRecordB,
+    is_user_game: isUserGame,
+  };
+};
+
+export const finalizeGameSimulation = async (params: {
+  league: LeagueState;
+  record: GameRecord;
+  simGame: SimGame;
+  driveRecords: DriveRecord[];
+  playRecords: PlayRecord[];
+  starters: StartersCache;
+  playersById: Map<number, PlayerRecord>;
+  preRecordA: string;
+  preRecordB: string;
+}) => {
+  const {
+    league,
+    record,
+    simGame,
+    driveRecords,
+    playRecords,
+    starters,
+    playersById,
+    preRecordA,
+    preRecordB,
+  } = params;
+
+  const logs = createGameLogsFromPlays(league, simGame, playRecords, starters);
+
+  updateTeamRecords([simGame]);
+  await generateHeadlines([simGame], new Map([[simGame.id, logs]]), playersById);
+
+  const updatedRecord: GameRecord = {
+    ...record,
+    scoreA: simGame.scoreA,
+    scoreB: simGame.scoreB,
+    winnerId: simGame.winner?.id ?? null,
+    resultA: simGame.resultA,
+    resultB: simGame.resultB,
+    overtime: simGame.overtime,
+    headline: simGame.headline ?? null,
+    headline_subtitle: simGame.headline_subtitle ?? null,
+    headline_tags: simGame.headline_tags ?? null,
+    headline_tone: simGame.headline_tone ?? null,
+  };
+
+  await saveGames([updatedRecord]);
+  await saveDrives(driveRecords);
+  await savePlays(playRecords);
+  await saveGameLogs(logs);
+  await handleSpecialWeeks(league, await loadOddsContext());
+
+  league.teams.forEach(team => (team.record = formatRecord(team)));
+  await saveLeague(league);
+
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const gameData = buildGameData(updatedRecord, teamsById);
+  gameData.teamA.record = preRecordA;
+  gameData.teamB.record = preRecordB;
+
+  return {
+    drives: buildDriveResponse(driveRecords, playRecords, teamsById),
+    game: gameData,
   };
 };
 
