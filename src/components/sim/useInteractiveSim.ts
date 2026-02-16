@@ -79,10 +79,10 @@ const mapPlayRecord = (play: PlayRecord): Play => ({
 
 export const useInteractiveSim = ({
   gameId,
-  enabled,
+  allowUserDecision,
 }: {
   gameId: number | null;
-  enabled: boolean;
+  allowUserDecision: boolean;
 }) => {
   const [plays, setPlays] = useState<Play[]>([]);
   const [drives, setDrives] = useState<Drive[]>([]);
@@ -286,7 +286,7 @@ export const useInteractiveSim = ({
   };
 
   const start = async () => {
-    if (!enabled || !gameId) return;
+    if (!gameId) return;
 
     resetRefs();
     const response = await prepareInteractiveLiveGame(gameId);
@@ -308,7 +308,9 @@ export const useInteractiveSim = ({
       simGame: response.simGame,
       preRecordA: response.preRecordA,
       preRecordB: response.preRecordB,
-      userTeamId: response.league.teams.find(team => team.name === response.league.info.team)?.id ?? null,
+      userTeamId: allowUserDecision
+        ? response.league.teams.find(team => team.name === response.league.info.team)?.id ?? null
+        : null,
       driveNum: 0,
       fieldPosition: 20,
       inOvertime: false,
@@ -488,7 +490,7 @@ export const useInteractiveSim = ({
     }
     : null;
 
-  const isUserOffenseNow = enabled
+  const isUserOffenseNow = allowUserDecision
     && !!contextRef.current?.currentOffense
     && contextRef.current?.currentOffense?.id === contextRef.current?.userTeamId;
 
@@ -500,7 +502,7 @@ export const useInteractiveSim = ({
     || contextRef.current?.currentDriveState?.fieldPosition
     || 20;
 
-  const previousPlayYards = enabled && interactiveState
+  const previousPlayYards = allowUserDecision && interactiveState
     ? (() => {
       const lastPlay = plays[plays.length - 1];
       if (!lastPlay) return 0;
