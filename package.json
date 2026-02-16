@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend2 run build",
+    "start": "npm --prefix frontend2 run start"
+  }
+}
