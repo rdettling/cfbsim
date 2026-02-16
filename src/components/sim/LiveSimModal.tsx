@@ -122,10 +122,7 @@ const LiveSimModal = ({
 
                             <Box sx={{ background: 'rgba(255,255,255,0.95)', borderRadius: 3, overflow: 'hidden', boxShadow: '0 12px 26px rgba(15, 23, 42, 0.08)' }}>
                                 <GameControls
-                                    isInteractive
                                     isGameComplete={state.isGameComplete}
-                                    isPlaybackComplete={state.isPlaybackComplete}
-                                    startInteractiveSimulation={() => {}}
                                     handleNextPlay={() => actions.simulateAutoPlays(1)}
                                     handleNextDrive={actions.simulateAutoDrive}
                                     handleSimToEnd={actions.simulateToEnd}

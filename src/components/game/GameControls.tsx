@@ -7,10 +7,7 @@ import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import type { GameControlsProps } from '../../types/components';
 
 const GameControls = ({
-    isInteractive,
     isGameComplete,
-    isPlaybackComplete,
-    startInteractiveSimulation,
     handleNextPlay,
     handleNextDrive,
     handleSimToEnd,
@@ -127,102 +124,48 @@ const GameControls = ({
         }
     }
 
-    if (isInteractive) {
-        return (
-            <Box>
-                {decisionSection}
-                <Box sx={{ 
-                    borderTop: decisionSection ? 'none' : '1px solid',
-                    borderColor: 'divider',
-                    p: 2,
-                    display: 'flex',
-                    gap: 2,
-                    justifyContent: 'center',
-                    flexWrap: 'wrap',
-                    background: 'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(245,247,255,0.95) 100%)'
-                }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<SkipNextIcon />}
-                        onClick={handleNextPlay}
-                        disabled={isGameComplete || submittingDecision}
-                        sx={{ borderRadius: 2, fontWeight: 600 }}
-                    >
-                        Sim Play
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<SkipNextIcon />}
-                        onClick={handleNextDrive}
-                        disabled={isGameComplete || submittingDecision}
-                        sx={{ borderRadius: 2, fontWeight: 600 }}
-                    >
-                        Sim Drive
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        startIcon={<FastForwardIcon />}
-                        onClick={handleSimToEnd}
-                        disabled={isGameComplete || submittingDecision}
-                        sx={{ borderRadius: 2, fontWeight: 700 }}
-                    >
-                        Sim to End of Game
-                    </Button>
-                </Box>
-            </Box>
-        );
-    }
-
-    // Regular game controls
     return (
-        <Box sx={{ 
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            p: 2,
-            display: 'flex',
-            gap: 2,
-            justifyContent: 'center',
-            flexWrap: 'wrap'
-        }}>
-            {isInteractive && !isGameComplete && (
+        <Box>
+            {decisionSection}
+            <Box sx={{ 
+                borderTop: decisionSection ? 'none' : '1px solid',
+                borderColor: 'divider',
+                p: 2,
+                display: 'flex',
+                gap: 2,
+                justifyContent: 'center',
+                flexWrap: 'wrap',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(245,247,255,0.95) 100%)'
+            }}>
+                <Button
+                    variant="outlined"
+                    startIcon={<SkipNextIcon />}
+                    onClick={handleNextPlay}
+                    disabled={isGameComplete || submittingDecision}
+                    sx={{ borderRadius: 2, fontWeight: 600 }}
+                >
+                    Sim Play
+                </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<SkipNextIcon />}
+                    onClick={handleNextDrive}
+                    disabled={isGameComplete || submittingDecision}
+                    sx={{ borderRadius: 2, fontWeight: 600 }}
+                >
+                    Sim Drive
+                </Button>
                 <Button
                     variant="contained"
-                    color="primary"
-                    onClick={startInteractiveSimulation}
-                    disabled={isGameComplete}
+                    color="secondary"
+                    startIcon={<FastForwardIcon />}
+                    onClick={handleSimToEnd}
+                    disabled={isGameComplete || submittingDecision}
+                    sx={{ borderRadius: 2, fontWeight: 700 }}
                 >
-                    Start Interactive Simulation
+                    Sim to End of Game
                 </Button>
-            )}
-            
-            <Button
-                variant="outlined"
-                startIcon={<SkipNextIcon />}
-                onClick={handleNextPlay}
-                disabled={!isInteractive && isPlaybackComplete}
-            >
-                {isInteractive ? 'Continue Simulation' : 'Next Play'}
-            </Button>
-            
-            <Button
-                variant="outlined"
-                startIcon={<SkipNextIcon />}
-                onClick={handleNextDrive}
-                disabled={!isInteractive && isPlaybackComplete}
-            >
-                Next Drive
-            </Button>
-            
-            <Button
-                variant="contained"
-                color="secondary"
-                startIcon={<FastForwardIcon />}
-                onClick={handleSimToEnd}
-                disabled={isGameComplete}
-            >
-                Sim to End
-            </Button>
+            </Box>
         </Box>
     );
 };

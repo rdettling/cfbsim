@@ -226,10 +226,7 @@ export interface FootballFieldProps {
 }
 
 export interface GameControlsProps {
-  isInteractive: boolean;
   isGameComplete: boolean;
-  isPlaybackComplete: boolean;
-  startInteractiveSimulation: () => void;
   handleNextPlay: () => void;
   handleNextDrive: () => void;
   handleSimToEnd: () => void;

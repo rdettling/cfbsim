@@ -1,7 +1,6 @@
 export {
   initializeSimData,
   getGamesToLiveSim,
-  liveSimGame,
   prepareInteractiveLiveGame,
   finalizeGameSimulation,
   advanceWeeks,

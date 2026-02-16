@@ -77,6 +77,13 @@ const mapPlayRecord = (play: PlayRecord): Play => ({
   scoreB: play.scoreB,
 });
 
+const resolveDecision = (decision: string) => {
+  if (decision === 'field_goal') return 'field_goal';
+  if (decision === 'punt') return 'punt';
+  if (decision === 'pass') return 'pass';
+  return 'run';
+};
+
 export const useInteractiveSim = ({
   gameId,
   allowUserDecision,
@@ -123,6 +130,16 @@ export const useInteractiveSim = ({
     yards_left: state.yardsLeft,
     field_position: state.fieldPosition,
   }) as GameControlsProps['decisionPrompt'];
+
+  const updateDecisionPrompt = (driveState: InteractiveDriveState | null) => {
+    const context = contextRef.current;
+    if (!context || !driveState) {
+      setDecisionPrompt(null);
+      return;
+    }
+    const isUserOffense = !!context.userTeamId && context.currentOffense?.id === context.userTeamId;
+    setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
+  };
 
   const upsertDriveUi = (driveRecord: DriveRecord) => {
     const context = contextRef.current;
@@ -252,9 +269,7 @@ export const useInteractiveSim = ({
       context.driveNum
     );
     context.currentDriveState = driveState;
-
-    const isUserOffense = context.userTeamId ? offense.id === context.userTeamId : false;
-    setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
+    updateDecisionPrompt(driveState);
   };
 
   const finishInteractiveGame = async () => {
@@ -330,6 +345,21 @@ export const useInteractiveSim = ({
     await advanceToNextDrive();
   };
 
+  const applyStepResult = async (stepResult: ReturnType<typeof stepInteractiveDrive>) => {
+    const context = contextRef.current;
+    if (!context) return;
+
+    context.currentDriveState = stepResult.state as InteractiveDriveState;
+    addPlaysToDrive(stepResult.state.drive, [stepResult.play], stepResult.driveComplete);
+    playRecordsRef.current.push(stepResult.play);
+
+    if (stepResult.driveComplete) {
+      await finalizeDrive(stepResult.state, stepResult.nextFieldPosition);
+    } else {
+      updateDecisionPrompt(stepResult.state as InteractiveDriveState);
+    }
+  };
+
   const handleDecision = async (decision: string) => {
     const context = contextRef.current;
     if (!context || !context.currentDriveState || !context.currentOffense || !context.currentDefense) return;
@@ -340,22 +370,12 @@ export const useInteractiveSim = ({
         context.league,
         context.simGame,
         context.currentDriveState,
-        decision === 'field_goal' ? 'field_goal' : decision === 'punt' ? 'punt' : decision === 'pass' ? 'pass' : 'run',
+        resolveDecision(decision),
         context.currentOffense,
         context.currentDefense,
         context.starters
       );
-
-      context.currentDriveState = stepResult.state as InteractiveDriveState;
-      addPlaysToDrive(stepResult.state.drive, [stepResult.play], stepResult.driveComplete);
-      playRecordsRef.current.push(stepResult.play);
-
-      if (stepResult.driveComplete) {
-        await finalizeDrive(stepResult.state, stepResult.nextFieldPosition);
-      } else {
-        const isUserOffense = context.userTeamId ? context.currentOffense.id === context.userTeamId : false;
-        setDecisionPrompt(isUserOffense ? buildDecisionPrompt(stepResult.state) : null);
-      }
+      await applyStepResult(stepResult);
     } finally {
       setSubmittingDecision(false);
     }
@@ -365,34 +385,20 @@ export const useInteractiveSim = ({
     const context = contextRef.current;
     if (!context || !context.currentDriveState || !context.currentOffense || !context.currentDefense) return;
 
-    let driveState = context.currentDriveState;
     let remaining = count;
     while (remaining > 0) {
       const stepResult = stepInteractiveDrive(
         context.league,
         context.simGame,
-        driveState,
+        context.currentDriveState,
         'auto',
         context.currentOffense,
         context.currentDefense,
         context.starters
       );
-
-      driveState = stepResult.state as InteractiveDriveState;
-      context.currentDriveState = driveState;
-      addPlaysToDrive(driveState.drive, [stepResult.play], stepResult.driveComplete);
-      playRecordsRef.current.push(stepResult.play);
-
-      if (stepResult.driveComplete) {
-        await finalizeDrive(driveState, stepResult.nextFieldPosition);
-        return;
-      }
-
+      await applyStepResult(stepResult);
+      if (stepResult.driveComplete) return;
       remaining -= 1;
-      if (remaining === 0) {
-        const isUserOffense = context.userTeamId ? context.currentOffense.id === context.userTeamId : false;
-        setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
-      }
     }
   };
 
@@ -427,8 +433,7 @@ export const useInteractiveSim = ({
     if (stepResult?.driveComplete) {
       await finalizeDrive(driveState, stepResult.nextFieldPosition);
     } else {
-      const isUserOffense = context.userTeamId ? context.currentOffense.id === context.userTeamId : false;
-      setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
+      updateDecisionPrompt(driveState);
     }
   };
 
@@ -445,71 +450,79 @@ export const useInteractiveSim = ({
     }
   };
 
-  const lastPlayText = plays.length ? (plays[plays.length - 1]?.text ?? '') : '';
-  const currentPlay = currentPlayIndex !== undefined && plays.length > 0
-    ? plays[currentPlayIndex]
-    : null;
-  const previousPlay = currentPlayIndex !== undefined && plays.length > 0 && currentPlayIndex > 0
-    ? plays[currentPlayIndex - 1]
-    : null;
+  const derived = (() => {
+    const context = contextRef.current;
+    const lastPlay = plays.length ? plays[plays.length - 1] : null;
+    const currentPlay = plays.length > 0 ? plays[currentPlayIndex] ?? null : null;
+    const previousPlay = plays.length > 0 && currentPlayIndex > 0 ? plays[currentPlayIndex - 1] : null;
+    const interactiveState = context?.currentDriveState ?? null;
 
-  const interactiveState = contextRef.current?.currentDriveState ?? null;
-  const displayPlay = interactiveState
-    ? {
-      id: currentPlay?.id ?? -1,
-      driveId: currentPlay?.driveId,
-      down: interactiveState.down,
-      yardsLeft: interactiveState.yardsLeft,
-      startingFP: interactiveState.fieldPosition,
-      playType: currentPlay?.playType ?? '',
-      yardsGained: currentPlay?.yardsGained ?? 0,
-      text: currentPlay?.text ?? '',
-      header: buildNextHeader(
-        interactiveState.fieldPosition,
-        interactiveState.down,
-        interactiveState.yardsLeft
-      ),
-      result: currentPlay?.result ?? '',
-      scoreA: gameData?.scoreA ?? 0,
-      scoreB: gameData?.scoreB ?? 0,
-    }
-    : currentPlay;
+    const displayPlay = interactiveState
+      ? {
+          id: currentPlay?.id ?? -1,
+          driveId: currentPlay?.driveId,
+          down: interactiveState.down,
+          yardsLeft: interactiveState.yardsLeft,
+          startingFP: interactiveState.fieldPosition,
+          playType: currentPlay?.playType ?? '',
+          yardsGained: currentPlay?.yardsGained ?? 0,
+          text: currentPlay?.text ?? '',
+          header: buildNextHeader(
+            interactiveState.fieldPosition,
+            interactiveState.down,
+            interactiveState.yardsLeft
+          ),
+          result: currentPlay?.result ?? '',
+          scoreA: gameData?.scoreA ?? 0,
+          scoreB: gameData?.scoreB ?? 0,
+        }
+      : currentPlay;
 
-  const displayDrive = interactiveState
-    ? {
-      driveNum: interactiveState.drive.driveNum,
-      offense: contextRef.current?.currentOffense?.name ?? '',
-      defense: contextRef.current?.currentDefense?.name ?? '',
-      startingFP: interactiveState.drive.startingFP,
-      result: interactiveState.drive.result,
-      points: interactiveState.drive.points,
-      scoreAAfter: interactiveState.drive.scoreAAfter,
-      scoreBAfter: interactiveState.drive.scoreBAfter,
-      plays: [],
-      yards: 0,
-    }
-    : null;
+    const displayDrive = interactiveState
+      ? {
+          driveNum: interactiveState.drive.driveNum,
+          offense: context?.currentOffense?.name ?? '',
+          defense: context?.currentDefense?.name ?? '',
+          startingFP: interactiveState.drive.startingFP,
+          result: interactiveState.drive.result,
+          points: interactiveState.drive.points,
+          scoreAAfter: interactiveState.drive.scoreAAfter,
+          scoreBAfter: interactiveState.drive.scoreBAfter,
+          plays: [],
+          yards: 0,
+        }
+      : null;
 
-  const isUserOffenseNow = allowUserDecision
-    && !!contextRef.current?.currentOffense
-    && contextRef.current?.currentOffense?.id === contextRef.current?.userTeamId;
+    const isUserOffenseNow = allowUserDecision
+      && !!context?.currentOffense
+      && context.currentOffense.id === context.userTeamId;
 
-  const isTeamAOnOffense = displayDrive
-    ? displayDrive.offense === gameData?.teamA.name
-    : contextRef.current?.currentOffense?.id === gameData?.teamA.id;
+    const isTeamAOnOffense = displayDrive
+      ? displayDrive.offense === gameData?.teamA.name
+      : context?.currentOffense?.id === gameData?.teamA.id;
 
-  const fieldPosition = displayPlay?.startingFP
-    || contextRef.current?.currentDriveState?.fieldPosition
-    || 20;
+    const fieldPosition = displayPlay?.startingFP
+      || interactiveState?.fieldPosition
+      || 20;
 
-  const previousPlayYards = allowUserDecision && interactiveState
-    ? (() => {
-      const lastPlay = plays[plays.length - 1];
-      if (!lastPlay) return 0;
-      if (lastPlay.driveId && lastPlay.driveId !== interactiveState.drive.id) return 0;
-      return lastPlay.yardsGained || 0;
-    })()
-    : (currentPlay && previousPlay ? previousPlay.yardsGained : 0);
+    const previousPlayYards = allowUserDecision && interactiveState
+      ? (() => {
+          if (!lastPlay) return 0;
+          if (lastPlay.driveId && lastPlay.driveId !== interactiveState.drive.id) return 0;
+          return lastPlay.yardsGained || 0;
+        })()
+      : (currentPlay && previousPlay ? previousPlay.yardsGained : 0);
+
+    return {
+      displayPlay,
+      displayDrive,
+      isUserOffenseNow,
+      isTeamAOnOffense,
+      fieldPosition,
+      previousPlayYards,
+      lastPlayText: lastPlay?.text ?? '',
+    };
+  })();
 
   return {
     state: {
@@ -521,13 +534,13 @@ export const useInteractiveSim = ({
       isPlaybackComplete: isGameComplete,
       decisionPrompt,
       submittingDecision,
-      displayPlay,
-      displayDrive,
-      isTeamAOnOffense,
-      fieldPosition,
-      previousPlayYards,
-      lastPlayText,
-      isUserOffenseNow,
+      displayPlay: derived.displayPlay,
+      displayDrive: derived.displayDrive,
+      isTeamAOnOffense: derived.isTeamAOnOffense,
+      fieldPosition: derived.fieldPosition,
+      previousPlayYards: derived.previousPlayYards,
+      lastPlayText: derived.lastPlayText,
+      isUserOffenseNow: derived.isUserOffenseNow,
     },
     actions: {
       start,
