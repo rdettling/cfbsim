@@ -1,25 +1,40 @@
-# CFBSim.net
+# Frontend Two – Page Pattern
 
-College football season simulator with an API‑backed web UI. Inspired by Basketball GM.
+## Goals
+- No backend endpoints.
+- IndexedDB-first persistence.
+- Pages are thin; domain layer owns logic.
 
-## Read This First
+## Architecture
+- `src/db/`: IndexedDB + base data caching
+- `src/domain/`: business logic, domain types, and hooks
+- `src/pages/`: UI screens
+- `src/components/`: shared UI pieces
+- `src/constants/`: shared constants (routes, stages)
 
-- Project setup: `DEV_SETUP.md`
-- System design: `ARCHITECTURE.md`
-- Codex/agent context: `AGENTS.md`
+## Page Pattern
+1. Fetch domain data with `useDomainData`.
+2. Keep page state local (UI-only state).
+3. Call domain functions for mutations.
 
-## What It Does
+### Example
+```tsx
+const { data, loading, error } = useDomainData({
+  fetcher: () => loadHomeData(),
+});
 
-- Simulates full college football seasons with recruiting, progression, realignment, and playoffs.
-- Provides a REST API for a Vite + React frontend.
+return (
+  <PageLayout loading={loading} error={error}>
+    {/* render UI */}
+  </PageLayout>
+);
+```
 
-## Tech Stack
+## Domain Functions
+- `loadHomeData()`
+- `startNewLeague(team, year)`
+- `loadNonCon()`
+- `getTeamInfo(teamName)`
 
-- Backend: Django + Django REST Framework
-- Frontend: React + Vite
-- Database: SQLite (dev), Postgres (prod)
-- Deployment: Heroku
-
-## License
-
-This project is for personal use only.
+Add new pages by first copying the old page UI, then replacing any API calls
+with domain functions.

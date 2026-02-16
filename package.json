@@ -1,11 +1,35 @@
 {
-    "name": "cfbsim",
-    "engines": {
-        "node": "20.x",
-        "npm": "10.x"
-    },
-    "scripts": {
-        "postinstall": "cd frontend && npm install && npm run build && mkdir -p ../backend/templates && cp dist/index.html ../backend/templates/",
-        "start": "cd backend && python manage.py runserver"
-    }
+  "name": "frontend2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "serve -s dist",
+    "preview": "vite preview",
+    "generate:history": "tsx scripts/generate_history.ts",
+    "generate:odds": "tsx scripts/generate_betting_odds.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
+    "idb": "^8.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.5",
+    "serve": "^14.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^7.3.1"
+  }
 }

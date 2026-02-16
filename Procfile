@@ -1,2 +1,1 @@
-release: cd backend && python manage.py collectstatic --noinput
-web: cd backend && gunicorn cfbsim.wsgi --log-file -
+web: npm run start
