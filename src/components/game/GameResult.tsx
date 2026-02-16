@@ -13,6 +13,7 @@ import { TeamLogo, TeamLink, TeamInfoModal } from '../team/TeamComponents';
 import DriveSummary from './DriveSummary';
 import type { GameResultProps } from '../../types/components';
 import { resolveHomeAway, resolveTeamSide, formatMatchup } from '../../domain/utils/gameDisplay';
+import { buildSimMatchup } from '../../domain/utils/simMatchup';
 
 // Helper component for team header in game result
 const TeamHeader = ({ 
@@ -79,18 +80,12 @@ const GameResult = ({ data }: GameResultProps) => {
 
     const { game, drives = [] } = data;
     const { home, away, neutral } = resolveHomeAway(game);
-    const awayIsTeamA = away.id === game.teamA.id;
-    const matchup = {
-        homeTeam: home,
-        awayTeam: away,
-        homeScore: awayIsTeamA ? game.scoreB : game.scoreA,
-        awayScore: awayIsTeamA ? game.scoreA : game.scoreB,
-        currentScoreA: game.scoreA,
-        currentScoreB: game.scoreB,
-        awayIsTeamA,
-        isAwayOnOffense: false,
-        currentDriveNum: 0,
-    };
+    const matchup = buildSimMatchup(
+        game,
+        { scoreA: game.scoreA, scoreB: game.scoreB },
+        false,
+        0
+    );
     const awaySide = resolveTeamSide(game, away.id);
     const homeSide = resolveTeamSide(game, home.id);
 

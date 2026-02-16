@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { useGameSim } from './useGameSim';
 import type { GameSimModalProps } from '../../types/components';
 import { resolveHomeAway } from '../../domain/utils/gameDisplay';
+import { buildSimMatchup } from '../../domain/utils/simMatchup';
 
 const GameSimModal = ({
     open,
@@ -58,20 +59,14 @@ const GameSimModal = ({
         homeTeamId: state.gameData.homeTeamId ?? null,
         awayTeamId: state.gameData.awayTeamId ?? null,
     });
-    const awayIsTeamA = awayTeam.id === state.gameData.teamA.id;
     const rawScoreA = state.displayPlay?.scoreA ?? state.gameData.scoreA;
     const rawScoreB = state.displayPlay?.scoreB ?? state.gameData.scoreB;
-    const matchup = {
-        homeTeam,
-        awayTeam,
-        homeScore: awayIsTeamA ? rawScoreB : rawScoreA,
-        awayScore: awayIsTeamA ? rawScoreA : rawScoreB,
-        currentScoreA: rawScoreA,
-        currentScoreB: rawScoreB,
-        awayIsTeamA,
-        isAwayOnOffense: awayIsTeamA ? state.isTeamAOnOffense : !state.isTeamAOnOffense,
-        currentDriveNum: state.displayDrive?.driveNum ?? 0,
-    };
+    const matchup = buildSimMatchup(
+        state.gameData,
+        { scoreA: rawScoreA, scoreB: rawScoreB },
+        state.isTeamAOnOffense,
+        state.displayDrive?.driveNum ?? 0
+    );
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
