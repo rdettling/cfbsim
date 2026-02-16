@@ -30,11 +30,11 @@ const GameControls = ({
                 <Box sx={{ 
                     borderTop: '1px solid',
                     borderColor: 'divider',
-                    p: 2,
-                    backgroundColor: 'primary.main',
+                    p: 2.5,
+                    background: 'linear-gradient(135deg, rgba(17,24,39,0.92) 0%, rgba(30,64,175,0.9) 55%, rgba(59,130,246,0.9) 100%)',
                     color: 'white'
                 }}>
-                    <Typography variant="h6" fontWeight="bold" textAlign="center" sx={{ mb: 2 }}>
+                    <Typography variant="h6" fontWeight={700} textAlign="center" sx={{ mb: 2, fontFamily: '"Space Grotesk", sans-serif' }}>
                         {down}st & {yards_left} at {location} {yardLine}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -44,7 +44,7 @@ const GameControls = ({
                             startIcon={<DirectionsRunIcon />}
                             onClick={() => handleDecision('run')}
                             disabled={submittingDecision}
-                            sx={{ minWidth: 120 }}
+                            sx={{ minWidth: 120, borderRadius: 2, fontWeight: 700 }}
                         >
                             RUN
                         </Button>
@@ -54,7 +54,7 @@ const GameControls = ({
                             startIcon={<SportsSoccerIcon />}
                             onClick={() => handleDecision('pass')}
                             disabled={submittingDecision}
-                            sx={{ minWidth: 120 }}
+                            sx={{ minWidth: 120, borderRadius: 2, fontWeight: 700 }}
                         >
                             PASS
                         </Button>
@@ -71,11 +71,11 @@ const GameControls = ({
                 <Box sx={{ 
                     borderTop: '1px solid',
                     borderColor: 'divider',
-                    p: 2,
-                    backgroundColor: 'warning.main',
+                    p: 2.5,
+                    background: 'linear-gradient(135deg, rgba(120,53,15,0.92) 0%, rgba(217,119,6,0.9) 60%, rgba(245,158,11,0.9) 100%)',
                     color: 'white'
                 }}>
-                    <Typography variant="h6" fontWeight="bold" textAlign="center" sx={{ mb: 2 }}>
+                    <Typography variant="h6" fontWeight={700} textAlign="center" sx={{ mb: 2, fontFamily: '"Space Grotesk", sans-serif' }}>
                         4th & {yards_left} at {location} {yardLine}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -86,6 +86,7 @@ const GameControls = ({
                             onClick={() => handleDecision('run')}
                             disabled={submittingDecision}
                             size="small"
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
                             RUN
                         </Button>
@@ -96,6 +97,7 @@ const GameControls = ({
                             onClick={() => handleDecision('pass')}
                             disabled={submittingDecision}
                             size="small"
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
                             PASS
                         </Button>
@@ -105,6 +107,7 @@ const GameControls = ({
                             onClick={() => handleDecision('punt')}
                             disabled={submittingDecision}
                             size="small"
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
                             PUNT
                         </Button>
@@ -114,6 +117,7 @@ const GameControls = ({
                             onClick={() => handleDecision('field_goal')}
                             disabled={submittingDecision}
                             size="small"
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
                             FG
                         </Button>
@@ -135,13 +139,14 @@ const GameControls = ({
                     gap: 2,
                     justifyContent: 'center',
                     flexWrap: 'wrap',
-                    backgroundColor: decisionSection ? 'grey.50' : 'transparent'
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(245,247,255,0.95) 100%)'
                 }}>
                     <Button
                         variant="outlined"
                         startIcon={<SkipNextIcon />}
                         onClick={handleNextPlay}
                         disabled={isGameComplete || submittingDecision}
+                        sx={{ borderRadius: 2, fontWeight: 600 }}
                     >
                         Sim Play
                     </Button>
@@ -150,6 +155,7 @@ const GameControls = ({
                         startIcon={<SkipNextIcon />}
                         onClick={handleNextDrive}
                         disabled={isGameComplete || submittingDecision}
+                        sx={{ borderRadius: 2, fontWeight: 600 }}
                     >
                         Sim Drive
                     </Button>
@@ -159,6 +165,7 @@ const GameControls = ({
                         startIcon={<FastForwardIcon />}
                         onClick={handleSimToEnd}
                         disabled={isGameComplete || submittingDecision}
+                        sx={{ borderRadius: 2, fontWeight: 700 }}
                     >
                         Sim to End of Game
                     </Button>

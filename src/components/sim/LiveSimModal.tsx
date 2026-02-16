@@ -8,7 +8,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import DriveSummary from "../game/DriveSummary";
 import FootballField from "../game/FootballField";
-import GameHeader from "../game/GameHeader";
+import GameScoreStrip from "../game/GameScoreStrip";
 import GameControls from "../game/GameControls";
 import { Play, Drive, GameData } from "../../types/game";
 import { useState, useEffect } from "react";
@@ -233,7 +233,7 @@ const LiveSimModal = ({
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
-            <DialogContent sx={{ p: 0, height: "80vh", maxHeight: "80vh", position: 'relative' }}>
+            <DialogContent sx={{ p: 0, height: "88vh", maxHeight: "88vh", position: 'relative', background: 'linear-gradient(180deg, #f7f2ea 0%, #eef2f7 60%, #e7eef2 100%)' }}>
                 <IconButton
                     onClick={handleClose}
                     sx={{
@@ -250,89 +250,105 @@ const LiveSimModal = ({
                     <CloseIcon />
                 </IconButton>
 
-                <Box sx={{ display: "flex", height: "100%", overflow: "hidden" }}>
-                        <Box sx={{ flex: 1, p: 3, overflowY: 'auto' }}>
+                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2, p: 3, fontFamily: '"IBM Plex Sans", sans-serif' }}>
+                    <GameScoreStrip
+                        gameData={displayData}
+                        currentPlay={headerPlay}
+                        isTeamAOnOffense={headerIsTeamAOnOffense}
+                        plays={effectivePlays}
+                        isPlaybackComplete={isPlaybackComplete}
+                        currentDrive={headerDrive}
+                    />
 
-                        <GameHeader
-                            gameData={displayData}
-                            currentPlay={headerPlay}
-                            isTeamAOnOffense={headerIsTeamAOnOffense}
-                            plays={effectivePlays}
-                            isPlaybackComplete={isPlaybackComplete}
-                            lastPlayText={headerLastPlayText}
-                            currentDrive={headerDrive}
-                        />
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2.4fr 1fr' }, gap: 2, flex: 1, minHeight: 0 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
+                            <Box sx={{ background: 'rgba(255,255,255,0.9)', borderRadius: 3, p: 2, boxShadow: '0 12px 26px rgba(15, 23, 42, 0.08)' }}>
+                                <FootballField 
+                                    currentYardLine={fieldYardLine}
+                                    teamA={displayData.teamA.name}
+                                    teamB={displayData.teamB.name}
+                                    isTeamAOnOffense={headerIsTeamAOnOffense}
+                                    down={fieldDown}
+                                    yardsToGo={fieldYardsToGo}
+                                    previousPlayYards={fieldPreviousPlayYards}
+                                    teamAColorPrimary={displayData.teamA.colorPrimary}
+                                    teamAColorSecondary={displayData.teamA.colorSecondary}
+                                    teamBColorPrimary={displayData.teamB.colorPrimary}
+                                    teamBColorSecondary={displayData.teamB.colorSecondary}
+                                />
+                            </Box>
 
-                        <Box sx={{ mt: 2 }}>
-                                    <FootballField 
-                                currentYardLine={fieldYardLine}
-                                        teamA={displayData.teamA.name}
-                                        teamB={displayData.teamB.name}
-                                        isTeamAOnOffense={headerIsTeamAOnOffense}
-                                down={fieldDown}
-                                yardsToGo={fieldYardsToGo}
-                                        previousPlayYards={fieldPreviousPlayYards}
-                                        teamAColorPrimary={displayData.teamA.colorPrimary}
-                                        teamAColorSecondary={displayData.teamA.colorSecondary}
-                                        teamBColorPrimary={displayData.teamB.colorPrimary}
-                                        teamBColorSecondary={displayData.teamB.colorSecondary}
-                                    />
+                            <Box sx={{ background: 'rgba(255,255,255,0.92)', borderRadius: 3, p: 2.5, boxShadow: '0 12px 26px rgba(15, 23, 42, 0.08)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                    <Box sx={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: '"Space Grotesk", sans-serif' }}>
+                                        {headerPlay?.header ?? 'Waiting for snap'}
+                                    </Box>
+                                    <Box sx={{ fontSize: '0.9rem', color: 'text.secondary' }}>
+                                        Drive {(headerDrive?.driveNum || 0) + 1}
+                                    </Box>
+                                </Box>
+                                <Box sx={{ fontSize: '0.9rem', color: 'text.secondary' }}>
+                                    {headerLastPlayText ? `Last play: ${headerLastPlayText}` : 'No plays yet'}
+                                </Box>
+                            </Box>
+
+                            <Box sx={{ background: 'rgba(255,255,255,0.95)', borderRadius: 3, overflow: 'hidden', boxShadow: '0 12px 26px rgba(15, 23, 42, 0.08)' }}>
+                                <GameControls
+                                    isInteractive={isUserGame}
+                                    isGameComplete={isUserGame ? interactiveState.isGameComplete : isGameComplete}
+                                    isPlaybackComplete={isPlaybackComplete}
+                                    startInteractiveSimulation={() => {}}
+                                    handleNextPlay={handleNextPlay}
+                                    handleNextDrive={handleNextDrive}
+                                    handleSimToEnd={handleSimToEnd}
+                                    decisionPrompt={isUserGame && interactiveState.isUserOffenseNow ? interactiveState.decisionPrompt ?? undefined : undefined}
+                                    handleDecision={isUserGame && interactiveState.isUserOffenseNow && interactiveState.decisionPrompt ? interactiveActions.handleDecision : undefined}
+                                    submittingDecision={interactiveState.submittingDecision}
+                                />
+                            </Box>
                         </Box>
 
-                        <GameControls
-                            isInteractive={isUserGame}
-                            isGameComplete={isUserGame ? interactiveState.isGameComplete : isGameComplete}
-                            isPlaybackComplete={isPlaybackComplete}
-                            startInteractiveSimulation={() => {}}
-                            handleNextPlay={handleNextPlay}
-                            handleNextDrive={handleNextDrive}
-                            handleSimToEnd={handleSimToEnd}
-                            decisionPrompt={isUserGame && interactiveState.isUserOffenseNow ? interactiveState.decisionPrompt ?? undefined : undefined}
-                            handleDecision={isUserGame && interactiveState.isUserOffenseNow && interactiveState.decisionPrompt ? interactiveActions.handleDecision : undefined}
-                            submittingDecision={interactiveState.submittingDecision}
-                        />
-                        </Box>
-
-                    <Box
-                        sx={{
-                            width: 400,
-                            backgroundColor: "grey.50",
-                            borderLeft: "1px solid",
-                            borderColor: "divider",
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: '100%',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        <Box sx={{ 
-                            flex: 1, 
-                            overflowY: 'auto',
-                            pr: 1,
-                            '&::-webkit-scrollbar': {
-                                width: '6px',
-                            },
-                            '&::-webkit-scrollbar-track': {
-                                background: 'rgba(0,0,0,0.1)',
-                                borderRadius: '3px',
-                            },
-                            '&::-webkit-scrollbar-thumb': {
-                                background: 'rgba(0,0,0,0.3)',
-                                borderRadius: '3px',
-                            },
-                            '&::-webkit-scrollbar-thumb:hover': {
-                                background: 'rgba(0,0,0,0.5)',
-                            }
-                        }}>
-                            <DriveSummary 
-                                drives={effectiveDrives as any}
-                                currentPlayIndex={effectiveCurrentPlayIndex}
-                                variant="modal"
-                            />
+                        <Box
+                            sx={{
+                                background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,255,0.95) 100%)',
+                                borderRadius: 3,
+                                p: 2,
+                                boxShadow: '0 12px 26px rgba(15, 23, 42, 0.08)',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                minHeight: 0
+                            }}
+                        >
+                            <Box sx={{ 
+                                flex: 1, 
+                                overflowY: 'auto',
+                                pr: 1,
+                                '&::-webkit-scrollbar': {
+                                    width: '6px',
+                                },
+                                '&::-webkit-scrollbar-track': {
+                                    background: 'rgba(0,0,0,0.08)',
+                                    borderRadius: '3px',
+                                },
+                                '&::-webkit-scrollbar-thumb': {
+                                    background: 'rgba(0,0,0,0.25)',
+                                    borderRadius: '3px',
+                                },
+                                '&::-webkit-scrollbar-thumb:hover': {
+                                    background: 'rgba(0,0,0,0.45)',
+                                }
+                            }}>
+                                <DriveSummary 
+                                    drives={effectiveDrives as any}
+                                    currentPlayIndex={effectiveCurrentPlayIndex}
+                                    variant="modal"
+                                    includeCurrentDrive
+                                />
+                            </Box>
                         </Box>
                     </Box>
-                    </Box>
+                </Box>
             </DialogContent>
         </Dialog>
     );

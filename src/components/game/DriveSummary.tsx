@@ -21,7 +21,8 @@ const DriveSummary = ({
     currentPlayIndex = 0, 
     totalPlays: _totalPlays = 0,
     isGameComplete = false,
-    variant = 'page'
+    variant = 'page',
+    includeCurrentDrive = false
 }: DriveSummaryProps) => {
     const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
 
@@ -45,12 +46,15 @@ const DriveSummary = ({
         for (const drive of drives) {
             const driveEndIndex = playCount + (drive.plays?.length || 0) - 1;
             // Include drive only if it's completely finished (all plays have been watched)
-            if (driveEndIndex <= currentPlayIndex) {
+            if (driveEndIndex < currentPlayIndex) {
                 completed.push(drive);
-            } else {
-                break;
+                playCount += drive.plays?.length || 0;
+                continue;
             }
-            playCount += drive.plays?.length || 0;
+            if (includeCurrentDrive) {
+                completed.push(drive);
+            }
+            break;
         }
         
         return completed;

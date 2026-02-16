@@ -189,6 +189,7 @@ export interface DriveSummaryProps {
   totalPlays?: number;
   isGameComplete?: boolean;
   variant?: 'modal' | 'page';
+  includeCurrentDrive?: boolean;
 }
 
 export interface FootballFieldProps {
@@ -230,5 +231,14 @@ export interface GameHeaderProps {
   plays: Play[];
   isPlaybackComplete: boolean;
   lastPlayText?: string;
+  currentDrive?: Drive | null;
+}
+
+export interface GameScoreStripProps {
+  gameData: GameData;
+  currentPlay: Play | null;
+  isTeamAOnOffense: boolean;
+  plays: Play[];
+  isPlaybackComplete: boolean;
   currentDrive?: Drive | null;
 }
