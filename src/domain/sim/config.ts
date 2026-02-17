@@ -13,12 +13,6 @@ export type SimTuning = {
       passIncomplete: { min: number; max: number };
       specialTeams: { min: number; max: number };
     };
-    minimumPlaySeconds: {
-      run: number;
-      passComplete: number;
-      passIncomplete: number;
-      specialTeams: number;
-    };
     firstDownStopSeconds: number;
     outOfBoundsStop: {
       firstHalfSeconds: number;
@@ -35,8 +29,6 @@ export type SimTuning = {
     passWeightBase: number;
     passWeightThirdAndLong: number;
     passWeightShortYards: number;
-    passWeightFastTempo: number;
-    passWeightChewTempo: number;
     passWeightLateTrailing: number;
     passWeightLateLeading: number;
     passWeightMin: number;
@@ -47,25 +39,20 @@ export type SimTuning = {
     baseSackRate: number;
     baseIntRate: number;
     baseFumbleRate: number;
-    sackRateAdvantageFactor: number;
     compRateAdvantageFactor: number;
-    intRateAdvantageFactor: number;
-    fumbleRateAdvantageFactor: number;
-    skillDominance: number;
+    riskAdvantageFactor: number;
     advantageScale: number;
     pass: {
       baseMean: number;
       stdDev: number;
       advantageFactor: number;
       positiveMultiplier: number;
-      positivePower: number;
     };
     run: {
       baseMean: number;
       stdDev: number;
       advantageFactor: number;
       positiveMultiplier: number;
-      positivePower: number;
     };
     sack: {
       baseMean: number;
@@ -73,9 +60,11 @@ export type SimTuning = {
     };
     fieldGoal: {
       goodFrom: number;
-      midRange: { max: number; baseProb: number; step: number };
-      longRange: { max: number; baseProb: number; step: number };
-      veryLong: { baseProb: number; step: number };
+      maxRange: number;
+      baseProb: number;
+      slope: number;
+      longProb: number;
+      longSlope: number;
     };
   };
 };

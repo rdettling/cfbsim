@@ -29,8 +29,6 @@ export const choosePlayType = (
   let passWeight = SIM_TUNING.playcalling.passWeightBase;
   if (down >= 3 && yardsLeft >= 7) passWeight += SIM_TUNING.playcalling.passWeightThirdAndLong;
   if (down <= 2 && yardsLeft <= 3) passWeight += SIM_TUNING.playcalling.passWeightShortYards;
-  if (tempo === 'fast') passWeight += SIM_TUNING.playcalling.passWeightFastTempo;
-  if (tempo === 'chew') passWeight += SIM_TUNING.playcalling.passWeightChewTempo;
   if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead < 0) {
     passWeight += SIM_TUNING.playcalling.passWeightLateTrailing;
   }

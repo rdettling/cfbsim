@@ -53,39 +53,27 @@ const samplePlaySeconds = (playType: string, result: string, tempo: ClockPlayCon
       ? SIM_TUNING.clock.tempoMultipliers.chew
       : SIM_TUNING.clock.tempoMultipliers.normal;
   if (playType === 'punt' || playType === 'field goal') {
-    return Math.max(
-      SIM_TUNING.clock.minimumPlaySeconds.specialTeams,
-      Math.round(randomInt(
-        SIM_TUNING.clock.playSeconds.specialTeams.min,
-        SIM_TUNING.clock.playSeconds.specialTeams.max
-      ) * tempoMultiplier)
-    );
+    return Math.round(randomInt(
+      SIM_TUNING.clock.playSeconds.specialTeams.min,
+      SIM_TUNING.clock.playSeconds.specialTeams.max
+    ) * tempoMultiplier);
   }
   if (result === 'incomplete pass') {
-    return Math.max(
-      SIM_TUNING.clock.minimumPlaySeconds.passIncomplete,
-      Math.round(randomInt(
-        SIM_TUNING.clock.playSeconds.passIncomplete.min,
-        SIM_TUNING.clock.playSeconds.passIncomplete.max
-      ) * tempoMultiplier)
-    );
+    return Math.round(randomInt(
+      SIM_TUNING.clock.playSeconds.passIncomplete.min,
+      SIM_TUNING.clock.playSeconds.passIncomplete.max
+    ) * tempoMultiplier);
   }
   if (playType === 'pass') {
-    return Math.max(
-      SIM_TUNING.clock.minimumPlaySeconds.passComplete,
-      Math.round(randomInt(
-        SIM_TUNING.clock.playSeconds.passComplete.min,
-        SIM_TUNING.clock.playSeconds.passComplete.max
-      ) * tempoMultiplier)
-    );
+    return Math.round(randomInt(
+      SIM_TUNING.clock.playSeconds.passComplete.min,
+      SIM_TUNING.clock.playSeconds.passComplete.max
+    ) * tempoMultiplier);
   }
-  return Math.max(
-    SIM_TUNING.clock.minimumPlaySeconds.run,
-    Math.round(randomInt(
-      SIM_TUNING.clock.playSeconds.run.min,
-      SIM_TUNING.clock.playSeconds.run.max
-    ) * tempoMultiplier)
-  );
+  return Math.round(randomInt(
+    SIM_TUNING.clock.playSeconds.run.min,
+    SIM_TUNING.clock.playSeconds.run.max
+  ) * tempoMultiplier);
 };
 
 export const applyPlayClock = (clock: ClockState, context: ClockPlayContext) => {

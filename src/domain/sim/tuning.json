@@ -23,12 +23,6 @@
         "max": 20
       }
     },
-    "minimumPlaySeconds": {
-      "run": 15,
-      "passComplete": 10,
-      "passIncomplete": 3,
-      "specialTeams": 5
-    },
     "firstDownStopSeconds": 120,
     "outOfBoundsStop": {
       "firstHalfSeconds": 120,
@@ -45,37 +39,30 @@
     "passWeightBase": 0.5,
     "passWeightThirdAndLong": 0.25,
     "passWeightShortYards": -0.2,
-    "passWeightFastTempo": 0.1,
-    "passWeightChewTempo": -0.1,
     "passWeightLateTrailing": 0.15,
     "passWeightLateLeading": -0.15,
     "passWeightMin": 0.15,
     "passWeightMax": 0.85
   },
   "outcomes": {
-    "baseCompPercent": 0.5934432851968193,
-    "baseSackRate": 0.07546006483748725,
-    "baseIntRate": 0.07092028195394032,
+    "baseCompPercent": 0.552177527286331,
+    "baseSackRate": 0.10211755329614874,
+    "baseIntRate": 0.0609179523456317,
     "baseFumbleRate": 0.02,
-    "sackRateAdvantageFactor": 0.015,
+    "riskAdvantageFactor": 0.015,
     "compRateAdvantageFactor": 0.04,
-    "intRateAdvantageFactor": 0.012,
-    "fumbleRateAdvantageFactor": 0.004,
-    "skillDominance": 2,
     "advantageScale": 16,
     "pass": {
-      "baseMean": 6.05525807131716,
-      "stdDev": 4.644205562953462,
+      "baseMean": 6.5347995911171175,
+      "stdDev": 5.661440590354667,
       "advantageFactor": 2,
-      "positiveMultiplier": 0.005912088040694335,
-      "positivePower": 3.113242742490599
+      "positiveMultiplier": 0.0026248284191854364
     },
     "run": {
-      "baseMean": 2.9358234288179874,
-      "stdDev": 2.4343846492739734,
+      "baseMean": 2.8838199347546305,
+      "stdDev": 4.053399132499431,
       "advantageFactor": 1,
-      "positiveMultiplier": 0.00037875182826050655,
-      "positivePower": 5.242593308633322
+      "positiveMultiplier": 0.00087167863274993
     },
     "sack": {
       "baseMean": -6,
@@ -83,20 +70,11 @@
     },
     "fieldGoal": {
       "goodFrom": 37,
-      "midRange": {
-        "max": 47,
-        "baseProb": 0.9,
-        "step": 0.05
-      },
-      "longRange": {
-        "max": 57,
-        "baseProb": 0.75,
-        "step": 0.05
-      },
-      "veryLong": {
-        "baseProb": 0.55,
-        "step": 0.03
-      }
+      "maxRange": 57,
+      "baseProb": 0.9,
+      "slope": 0.05,
+      "longProb": 0.55,
+      "longSlope": 0.03
     }
   }
 }

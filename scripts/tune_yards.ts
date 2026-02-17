@@ -26,6 +26,9 @@ const SIMS = 20000;
 const ITERATIONS = 1000;
 const WRITE = true;
 
+const PASS_POSITIVE_POWER = 3.2;
+const RUN_POSITIVE_POWER = 4.2;
+
 const random = (min: number, max: number) => min + Math.random() * (max - min);
 
 const gaussian = (mean: number, stdDev: number) => {
@@ -46,7 +49,7 @@ const percentile = (values: number[], p: number) => {
 const runYards = (cfg: any) => {
   const raw = gaussian(cfg.baseMean, cfg.stdDev);
   if (raw < 0) return Math.round(raw);
-  const adjusted = raw + cfg.positiveMultiplier * (raw ** cfg.positivePower);
+  const adjusted = raw + cfg.positiveMultiplier * (raw ** RUN_POSITIVE_POWER);
   return Math.min(Math.round(adjusted), 99);
 };
 
@@ -55,7 +58,7 @@ const sackYards = (cfg: any) => Math.min(Math.round(gaussian(cfg.sack.baseMean, 
 const passYards = (cfg: any) => {
   const raw = gaussian(cfg.pass.baseMean, cfg.pass.stdDev);
   if (raw < 0) return Math.round(raw);
-  const adjusted = raw + cfg.pass.positiveMultiplier * (raw ** cfg.pass.positivePower);
+  const adjusted = raw + cfg.pass.positiveMultiplier * (raw ** PASS_POSITIVE_POWER);
   return Math.min(Math.round(adjusted), 99);
 };
 
@@ -130,12 +133,10 @@ const candidateFromBase = (baseCfg: any) => {
   run.baseMean *= random(0.85, 1.15);
   run.stdDev *= random(0.8, 1.2);
   run.positiveMultiplier *= random(0.7, 1.3);
-  run.positivePower *= random(0.9, 1.1);
 
   pass.baseMean *= random(0.85, 1.15);
   pass.stdDev *= random(0.8, 1.2);
   pass.positiveMultiplier *= random(0.7, 1.3);
-  pass.positivePower *= random(0.9, 1.1);
 
   candidate.outcomes.baseCompPercent *= random(0.9, 1.1);
   candidate.outcomes.baseSackRate *= random(0.85, 1.15);
