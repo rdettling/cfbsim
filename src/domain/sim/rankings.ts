@@ -3,8 +3,11 @@ import type { SimGame } from '../../types/sim';
 import type { LeagueState } from '../../types/league';
 import type { GameRecord } from '../../types/db';
 import { DEFAULT_SETTINGS } from '../../types/league';
+import type { OddsContext } from '../odds';
+import { getWinProbForRatings, HOME_FIELD_ADVANTAGE } from '../odds';
 
 const RANKING_TOTAL_WEEKS = 14;
+const MIN_SOR_WEIGHT = 0.1;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -12,7 +15,30 @@ const clamp = (value: number, min: number, max: number) =>
 export const formatRecord = (team: Team) =>
   `${team.totalWins}-${team.totalLosses} (${team.confWins}-${team.confLosses})`;
 
-export const updateTeamRecords = (games: SimGame[]) => {
+const averageTeamRating = (teams: Team[]) =>
+  teams.reduce((sum, team) => sum + team.rating, 0) / Math.max(1, teams.length);
+
+const expectedWinForAverageTeam = (
+  averageRating: number,
+  opponent: Team,
+  isHome: boolean,
+  isNeutral: boolean,
+  oddsContext: OddsContext
+) => {
+  let ratingA = averageRating;
+  let ratingB = opponent.rating;
+  if (!isNeutral) {
+    if (isHome) ratingA += HOME_FIELD_ADVANTAGE;
+    else ratingB += HOME_FIELD_ADVANTAGE;
+  }
+  return getWinProbForRatings(ratingA, ratingB, oddsContext);
+};
+
+export const updateTeamRecords = (
+  games: SimGame[],
+  teams: Team[],
+  oddsContext: OddsContext
+) => {
   const updates = new Map<number, {
     team: Team;
     confWins: number;
@@ -25,53 +51,87 @@ export const updateTeamRecords = (games: SimGame[]) => {
     gamesPlayed: number;
   }>();
 
+  const averageRating = averageTeamRating(teams);
+
+  const getUpdate = (team: Team) => {
+    const existing = updates.get(team.id);
+    if (existing) return existing;
+    const created = {
+      team,
+      confWins: 0,
+      confLosses: 0,
+      nonConfWins: 0,
+      nonConfLosses: 0,
+      totalWins: 0,
+      totalLosses: 0,
+      strength: 0,
+      gamesPlayed: 0,
+    };
+    updates.set(team.id, created);
+    return created;
+  };
+
   games.forEach(game => {
     if (!game.winner) return;
-    const winner = game.winner;
-    const loser = winner.id === game.teamA.id ? game.teamB : game.teamA;
 
-    const winnerUpdate = updates.get(winner.id) ?? {
-      team: winner,
-      confWins: 0,
-      confLosses: 0,
-      nonConfWins: 0,
-      nonConfLosses: 0,
-      totalWins: 0,
-      totalLosses: 0,
-      strength: 0,
-      gamesPlayed: 0,
-    };
-    const loserUpdate = updates.get(loser.id) ?? {
-      team: loser,
-      confWins: 0,
-      confLosses: 0,
-      nonConfWins: 0,
-      nonConfLosses: 0,
-      totalWins: 0,
-      totalLosses: 0,
-      strength: 0,
-      gamesPlayed: 0,
-    };
+    const teamA = game.teamA;
+    const teamB = game.teamB;
+    const teamAUpdate = getUpdate(teamA);
+    const teamBUpdate = getUpdate(teamB);
 
-    updates.set(winner.id, winnerUpdate);
-    updates.set(loser.id, loserUpdate);
+    teamAUpdate.gamesPlayed += 1;
+    teamBUpdate.gamesPlayed += 1;
 
-    winnerUpdate.gamesPlayed += 1;
-    loserUpdate.gamesPlayed += 1;
+    const teamAWin = game.winner.id === teamA.id;
+    const teamBWin = !teamAWin;
 
-    if (winner.conference !== 'Independent' && winner.conference === loser.conference) {
-      winnerUpdate.confWins += 1;
-      loserUpdate.confLosses += 1;
+    if (teamAWin) {
+      teamAUpdate.totalWins += 1;
+      teamBUpdate.totalLosses += 1;
     } else {
-      winnerUpdate.nonConfWins += 1;
-      loserUpdate.nonConfLosses += 1;
+      teamBUpdate.totalWins += 1;
+      teamAUpdate.totalLosses += 1;
     }
 
-    winnerUpdate.totalWins += 1;
-    loserUpdate.totalLosses += 1;
+    if (teamA.conference !== 'Independent' && teamA.conference === teamB.conference) {
+      if (teamAWin) {
+        teamAUpdate.confWins += 1;
+        teamBUpdate.confLosses += 1;
+      } else {
+        teamBUpdate.confWins += 1;
+        teamAUpdate.confLosses += 1;
+      }
+    } else {
+      if (teamAWin) {
+        teamAUpdate.nonConfWins += 1;
+        teamBUpdate.nonConfLosses += 1;
+      } else {
+        teamBUpdate.nonConfWins += 1;
+        teamAUpdate.nonConfLosses += 1;
+      }
+    }
 
-    winnerUpdate.strength += loser.rating;
-    loserUpdate.strength += winner.rating;
+    const isNeutral = game.neutralSite;
+    const teamAHome = !!game.homeTeam && game.homeTeam.id === teamA.id;
+    const teamBHome = !!game.homeTeam && game.homeTeam.id === teamB.id;
+
+    const expectedA = expectedWinForAverageTeam(
+      averageRating,
+      teamB,
+      teamAHome,
+      isNeutral,
+      oddsContext
+    );
+    const expectedB = expectedWinForAverageTeam(
+      averageRating,
+      teamA,
+      teamBHome,
+      isNeutral,
+      oddsContext
+    );
+
+    teamAUpdate.strength += (teamAWin ? 1 : 0) - expectedA;
+    teamBUpdate.strength += (teamBWin ? 1 : 0) - expectedB;
   });
 
   updates.forEach(update => {
@@ -116,7 +176,7 @@ export const updateRankings = (
     const gamesPlayed = team.totalWins + team.totalLosses;
     const baseScore = team.strength_of_record / Math.max(1, gamesPlayed);
     const lastRegularWeek = Math.min(info.lastWeek ?? RANKING_TOTAL_WEEKS, RANKING_TOTAL_WEEKS);
-    const inertiaWeight = clamp((lastRegularWeek - info.currentWeek) / Math.max(1, lastRegularWeek - 1), 0, 1);
+    const inertiaWeight = clamp((lastRegularWeek - info.currentWeek) / Math.max(1, lastRegularWeek - 1), 0, 1 - MIN_SOR_WEIGHT);
     const pollScore = inertiaWeight * team.poll_score + (1 - inertiaWeight) * baseScore;
     team.poll_score = Math.round(pollScore * 10) / 10;
   });

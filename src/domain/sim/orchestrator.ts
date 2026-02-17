@@ -225,7 +225,7 @@ export const finalizeGameSimulation = async (params: {
 
   const logs = createGameLogsFromPlays(league, simGame, playRecords, starters);
 
-  updateTeamRecords([simGame]);
+  updateTeamRecords([simGame], league.teams, await loadOddsContext());
   await generateHeadlines([simGame], new Map([[simGame.id, logs]]), playersById);
 
   const updatedRecord: GameRecord = {
@@ -341,7 +341,7 @@ export const advanceWeeks = async (destWeek: number) => {
     });
 
     if (simGames.length) {
-      updateTeamRecords(simGames);
+      updateTeamRecords(simGames, league.teams, oddsContext);
       await generateHeadlines(simGames, gameLogsByGame, playersById);
       simGames.forEach(simGameObj => {
         const gameRecord = unplayed.find(game => game.id === simGameObj.id);

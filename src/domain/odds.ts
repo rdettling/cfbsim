@@ -67,3 +67,26 @@ export const buildOddsFields = (
     winProbB: isTeamAFav ? odds.udWinProb : odds.favWinProb,
   };
 };
+
+export const getWinProbForRatings = (
+  ratingA: number,
+  ratingB: number,
+  context: OddsContext
+) => {
+  const diff = Math.min(
+    context.maxDiff,
+    Math.abs(Math.round(ratingA - ratingB))
+  );
+  const odds =
+    context.oddsMap[String(diff)] ??
+    context.oddsMap[String(context.maxDiff)] ?? {
+      favSpread: '-1.5',
+      udSpread: '+1.5',
+      favWinProb: 0.6,
+      udWinProb: 0.4,
+      favMoneyline: '-120',
+      udMoneyline: '+120',
+    };
+  const isFav = ratingA >= ratingB;
+  return isFav ? odds.favWinProb : odds.udWinProb;
+};
