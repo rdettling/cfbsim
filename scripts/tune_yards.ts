@@ -11,7 +11,6 @@ const TARGETS = {
     p90: 12,
     p95: 18,
   },
-  passCompletionRate: 0.6,
   pass: {
     mean: 10.5,
     p10: 0,
@@ -23,7 +22,8 @@ const TARGETS = {
 };
 
 const SIMS = 20000;
-const ITERATIONS = 1000;
+const ITERATIONS_RUN = 600;
+const ITERATIONS_PASS = 600;
 const WRITE = true;
 
 const PASS_POSITIVE_POWER = 3.2;
@@ -53,29 +53,11 @@ const runYards = (cfg: any) => {
   return Math.min(Math.round(adjusted), 99);
 };
 
-const sackYards = (cfg: any) => Math.min(Math.round(gaussian(cfg.sack.baseMean, cfg.sack.stdDev)), 0);
-
 const passYards = (cfg: any) => {
   const raw = gaussian(cfg.pass.baseMean, cfg.pass.stdDev);
   if (raw < 0) return Math.round(raw);
   const adjusted = raw + cfg.pass.positiveMultiplier * (raw ** PASS_POSITIVE_POWER);
   return Math.min(Math.round(adjusted), 99);
-};
-
-const simRun = (cfg: any) => {
-  if (Math.random() < cfg.baseFumbleRate) return 0;
-  return runYards(cfg.run);
-};
-
-const simPass = (cfg: any) => {
-  const randSack = Math.random();
-  const randCompletion = Math.random();
-  const randInterception = Math.random();
-
-  if (randSack < cfg.baseSackRate) return { completed: false, yards: sackYards(cfg) };
-  if (randCompletion < cfg.baseCompPercent) return { completed: true, yards: passYards(cfg) };
-  if (randInterception < cfg.baseIntRate) return { completed: false, yards: 0 };
-  return { completed: false, yards: 0 }; // incomplete
 };
 
 const summarize = (values: number[]) => ({
@@ -101,69 +83,75 @@ const loadTuning = () => JSON.parse(readFileSync(TUNING_PATH, 'utf-8'));
 
 const base = loadTuning();
 
-const evaluate = (candidate: any) => {
+const evaluateRun = (candidate: any) => {
   const runSamples: number[] = [];
-  const passCompletions: number[] = [];
-  let completed = 0;
-
   for (let i = 0; i < SIMS; i += 1) {
-    runSamples.push(simRun(candidate.outcomes));
-    const pass = simPass(candidate.outcomes);
-    if (pass.completed) {
-      completed += 1;
-      passCompletions.push(pass.yards);
-    }
+    runSamples.push(runYards(candidate.outcomes.run));
   }
-
   const runStats = summarize(runSamples);
-  const passStats = summarize(passCompletions);
-  const completionRate = completed / SIMS;
-  const totalScore = score(runStats, TARGETS.run)
-    + score(passStats, TARGETS.pass)
-    + ((completionRate - TARGETS.passCompletionRate) ** 2) * 100;
-
-  return { totalScore, runStats, passStats, completionRate };
+  const totalScore = score(runStats, TARGETS.run);
+  return { totalScore, runStats };
 };
 
-const candidateFromBase = (baseCfg: any) => {
+const evaluatePass = (candidate: any) => {
+  const passSamples: number[] = [];
+  for (let i = 0; i < SIMS; i += 1) {
+    passSamples.push(passYards(candidate.outcomes));
+  }
+  const passStats = summarize(passSamples);
+  const totalScore = score(passStats, TARGETS.pass);
+  return { totalScore, passStats };
+};
+
+const candidateRunFromBase = (baseCfg: any) => {
   const candidate = structuredClone(baseCfg);
   const run = candidate.outcomes.run;
+  run.baseMean *= random(1.0, 1.2);
+  run.stdDev *= random(0.9, 1.25);
+  run.positiveMultiplier *= random(0.8, 1.3);
+  return candidate;
+};
+
+const candidatePassFromBase = (baseCfg: any) => {
+  const candidate = structuredClone(baseCfg);
   const pass = candidate.outcomes.pass;
-
-  run.baseMean *= random(0.85, 1.15);
-  run.stdDev *= random(0.8, 1.2);
-  run.positiveMultiplier *= random(0.7, 1.3);
-
   pass.baseMean *= random(0.85, 1.15);
   pass.stdDev *= random(0.8, 1.2);
   pass.positiveMultiplier *= random(0.7, 1.3);
-
-  candidate.outcomes.baseCompPercent *= random(0.9, 1.1);
-  candidate.outcomes.baseSackRate *= random(0.85, 1.15);
-  candidate.outcomes.baseIntRate *= random(0.85, 1.15);
-
   return candidate;
 };
 
 let best = base;
-let bestEval = evaluate(base);
+let bestRunEval = evaluateRun(base);
 
-for (let i = 0; i < ITERATIONS; i += 1) {
-  const candidate = candidateFromBase(best);
-  const evalResult = evaluate(candidate);
-  if (evalResult.totalScore < bestEval.totalScore) {
+for (let i = 0; i < ITERATIONS_RUN; i += 1) {
+  const candidate = candidateRunFromBase(best);
+  const evalResult = evaluateRun(candidate);
+  if (evalResult.totalScore < bestRunEval.totalScore) {
     best = candidate;
-    bestEval = evalResult;
+    bestRunEval = evalResult;
   }
   if ((i + 1) % 20 === 0) {
-    console.log(`iter ${i + 1}/${ITERATIONS} bestScore=${bestEval.totalScore.toFixed(2)}`);
+    console.log(`run iter ${i + 1}/${ITERATIONS_RUN} bestScore=${bestRunEval.totalScore.toFixed(2)}`);
   }
 }
 
-console.log('\nBest run stats:', bestEval.runStats);
-console.log('Best pass stats (completions only):', bestEval.passStats);
-console.log('Completion rate:', bestEval.completionRate.toFixed(3));
-console.log('Score:', bestEval.totalScore.toFixed(2));
+let bestPassEval = evaluatePass(best);
+for (let i = 0; i < ITERATIONS_PASS; i += 1) {
+  const candidate = candidatePassFromBase(best);
+  const evalResult = evaluatePass(candidate);
+  if (evalResult.totalScore < bestPassEval.totalScore) {
+    best = candidate;
+    bestPassEval = evalResult;
+  }
+  if ((i + 1) % 20 === 0) {
+    console.log(`pass iter ${i + 1}/${ITERATIONS_PASS} bestScore=${bestPassEval.totalScore.toFixed(2)}`);
+  }
+}
+
+console.log('\nBest run stats:', bestRunEval.runStats);
+console.log('Best pass stats (completions only):', bestPassEval.passStats);
+console.log('Score:', (bestRunEval.totalScore + bestPassEval.totalScore).toFixed(2));
 
 if (WRITE) {
   writeFileSync(TUNING_PATH, JSON.stringify(best, null, 2));

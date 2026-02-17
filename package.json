@@ -12,6 +12,7 @@
     "generate:odds": "tsx scripts/generate_betting_odds.ts",
     "tune:yards": "tsx scripts/tune_yards.ts",
     "eval:winrate": "tsx scripts/eval_winrate.ts",
+    "tune:winrate": "tsx scripts/tune_winrate.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

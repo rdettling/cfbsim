@@ -53,16 +53,16 @@
     "compRateAdvantageFactor": 0.04,
     "advantageScale": 16,
     "pass": {
-      "baseMean": 6.5347995911171175,
-      "stdDev": 5.661440590354667,
+      "baseMean": 6.674284719072008,
+      "stdDev": 6.020854683653401,
       "advantageFactor": 2,
-      "positiveMultiplier": 0.0026248284191854364
+      "positiveMultiplier": 0.0021919893961092622
     },
     "run": {
-      "baseMean": 2.8838199347546305,
-      "stdDev": 4.053399132499431,
+      "baseMean": 3.315893314104928,
+      "stdDev": 4.228514694761939,
       "advantageFactor": 1,
-      "positiveMultiplier": 0.00087167863274993
+      "positiveMultiplier": 0.00041273348403663985
     },
     "sack": {
       "baseMean": -6,
