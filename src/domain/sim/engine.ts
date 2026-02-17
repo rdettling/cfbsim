@@ -40,6 +40,20 @@ type ClockState = {
   clockRunning: boolean;
 };
 
+type ClockPlayContext = {
+  playType: string;
+  result: string;
+  isFirstDown: boolean;
+  isOutOfBounds: boolean;
+  tempo: 'normal' | 'fast' | 'chew';
+};
+
+export const kickoffStartFieldPosition = () => {
+  const touchback = Math.random() < 0.65;
+  if (touchback) return 25;
+  return randomInt(15, 35);
+};
+
 const randomInt = (min: number, max: number) => {
   const range = Math.max(0, max - min);
   return min + Math.floor(Math.random() * (range + 1));
@@ -56,21 +70,34 @@ const isClockStopResult = (playType: string, result: string) => {
   return false;
 };
 
-const samplePlaySeconds = (playType: string, result: string) => {
-  if (playType === 'punt' || playType === 'field goal') {
-    return randomInt(10, 20);
-  }
-  if (result === 'incomplete pass') {
-    return randomInt(5, 10);
-  }
-  if (playType === 'pass') {
-    return randomInt(20, 30);
-  }
-  return randomInt(30, 40);
+const isFinalTwoMinutesOfHalf = (clock: ClockState) => {
+  if (clock.quarter === 2 && clock.secondsLeft <= 120) return true;
+  if (clock.quarter === 4 && clock.secondsLeft <= 120) return true;
+  return false;
 };
 
-const applyPlayClock = (clock: ClockState, playType: string, result: string) => {
-  const playSeconds = samplePlaySeconds(playType, result);
+const isOutOfBoundsStopWindow = (clock: ClockState) => {
+  if (clock.quarter === 2 && clock.secondsLeft <= 120) return true;
+  if (clock.quarter === 4 && clock.secondsLeft <= 300) return true;
+  return false;
+};
+
+const samplePlaySeconds = (playType: string, result: string, tempo: ClockPlayContext['tempo']) => {
+  const tempoMultiplier = tempo === 'fast' ? 0.7 : tempo === 'chew' ? 1.2 : 1;
+  if (playType === 'punt' || playType === 'field goal') {
+    return Math.max(5, Math.round(randomInt(10, 20) * tempoMultiplier));
+  }
+  if (result === 'incomplete pass') {
+    return Math.max(3, Math.round(randomInt(5, 10) * tempoMultiplier));
+  }
+  if (playType === 'pass') {
+    return Math.max(10, Math.round(randomInt(20, 30) * tempoMultiplier));
+  }
+  return Math.max(15, Math.round(randomInt(30, 40) * tempoMultiplier));
+};
+
+const applyPlayClock = (clock: ClockState, context: ClockPlayContext) => {
+  const playSeconds = samplePlaySeconds(context.playType, context.result, context.tempo);
   let secondsLeft = clock.secondsLeft - playSeconds;
   let quarter = clock.quarter;
   let halfEnded = false;
@@ -93,7 +120,11 @@ const applyPlayClock = (clock: ClockState, playType: string, result: string) => 
     clock: {
       quarter,
       secondsLeft,
-      clockRunning: !isClockStopResult(playType, result),
+      clockRunning: !(
+        isClockStopResult(context.playType, context.result)
+        || (context.isFirstDown && !isFinalTwoMinutesOfHalf(clock))
+        || (context.isOutOfBounds && isOutOfBoundsStopWindow(clock))
+      ),
     },
     playSeconds,
     halfEnded,
@@ -227,6 +258,38 @@ const pointsNeeded = (lead: number, timeLeftSeconds: number) => {
     if (deficit - points <= (drivesLeft - 1) * maxScore) return points;
   }
   return 9;
+};
+
+const getTempo = (lead: number, clock: ClockState): ClockPlayContext['tempo'] => {
+  if (clock.quarter === 2 && clock.secondsLeft <= 120 && lead < 0) return 'fast';
+  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead < 0) return 'fast';
+  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead > 7) return 'chew';
+  return 'normal';
+};
+
+const choosePlayType = (
+  down: number,
+  yardsLeft: number,
+  tempo: ClockPlayContext['tempo'],
+  lead: number,
+  clock: ClockState
+) => {
+  let passWeight = 0.5;
+  if (down >= 3 && yardsLeft >= 7) passWeight += 0.25;
+  if (down <= 2 && yardsLeft <= 3) passWeight -= 0.2;
+  if (tempo === 'fast') passWeight += 0.1;
+  if (tempo === 'chew') passWeight -= 0.1;
+  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead < 0) passWeight += 0.15;
+  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead > 0) passWeight -= 0.15;
+  passWeight = Math.max(0.15, Math.min(0.85, passWeight));
+  return Math.random() < passWeight ? 'pass' : 'run';
+};
+
+const isOutOfBoundsResult = (playType: string, result: string) => {
+  if (result !== 'run' && result !== 'pass') return false;
+  if (playType === 'pass') return Math.random() < 0.2;
+  if (playType === 'run') return Math.random() < 0.08;
+  return false;
 };
 
 const decideFourthDown = (fieldPosition: number, yardsLeft: number, needed: number) => {
@@ -413,7 +476,7 @@ export const simDrive = (
 
   const plays: PlayRecord[] = [];
   let yardsLeft = 10;
-  const applyClock = (playType: string, result: string) => {
+  const applyClock = (context: ClockPlayContext) => {
     if (!clockEnabled) {
       return {
         clock,
@@ -422,7 +485,7 @@ export const simDrive = (
         gameEnded: false,
       };
     }
-    return applyPlayClock(clock, playType, result);
+    return applyPlayClock(clock, context);
   };
 
   while (!drive.result) {
@@ -452,6 +515,7 @@ export const simDrive = (
 
       setPlayHeader(play, offense, defense);
 
+      const tempo = getTempo(lead, clock);
       if (down === 4) {
         const decision = decideFourthDown(fieldPosition, yardsLeft, needed);
         if (decision === 'field_goal') {
@@ -468,7 +532,13 @@ export const simDrive = (
           }
           play.quarter = clock.quarter;
           play.clockSecondsLeft = clock.secondsLeft;
-          const clockResult = applyClock(play.playType, play.result);
+          const clockResult = applyClock({
+            playType: play.playType,
+            result: play.result,
+            isFirstDown: false,
+            isOutOfBounds: false,
+            tempo,
+          });
           play.playSeconds = clockResult.playSeconds;
           game.quarter = clockResult.clock.quarter;
           game.clockSecondsLeft = clockResult.clock.secondsLeft;
@@ -481,7 +551,9 @@ export const simDrive = (
           return {
             record: drive,
             plays,
-            nextFieldPosition: play.result === 'made field goal' ? 20 : 100 - fieldPosition,
+            nextFieldPosition: play.result === 'made field goal'
+              ? kickoffStartFieldPosition()
+              : 100 - fieldPosition,
           };
         }
         if (decision === 'punt') {
@@ -492,7 +564,13 @@ export const simDrive = (
           drive.points = 0;
           play.quarter = clock.quarter;
           play.clockSecondsLeft = clock.secondsLeft;
-          const clockResult = applyClock(play.playType, play.result);
+          const clockResult = applyClock({
+            playType: play.playType,
+            result: play.result,
+            isFirstDown: false,
+            isOutOfBounds: false,
+            tempo,
+          });
           play.playSeconds = clockResult.playSeconds;
           game.quarter = clockResult.clock.quarter;
           game.clockSecondsLeft = clockResult.clock.secondsLeft;
@@ -510,7 +588,7 @@ export const simDrive = (
         }
       }
 
-      const playType = Math.random() < 0.5 ? 'run' : 'pass';
+      const playType = choosePlayType(down, yardsLeft, tempo, lead, clock);
       const result = playType === 'run'
         ? simRun(fieldPosition, offense, defense, game)
         : simPass(fieldPosition, offense, defense, game);
@@ -522,9 +600,21 @@ export const simDrive = (
       yardsLeft -= result.yards;
       play.yardsLeft = yardsLeft;
 
+      const achievedFirstDown = yardsLeft <= 0
+        && result.outcome !== 'touchdown'
+        && result.outcome !== 'interception'
+        && result.outcome !== 'fumble';
+      const outOfBounds = isOutOfBoundsResult(play.playType, play.result);
+
       play.quarter = clock.quarter;
       play.clockSecondsLeft = clock.secondsLeft;
-      const clockResult = applyClock(play.playType, play.result);
+      const clockResult = applyClock({
+        playType: play.playType,
+        result: play.result,
+        isFirstDown: achievedFirstDown,
+        isOutOfBounds: outOfBounds,
+        tempo,
+      });
       play.playSeconds = clockResult.playSeconds;
       game.quarter = clockResult.clock.quarter;
       game.clockSecondsLeft = clockResult.clock.secondsLeft;
@@ -540,7 +630,7 @@ export const simDrive = (
         drive.result = 'touchdown';
         drive.points = 7;
         updateDriveScoreAfter(game, drive, offense);
-        return { record: drive, plays, nextFieldPosition: 20 };
+        return { record: drive, plays, nextFieldPosition: kickoffStartFieldPosition() };
       }
       if (result.outcome === 'interception') {
         drive.result = 'interception';
@@ -554,7 +644,7 @@ export const simDrive = (
         drive.result = 'safety';
         drive.points = 0;
         updateDriveScoreAfter(game, drive, offense);
-        return { record: drive, plays, nextFieldPosition: 20 };
+        return { record: drive, plays, nextFieldPosition: kickoffStartFieldPosition() };
       }
       if (down === 4 && yardsLeft > 0) {
         drive.result = 'turnover on downs';
@@ -563,11 +653,11 @@ export const simDrive = (
 
       if (clockResult.halfEnded) {
         drive.result = 'end of half';
-        return { record: drive, plays, nextFieldPosition: 20 };
+        return { record: drive, plays, nextFieldPosition: kickoffStartFieldPosition() };
       }
       if (clockResult.gameEnded) {
         drive.result = 'end of game';
-        return { record: drive, plays, nextFieldPosition: 20 };
+        return { record: drive, plays, nextFieldPosition: kickoffStartFieldPosition() };
       }
 
       if (yardsLeft <= 0) {
@@ -640,6 +730,9 @@ export const stepInteractiveDrive = (
   starters: StartersCache,
   clockEnabled = true
 ) => {
+  const clockState = { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning };
+  const lead = offense.id === game.teamA.id ? game.scoreA - game.scoreB : game.scoreB - game.scoreA;
+  const tempo = getTempo(lead, clockState);
   const playId = nextId(league, 'play');
   const down = state.down;
   const fieldPosition = state.fieldPosition;
@@ -669,9 +762,9 @@ export const stepInteractiveDrive = (
     if (down === 4) {
       const auto = decideFourthDown(fieldPosition, yardsLeft, state.drive.points_needed);
       if (auto === 'punt' || auto === 'field_goal') return auto;
-      return Math.random() < 0.5 ? 'run' : 'pass';
+      return choosePlayType(down, yardsLeft, tempo, lead, clockState);
     }
-    return Math.random() < 0.5 ? 'run' : 'pass';
+    return choosePlayType(down, yardsLeft, tempo, lead, clockState);
   };
 
   const pickDecision = decision === 'auto' ? resolveAutoDecision() : decision;
@@ -692,13 +785,15 @@ export const stepInteractiveDrive = (
       play.quarter = game.quarter;
       play.clockSecondsLeft = game.clockSecondsLeft;
       const clockResult = clockEnabled
-        ? applyPlayClock(
-          { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
-          play.playType,
-          play.result
-        )
+        ? applyPlayClock(clockState, {
+          playType: play.playType,
+          result: play.result,
+          isFirstDown: false,
+          isOutOfBounds: false,
+          tempo,
+        })
         : {
-          clock: { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+          clock: clockState,
           playSeconds: 0,
           halfEnded: false,
           gameEnded: false,
@@ -716,7 +811,9 @@ export const stepInteractiveDrive = (
         state,
         play,
         driveComplete: true,
-        nextFieldPosition: state.drive.result === 'made field goal' ? 20 : 100 - fieldPosition,
+        nextFieldPosition: state.drive.result === 'made field goal'
+          ? kickoffStartFieldPosition()
+          : 100 - fieldPosition,
         gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
       };
     }
@@ -729,13 +826,15 @@ export const stepInteractiveDrive = (
     play.quarter = game.quarter;
     play.clockSecondsLeft = game.clockSecondsLeft;
     const clockResult = clockEnabled
-      ? applyPlayClock(
-        { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
-        play.playType,
-        play.result
-      )
+      ? applyPlayClock(clockState, {
+        playType: play.playType,
+        result: play.result,
+        isFirstDown: false,
+        isOutOfBounds: false,
+        tempo,
+      })
       : {
-        clock: { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+        clock: clockState,
         playSeconds: 0,
         halfEnded: false,
         gameEnded: false,
@@ -769,14 +868,21 @@ export const stepInteractiveDrive = (
 
   play.quarter = game.quarter;
   play.clockSecondsLeft = game.clockSecondsLeft;
+  const achievedFirstDown = nextYardsLeft <= 0
+    && result.outcome !== 'touchdown'
+    && result.outcome !== 'interception'
+    && result.outcome !== 'fumble';
+  const outOfBounds = isOutOfBoundsResult(play.playType, play.result);
   const clockResult = clockEnabled
-    ? applyPlayClock(
-      { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
-      play.playType,
-      play.result
-    )
+    ? applyPlayClock(clockState, {
+      playType: play.playType,
+      result: play.result,
+      isFirstDown: achievedFirstDown,
+      isOutOfBounds: outOfBounds,
+      tempo,
+    })
     : {
-      clock: { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+      clock: clockState,
       playSeconds: 0,
       halfEnded: false,
       gameEnded: false,
@@ -798,7 +904,7 @@ export const stepInteractiveDrive = (
       state,
       play,
       driveComplete: true,
-      nextFieldPosition: 20,
+      nextFieldPosition: kickoffStartFieldPosition(),
       gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
     };
   }
@@ -832,7 +938,7 @@ export const stepInteractiveDrive = (
       state,
       play,
       driveComplete: true,
-      nextFieldPosition: 20,
+      nextFieldPosition: kickoffStartFieldPosition(),
       gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
     };
   }
@@ -853,7 +959,7 @@ export const stepInteractiveDrive = (
       state,
       play,
       driveComplete: true,
-      nextFieldPosition: 20,
+      nextFieldPosition: kickoffStartFieldPosition(),
       gameComplete: false,
     };
   }
@@ -863,7 +969,7 @@ export const stepInteractiveDrive = (
       state,
       play,
       driveComplete: true,
-      nextFieldPosition: 20,
+      nextFieldPosition: kickoffStartFieldPosition(),
       gameComplete: game.scoreA !== game.scoreB,
     };
   }
@@ -902,7 +1008,7 @@ export const simGame = (
   game.clockRunning = true;
 
   const drives: SimDrive[] = [];
-  let fieldPosition = 20;
+  let fieldPosition = kickoffStartFieldPosition();
   let nextOffenseIsTeamA = openingIsTeamA;
   let driveNum = 0;
 
@@ -937,7 +1043,7 @@ export const simGame = (
       break;
     }
     if (halftimeReached) {
-      fieldPosition = 20;
+      fieldPosition = kickoffStartFieldPosition();
       nextOffenseIsTeamA = !openingIsTeamA;
       continue;
     }

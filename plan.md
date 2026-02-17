@@ -63,3 +63,24 @@ Replace the fixed-drive sim model with a clock-driven model where the game is go
 - UI showing quarter/time.
 - Play/drive records include time metadata.
 - Typecheck passing.
+
+## Phase 6: Immersion Enhancements (Planned)
+### 6A. Situational Playcalling + Tempo
+- Add a simple tempo model (normal/fast/chew) to influence play duration and run/pass mix.
+- Use down/distance, score margin, and time remaining to bias play selection.
+- Late-half behavior: more hurry-up, higher pass rate, shorter play clock.
+
+### 6B. College Clock Rules (Lightweight)
+- Stop clock for first downs until ball is set (except final 2 minutes, optional toggle).
+- Stop clock for out-of-bounds plays (especially late).
+- Preserve existing stop rules (incomplete, turnover, score, end of quarter).
+
+### 6C. Kickoffs / Returns (Simple Model)
+- Add kickoff events that set starting field position:
+  - Touchback vs. return split.
+  - Return yardage in a small random band (e.g., to ~25–30 average).
+- Apply after scores and start of halves.
+
+### Notes
+- Keep changes incremental and testable.
+- Avoid deep stats refactors; focus on feel and flow.

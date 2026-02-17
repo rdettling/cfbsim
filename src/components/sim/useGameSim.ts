@@ -11,6 +11,7 @@ import {
   OT_START_YARD_LINE,
   isTeamAOpeningOffense,
   SECONDS_PER_QUARTER,
+  kickoffStartFieldPosition,
 } from '../../domain/sim/engine';
 import type { GameData, Play, Drive } from '../../types/game';
 import type { LeagueState } from '../../types/league';
@@ -233,7 +234,6 @@ export const useGameSim = ({
         && context.simGame.quarter === 3
         && context.simGame.clockSecondsLeft === SECONDS_PER_QUARTER;
       if (halftimeReached) {
-        context.fieldPosition = 20;
         context.nextOffenseIsTeamA = !context.openingIsTeamA;
       } else {
         context.nextOffenseIsTeamA = !context.nextOffenseIsTeamA;
@@ -360,7 +360,7 @@ export const useGameSim = ({
         ? response.league.teams.find(team => team.name === response.league.info.team)?.id ?? null
         : null,
       driveNum: 0,
-      fieldPosition: 20,
+      fieldPosition: kickoffStartFieldPosition(),
       inOvertime: false,
       otPossession: 0,
       openingIsTeamA: isTeamAOpeningOffense(response.simGame),
