@@ -4,7 +4,7 @@ import type { SimGame, StartersCache } from '../../types/sim';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
 import type { GameData, Drive } from '../../types/game';
 import type { Team } from '../../types/domain';
-import { fillUserSchedule, buildUserScheduleFromGames } from '../schedule';
+import { buildFullScheduleFromExisting } from '../schedule';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
   getGameById,
@@ -16,7 +16,6 @@ import {
   saveGameLogs,
   saveGames,
   savePlays,
-  clearSimArtifacts,
   clearNonGameArtifacts,
 } from '../../db/simRepo';
 import { ensureRosters } from '../roster';
@@ -277,22 +276,10 @@ export const advanceWeeks = async (destWeek: number) => {
     const existingGames = (await getAllGames()).filter(
       game => game.year === league.info.currentYear
     );
-    const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
-    const fixedGames = existingGames
-      .filter(game => game.teamAId !== userTeam.id && game.teamBId !== userTeam.id)
-      .map(game => ({
-        teamA: teamsById.get(game.teamAId)!,
-        teamB: teamsById.get(game.teamBId)!,
-        weekPlayed: game.weekPlayed,
-        homeTeam: game.homeTeamId ? teamsById.get(game.homeTeamId)! : null,
-        awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
-        name: game.name ?? null,
-      }));
-    const fullGames = fillUserSchedule(schedule, userTeam, league.teams, fixedGames);
-    await clearSimArtifacts();
+    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
-    await initializeSimData(league, fullGames);
+    await initializeSimData(league, newGames);
   }
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));

@@ -72,6 +72,42 @@ export const buildUserScheduleFromGames = (
   return schedule;
 };
 
+const scheduleKey = (teamAId: number, teamBId: number, weekPlayed: number) => {
+  const [minId, maxId] = teamAId < teamBId ? [teamAId, teamBId] : [teamBId, teamAId];
+  return `${minId}-${maxId}-${weekPlayed}`;
+};
+
+export const buildFixedGamesFromRecords = (
+  games: GameRecord[],
+  teamsById: Map<number, Team>
+): FullGame[] =>
+  games
+    .filter(game => game.weekPlayed && game.weekPlayed > 0)
+    .map(game => ({
+      teamA: teamsById.get(game.teamAId)!,
+      teamB: teamsById.get(game.teamBId)!,
+      weekPlayed: game.weekPlayed,
+      homeTeam: game.homeTeamId ? teamsById.get(game.homeTeamId)! : null,
+      awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
+      name: game.name ?? null,
+    }));
+
+export const buildFullScheduleFromExisting = (
+  userTeam: Team,
+  teams: Team[],
+  existingGames: GameRecord[]
+) => {
+  const teamsById = new Map(teams.map(team => [team.id, team]));
+  const schedule = buildUserScheduleFromGames(userTeam, teams, existingGames);
+  const fixedGames = buildFixedGamesFromRecords(existingGames, teamsById);
+  const fullGames = fillUserSchedule(schedule, userTeam, teams, fixedGames);
+  const fixedKeys = new Set(fixedGames.map(game => scheduleKey(game.teamA.id, game.teamB.id, game.weekPlayed)));
+  const newGames = fullGames.filter(
+    game => !fixedKeys.has(scheduleKey(game.teamA.id, game.teamB.id, game.weekPlayed))
+  );
+  return { schedule, fixedGames, fullGames, newGames };
+};
+
 export const applyRivalriesToSchedule = async (
   schedule: ScheduleGame[],
   userTeam: Team,

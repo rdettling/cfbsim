@@ -12,7 +12,6 @@ import {
 import { saveLeague } from '../../../db/leagueRepo';
 import {
   clearAllSimData,
-  clearSimArtifacts,
   getAllGames,
   getAllPlayers,
   getGameById,
@@ -23,8 +22,8 @@ import {
 } from '../../../db/simRepo';
 import { buildPreviewData, buildTeamsAndConferences } from '../../baseData';
 import {
+  buildFullScheduleFromExisting,
   buildUserScheduleFromGames,
-  fillUserSchedule,
   listAvailableTeams as listTeamsForWeek,
   scheduleNonConGame as scheduleGameForWeek,
 } from '../../schedule';
@@ -194,23 +193,10 @@ export const loadDashboard = async () => {
   if (!league.scheduleBuilt) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
     const existingGames = (await getAllGames()).filter(game => game.year === league.info.currentYear);
-    const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
-    const teamsById = new Map(league.teams.map(team => [team.id, team]));
-    const fixedGames = existingGames
-      .filter(game => game.teamAId !== userTeam.id && game.teamBId !== userTeam.id)
-      .map(game => ({
-        teamA: teamsById.get(game.teamAId)!,
-        teamB: teamsById.get(game.teamBId)!,
-        weekPlayed: game.weekPlayed,
-        homeTeam: game.homeTeamId ? teamsById.get(game.homeTeamId)! : null,
-        awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
-        name: game.name ?? null,
-      }));
-    const fullGames = fillUserSchedule(schedule, userTeam, league.teams, fixedGames);
-    await clearSimArtifacts();
+    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
-    await initializeSimData(league, fullGames);
+    await initializeSimData(league, newGames);
   }
 
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
@@ -263,23 +249,10 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
   if (!league.scheduleBuilt && selectedYear === league.info.currentYear) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
     const existingGames = (await getAllGames()).filter(game => game.year === league.info.currentYear);
-    const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
-    const teamsById = new Map(league.teams.map(team => [team.id, team]));
-    const fixedGames = existingGames
-      .filter(game => game.teamAId !== userTeam.id && game.teamBId !== userTeam.id)
-      .map(game => ({
-        teamA: teamsById.get(game.teamAId)!,
-        teamB: teamsById.get(game.teamBId)!,
-        weekPlayed: game.weekPlayed,
-        homeTeam: game.homeTeamId ? teamsById.get(game.homeTeamId)! : null,
-        awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
-        name: game.name ?? null,
-      }));
-    const fullGames = fillUserSchedule(schedule, userTeam, league.teams, fixedGames);
-    await clearSimArtifacts();
+    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
-    await initializeSimData(league, fullGames);
+    await initializeSimData(league, newGames);
   }
 
   const team =
