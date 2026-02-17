@@ -56,6 +56,14 @@ export const createNonConGameRecord = async (
   };
 };
 
+export const initializeNonConScheduling = async (league: LeagueState) => {
+  const schedule = buildSchedule();
+  const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
+  league.pending_rivalries = await applyRivalriesToSchedule(schedule, userTeam, league.teams);
+  const gamesToSave = await buildRivalryGameRecords(league);
+  return { schedule, gamesToSave };
+};
+
 export const resetSeasonData = async (league: LeagueState) => {
   league.teams.forEach(team => {
     team.nonConfGames = 0;
@@ -82,12 +90,7 @@ export const resetSeasonData = async (league: LeagueState) => {
     league.idCounters = { game: 1, drive: 1, play: 1, gameLog: 1, player: 1 };
   }
 
-  const schedule = buildSchedule();
-  const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-  league.pending_rivalries = await applyRivalriesToSchedule(schedule, userTeam, league.teams);
-
-  const gamesToSave = await buildRivalryGameRecords(league);
-  return { schedule, gamesToSave };
+  return initializeNonConScheduling(league);
 };
 
 export const buildRivalryGameRecords = async (league: LeagueState): Promise<GameRecord[]> => {

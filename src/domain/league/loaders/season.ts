@@ -12,6 +12,7 @@ import {
 import { saveLeague } from '../../../db/leagueRepo';
 import {
   clearAllSimData,
+  clearSimArtifacts,
   getAllGames,
   getAllPlayers,
   getGameById,
@@ -22,8 +23,6 @@ import {
 } from '../../../db/simRepo';
 import { buildPreviewData, buildTeamsAndConferences } from '../../baseData';
 import {
-  applyRivalriesToSchedule,
-  buildSchedule,
   buildUserScheduleFromGames,
   fillUserSchedule,
   listAvailableTeams as listTeamsForWeek,
@@ -34,7 +33,7 @@ import { DEFAULT_SETTINGS } from '../../../types/league';
 import { getLastWeekByPlayoffTeams } from '../postseason';
 import { normalizeLeague } from '../normalize';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
-import { buildRivalryGameRecords } from '../seasonReset';
+import { initializeNonConScheduling } from '../seasonReset';
 import { advanceToPreseason } from '../stages';
 import { ensureRosters } from '../../roster';
 
@@ -147,14 +146,7 @@ export const startNewLeague = async (
   await ensureRosters(league);
   await primeHistoryData(startYear);
 
-  const schedule = buildSchedule();
-  league.pending_rivalries = await applyRivalriesToSchedule(
-    schedule,
-    userTeam,
-    teams
-  );
-
-  const gamesToSave = await buildRivalryGameRecords(league);
+  const { schedule, gamesToSave } = await initializeNonConScheduling(league);
   if (gamesToSave.length) {
     await saveGames(gamesToSave);
   }
@@ -215,6 +207,7 @@ export const loadDashboard = async () => {
         name: game.name ?? null,
       }));
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams, fixedGames);
+    await clearSimArtifacts();
     league.info.stage = 'season';
     league.scheduleBuilt = true;
     await initializeSimData(league, fullGames);
@@ -283,6 +276,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
         name: game.name ?? null,
       }));
     const fullGames = fillUserSchedule(schedule, userTeam, league.teams, fixedGames);
+    await clearSimArtifacts();
     league.info.stage = 'season';
     league.scheduleBuilt = true;
     await initializeSimData(league, fullGames);
