@@ -2,7 +2,13 @@ import type { Info, Team } from '../../../types/domain';
 import type { LaunchProps, LeagueState, NonConData } from '../../../types/league';
 import type { YearData } from '../../../types/baseData';
 import type { GameRecord } from '../../../types/db';
-import { getHistoryData, getYearsIndex, getRatingsData, getYearData } from '../../../db/baseData';
+import {
+  clearBaseDataCache,
+  getHistoryData,
+  getYearsIndex,
+  getRatingsData,
+  getYearData,
+} from '../../../db/baseData';
 import { saveLeague } from '../../../db/leagueRepo';
 import {
   clearAllSimData,
@@ -79,6 +85,7 @@ export const startNewLeague = async (
   playoffSettings?: PlayoffInitSettings
 ): Promise<NonConData> => {
   await clearAllSimData();
+  await clearBaseDataCache();
   const [yearData, teamsAndConferences] = await Promise.all([
     getYearData(year),
     buildTeamsAndConferences(year),
