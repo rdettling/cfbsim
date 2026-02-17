@@ -8,6 +8,7 @@ import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
 import { buildWatchability } from './games';
 import { getGameById, getGamesByWeek, saveGames } from '../../db/simRepo';
+import { finalizePostseasonRankings } from './rankings';
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
   teamA.conference !== 'Independent' && teamA.conference === teamB.conference;
@@ -514,6 +515,7 @@ const ensureSummaryStage = async (league: LeagueState) => {
   const natty = await getGameById(league.playoff.natty);
   if (natty?.winnerId) {
     league.info.stage = 'summary';
+    finalizePostseasonRankings(league.teams, natty);
   }
 };
 

@@ -1,6 +1,7 @@
 import type { Info, Team } from '../../types/domain';
 import type { SimGame } from '../../types/sim';
 import type { LeagueState } from '../../types/league';
+import type { GameRecord } from '../../types/db';
 import { DEFAULT_SETTINGS } from '../../types/league';
 
 const RANKING_TOTAL_WEEKS = 14;
@@ -124,6 +125,40 @@ export const updateRankings = (
     if (b.poll_score !== a.poll_score) return b.poll_score - a.poll_score;
     return (a.last_rank ?? a.ranking) - (b.last_rank ?? b.ranking);
   });
+  sorted.forEach((team, index) => {
+    team.ranking = index + 1;
+  });
+};
+
+export const finalizePostseasonRankings = (
+  teams: Team[],
+  natty: GameRecord | null
+) => {
+  teams.forEach(team => {
+    const gamesPlayed = team.totalWins + team.totalLosses;
+    const baseScore = team.strength_of_record / Math.max(1, gamesPlayed);
+    team.poll_score = Math.round(baseScore * 10) / 10;
+  });
+
+  const sorted = [...teams].sort((a, b) => {
+    if (b.poll_score !== a.poll_score) return b.poll_score - a.poll_score;
+    return (a.last_rank ?? a.ranking) - (b.last_rank ?? b.ranking);
+  });
+
+  if (natty?.winnerId && natty.teamAId && natty.teamBId) {
+    const winnerId = natty.winnerId;
+    const loserId = natty.teamAId === winnerId ? natty.teamBId : natty.teamAId;
+    const champ = teams.find(team => team.id === winnerId) ?? null;
+    const runnerUp = teams.find(team => team.id === loserId) ?? null;
+    const rest = sorted.filter(team => team.id !== winnerId && team.id !== loserId);
+    const ordered = [champ, runnerUp].filter(Boolean) as Team[];
+    ordered.push(...rest);
+    ordered.forEach((team, index) => {
+      team.ranking = index + 1;
+    });
+    return;
+  }
+
   sorted.forEach((team, index) => {
     team.ranking = index + 1;
   });
