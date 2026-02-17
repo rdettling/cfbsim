@@ -8,8 +8,8 @@ import { nextId } from './ids';
 import { getHeadlinesData } from '../../db/baseData';
 import { getPlayersByTeam } from '../../db/simRepo';
 
-export const DRIVES_PER_TEAM = 12;
 export const OT_START_YARD_LINE = 75;
+export const SECONDS_PER_QUARTER = 15 * 60;
 
 const BASE_COMP_PERCENT = 0.62;
 const BASE_SACK_RATE = 0.07;
@@ -33,6 +33,78 @@ const RUN_STD_DEV = 5.5;
 const RUN_ADVANTAGE_FACTOR = 1.0;
 const RUN_POSITIVE_MULTIPLIER = 0.0004;
 const RUN_POSITIVE_POWER = 4.2;
+
+type ClockState = {
+  quarter: number;
+  secondsLeft: number;
+  clockRunning: boolean;
+};
+
+const randomInt = (min: number, max: number) => {
+  const range = Math.max(0, max - min);
+  return min + Math.floor(Math.random() * (range + 1));
+};
+
+const isClockStopResult = (playType: string, result: string) => {
+  if (result === 'incomplete pass') return true;
+  if (result === 'interception' || result === 'fumble') return true;
+  if (result === 'touchdown' || result === 'safety') return true;
+  if (result === 'turnover on downs') return true;
+  if (result === 'made field goal' || result === 'missed field goal') return true;
+  if (result === 'punt') return true;
+  if (playType === 'field goal' || playType === 'punt') return true;
+  return false;
+};
+
+const samplePlaySeconds = (playType: string, result: string) => {
+  if (playType === 'punt' || playType === 'field goal') {
+    return randomInt(10, 20);
+  }
+  if (result === 'incomplete pass') {
+    return randomInt(5, 10);
+  }
+  if (playType === 'pass') {
+    return randomInt(20, 30);
+  }
+  return randomInt(30, 40);
+};
+
+const applyPlayClock = (clock: ClockState, playType: string, result: string) => {
+  const playSeconds = samplePlaySeconds(playType, result);
+  let secondsLeft = clock.secondsLeft - playSeconds;
+  let quarter = clock.quarter;
+  let halfEnded = false;
+  let gameEnded = false;
+
+  if (secondsLeft <= 0) {
+    if (quarter >= 4) {
+      secondsLeft = 0;
+      gameEnded = true;
+    } else {
+      if (quarter === 2) {
+        halfEnded = true;
+      }
+      quarter += 1;
+      secondsLeft = SECONDS_PER_QUARTER;
+    }
+  }
+
+  return {
+    clock: {
+      quarter,
+      secondsLeft,
+      clockRunning: !isClockStopResult(playType, result),
+    },
+    playSeconds,
+    halfEnded,
+    gameEnded,
+  };
+};
+
+const totalSecondsLeft = (clock: ClockState) => {
+  const remainingQuarters = Math.max(0, 4 - clock.quarter);
+  return remainingQuarters * SECONDS_PER_QUARTER + clock.secondsLeft;
+};
 
 const gaussian = (mean: number, stdDev: number) => {
   let u = 0;
@@ -139,9 +211,9 @@ const fieldGoal = (fieldPosition: number) => {
   return false;
 };
 
-const pointsNeeded = (lead: number, driveNum: number) => {
+const pointsNeeded = (lead: number, timeLeftSeconds: number) => {
   if (lead >= 0) return 0;
-  const drivesLeft = Math.max(1, DRIVES_PER_TEAM - driveNum);
+  const drivesLeft = Math.max(1, Math.round(timeLeftSeconds / 180));
   const deficit = Math.abs(lead);
   const possibleScores = [3, 6, 7, 8];
   const maxScore = Math.max(...possibleScores);
@@ -314,10 +386,15 @@ export const simDrive = (
   offense: Team,
   defense: Team,
   driveNum: number,
-  starters: StartersCache
+  starters: StartersCache,
+  clockEnabled = true
 ): SimDrive => {
-  const driveIndex = driveNum % 2 === 0 ? driveNum / 2 : (driveNum - 1) / 2;
-  const needed = pointsNeeded(lead, driveIndex);
+  const clock: ClockState = {
+    quarter: game.quarter,
+    secondsLeft: game.clockSecondsLeft,
+    clockRunning: game.clockRunning,
+  };
+  const needed = clockEnabled ? pointsNeeded(lead, totalSecondsLeft(clock)) : 0;
   const driveId = nextId(league, 'drive');
 
   const drive: DriveRecord = {
@@ -336,6 +413,17 @@ export const simDrive = (
 
   const plays: PlayRecord[] = [];
   let yardsLeft = 10;
+  const applyClock = (playType: string, result: string) => {
+    if (!clockEnabled) {
+      return {
+        clock,
+        playSeconds: 0,
+        halfEnded: false,
+        gameEnded: false,
+      };
+    }
+    return applyPlayClock(clock, playType, result);
+  };
 
   while (!drive.result) {
     for (let down = 1; down <= 4; down += 1) {
@@ -378,6 +466,16 @@ export const simDrive = (
             play.result = 'missed field goal';
             drive.result = 'missed field goal';
           }
+          play.quarter = clock.quarter;
+          play.clockSecondsLeft = clock.secondsLeft;
+          const clockResult = applyClock(play.playType, play.result);
+          play.playSeconds = clockResult.playSeconds;
+          game.quarter = clockResult.clock.quarter;
+          game.clockSecondsLeft = clockResult.clock.secondsLeft;
+          game.clockRunning = clockResult.clock.clockRunning;
+          clock.quarter = clockResult.clock.quarter;
+          clock.secondsLeft = clockResult.clock.secondsLeft;
+          clock.clockRunning = clockResult.clock.clockRunning;
           formatPlayText(play, offense, defense, starters);
           plays.push(play);
           return {
@@ -392,6 +490,16 @@ export const simDrive = (
           play.yardsGained = 0;
           drive.result = 'punt';
           drive.points = 0;
+          play.quarter = clock.quarter;
+          play.clockSecondsLeft = clock.secondsLeft;
+          const clockResult = applyClock(play.playType, play.result);
+          play.playSeconds = clockResult.playSeconds;
+          game.quarter = clockResult.clock.quarter;
+          game.clockSecondsLeft = clockResult.clock.secondsLeft;
+          game.clockRunning = clockResult.clock.clockRunning;
+          clock.quarter = clockResult.clock.quarter;
+          clock.secondsLeft = clockResult.clock.secondsLeft;
+          clock.clockRunning = clockResult.clock.clockRunning;
           formatPlayText(play, offense, defense, starters);
           plays.push(play);
           return {
@@ -413,6 +521,17 @@ export const simDrive = (
       fieldPosition += result.yards;
       yardsLeft -= result.yards;
       play.yardsLeft = yardsLeft;
+
+      play.quarter = clock.quarter;
+      play.clockSecondsLeft = clock.secondsLeft;
+      const clockResult = applyClock(play.playType, play.result);
+      play.playSeconds = clockResult.playSeconds;
+      game.quarter = clockResult.clock.quarter;
+      game.clockSecondsLeft = clockResult.clock.secondsLeft;
+      game.clockRunning = clockResult.clock.clockRunning;
+      clock.quarter = clockResult.clock.quarter;
+      clock.secondsLeft = clockResult.clock.secondsLeft;
+      clock.clockRunning = clockResult.clock.clockRunning;
 
       formatPlayText(play, offense, defense, starters);
       plays.push(play);
@@ -442,6 +561,15 @@ export const simDrive = (
         return { record: drive, plays, nextFieldPosition: 100 - fieldPosition };
       }
 
+      if (clockResult.halfEnded) {
+        drive.result = 'end of half';
+        return { record: drive, plays, nextFieldPosition: 20 };
+      }
+      if (clockResult.gameEnded) {
+        drive.result = 'end of game';
+        return { record: drive, plays, nextFieldPosition: 20 };
+      }
+
       if (yardsLeft <= 0) {
         down = 0;
         yardsLeft = startingYardsLeft(fieldPosition);
@@ -460,10 +588,19 @@ export const startInteractiveDrive = (
   lead: number,
   offense: Team,
   defense: Team,
-  driveNum: number
+  driveNum: number,
+  clockEnabled = true
 ) => {
-  const driveIndex = driveNum % 2 === 0 ? driveNum / 2 : (driveNum - 1) / 2;
-  const needed = pointsNeeded(lead, driveIndex);
+  const needed = clockEnabled
+    ? pointsNeeded(
+      lead,
+      totalSecondsLeft({
+        quarter: game.quarter,
+        secondsLeft: game.clockSecondsLeft,
+        clockRunning: game.clockRunning,
+      })
+    )
+    : 0;
   const driveId = nextId(league, 'drive');
 
   const drive: DriveRecord = {
@@ -500,7 +637,8 @@ export const stepInteractiveDrive = (
   decision: 'run' | 'pass' | 'punt' | 'field_goal' | 'auto',
   offense: Team,
   defense: Team,
-  starters: StartersCache
+  starters: StartersCache,
+  clockEnabled = true
 ) => {
   const playId = nextId(league, 'play');
   const down = state.down;
@@ -551,6 +689,24 @@ export const stepInteractiveDrive = (
         play.result = 'missed field goal';
         state.drive.result = 'missed field goal';
       }
+      play.quarter = game.quarter;
+      play.clockSecondsLeft = game.clockSecondsLeft;
+      const clockResult = clockEnabled
+        ? applyPlayClock(
+          { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+          play.playType,
+          play.result
+        )
+        : {
+          clock: { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+          playSeconds: 0,
+          halfEnded: false,
+          gameEnded: false,
+        };
+      play.playSeconds = clockResult.playSeconds;
+      game.quarter = clockResult.clock.quarter;
+      game.clockSecondsLeft = clockResult.clock.secondsLeft;
+      game.clockRunning = clockResult.clock.clockRunning;
       formatPlayText(play, offense, defense, starters);
       if (state.drive.result === 'made field goal') {
         game.scoreA = state.drive.scoreAAfter;
@@ -561,6 +717,7 @@ export const stepInteractiveDrive = (
         play,
         driveComplete: true,
         nextFieldPosition: state.drive.result === 'made field goal' ? 20 : 100 - fieldPosition,
+        gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
       };
     }
 
@@ -569,12 +726,31 @@ export const stepInteractiveDrive = (
     play.yardsGained = 0;
     state.drive.result = 'punt';
     state.drive.points = 0;
+    play.quarter = game.quarter;
+    play.clockSecondsLeft = game.clockSecondsLeft;
+    const clockResult = clockEnabled
+      ? applyPlayClock(
+        { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+        play.playType,
+        play.result
+      )
+      : {
+        clock: { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+        playSeconds: 0,
+        halfEnded: false,
+        gameEnded: false,
+      };
+    play.playSeconds = clockResult.playSeconds;
+    game.quarter = clockResult.clock.quarter;
+    game.clockSecondsLeft = clockResult.clock.secondsLeft;
+    game.clockRunning = clockResult.clock.clockRunning;
     formatPlayText(play, offense, defense, starters);
     return {
       state,
       play,
       driveComplete: true,
       nextFieldPosition: 100 - (fieldPosition + 40),
+      gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
     };
   }
 
@@ -591,6 +767,25 @@ export const stepInteractiveDrive = (
   let nextYardsLeft = yardsLeft - result.yards;
   play.yardsLeft = nextYardsLeft;
 
+  play.quarter = game.quarter;
+  play.clockSecondsLeft = game.clockSecondsLeft;
+  const clockResult = clockEnabled
+    ? applyPlayClock(
+      { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+      play.playType,
+      play.result
+    )
+    : {
+      clock: { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning },
+      playSeconds: 0,
+      halfEnded: false,
+      gameEnded: false,
+    };
+  play.playSeconds = clockResult.playSeconds;
+  game.quarter = clockResult.clock.quarter;
+  game.clockSecondsLeft = clockResult.clock.secondsLeft;
+  game.clockRunning = clockResult.clock.clockRunning;
+
   formatPlayText(play, offense, defense, starters);
 
   if (result.outcome === 'touchdown') {
@@ -604,6 +799,7 @@ export const stepInteractiveDrive = (
       play,
       driveComplete: true,
       nextFieldPosition: 20,
+      gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
     };
   }
   if (result.outcome === 'interception') {
@@ -613,6 +809,7 @@ export const stepInteractiveDrive = (
       play,
       driveComplete: true,
       nextFieldPosition: 100 - nextFieldPosition,
+      gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
     };
   }
   if (result.outcome === 'fumble') {
@@ -622,6 +819,7 @@ export const stepInteractiveDrive = (
       play,
       driveComplete: true,
       nextFieldPosition: 100 - nextFieldPosition,
+      gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
     };
   }
   if (nextFieldPosition < 1) {
@@ -635,6 +833,7 @@ export const stepInteractiveDrive = (
       play,
       driveComplete: true,
       nextFieldPosition: 20,
+      gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
     };
   }
   if (down === 4 && nextYardsLeft > 0) {
@@ -644,6 +843,28 @@ export const stepInteractiveDrive = (
       play,
       driveComplete: true,
       nextFieldPosition: 100 - nextFieldPosition,
+      gameComplete: clockResult.gameEnded && game.scoreA !== game.scoreB,
+    };
+  }
+
+  if (clockResult.halfEnded) {
+    state.drive.result = 'end of half';
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 20,
+      gameComplete: false,
+    };
+  }
+  if (clockResult.gameEnded) {
+    state.drive.result = 'end of game';
+    return {
+      state,
+      play,
+      driveComplete: true,
+      nextFieldPosition: 20,
+      gameComplete: game.scoreA !== game.scoreB,
     };
   }
 
@@ -663,6 +884,7 @@ export const stepInteractiveDrive = (
     play,
     driveComplete: false,
     nextFieldPosition: null,
+    gameComplete: false,
   };
 };
 
@@ -674,20 +896,21 @@ export const simGame = (
   game.scoreA = 0;
   game.scoreB = 0;
   game.overtime = 0;
-  const totalDrives = DRIVES_PER_TEAM * 2;
-  const drives: SimDrive[] = [];
   const openingIsTeamA = isTeamAOpeningOffense(game);
+  game.quarter = 1;
+  game.clockSecondsLeft = SECONDS_PER_QUARTER;
+  game.clockRunning = true;
 
+  const drives: SimDrive[] = [];
   let fieldPosition = 20;
-  for (let i = 0; i < totalDrives; i += 1) {
-    const isTeamA = openingIsTeamA ? i % 2 === 0 : i % 2 !== 0;
-    const offense = isTeamA ? game.teamA : game.teamB;
-    const defense = isTeamA ? game.teamB : game.teamA;
-    const lead = isTeamA ? game.scoreA - game.scoreB : game.scoreB - game.scoreA;
+  let nextOffenseIsTeamA = openingIsTeamA;
+  let driveNum = 0;
 
-    if (i === 0 || i === DRIVES_PER_TEAM) {
-      fieldPosition = 20;
-    }
+  while (true) {
+    const offense = nextOffenseIsTeamA ? game.teamA : game.teamB;
+    const defense = nextOffenseIsTeamA ? game.teamB : game.teamA;
+    const lead = nextOffenseIsTeamA ? game.scoreA - game.scoreB : game.scoreB - game.scoreA;
+    const prevQuarter = game.quarter;
 
     const driveResult = simDrive(
       league,
@@ -696,18 +919,33 @@ export const simGame = (
       lead,
       offense,
       defense,
-      i,
-      starters
+      driveNum,
+      starters,
+      true
     );
     fieldPosition = driveResult.nextFieldPosition;
 
     game.scoreA = driveResult.record.scoreAAfter;
     game.scoreB = driveResult.record.scoreBAfter;
     drives.push(driveResult);
+    driveNum += 1;
+
+    const halftimeReached = prevQuarter === 2
+      && game.quarter === 3
+      && game.clockSecondsLeft === SECONDS_PER_QUARTER;
+    if (game.quarter === 4 && game.clockSecondsLeft === 0) {
+      break;
+    }
+    if (halftimeReached) {
+      fieldPosition = 20;
+      nextOffenseIsTeamA = !openingIsTeamA;
+      continue;
+    }
+    nextOffenseIsTeamA = !nextOffenseIsTeamA;
   }
 
   if (game.scoreA === game.scoreB) {
-    let driveNum = DRIVES_PER_TEAM * 2 + 1;
+    let driveNumOt = driveNum + 1;
     while (game.scoreA === game.scoreB) {
       game.overtime += 1;
       for (let possession = 0; possession < 2; possession += 1) {
@@ -722,13 +960,14 @@ export const simGame = (
           lead,
           offense,
           defense,
-          driveNum,
-          starters
+          driveNumOt,
+          starters,
+          false
         );
         game.scoreA = driveResult.record.scoreAAfter;
         game.scoreB = driveResult.record.scoreBAfter;
         drives.push(driveResult);
-        driveNum += 1;
+        driveNumOt += 1;
         if (possession === 1 && game.scoreA !== game.scoreB) {
           break;
         }
@@ -1150,6 +1389,9 @@ export const buildDriveResponse = (
         result: play.result,
         scoreA: play.scoreA,
         scoreB: play.scoreB,
+        quarter: play.quarter,
+        clockSecondsLeft: play.clockSecondsLeft,
+        playSeconds: play.playSeconds,
       }));
       const yards = drivePlays.reduce((sum, play) => sum + play.yardsGained, 0);
       return {
@@ -1222,6 +1464,9 @@ export const hydrateGame = (game: GameRecord, teamsById: Map<number, Team>): Sim
   resultA: game.resultA,
   resultB: game.resultB,
   overtime: game.overtime,
+  quarter: game.quarter ?? 1,
+  clockSecondsLeft: game.clockSecondsLeft ?? SECONDS_PER_QUARTER,
+  clockRunning: true,
   scoreA: game.scoreA ?? 0,
   scoreB: game.scoreB ?? 0,
   headline: game.headline,

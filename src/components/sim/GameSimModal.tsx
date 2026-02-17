@@ -65,7 +65,13 @@ const GameSimModal = ({
         state.gameData,
         { scoreA: rawScoreA, scoreB: rawScoreB },
         state.isTeamAOnOffense,
-        state.displayDrive?.driveNum ?? 0
+        state.displayDrive?.driveNum ?? 0,
+        {
+            quarter: state.quarter,
+            clockSecondsLeft: state.clockSecondsLeft,
+            inOvertime: state.inOvertime,
+            overtimeCount: state.overtimeCount,
+        }
     );
 
     return (

@@ -11,6 +11,9 @@ export interface Play {
   result: string;
   scoreA: number;
   scoreB: number;
+  quarter?: number;
+  clockSecondsLeft?: number;
+  playSeconds?: number;
 }
 
 export interface Drive {

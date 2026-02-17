@@ -26,13 +26,18 @@ type SimMatchup = {
   awayIsTeamA: boolean;
   isAwayOnOffense: boolean;
   currentDriveNum: number;
+  quarter: number;
+  clockSecondsLeft: number;
+  inOvertime: boolean;
+  overtimeCount: number;
 };
 
 export const buildSimMatchup = (
   game: SimGameSource,
   scores: { scoreA: number; scoreB: number },
   isTeamAOnOffense: boolean,
-  currentDriveNum: number
+  currentDriveNum: number,
+  clock?: { quarter: number; clockSecondsLeft: number; inOvertime?: boolean; overtimeCount?: number }
 ): SimMatchup => {
   const { home, away } = resolveHomeAway({
     teamA: game.teamA,
@@ -45,6 +50,10 @@ export const buildSimMatchup = (
   const awayScore = awayIsTeamA ? scores.scoreA : scores.scoreB;
   const homeScore = awayIsTeamA ? scores.scoreB : scores.scoreA;
   const isAwayOnOffense = awayIsTeamA ? isTeamAOnOffense : !isTeamAOnOffense;
+  const quarter = clock?.quarter ?? 1;
+  const clockSecondsLeft = clock?.clockSecondsLeft ?? 900;
+  const inOvertime = clock?.inOvertime ?? false;
+  const overtimeCount = clock?.overtimeCount ?? 0;
 
   return {
     homeTeam: home,
@@ -56,5 +65,9 @@ export const buildSimMatchup = (
     awayIsTeamA,
     isAwayOnOffense,
     currentDriveNum,
+    quarter,
+    clockSecondsLeft,
+    inOvertime,
+    overtimeCount,
   };
 };

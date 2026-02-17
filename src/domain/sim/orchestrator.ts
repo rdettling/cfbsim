@@ -32,6 +32,7 @@ import {
   buildStartersCache,
   loadPlayersMap,
   hydrateGame,
+  SECONDS_PER_QUARTER,
 } from './engine';
 import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
 import { handleSpecialWeeks } from './postseason';
@@ -66,6 +67,8 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
       resultA: null,
       resultB: null,
       overtime: 0,
+      quarter: 1,
+      clockSecondsLeft: SECONDS_PER_QUARTER,
       scoreA: null,
       scoreB: null,
       headline: null,
@@ -233,6 +236,8 @@ export const finalizeGameSimulation = async (params: {
     resultA: simGame.resultA,
     resultB: simGame.resultB,
     overtime: simGame.overtime,
+    quarter: simGame.quarter,
+    clockSecondsLeft: simGame.clockSecondsLeft,
     headline: simGame.headline ?? null,
     headline_subtitle: simGame.headline_subtitle ?? null,
     headline_tags: simGame.headline_tags ?? null,
@@ -315,6 +320,8 @@ export const advanceWeeks = async (destWeek: number) => {
       gameRecord.resultA = simGameObj.resultA;
       gameRecord.resultB = simGameObj.resultB;
       gameRecord.overtime = simGameObj.overtime;
+      gameRecord.quarter = simGameObj.quarter;
+      gameRecord.clockSecondsLeft = simGameObj.clockSecondsLeft;
     });
 
     if (simGames.length) {

@@ -46,6 +46,8 @@ export const createNonConGameRecord = async (
     resultA: null,
     resultB: null,
     overtime: 0,
+    quarter: 1,
+    clockSecondsLeft: 900,
     scoreA: null,
     scoreB: null,
     headline: null,

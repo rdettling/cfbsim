@@ -24,6 +24,9 @@ export interface SimGame {
   resultA: string | null;
   resultB: string | null;
   overtime: number;
+  quarter: number;
+  clockSecondsLeft: number;
+  clockRunning: boolean;
   scoreA: number;
   scoreB: number;
   headline: string | null;
@@ -57,4 +60,5 @@ export interface InteractiveStepResult {
   play: PlayRecord;
   driveComplete: boolean;
   nextFieldPosition: number | null;
+  gameComplete: boolean;
 }

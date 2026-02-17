@@ -230,6 +230,10 @@ export interface SimMatchup {
   awayIsTeamA: boolean;
   isAwayOnOffense: boolean;
   currentDriveNum: number;
+  quarter: number;
+  clockSecondsLeft: number;
+  inOvertime: boolean;
+  overtimeCount: number;
 }
 
 export interface FootballFieldProps {
