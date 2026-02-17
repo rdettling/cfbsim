@@ -3,9 +3,6 @@ import type { SimGame } from '../../types/sim';
 import { HOME_FIELD_ADVANTAGE } from '../odds';
 import { SIM_TUNING } from './config';
 
-const PASS_POSITIVE_POWER = 3.2;
-const RUN_POSITIVE_POWER = 4.2;
-
 const gaussian = (mean: number, stdDev: number) => {
   let u = 0;
   let v = 0;
@@ -24,21 +21,22 @@ const adjustedRatings = (offense: Team, defense: Team, game?: SimGame) => {
   return { offenseRating, defenseRating };
 };
 
-const ratingAdvantage = (offense: Team, defense: Team, game?: SimGame) => {
+const ratingMultiplier = (offense: Team, defense: Team, game?: SimGame) => {
   const { offenseRating, defenseRating } = adjustedRatings(offense, defense, game);
   const ratingDiff = offenseRating - defenseRating;
-  return Math.tanh(ratingDiff / SIM_TUNING.outcomes.advantageScale);
+  return 1 + (ratingDiff / SIM_TUNING.outcomes.ratingDiffDivisor);
 };
 
 const passYards = (offense: Team, defense: Team, game?: SimGame) => {
   const { offenseRating, defenseRating } = adjustedRatings(offense, defense, game);
-  const advantageYardage = ratingAdvantage(offense, defense, game) * SIM_TUNING.outcomes.pass.advantageFactor;
-  const meanYardage = SIM_TUNING.outcomes.pass.baseMean + advantageYardage;
+  const meanYardage = SIM_TUNING.outcomes.pass.baseMean;
   const rawYardage = gaussian(meanYardage, SIM_TUNING.outcomes.pass.stdDev);
   if (rawYardage < 0) return Math.round(rawYardage);
   const multiplied = rawYardage + SIM_TUNING.outcomes.pass.positiveMultiplier
-    * (rawYardage ** PASS_POSITIVE_POWER);
-  return Math.min(Math.round(multiplied), 99);
+    * (rawYardage ** SIM_TUNING.outcomes.passPositivePower);
+  const ratingMult = ratingMultiplier(offense, defense, game);
+  const adjusted = multiplied > 0 ? multiplied * ratingMult : multiplied;
+  return Math.min(Math.round(adjusted), 99);
 };
 
 const sackYards = () => Math.min(
@@ -47,25 +45,25 @@ const sackYards = () => Math.min(
 );
 
 const runYards = (offense: Team, defense: Team, game?: SimGame) => {
-  const advantageYardage = ratingAdvantage(offense, defense, game) * SIM_TUNING.outcomes.run.advantageFactor;
-  const meanYardage = SIM_TUNING.outcomes.run.baseMean + advantageYardage;
+  const meanYardage = SIM_TUNING.outcomes.run.baseMean;
   const rawYardage = gaussian(meanYardage, SIM_TUNING.outcomes.run.stdDev);
   if (rawYardage < 0) return Math.round(rawYardage);
   const multiplied = rawYardage + SIM_TUNING.outcomes.run.positiveMultiplier
-    * (rawYardage ** RUN_POSITIVE_POWER);
-  return Math.min(Math.round(multiplied), 99);
+    * (rawYardage ** SIM_TUNING.outcomes.runPositivePower);
+  const ratingMult = ratingMultiplier(offense, defense, game);
+  const adjusted = multiplied > 0 ? multiplied * ratingMult : multiplied;
+  return Math.min(Math.round(adjusted), 99);
 };
 
 export const simPass = (fieldPosition: number, offense: Team, defense: Team, game?: SimGame) => {
-  const adv = ratingAdvantage(offense, defense, game);
   const randSack = Math.random();
   const randCompletion = Math.random();
   const randInterception = Math.random();
   const result = { outcome: '', yards: 0 };
 
-  const sackRate = Math.max(0.01, SIM_TUNING.outcomes.baseSackRate - adv * SIM_TUNING.outcomes.riskAdvantageFactor);
-  const compRate = Math.min(0.8, Math.max(0.45, SIM_TUNING.outcomes.baseCompPercent + adv * SIM_TUNING.outcomes.compRateAdvantageFactor));
-  const intRate = Math.max(0.01, SIM_TUNING.outcomes.baseIntRate - adv * SIM_TUNING.outcomes.riskAdvantageFactor);
+  const sackRate = Math.max(0.01, SIM_TUNING.outcomes.baseSackRate);
+  const compRate = Math.min(0.8, Math.max(0.45, SIM_TUNING.outcomes.baseCompPercent));
+  const intRate = Math.max(0.01, SIM_TUNING.outcomes.baseIntRate);
 
   if (randSack < sackRate) {
     result.outcome = 'sack';
@@ -88,10 +86,9 @@ export const simPass = (fieldPosition: number, offense: Team, defense: Team, gam
 };
 
 export const simRun = (fieldPosition: number, offense: Team, defense: Team, game?: SimGame) => {
-  const adv = ratingAdvantage(offense, defense, game);
   const randFumble = Math.random();
   const result = { outcome: '', yards: 0 };
-  const fumbleRate = Math.max(0.005, SIM_TUNING.outcomes.baseFumbleRate - adv * SIM_TUNING.outcomes.riskAdvantageFactor);
+  const fumbleRate = Math.max(0.005, SIM_TUNING.outcomes.baseFumbleRate);
   if (randFumble < fumbleRate) {
     result.outcome = 'fumble';
   } else {

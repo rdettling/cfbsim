@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { simGame } from '../src/domain/sim/engine';
+import { applySimTuning } from '../src/domain/sim/config';
 import type { LeagueState } from '../src/types/league';
 import type { Team } from '../src/types/domain';
 import type { SimGame, StartersCache } from '../src/types/sim';
@@ -16,12 +17,10 @@ const TARGETS: Record<number, number> = {
 };
 
 const DIFFS = Object.keys(TARGETS).map(Number);
-const GAMES_PER_DIFF = 120;
-const ITERATIONS = 120;
+const GAMES_PER_DIFF = 400;
+const PASSES = 50;
 const WRITE = true;
 const BASE_RATING = 75;
-
-const random = (min: number, max: number) => min + Math.random() * (max - min);
 
 const loadTuning = () => JSON.parse(readFileSync(TUNING_PATH, 'utf-8'));
 
@@ -145,8 +144,7 @@ const runDiff = (diff: number) => {
     if (game.scoreA > game.scoreB) teamAWins += 1;
   }
 
-  const winPct = teamAWins / GAMES_PER_DIFF;
-  return winPct;
+  return teamAWins / GAMES_PER_DIFF;
 };
 
 const evaluate = () => {
@@ -162,32 +160,40 @@ const evaluate = () => {
   return { totalError, results };
 };
 
-const candidateFromBase = (baseCfg: any) => {
-  const candidate = structuredClone(baseCfg);
-
-  candidate.outcomes.advantageScale *= random(1.0, 1.4);
-  candidate.outcomes.compRateAdvantageFactor *= random(0.7, 1.3);
-  candidate.outcomes.riskAdvantageFactor *= random(0.7, 1.3);
-
-  candidate.outcomes.pass.advantageFactor *= random(0.7, 1.3);
-  candidate.outcomes.run.advantageFactor *= random(0.7, 1.3);
-
-  return candidate;
-};
-
 let best = loadTuning();
+applySimTuning(best);
 let bestEval = evaluate();
 
-for (let i = 0; i < ITERATIONS; i += 1) {
-  const candidate = candidateFromBase(best);
-  writeFileSync(TUNING_PATH, JSON.stringify(candidate, null, 2));
-  const evalResult = evaluate();
-  if (evalResult.totalError < bestEval.totalError) {
-    best = candidate;
-    bestEval = evalResult;
-  }
-  if ((i + 1) % 10 === 0) {
-    console.log(`iter ${i + 1}/${ITERATIONS} bestError=${bestEval.totalError.toFixed(4)}`);
+const scaleCandidates = [0.6, 0.8, 1.0, 1.25, 1.5, 1.8];
+
+for (let pass = 0; pass < PASSES; pass += 1) {
+  const current = best;
+
+  const tune = (label: string, updater: (candidate: any, scale: number) => void) => {
+    let localBest = current;
+    let localEval = bestEval;
+    scaleCandidates.forEach(scale => {
+      const candidate = structuredClone(current);
+      updater(candidate, scale);
+      applySimTuning(candidate);
+      const evalResult = evaluate();
+      if (evalResult.totalError < localEval.totalError) {
+        localBest = candidate;
+        localEval = evalResult;
+      }
+    });
+    console.log(`pass ${pass + 1} ${label}: bestError=${localEval.totalError.toFixed(4)}`);
+    return { tuning: localBest, eval: localEval };
+  };
+
+  const step1 = tune('ratingDiffDivisor', (candidate, scale) => {
+    candidate.outcomes.ratingDiffDivisor = Math.max(10, current.outcomes.ratingDiffDivisor * scale);
+  });
+  best = step1.tuning;
+  bestEval = step1.eval;
+
+  if ((pass + 1) % 5 === 0) {
+    console.log(`iter ${pass + 1}/${PASSES} bestError=${bestEval.totalError.toFixed(4)}`);
   }
 }
 
@@ -195,6 +201,7 @@ console.log('\nBest win rates:', bestEval.results);
 console.log('Total error:', bestEval.totalError.toFixed(4));
 
 if (WRITE) {
+  applySimTuning(best);
   writeFileSync(TUNING_PATH, JSON.stringify(best, null, 2));
   console.log(`\nWrote tuning to ${TUNING_PATH}`);
 }

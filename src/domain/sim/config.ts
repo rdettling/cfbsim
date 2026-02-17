@@ -35,23 +35,21 @@ export type SimTuning = {
     passWeightMax: number;
   };
   outcomes: {
+    passPositivePower: number;
+    runPositivePower: number;
     baseCompPercent: number;
     baseSackRate: number;
     baseIntRate: number;
     baseFumbleRate: number;
-    compRateAdvantageFactor: number;
-    riskAdvantageFactor: number;
-    advantageScale: number;
+    ratingDiffDivisor: number;
     pass: {
       baseMean: number;
       stdDev: number;
-      advantageFactor: number;
       positiveMultiplier: number;
     };
     run: {
       baseMean: number;
       stdDev: number;
-      advantageFactor: number;
       positiveMultiplier: number;
     };
     sack: {
@@ -70,3 +68,21 @@ export type SimTuning = {
 };
 
 export const SIM_TUNING = raw as SimTuning;
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+};
+
+const deepAssign = (target: Record<string, unknown>, source: Record<string, unknown>) => {
+  Object.entries(source).forEach(([key, value]) => {
+    if (isPlainObject(value) && isPlainObject(target[key])) {
+      deepAssign(target[key] as Record<string, unknown>, value);
+      return;
+    }
+    target[key] = value;
+  });
+};
+
+export const applySimTuning = (next: SimTuning) => {
+  deepAssign(SIM_TUNING as Record<string, unknown>, next as Record<string, unknown>);
+};

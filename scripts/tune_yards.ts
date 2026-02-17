@@ -24,11 +24,8 @@ const TARGETS = {
 const SIMS = 20000;
 const ITERATIONS_RUN = 600;
 const ITERATIONS_PASS = 600;
+const ITERATIONS_POWER = 300;
 const WRITE = true;
-
-const PASS_POSITIVE_POWER = 3.2;
-const RUN_POSITIVE_POWER = 4.2;
-
 const random = (min: number, max: number) => min + Math.random() * (max - min);
 
 const gaussian = (mean: number, stdDev: number) => {
@@ -46,17 +43,17 @@ const percentile = (values: number[], p: number) => {
   return sorted[idx];
 };
 
-const runYards = (cfg: any) => {
+const runYards = (cfg: any, positivePower: number) => {
   const raw = gaussian(cfg.baseMean, cfg.stdDev);
   if (raw < 0) return Math.round(raw);
-  const adjusted = raw + cfg.positiveMultiplier * (raw ** RUN_POSITIVE_POWER);
+  const adjusted = raw + cfg.positiveMultiplier * (raw ** positivePower);
   return Math.min(Math.round(adjusted), 99);
 };
 
-const passYards = (cfg: any) => {
+const passYards = (cfg: any, positivePower: number) => {
   const raw = gaussian(cfg.pass.baseMean, cfg.pass.stdDev);
   if (raw < 0) return Math.round(raw);
-  const adjusted = raw + cfg.pass.positiveMultiplier * (raw ** PASS_POSITIVE_POWER);
+  const adjusted = raw + cfg.pass.positiveMultiplier * (raw ** positivePower);
   return Math.min(Math.round(adjusted), 99);
 };
 
@@ -86,7 +83,7 @@ const base = loadTuning();
 const evaluateRun = (candidate: any) => {
   const runSamples: number[] = [];
   for (let i = 0; i < SIMS; i += 1) {
-    runSamples.push(runYards(candidate.outcomes.run));
+    runSamples.push(runYards(candidate.outcomes.run, candidate.outcomes.runPositivePower));
   }
   const runStats = summarize(runSamples);
   const totalScore = score(runStats, TARGETS.run);
@@ -96,7 +93,7 @@ const evaluateRun = (candidate: any) => {
 const evaluatePass = (candidate: any) => {
   const passSamples: number[] = [];
   for (let i = 0; i < SIMS; i += 1) {
-    passSamples.push(passYards(candidate.outcomes));
+    passSamples.push(passYards(candidate.outcomes, candidate.outcomes.passPositivePower));
   }
   const passStats = summarize(passSamples);
   const totalScore = score(passStats, TARGETS.pass);
@@ -118,6 +115,23 @@ const candidatePassFromBase = (baseCfg: any) => {
   pass.baseMean *= random(0.85, 1.15);
   pass.stdDev *= random(0.8, 1.2);
   pass.positiveMultiplier *= random(0.7, 1.3);
+  return candidate;
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const candidatePowerFromBase = (baseCfg: any) => {
+  const candidate = structuredClone(baseCfg);
+  candidate.outcomes.runPositivePower = clamp(
+    candidate.outcomes.runPositivePower * random(0.9, 1.1),
+    2.0,
+    6.0
+  );
+  candidate.outcomes.passPositivePower = clamp(
+    candidate.outcomes.passPositivePower * random(0.9, 1.1),
+    2.0,
+    6.0
+  );
   return candidate;
 };
 
@@ -146,6 +160,28 @@ for (let i = 0; i < ITERATIONS_PASS; i += 1) {
   }
   if ((i + 1) % 20 === 0) {
     console.log(`pass iter ${i + 1}/${ITERATIONS_PASS} bestScore=${bestPassEval.totalScore.toFixed(2)}`);
+  }
+}
+
+let bestPowerEval = {
+  totalScore: bestRunEval.totalScore + bestPassEval.totalScore,
+  runStats: bestRunEval.runStats,
+  passStats: bestPassEval.passStats,
+};
+
+for (let i = 0; i < ITERATIONS_POWER; i += 1) {
+  const candidate = candidatePowerFromBase(best);
+  const runEval = evaluateRun(candidate);
+  const passEval = evaluatePass(candidate);
+  const totalScore = runEval.totalScore + passEval.totalScore;
+  if (totalScore < bestPowerEval.totalScore) {
+    best = candidate;
+    bestRunEval = runEval;
+    bestPassEval = passEval;
+    bestPowerEval = { totalScore, runStats: runEval.runStats, passStats: passEval.passStats };
+  }
+  if ((i + 1) % 20 === 0) {
+    console.log(`power iter ${i + 1}/${ITERATIONS_POWER} bestScore=${bestPowerEval.totalScore.toFixed(2)}`);
   }
 }
 

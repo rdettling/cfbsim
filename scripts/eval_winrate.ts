@@ -1,15 +1,12 @@
-import { kickoffStartFieldPosition, simGame } from '../src/domain/sim/engine';
+import { simGame } from '../src/domain/sim/engine';
 import type { LeagueState } from '../src/types/league';
 import type { Team } from '../src/types/domain';
 import type { SimGame, StartersCache } from '../src/types/sim';
 import type { PlayerRecord } from '../src/types/db';
 
-const GAMES_PER_DIFF = Number(process.argv.find(arg => arg.startsWith('--games='))?.split('=')[1] ?? 300);
-const BASE_RATING = Number(process.argv.find(arg => arg.startsWith('--base='))?.split('=')[1] ?? 75);
-const DIFFS = (process.argv.find(arg => arg.startsWith('--diffs='))?.split('=')[1] ?? '0,7,14,21')
-  .split(',')
-  .map(value => Number(value.trim()))
-  .filter(value => !Number.isNaN(value));
+const GAMES_PER_DIFF = 400;
+const BASE_RATING = 75;
+const DIFFS = [0, 7, 14, 21];
 
 const createTeam = (id: number, rating: number): Team => ({
   id,
@@ -120,7 +117,6 @@ const buildGame = (teamA: Team, teamB: Team): SimGame => ({
 
 const runDiff = (diff: number) => {
   let teamAWins = 0;
-  let teamBWins = 0;
   let scoreMargin = 0;
   let totalYardsA = 0;
   let totalYardsB = 0;
@@ -141,22 +137,20 @@ const runDiff = (diff: number) => {
     });
 
     if (game.scoreA > game.scoreB) teamAWins += 1;
-    else teamBWins += 1;
     scoreMargin += (game.scoreA - game.scoreB);
   }
 
-  const winPct = teamAWins / (teamAWins + teamBWins);
+  const winPct = teamAWins / GAMES_PER_DIFF;
   return {
     diff,
     winPct,
-    avgMargin: scoreMargin / (teamAWins + teamBWins),
-    avgYardsA: totalYardsA / (teamAWins + teamBWins),
-    avgYardsB: totalYardsB / (teamAWins + teamBWins),
+    avgMargin: scoreMargin / GAMES_PER_DIFF,
+    avgYardsA: totalYardsA / GAMES_PER_DIFF,
+    avgYardsB: totalYardsB / GAMES_PER_DIFF,
   };
 };
 
-console.log('Kickoff spot example:', kickoffStartFieldPosition());
-console.log(`Games per diff: ${GAMES_PER_DIFF}`);
+console.log('Games per diff:', GAMES_PER_DIFF);
 console.log('---');
 
 DIFFS.forEach(diff => {

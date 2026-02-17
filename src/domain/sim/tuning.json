@@ -45,24 +45,22 @@
     "passWeightMax": 0.85
   },
   "outcomes": {
-    "baseCompPercent": 0.552177527286331,
-    "baseSackRate": 0.10211755329614874,
-    "baseIntRate": 0.0609179523456317,
+    "passPositivePower": 3.2,
+    "runPositivePower": 4.2,
+    "baseCompPercent": 0.62,
+    "baseSackRate": 0.05,
+    "baseIntRate": 0.03,
     "baseFumbleRate": 0.02,
-    "riskAdvantageFactor": 0.004307588458790255,
-    "compRateAdvantageFactor": 0.02190552545602409,
-    "advantageScale": 643.9063168848696,
+    "ratingDiffDivisor": 100,
     "pass": {
-      "baseMean": 6.674284719072008,
-      "stdDev": 6.020854683653401,
-      "advantageFactor": 1.3661186003319223,
-      "positiveMultiplier": 0.0021919893961092622
+      "baseMean": 6.6177898287501815,
+      "stdDev": 5.887510335402317,
+      "positiveMultiplier": 0.0023652368429015313
     },
     "run": {
-      "baseMean": 3.315893314104928,
-      "stdDev": 4.228514694761939,
-      "advantageFactor": 0.5166814379427295,
-      "positiveMultiplier": 0.00041273348403663985
+      "baseMean": 3.9887977990894194,
+      "stdDev": 4.23545369057931,
+      "positiveMultiplier": 0.00031574348497282156
     },
     "sack": {
       "baseMean": -6,
