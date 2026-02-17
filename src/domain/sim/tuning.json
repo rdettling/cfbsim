@@ -6,10 +6,22 @@
       "normal": 1
     },
     "playSeconds": {
-      "run": { "min": 30, "max": 40 },
-      "passComplete": { "min": 20, "max": 30 },
-      "passIncomplete": { "min": 5, "max": 10 },
-      "specialTeams": { "min": 10, "max": 20 }
+      "run": {
+        "min": 30,
+        "max": 40
+      },
+      "passComplete": {
+        "min": 20,
+        "max": 30
+      },
+      "passIncomplete": {
+        "min": 5,
+        "max": 10
+      },
+      "specialTeams": {
+        "min": 10,
+        "max": 20
+      }
     },
     "minimumPlaySeconds": {
       "run": 15,
@@ -41,29 +53,29 @@
     "passWeightMax": 0.85
   },
   "outcomes": {
-    "baseCompPercent": 0.62,
-    "baseSackRate": 0.07,
-    "baseIntRate": 0.07,
+    "baseCompPercent": 0.5934432851968193,
+    "baseSackRate": 0.07546006483748725,
+    "baseIntRate": 0.07092028195394032,
     "baseFumbleRate": 0.02,
     "sackRateAdvantageFactor": 0.015,
     "compRateAdvantageFactor": 0.04,
     "intRateAdvantageFactor": 0.012,
     "fumbleRateAdvantageFactor": 0.004,
-    "skillDominance": 2.0,
+    "skillDominance": 2,
     "advantageScale": 16,
     "pass": {
-      "baseMean": 7,
-      "stdDev": 5.2,
-      "advantageFactor": 2.0,
-      "positiveMultiplier": 0.004,
-      "positivePower": 3.2
+      "baseMean": 6.05525807131716,
+      "stdDev": 4.644205562953462,
+      "advantageFactor": 2,
+      "positiveMultiplier": 0.005912088040694335,
+      "positivePower": 3.113242742490599
     },
     "run": {
-      "baseMean": 2.8,
-      "stdDev": 5.5,
-      "advantageFactor": 1.0,
-      "positiveMultiplier": 0.0004,
-      "positivePower": 4.2
+      "baseMean": 2.9358234288179874,
+      "stdDev": 2.4343846492739734,
+      "advantageFactor": 1,
+      "positiveMultiplier": 0.00037875182826050655,
+      "positivePower": 5.242593308633322
     },
     "sack": {
       "baseMean": -6,
