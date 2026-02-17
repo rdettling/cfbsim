@@ -49,19 +49,19 @@
     "baseSackRate": 0.10211755329614874,
     "baseIntRate": 0.0609179523456317,
     "baseFumbleRate": 0.02,
-    "riskAdvantageFactor": 0.015,
-    "compRateAdvantageFactor": 0.04,
-    "advantageScale": 16,
+    "riskAdvantageFactor": 0.004307588458790255,
+    "compRateAdvantageFactor": 0.02190552545602409,
+    "advantageScale": 643.9063168848696,
     "pass": {
       "baseMean": 6.674284719072008,
       "stdDev": 6.020854683653401,
-      "advantageFactor": 2,
+      "advantageFactor": 1.3661186003319223,
       "positiveMultiplier": 0.0021919893961092622
     },
     "run": {
       "baseMean": 3.315893314104928,
       "stdDev": 4.228514694761939,
-      "advantageFactor": 1,
+      "advantageFactor": 0.5166814379427295,
       "positiveMultiplier": 0.00041273348403663985
     },
     "sack": {

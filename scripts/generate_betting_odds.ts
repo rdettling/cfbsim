@@ -13,8 +13,8 @@ const TEST_SIMULATIONS = 1000;
 const TAX_FACTOR = 0.05;
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(SCRIPT_DIR, '..', '..');
-const OUTPUT_PATH = join(ROOT, 'frontend2', 'public', 'data', 'betting_odds.json');
+const ROOT = join(SCRIPT_DIR, '..');
+const OUTPUT_PATH = join(ROOT, 'public', 'data', 'betting_odds.json');
 
 const createTeam = (id: number, rating: number): Team => ({
   id,
