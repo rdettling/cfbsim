@@ -3,12 +3,10 @@ import type { SimGame } from '../../types/sim';
 import type { LeagueState } from '../../types/league';
 import { DEFAULT_SETTINGS } from '../../types/league';
 
-const WIN_FACTOR = 1.5;
-const LOSS_FACTOR = 1.08;
-
-const POLL_INERTIA_WIN_BONUS = 172;
-const POLL_INERTIA_LOSS_PENALTY = 157;
 const RANKING_TOTAL_WEEKS = 14;
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 export const formatRecord = (team: Team) =>
   `${team.totalWins}-${team.totalLosses} (${team.confWins}-${team.confLosses})`;
@@ -71,10 +69,8 @@ export const updateTeamRecords = (games: SimGame[]) => {
     winnerUpdate.totalWins += 1;
     loserUpdate.totalLosses += 1;
 
-    const winnerResumeAdd = loser.rating ** WIN_FACTOR;
-    const loserResumeAdd = winner.rating ** LOSS_FACTOR;
-    winnerUpdate.strength += winnerResumeAdd;
-    loserUpdate.strength += loserResumeAdd;
+    winnerUpdate.strength += loser.rating;
+    loserUpdate.strength += winner.rating;
   });
 
   updates.forEach(update => {
@@ -118,18 +114,10 @@ export const updateRankings = (
     team.last_rank = team.ranking;
     const gamesPlayed = team.totalWins + team.totalLosses;
     const baseScore = team.strength_of_record / Math.max(1, gamesPlayed);
-    if (info.currentWeek === info.lastWeek) {
-      team.poll_score = Math.round(baseScore * 10) / 10;
-    } else {
-      const weeksLeft = Math.max(0, RANKING_TOTAL_WEEKS - info.currentWeek);
-      const inertiaScale = weeksLeft / RANKING_TOTAL_WEEKS;
-      const teamGame = teamGames.get(team.id);
-      const inertiaFactor = teamGame && teamGame.winner?.id === team.id
-        ? POLL_INERTIA_WIN_BONUS
-        : POLL_INERTIA_LOSS_PENALTY;
-      const inertiaValue = Math.max(0, inertiaFactor * (teams.length - team.ranking) * inertiaScale);
-      team.poll_score = Math.round((baseScore + inertiaValue) * 10) / 10;
-    }
+    const lastRegularWeek = Math.min(info.lastWeek ?? RANKING_TOTAL_WEEKS, RANKING_TOTAL_WEEKS);
+    const inertiaWeight = clamp((lastRegularWeek - info.currentWeek) / Math.max(1, lastRegularWeek - 1), 0, 1);
+    const pollScore = inertiaWeight * team.poll_score + (1 - inertiaWeight) * baseScore;
+    team.poll_score = Math.round(pollScore * 10) / 10;
   });
 
   const sorted = [...teams].sort((a, b) => {

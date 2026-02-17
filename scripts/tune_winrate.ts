@@ -11,9 +11,9 @@ const TUNING_PATH = resolve('src/domain/sim/tuning.json');
 
 const TARGETS: Record<number, number> = {
   0: 0.5,
-  7: 0.625,
-  14: 0.775,
-  21: 0.875,
+  7: 0.68,
+  14: 0.80,
+  21: 0.92,
 };
 
 const DIFFS = Object.keys(TARGETS).map(Number);

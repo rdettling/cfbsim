@@ -52,7 +52,7 @@
     "baseIntRate": 0.03,
     "baseFumbleRate": 0.02,
     "executionDiffDivisor": 180,
-    "yardsDiffDivisor": 270,
+    "yardsDiffDivisor": 172.8,
     "pass": {
       "baseMean": 6.29457260039563,
       "stdDev": 5.226340735191511,
