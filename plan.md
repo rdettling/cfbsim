@@ -1,62 +1,65 @@
-# Live Interactive Sim Plan
+# Clock-Based Simulation Plan (Option C)
 
 ## Goal
-Add an interactive live sim mode for the user’s game only. All other games remain batch-sim. During the user’s offensive snaps, the sim pauses and prompts for play choice.
+Replace the fixed-drive sim model with a clock-driven model where the game is governed by time (quarters and clock), and drives emerge naturally from possession changes.
 
-## User Requirements
-- Interactive only for the user’s team game.
-- Pause after every **user offensive snap**.
-- Choices on user offense:
-  - `Run`
-  - `Pass`
-  - On 4th down also allow: `Punt` and `Field Goal`
-  - `Sim Drive` (auto-sim the rest of the current user drive)
-- Defense is always auto-simmed (no prompts).
-- Live sim still progresses through every play; the user only chooses run/pass/punt/FG when on offense.
+## Principles
+- Clock is primary; drives are consequences.
+- One shared engine for live sim + interactive sim.
+- Home/away is the UI view model only; Team A/B remain internal to storage.
+- Keep changes incremental and testable.
 
-## Proposed Architecture Changes
-1. **Engine: step-based drive simulation**
-   - Add functions in `src/domain/sim/engine.ts`:
-     - `startInteractiveDrive(...)` → initialize drive state for manual stepping.
-     - `stepInteractiveDrive(...)` → sim a **single play** given a play choice (`run`/`pass`/`punt`/`field_goal`/`auto`).
-     - Return: updated drive state, play record, drive completion status, next field position.
-   - Reuse existing logic (`simRun`, `simPass`, `decideFourthDown`, `fieldGoal`, `formatPlayText`).
-   - Expose `DRIVES_PER_TEAM` and `OT_START_YARD_LINE` if needed by UI/orchestrator.
+## Phase 1: Audit & Design
+1. **Audit current flow**
+   - Identify where `DRIVES_PER_TEAM` and fixed drive loops are used.
+   - Map sim entry points:
+     - `simGame` (full sim)
+     - `startInteractiveDrive` / `stepInteractiveDrive`
+     - `useGameSim` orchestration
+2. **Define clock model**
+   - `quarter: 1-4`, `secondsLeft`, `clockRunning`
+   - End-of-quarter / halftime transitions
+   - Overtime rules (keep existing OT logic unless explicitly changing)
+3. **Define timing rules (initial pass)**
+   - Run: 30–40 seconds
+   - Completed pass: 20–30 seconds
+   - Incomplete pass: 5–10 seconds
+   - Special teams (punt/FG): 10–20 seconds
+   - Clock stops: incomplete, out of bounds, turnover, score, end of quarter
 
-2. **Orchestrator changes**
-   - Add an interactive preparation helper:
-     - `prepareInteractiveLiveGame(gameId)` to load league, game, starters, players, etc.
-   - Add a finalization helper:
-     - `finalizeGameSimulation(...)` to persist drives/plays/logs, update records, headlines, rankings, and save league.
-   - Keep `liveSimGame(...)` for non-interactive / already-finished games.
+## Phase 2: Data Model Changes
+1. **DB**
+   - Add to `PlayRecord`: `quarter`, `clockSecondsLeft`, `playSeconds`
+   - Add to `GameRecord`: `quarter`, `clockSecondsLeft` (for in-progress state)
+2. **Types**
+   - Update `src/types/db.ts`, `src/types/game.ts`, `src/types/sim.ts` to carry clock fields.
 
-3. **LiveSimModal updates**
-   - Pass `isUserGame` from `GameSelectionModal` → `Navbar` → `LiveSimModal`.
-   - If **not** user game: keep current playback-only behavior.
-   - If **user** game:
-     - Create local state for current drive, field position, drive number, overtime.
-     - When user offense: show prompt (Run/Pass; on 4th down also Punt/FG; Sim Drive).
-     - When user defense: auto-sim full drive via `simDrive`.
-     - Append each play to local `plays` and each finished drive to `drives` so playback UI stays intact.
-     - Continue until game completion, then call `finalizeGameSimulation`.
+## Phase 3: Engine Refactor (Clock-Driven)
+1. **Clock utilities**
+   - `applyPlayClock(playResult, clockState) -> clockState`
+   - `shouldStopClock(playResult) -> boolean`
+2. **Drive execution**
+   - Replace fixed-drive loop in `simGame` with a `while clock > 0` loop.
+   - Drives can span quarters.
+3. **Interactive stepping**
+   - `stepInteractiveDrive` returns updated clock info.
+   - `useGameSim` updates display using clock state.
 
-4. **GameControls updates**
-   - Reuse existing `decisionPrompt` UI, extend to include `punt` / `field_goal` and `sim_drive` where appropriate.
+## Phase 4: UI Updates
+1. **Score strip**
+   - Display `quarter` and `time` (e.g., `Q2 3:12`)
+2. **Drive summary**
+   - Optional timestamps per play (later phase).
+3. **Controls**
+   - No structural changes; time advances on each play/step.
 
-5. **Types & props**
-   - Update `LiveSimModalProps` to include `isUserGame`.
-   - Ensure `GameSelectionModalGame` uses `is_user_game` consistently.
+## Phase 5: Edge Cases & Validation
+- End of half during drive: decide if drive continues (college rules allow final play if clock hits 0).
+- Overtime remains possession-based unless explicitly changed.
+- Verify score/possession alignment with home/away UI.
 
-## Edge Cases
-- Overtime must still work; interactive logic should carry into OT.
-- Turnovers, safeties, touchdowns should end drives and swap possession normally.
-- If `Sim Drive` is chosen, control should only return when user offense occurs again on a later drive.
-
-## UI Behavior Summary
-- User offense: show decision buttons, pause every snap.
-- User defense: “Simulating defense…” then auto-advance.
-- Non-user games: unchanged (auto sim + playback).
-
-## Cleanup
-- Remove any dead code paths after interactive mode is complete.
-- Keep sim logic in `engine.ts` authoritative; UI shouldn’t re-implement sim rules.
+## Deliverables
+- Clock-aware sim engine (full + interactive).
+- UI showing quarter/time.
+- Play/drive records include time metadata.
+- Typecheck passing.

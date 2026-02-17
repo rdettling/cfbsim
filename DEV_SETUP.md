@@ -11,6 +11,10 @@
 3. `npm run dev`
 4. Optional: `npm run typecheck`
 
+## Live Sim Notes
+- Unified sim UI lives in `src/components/sim/GameSimModal.tsx`
+- Unified sim hook: `src/components/sim/useGameSim.ts`
+
 ## Data Requirements (Frontend2)
 
 The active frontend loads data from `public/data/` (cached to IndexedDB on first run):

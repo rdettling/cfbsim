@@ -1,4 +1,4 @@
-# Frontend Two – Page Pattern
+# Frontend – Page Pattern
 
 ## Goals
 - No backend endpoints.
@@ -38,3 +38,9 @@ return (
 
 Add new pages by first copying the old page UI, then replacing any API calls
 with domain functions.
+
+## Live Game Sim (UI)
+- Unified sim modal: `GameSimModal`
+- Unified sim hook: `useGameSim`
+- UI is home/away first (Team A/B are internal only)
+- Live/interactive behave the same; user offense enables decision buttons

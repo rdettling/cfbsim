@@ -43,6 +43,12 @@ Gameplay is simulated at the drive/play level in `src/domain/sim/`:
 - Overtime simulates alternating possessions.
 - Plays and drives are optionally persisted for game logs.
 
+### Live Sim UI (Frontend2)
+- `GameSimModal` drives live/interactive playback.
+- `useGameSim` is the single source of truth for sim state.
+- UI renders home/away only; Team A/B remain internal to engine/storage.
+- `SimMatchup` is the UI view model for home/away score, possession, and drive.
+
 ## Scheduling (Frontend2)
 
 `src/domain/schedule.ts` builds:
