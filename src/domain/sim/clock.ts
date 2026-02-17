@@ -1,4 +1,5 @@
 import type { SimGame } from '../../types/sim';
+import { SIM_TUNING } from './config';
 
 export const SECONDS_PER_QUARTER = 15 * 60;
 
@@ -33,29 +34,58 @@ const isClockStopResult = (playType: string, result: string) => {
 };
 
 const isFinalTwoMinutesOfHalf = (clock: ClockState) => {
-  if (clock.quarter === 2 && clock.secondsLeft <= 120) return true;
-  if (clock.quarter === 4 && clock.secondsLeft <= 120) return true;
+  const threshold = SIM_TUNING.clock.firstDownStopSeconds;
+  if (clock.quarter === 2 && clock.secondsLeft <= threshold) return true;
+  if (clock.quarter === 4 && clock.secondsLeft <= threshold) return true;
   return false;
 };
 
 const isOutOfBoundsStopWindow = (clock: ClockState) => {
-  if (clock.quarter === 2 && clock.secondsLeft <= 120) return true;
-  if (clock.quarter === 4 && clock.secondsLeft <= 300) return true;
+  if (clock.quarter === 2 && clock.secondsLeft <= SIM_TUNING.clock.outOfBoundsStop.firstHalfSeconds) return true;
+  if (clock.quarter === 4 && clock.secondsLeft <= SIM_TUNING.clock.outOfBoundsStop.secondHalfSeconds) return true;
   return false;
 };
 
 const samplePlaySeconds = (playType: string, result: string, tempo: ClockPlayContext['tempo']) => {
-  const tempoMultiplier = tempo === 'fast' ? 0.7 : tempo === 'chew' ? 1.2 : 1;
+  const tempoMultiplier = tempo === 'fast'
+    ? SIM_TUNING.clock.tempoMultipliers.fast
+    : tempo === 'chew'
+      ? SIM_TUNING.clock.tempoMultipliers.chew
+      : SIM_TUNING.clock.tempoMultipliers.normal;
   if (playType === 'punt' || playType === 'field goal') {
-    return Math.max(5, Math.round(randomInt(10, 20) * tempoMultiplier));
+    return Math.max(
+      SIM_TUNING.clock.minimumPlaySeconds.specialTeams,
+      Math.round(randomInt(
+        SIM_TUNING.clock.playSeconds.specialTeams.min,
+        SIM_TUNING.clock.playSeconds.specialTeams.max
+      ) * tempoMultiplier)
+    );
   }
   if (result === 'incomplete pass') {
-    return Math.max(3, Math.round(randomInt(5, 10) * tempoMultiplier));
+    return Math.max(
+      SIM_TUNING.clock.minimumPlaySeconds.passIncomplete,
+      Math.round(randomInt(
+        SIM_TUNING.clock.playSeconds.passIncomplete.min,
+        SIM_TUNING.clock.playSeconds.passIncomplete.max
+      ) * tempoMultiplier)
+    );
   }
   if (playType === 'pass') {
-    return Math.max(10, Math.round(randomInt(20, 30) * tempoMultiplier));
+    return Math.max(
+      SIM_TUNING.clock.minimumPlaySeconds.passComplete,
+      Math.round(randomInt(
+        SIM_TUNING.clock.playSeconds.passComplete.min,
+        SIM_TUNING.clock.playSeconds.passComplete.max
+      ) * tempoMultiplier)
+    );
   }
-  return Math.max(15, Math.round(randomInt(30, 40) * tempoMultiplier));
+  return Math.max(
+    SIM_TUNING.clock.minimumPlaySeconds.run,
+    Math.round(randomInt(
+      SIM_TUNING.clock.playSeconds.run.min,
+      SIM_TUNING.clock.playSeconds.run.max
+    ) * tempoMultiplier)
+  );
 };
 
 export const applyPlayClock = (clock: ClockState, context: ClockPlayContext) => {
@@ -100,9 +130,11 @@ export const totalSecondsLeft = (clock: ClockState) => {
 };
 
 export const getTempo = (lead: number, clock: ClockState): ClockPlayContext['tempo'] => {
-  if (clock.quarter === 2 && clock.secondsLeft <= 120 && lead < 0) return 'fast';
-  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead < 0) return 'fast';
-  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead > 7) return 'chew';
+  const firstDownStop = SIM_TUNING.clock.firstDownStopSeconds;
+  const lateSecondHalf = SIM_TUNING.clock.outOfBoundsStop.secondHalfSeconds;
+  if (clock.quarter === 2 && clock.secondsLeft <= firstDownStop && lead < 0) return 'fast';
+  if (clock.quarter === 4 && clock.secondsLeft <= lateSecondHalf && lead < 0) return 'fast';
+  if (clock.quarter === 4 && clock.secondsLeft <= lateSecondHalf && lead > 7) return 'chew';
   return 'normal';
 };
 

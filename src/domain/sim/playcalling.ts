@@ -1,4 +1,5 @@
 import type { ClockPlayContext, ClockState } from './clock';
+import { SIM_TUNING } from './config';
 
 export const pointsNeeded = (lead: number, timeLeftSeconds: number) => {
   if (lead >= 0) return 0;
@@ -25,14 +26,21 @@ export const choosePlayType = (
   lead: number,
   clock: ClockState
 ) => {
-  let passWeight = 0.5;
-  if (down >= 3 && yardsLeft >= 7) passWeight += 0.25;
-  if (down <= 2 && yardsLeft <= 3) passWeight -= 0.2;
-  if (tempo === 'fast') passWeight += 0.1;
-  if (tempo === 'chew') passWeight -= 0.1;
-  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead < 0) passWeight += 0.15;
-  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead > 0) passWeight -= 0.15;
-  passWeight = Math.max(0.15, Math.min(0.85, passWeight));
+  let passWeight = SIM_TUNING.playcalling.passWeightBase;
+  if (down >= 3 && yardsLeft >= 7) passWeight += SIM_TUNING.playcalling.passWeightThirdAndLong;
+  if (down <= 2 && yardsLeft <= 3) passWeight += SIM_TUNING.playcalling.passWeightShortYards;
+  if (tempo === 'fast') passWeight += SIM_TUNING.playcalling.passWeightFastTempo;
+  if (tempo === 'chew') passWeight += SIM_TUNING.playcalling.passWeightChewTempo;
+  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead < 0) {
+    passWeight += SIM_TUNING.playcalling.passWeightLateTrailing;
+  }
+  if (clock.quarter === 4 && clock.secondsLeft <= 300 && lead > 0) {
+    passWeight += SIM_TUNING.playcalling.passWeightLateLeading;
+  }
+  passWeight = Math.max(
+    SIM_TUNING.playcalling.passWeightMin,
+    Math.min(SIM_TUNING.playcalling.passWeightMax, passWeight)
+  );
   return Math.random() < passWeight ? 'pass' : 'run';
 };
 

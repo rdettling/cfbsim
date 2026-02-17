@@ -1,0 +1,90 @@
+{
+  "clock": {
+    "tempoMultipliers": {
+      "fast": 0.7,
+      "chew": 1.2,
+      "normal": 1
+    },
+    "playSeconds": {
+      "run": { "min": 30, "max": 40 },
+      "passComplete": { "min": 20, "max": 30 },
+      "passIncomplete": { "min": 5, "max": 10 },
+      "specialTeams": { "min": 10, "max": 20 }
+    },
+    "minimumPlaySeconds": {
+      "run": 15,
+      "passComplete": 10,
+      "passIncomplete": 3,
+      "specialTeams": 5
+    },
+    "firstDownStopSeconds": 120,
+    "outOfBoundsStop": {
+      "firstHalfSeconds": 120,
+      "secondHalfSeconds": 300
+    }
+  },
+  "kickoffs": {
+    "touchbackRate": 0.65,
+    "touchbackSpot": 25,
+    "returnMin": 15,
+    "returnMax": 35
+  },
+  "playcalling": {
+    "passWeightBase": 0.5,
+    "passWeightThirdAndLong": 0.25,
+    "passWeightShortYards": -0.2,
+    "passWeightFastTempo": 0.1,
+    "passWeightChewTempo": -0.1,
+    "passWeightLateTrailing": 0.15,
+    "passWeightLateLeading": -0.15,
+    "passWeightMin": 0.15,
+    "passWeightMax": 0.85
+  },
+  "outcomes": {
+    "baseCompPercent": 0.62,
+    "baseSackRate": 0.07,
+    "baseIntRate": 0.07,
+    "baseFumbleRate": 0.02,
+    "sackRateAdvantageFactor": 0.015,
+    "compRateAdvantageFactor": 0.04,
+    "intRateAdvantageFactor": 0.012,
+    "fumbleRateAdvantageFactor": 0.004,
+    "skillDominance": 2.0,
+    "advantageScale": 16,
+    "pass": {
+      "baseMean": 7,
+      "stdDev": 5.2,
+      "advantageFactor": 2.0,
+      "positiveMultiplier": 0.004,
+      "positivePower": 3.2
+    },
+    "run": {
+      "baseMean": 2.8,
+      "stdDev": 5.5,
+      "advantageFactor": 1.0,
+      "positiveMultiplier": 0.0004,
+      "positivePower": 4.2
+    },
+    "sack": {
+      "baseMean": -6,
+      "stdDev": 2
+    },
+    "fieldGoal": {
+      "goodFrom": 37,
+      "midRange": {
+        "max": 47,
+        "baseProb": 0.9,
+        "step": 0.05
+      },
+      "longRange": {
+        "max": 57,
+        "baseProb": 0.75,
+        "step": 0.05
+      },
+      "veryLong": {
+        "baseProb": 0.55,
+        "step": 0.03
+      }
+    }
+  }
+}

@@ -1,29 +1,7 @@
 import type { Team } from '../../types/domain';
 import type { SimGame } from '../../types/sim';
 import { HOME_FIELD_ADVANTAGE } from '../odds';
-
-const BASE_COMP_PERCENT = 0.62;
-const BASE_SACK_RATE = 0.07;
-const BASE_INT_RATE = 0.07;
-const BASE_FUMBLE_RATE = 0.02;
-
-const SKILL_DOMINANCE = 2.0;
-const ADVANTAGE_SCALE = 16;
-
-const PASS_BASE_MEAN = 7;
-const PASS_STD_DEV = 5.2;
-const PASS_ADVANTAGE_FACTOR = 2.0;
-const PASS_POSITIVE_MULTIPLIER = 0.004;
-const PASS_POSITIVE_POWER = 3.2;
-
-const SACK_BASE_MEAN = -6;
-const SACK_STD_DEV = 2;
-
-const RUN_BASE_MEAN = 2.8;
-const RUN_STD_DEV = 5.5;
-const RUN_ADVANTAGE_FACTOR = 1.0;
-const RUN_POSITIVE_MULTIPLIER = 0.0004;
-const RUN_POSITIVE_POWER = 4.2;
+import { SIM_TUNING } from './config';
 
 const gaussian = (mean: number, stdDev: number) => {
   let u = 0;
@@ -46,27 +24,32 @@ const adjustedRatings = (offense: Team, defense: Team, game?: SimGame) => {
 const ratingAdvantage = (offense: Team, defense: Team, game?: SimGame) => {
   const { offenseRating, defenseRating } = adjustedRatings(offense, defense, game);
   const ratingDiff = offenseRating - defenseRating;
-  return Math.tanh(ratingDiff / ADVANTAGE_SCALE) * SKILL_DOMINANCE;
+  return Math.tanh(ratingDiff / SIM_TUNING.outcomes.advantageScale) * SIM_TUNING.outcomes.skillDominance;
 };
 
 const passYards = (offense: Team, defense: Team, game?: SimGame) => {
   const { offenseRating, defenseRating } = adjustedRatings(offense, defense, game);
-  const advantageYardage = ratingAdvantage(offense, defense, game) * PASS_ADVANTAGE_FACTOR;
-  const meanYardage = PASS_BASE_MEAN + advantageYardage;
-  const rawYardage = gaussian(meanYardage, PASS_STD_DEV);
+  const advantageYardage = ratingAdvantage(offense, defense, game) * SIM_TUNING.outcomes.pass.advantageFactor;
+  const meanYardage = SIM_TUNING.outcomes.pass.baseMean + advantageYardage;
+  const rawYardage = gaussian(meanYardage, SIM_TUNING.outcomes.pass.stdDev);
   if (rawYardage < 0) return Math.round(rawYardage);
-  const multiplied = rawYardage + PASS_POSITIVE_MULTIPLIER * (rawYardage ** PASS_POSITIVE_POWER);
+  const multiplied = rawYardage + SIM_TUNING.outcomes.pass.positiveMultiplier
+    * (rawYardage ** SIM_TUNING.outcomes.pass.positivePower);
   return Math.min(Math.round(multiplied), 99);
 };
 
-const sackYards = () => Math.min(Math.round(gaussian(SACK_BASE_MEAN, SACK_STD_DEV)), 0);
+const sackYards = () => Math.min(
+  Math.round(gaussian(SIM_TUNING.outcomes.sack.baseMean, SIM_TUNING.outcomes.sack.stdDev)),
+  0
+);
 
 const runYards = (offense: Team, defense: Team, game?: SimGame) => {
-  const advantageYardage = ratingAdvantage(offense, defense, game) * RUN_ADVANTAGE_FACTOR;
-  const meanYardage = RUN_BASE_MEAN + advantageYardage;
-  const rawYardage = gaussian(meanYardage, RUN_STD_DEV);
+  const advantageYardage = ratingAdvantage(offense, defense, game) * SIM_TUNING.outcomes.run.advantageFactor;
+  const meanYardage = SIM_TUNING.outcomes.run.baseMean + advantageYardage;
+  const rawYardage = gaussian(meanYardage, SIM_TUNING.outcomes.run.stdDev);
   if (rawYardage < 0) return Math.round(rawYardage);
-  const multiplied = rawYardage + RUN_POSITIVE_MULTIPLIER * (rawYardage ** RUN_POSITIVE_POWER);
+  const multiplied = rawYardage + SIM_TUNING.outcomes.run.positiveMultiplier
+    * (rawYardage ** SIM_TUNING.outcomes.run.positivePower);
   return Math.min(Math.round(multiplied), 99);
 };
 
@@ -77,9 +60,9 @@ export const simPass = (fieldPosition: number, offense: Team, defense: Team, gam
   const randInterception = Math.random();
   const result = { outcome: '', yards: 0 };
 
-  const sackRate = Math.max(0.01, BASE_SACK_RATE - adv * 0.015);
-  const compRate = Math.min(0.8, Math.max(0.45, BASE_COMP_PERCENT + adv * 0.04));
-  const intRate = Math.max(0.01, BASE_INT_RATE - adv * 0.012);
+  const sackRate = Math.max(0.01, SIM_TUNING.outcomes.baseSackRate - adv * SIM_TUNING.outcomes.sackRateAdvantageFactor);
+  const compRate = Math.min(0.8, Math.max(0.45, SIM_TUNING.outcomes.baseCompPercent + adv * SIM_TUNING.outcomes.compRateAdvantageFactor));
+  const intRate = Math.max(0.01, SIM_TUNING.outcomes.baseIntRate - adv * SIM_TUNING.outcomes.intRateAdvantageFactor);
 
   if (randSack < sackRate) {
     result.outcome = 'sack';
@@ -105,7 +88,7 @@ export const simRun = (fieldPosition: number, offense: Team, defense: Team, game
   const adv = ratingAdvantage(offense, defense, game);
   const randFumble = Math.random();
   const result = { outcome: '', yards: 0 };
-  const fumbleRate = Math.max(0.005, BASE_FUMBLE_RATE - adv * 0.004);
+  const fumbleRate = Math.max(0.005, SIM_TUNING.outcomes.baseFumbleRate - adv * SIM_TUNING.outcomes.fumbleRateAdvantageFactor);
   if (randFumble < fumbleRate) {
     result.outcome = 'fumble';
   } else {
@@ -123,9 +106,21 @@ export const simRun = (fieldPosition: number, offense: Team, defense: Team, game
 export const fieldGoal = (fieldPosition: number) => {
   const yardLine = 100 - fieldPosition;
   const distance = yardLine + 17;
-  if (distance < 37) return true;
-  if (distance < 47) return 0.9 - (distance - 37) * 0.05 > Math.random();
-  if (distance < 57) return 0.75 - (distance - 47) * 0.05 > Math.random();
-  if (distance >= 57) return 0.55 - (distance - 57) * 0.03 > Math.random();
+  if (distance < SIM_TUNING.outcomes.fieldGoal.goodFrom) return true;
+  if (distance < SIM_TUNING.outcomes.fieldGoal.midRange.max) {
+    return SIM_TUNING.outcomes.fieldGoal.midRange.baseProb
+      - (distance - SIM_TUNING.outcomes.fieldGoal.goodFrom)
+        * SIM_TUNING.outcomes.fieldGoal.midRange.step > Math.random();
+  }
+  if (distance < SIM_TUNING.outcomes.fieldGoal.longRange.max) {
+    return SIM_TUNING.outcomes.fieldGoal.longRange.baseProb
+      - (distance - SIM_TUNING.outcomes.fieldGoal.midRange.max)
+        * SIM_TUNING.outcomes.fieldGoal.longRange.step > Math.random();
+  }
+  if (distance >= SIM_TUNING.outcomes.fieldGoal.longRange.max) {
+    return SIM_TUNING.outcomes.fieldGoal.veryLong.baseProb
+      - (distance - SIM_TUNING.outcomes.fieldGoal.longRange.max)
+        * SIM_TUNING.outcomes.fieldGoal.veryLong.step > Math.random();
+  }
   return false;
 };
