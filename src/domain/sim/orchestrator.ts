@@ -1,7 +1,9 @@
 import type { FullGame } from '../../types/schedule';
 import type { LeagueState } from '../../types/league';
-import type { SimGame } from '../../types/sim';
-import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord } from '../../types/db';
+import type { SimGame, StartersCache } from '../../types/sim';
+import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
+import type { GameData, Drive } from '../../types/game';
+import type { Team } from '../../types/domain';
 import { fillUserSchedule, buildUserScheduleFromGames } from '../schedule';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
@@ -111,6 +113,11 @@ export const getGamesToLiveSim = async () => {
     const teamB = teamsById.get(game.teamBId)!;
     return {
       id: game.id,
+      teamAId: teamA.id,
+      teamBId: teamB.id,
+      homeTeamId: game.homeTeamId,
+      awayTeamId: game.awayTeamId,
+      neutralSite: game.neutralSite,
       teamA: { name: teamA.name, ranking: game.rankATOG, record: teamA.record },
       teamB: { name: teamB.name, ranking: game.rankBTOG, record: teamB.record },
       label: game.baseLabel,
@@ -122,7 +129,29 @@ export const getGamesToLiveSim = async () => {
   return { games: gamesData, week: league.info.currentWeek };
 };
 
-export const liveSimGame = async (gameId: number) => {
+export type PreparedInteractiveLiveGameComplete = {
+  status: 'complete';
+  drives: Drive[];
+  game: GameData;
+  is_user_game: boolean;
+};
+
+export type PreparedInteractiveLiveGameReady = {
+  status: 'ready';
+  league: LeagueState;
+  record: GameRecord;
+  teamsById: Map<number, Team>;
+  starters: StartersCache;
+  playersById: Map<number, PlayerRecord>;
+  simGame: SimGame;
+  preRecordA: string;
+  preRecordB: string;
+  is_user_game: boolean;
+};
+
+export type PreparedInteractiveLiveGame = PreparedInteractiveLiveGameComplete | PreparedInteractiveLiveGameReady;
+
+export const prepareInteractiveLiveGame = async (gameId: number): Promise<PreparedInteractiveLiveGame> => {
   const league = await loadLeague<LeagueState>();
   if (!league) throw new Error('No league found. Start a new game.');
   const changed = normalizeLeague(league);
@@ -134,14 +163,16 @@ export const liveSimGame = async (gameId: number) => {
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const userTeam = league.teams.find(team => team.name === league.info.team);
+  const isUserGame = userTeam ? (record.teamAId === userTeam.id || record.teamBId === userTeam.id) : false;
 
   if (record.winnerId) {
     const drives = await getDrivesByGame(gameId);
     const plays = await getPlaysByGame(gameId);
     return {
+      status: 'complete',
       drives: buildDriveResponse(drives, plays, teamsById),
       game: buildGameData(record, teamsById),
-      is_user_game: userTeam ? (record.teamAId === userTeam.id || record.teamBId === userTeam.id) : false,
+      is_user_game: isUserGame,
     };
   }
 
@@ -151,27 +182,63 @@ export const liveSimGame = async (gameId: number) => {
   const starters = await buildStartersCache(league.teams);
   const playersById = await loadPlayersMap(league.teams);
   const simGameObj = hydrateGame(record, teamsById);
-  const simDrives = simGame(league, simGameObj, starters);
-  const driveRecords = simDrives.map(drive => drive.record);
-  const playRecords = simDrives.flatMap(drive => drive.plays);
-  const logs = createGameLogsFromPlays(league, simGameObj, playRecords, starters);
 
-  updateTeamRecords([simGameObj]);
-  await generateHeadlines([simGameObj], new Map([[simGameObj.id, logs]]), playersById);
+  return {
+    status: 'ready',
+    league,
+    record,
+    teamsById,
+    starters,
+    playersById,
+    simGame: simGameObj,
+    preRecordA,
+    preRecordB,
+    is_user_game: isUserGame,
+  };
+};
+
+export const finalizeGameSimulation = async (params: {
+  league: LeagueState;
+  record: GameRecord;
+  simGame: SimGame;
+  driveRecords: DriveRecord[];
+  playRecords: PlayRecord[];
+  starters: StartersCache;
+  playersById: Map<number, PlayerRecord>;
+  preRecordA: string;
+  preRecordB: string;
+}) => {
+  const {
+    league,
+    record,
+    simGame,
+    driveRecords,
+    playRecords,
+    starters,
+    playersById,
+    preRecordA,
+    preRecordB,
+  } = params;
+
+  const logs = createGameLogsFromPlays(league, simGame, playRecords, starters);
+
+  updateTeamRecords([simGame]);
+  await generateHeadlines([simGame], new Map([[simGame.id, logs]]), playersById);
 
   const updatedRecord: GameRecord = {
     ...record,
-    scoreA: simGameObj.scoreA,
-    scoreB: simGameObj.scoreB,
-    winnerId: simGameObj.winner?.id ?? null,
-    resultA: simGameObj.resultA,
-    resultB: simGameObj.resultB,
-    overtime: simGameObj.overtime,
-    headline: simGameObj.headline ?? null,
-    headline_subtitle: simGameObj.headline_subtitle ?? null,
-    headline_tags: simGameObj.headline_tags ?? null,
-    headline_tone: simGameObj.headline_tone ?? null,
+    scoreA: simGame.scoreA,
+    scoreB: simGame.scoreB,
+    winnerId: simGame.winner?.id ?? null,
+    resultA: simGame.resultA,
+    resultB: simGame.resultB,
+    overtime: simGame.overtime,
+    headline: simGame.headline ?? null,
+    headline_subtitle: simGame.headline_subtitle ?? null,
+    headline_tags: simGame.headline_tags ?? null,
+    headline_tone: simGame.headline_tone ?? null,
   };
+
   await saveGames([updatedRecord]);
   await saveDrives(driveRecords);
   await savePlays(playRecords);
@@ -181,6 +248,7 @@ export const liveSimGame = async (gameId: number) => {
   league.teams.forEach(team => (team.record = formatRecord(team)));
   await saveLeague(league);
 
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const gameData = buildGameData(updatedRecord, teamsById);
   gameData.teamA.record = preRecordA;
   gameData.teamB.record = preRecordB;
@@ -188,7 +256,6 @@ export const liveSimGame = async (gameId: number) => {
   return {
     drives: buildDriveResponse(driveRecords, playRecords, teamsById),
     game: gameData,
-    is_user_game: userTeam ? (record.teamAId === userTeam.id || record.teamBId === userTeam.id) : false,
   };
 };
 

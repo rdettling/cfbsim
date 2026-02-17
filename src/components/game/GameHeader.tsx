@@ -25,11 +25,22 @@ const GameHeader = ({
     );
 
     return (
-        <Box sx={{ mb: 3 }}>
-            {/* Game Base Label */}
-            <Typography variant="h6" color="text.secondary" sx={{ textAlign: 'center', mb: 2, fontWeight: 'bold' }}>
-                {gameData.base_label}
-            </Typography>
+        <Box sx={{ mb: 3, fontFamily: '"IBM Plex Sans", sans-serif' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                <Box sx={{ 
+                    px: 2.5,
+                    py: 0.75,
+                    borderRadius: '999px',
+                    background: 'linear-gradient(90deg, rgba(17,24,39,0.95), rgba(30,64,175,0.9))',
+                    color: 'white',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase'
+                }}>
+                    {gameData.base_label}
+                </Box>
+            </Box>
 
             {/* Teams and Score Row */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -38,7 +49,7 @@ const GameHeader = ({
                     <TeamLogo name={gameData.teamA.name} size={60} />
                     <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="h5" fontWeight="bold">
+                            <Typography variant="h5" fontWeight={700} sx={{ fontFamily: '"Space Grotesk", sans-serif' }}>
                                 {gameData.teamA.name}
                             </Typography>
                             {isTeamAOnOffense && <PossessionIndicator />}
@@ -51,7 +62,7 @@ const GameHeader = ({
 
                 {/* Score */}
                 <Box sx={{ textAlign: 'center', flex: 1 }}>
-                    <Typography variant="h2" fontWeight="bold">
+                    <Typography variant="h2" fontWeight={700} sx={{ fontFamily: '"Space Grotesk", sans-serif' }}>
                         {(() => {
                             if (currentPlay) {
                                 // Show current play score
@@ -77,18 +88,18 @@ const GameHeader = ({
                                 {gameData.teamB.name}
                             </Typography>
                         </Box>
-                        <Typography variant="body2" color="text.secondary">
-                            {gameData.teamB.record}
-                        </Typography>
-                    </Box>
-                    <TeamLogo name={gameData.teamB.name} size={60} />
+                    <Typography variant="body2" color="text.secondary">
+                        {gameData.teamB.record}
+                    </Typography>
                 </Box>
+                <TeamLogo name={gameData.teamB.name} size={60} />
+            </Box>
             </Box>
 
             {/* Drive and Play Info */}
             <Box sx={{ textAlign: 'center' }}>
                 {/* Drive Number or Final */}
-                <Typography variant="h5" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                <Typography variant="h5" color="text.secondary" sx={{ fontWeight: 600, fontFamily: '"Space Grotesk", sans-serif' }}>
                     {isPlaybackComplete ? 'FINAL' : `Drive ${(currentDrive?.driveNum || 0) + 1}`}
                 </Typography>
                 
@@ -129,7 +140,7 @@ const GameHeader = ({
                 
                 {/* Down and Distance */}
                 {currentPlay?.header && !isPlaybackComplete && (
-                    <Typography variant="h6" color="text.secondary" sx={{ mt: 1 }}>
+                    <Typography variant="h6" color="text.secondary" sx={{ mt: 1, fontWeight: 600 }}>
                         {currentPlay.header}
                     </Typography>
                 )}

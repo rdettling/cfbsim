@@ -21,7 +21,9 @@ const DriveSummary = ({
     currentPlayIndex = 0, 
     totalPlays: _totalPlays = 0,
     isGameComplete = false,
-    variant = 'page'
+    variant = 'page',
+    includeCurrentDrive = false,
+    matchup
 }: DriveSummaryProps) => {
     const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
 
@@ -47,10 +49,13 @@ const DriveSummary = ({
             // Include drive only if it's completely finished (all plays have been watched)
             if (driveEndIndex < currentPlayIndex) {
                 completed.push(drive);
-            } else {
-                break;
+                playCount += drive.plays?.length || 0;
+                continue;
             }
-            playCount += drive.plays?.length || 0;
+            if (includeCurrentDrive) {
+                completed.push(drive);
+            }
+            break;
         }
         
         return completed;
@@ -105,6 +110,17 @@ const DriveSummary = ({
                         displayDrives.map((drive, idx) => {
                             const isExpanded = expandedDrives.has(drive.driveNum);
                             const hasPlays = drive.plays && drive.plays.length > 0;
+                            const isCurrentDrive = includeCurrentDrive
+                                && !isGameComplete
+                                && variant === 'modal'
+                                && idx === displayDrives.length - 1;
+                            const scoreA = isCurrentDrive && matchup ? matchup.currentScoreA : drive.scoreAAfter;
+                            const scoreB = isCurrentDrive && matchup ? matchup.currentScoreB : drive.scoreBAfter;
+                            const resolvedScore = matchup
+                                ? (matchup.awayIsTeamA
+                                    ? { awayScore: scoreA ?? 0, homeScore: scoreB ?? 0 }
+                                    : { awayScore: scoreB ?? 0, homeScore: scoreA ?? 0 })
+                                : { awayScore: scoreA ?? 0, homeScore: scoreB ?? 0 };
                             
                             return (
                                 <Card 
@@ -187,13 +203,13 @@ const DriveSummary = ({
                                                 <Typography variant="caption" color="text.secondary">
                                                     {drive.plays?.length || 0} plays{drive.yards !== undefined ? `, ${drive.yards} yards` : ''}
                                                 </Typography>
-                                                {drive.scoreAAfter !== undefined && drive.scoreBAfter !== undefined && (
+                                                {scoreA !== undefined && scoreB !== undefined && (
                                                     <Typography 
                                                         variant="caption" 
                                                         color="text.secondary"
                                                         sx={{ fontWeight: 'medium' }}
                                                     >
-                                                        {drive.scoreAAfter}-{drive.scoreBAfter}
+                                                        {resolvedScore.awayScore}-{resolvedScore.homeScore}
                                                     </Typography>
                                                 )}
                                             </Box>

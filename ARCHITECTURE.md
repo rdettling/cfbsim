@@ -2,7 +2,7 @@
 
 ## Overview
 
-The active architecture is a standalone Vite + React app at the repo root. It runs the simulation entirely in the browser and persists state to IndexedDB. The legacy full‑stack app (Django API + old frontend) is preserved under `legacy/`.
+The architecture is a standalone Vite + React app at the repo root. It runs the simulation entirely in the browser and persists state to IndexedDB.
 
 ## Frontend2 (Active)
 
@@ -26,21 +26,6 @@ High-level flow:
 - `domain/league/utils/` shared helpers for league logic
 - `domain/sim/` play-by-play engine + sim orchestration
 - `domain/` (root) shared utilities (roster, schedule, odds)
-
-## Legacy Backend (Optional)
-
-Key modules:
-- `legacy/backend/cfbsim/` project config, settings, URLs
-- `legacy/backend/api/` API endpoints, serializers, view logic
-- `legacy/backend/logic/` simulation engine, scheduling, progression
-- `legacy/backend/logic/sim/` game simulation core
-- `legacy/backend/recruit/` legacy Django app (kept for compatibility)
-- `legacy/backend/data/` static data inputs
-
-High-level flow:
-1. API endpoints in `backend/api/` call into `backend/logic/`.
-2. Simulation state is persisted via Django models in `backend/api/models.py`.
-3. Frontend consumes API responses to render views.
 
 ## Season Lifecycle (Frontend2)
 

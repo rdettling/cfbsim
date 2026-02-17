@@ -124,14 +124,20 @@ export interface DashboardTeamRowProps {
   onTeamClick: (name: string) => void;
 }
 
-export interface LiveSimModalProps {
+export interface GameSimModalProps {
   open: boolean;
   onClose: () => void;
   gameId: number | null;
+  isUserGame: boolean;
 }
 
 export interface GameSelectionModalGame {
   id: number;
+  teamAId?: number;
+  teamBId?: number;
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
+  neutralSite?: boolean;
   teamA: {
     name: string;
     ranking: number;
@@ -164,8 +170,11 @@ export interface GamePreviewProps {
     label: string;
     weekPlayed: number;
     year: number;
-    teamA: any;
-    teamB: any;
+    homeTeamId?: number | null;
+    awayTeamId?: number | null;
+    neutralSite?: boolean;
+    teamA: Team;
+    teamB: Team;
     rankATOG: number;
     rankBTOG: number;
     spreadA?: string;
@@ -177,7 +186,14 @@ export interface GamePreviewProps {
 
 export interface GameResultProps {
   data: {
-    game: any;
+    game: {
+      teamA: Team;
+      teamB: Team;
+      homeTeamId?: number | null;
+      awayTeamId?: number | null;
+      neutralSite?: boolean;
+      [key: string]: any;
+    };
     drives?: Drive[];
   };
 }
@@ -188,31 +204,65 @@ export interface DriveSummaryProps {
   totalPlays?: number;
   isGameComplete?: boolean;
   variant?: 'modal' | 'page';
+  includeCurrentDrive?: boolean;
+  matchup?: SimMatchup;
+}
+
+export interface SimMatchup {
+  homeTeam: {
+    name: string;
+    record: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
+  };
+  awayTeam: {
+    name: string;
+    record: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
+  };
+  homeScore: number;
+  awayScore: number;
+  currentScoreA: number;
+  currentScoreB: number;
+  awayIsTeamA: boolean;
+  isAwayOnOffense: boolean;
+  currentDriveNum: number;
 }
 
 export interface FootballFieldProps {
   currentYardLine: number;
-  teamA: string;
-  teamB: string;
-  isTeamAOnOffense: boolean;
+  homeTeam: {
+    name: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
+  };
+  awayTeam: {
+    name: string;
+    mascot?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
+  };
+  isOffenseLeftToRight: boolean;
   down: number;
   yardsToGo: number;
   previousPlayYards?: number;
-  teamAColorPrimary?: string;
-  teamAColorSecondary?: string;
-  teamBColorPrimary?: string;
-  teamBColorSecondary?: string;
 }
 
 export interface GameControlsProps {
-  isInteractive: boolean;
   isGameComplete: boolean;
-  isPlaybackComplete: boolean;
-  startInteractiveSimulation: () => void;
   handleNextPlay: () => void;
   handleNextDrive: () => void;
   handleSimToEnd: () => void;
-  decisionPrompt?: any;
+  decisionPrompt?: {
+    type: 'run_pass' | 'fourth_down';
+    down: number;
+    yards_left: number;
+    field_position: number;
+  };
   handleDecision?: (decision: string) => void;
   submittingDecision?: boolean;
 }
@@ -225,4 +275,9 @@ export interface GameHeaderProps {
   isPlaybackComplete: boolean;
   lastPlayText?: string;
   currentDrive?: Drive | null;
+}
+
+export interface GameScoreStripProps {
+  matchup: SimMatchup;
+  isPlaybackComplete: boolean;
 }

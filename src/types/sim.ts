@@ -42,3 +42,19 @@ export interface SimDrive {
 export interface StartersCache {
   byTeamPos: Map<string, PlayerRecord[]>;
 }
+
+export type InteractivePlayChoice = 'run' | 'pass' | 'punt' | 'field_goal' | 'auto';
+
+export interface InteractiveDriveState {
+  drive: DriveRecord;
+  fieldPosition: number;
+  down: number;
+  yardsLeft: number;
+}
+
+export interface InteractiveStepResult {
+  state: InteractiveDriveState;
+  play: PlayRecord;
+  driveComplete: boolean;
+  nextFieldPosition: number | null;
+}

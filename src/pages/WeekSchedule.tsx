@@ -13,6 +13,7 @@ import { TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadWeekSchedule } from '../domain/league';
 import { PageLayout } from '../components/layout/PageLayout';
+import { resolveHomeAway, resolveTeamSide, formatMatchup } from '../domain/utils/gameDisplay';
 
 export default function WeekSchedule() {
   const { week } = useParams();
@@ -129,7 +130,11 @@ export default function WeekSchedule() {
           </Box>
 
           <Grid container spacing={2}>
-            {data.games.map((game) => (
+            {data.games.map((game) => {
+              const { home, away, neutral } = resolveHomeAway(game);
+              const awaySide = resolveTeamSide(game, away.id);
+              const homeSide = resolveTeamSide(game, home.id);
+              return (
               <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={game.id}>
                 <Card
                   sx={{
@@ -154,7 +159,7 @@ export default function WeekSchedule() {
                       }}
                     >
                       <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                        {game.label}
+                        {formatMatchup(home.name, away.name, neutral)}
                       </Typography>
                       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                         Watchability: {game.watchability}
@@ -174,7 +179,7 @@ export default function WeekSchedule() {
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <TeamLogo name={game.teamA.name} size={24} />
+                          <TeamLogo name={away.name} size={24} />
                           <Typography
                             variant="body2"
                             sx={{
@@ -182,13 +187,13 @@ export default function WeekSchedule() {
                               cursor: 'pointer',
                               '&:hover': { textDecoration: 'underline' },
                             }}
-                            onClick={() => handleTeamClick(game.teamA.name)}
+                            onClick={() => handleTeamClick(away.name)}
                           >
-                            {game.rankATOG < 26 ? `#${game.rankATOG} ${game.teamA.name}` : game.teamA.name}
+                            {awaySide.rank > 0 && awaySide.rank < 26 ? `#${awaySide.rank} ${away.name}` : away.name}
                           </Typography>
                         </Box>
                         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                          {game.winner ? game.scoreA : game.spreadA}
+                          {game.winner ? awaySide.score : awaySide.spread}
                         </Typography>
                       </Box>
 
@@ -203,7 +208,7 @@ export default function WeekSchedule() {
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <TeamLogo name={game.teamB.name} size={24} />
+                          <TeamLogo name={home.name} size={24} />
                           <Typography
                             variant="body2"
                             sx={{
@@ -211,13 +216,13 @@ export default function WeekSchedule() {
                               cursor: 'pointer',
                               '&:hover': { textDecoration: 'underline' },
                             }}
-                            onClick={() => handleTeamClick(game.teamB.name)}
+                            onClick={() => handleTeamClick(home.name)}
                           >
-                            {game.rankBTOG < 26 ? `#${game.rankBTOG} ${game.teamB.name}` : game.teamB.name}
+                            {homeSide.rank > 0 && homeSide.rank < 26 ? `#${homeSide.rank} ${home.name}` : home.name}
                           </Typography>
                         </Box>
                         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                          {game.winner ? game.scoreB : game.spreadB}
+                          {game.winner ? homeSide.score : homeSide.spread}
                         </Typography>
                       </Box>
                     </Box>
@@ -228,7 +233,7 @@ export default function WeekSchedule() {
                           ? `${game.base_label || 'VS'} - FINAL${
                               game.overtime && game.overtime > 0 ? ` (${game.overtime > 1 ? `${game.overtime}OT` : 'OT'})` : ''
                             }`
-                          : game.base_label || 'VS'}
+                          : formatMatchup(home.name, away.name, neutral)}
                       </Typography>
                       <Button component={RouterLink} to={`/game/${game.id}`} size="small" variant="outlined" sx={{ fontSize: '0.75rem' }}>
                         {game.winner ? 'Summary' : 'Preview'}
@@ -237,7 +242,8 @@ export default function WeekSchedule() {
                   </CardContent>
                 </Card>
               </Grid>
-            ))}
+              );
+            })}
           </Grid>
 
           <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />

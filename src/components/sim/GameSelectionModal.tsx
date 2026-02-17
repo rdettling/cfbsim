@@ -15,6 +15,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { TeamLogo } from '../team/TeamComponents';
 import { getGamesToLiveSim } from '../../domain/sim';
 import type { GameSelectionModalProps, GameSelectionModalGame } from '../../types/components';
+import { resolveHomeAway } from '../../domain/utils/gameDisplay';
 
 const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalProps) => {
     const [games, setGames] = useState<GameSelectionModalGame[]>([]);
@@ -87,6 +88,17 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                 ) : (
                     <List sx={{ p: 0 }}>
                         {games.map((game, index) => (
+                            (() => {
+                                const { home, away, neutral } = resolveHomeAway({
+                                    teamA: { id: game.teamAId ?? 0, name: game.teamA.name },
+                                    teamB: { id: game.teamBId ?? 0, name: game.teamB.name },
+                                    homeTeamId: game.homeTeamId ?? null,
+                                    awayTeamId: game.awayTeamId ?? null,
+                                    neutralSite: game.neutralSite ?? false,
+                                });
+                                const awayInfo = away.id === (game.teamAId ?? away.id) ? game.teamA : game.teamB;
+                                const homeInfo = home.id === (game.teamAId ?? home.id) ? game.teamA : game.teamB;
+                                return (
                             <ListItem 
                                 key={game.id} 
                                 disablePadding
@@ -128,14 +140,14 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                                         }}>
                                             <Box sx={{ textAlign: 'right' }}>
                                                 <Typography variant="h6" fontWeight="bold">
-                                                    {game.teamA.ranking > 0 && `#${game.teamA.ranking} `}
-                                                    {game.teamA.name}
+                                                    {awayInfo.ranking > 0 && `#${awayInfo.ranking} `}
+                                                    {awayInfo.name}
                                                 </Typography>
                                                 <Typography variant="body2" color="text.secondary">
-                                                    {game.teamA.record}
+                                                    {awayInfo.record}
                                                 </Typography>
                                             </Box>
-                                            <TeamLogo name={game.teamA.name} size={50} />
+                                            <TeamLogo name={awayInfo.name} size={50} />
                                         </Box>
 
                                         {/* VS divider */}
@@ -150,7 +162,7 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                                                 fontWeight="bold" 
                                                 color={game.is_user_game ? 'primary.main' : 'text.secondary'}
                                             >
-                                                {game.is_user_game ? 'YOUR GAME' : 'VS'}
+                                                {game.is_user_game ? 'YOUR GAME' : (neutral ? 'VS' : 'AT')}
                                             </Typography>
                                             {!game.is_user_game && (
                                                 <Typography 
@@ -171,20 +183,22 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                                             flex: 1,
                                             gap: 2
                                         }}>
-                                            <TeamLogo name={game.teamB.name} size={50} />
+                                            <TeamLogo name={homeInfo.name} size={50} />
                                             <Box>
                                                 <Typography variant="h6" fontWeight="bold">
-                                                    {game.teamB.ranking > 0 && `#${game.teamB.ranking} `}
-                                                    {game.teamB.name}
+                                                    {homeInfo.ranking > 0 && `#${homeInfo.ranking} `}
+                                                    {homeInfo.name}
                                                 </Typography>
                                                 <Typography variant="body2" color="text.secondary">
-                                                    {game.teamB.record}
+                                                    {homeInfo.record}
                                                 </Typography>
                                             </Box>
                                         </Box>
                                     </Box>
                                 </ListItemButton>
                             </ListItem>
+                                );
+                            })()
                         ))}
                     </List>
                 )}

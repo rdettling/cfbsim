@@ -1,9 +1,17 @@
 import { Box, Typography } from '@mui/material';
 import type { FootballFieldProps } from '../../types/components';
 
-const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, yardsToGo, previousPlayYards, teamAColorPrimary, teamAColorSecondary, teamBColorPrimary, teamBColorSecondary }: FootballFieldProps) => {
+const FootballField = ({
+    currentYardLine,
+    homeTeam,
+    awayTeam,
+    isOffenseLeftToRight,
+    down,
+    yardsToGo,
+    previousPlayYards
+}: FootballFieldProps) => {
     // Field dimensions based on yards
-    const PIXELS_PER_YARD = 7;
+    const PIXELS_PER_YARD = 5;
     const END_ZONE_YARDS = 10;
     const FIELD_YARDS = 100;
     const FIELD_WIDTH_YARDS = 53;
@@ -19,32 +27,21 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
     // Helper function to convert yard line to pixel position
     const yardToPixels = (yard: number): number => endZoneWidth + (yard * PIXELS_PER_YARD);
     
-    // Calculate positions - flip field based on offense team
-    const displayYardLine = isTeamAOnOffense ? currentYardLine : 100 - currentYardLine;
+    // Calculate positions - flip field based on offense direction
+    const displayYardLine = isOffenseLeftToRight ? currentYardLine : 100 - currentYardLine;
     const ballPosition = yardToPixels(displayYardLine);
     
     // Calculate first down line - both teams go forward from their current position
     const firstDownYardLine = Math.min(100, currentYardLine + yardsToGo);
     
     // For display, we need to flip the first down line when Team B is on offense
-    const displayFirstDownYardLine = isTeamAOnOffense ? firstDownYardLine : 100 - firstDownYardLine;
+    const displayFirstDownYardLine = isOffenseLeftToRight ? firstDownYardLine : 100 - firstDownYardLine;
     const firstDownPosition = yardToPixels(displayFirstDownYardLine);
-    
-    // Debug logging for first down calculation
-    console.log('🏈 First Down Debug:', {
-        isTeamAOnOffense,
-        currentYardLine,
-        yardsToGo,
-        firstDownYardLine,
-        displayFirstDownYardLine,
-        ballPosition,
-        firstDownPosition
-    });
     
     // Calculate previous play zone - flip based on offense team
     const previousPlayZone = previousPlayYards && previousPlayYards !== 0 ? {
         left: Math.min(
-            yardToPixels(Math.max(0, Math.min(100, displayYardLine - previousPlayYards * (isTeamAOnOffense ? 1 : -1)))),
+            yardToPixels(Math.max(0, Math.min(100, displayYardLine - previousPlayYards * (isOffenseLeftToRight ? 1 : -1)))),
             ballPosition
         ),
         width: Math.abs(previousPlayYards * PIXELS_PER_YARD),
@@ -63,28 +60,37 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
         <Box sx={{ position: 'absolute', left, top: 0, bottom: 0, width, bgcolor: color, zIndex, ...(shadow && { boxShadow: shadow }) }} />
     );
 
+    const endZonePrimary = homeTeam.colorPrimary || awayTeam.colorPrimary || 'primary.main';
+    const endZoneSecondary = homeTeam.colorSecondary || awayTeam.colorSecondary || 'white';
+    const endZoneLeftText = homeTeam.name;
+    const endZoneRightText = homeTeam.mascot || homeTeam.name;
+    const midfieldLogoName = homeTeam.name;
+
     return (
         <Box sx={{ 
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
-            py: 2
+            py: 2,
+            overflowX: 'auto'
         }}>
             <Box sx={{ 
                 width: totalWidth,
                 height: fieldHeight,
                 position: 'relative',
-                bgcolor: '#2e7d32', // Darker green for grass
-                borderRadius: 1,
+                bgcolor: '#255a3a',
+                borderRadius: 3,
                 overflow: 'hidden',
-                display: 'flex'
+                display: 'flex',
+                boxShadow: '0 14px 40px rgba(16, 24, 16, 0.25)',
+                backgroundImage: 'linear-gradient(120deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 60%)'
             }}>
                 {/* Team A End Zone */}
                 <Box
                     sx={{
                         width: endZoneWidth,
-                        bgcolor: teamAColorPrimary || 'primary.main',
-                        opacity: 0.9,
+                        bgcolor: endZonePrimary,
+                        opacity: 0.95,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -93,14 +99,14 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 >
                     <Typography
                         sx={{
-                            color: teamAColorSecondary || 'white',
+                            color: endZoneSecondary,
                             fontWeight: 'bold',
                             fontSize: END_ZONE_TEXT_SIZE,
                             transform: 'rotate(-90deg)',
                             whiteSpace: 'nowrap'
                         }}
                     >
-                        {teamA}
+                        {endZoneLeftText}
                     </Typography>
                 </Box>
 
@@ -109,14 +115,15 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                     sx={{
                         width: fieldWidth,
                         position: 'relative',
-                        height: '100%'
+                        height: '100%',
+                        backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.04), rgba(255,255,255,0.04) 12px, rgba(255,255,255,0.02) 12px, rgba(255,255,255,0.02) 24px)'
                     }}
                 >
                     {/* Yard line markers */}
                     {yardLines.map((yard) => (
-                        <Box key={yard} sx={{ position: 'absolute', left: yard * PIXELS_PER_YARD, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box sx={{ width: 3, height: '100%', bgcolor: 'white', opacity: 0.9 }} />
-                            <Typography sx={{ position: 'absolute', top: 8, color: 'white', fontWeight: 'bold', fontSize: YARD_LINE_NUMBER_SIZE, textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}>
+                        <Box key={yard} sx={{ position: 'absolute', left: yard * PIXELS_PER_YARD, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 3 }}>
+                            <Box sx={{ width: 2, height: '100%', bgcolor: 'white', opacity: 0.8 }} />
+                            <Typography sx={{ position: 'absolute', top: 8, color: 'white', fontWeight: 700, fontSize: YARD_LINE_NUMBER_SIZE, textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}>
                                 {yard <= 50 ? yard : 100 - yard}
                             </Typography>
                         </Box>
@@ -127,8 +134,8 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 <Box
                     sx={{
                         width: endZoneWidth,
-                        bgcolor: teamBColorPrimary || 'secondary.main',
-                        opacity: 0.9,
+                        bgcolor: endZonePrimary,
+                        opacity: 0.95,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
@@ -136,30 +143,52 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 >
                     <Typography
                         sx={{
-                            color: teamBColorSecondary || 'white',
+                            color: endZoneSecondary,
                             fontWeight: 'bold',
                             fontSize: END_ZONE_TEXT_SIZE,
                             transform: 'rotate(90deg)',
                             whiteSpace: 'nowrap'
                         }}
                     >
-                        {teamB}
+                        {endZoneRightText}
                     </Typography>
+                </Box>
+
+                {/* Midfield Logo */}
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 112,
+                        height: 112,
+                        opacity: 1,
+                        zIndex: 4,
+                        pointerEvents: 'none'
+                    }}
+                >
+                    <img
+                        src={`/logos/teams/${midfieldLogoName}.png`}
+                        alt={midfieldLogoName}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
                 </Box>
 
                 {/* Down and Distance Display */}
                 <Box sx={{
                     position: 'absolute',
                     left: ballPosition,
-                    top: '25%',
+                    top: 16,
                     transform: 'translateX(-50%)',
-                    bgcolor: 'rgba(33, 150, 243, 0.8)',
+                    bgcolor: 'rgba(10, 20, 35, 0.85)',
                     zIndex: 6,
-                    px: 2,
+                    px: 1.5,
                     py: 0.5,
-                    borderRadius: 1
+                    borderRadius: '999px',
+                    border: '1px solid rgba(255,255,255,0.2)'
                 }}>
-                    <Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.8rem', textShadow: '1px 1px 3px rgba(0,0,0,0.9)', whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
                         {getDownText(down)} & {yardsToGo}
                     </Typography>
                 </Box>
@@ -169,16 +198,17 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                     <Box sx={{
                         position: 'absolute',
                         left: previousPlayZone.left,
-                        top: '75%',
-                        height: '15%',
+                        bottom: 16,
+                        height: 22,
                         width: previousPlayZone.width,
-                        bgcolor: previousPlayZone.isGain ? 'rgba(76, 175, 80, 0.7)' : 'rgba(244, 67, 54, 0.7)',
+                        bgcolor: previousPlayZone.isGain ? 'rgba(76, 175, 80, 0.75)' : 'rgba(244, 67, 54, 0.75)',
                         zIndex: 3,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        borderRadius: '999px'
                     }}>
-                        <Typography sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.7rem', textShadow: '1px 1px 3px rgba(0,0,0,0.9)' }}>
+                        <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '0.7rem' }}>
                             {previousPlayZone.isGain ? '+' : ''}{previousPlayZone.yards} YDS
                         </Typography>
                     </Box>
@@ -189,10 +219,10 @@ const FootballField = ({ currentYardLine, teamA, teamB, isTeamAOnOffense, down, 
                 <VerticalLine left={endZoneWidth + fieldWidth} width={3} color="rgba(255, 255, 255, 0.9)" zIndex={4} />
 
                 {/* Line of Scrimmage (Blue) */}
-                <VerticalLine left={ballPosition} width={4} color="#2196F3" zIndex={5} shadow="0 0 8px rgba(33, 150, 243, 0.8)" />
+                <VerticalLine left={ballPosition} width={4} color="#4FC3F7" zIndex={5} shadow="0 0 12px rgba(79, 195, 247, 0.9)" />
 
                 {/* First Down Line (Yellow) */}
-                <VerticalLine left={firstDownPosition} width={4} color="#FFD700" zIndex={5} shadow="0 0 8px rgba(255, 215, 0, 0.8)" />
+                <VerticalLine left={firstDownPosition} width={4} color="#FFD54F" zIndex={5} shadow="0 0 12px rgba(255, 213, 79, 0.9)" />
 
                 {/* Ball position indicator */}
                 <Box
