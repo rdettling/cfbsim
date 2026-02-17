@@ -14,7 +14,7 @@ The app is a standalone Vite + React client. There is no backend; everything run
    - Live/interactive sim: simulates one game with play‑by‑play pacing.
 5. **Persistence**: game, drive, play, and player logs are written to IndexedDB.
 
-Core sim logic lives in `src/domain/sim/engine.ts`.
+Core sim logic lives in `src/domain/sim/`.
 
 ## Data Model (Sim‑Relevant)
 
@@ -41,24 +41,40 @@ In‑memory state used by the engine:
 ## Engine Entry Points
 
 ### Full Sim (batch)
-- `simGame(league, game, starters)`
+- `simGame(league, game, starters)` in `engine.ts`
   - Resets scores and clock.
-  - Runs a clock‑driven while‑loop until regulation ends.
+  - Runs a clock‑driven loop until regulation ends.
   - If tied, runs possession‑based overtime.
   - Returns a list of simulated drives with plays.
 
 ### Interactive (live)
-- `startInteractiveDrive(...)`
-  - Creates a new `DriveRecord` with `points_needed` based on time/score.
-- `stepInteractiveDrive(...)`
-  - Executes one play and returns:
-    - updated drive state
-    - play record
-    - whether the drive is complete
-    - next field position
-    - whether the game ended
+- `startInteractiveDrive(context, fieldPosition, driveNum)`
+- `stepInteractiveDrive(context, state, decision, clockEnabledOverride?)`
+
+Both use the `SimContext` object (see below) and return play‑by‑play results as they run.
 
 The React hook `useGameSim` orchestrates interactive flow and writes results to IndexedDB once the game is complete.
+
+## Sim Module Layout
+
+- `engine.ts` — orchestration and game/drive loops
+- `clock.ts` — clock rules, tempo, and `applyPlayClock`
+- `playcalling.ts` — play selection + fourth‑down logic + points needed
+- `outcomes.ts` — play outcomes (run/pass/FG) and rating‑based yardage
+- `kickoffs.ts` — kickoff start field position
+- `plays.ts` — play headers, text, and yards‑to‑go helpers
+- `interactive.ts` — pure helper to build `SimContext` for live sim
+- `ui.ts` — play/drive mapping utilities used by UI
+
+## SimContext
+
+`SimContext` bundles everything needed to simulate a drive or play:
+- `league`, `game`, `starters`
+- `offense`, `defense`
+- `lead` (score margin from offense POV)
+- `clockEnabled`
+
+This keeps function signatures small and reduces argument ordering bugs.
 
 ## Clock Model
 
@@ -140,6 +156,7 @@ Each play uses probabilistic outcomes based on team ratings:
 - Touchdowns occur when yardage reaches the goal line.
 
 ## Overtime
+
 Overtime remains possession‑based:
 - Alternating possessions
 - Start at `OT_START_YARD_LINE`
@@ -163,11 +180,17 @@ Clock is not advanced in overtime (possession‑based rules).
 
 - IndexedDB is the source of truth.
 - Home/away is a UI view model only; Team A/B remains internal to storage.
-- The sim is intentionally lightweight and deterministic only by random seed.
+- The sim is intentionally lightweight and stochastic.
 
 ## Key Files
 
-- `src/domain/sim/engine.ts` — core engine + clock logic
+- `src/domain/sim/engine.ts` — core orchestration
+- `src/domain/sim/clock.ts` — clock rules
+- `src/domain/sim/playcalling.ts` — play selection logic
+- `src/domain/sim/outcomes.ts` — play outcomes + rating effects
+- `src/domain/sim/plays.ts` — play formatting helpers
+- `src/domain/sim/interactive.ts` — context builder
+- `src/domain/sim/ui.ts` — UI mapping helpers
 - `src/domain/sim/orchestrator.ts` — sim lifecycle and persistence
 - `src/components/sim/useGameSim.ts` — live sim orchestration
 - `src/components/game/GameScoreStrip.tsx` — clock/score display
