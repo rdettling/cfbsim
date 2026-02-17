@@ -41,7 +41,8 @@ export type SimTuning = {
     baseSackRate: number;
     baseIntRate: number;
     baseFumbleRate: number;
-    ratingDiffDivisor: number;
+    executionDiffDivisor: number;
+    yardsDiffDivisor: number;
     pass: {
       baseMean: number;
       stdDev: number;

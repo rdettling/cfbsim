@@ -167,13 +167,13 @@ let bestEval = evaluate();
 const scaleCandidates = [0.6, 0.8, 1.0, 1.25, 1.5, 1.8];
 
 for (let pass = 0; pass < PASSES; pass += 1) {
-  const current = best;
+  let current = best;
 
-  const tune = (label: string, updater: (candidate: any, scale: number) => void) => {
-    let localBest = current;
+  const tune = (label: string, base: any, updater: (candidate: any, scale: number) => void) => {
+    let localBest = base;
     let localEval = bestEval;
     scaleCandidates.forEach(scale => {
-      const candidate = structuredClone(current);
+      const candidate = structuredClone(base);
       updater(candidate, scale);
       applySimTuning(candidate);
       const evalResult = evaluate();
@@ -186,14 +186,21 @@ for (let pass = 0; pass < PASSES; pass += 1) {
     return { tuning: localBest, eval: localEval };
   };
 
-  const step1 = tune('ratingDiffDivisor', (candidate, scale) => {
-    candidate.outcomes.ratingDiffDivisor = Math.max(10, current.outcomes.ratingDiffDivisor * scale);
+  const step1 = tune('yardsDiffDivisor', current, (candidate, scale) => {
+    candidate.outcomes.yardsDiffDivisor = Math.max(10, current.outcomes.yardsDiffDivisor * scale);
   });
   best = step1.tuning;
   bestEval = step1.eval;
 
-  if ((pass + 1) % 5 === 0) {
-    console.log(`iter ${pass + 1}/${PASSES} bestError=${bestEval.totalError.toFixed(4)}`);
+  current = best;
+  const step2 = tune('executionDiffDivisor', current, (candidate, scale) => {
+    candidate.outcomes.executionDiffDivisor = Math.max(10, current.outcomes.executionDiffDivisor * scale);
+  });
+best = step2.tuning;
+bestEval = step2.eval;
+
+if ((pass + 1) % 5 === 0) {
+  console.log(`iter ${pass + 1}/${PASSES} bestError=${bestEval.totalError.toFixed(4)}`);
   }
 }
 

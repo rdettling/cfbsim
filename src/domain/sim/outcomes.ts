@@ -24,7 +24,13 @@ const adjustedRatings = (offense: Team, defense: Team, game?: SimGame) => {
 const ratingMultiplier = (offense: Team, defense: Team, game?: SimGame) => {
   const { offenseRating, defenseRating } = adjustedRatings(offense, defense, game);
   const ratingDiff = offenseRating - defenseRating;
-  return 1 + (ratingDiff / SIM_TUNING.outcomes.ratingDiffDivisor);
+  return 1 + (ratingDiff / SIM_TUNING.outcomes.yardsDiffDivisor);
+};
+
+const executionFactor = (offense: Team, defense: Team, game?: SimGame) => {
+  const { offenseRating, defenseRating } = adjustedRatings(offense, defense, game);
+  const ratingDiff = offenseRating - defenseRating;
+  return ratingDiff / SIM_TUNING.outcomes.executionDiffDivisor;
 };
 
 const passYards = (offense: Team, defense: Team, game?: SimGame) => {
@@ -61,9 +67,13 @@ export const simPass = (fieldPosition: number, offense: Team, defense: Team, gam
   const randInterception = Math.random();
   const result = { outcome: '', yards: 0 };
 
-  const sackRate = Math.max(0.01, SIM_TUNING.outcomes.baseSackRate);
-  const compRate = Math.min(0.8, Math.max(0.45, SIM_TUNING.outcomes.baseCompPercent));
-  const intRate = Math.max(0.01, SIM_TUNING.outcomes.baseIntRate);
+  const exec = executionFactor(offense, defense, game);
+  const sackRate = Math.max(0.01, SIM_TUNING.outcomes.baseSackRate * (1 - exec));
+  const compRate = Math.min(
+    0.8,
+    Math.max(0.45, SIM_TUNING.outcomes.baseCompPercent * (1 + exec))
+  );
+  const intRate = Math.max(0.01, SIM_TUNING.outcomes.baseIntRate * (1 - exec));
 
   if (randSack < sackRate) {
     result.outcome = 'sack';
@@ -88,7 +98,8 @@ export const simPass = (fieldPosition: number, offense: Team, defense: Team, gam
 export const simRun = (fieldPosition: number, offense: Team, defense: Team, game?: SimGame) => {
   const randFumble = Math.random();
   const result = { outcome: '', yards: 0 };
-  const fumbleRate = Math.max(0.005, SIM_TUNING.outcomes.baseFumbleRate);
+  const exec = executionFactor(offense, defense, game);
+  const fumbleRate = Math.max(0.005, SIM_TUNING.outcomes.baseFumbleRate * (1 - exec));
   if (randFumble < fumbleRate) {
     result.outcome = 'fumble';
   } else {

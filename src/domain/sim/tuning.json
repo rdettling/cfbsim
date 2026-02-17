@@ -51,16 +51,17 @@
     "baseSackRate": 0.05,
     "baseIntRate": 0.03,
     "baseFumbleRate": 0.02,
-    "ratingDiffDivisor": 100,
+    "executionDiffDivisor": 180,
+    "yardsDiffDivisor": 270,
     "pass": {
-      "baseMean": 6.6177898287501815,
-      "stdDev": 5.887510335402317,
-      "positiveMultiplier": 0.0023652368429015313
+      "baseMean": 6.29457260039563,
+      "stdDev": 5.226340735191511,
+      "positiveMultiplier": 0.003260878038087979
     },
     "run": {
-      "baseMean": 3.9887977990894194,
-      "stdDev": 4.23545369057931,
-      "positiveMultiplier": 0.00031574348497282156
+      "baseMean": 4.074422731653613,
+      "stdDev": 3.994593054512268,
+      "positiveMultiplier": 0.00028222561057716645
     },
     "sack": {
       "baseMean": -6,
