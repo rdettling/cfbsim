@@ -5,6 +5,7 @@ import { buildSchedule, applyRivalriesToSchedule } from '../schedule';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { clearNonGameArtifacts } from '../../db/simRepo';
+import { getRivalriesData } from '../../db/baseData';
 
 export const createNonConGameRecord = async (
   league: LeagueState,
@@ -85,24 +86,44 @@ export const resetSeasonData = async (league: LeagueState) => {
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
   league.pending_rivalries = await applyRivalriesToSchedule(schedule, userTeam, league.teams);
 
-  const created = await Promise.all(
-    schedule
-      .filter(slot => slot.opponent)
-      .map(slot => {
-        const opponent = league.teams.find(team => team.name === slot.opponent?.name);
-        if (!opponent) return null;
-        userTeam.nonConfGames += 1;
-        opponent.nonConfGames += 1;
-        return createNonConGameRecord(
-          league,
-          userTeam,
-          opponent,
-          slot.weekPlayed,
-          slot.label ?? null,
-          { neutralSite: true }
-        );
-      })
-  );
+  const gamesToSave = await buildRivalryGameRecords(league);
+  return { schedule, gamesToSave };
+};
 
-  return { schedule, gamesToSave: created.filter(Boolean) as GameRecord[] };
+export const buildRivalryGameRecords = async (league: LeagueState): Promise<GameRecord[]> => {
+  const rivalries = await getRivalriesData();
+  const teamByName = new Map(league.teams.map(team => [team.name, team]));
+  const seen = new Set<string>();
+  const games: GameRecord[] = [];
+
+  for (const [teamAName, teamBName, week, name] of rivalries.rivalries) {
+    if (!week) continue;
+    const teamA = teamByName.get(teamAName);
+    const teamB = teamByName.get(teamBName);
+    if (!teamA || !teamB) continue;
+
+    const key = [teamA.id, teamB.id].sort((a, b) => a - b).join('-') + `-${week}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    if (teamA.conference !== 'Independent' && teamA.conference === teamB.conference) {
+      teamA.confGames += 1;
+      teamB.confGames += 1;
+    } else {
+      teamA.nonConfGames += 1;
+      teamB.nonConfGames += 1;
+    }
+
+    const record = await createNonConGameRecord(
+      league,
+      teamA,
+      teamB,
+      week,
+      name ?? null,
+      { neutralSite: true }
+    );
+    games.push(record);
+  }
+
+  return games;
 };

@@ -199,7 +199,8 @@ const resetTeamScheduleCounts = (teams: Team[]) => {
 export const fillUserSchedule = (
   schedule: ScheduleGame[],
   userTeam: Team,
-  teams: Team[]
+  teams: Team[],
+  fixedGames: FullGame[] = []
 ): FullGame[] => {
   resetTeamScheduleCounts(teams);
   const teamByName = new Map(teams.map(team => [team.name, team]));
@@ -209,6 +210,26 @@ export const fillUserSchedule = (
   const homeCounts = new Map<number, number>(teams.map(team => [team.id, 0]));
   const awayCounts = new Map<number, number>(teams.map(team => [team.id, 0]));
   const games: FullGame[] = [];
+
+  fixedGames.forEach(game => {
+    scheduleGame(
+      games,
+      game.teamA,
+      game.teamB,
+      game.weekPlayed,
+      game.homeTeam ?? game.teamA,
+      game.awayTeam ?? game.teamB,
+      game.name ?? null
+    );
+    scheduledOpponents.get(game.teamA.id)?.add(game.teamB.id);
+    scheduledOpponents.get(game.teamB.id)?.add(game.teamA.id);
+    if (game.homeTeam) {
+      homeCounts.set(game.homeTeam.id, (homeCounts.get(game.homeTeam.id) ?? 0) + 1);
+    }
+    if (game.awayTeam) {
+      awayCounts.set(game.awayTeam.id, (awayCounts.get(game.awayTeam.id) ?? 0) + 1);
+    }
+  });
 
   schedule.forEach(slot => {
     if (!slot.opponent) return;
@@ -365,7 +386,7 @@ export const fillUserSchedule = (
     }
   }
 
-  const fixedGames = games.filter(game => game.weekPlayed > 0);
+  const fixedWeekGames = games.filter(game => game.weekPlayed > 0);
   const unscheduledGames = games.filter(game => !game.weekPlayed || game.weekPlayed === 0);
   const baseTeamWeeks = new Map<number, Set<number>>(
     teams.map(team => [team.id, new Set<number>()])
@@ -375,7 +396,7 @@ export const fillUserSchedule = (
     baseWeekLoad.set(week, 0);
   }
 
-  fixedGames.forEach(game => {
+  fixedWeekGames.forEach(game => {
     baseTeamWeeks.get(game.teamA.id)?.add(game.weekPlayed);
     baseTeamWeeks.get(game.teamB.id)?.add(game.weekPlayed);
     baseWeekLoad.set(game.weekPlayed, (baseWeekLoad.get(game.weekPlayed) ?? 0) + 1);
@@ -542,7 +563,8 @@ export const listAvailableTeams = (
   schedule: ScheduleGame[],
   userTeam: Team,
   teams: Team[],
-  week: number
+  week: number,
+  existingGames: GameRecord[] = []
 ): string[] => {
   const weekIndex = week - 1;
   const weekSlot = schedule[weekIndex];
@@ -552,11 +574,18 @@ export const listAvailableTeams = (
   schedule.forEach(slot => {
     if (slot.opponent) scheduledTeams.add(slot.opponent.name);
   });
+  const teamIdsWithGame = new Set<number>();
+  existingGames.forEach(game => {
+    if (game.weekPlayed !== week) return;
+    teamIdsWithGame.add(game.teamAId);
+    teamIdsWithGame.add(game.teamBId);
+  });
 
   return teams
     .filter(team => team.name !== userTeam.name)
     .filter(team => team.nonConfGames < team.nonConfLimit)
     .filter(team => !scheduledTeams.has(team.name))
+    .filter(team => !teamIdsWithGame.has(team.id))
     .filter(team => team.conference !== userTeam.conference)
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(team => team.name);

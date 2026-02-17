@@ -16,6 +16,7 @@ import {
   saveGameLogs,
   saveGames,
   savePlays,
+  clearSimArtifacts,
   clearNonGameArtifacts,
 } from '../../db/simRepo';
 import { ensureRosters } from '../roster';
@@ -277,7 +278,18 @@ export const advanceWeeks = async (destWeek: number) => {
       game => game.year === league.info.currentYear
     );
     const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
-    const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
+    const fixedGames = existingGames
+      .filter(game => game.teamAId !== userTeam.id && game.teamBId !== userTeam.id)
+      .map(game => ({
+        teamA: teamsById.get(game.teamAId)!,
+        teamB: teamsById.get(game.teamBId)!,
+        weekPlayed: game.weekPlayed,
+        homeTeam: game.homeTeamId ? teamsById.get(game.homeTeamId)! : null,
+        awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
+        name: game.name ?? null,
+      }));
+    const fullGames = fillUserSchedule(schedule, userTeam, league.teams, fixedGames);
+    await clearSimArtifacts();
     league.info.stage = 'season';
     league.scheduleBuilt = true;
     await initializeSimData(league, fullGames);
@@ -296,6 +308,23 @@ export const advanceWeeks = async (destWeek: number) => {
     const weekGames = (await getGamesByWeek(league.info.currentWeek)).filter(
       game => game.year === league.info.currentYear
     );
+    const gamesByTeam = new Map<number, GameRecord[]>();
+    weekGames.forEach(game => {
+      const listA = gamesByTeam.get(game.teamAId) ?? [];
+      listA.push(game);
+      gamesByTeam.set(game.teamAId, listA);
+      const listB = gamesByTeam.get(game.teamBId) ?? [];
+      listB.push(game);
+      gamesByTeam.set(game.teamBId, listB);
+    });
+    gamesByTeam.forEach((games, teamId) => {
+      if (games.length > 1) {
+        console.warn(
+          `[sim debug] team ${teamId} has ${games.length} games in week ${league.info.currentWeek}:`,
+          games.map(game => ({ id: game.id, week: game.weekPlayed, teamAId: game.teamAId, teamBId: game.teamBId, name: game.name }))
+        );
+      }
+    });
     const unplayed = weekGames.filter(game => !game.winnerId);
     const simGames: SimGame[] = [];
     const gameLogsByGame = new Map<number, GameLogRecord[]>();
