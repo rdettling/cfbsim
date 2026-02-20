@@ -5,12 +5,8 @@ import type { GameRecord } from '../../types/db';
 import { DEFAULT_SETTINGS } from '../../types/league';
 import type { OddsContext } from '../odds';
 import { getWinProbForRatings, HOME_FIELD_ADVANTAGE } from '../odds';
+import { REGULAR_SEASON_WEEKS } from '../league/postseason';
 
-const RANKING_TOTAL_WEEKS = 14;
-const MIN_SOR_WEIGHT = 0.1;
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
 
 export const formatRecord = (team: Team) =>
   `${team.totalWins}-${team.totalLosses} (${team.confWins}-${team.confLosses})`;
@@ -37,7 +33,8 @@ const expectedWinForAverageTeam = (
 export const updateTeamRecords = (
   games: SimGame[],
   teams: Team[],
-  oddsContext: OddsContext
+  oddsContext: OddsContext,
+  info?: Info
 ) => {
   const updates = new Map<number, {
     team: Team;
@@ -52,6 +49,9 @@ export const updateTeamRecords = (
   }>();
 
   const averageRating = averageTeamRating(teams);
+  if (info) {
+    info.averageTeamRating = Math.round(averageRating * 10) / 10;
+  }
 
   const getUpdate = (team: Team) => {
     const existing = updates.get(team.id);
@@ -144,6 +144,7 @@ export const updateTeamRecords = (
     team.totalLosses += update.totalLosses;
     team.strength_of_record += update.strength;
     team.gamesPlayed += update.gamesPlayed;
+    team.strength_of_record_avg = team.strength_of_record / Math.max(1, team.gamesPlayed);
     team.record = formatRecord(team);
   });
 };
@@ -171,14 +172,40 @@ export const updateRankings = (
     teamGames.set(game.teamB.id, game);
   });
 
+  const teamCount = teams.length;
+  const toScore = (rank: number) =>
+    teamCount <= 1 ? 100 : ((teamCount - rank) / (teamCount - 1)) * 100;
+
+  const sortedBySor = [...teams].sort((a, b) => {
+    const aSor = a.strength_of_record_avg ?? 0;
+    const bSor = b.strength_of_record_avg ?? 0;
+    if (bSor !== aSor) return bSor - aSor;
+    return (a.last_rank ?? a.ranking) - (b.last_rank ?? b.ranking);
+  });
+
+  const sorRankByTeam = new Map<number, number>();
+  let prevSor: number | null = null;
+  let currentRank = 0;
+  let index = 0;
+  sortedBySor.forEach(team => {
+    index += 1;
+    const sor = team.strength_of_record_avg ?? 0;
+    if (prevSor === null || sor !== prevSor) {
+      currentRank = index;
+      prevSor = sor;
+    }
+    sorRankByTeam.set(team.id, currentRank);
+  });
+
   teams.forEach(team => {
     team.last_rank = team.ranking;
-    const gamesPlayed = team.totalWins + team.totalLosses;
-    const baseScore = team.strength_of_record / Math.max(1, gamesPlayed);
-    const lastRegularWeek = Math.min(info.lastWeek ?? RANKING_TOTAL_WEEKS, RANKING_TOTAL_WEEKS);
-    const inertiaWeight = clamp((lastRegularWeek - info.currentWeek) / Math.max(1, lastRegularWeek - 1), 0, 1 - MIN_SOR_WEIGHT);
-    const pollScore = inertiaWeight * team.poll_score + (1 - inertiaWeight) * baseScore;
-    team.poll_score = Math.round(pollScore * 10) / 10;
+    const rankScore = toScore(team.ranking);
+    const sorRank = sorRankByTeam.get(team.id) ?? teamCount;
+    const sorScore = toScore(sorRank);
+    const remainingWeeks = Math.max(0, REGULAR_SEASON_WEEKS - (info.currentWeek - 1));
+    const inertiaWeight = REGULAR_SEASON_WEEKS === 0 ? 0 : remainingWeeks / REGULAR_SEASON_WEEKS;
+    const pollScore = inertiaWeight * rankScore + (1 - inertiaWeight) * sorScore;
+    team.poll_score = Math.round(pollScore * 1000) / 1000;
   });
 
   const sorted = [...teams].sort((a, b) => {
@@ -197,7 +224,7 @@ export const finalizePostseasonRankings = (
   teams.forEach(team => {
     const gamesPlayed = team.totalWins + team.totalLosses;
     const baseScore = team.strength_of_record / Math.max(1, gamesPlayed);
-    team.poll_score = Math.round(baseScore * 10) / 10;
+    team.poll_score = Math.round(baseScore * 1000) / 1000;
   });
 
   const sorted = [...teams].sort((a, b) => {

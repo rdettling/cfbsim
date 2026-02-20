@@ -81,6 +81,7 @@ export const resetSeasonData = async (league: LeagueState) => {
     team.movement = 0;
     team.last_game = null;
     team.next_game = null;
+    team.strength_of_record_avg = 0;
   });
 
   await clearNonGameArtifacts();
