@@ -1,0 +1,79 @@
+{
+  "clock": {
+    "tempoMultipliers": {
+      "fast": 0.7,
+      "chew": 1.2,
+      "normal": 1
+    },
+    "playSeconds": {
+      "run": {
+        "min": 30,
+        "max": 40
+      },
+      "passComplete": {
+        "min": 20,
+        "max": 30
+      },
+      "passIncomplete": {
+        "min": 5,
+        "max": 10
+      },
+      "specialTeams": {
+        "min": 10,
+        "max": 20
+      }
+    },
+    "firstDownStopSeconds": 120,
+    "outOfBoundsStop": {
+      "firstHalfSeconds": 120,
+      "secondHalfSeconds": 300
+    }
+  },
+  "kickoffs": {
+    "touchbackRate": 0.65,
+    "touchbackSpot": 25,
+    "returnMin": 15,
+    "returnMax": 35
+  },
+  "playcalling": {
+    "passWeightBase": 0.5,
+    "passWeightThirdAndLong": 0.25,
+    "passWeightShortYards": -0.2,
+    "passWeightLateTrailing": 0.15,
+    "passWeightLateLeading": -0.15,
+    "passWeightMin": 0.15,
+    "passWeightMax": 0.85
+  },
+  "outcomes": {
+    "passPositivePower": 3.2,
+    "runPositivePower": 4.2,
+    "baseCompPercent": 0.62,
+    "baseSackRate": 0.05,
+    "baseIntRate": 0.03,
+    "baseFumbleRate": 0.02,
+    "executionDiffDivisor": 180,
+    "yardsDiffDivisor": 172.8,
+    "pass": {
+      "baseMean": 6.29457260039563,
+      "stdDev": 5.226340735191511,
+      "positiveMultiplier": 0.003260878038087979
+    },
+    "run": {
+      "baseMean": 4.074422731653613,
+      "stdDev": 3.994593054512268,
+      "positiveMultiplier": 0.00028222561057716645
+    },
+    "sack": {
+      "baseMean": -6,
+      "stdDev": 2
+    },
+    "fieldGoal": {
+      "goodFrom": 37,
+      "maxRange": 57,
+      "baseProb": 0.9,
+      "slope": 0.05,
+      "longProb": 0.55,
+      "longSlope": 0.03
+    }
+  }
+}

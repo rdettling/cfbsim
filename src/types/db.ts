@@ -21,6 +21,8 @@ export interface GameRecord {
   resultA: string | null;
   resultB: string | null;
   overtime: number;
+  quarter?: number;
+  clockSecondsLeft?: number;
   scoreA: number | null;
   scoreB: number | null;
   headline: string | null;
@@ -60,6 +62,9 @@ export interface PlayRecord {
   header: string;
   scoreA: number;
   scoreB: number;
+  quarter?: number;
+  clockSecondsLeft?: number;
+  playSeconds?: number;
 }
 
 export interface GameLogRecord {

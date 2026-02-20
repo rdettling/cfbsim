@@ -66,3 +66,8 @@ export const getBettingOddsData = () =>
       }
     >;
   }>('betting_odds', '/data/betting_odds.json');
+
+export const clearBaseDataCache = async () => {
+  const db = await getDb();
+  await db.clear('baseData');
+};

@@ -40,6 +40,7 @@ export interface Team {
   movement: number;
   poll_score: number;
   strength_of_record: number;
+  strength_of_record_avg?: number;
   last_rank?: number;
   last_game: ScheduleGame | null;
   next_game: ScheduleGame | null;
@@ -52,6 +53,7 @@ export interface Info {
   stage: string;
   team: string;
   lastWeek: number;
+  averageTeamRating?: number;
   colorPrimary?: string;
   colorSecondary?: string;
 }

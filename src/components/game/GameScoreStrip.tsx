@@ -17,6 +17,15 @@ const GameScoreStrip = ({
   const scoreText = `${matchup.awayScore} - ${matchup.homeScore}`;
   const isAwayOnOffense = matchup.isAwayOnOffense;
   const isHomeOnOffense = !matchup.isAwayOnOffense;
+  const formatClock = (totalSeconds: number) => {
+    const minutes = Math.max(0, Math.floor(totalSeconds / 60));
+    const seconds = Math.max(0, totalSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+  const periodLabel = matchup.inOvertime
+    ? (matchup.overtimeCount > 1 ? `${matchup.overtimeCount}OT` : 'OT')
+    : `Q${matchup.quarter}`;
+  const clockLabel = matchup.inOvertime ? '' : formatClock(matchup.clockSecondsLeft);
 
   return (
     <Box
@@ -52,7 +61,9 @@ const GameScoreStrip = ({
           {scoreText}
         </Typography>
         <Typography sx={{ fontSize: '0.9rem', opacity: 0.85 }}>
-          {isPlaybackComplete ? 'FINAL' : `Drive ${matchup.currentDriveNum + 1}`}
+          {isPlaybackComplete
+            ? 'FINAL'
+            : `${periodLabel}${clockLabel ? ` ${clockLabel}` : ''}`}
         </Typography>
       </Box>
 

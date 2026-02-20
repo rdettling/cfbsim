@@ -3,14 +3,16 @@ import {
   prepareInteractiveLiveGame,
   finalizeGameSimulation,
 } from '../../domain/sim';
+import { buildSimContext } from '../../domain/sim/interactive';
 import {
   startInteractiveDrive,
   stepInteractiveDrive,
   buildGameData,
   finalizeGameResult,
-  DRIVES_PER_TEAM,
   OT_START_YARD_LINE,
   isTeamAOpeningOffense,
+  SECONDS_PER_QUARTER,
+  kickoffStartFieldPosition,
 } from '../../domain/sim/engine';
 import type { GameData, Play, Drive } from '../../types/game';
 import type { LeagueState } from '../../types/league';
@@ -18,6 +20,7 @@ import type { GameRecord, DriveRecord, PlayRecord, PlayerRecord } from '../../ty
 import type { SimGame, StartersCache, InteractiveDriveState } from '../../types/sim';
 import type { Team } from '../../types/domain';
 import type { GameControlsProps } from '../../types/components';
+import { buildDriveUi, mapPlayRecord, buildNextHeader, resolveDecision } from '../../domain/sim/ui';
 
 export type InteractiveSimState = {
   plays: Play[];
@@ -36,6 +39,10 @@ export type InteractiveSimState = {
   previousPlayYards: number;
   lastPlayText: string;
   isUserOffenseNow: boolean;
+  quarter: number;
+  clockSecondsLeft: number;
+  inOvertime: boolean;
+  overtimeCount: number;
 };
 
 type InteractiveContext = {
@@ -53,38 +60,11 @@ type InteractiveContext = {
   inOvertime: boolean;
   otPossession: number;
   openingIsTeamA: boolean;
+  nextOffenseIsTeamA: boolean;
+  driveStartQuarter: number;
   currentDriveState: InteractiveDriveState | null;
   currentOffense: Team | null;
   currentDefense: Team | null;
-};
-
-const buildNextHeader = (fieldPosition: number, down: number, yardsLeft: number) => {
-  const location = fieldPosition <= 50 ? 'OWN' : 'OPP';
-  const yardLine = fieldPosition <= 50 ? fieldPosition : 100 - fieldPosition;
-  const downSuffix = down === 1 ? 'st' : down === 2 ? 'nd' : down === 3 ? 'rd' : 'th';
-  return `${down}${downSuffix} & ${yardsLeft} at ${location} ${yardLine}`;
-};
-
-const mapPlayRecord = (play: PlayRecord): Play => ({
-  id: play.id,
-  driveId: play.driveId,
-  down: play.down,
-  yardsLeft: play.yardsLeft,
-  startingFP: play.startingFP,
-  playType: play.playType,
-  yardsGained: play.yardsGained,
-  text: play.text,
-  header: play.header,
-  result: play.result,
-  scoreA: play.scoreA,
-  scoreB: play.scoreB,
-});
-
-const resolveDecision = (decision: string) => {
-  if (decision === 'field_goal') return 'field_goal';
-  if (decision === 'punt') return 'punt';
-  if (decision === 'pass') return 'pass';
-  return 'run';
 };
 
 export const useGameSim = ({
@@ -144,25 +124,13 @@ export const useGameSim = ({
     setDecisionPrompt(isUserOffense ? buildDecisionPrompt(driveState) : null);
   };
 
+
   const upsertDriveUi = (driveRecord: DriveRecord) => {
     const context = contextRef.current;
     if (!context) return null;
-    const offense = context.teamsById.get(driveRecord.offenseId);
-    const defense = context.teamsById.get(driveRecord.defenseId);
     const existing = drivesRef.current.get(driveRecord.id);
     if (existing) return existing;
-    const created: Drive = {
-      driveNum: driveRecord.driveNum,
-      offense: offense?.name ?? '',
-      defense: defense?.name ?? '',
-      startingFP: driveRecord.startingFP,
-      result: driveRecord.result,
-      points: driveRecord.points,
-      scoreAAfter: driveRecord.scoreAAfter,
-      scoreBAfter: driveRecord.scoreBAfter,
-      plays: [],
-      yards: 0,
-    };
+    const created: Drive = buildDriveUi(driveRecord, context.teamsById);
     drivesRef.current.set(driveRecord.id, created);
     return created;
   };
@@ -194,7 +162,8 @@ export const useGameSim = ({
 
   const finalizeDrive = async (
     driveState: InteractiveDriveState,
-    nextFieldPosition: number | null
+    nextFieldPosition: number | null,
+    gameComplete: boolean
   ) => {
     const context = contextRef.current;
     if (!context) return;
@@ -203,16 +172,14 @@ export const useGameSim = ({
     const nextField = nextFieldPosition ?? context.fieldPosition;
     context.fieldPosition = nextField;
     setGameData(prev => prev ? { ...prev, scoreA: context.simGame.scoreA, scoreB: context.simGame.scoreB } : prev);
-    await advanceDriveCounters();
-  };
-
-  const advanceDriveCounters = async () => {
-    const context = contextRef.current;
-    if (!context) return;
+    context.driveNum += 1;
+    if (gameComplete) {
+      await finishInteractiveGame();
+      return;
+    }
 
     if (context.inOvertime) {
       context.otPossession += 1;
-      context.driveNum += 1;
       if (context.otPossession >= 2) {
         if (context.simGame.scoreA !== context.simGame.scoreB) {
           await finishInteractiveGame();
@@ -221,7 +188,14 @@ export const useGameSim = ({
         context.otPossession = 0;
       }
     } else {
-      context.driveNum += 1;
+      const halftimeReached = context.driveStartQuarter === 2
+        && context.simGame.quarter === 3
+        && context.simGame.clockSecondsLeft === SECONDS_PER_QUARTER;
+      if (halftimeReached) {
+        context.nextOffenseIsTeamA = !context.openingIsTeamA;
+      } else {
+        context.nextOffenseIsTeamA = !context.nextOffenseIsTeamA;
+      }
     }
 
     await advanceToNextDrive();
@@ -232,12 +206,12 @@ export const useGameSim = ({
     if (!context) return;
 
     if (!context.inOvertime) {
-      if (context.driveNum >= DRIVES_PER_TEAM * 2) {
+      const endOfRegulation = context.simGame.quarter === 4 && context.simGame.clockSecondsLeft === 0;
+      if (endOfRegulation) {
         if (context.simGame.scoreA === context.simGame.scoreB) {
           context.inOvertime = true;
           context.otPossession = 0;
           context.simGame.overtime = 0;
-          context.driveNum = DRIVES_PER_TEAM * 2 + 1;
         } else {
           await finishInteractiveGame();
           return;
@@ -251,26 +225,24 @@ export const useGameSim = ({
 
     const isTeamA = context.inOvertime
       ? context.otPossession === 0
-      : (context.openingIsTeamA ? context.driveNum % 2 === 0 : context.driveNum % 2 !== 0);
+      : context.nextOffenseIsTeamA;
     const offense = isTeamA ? context.simGame.teamA : context.simGame.teamB;
     const defense = isTeamA ? context.simGame.teamB : context.simGame.teamA;
-    const lead = isTeamA ? context.simGame.scoreA - context.simGame.scoreB : context.simGame.scoreB - context.simGame.scoreA;
 
-    const fieldPosition = context.inOvertime
+    let fieldPosition = context.inOvertime
       ? OT_START_YARD_LINE
-      : (context.driveNum === 0 || context.driveNum === DRIVES_PER_TEAM ? 20 : context.fieldPosition);
+      : context.fieldPosition;
 
     context.fieldPosition = fieldPosition;
     context.currentOffense = offense;
     context.currentDefense = defense;
+    context.driveStartQuarter = context.simGame.quarter;
 
+    const simContext = buildSimContext(context, !context.inOvertime);
+    if (!simContext) return;
     const driveState = startInteractiveDrive(
-      context.league,
-      context.simGame,
+      simContext,
       fieldPosition,
-      lead,
-      offense,
-      defense,
       context.driveNum
     );
     context.currentDriveState = driveState;
@@ -319,6 +291,16 @@ export const useGameSim = ({
       return;
     }
 
+    response.simGame.scoreA = 0;
+    response.simGame.scoreB = 0;
+    response.simGame.overtime = 0;
+    response.simGame.quarter = 1;
+    response.simGame.clockSecondsLeft = SECONDS_PER_QUARTER;
+    response.simGame.clockRunning = true;
+    response.simGame.winner = null;
+    response.simGame.resultA = null;
+    response.simGame.resultB = null;
+
     const context: InteractiveContext = {
       league: response.league,
       record: response.record,
@@ -332,10 +314,12 @@ export const useGameSim = ({
         ? response.league.teams.find(team => team.name === response.league.info.team)?.id ?? null
         : null,
       driveNum: 0,
-      fieldPosition: 20,
+      fieldPosition: kickoffStartFieldPosition(),
       inOvertime: false,
       otPossession: 0,
       openingIsTeamA: isTeamAOpeningOffense(response.simGame),
+      nextOffenseIsTeamA: isTeamAOpeningOffense(response.simGame),
+      driveStartQuarter: response.simGame.quarter,
       currentDriveState: null,
       currentOffense: null,
       currentDefense: null,
@@ -360,7 +344,7 @@ export const useGameSim = ({
     playRecordsRef.current.push(stepResult.play);
 
     if (stepResult.driveComplete) {
-      await finalizeDrive(stepResult.state, stepResult.nextFieldPosition);
+      await finalizeDrive(stepResult.state, stepResult.nextFieldPosition, stepResult.gameComplete);
     } else {
       updateDecisionPrompt(stepResult.state as InteractiveDriveState);
     }
@@ -372,14 +356,13 @@ export const useGameSim = ({
 
     setSubmittingDecision(true);
     try {
+      const simContext = buildSimContext(context, !context.inOvertime);
+      if (!simContext) return;
       const stepResult = stepInteractiveDrive(
-        context.league,
-        context.simGame,
+        simContext,
         context.currentDriveState,
         resolveDecision(decision),
-        context.currentOffense,
-        context.currentDefense,
-        context.starters
+        !context.inOvertime
       );
       await applyStepResult(stepResult);
     } finally {
@@ -393,14 +376,13 @@ export const useGameSim = ({
 
     let remaining = count;
     while (remaining > 0) {
+      const simContext = buildSimContext(context, !context.inOvertime);
+      if (!simContext) return;
       const stepResult = stepInteractiveDrive(
-        context.league,
-        context.simGame,
+        simContext,
         context.currentDriveState,
         'auto',
-        context.currentOffense,
-        context.currentDefense,
-        context.starters
+        !context.inOvertime
       );
       await applyStepResult(stepResult);
       if (stepResult.driveComplete) return;
@@ -417,14 +399,13 @@ export const useGameSim = ({
     let stepResult: ReturnType<typeof stepInteractiveDrive> | null = null;
     let guard = 0;
     while (guard < 200) {
+      const simContext = buildSimContext(context, !context.inOvertime);
+      if (!simContext) return;
       stepResult = stepInteractiveDrive(
-        context.league,
-        context.simGame,
+        simContext,
         driveState,
         'auto',
-        context.currentOffense,
-        context.currentDefense,
-        context.starters
+        !context.inOvertime
       );
       playBuffer.push(stepResult.play);
       driveState = stepResult.state as InteractiveDriveState;
@@ -437,7 +418,7 @@ export const useGameSim = ({
     playRecordsRef.current.push(...playBuffer);
 
     if (stepResult?.driveComplete) {
-      await finalizeDrive(driveState, stepResult.nextFieldPosition);
+      await finalizeDrive(driveState, stepResult.nextFieldPosition, stepResult.gameComplete);
     } else {
       updateDecisionPrompt(driveState);
     }
@@ -528,6 +509,10 @@ export const useGameSim = ({
       fieldPosition,
       previousPlayYards,
       lastPlayText: lastPlay?.text ?? '',
+      quarter: context?.simGame.quarter ?? 1,
+      clockSecondsLeft: context?.simGame.clockSecondsLeft ?? SECONDS_PER_QUARTER,
+      inOvertime: context?.inOvertime ?? false,
+      overtimeCount: context?.simGame.overtime ?? 0,
     };
   })();
 
@@ -549,6 +534,10 @@ export const useGameSim = ({
       previousPlayYards: derived.previousPlayYards,
       lastPlayText: derived.lastPlayText,
       isUserOffenseNow: derived.isUserOffenseNow,
+      quarter: derived.quarter,
+      clockSecondsLeft: derived.clockSecondsLeft,
+      inOvertime: derived.inOvertime,
+      overtimeCount: derived.overtimeCount,
     },
     actions: {
       start,

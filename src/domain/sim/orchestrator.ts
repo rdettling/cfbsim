@@ -4,7 +4,7 @@ import type { SimGame, StartersCache } from '../../types/sim';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
 import type { GameData, Drive } from '../../types/game';
 import type { Team } from '../../types/domain';
-import { fillUserSchedule, buildUserScheduleFromGames } from '../schedule';
+import { buildFullScheduleFromExisting } from '../schedule';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
   getGameById,
@@ -32,6 +32,7 @@ import {
   buildStartersCache,
   loadPlayersMap,
   hydrateGame,
+  SECONDS_PER_QUARTER,
 } from './engine';
 import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
 import { handleSpecialWeeks } from './postseason';
@@ -66,6 +67,8 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
       resultA: null,
       resultB: null,
       overtime: 0,
+      quarter: 1,
+      clockSecondsLeft: SECONDS_PER_QUARTER,
       scoreA: null,
       scoreB: null,
       headline: null,
@@ -222,7 +225,7 @@ export const finalizeGameSimulation = async (params: {
 
   const logs = createGameLogsFromPlays(league, simGame, playRecords, starters);
 
-  updateTeamRecords([simGame]);
+  updateTeamRecords([simGame], league.teams, await loadOddsContext(), league.info);
   await generateHeadlines([simGame], new Map([[simGame.id, logs]]), playersById);
 
   const updatedRecord: GameRecord = {
@@ -233,6 +236,8 @@ export const finalizeGameSimulation = async (params: {
     resultA: simGame.resultA,
     resultB: simGame.resultB,
     overtime: simGame.overtime,
+    quarter: simGame.quarter,
+    clockSecondsLeft: simGame.clockSecondsLeft,
     headline: simGame.headline ?? null,
     headline_subtitle: simGame.headline_subtitle ?? null,
     headline_tags: simGame.headline_tags ?? null,
@@ -271,11 +276,10 @@ export const advanceWeeks = async (destWeek: number) => {
     const existingGames = (await getAllGames()).filter(
       game => game.year === league.info.currentYear
     );
-    const schedule = buildUserScheduleFromGames(userTeam, league.teams, existingGames);
-    const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
+    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
-    await initializeSimData(league, fullGames);
+    await initializeSimData(league, newGames);
   }
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
@@ -291,6 +295,23 @@ export const advanceWeeks = async (destWeek: number) => {
     const weekGames = (await getGamesByWeek(league.info.currentWeek)).filter(
       game => game.year === league.info.currentYear
     );
+    const gamesByTeam = new Map<number, GameRecord[]>();
+    weekGames.forEach(game => {
+      const listA = gamesByTeam.get(game.teamAId) ?? [];
+      listA.push(game);
+      gamesByTeam.set(game.teamAId, listA);
+      const listB = gamesByTeam.get(game.teamBId) ?? [];
+      listB.push(game);
+      gamesByTeam.set(game.teamBId, listB);
+    });
+    gamesByTeam.forEach((games, teamId) => {
+      if (games.length > 1) {
+        console.warn(
+          `[sim debug] team ${teamId} has ${games.length} games in week ${league.info.currentWeek}:`,
+          games.map(game => ({ id: game.id, week: game.weekPlayed, teamAId: game.teamAId, teamBId: game.teamBId, name: game.name }))
+        );
+      }
+    });
     const unplayed = weekGames.filter(game => !game.winnerId);
     const simGames: SimGame[] = [];
     const gameLogsByGame = new Map<number, GameLogRecord[]>();
@@ -315,10 +336,12 @@ export const advanceWeeks = async (destWeek: number) => {
       gameRecord.resultA = simGameObj.resultA;
       gameRecord.resultB = simGameObj.resultB;
       gameRecord.overtime = simGameObj.overtime;
+      gameRecord.quarter = simGameObj.quarter;
+      gameRecord.clockSecondsLeft = simGameObj.clockSecondsLeft;
     });
 
     if (simGames.length) {
-      updateTeamRecords(simGames);
+      updateTeamRecords(simGames, league.teams, oddsContext, league.info);
       await generateHeadlines(simGames, gameLogsByGame, playersById);
       simGames.forEach(simGameObj => {
         const gameRecord = unplayed.find(game => game.id === simGameObj.id);

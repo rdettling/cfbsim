@@ -8,6 +8,7 @@ import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
 import { buildWatchability } from './games';
 import { getGameById, getGamesByWeek, saveGames } from '../../db/simRepo';
+import { finalizePostseasonRankings } from './rankings';
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
   teamA.conference !== 'Independent' && teamA.conference === teamB.conference;
@@ -193,6 +194,8 @@ const createGameRecord = (
     resultA: null,
     resultB: null,
     overtime: 0,
+    quarter: 1,
+    clockSecondsLeft: 900,
     scoreA: null,
     scoreB: null,
     headline: null,
@@ -512,6 +515,7 @@ const ensureSummaryStage = async (league: LeagueState) => {
   const natty = await getGameById(league.playoff.natty);
   if (natty?.winnerId) {
     league.info.stage = 'summary';
+    finalizePostseasonRankings(league.teams, natty);
   }
 };
 

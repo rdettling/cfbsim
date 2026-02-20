@@ -2,7 +2,13 @@ import type { Info, Team } from '../../../types/domain';
 import type { LaunchProps, LeagueState, NonConData } from '../../../types/league';
 import type { YearData } from '../../../types/baseData';
 import type { GameRecord } from '../../../types/db';
-import { getHistoryData, getYearsIndex, getRatingsData, getYearData } from '../../../db/baseData';
+import {
+  clearBaseDataCache,
+  getHistoryData,
+  getYearsIndex,
+  getRatingsData,
+  getYearData,
+} from '../../../db/baseData';
 import { saveLeague } from '../../../db/leagueRepo';
 import {
   clearAllSimData,
@@ -16,10 +22,8 @@ import {
 } from '../../../db/simRepo';
 import { buildPreviewData, buildTeamsAndConferences } from '../../baseData';
 import {
-  applyRivalriesToSchedule,
-  buildSchedule,
+  buildFullScheduleFromExisting,
   buildUserScheduleFromGames,
-  fillUserSchedule,
   listAvailableTeams as listTeamsForWeek,
   scheduleNonConGame as scheduleGameForWeek,
 } from '../../schedule';
@@ -28,7 +32,7 @@ import { DEFAULT_SETTINGS } from '../../../types/league';
 import { getLastWeekByPlayoffTeams } from '../postseason';
 import { normalizeLeague } from '../normalize';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
-import { createNonConGameRecord } from '../seasonReset';
+import { initializeNonConScheduling } from '../seasonReset';
 import { advanceToPreseason } from '../stages';
 import { ensureRosters } from '../../roster';
 
@@ -79,6 +83,7 @@ export const startNewLeague = async (
   playoffSettings?: PlayoffInitSettings
 ): Promise<NonConData> => {
   await clearAllSimData();
+  await clearBaseDataCache();
   const [yearData, teamsAndConferences] = await Promise.all([
     getYearData(year),
     buildTeamsAndConferences(year),
@@ -140,32 +145,7 @@ export const startNewLeague = async (
   await ensureRosters(league);
   await primeHistoryData(startYear);
 
-  const schedule = buildSchedule();
-  league.pending_rivalries = await applyRivalriesToSchedule(
-    schedule,
-    userTeam,
-    teams
-  );
-
-  const created = await Promise.all(
-    schedule
-      .filter(slot => slot.opponent)
-      .map(slot => {
-        const opponent = teams.find(team => team.name === slot.opponent?.name);
-        if (!opponent) return null;
-        userTeam.nonConfGames += 1;
-        opponent.nonConfGames += 1;
-        return createNonConGameRecord(
-          league,
-          userTeam,
-          opponent,
-          slot.weekPlayed,
-          slot.label ?? null,
-          { neutralSite: true }
-        );
-      })
-  );
-  const gamesToSave = created.filter(Boolean) as GameRecord[];
+  const { schedule, gamesToSave } = await initializeNonConScheduling(league);
   if (gamesToSave.length) {
     await saveGames(gamesToSave);
   }
@@ -212,11 +192,11 @@ export const loadDashboard = async () => {
 
   if (!league.scheduleBuilt) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
-    const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
+    const existingGames = (await getAllGames()).filter(game => game.year === league.info.currentYear);
+    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
-    await initializeSimData(league, fullGames);
+    await initializeSimData(league, newGames);
   }
 
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
@@ -268,11 +248,11 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
 
   if (!league.scheduleBuilt && selectedYear === league.info.currentYear) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-    const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
-    const fullGames = fillUserSchedule(schedule, userTeam, league.teams);
+    const existingGames = (await getAllGames()).filter(game => game.year === league.info.currentYear);
+    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
     league.info.stage = 'season';
     league.scheduleBuilt = true;
-    await initializeSimData(league, fullGames);
+    await initializeSimData(league, newGames);
   }
 
   const team =
@@ -500,7 +480,8 @@ export const listAvailableTeams = async (week: number): Promise<string[]> => {
   if (!userTeam) return [];
 
   const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
-  return listTeamsForWeek(schedule, userTeam, league.teams, week);
+  const games = (await getAllGames()).filter(game => game.year === league.info.currentYear);
+  return listTeamsForWeek(schedule, userTeam, league.teams, week, games);
 };
 
 export const scheduleNonConGame = async (opponentName: string, week: number): Promise<void> => {
@@ -512,6 +493,10 @@ export const scheduleNonConGame = async (opponentName: string, week: number): Pr
 
   const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
   if (schedule[week - 1]?.opponent) return;
+  const existingGames = (await getAllGames()).filter(game => game.year === league.info.currentYear);
+  if (existingGames.some(game => game.weekPlayed === week && (game.teamAId === opponent.id || game.teamBId === opponent.id))) {
+    return;
+  }
   scheduleGameForWeek(schedule, userTeam, opponent, week);
 
   const gameRecord = await createNonConGameRecord(

@@ -46,6 +46,7 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
       movement: 0,
       poll_score: 0,
       strength_of_record: 0,
+      strength_of_record_avg: 0,
       last_game: null,
       next_game: null,
     };
@@ -136,6 +137,7 @@ export const buildTeamsAndConferences = async (year: string): Promise<{ teams: T
       movement: 0,
       poll_score: 0,
       strength_of_record: 0,
+      strength_of_record_avg: 0,
       last_game: null,
       next_game: null,
     };
