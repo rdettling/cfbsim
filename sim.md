@@ -164,6 +164,12 @@ Overtime remains possession‑based:
 
 Clock is not advanced in overtime (possession‑based rules).
 
+## Postseason Progression
+
+- Postseason scheduling is orchestrated in `src/domain/sim/postseason.ts`.
+- In 12-team format, playoff round-1 seeding is based on playoff-committee ordering (autobids and bye rules) before bracket games are created.
+- Final postseason rankings force champion/runner-up placement and then normalize poll score from rank.
+
 ## Persistence and UI
 
 ### Persistence

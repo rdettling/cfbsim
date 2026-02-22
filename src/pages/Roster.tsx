@@ -52,6 +52,7 @@ const Roster = () => {
     <PageLayout
       loading={loading}
       error={error}
+      containerMaxWidth="xl"
       navbarData={
         data
           ? {
@@ -104,7 +105,13 @@ const Roster = () => {
                 {data.positions
                   .filter((position: string) => positionFilter === '' || positionFilter === position)
                   .map((position: string) => {
-                    const playersInPosition = data.roster.filter((player: PlayerRecord) => player.pos === position);
+                    const playersInPosition = data.roster
+                      .filter((player: PlayerRecord) => player.pos === position)
+                      .slice()
+                      .sort((a: PlayerRecord, b: PlayerRecord) => {
+                        if (b.rating !== a.rating) return b.rating - a.rating;
+                        return `${a.last},${a.first}`.localeCompare(`${b.last},${b.first}`);
+                      });
                     return playersInPosition.length > 0 ? (
                       <React.Fragment key={`pos-${position}`}>
                         <TableRow>
@@ -115,7 +122,7 @@ const Roster = () => {
                               fontWeight: 'bold',
                             }}
                           >
-                            {position}
+                            {position.toUpperCase()}
                           </TableCell>
                         </TableRow>
                         {playersInPosition.map((player: PlayerRecord) => (

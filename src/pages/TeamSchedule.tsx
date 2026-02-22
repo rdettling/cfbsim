@@ -14,6 +14,11 @@ import {
   Chip,
   Typography,
   Button,
+  Container,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamSchedule } from '../domain/league';
@@ -59,6 +64,7 @@ const TeamSchedule = () => {
     <PageLayout
       loading={loading}
       error={error}
+      containerMaxWidth="xl"
       navbarData={
         data
           ? {
@@ -71,15 +77,15 @@ const TeamSchedule = () => {
       }
     >
       {data && (
-        <>
+        <Container maxWidth={false} sx={{ px: { xs: 0, md: 1 } }}>
           <TeamHeader
             team={data.team}
             teams={data.teams}
             onTeamChange={handleTeamChange}
           />
 
-          <Box sx={{ mb: 3 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2 }}>
+            <Stack direction="row" alignItems="flex-end" justifyContent="space-between" sx={{ mb: 1.5 }}>
               <Typography
                 variant="h5"
                 sx={{
@@ -91,26 +97,26 @@ const TeamSchedule = () => {
                 {data.selected_year ?? data.info.currentYear} Season Schedule
               </Typography>
               {data.years.length > 0 && (
-                <Box>
-                  <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
-                    Year
-                  </Typography>
-                  <select
+                <FormControl size="small" sx={{ minWidth: 112 }}>
+                  <InputLabel id="schedule-year-label">Year</InputLabel>
+                  <Select
+                    labelId="schedule-year-label"
                     value={data.selected_year ?? data.info.currentYear}
+                    label="Year"
                     onChange={event => handleYearChange(Number(event.target.value))}
                   >
                     {data.years.map((yearOption: number) => (
-                      <option key={yearOption} value={yearOption}>
+                      <MenuItem key={yearOption} value={yearOption}>
                         {yearOption}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                </Box>
+                  </Select>
+                </FormControl>
               )}
             </Stack>
           </Box>
 
-          <TableContainer component={Paper} elevation={3} sx={{ mb: 4 }}>
+          <TableContainer component={Paper} elevation={2} sx={{ mb: 3, width: '100%' }}>
             <Table size="small">
               <TableHead>
                 <TableRow
@@ -197,38 +203,24 @@ const TeamSchedule = () => {
                     <TableCell align="center">{game.spread || '-'}</TableCell>
                     <TableCell align="center">
                       {game.id ? (
-                        <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
-                          {game.result ? (
-                            <Chip
-                              label={`${game.result}: ${game.score}`}
-                              color={game.result === 'W' ? 'success' : 'error'}
-                              variant="outlined"
-                              size="small"
-                              sx={{ fontWeight: 'bold' }}
-                            />
-                          ) : (
-                            <Chip label="Preview" size="small" variant="outlined" />
-                          )}
-                          {data.selected_year === data.info.currentYear ? (
-                            <Button
-                              component={RouterLink}
-                              to={`/game/${game.id}`}
-                              variant="text"
-                              size="small"
-                              sx={{ fontWeight: 600 }}
-                            >
-                              {game.result ? 'Summary' : 'Preview'}
-                            </Button>
-                          ) : (
-                            <Typography variant="caption" color="text.secondary">
-                              Archive
-                            </Typography>
-                          )}
-                        </Stack>
-                      ) : (
-                        <Button variant="outlined" size="small" disabled>
-                          Preview
+                        <Button
+                          component={RouterLink}
+                          to={`/game/${game.id}`}
+                          variant={game.result ? 'outlined' : 'contained'}
+                          color={
+                            game.result
+                              ? game.result === 'W'
+                                ? 'success'
+                                : 'error'
+                              : 'primary'
+                          }
+                          size="small"
+                          sx={{ fontWeight: 700, minWidth: 94 }}
+                        >
+                          {game.result ? `${game.result}: ${game.score}` : 'Preview'}
                         </Button>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">-</Typography>
                       )}
                     </TableCell>
                     <TableCell>
@@ -238,6 +230,7 @@ const TeamSchedule = () => {
                           size="small"
                           color="primary"
                           variant="outlined"
+                          sx={{ maxWidth: 320 }}
                         />
                       )}
                     </TableCell>
@@ -252,7 +245,7 @@ const TeamSchedule = () => {
             open={modalOpen}
             onClose={() => setModalOpen(false)}
           />
-        </>
+        </Container>
       )}
     </PageLayout>
   );

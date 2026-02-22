@@ -1,4 +1,4 @@
-import { Stack, Typography, Button } from '@mui/material';
+import { Box, Stack, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import LoadingDialog from '../sim/LoadingDialog';
@@ -7,10 +7,11 @@ import type { NonSeasonBannerProps } from '../../types/components';
 const NonSeasonBanner = ({ currentStage, nextStage, primaryColor = '#1976d2', secondaryColor = '#ffffff' }: NonSeasonBannerProps) => {
     const navigate = useNavigate();
     const [isSimulating, setIsSimulating] = useState(false);
+    const [simulationMessage, setSimulationMessage] = useState('');
 
-    const handleStageChange = (path: string) => {
+    const handleStageChange = (path: string, label: string) => {
+        setSimulationMessage(`Simulating to ${label}`);
         setIsSimulating(true);
-        // Add small delay to show loading state
         setTimeout(() => {
             navigate(path);
             setIsSimulating(false);
@@ -20,72 +21,81 @@ const NonSeasonBanner = ({ currentStage, nextStage, primaryColor = '#1976d2', se
 
     return (
         <>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={0.9} alignItems="center">
+                <Box
+                    sx={{
+                        px: 1.2,
+                        py: 0.45,
+                        borderRadius: 1.4,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: 'background.paper',
+                    }}
+                >
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 700,
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                        }}
+                    >
+                        {currentStage.label}
+                    </Typography>
+                </Box>
+
                 <Button
                     variant="contained"
                     size="small"
-                    onClick={() => handleStageChange(currentStage.path)}
+                    onClick={() => handleStageChange(nextStage.path, nextStage.label)}
                     sx={{
-                        px: 1.5,
-                        py: 0.3,
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
+                        px: 1.6,
+                        py: 0.45,
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
                         textTransform: 'none',
-                        borderRadius: 1.5,
+                        borderRadius: 1.4,
                         minWidth: 'auto',
-                        position: 'relative',
+                        boxShadow: 'none',
                         backgroundColor: primaryColor,
                         color: secondaryColor,
-                        boxShadow: 'none',
                         '&:hover': {
                             backgroundColor: primaryColor,
                             opacity: 0.9,
-                            boxShadow: 'none'
-                        }
+                            boxShadow: 'none',
+                        },
                     }}
                 >
-                    {currentStage.label}
+                    Next: {nextStage.label}
                 </Button>
-
-                <Typography 
-                    variant="caption" 
-                    sx={{ 
-                        color: 'text.secondary',
-                        fontSize: '0.7rem',
-                        mx: 0.5
-                    }}
-                >
-                    →
-                </Typography>
 
                 <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => handleStageChange(nextStage.path)}
+                    onClick={() => handleStageChange(currentStage.path, currentStage.label)}
                     sx={{
-                        px: 1.5,
-                        py: 0.3,
-                        fontSize: '0.75rem',
+                        px: 1.4,
+                        py: 0.45,
+                        fontSize: '0.8rem',
                         fontWeight: 600,
                         textTransform: 'none',
-                        borderRadius: 1.5,
+                        borderRadius: 1.4,
                         minWidth: 'auto',
-                        borderWidth: '1px',
                         borderColor: primaryColor,
                         color: primaryColor,
                         '&:hover': {
-                            backgroundColor: `${primaryColor}15`,
-                            borderWidth: '1px',
-                            borderColor: primaryColor
-                        }
+                            backgroundColor: `${primaryColor}12`,
+                            borderColor: primaryColor,
+                        },
                     }}
                 >
-                    {nextStage.label}
+                    Open {currentStage.label}
                 </Button>
             </Stack>
             <LoadingDialog 
                 open={isSimulating} 
-                message={`Simulating to ${nextStage.label}`}
+                message={simulationMessage}
             />
         </>
     );

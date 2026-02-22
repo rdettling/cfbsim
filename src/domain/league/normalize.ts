@@ -11,6 +11,10 @@ export const normalizeLeague = (league: LeagueState) => {
     league.info.startYear = league.info.currentYear;
     changed = true;
   }
+  if (!league.rivalryHostSeeds) {
+    league.rivalryHostSeeds = {};
+    changed = true;
+  }
   if (ensureLeaguePostseasonState(league)) {
     changed = true;
   }

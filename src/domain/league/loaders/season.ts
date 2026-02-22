@@ -4,7 +4,6 @@ import type { YearData } from '../../../types/baseData';
 import type { GameRecord } from '../../../types/db';
 import {
   clearBaseDataCache,
-  getHistoryData,
   getYearsIndex,
   getRatingsData,
   getYearData,
@@ -26,13 +25,13 @@ import {
   buildUserScheduleFromGames,
   listAvailableTeams as listTeamsForWeek,
   scheduleNonConGame as scheduleGameForWeek,
-} from '../../schedule';
+} from '../../scheduleBuilder';
 import { buildDriveResponse, initializeSimData } from '../../sim';
 import { DEFAULT_SETTINGS } from '../../../types/league';
 import { getLastWeekByPlayoffTeams } from '../postseason';
 import { normalizeLeague } from '../normalize';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
-import { initializeNonConScheduling } from '../seasonReset';
+import { initializeNonConScheduling, createNonConGameRecord } from '../seasonReset';
 import { advanceToPreseason } from '../stages';
 import { ensureRosters } from '../../roster';
 
@@ -123,6 +122,7 @@ export const startNewLeague = async (
     teams,
     conferences,
     pending_rivalries: [],
+    rivalryHostSeeds: {},
     scheduleBuilt: false,
     simInitialized: false,
     settings: {
@@ -244,9 +244,9 @@ export const loadDashboard = async () => {
 
 export const loadTeamSchedule = async (teamName?: string, yearParam?: number) => {
   const league = await loadLeagueOrThrow();
-  const selectedYear = yearParam ?? league.info.currentYear;
+  const requestedYear = yearParam ?? league.info.currentYear;
 
-  if (!league.scheduleBuilt && selectedYear === league.info.currentYear) {
+  if (!league.scheduleBuilt && requestedYear === league.info.currentYear) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
     const existingGames = (await getAllGames()).filter(game => game.year === league.info.currentYear);
     const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
@@ -263,11 +263,15 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
   const games = await getAllGames();
   const teamGames = games.filter(
     game =>
-      game.year === selectedYear &&
       (game.teamAId === team.id || game.teamBId === team.id)
   );
+  const availableYears = Array.from(new Set(teamGames.map(game => game.year))).sort((a, b) => b - a);
+  const selectedYear = availableYears.includes(requestedYear)
+    ? requestedYear
+    : (availableYears[0] ?? league.info.currentYear);
+  const selectedYearGames = teamGames.filter(game => game.year === selectedYear);
   const gamesByWeek = new Map<number, (typeof teamGames)[number]>();
-  teamGames.forEach(game => {
+  selectedYearGames.forEach(game => {
     if (game.weekPlayed && game.weekPlayed > 0) {
       gamesByWeek.set(game.weekPlayed, game);
     }
@@ -349,19 +353,13 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
     };
   });
 
-  const historyData = await getHistoryData().catch(() => null);
-  const historyYears = historyData?.years ?? [];
-  const years = Array.from(new Set([league.info.currentYear, ...historyYears]))
-    .filter(Boolean)
-    .sort((a, b) => b - a);
-
   return {
     info: league.info,
     team,
     schedule,
     teams: league.teams.map(entry => entry.name).sort((a, b) => a.localeCompare(b)),
     conferences: league.conferences,
-    years,
+    years: availableYears,
     selected_year: selectedYear,
   };
 };

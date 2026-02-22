@@ -1,4 +1,4 @@
-import { Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
+import { Box, Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { ROUTES } from '../../constants/routes';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -56,17 +56,29 @@ const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#fffff
 
     return (
         <>
-            <Stack direction="row" spacing={1} alignItems="center">
-                <Typography 
-                    variant="body2" 
-                    sx={{ 
-                        fontWeight: 500,
-                        color: 'text.secondary',
-                        fontSize: '0.85rem'
+            <Stack direction="row" spacing={0.9} alignItems="center">
+                <Box
+                    sx={{
+                        px: 1.2,
+                        py: 0.45,
+                        borderRadius: 1.4,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: 'background.paper',
                     }}
                 >
-                    {isEndOfSeason ? 'End of Season' : `Week ${info.currentWeek}`}
-                </Typography>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 700,
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                        }}
+                    >
+                        {isEndOfSeason ? 'Season Complete' : `Week ${info.currentWeek}`}
+                    </Typography>
+                </Box>
                 <Button 
                     variant="contained" 
                     size="small"
@@ -74,12 +86,12 @@ const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#fffff
                     aria-controls="week-menu"
                     aria-haspopup="true"
                     sx={{
-                        px: 2,
+                        px: 1.8,
                         py: 0.5,
                         fontSize: '0.85rem',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         textTransform: 'none',
-                        borderRadius: 2,
+                        borderRadius: 1.4,
                         minWidth: 'auto',
                         backgroundColor: primaryColor,
                         color: secondaryColor,

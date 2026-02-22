@@ -1,10 +1,10 @@
-import type { FullGame } from '../../types/schedule';
+import type { FullGame } from '../../types/scheduleTypes';
 import type { LeagueState } from '../../types/league';
 import type { SimGame, StartersCache } from '../../types/sim';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
 import type { GameData, Drive } from '../../types/game';
 import type { Team } from '../../types/domain';
-import { buildFullScheduleFromExisting } from '../schedule';
+import { buildFullScheduleFromExisting } from '../scheduleBuilder';
 import { loadLeague, saveLeague } from '../../db/leagueRepo';
 import {
   getGameById,
@@ -352,7 +352,7 @@ export const advanceWeeks = async (destWeek: number) => {
           gameRecord.headline_tone = simGameObj.headline_tone ?? null;
         }
       });
-      updateRankings(league.info, league.teams, simGames, league.settings);
+      updateRankings(league.info, league.teams, league.settings);
 
       const futureGames = await getAllGames();
       const updatedById = new Map(unplayed.map(game => [game.id, game]));

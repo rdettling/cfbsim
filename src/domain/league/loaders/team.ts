@@ -7,7 +7,7 @@ import { saveLeague } from '../../../db/leagueRepo';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
 import { ensureRosters, POSITION_ORDER } from '../../roster';
 import { buildAwards } from '../awards';
-import { buildScheduleGameForTeam } from '../utils/schedule';
+import { buildScheduleGameForTeam } from '../utils/scheduleView';
 import { average, percentage } from '../utils/statMath';
 
 
@@ -50,7 +50,7 @@ export const loadTeamHistory = async (teamName?: string) => {
     league.teams.find(entry => entry.name === league.info.team) ??
     league.teams[0];
 
-  const cutoffYear = league.info.currentYear;
+  const cutoffYear = league.info.currentYear - 1;
   let historicalRows: Array<{
     year: number;
     prestige: number;
@@ -124,9 +124,11 @@ export const loadTeamHistory = async (teamName?: string) => {
     console.warn('History data preload missing, using ratings fallback.', error);
   }
 
-  const years = [
-    ...historicalRows,
-    {
+  const years = historicalRows.slice();
+  const shouldIncludeCurrentYear = league.info.stage === 'summary';
+  const hasCurrentYearRow = years.some(entry => entry.year === league.info.currentYear);
+  if (shouldIncludeCurrentYear && !hasCurrentYearRow) {
+    years.push({
       year: league.info.currentYear,
       prestige: team.prestige,
       rating: team.rating ?? null,
@@ -134,9 +136,10 @@ export const loadTeamHistory = async (teamName?: string) => {
       wins: team.totalWins,
       losses: team.totalLosses,
       rank: team.ranking ?? 0,
-      has_games: true,
-    },
-  ];
+      has_games: team.totalWins + team.totalLosses > 0,
+    });
+    years.sort((a, b) => b.year - a.year);
+  }
 
   return {
     info: league.info,

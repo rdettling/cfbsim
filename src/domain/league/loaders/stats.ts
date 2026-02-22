@@ -3,7 +3,7 @@ import { saveLeague } from '../../../db/leagueRepo';
 import { ensureRosters } from '../../roster';
 import { loadLeagueOrThrow } from '../leagueStore';
 import type { Team } from '../../../types/domain';
-import { buildScheduleGameForTeam } from '../utils/schedule';
+import { buildScheduleGameForTeam } from '../utils/scheduleView';
 
 const sortStandings = (teams: Team[]) => {
   return teams.slice().sort((a, b) => {

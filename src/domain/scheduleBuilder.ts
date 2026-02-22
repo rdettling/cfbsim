@@ -1,11 +1,12 @@
 import type { ScheduleGame, Team } from '../types/domain';
-import type { FullGame } from '../types/schedule';
+import type { FullGame } from '../types/scheduleTypes';
 import type { NonConData } from '../types/league';
 import { getRivalriesData } from '../db/baseData';
 import type { GameRecord } from '../types/db';
 
 const REGULAR_SEASON_WEEKS = 14;
 const REGULAR_SEASON_GAMES = 12;
+const randomTieBreak = () => Math.random() - 0.5;
 
 export const buildSchedule = (weeks = REGULAR_SEASON_WEEKS): ScheduleGame[] =>
   Array.from({ length: weeks }, (_, index) => ({
@@ -119,7 +120,7 @@ export const applyRivalriesToSchedule = async (
 
   const teamByName = new Map(teams.map(team => [team.name, team]));
 
-  rivalries.rivalries.forEach(([teamA, teamB, week, name]) => {
+  rivalries.rivalries.forEach(([teamA, teamB, week, name, neutralSite = false]) => {
     if (teamA !== userTeam.name && teamB !== userTeam.name) return;
     const opponentName = teamA === userTeam.name ? teamB : teamA;
     const opponent = teamByName.get(opponentName);
@@ -136,6 +137,7 @@ export const applyRivalriesToSchedule = async (
         };
         slot.label = name ?? 'Rivalry';
         slot.id = `${userTeam.name}-vs-${opponent.name}-week-${week}`;
+        if (neutralSite) slot.location = 'Neutral';
       }
       return;
     }
@@ -329,7 +331,9 @@ export const fillUserSchedule = (
       });
       stats.sort(
         (a, b) =>
-          a.buffer - b.buffer || a.team.confGames - b.team.confGames
+          a.buffer - b.buffer ||
+          a.team.confGames - b.team.confGames ||
+          randomTieBreak()
       );
       const { team, potential } = stats[0];
       confTeamsList = confTeamsList.filter(entry => entry.id !== team.id);
@@ -339,7 +343,7 @@ export const fillUserSchedule = (
         const bPotential = getPotential(b);
         const aBuffer = getBuffer(a, aPotential);
         const bBuffer = getBuffer(b, bPotential);
-        return aBuffer - bBuffer || a.confGames - b.confGames;
+        return aBuffer - bBuffer || a.confGames - b.confGames || randomTieBreak();
       });
 
       while (team.confGames < team.confLimit) {
@@ -388,7 +392,9 @@ export const fillUserSchedule = (
     });
     stats.sort(
       (a, b) =>
-        a.buffer - b.buffer || a.team.nonConfGames - b.team.nonConfGames
+        a.buffer - b.buffer ||
+        a.team.nonConfGames - b.team.nonConfGames ||
+        randomTieBreak()
     );
     const { team, potential } = stats[0];
     teamsList = teamsList.filter(entry => entry.id !== team.id);
@@ -398,7 +404,7 @@ export const fillUserSchedule = (
       const bPotential = getNonConfPotential(b);
       const aBuffer = getNonConfBuffer(a, aPotential);
       const bBuffer = getNonConfBuffer(b, bPotential);
-      return aBuffer - bBuffer || a.nonConfGames - b.nonConfGames;
+      return aBuffer - bBuffer || a.nonConfGames - b.nonConfGames || randomTieBreak();
     });
 
     while (team.nonConfGames < team.nonConfLimit) {
@@ -440,6 +446,16 @@ export const fillUserSchedule = (
 
   let assigned = false;
   const weeks = Array.from({ length: REGULAR_SEASON_WEEKS }, (_, index) => index + 1);
+  const pickWeekByLoad = (candidateWeeks: number[], isConference: boolean, weekLoad: Map<number, number>) =>
+    candidateWeeks.reduce((best, current) => {
+      const bestLoad = weekLoad.get(best) ?? 0;
+      const currentLoad = weekLoad.get(current) ?? 0;
+      if (currentLoad < bestLoad) return current;
+      if (currentLoad > bestLoad) return best;
+      if (isConference) return current > best ? current : best;
+      return current < best ? current : best;
+    });
+
   for (let attempt = 0; attempt < 50; attempt += 1) {
     unscheduledGames.forEach(game => {
       game.weekPlayed = 0;
@@ -488,11 +504,6 @@ export const fillUserSchedule = (
         };
       });
 
-      if (options.some(option => option.available.size === 0)) {
-        failed = true;
-        break;
-      }
-
       options.sort((a, b) => {
         for (let i = 0; i < a.key.length; i += 1) {
           if (a.key[i] !== b.key[i]) {
@@ -503,27 +514,20 @@ export const fillUserSchedule = (
       });
 
       const choice = options[0];
+      const isConference = isConferenceGame(choice.game.teamA, choice.game.teamB);
       const availableWeeks = Array.from(choice.available);
-      if (!availableWeeks.length) {
+      const fallbackToOverlaps = availableWeeks.length === 0;
+      const candidateWeeks = fallbackToOverlaps ? weeks : availableWeeks;
+      if (!candidateWeeks.length) {
         failed = true;
         break;
       }
-
-      const week = isConferenceGame(choice.game.teamA, choice.game.teamB)
-        ? availableWeeks.reduce((best, current) => {
-            const bestLoad = weekLoad.get(best) ?? 0;
-            const currentLoad = weekLoad.get(current) ?? 0;
-            if (currentLoad < bestLoad) return current;
-            if (currentLoad > bestLoad) return best;
-            return current > best ? current : best;
-          })
-        : availableWeeks.reduce((best, current) => {
-            const bestLoad = weekLoad.get(best) ?? 0;
-            const currentLoad = weekLoad.get(current) ?? 0;
-            if (currentLoad < bestLoad) return current;
-            if (currentLoad > bestLoad) return best;
-            return current < best ? current : best;
-          });
+      const week = pickWeekByLoad(candidateWeeks, isConference, weekLoad);
+      if (fallbackToOverlaps) {
+        console.warn(
+          `[schedule] forcing overlap for game ${choice.game.teamA.id} vs ${choice.game.teamB.id}; no conflict-free week available`
+        );
+      }
 
       choice.game.weekPlayed = week;
       teamWeeks.get(choice.game.teamA.id)?.add(week);

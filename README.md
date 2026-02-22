@@ -12,6 +12,10 @@
 - `src/components/`: shared UI pieces
 - `src/constants/`: shared constants (routes, stages)
 
+### Shared UI Patterns
+- Team identity is centralized in `src/components/team/TeamHeader.tsx` and reused across schedule/roster/history pages.
+- Top navigation is centralized in `src/components/layout/Navbar.tsx` with a consistent three-zone layout (team identity, primary nav, context/actions).
+
 ## Page Pattern
 1. Fetch domain data with `useDomainData`.
 2. Keep page state local (UI-only state).

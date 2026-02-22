@@ -1,7 +1,7 @@
 import type { LeagueState } from '../../types/league';
 import type { ScheduleGame, Team } from '../../types/domain';
 import type { GameRecord } from '../../types/db';
-import { buildSchedule, applyRivalriesToSchedule } from '../schedule';
+import { buildSchedule, applyRivalriesToSchedule } from '../scheduleBuilder';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { clearNonGameArtifacts } from '../../db/simRepo';
@@ -99,8 +99,13 @@ export const buildRivalryGameRecords = async (league: LeagueState): Promise<Game
   const teamByName = new Map(league.teams.map(team => [team.name, team]));
   const seen = new Set<string>();
   const games: GameRecord[] = [];
+  if (!league.rivalryHostSeeds) {
+    league.rivalryHostSeeds = {};
+  }
+  const startYear = league.info.startYear ?? league.info.currentYear;
+  const yearsSinceStart = Math.max(0, league.info.currentYear - startYear);
 
-  for (const [teamAName, teamBName, week, name] of rivalries.rivalries) {
+  for (const [teamAName, teamBName, week, name, neutralSite = false] of rivalries.rivalries) {
     if (!week) continue;
     const teamA = teamByName.get(teamAName);
     const teamB = teamByName.get(teamBName);
@@ -109,6 +114,23 @@ export const buildRivalryGameRecords = async (league: LeagueState): Promise<Game
     const key = [teamA.id, teamB.id].sort((a, b) => a - b).join('-') + `-${week}`;
     if (seen.has(key)) continue;
     seen.add(key);
+
+    const rivalryKey = [teamAName, teamBName].sort((a, b) => a.localeCompare(b)).join('::');
+    const shouldAlternate = !neutralSite;
+    if (shouldAlternate && !league.rivalryHostSeeds[rivalryKey]) {
+      league.rivalryHostSeeds[rivalryKey] = Math.random() < 0.5 ? teamAName : teamBName;
+    }
+    const seedHomeName = league.rivalryHostSeeds[rivalryKey] ?? teamAName;
+    const flipped = yearsSinceStart % 2 === 1;
+    const homeName = flipped
+      ? (seedHomeName === teamAName ? teamBName : teamAName)
+      : seedHomeName;
+    const homeTeam = shouldAlternate
+      ? (teamByName.get(homeName) ?? teamA)
+      : null;
+    const awayTeam = shouldAlternate
+      ? (homeName === teamAName ? teamB : teamA)
+      : null;
 
     if (teamA.conference !== 'Independent' && teamA.conference === teamB.conference) {
       teamA.confGames += 1;
@@ -124,7 +146,7 @@ export const buildRivalryGameRecords = async (league: LeagueState): Promise<Game
       teamB,
       week,
       name ?? null,
-      { neutralSite: true }
+      { neutralSite, homeTeam, awayTeam }
     );
     games.push(record);
   }
