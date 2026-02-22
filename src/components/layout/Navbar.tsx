@@ -12,6 +12,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
+import { getContrastRatio } from '@mui/material/styles';
 import { useNavigate, useLocation } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -43,6 +44,17 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
 
   const primaryColor = info.colorPrimary || team.colorPrimary || '#1976d2';
   const secondaryColor = info.colorSecondary || team.colorSecondary || '#ffffff';
+  const getReadableTextColor = (background: string, preferredText: string) => {
+    if (getContrastRatio(preferredText, background) >= 4.5) {
+      return preferredText;
+    }
+    const darkText = '#111111';
+    const lightText = '#ffffff';
+    return getContrastRatio(lightText, background) >= getContrastRatio(darkText, background)
+      ? lightText
+      : darkText;
+  };
+  const actionTextColor = getReadableTextColor(primaryColor, secondaryColor);
 
   const navMenus: NavMenu[] = [
     {
@@ -333,7 +345,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                 <SeasonBanner
                   info={info}
                   primaryColor={primaryColor}
-                  secondaryColor={secondaryColor}
+                  secondaryColor={actionTextColor}
                 />
                 <Divider orientation="vertical" flexItem sx={{ my: 0.25 }} />
                 <Button
@@ -376,7 +388,7 @@ const Navbar = ({ team, currentStage, info, conferences }: NavbarProps) => {
                     currentStage={currentStageInfo}
                     nextStage={nextStageInfo}
                     primaryColor={primaryColor}
-                    secondaryColor={secondaryColor}
+                    secondaryColor={actionTextColor}
                   />
                 </Stack>
               )

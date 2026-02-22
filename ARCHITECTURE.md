@@ -51,9 +51,10 @@ Gameplay is simulated at the drive/play level in `src/domain/sim/`:
 
 ## Scheduling (Frontend2)
 
-`src/domain/schedule.ts` builds:
+`src/domain/scheduleBuilder.ts` builds:
 - Regular season schedules and rivalry games.
 - Week assignment and home/away balancing.
+- If a conflict-free assignment is not available, overlap fallback can place multiple games for a team in the same week instead of leaving games unscheduled.
 
 ## Rosters (Frontend2)
 
@@ -69,6 +70,15 @@ Rankings, stats, and awards are updated during sim and persisted in IndexedDB.
 ## Data
 
 The app relies on JSON files under `public/data/` for teams, conferences, years, ratings, and generated history/odds.
+- Rivalries are defined in `public/data/rivalries.json` as tuples:
+  `[teamA, teamB, weekOrNull, rivalryNameOrNull, neutralSite?]`.
+  The `neutralSite` flag defaults to `false`.
+
+## Rankings & Playoff Seeding
+
+- Weekly rankings use inertia + value-normalized strength-of-record and are persisted on teams (`ranking`, `poll_score`, `last_rank`).
+- For 12-team playoffs, a playoff-committee ordering pass is applied before creating round-1 games.
+- End-of-season rankings normalize `poll_score` to a rank-based 0–100 scale.
 
 ## Docs Map
 
