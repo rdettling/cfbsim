@@ -16,10 +16,9 @@ const renderTeamHeader = (
   side: GameHeaderProps['awaySide'],
   align: 'left' | 'right',
   onTeamClick: GameHeaderProps['onTeamClick'],
-  mode: NonNullable<GameHeaderProps['mode']>
+  isResult: boolean
 ) => {
   const teamName = <TeamLink name={team.name} onTeamClick={onTeamClick} />;
-  const isResult = mode === 'result';
   const logoSize = isResult ? 30 : 40;
 
   return (
@@ -97,7 +96,6 @@ export default function GameHeader({
   mode = 'preview',
   homeScore,
   awayScore,
-  resultStatus,
   headlineSubtitle,
   homeSide,
   awaySide,
@@ -106,7 +104,6 @@ export default function GameHeader({
   const venueText = neutral ? 'Neutral Site' : `${home.stadium} • ${home.city}, ${home.state}`;
   const resolvedAwayScore = awayScore ?? awaySide.score ?? 0;
   const resolvedHomeScore = homeScore ?? homeSide.score ?? 0;
-  const statusText = resultStatus ?? 'FINAL';
   const isResult = mode === 'result';
 
   return (
@@ -130,11 +127,11 @@ export default function GameHeader({
         }}
       >
         <Box>
-          {renderTeamHeader(away, awaySide, 'left', onTeamClick, mode)}
+          {renderTeamHeader(away, awaySide, 'left', onTeamClick, isResult)}
         </Box>
         <Box>
           <Box sx={{ textAlign: 'center' }}>
-            {mode === 'result' ? (
+            {isResult ? (
               <>
                 <Typography variant="h3" sx={{ fontWeight: 900, lineHeight: 1, color: 'primary.main' }}>
                   {resolvedAwayScore} - {resolvedHomeScore}
@@ -146,27 +143,27 @@ export default function GameHeader({
                 )}
               </>
             ) : null}
-            {mode === 'preview' && game.label && (
+            {!isResult && game.label && (
               <Typography
-                variant={isResult ? 'h6' : 'h6'}
+                variant="h6"
                 sx={{ fontWeight: 700, mt: 0.45, lineHeight: 1.1 }}
               >
                 {game.label}
               </Typography>
             )}
             <Typography
-              variant={isResult ? 'body1' : 'body1'}
+              variant="body1"
               color="text.secondary"
               sx={{ mt: isResult ? 0.15 : 0.3, lineHeight: 1.15 }}
             >
               Week {game.weekPlayed} • {game.year} • {venueText}
             </Typography>
-            {mode === 'result' && game.headline && (
+            {isResult && game.headline && (
               <Typography variant="body1" sx={{ mt: 0.25, fontStyle: 'italic', lineHeight: 1.2 }}>
                 {game.headline}
               </Typography>
             )}
-            {mode === 'result' && headlineSubtitle && (
+            {isResult && headlineSubtitle && (
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -178,7 +175,7 @@ export default function GameHeader({
           </Box>
         </Box>
         <Box>
-          {renderTeamHeader(home, homeSide, 'right', onTeamClick, mode)}
+          {renderTeamHeader(home, homeSide, 'right', onTeamClick, isResult)}
         </Box>
       </Box>
     </Paper>

@@ -3,7 +3,6 @@ import {
   Box,
   Card,
   CardContent,
-  Chip,
   Collapse,
   Divider,
   IconButton,
@@ -43,6 +42,30 @@ const DriveSummary = ({
     if (typeof quarter !== 'number') return '';
     const clock = formatClock(clockSecondsLeft);
     return clock ? `Q${quarter} ${clock}` : `Q${quarter}`;
+  };
+
+  const overtimeByDriveNum = useMemo(() => {
+    const mapping = new Map<number, number>();
+    let overtimeDriveCount = 0;
+    drives.forEach(drive => {
+      const firstPlay = drive.plays?.[0];
+      if (firstPlay?.quarter === 4 && firstPlay.clockSecondsLeft === 0) {
+        const overtimeNumber = Math.floor(overtimeDriveCount / 2) + 1;
+        mapping.set(drive.driveNum, overtimeNumber);
+        overtimeDriveCount += 1;
+      }
+    });
+    return mapping;
+  }, [drives]);
+
+  const getDriveStartTime = (drive: Drive) => {
+    const firstPlay = drive.plays?.[0];
+    if (!firstPlay) return '';
+    const overtimeNumber = overtimeByDriveNum.get(drive.driveNum);
+    if (overtimeNumber) {
+      return `OT ${overtimeNumber}`;
+    }
+    return formatPlayTime(firstPlay.quarter, firstPlay.clockSecondsLeft);
   };
 
   const formatDuration = (seconds: number) => {
@@ -190,7 +213,7 @@ const DriveSummary = ({
                     <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700 }}>
-                          Drive #{drive.driveNum + 1}
+                          {getDriveStartTime(drive) || 'Start time unavailable'}
                         </Typography>
                         {hasPlays && (
                           <IconButton size="small" onClick={() => toggleDriveExpansion(drive.driveNum)}>
@@ -198,7 +221,11 @@ const DriveSummary = ({
                           </IconButton>
                         )}
                       </Stack>
-                      <Chip label={drive.points > 0 ? `+${drive.points} pts` : 'No score'} size="small" />
+                      {drive.points > 0 && (
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main' }}>
+                          +{drive.points} pts
+                        </Typography>
+                      )}
                     </Stack>
 
                     <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mt: 1 }}>

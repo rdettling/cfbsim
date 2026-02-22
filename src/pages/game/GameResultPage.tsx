@@ -57,7 +57,6 @@ const GameResultPage = ({ data }: GameResultProps) => {
           mode="result"
           awayScore={awaySide.score ?? 0}
           homeScore={homeSide.score ?? 0}
-          resultStatus={game.overtime && game.overtime > 0 ? `FINAL • ${game.overtime}OT` : 'FINAL'}
           headlineSubtitle={game.headline_subtitle ?? null}
           homeSide={homeSide}
           awaySide={awaySide}

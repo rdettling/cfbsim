@@ -267,7 +267,6 @@ export interface GameHeaderProps {
   mode?: 'preview' | 'result';
   homeScore?: number;
   awayScore?: number;
-  resultStatus?: string;
   headlineSubtitle?: string | null;
   homeSide: {
     rank: number;
