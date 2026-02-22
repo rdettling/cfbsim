@@ -40,15 +40,20 @@ const applyRealignment = (
 
   const ensureTeam = (teamName: string, prestige: number, confName: string, confGames: number) => {
     const existing = teamsByName.get(teamName);
+    const meta = teamsData.teams?.[teamName];
     if (existing) {
       existing.conference = confName;
       existing.confName = confName;
       existing.confLimit = confGames;
       existing.nonConfLimit = 12 - confGames;
+      if (meta) {
+        existing.city = meta.city;
+        existing.state = meta.state;
+        existing.stadium = meta.stadium;
+      }
       return existing;
     }
 
-    const meta = teamsData.teams?.[teamName];
     if (!meta) return null;
 
     const team: Team = {
@@ -64,6 +69,9 @@ const applyRealignment = (
       ceiling: meta.ceiling,
       floor: meta.floor,
       mascot: meta.mascot,
+      city: meta.city,
+      state: meta.state,
+      stadium: meta.stadium,
       ranking: league.teams.length + 1,
       offense: 90,
       defense: 90,

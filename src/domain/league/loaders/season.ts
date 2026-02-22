@@ -12,6 +12,8 @@ import { saveLeague } from '../../../db/leagueRepo';
 import {
   clearAllSimData,
   getAllGames,
+  getAllPlays,
+  getAllGameLogs,
   getAllPlayers,
   getGameById,
   getDrivesByGame,
@@ -407,6 +409,226 @@ export const loadWeekSchedule = async (week: number) => {
   };
 };
 
+type TeamPreviewMetricKey =
+  | 'yards_per_game'
+  | 'pass_yards_per_game'
+  | 'pass_tds_per_game'
+  | 'rush_yards_per_game'
+  | 'turnovers_per_game'
+  | 'points_per_game';
+
+const average = (total: number, divisor: number) => {
+  if (!divisor) return 0;
+  return Math.round((total / divisor) * 10) / 10;
+};
+
+const buildTeamStatsAndRanks = (
+  teams: Team[],
+  allGames: Awaited<ReturnType<typeof getAllGames>>,
+  allPlays: Awaited<ReturnType<typeof getAllPlays>>,
+  targetGame: GameRecord
+) => {
+  const pregameGames = allGames.filter(
+    game =>
+      game.year === targetGame.year &&
+      game.winnerId !== null &&
+      game.weekPlayed < targetGame.weekPlayed
+  );
+  const pregameGameIds = new Set(pregameGames.map(game => game.id));
+  const pregamePlays = allPlays.filter(play => pregameGameIds.has(play.gameId));
+
+  const gamesByTeamId = new Map<number, number>();
+  const pointsByTeamId = new Map<number, number>();
+  const rawStats = new Map<
+    number,
+    {
+      passYards: number;
+      passTds: number;
+      rushYards: number;
+      turnovers: number;
+    }
+  >();
+
+  teams.forEach(team => {
+    gamesByTeamId.set(team.id, 0);
+    pointsByTeamId.set(team.id, 0);
+    rawStats.set(team.id, {
+      passYards: 0,
+      passTds: 0,
+      rushYards: 0,
+      turnovers: 0,
+    });
+  });
+
+  pregameGames.forEach(game => {
+    gamesByTeamId.set(game.teamAId, (gamesByTeamId.get(game.teamAId) ?? 0) + 1);
+    gamesByTeamId.set(game.teamBId, (gamesByTeamId.get(game.teamBId) ?? 0) + 1);
+    pointsByTeamId.set(game.teamAId, (pointsByTeamId.get(game.teamAId) ?? 0) + (game.scoreA ?? 0));
+    pointsByTeamId.set(game.teamBId, (pointsByTeamId.get(game.teamBId) ?? 0) + (game.scoreB ?? 0));
+  });
+
+  pregamePlays.forEach(play => {
+    const teamStats = rawStats.get(play.offenseId);
+    if (!teamStats) return;
+
+    if (play.playType === 'pass') {
+      teamStats.passYards += play.yardsGained;
+      if (play.result === 'touchdown') {
+        teamStats.passTds += 1;
+      }
+      if (play.result === 'interception') {
+        teamStats.turnovers += 1;
+      }
+      if (play.result === 'fumble') {
+        teamStats.turnovers += 1;
+      }
+      return;
+    }
+
+    if (play.playType === 'run') {
+      teamStats.rushYards += play.yardsGained;
+      if (play.result === 'fumble') {
+        teamStats.turnovers += 1;
+      }
+      return;
+    }
+
+    if (play.result === 'fumble') {
+      teamStats.turnovers += 1;
+    }
+  });
+
+  const teamStatsById = new Map<
+    number,
+    Record<TeamPreviewMetricKey, number>
+  >();
+
+  teams.forEach(team => {
+    const games = gamesByTeamId.get(team.id) ?? 0;
+    const stats = rawStats.get(team.id)!;
+    const teamStats = {
+      yards_per_game: average(stats.passYards + stats.rushYards, games),
+      pass_yards_per_game: average(stats.passYards, games),
+      pass_tds_per_game: average(stats.passTds, games),
+      rush_yards_per_game: average(stats.rushYards, games),
+      turnovers_per_game: average(stats.turnovers, games),
+      points_per_game: average(pointsByTeamId.get(team.id) ?? 0, games),
+    };
+    teamStatsById.set(team.id, teamStats);
+  });
+
+  const rankDirections: Record<TeamPreviewMetricKey, 'asc' | 'desc'> = {
+    yards_per_game: 'desc',
+    pass_yards_per_game: 'desc',
+    pass_tds_per_game: 'desc',
+    rush_yards_per_game: 'desc',
+    turnovers_per_game: 'asc',
+    points_per_game: 'desc',
+  };
+
+  const ranksByTeamId = new Map<number, Record<TeamPreviewMetricKey, number>>();
+  const keys = Object.keys(rankDirections) as TeamPreviewMetricKey[];
+  keys.forEach(key => {
+    const sorted = teams
+      .map(team => ({ id: team.id, value: teamStatsById.get(team.id)?.[key] ?? 0 }))
+      .sort((a, b) => {
+        if (rankDirections[key] === 'asc') return a.value - b.value;
+        return b.value - a.value;
+      });
+    sorted.forEach((entry, index) => {
+      const current = ranksByTeamId.get(entry.id) ?? ({} as Record<TeamPreviewMetricKey, number>);
+      current[key] = index + 1;
+      ranksByTeamId.set(entry.id, current);
+    });
+  });
+
+  return { teamStatsById, ranksByTeamId, pregameGameIds };
+};
+
+const buildTopStartersForTeam = (
+  teamId: number,
+  allPlayers: Awaited<ReturnType<typeof getAllPlayers>>
+) =>
+  allPlayers
+    .filter(player => player.active && player.starter && player.teamId === teamId)
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 5)
+    .map(player => ({
+      id: player.id,
+      first: player.first,
+      last: player.last,
+      pos: player.pos.toUpperCase(),
+      rating: player.rating,
+    }));
+
+const buildKeyPlayersForTeam = (
+  teamId: number,
+  pregameGameIds: Set<number>,
+  allPlayers: Awaited<ReturnType<typeof getAllPlayers>>,
+  allLogs: Awaited<ReturnType<typeof getAllGameLogs>>
+) => {
+  const playersById = new Map(
+    allPlayers
+      .filter(player => player.teamId === teamId && player.active)
+      .map(player => [player.id, player])
+  );
+  const impactByPlayerId = new Map<number, number>();
+
+  allLogs.forEach(log => {
+    if (!pregameGameIds.has(log.gameId)) return;
+    if (!playersById.has(log.playerId)) return;
+
+    const impact =
+      log.pass_yards * 0.04 +
+      log.pass_touchdowns * 6 +
+      log.rush_yards * 0.06 +
+      log.rush_touchdowns * 6 +
+      log.receiving_yards * 0.06 +
+      log.receiving_touchdowns * 6 +
+      log.tackles * 1 +
+      log.sacks * 4 +
+      log.interceptions * 5 +
+      log.fumbles_forced * 3;
+
+    impactByPlayerId.set(log.playerId, (impactByPlayerId.get(log.playerId) ?? 0) + impact);
+  });
+
+  const ranked = Array.from(impactByPlayerId.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([playerId, impact]) => {
+      const player = playersById.get(playerId)!;
+      return {
+        id: player.id,
+        first: player.first,
+        last: player.last,
+        pos: player.pos.toUpperCase(),
+        rating: player.rating,
+        impact: Math.round(impact * 10) / 10,
+      };
+    });
+
+  if (ranked.length) return ranked;
+
+  return allPlayers
+    .filter(
+      player =>
+        player.active &&
+        player.teamId === teamId &&
+        ['qb', 'rb', 'wr', 'te'].includes(player.pos)
+    )
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 3)
+    .map(player => ({
+      id: player.id,
+      first: player.first,
+      last: player.last,
+      pos: player.pos.toUpperCase(),
+      rating: player.rating,
+      impact: 0,
+    }));
+};
+
 export const loadGame = async (gameId: number) => {
   const league = await loadLeagueOrThrow();
 
@@ -453,6 +675,34 @@ export const loadGame = async (gameId: number) => {
     headline_tags: record.headline_tags ?? null,
   };
 
+  const [allGames, allPlays, allPlayers, allLogs] = await Promise.all([
+    getAllGames(),
+    getAllPlays(),
+    getAllPlayers(),
+    getAllGameLogs(),
+  ]);
+  const { teamStatsById, ranksByTeamId, pregameGameIds } = buildTeamStatsAndRanks(
+    league.teams,
+    allGames,
+    allPlays,
+    record
+  );
+
+  const preview = {
+    teamA: {
+      stats: teamStatsById.get(teamA.id)!,
+      ranks: ranksByTeamId.get(teamA.id)!,
+      topStarters: buildTopStartersForTeam(teamA.id, allPlayers),
+      keyPlayers: buildKeyPlayersForTeam(teamA.id, pregameGameIds, allPlayers, allLogs),
+    },
+    teamB: {
+      stats: teamStatsById.get(teamB.id)!,
+      ranks: ranksByTeamId.get(teamB.id)!,
+      topStarters: buildTopStartersForTeam(teamB.id, allPlayers),
+      keyPlayers: buildKeyPlayersForTeam(teamB.id, pregameGameIds, allPlayers, allLogs),
+    },
+  };
+
   const drives = record.winnerId
     ? buildDriveResponse(
         await getDrivesByGame(gameId),
@@ -466,6 +716,7 @@ export const loadGame = async (gameId: number) => {
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     conferences: league.conferences,
     game,
+    preview,
     drives,
   };
 };

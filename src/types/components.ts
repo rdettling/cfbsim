@@ -165,22 +165,95 @@ export interface LoadingDialogProps {
 }
 
 export interface GamePreviewProps {
-  game: {
-    id: number;
-    label: string;
-    weekPlayed: number;
-    year: number;
-    homeTeamId?: number | null;
-    awayTeamId?: number | null;
-    neutralSite?: boolean;
-    teamA: Team;
-    teamB: Team;
-    rankATOG: number;
-    rankBTOG: number;
-    spreadA?: string;
-    spreadB?: string;
-    moneylineA?: string;
-    moneylineB?: string;
+  data: {
+    game: {
+      id: number;
+      label: string;
+      weekPlayed: number;
+      year: number;
+      homeTeamId?: number | null;
+      awayTeamId?: number | null;
+      neutralSite?: boolean;
+      teamA: Team;
+      teamB: Team;
+      rankATOG: number;
+      rankBTOG: number;
+      spreadA?: string;
+      spreadB?: string;
+      moneylineA?: string;
+      moneylineB?: string;
+      winProbA?: number;
+      winProbB?: number;
+      headline?: string | null;
+    };
+    preview: {
+      teamA: {
+        stats: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        ranks: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        topStarters: Array<{
+          id: number;
+          first: string;
+          last: string;
+          pos: string;
+          rating: number;
+        }>;
+        keyPlayers: Array<{
+          id: number;
+          first: string;
+          last: string;
+          pos: string;
+          rating: number;
+          impact: number;
+        }>;
+      };
+      teamB: {
+        stats: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        ranks: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        topStarters: Array<{
+          id: number;
+          first: string;
+          last: string;
+          pos: string;
+          rating: number;
+        }>;
+        keyPlayers: Array<{
+          id: number;
+          first: string;
+          last: string;
+          pos: string;
+          rating: number;
+          impact: number;
+        }>;
+      };
+    };
   };
 }
 

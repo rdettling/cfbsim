@@ -7,6 +7,8 @@ type GameSideFields = {
   spreadB?: string | null;
   moneylineA?: string | null;
   moneylineB?: string | null;
+  winProbA?: number | null;
+  winProbB?: number | null;
   rankATOG?: number | null;
   rankBTOG?: number | null;
   resultA?: string | null;
@@ -45,6 +47,7 @@ export const resolveTeamSide = (game: GameSideFields, teamId: number) => {
     score: isTeamA ? game.scoreA ?? 0 : game.scoreB ?? 0,
     spread: isTeamA ? game.spreadA ?? '' : game.spreadB ?? '',
     moneyline: isTeamA ? game.moneylineA ?? '' : game.moneylineB ?? '',
+    winProb: isTeamA ? game.winProbA ?? undefined : game.winProbB ?? undefined,
     result: isTeamA ? game.resultA ?? '' : game.resultB ?? '',
   };
 };

@@ -18,9 +18,9 @@ export interface TeamsData {
       floor: number;
       colorPrimary: string;
       colorSecondary: string;
-      city?: string;
-      state?: string;
-      stadium?: string;
+      city: string;
+      state: string;
+      stadium: string;
     }
   >;
 }
