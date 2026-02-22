@@ -4,7 +4,6 @@ import {
   Typography,
   Box,
   Grid,
-  Paper,
   Card,
   CardContent,
   Chip,
@@ -12,9 +11,19 @@ import {
   LinearProgress,
   Divider,
 } from '@mui/material';
-import { TeamInfoModal, TeamLogo, TeamLink } from '../team/TeamComponents';
+import { Link as RouterLink } from 'react-router-dom';
+import { TeamInfoModal, TeamLogo } from '../team/TeamComponents';
+import GameHeader from './GameHeader';
 import type { GamePreviewProps } from '../../types/components';
-import { resolveHomeAway, resolveTeamSide, formatMatchup } from '../../domain/utils/gameDisplay';
+import { resolveHomeAway, resolveTeamSide } from '../../domain/utils/gameDisplay';
+
+const CARD_SX = { height: '100%', border: '1px solid', borderColor: 'divider' } as const;
+const CARD_CONTENT_SX = { p: 1.75 } as const;
+const SPLIT_COLUMN_SX = {
+  borderLeft: { xs: 'none', sm: '1px solid' },
+  borderColor: { xs: 'transparent', sm: 'divider' },
+  pl: { xs: 0, sm: 1.5 },
+} as const;
 
 const STAT_ROWS = [
   { key: 'points_per_game', label: 'Points/Game' },
@@ -24,6 +33,12 @@ const STAT_ROWS = [
   { key: 'rush_yards_per_game', label: 'Rush Yards/Game' },
   { key: 'turnovers_per_game', label: 'Turnovers/Game' },
 ] as const;
+
+const formatWinProb = (value: number) => `${Math.round(value * 100)}%`;
+const showMetricValue = (value: number, gamesPlayed: number) =>
+  gamesPlayed === 0 ? '—' : value.toFixed(1);
+const showMetricRank = (rank: number, gamesPlayed: number) =>
+  gamesPlayed === 0 ? '—' : `#${rank}`;
 
 const GamePreview = ({ data }: GamePreviewProps) => {
   const { game, preview } = data;
@@ -43,215 +58,284 @@ const GamePreview = ({ data }: GamePreviewProps) => {
 
   const awayWinProb = typeof awaySide.winProb === 'number' ? awaySide.winProb : 0.5;
   const homeWinProb = typeof homeSide.winProb === 'number' ? homeSide.winProb : 0.5;
-  const venueText = neutral ? 'Neutral Site' : `${home.stadium} • ${home.city}, ${home.state}`;
+  const favoriteName = awayWinProb >= homeWinProb ? away.name : home.name;
   const spreadText = awaySide.spread
     ? `${away.abbreviation || away.name} ${awaySide.spread}`
     : `${home.abbreviation || home.name} ${homeSide.spread ?? ''}`.trim();
+  const hasPregameStats = awayPreview.gamesPlayed > 0 && homePreview.gamesPlayed > 0;
 
-  const formatWinProb = (value: number) => `${Math.round(value * 100)}%`;
-  const favoriteName = awayWinProb >= homeWinProb ? away.name : home.name;
-  const offenseEdgeAway = away.offense - home.defense;
-  const offenseEdgeHome = home.offense - away.defense;
-  const pointsEdgeAway = awayPreview.stats.points_per_game - homePreview.stats.points_per_game;
-  const turnoverEdgeAway = homePreview.stats.turnovers_per_game - awayPreview.stats.turnovers_per_game;
-
-  const matchupNotes = [
-    offenseEdgeAway >= offenseEdgeHome
-      ? `${away.name} offense edge ${offenseEdgeAway >= 0 ? '+' : ''}${offenseEdgeAway.toFixed(1)}`
-      : `${home.name} offense edge ${offenseEdgeHome >= 0 ? '+' : ''}${offenseEdgeHome.toFixed(1)}`,
-    pointsEdgeAway >= 0
-      ? `${away.name} scores ${pointsEdgeAway.toFixed(1)} more PPG`
-      : `${home.name} scores ${Math.abs(pointsEdgeAway).toFixed(1)} more PPG`,
-    turnoverEdgeAway >= 0
-      ? `${away.name} protects the ball better (${turnoverEdgeAway.toFixed(1)} TO/G edge)`
-      : `${home.name} protects the ball better (${Math.abs(turnoverEdgeAway).toFixed(1)} TO/G edge)`,
-  ];
-
-  const renderTeamHeader = (
-    team: typeof away,
-    side: typeof awaySide,
-    align: 'left' | 'right'
-  ) => (
-    <Stack direction={align === 'left' ? 'row' : 'row-reverse'} spacing={1.5} alignItems="center">
-      <TeamLogo name={team.name} size={64} />
-      <Box sx={{ textAlign: align }}>
-        <Stack
-          direction="row"
-          spacing={0.8}
-          alignItems="center"
-          justifyContent={align === 'left' ? 'flex-start' : 'flex-end'}
-        >
-          {side.rank > 0 && <Chip label={`#${side.rank}`} size="small" color="primary" />}
-          <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1 }}>
-            <TeamLink name={team.name} onTeamClick={handleTeamClick} />
-          </Typography>
-        </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-          {team.record} • {team.conference}
+  const renderTopStartersColumn = (team: typeof away, sidePreview: typeof awayPreview) => (
+    <Box>
+      <Stack direction="row" spacing={0.8} alignItems="center" sx={{ mb: 0.6 }}>
+        <TeamLogo name={team.name} size={24} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+          {team.name}
         </Typography>
-      </Box>
-    </Stack>
-  );
-
-  const renderStatsCard = (
-    team: typeof away,
-    side: typeof awaySide,
-    sidePreview: typeof awayPreview,
-    align: 'left' | 'right'
-  ) => (
-    <Card elevation={2} sx={{ height: '100%' }}>
-      <CardContent sx={{ p: 1.5 }}>
-        <Box sx={{ mb: 1.25 }}>
-          {renderTeamHeader(team, side, align)}
-        </Box>
-        <Stack spacing={0.6}>
-          {STAT_ROWS.map(row => (
-            <Box
-              key={row.key}
-              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                {row.label}
+      </Stack>
+      <Stack spacing={0.2}>
+        {sidePreview.topStarters.map((player, index) => (
+          <Box key={player.id}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 0.8, py: 0.35 }}>
+              <Chip
+                size="small"
+                label={player.pos}
+                sx={{
+                  height: 20,
+                  fontSize: '0.66rem',
+                  fontWeight: 700,
+                  bgcolor: 'grey.100',
+                  color: 'text.secondary',
+                  minWidth: 34,
+                }}
+              />
+              <Typography
+                variant="body2"
+                noWrap
+                sx={{
+                  textDecoration: 'none',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+                component={RouterLink}
+                to={`/players/${player.id}`}
+              >
+                {player.first} {player.last}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                {sidePreview.stats[row.key].toFixed(1)} <Typography component="span" variant="caption" color="text.secondary">(#{sidePreview.ranks[row.key]})</Typography>
-              </Typography>
-            </Box>
-          ))}
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-
-  const renderPlayersCard = (
-    team: typeof away,
-    sidePreview: typeof awayPreview
-  ) => (
-    <Card elevation={2} sx={{ height: '100%' }}>
-      <CardContent sx={{ p: 1.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.8 }}>
-          {team.name} Players
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Top 5 Starters
-        </Typography>
-        <Stack spacing={0.35} sx={{ mb: 1.2, mt: 0.45 }}>
-          {sidePreview.topStarters.map(player => (
-            <Box key={player.id} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2">
-                {player.pos} {player.first} {player.last}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  fontWeight: 700,
+                  minWidth: 26,
+                  textAlign: 'right',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {player.rating}
               </Typography>
             </Box>
-          ))}
-        </Stack>
-        <Divider sx={{ mb: 0.8 }} />
-        <Typography variant="caption" color="text.secondary">
-          Key Players
-        </Typography>
-        <Stack spacing={0.35} sx={{ mt: 0.45 }}>
-          {sidePreview.keyPlayers.map(player => (
-            <Box key={player.id} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2">
-                {player.pos} {player.first} {player.last}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                OVR {player.rating}{player.impact > 0 ? ` • IMP ${player.impact.toFixed(1)}` : ''}
-              </Typography>
+            {index !== sidePreview.topStarters.length - 1 && (
+              <Divider sx={{ borderColor: 'grey.300' }} />
+            )}
+          </Box>
+        ))}
+      </Stack>
+    </Box>
+  );
+
+  const renderLastFiveColumn = (team: typeof away, sidePreview: typeof awayPreview) => (
+    <Box>
+      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5 }}>
+        {team.name}
+      </Typography>
+      {sidePreview.lastFiveGames.length ? (
+        <Stack spacing={0.55} sx={{ mt: 0.35 }}>
+          {sidePreview.lastFiveGames.map((entry, index) => (
+            <Box key={entry.id}>
+              <Box
+                component={RouterLink}
+                to={`/game/${entry.id}`}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1fr auto',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 0.6,
+                  py: 0.45,
+                  borderRadius: 1,
+                  color: 'text.primary',
+                  textDecoration: 'none',
+                  '&:hover': { backgroundColor: 'action.hover' },
+                }}
+              >
+                <Stack direction="row" spacing={0.55} alignItems="center">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 700,
+                      color: entry.result === 'W' ? 'success.main' : 'error.main',
+                      minWidth: 14,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {entry.result}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ minWidth: 34 }}>
+                    Wk {entry.week}
+                  </Typography>
+                </Stack>
+                <Stack direction="row" spacing={0.65} alignItems="center" sx={{ minWidth: 0 }}>
+                  <TeamLogo name={entry.opponent} size={18} />
+                  <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+                    {entry.location} {entry.opponent}
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                  {entry.score}
+                </Typography>
+              </Box>
+              {index !== sidePreview.lastFiveGames.length - 1 && (
+                <Divider sx={{ mt: 0.45, borderColor: 'grey.300' }} />
+              )}
             </Box>
           ))}
         </Stack>
-      </CardContent>
-    </Card>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          No completed games yet.
+        </Typography>
+      )}
+    </Box>
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5 }}>
-      <Box sx={{ display: 'grid', gap: 1.25 }}>
-        <Paper elevation={2} sx={{ p: 1.5 }}>
-          <Grid container alignItems="center" spacing={1.5}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              {renderTeamHeader(away, awaySide, 'left')}
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1.1, color: 'primary.main' }}>
-                  {formatMatchup(home.name, away.name, neutral)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Week {game.weekPlayed} • {game.year} • {venueText}
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.4 }}>
-                  Spread {spreadText} • ML {away.abbreviation || away.name} {awaySide.moneyline || '--'} / {home.abbreviation || home.name} {homeSide.moneyline || '--'}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              {renderTeamHeader(home, homeSide, 'right')}
-            </Grid>
-          </Grid>
-        </Paper>
+    <Container maxWidth={false} sx={{ py: 1.75, px: { xs: 1.5, md: 3 } }}>
+      <Box sx={{ display: 'grid', gap: 1.75 }}>
+        <GameHeader
+          game={game}
+          home={home}
+          away={away}
+          neutral={neutral}
+          homeSide={homeSide}
+          awaySide={awaySide}
+          onTeamClick={handleTeamClick}
+        />
 
-        <Grid container spacing={1.25}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            {renderStatsCard(away, awaySide, awayPreview, 'left')}
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card elevation={2} sx={{ height: '100%' }}>
-              <CardContent sx={{ p: 1.5 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                  Game Lens
+        <Grid container spacing={1.75}>
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Card elevation={1} sx={CARD_SX}>
+              <CardContent sx={CARD_CONTENT_SX}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.8 }}>
+                  Team Stat Comparison
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Favorite: {favoriteName} ({formatWinProb(Math.max(awayWinProb, homeWinProb))})
-                </Typography>
-
-                <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.4 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    {away.name} {formatWinProb(awayWinProb)}
+                {!hasPregameStats ? (
+                  <Typography variant="body1" color="text.secondary">
+                    No prior games yet this season. Team stat comparisons will appear after each team has played.
                   </Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    {home.name} {formatWinProb(homeWinProb)}
-                  </Typography>
-                </Stack>
-                <LinearProgress
-                  variant="determinate"
-                  value={Math.round(awayWinProb * 100)}
-                  sx={{
-                    height: 10,
-                    borderRadius: 99,
-                    backgroundColor: 'grey.200',
-                    '& .MuiLinearProgress-bar': { backgroundColor: 'primary.main' },
-                  }}
-                />
-
-                <Divider sx={{ my: 1 }} />
-                <Typography variant="caption" color="text.secondary">
-                  Key Matchups
-                </Typography>
-                <Stack spacing={0.5} sx={{ mt: 0.4 }}>
-                  {matchupNotes.map(note => (
-                    <Typography key={note} variant="body2">
-                      {note}
-                    </Typography>
-                  ))}
-                </Stack>
+                ) : (
+                  <Stack spacing={0.5}>
+                    {STAT_ROWS.map((row, index) => (
+                      <Box key={row.key}>
+                        <Grid container alignItems="center" spacing={0.6}>
+                          <Grid size={{ xs: 2.5, md: 2 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                              {showMetricValue(awayPreview.stats[row.key], awayPreview.gamesPlayed)}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 1.5, md: 1.2 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                              {showMetricRank(awayPreview.ranks[row.key], awayPreview.gamesPlayed)}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 4, md: 5.6 }}>
+                            <Typography variant="body1" sx={{ textAlign: 'center', fontWeight: 600 }}>
+                              {row.label}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 1.5, md: 1.2 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'block', fontWeight: 600 }}>
+                              {showMetricRank(homePreview.ranks[row.key], homePreview.gamesPlayed)}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 2.5, md: 2 }}>
+                            <Typography variant="body1" sx={{ textAlign: 'right', fontWeight: 700 }}>
+                              {showMetricValue(homePreview.stats[row.key], homePreview.gamesPlayed)}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                        {index !== STAT_ROWS.length - 1 && <Divider sx={{ mt: 0.45, borderColor: 'grey.300' }} />}
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
               </CardContent>
             </Card>
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
-            {renderStatsCard(home, homeSide, homePreview, 'right')}
+            <Card elevation={1} sx={CARD_SX}>
+              <CardContent sx={CARD_CONTENT_SX}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.8 }}>
+                  Odds Snapshot
+                </Typography>
+                <Stack spacing={1.1}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Spread
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                      {spreadText}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Moneyline
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                      {away.abbreviation || away.name} {awaySide.moneyline || '--'} / {home.abbreviation || home.name} {homeSide.moneyline || '--'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {away.name} {formatWinProb(awayWinProb)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {home.name} {formatWinProb(homeWinProb)}
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.round(awayWinProb * 100)}
+                      sx={{
+                        mt: 0.25,
+                        height: 11,
+                        borderRadius: 99,
+                        backgroundColor: 'grey.200',
+                        '& .MuiLinearProgress-bar': { backgroundColor: 'primary.main' },
+                      }}
+                    />
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
 
-        <Grid container spacing={1.25}>
+        <Grid container spacing={1.75}>
           <Grid size={{ xs: 12, md: 6 }}>
-            {renderPlayersCard(away, awayPreview)}
+            <Card elevation={1} sx={CARD_SX}>
+              <CardContent sx={CARD_CONTENT_SX}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.7 }}>
+                  Top Starters
+                </Typography>
+                <Grid container spacing={1.5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    {renderTopStartersColumn(away, awayPreview)}
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }} sx={SPLIT_COLUMN_SX}>
+                    {renderTopStartersColumn(home, homePreview)}
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
-            {renderPlayersCard(home, homePreview)}
+            <Card elevation={1} sx={CARD_SX}>
+              <CardContent sx={CARD_CONTENT_SX}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.7 }}>
+                  Last Five Games
+                </Typography>
+                <Grid container spacing={1.5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    {renderLastFiveColumn(away, awayPreview)}
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }} sx={SPLIT_COLUMN_SX}>
+                    {renderLastFiveColumn(home, homePreview)}
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       </Box>

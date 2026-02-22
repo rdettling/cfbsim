@@ -1,159 +1,147 @@
-import { Box, Typography, Link } from '@mui/material';
-import { TeamLogo } from '../team/TeamComponents';
+import { Box, Grid, Paper, Stack, Typography } from '@mui/material';
+import { TeamLogo, TeamLink } from '../team/TeamComponents';
 import type { GameHeaderProps } from '../../types/components';
+import { formatMatchup } from '../../domain/utils/gameDisplay';
 
-const GameHeader = ({ 
-    gameData, 
-    currentPlay, 
-    isTeamAOnOffense, 
-    plays, 
-    isPlaybackComplete,
-    lastPlayText,
-    currentDrive
-}: GameHeaderProps) => {
-    // Possession indicator component
-    const PossessionIndicator = () => (
-        <img 
-            src="/logos/football.png" 
-            alt="Football" 
-            style={{ 
-                width: '32px', 
-                height: '32px', 
-                objectFit: 'contain'
-            }}
-        />
-    );
+const TEAM_LINK_SX = {
+  '& .MuiLink-root': {
+    textDecoration: 'none',
+    color: 'text.primary',
+    fontWeight: 800,
+    '&:hover': { textDecoration: 'underline' },
+  },
+} as const;
 
-    return (
-        <Box sx={{ mb: 3, fontFamily: '"IBM Plex Sans", sans-serif' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <Box sx={{ 
-                    px: 2.5,
-                    py: 0.75,
-                    borderRadius: '999px',
-                    background: 'linear-gradient(90deg, rgba(17,24,39,0.95), rgba(30,64,175,0.9))',
-                    color: 'white',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase'
-                }}>
-                    {gameData.base_label}
-                </Box>
-            </Box>
+const renderTeamHeader = (
+  team: GameHeaderProps['away'],
+  side: GameHeaderProps['awaySide'],
+  align: 'left' | 'right',
+  onTeamClick: GameHeaderProps['onTeamClick'],
+  mode: NonNullable<GameHeaderProps['mode']>
+) => {
+  const teamName = <TeamLink name={team.name} onTeamClick={onTeamClick} />;
+  const isLeft = align === 'left';
+  const logoSize = mode === 'result' ? 28 : 36;
+  const rankVariant = mode === 'result' ? 'h5' : 'h4';
+  const nameVariant = mode === 'result' ? 'h3' : 'h4';
+  const ovrVariant = mode === 'result' ? 'h6' : 'body1';
+  const recordVariant = mode === 'result' ? 'h5' : 'h6';
 
-            {/* Teams and Score Row */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                {/* Team A */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                    <TeamLogo name={gameData.teamA.name} size={60} />
-                    <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="h5" fontWeight={700} sx={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                                {gameData.teamA.name}
-                            </Typography>
-                            {isTeamAOnOffense && <PossessionIndicator />}
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                            {gameData.teamA.record}
-                        </Typography>
-                    </Box>
-                </Box>
-
-                {/* Score */}
-                <Box sx={{ textAlign: 'center', flex: 1 }}>
-                    <Typography variant="h2" fontWeight={700} sx={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-                        {(() => {
-                            if (currentPlay) {
-                                // Show current play score
-                                return `${currentPlay.scoreA} - ${currentPlay.scoreB}`;
-                            } else if (isPlaybackComplete && plays.length > 0) {
-                                // Show final score from last play
-                                const lastPlay = plays[plays.length - 1];
-                                return `${lastPlay.scoreA} - ${lastPlay.scoreB}`;
-                            } else {
-                                // Show original game data score
-                                return `${gameData.scoreA} - ${gameData.scoreB}`;
-                            }
-                        })()}
-                    </Typography>
-                </Box>
-
-                {/* Team B */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'flex-end' }}>
-                    <Box sx={{ textAlign: 'right' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-                            {!isTeamAOnOffense && <PossessionIndicator />}
-                            <Typography variant="h5" fontWeight="bold">
-                                {gameData.teamB.name}
-                            </Typography>
-                        </Box>
-                    <Typography variant="body2" color="text.secondary">
-                        {gameData.teamB.record}
-                    </Typography>
-                </Box>
-                <TeamLogo name={gameData.teamB.name} size={60} />
-            </Box>
-            </Box>
-
-            {/* Drive and Play Info */}
-            <Box sx={{ textAlign: 'center' }}>
-                {/* Drive Number or Final */}
-                <Typography variant="h5" color="text.secondary" sx={{ fontWeight: 600, fontFamily: '"Space Grotesk", sans-serif' }}>
-                    {isPlaybackComplete ? 'FINAL' : `Drive ${(currentDrive?.driveNum || 0) + 1}`}
-                </Typography>
-                
-                {/* Game Headline Link (only when game is over) */}
-                {isPlaybackComplete && gameData.headline && (
-                    <Link 
-                        href={`/game/${gameData.id}`} 
-                        sx={{ 
-                            textDecoration: 'none',
-                            color: 'primary.main',
-                            '&:hover': {
-                                textDecoration: 'underline'
-                            }
-                        }}
-                    >
-                        <Typography variant="body1" sx={{ mt: 1, fontWeight: 'medium' }}>
-                            {gameData.headline}
-                        </Typography>
-                        {gameData.headline_subtitle && (
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                                {gameData.headline_subtitle}
-                            </Typography>
-                        )}
-                    </Link>
-                )}
-                
-                {/* Horizontal separator line */}
-                {!isPlaybackComplete && (currentPlay?.header || lastPlayText) && (
-                    <Box sx={{ 
-                        width: '60%', 
-                        height: '1px', 
-                        bgcolor: 'divider', 
-                        mx: 'auto', 
-                        mt: 1, 
-                        mb: 1 
-                    }} />
-                )}
-                
-                {/* Down and Distance */}
-                {currentPlay?.header && !isPlaybackComplete && (
-                    <Typography variant="h6" color="text.secondary" sx={{ mt: 1, fontWeight: 600 }}>
-                        {currentPlay.header}
-                    </Typography>
-                )}
-                
-                {/* Last Play Text */}
-                {lastPlayText && !isPlaybackComplete && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        LAST PLAY: {lastPlayText}
-                    </Typography>
-                )}
-            </Box>
-        </Box>
-    );
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: isLeft ? 'row' : 'row-reverse',
+        gap: 0.9,
+        alignItems: 'start',
+      }}
+    >
+      <Box sx={{ lineHeight: 0, mt: 0.1 }}>
+        <TeamLogo name={team.name} size={logoSize} />
+      </Box>
+      <Box sx={{ minWidth: 0, textAlign: align }}>
+        <Stack
+          direction="row"
+          spacing={0.65}
+          alignItems="center"
+          justifyContent={isLeft ? 'flex-start' : 'flex-end'}
+        >
+          <Typography variant={rankVariant} sx={{ color: 'text.secondary', fontWeight: 700, lineHeight: 1 }}>
+            {side.rank > 0 ? `#${side.rank}` : 'NR'}
+          </Typography>
+          <Box sx={TEAM_LINK_SX}>
+            <Typography variant={nameVariant} sx={{ lineHeight: 1 }}>
+              {teamName}
+            </Typography>
+          </Box>
+        </Stack>
+        <Typography
+          variant={ovrVariant}
+          color="text.secondary"
+          sx={{ fontWeight: 700, lineHeight: 1.1, mt: 0.25 }}
+        >
+          OVR {team.rating}
+        </Typography>
+        <Typography
+          variant={recordVariant}
+          color="text.secondary"
+          sx={{ fontWeight: 700, lineHeight: 1.1, mt: 0.1 }}
+        >
+          {team.record}
+        </Typography>
+      </Box>
+    </Box>
+  );
 };
 
-export default GameHeader;
+export default function GameHeader({
+  game,
+  home,
+  away,
+  neutral,
+  mode = 'preview',
+  homeScore,
+  awayScore,
+  resultStatus,
+  headlineSubtitle,
+  homeSide,
+  awaySide,
+  onTeamClick,
+}: GameHeaderProps) {
+  const venueText = neutral ? 'Neutral Site' : `${home.stadium} • ${home.city}, ${home.state}`;
+  const resolvedAwayScore = awayScore ?? awaySide.score ?? 0;
+  const resolvedHomeScore = homeScore ?? homeSide.score ?? 0;
+  const statusText = resultStatus ?? 'FINAL';
+
+  return (
+    <Paper elevation={1} sx={{ p: 1.75, border: '1px solid', borderColor: 'divider' }}>
+      <Grid container alignItems="center" spacing={1.75}>
+        <Grid size={{ xs: 12, md: 3.5 }}>
+          {renderTeamHeader(away, awaySide, 'left', onTeamClick, mode)}
+        </Grid>
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            {mode === 'result' ? (
+              <>
+                <Typography variant="h2" sx={{ fontWeight: 900, lineHeight: 1.05, color: 'primary.main' }}>
+                  {resolvedAwayScore} - {resolvedHomeScore}
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, mt: 0.2 }}>
+                  {statusText}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
+                  {(away.abbreviation || away.name).toUpperCase()} vs {(home.abbreviation || home.name).toUpperCase()}
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="h3" sx={{ fontWeight: 900, lineHeight: 1.1, color: 'primary.main' }}>
+                {formatMatchup(home.name, away.name, neutral)}
+              </Typography>
+            )}
+            {game.label && (
+              <Typography variant="h6" sx={{ fontWeight: 700, mt: mode === 'result' ? 0.35 : 0.45 }}>
+                {game.label}
+              </Typography>
+            )}
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.35 }}>
+              Week {game.weekPlayed} • {game.year} • {venueText}
+            </Typography>
+            {mode === 'result' && game.headline && (
+              <Typography variant="body2" sx={{ mt: 0.45, fontStyle: 'italic' }}>
+                {game.headline}
+              </Typography>
+            )}
+            {mode === 'result' && headlineSubtitle && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.15 }}>
+                {headlineSubtitle}
+              </Typography>
+            )}
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 12, md: 3.5 }}>
+          {renderTeamHeader(home, homeSide, 'right', onTeamClick, mode)}
+        </Grid>
+      </Grid>
+    </Paper>
+  );
+}
