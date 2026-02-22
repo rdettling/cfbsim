@@ -12,7 +12,7 @@ import TeamHistory from './pages/TeamHistory';
 import SettingsPage from './pages/Settings';
 import Awards from './pages/Awards';
 import SeasonSummary from './pages/SeasonSummary';
-import Game from './pages/Game';
+import GamePage from './pages/game/GamePage';
 import TeamStats from './pages/TeamStats';
 import IndividualStats from './pages/IndividualStats';
 import Player from './pages/Player';
@@ -45,7 +45,7 @@ const App = () => {
         <Route path="/recruiting_summary" element={<RecruitingSummary />} />
         <Route path="/roster_cuts" element={<RosterCuts />} />
         <Route path="/playoff" element={<Playoff />} />
-        <Route path="/game/:id" element={<Game />} />
+        <Route path="/game/:id" element={<GamePage />} />
         <Route path="/players/:playerId" element={<Player />} />
         <Route path="/stats/team" element={<TeamStats />} />
         <Route path="/stats/individual" element={<IndividualStats />} />

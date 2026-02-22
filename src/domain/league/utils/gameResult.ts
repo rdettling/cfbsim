@@ -39,27 +39,73 @@ const buildTeamStats = (teamId: number, points: number, plays: PlayRecord[]) => 
   const turnovers = teamPlays.filter(
     play => play.result === 'interception' || play.result === 'fumble'
   ).length;
+  const sacksAllowed = teamPlays.filter(play => play.result === 'sack').length;
+  const explosivePlays = teamPlays.filter(
+    play => (play.playType === 'run' || play.playType === 'pass') && play.yardsGained >= 20
+  ).length;
+  const playsCount = teamPlays.length;
+  const passAttempts = passPlays.length;
+  const runAttempts = runPlays.length;
+  const timeOfPossessionSeconds = teamPlays.reduce(
+    (sum, play) => sum + (typeof play.playSeconds === 'number' ? Math.max(play.playSeconds, 0) : 0),
+    0
+  );
+
+  const drivesById = new Map<number, PlayRecord[]>();
+  teamPlays.forEach(play => {
+    const current = drivesById.get(play.driveId) ?? [];
+    current.push(play);
+    drivesById.set(play.driveId, current);
+  });
+  const redZoneTrips = Array.from(drivesById.values()).filter(drivePlays =>
+    drivePlays.some(play => play.startingFP >= 80)
+  );
+  const redZoneTds = redZoneTrips.filter(drivePlays =>
+    drivePlays.some(play => play.result === 'touchdown')
+  ).length;
+
   const thirdDownAttempts = teamPlays.filter(play => play.down === 3).length;
   const thirdDownMade = teamPlays.filter(
     play => play.down === 3 && play.yardsGained >= play.yardsLeft
   ).length;
-  const thirdDownPct = thirdDownAttempts
-    ? Math.round((thirdDownMade / thirdDownAttempts) * 1000) / 10
-    : 0;
+  const goForItFourthDownPlays = teamPlays.filter(
+    play => play.down === 4 && play.playType !== 'punt' && play.playType !== 'field goal'
+  );
+  const fourthDownAttempts = goForItFourthDownPlays.length;
+  const fourthDownMade = goForItFourthDownPlays.filter(
+    play => play.yardsGained >= play.yardsLeft
+  ).length;
+  const totalYards = passYards + rushYards;
+  const yardsPerPlay = playsCount ? Math.round((totalYards / playsCount) * 10) / 10 : 0;
+  const yardsPerRun = runAttempts ? Math.round((rushYards / runAttempts) * 10) / 10 : 0;
+  const yardsPerPass = passAttempts ? Math.round((passYards / passAttempts) * 10) / 10 : 0;
 
   return {
     points,
-    totalYards: passYards + rushYards,
+    totalYards,
     passYards,
     rushYards,
     firstDowns,
     turnovers,
-    plays: teamPlays.length,
+    plays: playsCount,
     thirdDown: {
       made: thirdDownMade,
       attempts: thirdDownAttempts,
-      pct: thirdDownPct,
     },
+    fourthDown: {
+      made: fourthDownMade,
+      attempts: fourthDownAttempts,
+    },
+    redZone: {
+      tds: redZoneTds,
+      trips: redZoneTrips.length,
+    },
+    sacksAllowed,
+    explosivePlays,
+    timeOfPossessionSeconds,
+    yardsPerPlay,
+    yardsPerRun,
+    yardsPerPass,
   };
 };
 
@@ -90,7 +136,12 @@ const buildTeamBoxScore = (
     .filter(log => log.rush_attempts > 0)
     .sort((a, b) => b.rush_yards - a.rush_yards)
     .map(log =>
-      toLeaderEntry(log, `${log.rush_yards} yds • ${log.rush_touchdowns} TD`, playersById, teamsById)
+      toLeaderEntry(
+        log,
+        `${log.rush_attempts} ATT • ${log.rush_yards} yds • ${log.rush_touchdowns} TD`,
+        playersById,
+        teamsById
+      )
     )
     .filter(isLeaderEntry);
 
@@ -100,7 +151,7 @@ const buildTeamBoxScore = (
     .map(log =>
       toLeaderEntry(
         log,
-        `${log.receiving_yards} yds • ${log.receiving_touchdowns} TD`,
+        `${log.receiving_catches} REC • ${log.receiving_yards} yds • ${log.receiving_touchdowns} TD`,
         playersById,
         teamsById
       )

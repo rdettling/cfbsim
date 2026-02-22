@@ -305,8 +305,21 @@ export interface GameResultProps {
         thirdDown: {
           made: number;
           attempts: number;
-          pct: number;
         };
+        fourthDown: {
+          made: number;
+          attempts: number;
+        };
+        redZone: {
+          tds: number;
+          trips: number;
+        };
+        sacksAllowed: number;
+        explosivePlays: number;
+        timeOfPossessionSeconds: number;
+        yardsPerPlay: number;
+        yardsPerRun: number;
+        yardsPerPass: number;
       };
       teamB: {
         points: number;
@@ -319,8 +332,21 @@ export interface GameResultProps {
         thirdDown: {
           made: number;
           attempts: number;
-          pct: number;
         };
+        fourthDown: {
+          made: number;
+          attempts: number;
+        };
+        redZone: {
+          tds: number;
+          trips: number;
+        };
+        sacksAllowed: number;
+        explosivePlays: number;
+        timeOfPossessionSeconds: number;
+        yardsPerPlay: number;
+        yardsPerRun: number;
+        yardsPerPass: number;
       };
       leaders: {
         passing: Array<{
@@ -441,6 +467,7 @@ export interface DriveSummaryProps {
   variant?: 'modal' | 'page';
   includeCurrentDrive?: boolean;
   matchup?: SimMatchup;
+  panelHeight?: number;
 }
 
 export interface SimMatchup {

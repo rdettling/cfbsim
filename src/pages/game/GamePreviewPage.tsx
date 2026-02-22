@@ -12,8 +12,8 @@ import {
   Divider,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { TeamInfoModal, TeamLogo } from '../team/TeamComponents';
-import GameHeader from './GameHeader';
+import { TeamInfoModal, TeamLogo } from '../../components/team/TeamComponents';
+import GameHeader from '../../components/game/GameHeader';
 import type { GamePreviewProps } from '../../types/components';
 import { resolveHomeAway, resolveTeamSide } from '../../domain/utils/gameDisplay';
 
@@ -40,7 +40,7 @@ const showMetricValue = (value: number, gamesPlayed: number) =>
 const showMetricRank = (rank: number, gamesPlayed: number) =>
   gamesPlayed === 0 ? '—' : `#${rank}`;
 
-const GamePreview = ({ data }: GamePreviewProps) => {
+const GamePreviewPage = ({ data }: GamePreviewProps) => {
   const { game, preview } = data;
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
@@ -349,4 +349,4 @@ const GamePreview = ({ data }: GamePreviewProps) => {
   );
 };
 
-export default GamePreview;
+export default GamePreviewPage;

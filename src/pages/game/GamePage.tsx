@@ -1,11 +1,11 @@
 import { useParams } from 'react-router-dom';
-import { useDomainData } from '../domain/hooks';
-import { loadGame } from '../domain/league';
-import GamePreview from '../components/game/GamePreview';
-import GameResult from '../components/game/GameResult';
-import { PageLayout } from '../components/layout/PageLayout';
+import { useDomainData } from '../../domain/hooks';
+import { loadGame } from '../../domain/league';
+import GamePreviewPage from './GamePreviewPage';
+import GameResultPage from './GameResultPage';
+import { PageLayout } from '../../components/layout/PageLayout';
 
-const Game = () => {
+const GamePage = () => {
     const { id } = useParams<{ id: string }>();
 
     const { data, loading, error } = useDomainData({
@@ -31,12 +31,12 @@ const Game = () => {
             containerMaxWidth="xl"
         >
             {data?.game?.winnerId ? (
-                <GameResult data={data} />
+                <GameResultPage data={data} />
             ) : (
-                data && <GamePreview data={data} />
+                data && <GamePreviewPage data={data} />
             )}
         </PageLayout>
     );
 };
 
-export default Game;
+export default GamePage;
