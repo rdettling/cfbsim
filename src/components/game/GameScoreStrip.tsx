@@ -1,11 +1,11 @@
 import { Box, Typography } from '@mui/material';
 import { TeamLogo } from '../team/TeamComponents';
-import type { GameScoreStripProps } from '../../types/components';
+import type { SimHeaderProps } from '../../types/components';
 
 const GameScoreStrip = ({
   matchup,
   isPlaybackComplete,
-}: GameScoreStripProps) => {
+}: SimHeaderProps) => {
   const PossessionIndicator = () => (
     <img
       src="/logos/football.png"

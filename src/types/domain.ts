@@ -21,6 +21,9 @@ export interface Team {
   ceiling: number;
   floor: number;
   mascot: string;
+  city: string;
+  state: string;
+  stadium: string;
   ranking: number;
   offense: number;
   defense: number;

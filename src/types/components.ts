@@ -165,35 +165,295 @@ export interface LoadingDialogProps {
 }
 
 export interface GamePreviewProps {
-  game: {
-    id: number;
-    label: string;
-    weekPlayed: number;
-    year: number;
-    homeTeamId?: number | null;
-    awayTeamId?: number | null;
-    neutralSite?: boolean;
-    teamA: Team;
-    teamB: Team;
-    rankATOG: number;
-    rankBTOG: number;
-    spreadA?: string;
-    spreadB?: string;
-    moneylineA?: string;
-    moneylineB?: string;
+  data: {
+    game: {
+      id: number;
+      label: string;
+      weekPlayed: number;
+      year: number;
+      homeTeamId?: number | null;
+      awayTeamId?: number | null;
+      neutralSite?: boolean;
+      teamA: Team;
+      teamB: Team;
+      rankATOG: number;
+      rankBTOG: number;
+      spreadA?: string;
+      spreadB?: string;
+      moneylineA?: string;
+      moneylineB?: string;
+      winProbA?: number;
+      winProbB?: number;
+      headline?: string | null;
+    };
+    preview: {
+      teamA: {
+        gamesPlayed: number;
+        stats: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        ranks: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        topStarters: Array<{
+          id: number;
+          first: string;
+          last: string;
+          pos: string;
+          rating: number;
+        }>;
+        lastFiveGames: Array<{
+          id: number;
+          week: number;
+          opponent: string;
+          result: 'W' | 'L';
+          score: string;
+          location: 'vs' | '@' | 'N';
+        }>;
+      };
+      teamB: {
+        gamesPlayed: number;
+        stats: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        ranks: {
+          yards_per_game: number;
+          pass_yards_per_game: number;
+          pass_tds_per_game: number;
+          rush_yards_per_game: number;
+          turnovers_per_game: number;
+          points_per_game: number;
+        };
+        topStarters: Array<{
+          id: number;
+          first: string;
+          last: string;
+          pos: string;
+          rating: number;
+        }>;
+        lastFiveGames: Array<{
+          id: number;
+          week: number;
+          opponent: string;
+          result: 'W' | 'L';
+          score: string;
+          location: 'vs' | '@' | 'N';
+        }>;
+      };
+    };
   };
+}
+
+export interface GameHeaderProps {
+  game: GamePreviewProps['data']['game'];
+  home: Team;
+  away: Team;
+  neutral: boolean;
+  mode?: 'preview' | 'result';
+  homeScore?: number;
+  awayScore?: number;
+  headlineSubtitle?: string | null;
+  homeSide: {
+    rank: number;
+    score?: number;
+  };
+  awaySide: {
+    rank: number;
+    score?: number;
+  };
+  onTeamClick: (name: string) => void;
 }
 
 export interface GameResultProps {
   data: {
-    game: {
-      teamA: Team;
-      teamB: Team;
-      homeTeamId?: number | null;
-      awayTeamId?: number | null;
-      neutralSite?: boolean;
+    game: GamePreviewProps['data']['game'] & {
+      winnerId?: number | null;
+      scoreA?: number;
+      scoreB?: number;
+      resultA?: string;
+      resultB?: string;
+      overtime?: number;
+      headline_subtitle?: string | null;
+      headline_tags?: string[] | null;
       [key: string]: any;
     };
+    resultSummary?: {
+      teamA: {
+        points: number;
+        totalYards: number;
+        passYards: number;
+        rushYards: number;
+        firstDowns: number;
+        turnovers: number;
+        plays: number;
+        thirdDown: {
+          made: number;
+          attempts: number;
+        };
+        fourthDown: {
+          made: number;
+          attempts: number;
+        };
+        redZone: {
+          tds: number;
+          trips: number;
+        };
+        sacksAllowed: number;
+        explosivePlays: number;
+        timeOfPossessionSeconds: number;
+        yardsPerPlay: number;
+        yardsPerRun: number;
+        yardsPerPass: number;
+      };
+      teamB: {
+        points: number;
+        totalYards: number;
+        passYards: number;
+        rushYards: number;
+        firstDowns: number;
+        turnovers: number;
+        plays: number;
+        thirdDown: {
+          made: number;
+          attempts: number;
+        };
+        fourthDown: {
+          made: number;
+          attempts: number;
+        };
+        redZone: {
+          tds: number;
+          trips: number;
+        };
+        sacksAllowed: number;
+        explosivePlays: number;
+        timeOfPossessionSeconds: number;
+        yardsPerPlay: number;
+        yardsPerRun: number;
+        yardsPerPass: number;
+      };
+      leaders: {
+        passing: Array<{
+          playerId: number;
+          name: string;
+          pos: string;
+          team: string;
+          statLine: string;
+        }>;
+        rushing: Array<{
+          playerId: number;
+          name: string;
+          pos: string;
+          team: string;
+          statLine: string;
+        }>;
+        receiving: Array<{
+          playerId: number;
+          name: string;
+          pos: string;
+          team: string;
+          statLine: string;
+        }>;
+        defense: Array<{
+          playerId: number;
+          name: string;
+          pos: string;
+          team: string;
+          statLine: string;
+        }>;
+      };
+      boxScore: {
+        teamA: {
+          passing: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          rushing: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          receiving: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          defense: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          kicking: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+        };
+        teamB: {
+          passing: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          rushing: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          receiving: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          defense: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+          kicking: Array<{
+            playerId: number;
+            name: string;
+            pos: string;
+            team: string;
+            statLine: string;
+          }>;
+        };
+      };
+    } | null;
     drives?: Drive[];
   };
 }
@@ -206,6 +466,7 @@ export interface DriveSummaryProps {
   variant?: 'modal' | 'page';
   includeCurrentDrive?: boolean;
   matchup?: SimMatchup;
+  panelHeight?: number;
 }
 
 export interface SimMatchup {
@@ -271,17 +532,7 @@ export interface GameControlsProps {
   submittingDecision?: boolean;
 }
 
-export interface GameHeaderProps {
-  gameData: GameData;
-  currentPlay: Play | null;
-  isTeamAOnOffense: boolean;
-  plays: Play[];
-  isPlaybackComplete: boolean;
-  lastPlayText?: string;
-  currentDrive?: Drive | null;
-}
-
-export interface GameScoreStripProps {
+export interface SimHeaderProps {
   matchup: SimMatchup;
   isPlaybackComplete: boolean;
 }
