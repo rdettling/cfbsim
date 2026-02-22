@@ -37,7 +37,7 @@ export const setHistoryData = async (value: any) => {
 export const getPrestigeConfig = () =>
   getBaseData<Record<string, number>>('prestige_config', '/data/prestige_config.json');
 export const getRivalriesData = () =>
-  getBaseData<{ rivalries: [string, string, number | null, string | null][] }>(
+  getBaseData<{ rivalries: [string, string, number | null, string | null, boolean?][] }>(
     'rivalries',
     '/data/rivalries.json'
   );

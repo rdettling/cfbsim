@@ -289,6 +289,13 @@ const getPlayoffTeamOrder = async (
   return [...byes, ...seededRest, ...nonPlayoffTeams];
 };
 
+const applyPlayoffCommitteeRankings = (orderedTeams: Team[]) => {
+  orderedTeams.forEach((team, index) => {
+    team.last_rank = team.ranking;
+    team.ranking = index + 1;
+  });
+};
+
 const setConferenceChampionships = async (
   league: LeagueState,
   oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
@@ -337,12 +344,9 @@ const setPlayoffR1 = async (
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const teams = await getPlayoffTeamOrder(league, teamsById);
+  applyPlayoffCommitteeRankings(teams);
   const seeds = teams.slice(0, 12);
   if (seeds.length < 12) return;
-
-  seeds.forEach((team, index) => {
-    team.ranking = index + 1;
-  });
 
   league.playoff.seeds = seeds.map(team => team.id);
 

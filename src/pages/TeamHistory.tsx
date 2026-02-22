@@ -12,6 +12,8 @@ import {
   Typography,
   Box,
   Stack,
+  Chip,
+  Container,
 } from '@mui/material';
 import { Schedule } from '@mui/icons-material';
 import TeamHeader from '../components/team/TeamHeader';
@@ -90,18 +92,18 @@ const TeamHistory = () => {
             }
           : undefined
       }
-      containerMaxWidth="lg"
+      containerMaxWidth="xl"
     >
       {data && (
-        <>
+        <Container maxWidth={false} sx={{ px: { xs: 0, md: 1 } }}>
           <TeamHeader team={data.team} teams={data.teams} onTeamChange={handleTeamChange} />
 
-          <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <Paper elevation={2} sx={{ borderRadius: 2, overflow: 'hidden' }}>
             <Box
               sx={{
                 bgcolor: data.team.colorPrimary || 'primary.main',
                 color: 'white',
-                p: 2,
+                p: { xs: 1.5, md: 2 },
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -116,15 +118,24 @@ const TeamHistory = () => {
               </Typography>
             </Box>
             <TableContainer>
-              <Table>
+              <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ bgcolor: data.team.colorPrimary || 'primary.main' }}>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Year</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Prestige</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rating</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Conference</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Record</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rank</TableCell>
+                  <TableRow
+                    sx={{
+                      '& th': {
+                        bgcolor: data.team.colorPrimary || 'primary.main',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        borderBottomColor: 'rgba(255,255,255,0.25)',
+                      },
+                    }}
+                  >
+                    <TableCell sx={{ width: 110 }}>Year</TableCell>
+                    <TableCell sx={{ width: 220 }}>Prestige</TableCell>
+                    <TableCell sx={{ width: 110 }}>Rating</TableCell>
+                    <TableCell sx={{ width: 140 }}>Conference</TableCell>
+                    <TableCell sx={{ width: 120 }}>Record</TableCell>
+                    <TableCell sx={{ width: 100 }}>Rank</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -135,7 +146,7 @@ const TeamHistory = () => {
                         '&:hover': {
                           bgcolor: `${data.team.colorSecondary || 'grey.100'}20`,
                         },
-                        '&:nth-of-type(odd)': { bgcolor: 'grey.25' },
+                        '&:nth-of-type(odd)': { bgcolor: 'rgba(0,0,0,0.015)' },
                       }}
                     >
                       <TableCell>
@@ -165,13 +176,15 @@ const TeamHistory = () => {
                         <PrestigeStars prestige={year.prestige} />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight="bold">
-                          {year.rating}
-                        </Typography>
+                        {year.rating != null ? (
+                          <Chip size="small" variant="outlined" label={year.rating} sx={{ minWidth: 56 }} />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">-</Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         {year.conference === 'Independent' ? (
-                          <Typography variant="body2">Independent</Typography>
+                          <Typography variant="body2" color="text.secondary">Independent</Typography>
                         ) : (
                           <ConfLogo name={year.conference} size={30} />
                         )}
@@ -192,7 +205,7 @@ const TeamHistory = () => {
                             backgroundColor: year.rank <= 25 ? `${data.team.colorPrimary || 'primary.main'}` : 'transparent',
                             border:
                               year.rank <= 25 ? `1px solid ${data.team.colorPrimary || 'primary.main'}` : 'none',
-                            color: year.rank <= 25 ? 'white' : 'black',
+                            color: year.rank <= 25 ? 'white' : 'text.secondary',
                             fontWeight: year.rank <= 25 ? 'bold' : 'normal',
                           }}
                         >
@@ -205,7 +218,7 @@ const TeamHistory = () => {
               </Table>
             </TableContainer>
           </Paper>
-        </>
+        </Container>
       )}
     </PageLayout>
   );

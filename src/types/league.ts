@@ -42,6 +42,7 @@ export interface LeagueState {
   teams: Team[];
   conferences: Conference[];
   pending_rivalries: NonConData['pending_rivalries'];
+  rivalryHostSeeds?: Record<string, string>;
   scheduleBuilt?: boolean;
   simInitialized?: boolean;
   settings?: Settings;
