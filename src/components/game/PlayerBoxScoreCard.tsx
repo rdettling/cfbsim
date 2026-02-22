@@ -128,7 +128,7 @@ const PlayerBoxScoreCard = ({
           overflow: 'hidden',
         }}
       >
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.7 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
           Box Score
         </Typography>
         {!resultSummary ? (

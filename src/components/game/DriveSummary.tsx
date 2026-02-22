@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Card,
@@ -8,6 +8,8 @@ import {
   Divider,
   IconButton,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -27,6 +29,7 @@ const DriveSummary = ({
   panelHeight,
 }: DriveSummaryProps) => {
   const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
+  const [driveFilter, setDriveFilter] = useState<'all' | 'scoring'>('all');
 
   const formatClock = (secondsLeft?: number) => {
     if (typeof secondsLeft !== 'number') return '';
@@ -40,6 +43,23 @@ const DriveSummary = ({
     if (typeof quarter !== 'number') return '';
     const clock = formatClock(clockSecondsLeft);
     return clock ? `Q${quarter} ${clock}` : `Q${quarter}`;
+  };
+
+  const formatDuration = (seconds: number) => {
+    const clamped = Math.max(0, seconds);
+    const mins = Math.floor(clamped / 60);
+    const secs = clamped % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getDriveDurationLabel = (drive: Drive) => {
+    const hasTimingData = drive.plays.some(play => typeof play.playSeconds === 'number');
+    if (!hasTimingData) return '';
+    const totalSeconds = drive.plays.reduce(
+      (sum, play) => sum + (typeof play.playSeconds === 'number' ? Math.max(play.playSeconds, 0) : 0),
+      0
+    );
+    return formatDuration(totalSeconds);
   };
 
   const toggleDriveExpansion = (driveNum: number) => {
@@ -68,6 +88,21 @@ const DriveSummary = ({
   };
 
   const displayDrives = variant === 'modal' ? getCompletedDrives() : drives;
+  const visibleDrives = useMemo(
+    () => (driveFilter === 'scoring' ? displayDrives.filter(drive => drive.points > 0) : displayDrives),
+    [displayDrives, driveFilter]
+  );
+
+  useEffect(() => {
+    const visibleDriveNums = new Set(visibleDrives.map(drive => drive.driveNum));
+    setExpandedDrives(prev => {
+      const next = new Set<number>();
+      prev.forEach(driveNum => {
+        if (visibleDriveNums.has(driveNum)) next.add(driveNum);
+      });
+      return next;
+    });
+  }, [visibleDrives]);
 
   const containerSx =
     variant === 'page'
@@ -83,24 +118,63 @@ const DriveSummary = ({
             : { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }
         }
       >
-        <Typography variant="h5" gutterBottom>
-          Drive Summary
-        </Typography>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          spacing={1}
+          sx={{ mb: 1 }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 800 }}>
+            Drive Summary
+          </Typography>
+          <ToggleButtonGroup
+            size="small"
+            value={driveFilter}
+            exclusive
+            onChange={(_, value: 'all' | 'scoring' | null) => {
+              if (value) setDriveFilter(value);
+            }}
+            aria-label="drive filter"
+            sx={{ '& .MuiToggleButton-root': { textTransform: 'none', fontWeight: 700 } }}
+          >
+            <ToggleButton value="all">All drives</ToggleButton>
+            <ToggleButton value="scoring">Scoring drives</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
 
-        <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          {displayDrives.length === 0 ? (
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            pr: 0.25,
+            scrollbarWidth: 'thin',
+            '&::-webkit-scrollbar': { width: 7 },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(0,0,0,0.16)',
+              borderRadius: 8,
+            },
+          }}
+        >
+          {visibleDrives.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
-              {variant === 'modal' ? 'No completed drives yet' : 'No drives available'}
+              {driveFilter === 'scoring'
+                ? 'No scoring drives'
+                : variant === 'modal'
+                  ? 'No completed drives yet'
+                  : 'No drives available'}
             </Typography>
           ) : (
-            displayDrives.map((drive, idx) => {
+            visibleDrives.map((drive, idx) => {
               const hasPlays = Boolean(drive.plays && drive.plays.length > 0);
               const isExpanded = expandedDrives.has(drive.driveNum);
+              const driveDuration = getDriveDurationLabel(drive);
               const isCurrentDrive =
                 includeCurrentDrive &&
                 !isGameComplete &&
                 variant === 'modal' &&
-                idx === displayDrives.length - 1;
+                idx === visibleDrives.length - 1;
 
               const scoreA = isCurrentDrive && matchup ? matchup.currentScoreA : drive.scoreAAfter;
               const scoreB = isCurrentDrive && matchup ? matchup.currentScoreB : drive.scoreBAfter;
@@ -115,7 +189,9 @@ const DriveSummary = ({
                   <CardContent>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Chip label={`Drive #${drive.driveNum + 1}`} size="small" />
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700 }}>
+                          Drive #{drive.driveNum + 1}
+                        </Typography>
                         {hasPlays && (
                           <IconButton size="small" onClick={() => toggleDriveExpansion(drive.driveNum)}>
                             {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -127,21 +203,24 @@ const DriveSummary = ({
 
                     <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mt: 1 }}>
                       <TeamLogo name={drive.offense} size={22} />
-                      <Typography variant="body1">{drive.offense}</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        {drive.offense}
+                      </Typography>
                     </Stack>
 
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      {drive.result
-                        .split(' ')
-                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(' ')}
-                    </Typography>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {drive.plays?.length || 0} plays{drive.yards !== undefined ? `, ${drive.yards} yards` : ''}
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.85 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        {drive.result
+                          .split(' ')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')}
+                        {' • '}
+                        {drive.plays?.length || 0} plays
+                        {drive.yards !== undefined ? ` • ${drive.yards} yards` : ''}
+                        {driveDuration ? ` • ${driveDuration}` : ''}
                       </Typography>
                       {scoreA !== undefined && scoreB !== undefined && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
                           {resolvedScore.awayScore}-{resolvedScore.homeScore}
                         </Typography>
                       )}
@@ -149,29 +228,39 @@ const DriveSummary = ({
 
                     {hasPlays && (
                       <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                        <Divider sx={{ my: 1 }} />
-                        <Typography variant="subtitle2" gutterBottom>
+                        <Divider sx={{ my: 1.1 }} />
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.8, fontWeight: 700 }}>
                           Plays
                         </Typography>
-                        <Stack spacing={0.75}>
+                        <Stack spacing={0.65}>
                           {drive.plays?.map((play, playIdx) => (
-                            <Box key={playIdx}>
-                              <Stack direction="row" justifyContent="space-between" spacing={1}>
+                            <Box key={playIdx} sx={{ pb: 0.55 }}>
+                              <Stack direction="row" justifyContent="space-between" spacing={1} alignItems="center">
                                 <Typography variant="caption" color="text.secondary">
                                   {play.header}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
                                   {formatPlayTime(play.quarter, play.clockSecondsLeft)}
                                 </Typography>
                               </Stack>
-                              <Typography variant="body2" sx={{ mt: 0.25 }}>
+                              <Typography variant="body1" sx={{ mt: 0.2, fontWeight: 500 }}>
                                 {play.text}
                               </Typography>
-                              <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.25 }}>
+                              <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.2 }}>
                                 <Typography variant="caption" color="text.secondary">
                                   {play.playType.charAt(0).toUpperCase() + play.playType.slice(1)}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography
+                                  variant="caption"
+                                  color={
+                                    play.yardsGained > 0
+                                      ? 'success.main'
+                                      : play.yardsGained < 0
+                                        ? 'error.main'
+                                        : 'text.secondary'
+                                  }
+                                  sx={{ fontWeight: 700 }}
+                                >
                                   {play.yardsGained > 0 ? '+' : ''}
                                   {play.yardsGained} yards
                                 </Typography>

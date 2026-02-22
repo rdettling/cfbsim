@@ -72,7 +72,7 @@ const TeamStatsCard = ({
           overflow: 'hidden',
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.85 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
           Team Stats
         </Typography>
         {!hasSummary ? (

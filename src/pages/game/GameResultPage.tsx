@@ -18,7 +18,7 @@ import { buildSimMatchup } from '../../domain/utils/simMatchup';
 
 const CARD_SX = { height: '100%', border: '1px solid', borderColor: 'divider' } as const;
 const CARD_CONTENT_SX = { p: 1.5 } as const;
-const RESULT_PANEL_HEIGHT = 540;
+const RESULT_PANEL_HEIGHT = 500;
 
 const GameResultPage = ({ data }: GameResultProps) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -47,8 +47,8 @@ const GameResultPage = ({ data }: GameResultProps) => {
     : null;
 
   return (
-    <Container maxWidth={false} sx={{ py: 1.5, px: { xs: 1.5, md: 3 } }}>
-      <Box sx={{ display: 'grid', gap: 1.5 }}>
+    <Container maxWidth={false} sx={{ pt: 0.75, pb: 1.25, px: { xs: 1.5, md: 3 } }}>
+      <Box sx={{ display: 'grid', gap: 1.25 }}>
         <GameHeader
           game={game}
           home={home}
@@ -64,7 +64,7 @@ const GameResultPage = ({ data }: GameResultProps) => {
           onTeamClick={handleTeamClick}
         />
 
-        <Grid container spacing={1.5}>
+        <Grid container spacing={1.25}>
           <Grid size={{ xs: 12, md: 4 }}>
             {drives.length > 0 ? (
               <DriveSummary drives={drives} variant="page" matchup={matchup} panelHeight={RESULT_PANEL_HEIGHT} />
