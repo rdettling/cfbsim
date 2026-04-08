@@ -1,8 +1,8 @@
 # AGENTS.md
 
 This file is for Codex/agent context. For human‑readable docs, see:
-- `DEV_SETUP.md` for setup/run commands and env vars
-- `ARCHITECTURE.md` for system overview
+- `docs/README.md` for docs index
+- `docs/architecture/system-overview.md` for system overview
 
 ## Conventions
 
