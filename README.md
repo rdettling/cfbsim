@@ -1,50 +1,20 @@
-# Frontend – Page Pattern
+# CFB Sim
 
-## Goals
-- No backend endpoints.
-- IndexedDB-first persistence.
-- Pages are thin; domain layer owns logic.
+CFB Sim is a browser-based college football dynasty simulator where you run a program across repeated seasons.
 
-## Architecture
-- `src/db/`: IndexedDB + base data caching
-- `src/domain/`: business logic, domain types, and hooks
-- `src/pages/`: UI screens
-- `src/components/`: shared UI pieces
-- `src/constants/`: shared constants (routes, stages)
+## Documentation
 
-### Shared UI Patterns
-- Team identity is centralized in `src/components/team/TeamHeader.tsx` and reused across schedule/roster/history pages.
-- Top navigation is centralized in `src/components/layout/Navbar.tsx` with a consistent three-zone layout (team identity, primary nav, context/actions).
+All docs are under [`docs/`](docs/README.md).
 
-## Page Pattern
-1. Fetch domain data with `useDomainData`.
-2. Keep page state local (UI-only state).
-3. Call domain functions for mutations.
+- Architecture: [`docs/architecture/`](docs/architecture/README.md)
+- Systems: [`docs/systems/`](docs/systems/README.md)
+- Interfaces: [`docs/interfaces/`](docs/interfaces/README.md)
+- Operations: [`docs/operations/`](docs/operations/README.md)
 
-### Example
-```tsx
-const { data, loading, error } = useDomainData({
-  fetcher: () => loadHomeData(),
-});
+## What The App Does
 
-return (
-  <PageLayout loading={loading} error={error}>
-    {/* render UI */}
-  </PageLayout>
-);
-```
-
-## Domain Functions
-- `loadHomeData()`
-- `startNewLeague(team, year)`
-- `loadNonCon()`
-- `getTeamInfo(teamName)`
-
-Add new pages by first copying the old page UI, then replacing any API calls
-with domain functions.
-
-## Live Game Sim (UI)
-- Unified sim modal: `GameSimModal`
-- Unified sim hook: `useGameSim`
-- UI is home/away first (Team A/B are internal only)
-- Live/interactive behave the same; user offense enables decision buttons
+- Simulates games and full weeks
+- Advances leagues through a full seasonal lifecycle
+- Tracks rosters, players, stats, rankings, standings, playoff, and awards
+- Runs offseason systems including realignment, progression, recruiting, and cuts
+- Persists league state in browser storage
