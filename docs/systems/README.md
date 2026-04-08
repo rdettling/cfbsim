@@ -1,6 +1,6 @@
 # Systems Docs
 
-Technical subsystem documentation.
+Deep system-behavior documentation for how simulation and league mechanics actually run.
 
 ## Docs
 

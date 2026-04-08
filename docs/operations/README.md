@@ -1,6 +1,6 @@
 # Operations Docs
 
-Technical operational guidance for maintaining and validating the simulation runtime behavior.
+Operational guidance for tuning, calibration, and validation of simulator behavior.
 
 ## Docs
 

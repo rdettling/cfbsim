@@ -1,6 +1,6 @@
 # Interfaces Docs
 
-Technical interface boundaries between domain loaders and UI consumers.
+Contract-focused documentation for data movement between domain loaders and UI consumers.
 
 ## Docs
 
