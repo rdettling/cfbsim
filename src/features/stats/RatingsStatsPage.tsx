@@ -12,7 +12,7 @@ import styles from './StatsPages.module.css';
 const stars = (count: number) => '★'.repeat(Math.max(1, count));
 const STAR_LEVELS = [5, 4, 3, 2, 1] as const;
 
-export const NewRatingsStatsPage = () => {
+export const RatingsStatsPage = () => {
   const [data, setData] = useState<RatingsStatsPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

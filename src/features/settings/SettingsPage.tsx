@@ -6,7 +6,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewSettingsPage.module.css';
+import styles from './SettingsPage.module.css';
 
 const playoffLabel = (teams: number) => {
   if (teams === 2) return '2 Teams (BCS)';
@@ -19,7 +19,7 @@ const Status = ({ enabled }: { enabled: boolean }) => (
   <span className={enabled ? styles.statusOn : styles.statusOff}>{enabled ? 'Enabled' : 'Disabled'}</span>
 );
 
-export const NewSettingsPage = () => {
+export const SettingsPage = () => {
   const [data, setData] = useState<SettingsPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

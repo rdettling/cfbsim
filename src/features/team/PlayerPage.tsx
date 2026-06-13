@@ -8,7 +8,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewPlayerPage.module.css';
+import styles from './PlayerPage.module.css';
 
 const formatStatLabel = (key: string) =>
   key
@@ -17,7 +17,7 @@ const formatStatLabel = (key: string) =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
-export const NewPlayerPage = () => {
+export const PlayerPage = () => {
   const { playerId } = useParams();
   const [data, setData] = useState<PlayerPageData | null>(null);
   const [loading, setLoading] = useState(true);

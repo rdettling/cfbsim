@@ -6,7 +6,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewAwardsPage.module.css';
+import styles from './AwardsPage.module.css';
 
 type AwardPlayer = AwardsPageData['favorites'][number]['first_place'];
 type AwardEntry = AwardsPageData['favorites'][number];
@@ -81,7 +81,7 @@ const AwardCard = ({
   );
 };
 
-export const NewAwardsPage = () => {
+export const AwardsPage = () => {
   const [data, setData] = useState<AwardsPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

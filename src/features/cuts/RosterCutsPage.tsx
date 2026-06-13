@@ -6,9 +6,9 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewRosterCutsPage.module.css';
+import styles from './RosterCutsPage.module.css';
 
-export const NewRosterCutsPage = () => {
+export const RosterCutsPage = () => {
   const [data, setData] = useState<RosterCutsPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

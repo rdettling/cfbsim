@@ -6,7 +6,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewPlayoffPage.module.css';
+import styles from './PlayoffPage.module.css';
 
 type TeamSeedEntry = PlayoffPageData['playoff_teams'][number];
 type ResumeEntry = PlayoffPageData['resume_teams'][number];
@@ -57,7 +57,7 @@ const BracketGameCard = ({ game }: { game: BracketGame }) => (
   </article>
 );
 
-export const NewPlayoffPage = () => {
+export const PlayoffPage = () => {
   const [data, setData] = useState<PlayoffPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

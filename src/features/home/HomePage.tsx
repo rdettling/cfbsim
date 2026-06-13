@@ -11,7 +11,7 @@ import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { StatCard } from '../../ui/StatCard';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewHomePage.module.css';
+import styles from './HomePage.module.css';
 
 type PlayoffState = {
   teams: number;
@@ -73,7 +73,7 @@ const collectTeams = (data: LaunchProps | null, conferenceFilter: string) => {
   return teams.sort((left, right) => right.prestige - left.prestige);
 };
 
-export const NewHomePage = () => {
+export const HomePage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<LaunchProps | null>(null);
   const [loading, setLoading] = useState(true);

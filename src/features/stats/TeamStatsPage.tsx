@@ -57,7 +57,7 @@ const fillStats = (stats: Partial<TeamStatsType>): TeamStatsType => ({
   ...stats,
 });
 
-export const NewTeamStatsPage = () => {
+export const TeamStatsPage = () => {
   const [data, setData] = useState<TeamStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -7,7 +7,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewSeasonSummaryPage.module.css';
+import styles from './SeasonSummaryPage.module.css';
 
 type SummaryAward = {
   category_slug: string;
@@ -36,7 +36,7 @@ const changeClassName = (change: number) => {
   return styles.changeFlat;
 };
 
-export const NewSeasonSummaryPage = () => {
+export const SeasonSummaryPage = () => {
   const [data, setData] = useState<SeasonSummaryPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

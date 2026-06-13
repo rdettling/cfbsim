@@ -9,7 +9,7 @@ import { Modal } from '../../ui/Modal';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewNonConPage.module.css';
+import styles from './NonConPage.module.css';
 
 type LaunchState = {
   fromHome?: boolean;
@@ -22,7 +22,7 @@ type LaunchState = {
   };
 };
 
-export const NewNonConPage = () => {
+export const NonConPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const launchState = (location.state ?? {}) as LaunchState;

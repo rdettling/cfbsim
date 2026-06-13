@@ -4,8 +4,8 @@ type LoadingStateProps = {
 };
 
 export const LoadingState = ({
-  title = 'Loading preview',
-  description = 'The new frontend shell is ready for feature work. Data-backed screens will replace placeholders as migration continues.',
+  title = 'Loading',
+  description = 'Preparing the current screen from league data.',
 }: LoadingStateProps) => {
   return (
     <div className="ui-loading" role="status" aria-live="polite">
@@ -14,4 +14,3 @@ export const LoadingState = ({
     </div>
   );
 };
-

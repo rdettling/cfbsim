@@ -9,7 +9,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewWeekSchedulePage.module.css';
+import styles from './WeekSchedulePage.module.css';
 
 type WeekGame = WeekSchedulePageData['games'][number];
 
@@ -59,7 +59,7 @@ const GameTeams = ({ game }: { game: WeekGame }) => {
   );
 };
 
-export const NewWeekSchedulePage = () => {
+export const WeekSchedulePage = () => {
   const navigate = useNavigate();
   const { week } = useParams();
   const [data, setData] = useState<WeekSchedulePageData | null>(null);

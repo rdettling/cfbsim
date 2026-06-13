@@ -9,7 +9,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewGamePage.module.css';
+import styles from './GamePage.module.css';
 
 const PREVIEW_ROWS = [
   { key: 'points_per_game', label: 'Points/Game' },
@@ -29,7 +29,7 @@ const toClock = (seconds: number) => {
   return `${minutes}:${String(remainder).padStart(2, '0')}`;
 };
 
-export const NewGamePage = () => {
+export const GamePage = () => {
   const { id } = useParams();
   const [data, setData] = useState<GamePageData | null>(null);
   const [loading, setLoading] = useState(true);

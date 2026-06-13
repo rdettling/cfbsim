@@ -8,7 +8,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamPageActions } from './TeamPageActions';
-import styles from './NewTeamHistoryPage.module.css';
+import styles from './TeamHistoryPage.module.css';
 
 const getRankDisplay = (rank: number) => (rank === 0 ? 'N/A' : `#${rank}`);
 
@@ -25,7 +25,7 @@ const PrestigeStars = ({ prestige }: { prestige: number }) => {
   );
 };
 
-export const NewTeamHistoryPage = () => {
+export const TeamHistoryPage = () => {
   const navigate = useNavigate();
   const { teamName } = useParams();
   const [data, setData] = useState<TeamHistoryPageData | null>(null);

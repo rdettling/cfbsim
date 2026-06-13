@@ -9,7 +9,7 @@ import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
 import { Button } from '../../ui/Button';
 import { TeamPageActions } from './TeamPageActions';
-import styles from './NewTeamSchedulePage.module.css';
+import styles from './TeamSchedulePage.module.css';
 
 const locationLabel = (location?: 'Home' | 'Away' | 'Neutral') => {
   if (location === 'Home') return 'H';
@@ -38,7 +38,7 @@ const normalizeLocation = (location?: string): 'Home' | 'Away' | 'Neutral' | und
   return undefined;
 };
 
-export const NewTeamSchedulePage = () => {
+export const TeamSchedulePage = () => {
   const navigate = useNavigate();
   const { teamName, year } = useParams();
   const [data, setData] = useState<TeamSchedulePageData | null>(null);

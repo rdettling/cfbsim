@@ -224,11 +224,11 @@ export const AppShell = () => {
           <div className="app-shell__brand-wrap">
             <div className="app-shell__brand">
               <span className="app-shell__kicker">CFB Sim</span>
-              <span className="app-shell__title">{currentTeam?.name ?? 'Frontend Rebuild Preview'}</span>
+              <span className="app-shell__title">{currentTeam?.name ?? 'CFB Sim'}</span>
             </div>
             {league ? <AppStageControls league={league} /> : null}
           </div>
-          <nav className="app-shell__nav" aria-label="Preview navigation">
+          <nav className="app-shell__nav" aria-label="Primary navigation">
             <NavLink
               end
               to="/"

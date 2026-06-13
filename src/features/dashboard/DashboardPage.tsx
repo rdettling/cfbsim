@@ -9,7 +9,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewDashboardPage.module.css';
+import styles from './DashboardPage.module.css';
 
 const standingsRoute = (conferenceName?: string) =>
   `/standings/${conferenceName === 'Independent' || !conferenceName ? 'independent' : conferenceName}`;
@@ -71,7 +71,7 @@ const GameCard = ({ game, label }: { game: ScheduleGame | null; label: string })
   );
 };
 
-export const NewDashboardPage = () => {
+export const DashboardPage = () => {
   const [data, setData] = useState<DashboardPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

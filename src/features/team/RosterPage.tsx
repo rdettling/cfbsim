@@ -9,7 +9,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamPageActions } from './TeamPageActions';
-import styles from './NewRosterPage.module.css';
+import styles from './RosterPage.module.css';
 
 const yearLabels = {
   fr: 'Freshman',
@@ -18,7 +18,7 @@ const yearLabels = {
   sr: 'Senior',
 } as const;
 
-export const NewRosterPage = () => {
+export const RosterPage = () => {
   const navigate = useNavigate();
   const { teamName } = useParams();
   const [data, setData] = useState<TeamRosterPageData | null>(null);

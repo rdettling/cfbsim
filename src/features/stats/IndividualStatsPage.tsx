@@ -20,7 +20,7 @@ const SORT_FIELDS: Record<CategoryKey, string> = {
 
 const formatValue = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1));
 
-export const NewIndividualStatsPage = () => {
+export const IndividualStatsPage = () => {
   const [data, setData] = useState<IndividualStatsPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

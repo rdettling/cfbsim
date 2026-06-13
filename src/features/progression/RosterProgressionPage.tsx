@@ -9,7 +9,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewRosterProgressionPage.module.css';
+import styles from './RosterProgressionPage.module.css';
 
 interface ProgressedPlayer {
   id: number;
@@ -96,7 +96,7 @@ const TableBlock = ({
   );
 };
 
-export const NewRosterProgressionPage = () => {
+export const RosterProgressionPage = () => {
   const [data, setData] = useState<RosterProgressionPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

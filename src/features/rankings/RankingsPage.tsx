@@ -9,7 +9,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewRankingsPage.module.css';
+import styles from './RankingsPage.module.css';
 
 const InlineGame = ({
   team,
@@ -51,7 +51,7 @@ const InlineGame = ({
   );
 };
 
-export const NewRankingsPage = () => {
+export const RankingsPage = () => {
   const [data, setData] = useState<RankingsPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

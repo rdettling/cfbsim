@@ -8,7 +8,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewRealignmentPage.module.css';
+import styles from './RealignmentPage.module.css';
 
 type PlayoffChanges = {
   teams?: { old: number; new: number };
@@ -23,7 +23,7 @@ const playoffLabel = (teams: number) => {
   return `${teams} Teams`;
 };
 
-export const NewRealignmentPage = () => {
+export const RealignmentPage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<RealignmentPageData | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);

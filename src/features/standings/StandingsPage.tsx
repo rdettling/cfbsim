@@ -10,7 +10,7 @@ import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
-import styles from './NewStandingsPage.module.css';
+import styles from './StandingsPage.module.css';
 
 const normalizeConferenceName = (conferenceName: string) =>
   conferenceName === 'Independent' ? 'independent' : conferenceName;
@@ -50,7 +50,7 @@ const GameSummary = ({ game }: { game: ScheduleGame | null }) => {
   );
 };
 
-export const NewStandingsPage = () => {
+export const StandingsPage = () => {
   const navigate = useNavigate();
   const { conferenceName } = useParams();
   const [data, setData] = useState<StandingsPageData | null>(null);

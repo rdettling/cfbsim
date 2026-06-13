@@ -8,7 +8,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
-import styles from './NewRecruitingSummaryPage.module.css';
+import styles from './RecruitingSummaryPage.module.css';
 
 interface FreshmanPlayer {
   id: number;
@@ -24,7 +24,7 @@ type TeamRanking = RecruitingSummaryPageData['team_rankings'][number];
 
 const starText = (count: number) => '★'.repeat(count);
 
-export const NewRecruitingSummaryPage = () => {
+export const RecruitingSummaryPage = () => {
   const [data, setData] = useState<RecruitingSummaryPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
