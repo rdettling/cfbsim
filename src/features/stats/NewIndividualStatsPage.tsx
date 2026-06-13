@@ -119,12 +119,12 @@ export const NewIndividualStatsPage = () => {
                 {rows.map((player, index) => (
                   <tr className={index % 2 === 1 ? styles.altRow : undefined} key={player.id}>
                     <td>
-                      <Link className={styles.playerLink} to={`/__new/players/${player.id}`}>
+                      <Link className={styles.playerLink} to={`/players/${player.id}`}>
                         {player.first} {player.last}
                       </Link>
                     </td>
                     <td>
-                      <Link className={styles.teamLink} to={`/__new/${player.team}/roster`}>
+                      <Link className={styles.teamLink} to={`/${player.team}/roster`}>
                         {player.team}
                       </Link>
                     </td>

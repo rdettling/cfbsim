@@ -30,7 +30,7 @@ const teamLine = (name: string, seed: number | null) => `${seed ? `#${seed} ` : 
 const resultLine = (game: BracketGame) =>
   game.score1 != null && game.score2 != null ? `${game.score1}-${game.score2}` : 'TBD';
 
-const gameHref = (gameId?: number) => (gameId ? `/__new/game/${gameId}` : undefined);
+const gameHref = (gameId?: number) => (gameId ? `/game/${gameId}` : undefined);
 
 const BracketGameCard = ({ game }: { game: BracketGame }) => (
   <article className={styles.gameCard}>
@@ -112,7 +112,7 @@ export const NewPlayoffPage = () => {
       eyebrow="Postseason"
       title="Postseason Hub"
       description="Championship bracket, committee snapshot, and bowl slate in one place."
-      actions={<Button to="/__new/dashboard">Back to Dashboard</Button>}
+      actions={<Button to="/dashboard">Back to Dashboard</Button>}
       compact
     >
       <section className={styles.hero}>
@@ -219,7 +219,7 @@ export const NewPlayoffPage = () => {
                 {data.playoff_teams.map((team: TeamSeedEntry, index) => (
                   <tr className={index % 2 === 1 ? styles.altRow : undefined} key={team.name}>
                     <td>#{team.seed}</td>
-                    <td><a className={styles.teamLink} href={`/__new/${team.name}/history`}>{team.name}</a></td>
+                    <td><a className={styles.teamLink} href={`/${team.name}/history`}>{team.name}</a></td>
                     <td>{team.record}</td>
                     <td>{team.conference}</td>
                     <td>{team.is_autobid ? <span className={styles.chipSuccess}>Auto Bid</span> : <span className={styles.chipNeutral}>At Large</span>}</td>
@@ -228,7 +228,7 @@ export const NewPlayoffPage = () => {
                 {data.bubble_teams.map((team, index) => (
                   <tr className={(data.playoff_teams.length + index) % 2 === 1 ? styles.altRow : undefined} key={team.name}>
                     <td>#{team.ranking}</td>
-                    <td><a className={styles.teamLink} href={`/__new/${team.name}/history`}>{team.name}</a></td>
+                    <td><a className={styles.teamLink} href={`/${team.name}/history`}>{team.name}</a></td>
                     <td>{team.record}</td>
                     <td>{team.conference}</td>
                     <td><span className={styles.chip}>Bubble</span></td>
@@ -259,7 +259,7 @@ export const NewPlayoffPage = () => {
               {data.resume_teams.map((team: ResumeEntry, index) => (
                 <tr className={index % 2 === 1 ? styles.altRow : undefined} key={team.name}>
                   <td>#{team.ranking}</td>
-                  <td><a className={styles.teamLink} href={`/__new/${team.name}/history`}>{team.name}</a></td>
+                  <td><a className={styles.teamLink} href={`/${team.name}/history`}>{team.name}</a></td>
                   <td>{team.record}</td>
                   <td>{team.rating}</td>
                   <td>#{team.sor_rank}</td>
@@ -291,15 +291,15 @@ export const NewPlayoffPage = () => {
                   <tr className={index % 2 === 1 ? styles.altRow : undefined} key={`${game.name}-${game.id}-${index}`}>
                     <td>
                       {game.id > 0 ? (
-                        <a className={styles.gameLink} href={`/__new/game/${game.id}`}>{game.name}</a>
+                        <a className={styles.gameLink} href={`/game/${game.id}`}>{game.name}</a>
                       ) : (
                         <span>{game.name}</span>
                       )}
                     </td>
                     <td>
-                      <a className={styles.teamLink} href={`/__new/${game.teamA}/history`}>#{game.rankA} {game.teamA}</a>
+                      <a className={styles.teamLink} href={`/${game.teamA}/history`}>#{game.rankA} {game.teamA}</a>
                       <span className={styles.subtle}> vs </span>
-                      <a className={styles.teamLink} href={`/__new/${game.teamB}/history`}>#{game.rankB} {game.teamB}</a>
+                      <a className={styles.teamLink} href={`/${game.teamB}/history`}>#{game.rankB} {game.teamB}</a>
                     </td>
                     <td>{game.recordA} / {game.recordB}</td>
                     <td>

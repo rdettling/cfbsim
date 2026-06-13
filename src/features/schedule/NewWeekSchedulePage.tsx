@@ -119,14 +119,14 @@ export const NewWeekSchedulePage = () => {
         <div className={styles.actions}>
           <Button
             variant="secondary"
-            onClick={() => navigate(`/__new/schedule/${Math.max(1, currentWeek - 1)}`)}
+            onClick={() => navigate(`/schedule/${Math.max(1, currentWeek - 1)}`)}
             disabled={currentWeek <= 1}
           >
             Prev Week
           </Button>
           <Button
             variant="secondary"
-            onClick={() => navigate(`/__new/schedule/${Math.min(data.info.lastWeek || currentWeek, currentWeek + 1)}`)}
+            onClick={() => navigate(`/schedule/${Math.min(data.info.lastWeek || currentWeek, currentWeek + 1)}`)}
             disabled={currentWeek >= (data.info.lastWeek || currentWeek)}
           >
             Next Week

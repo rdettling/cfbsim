@@ -154,7 +154,7 @@ export const NewRatingsStatsPage = () => {
                   <tr className={index % 2 === 1 ? styles.altRow : undefined} key={team.id}>
                     <td className={styles.rankCell}>#{index + 1}</td>
                     <td>
-                      <Link className={styles.teamLink} to={`/__new/${team.name}/history`}>
+                      <Link className={styles.teamLink} to={`/${team.name}/history`}>
                         {team.name}
                       </Link>
                     </td>

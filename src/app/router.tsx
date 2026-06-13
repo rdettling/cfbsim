@@ -23,8 +23,8 @@ import { NewRosterCutsPage } from '../features/cuts/NewRosterCutsPage';
 import { NewAwardsPage } from '../features/awards/NewAwardsPage';
 import { NewPlayoffPage } from '../features/playoff/NewPlayoffPage';
 
-export const newRouteElements = (
-  <Route path="/__new" element={<AppShell />}>
+const buildShellRoute = (path: string, statsRedirect: string) => (
+  <Route path={path} element={<AppShell />}>
     <Route index element={<NewHomePage />} />
     <Route path="noncon" element={<NewNonConPage />} />
     <Route path="dashboard" element={<NewDashboardPage />} />
@@ -38,7 +38,7 @@ export const newRouteElements = (
     <Route path="recruiting_summary" element={<NewRecruitingSummaryPage />} />
     <Route path="roster_cuts" element={<NewRosterCutsPage />} />
     <Route path="standings/:conferenceName" element={<NewStandingsPage />} />
-    <Route path="stats" element={<Navigate replace to="/__new/stats/team" />} />
+    <Route path="stats" element={<Navigate replace to={statsRedirect} />} />
     <Route path="stats/team" element={<NewTeamStatsPage />} />
     <Route path="stats/individual" element={<NewIndividualStatsPage />} />
     <Route path="stats/ratings" element={<NewRatingsStatsPage />} />
@@ -51,3 +51,6 @@ export const newRouteElements = (
     <Route path=":teamName/schedule/:year" element={<NewTeamSchedulePage />} />
   </Route>
 );
+
+export const primaryRouteElements = buildShellRoute('/', '/stats/team');
+export const compatibilityRouteElements = buildShellRoute('/__new', '/__new/stats/team');

@@ -1,13 +1,14 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { newRouteElements } from './app/router';
-import { legacyRouteElements } from './legacy/legacyRoutes';
+import { compatibilityRouteElements, primaryRouteElements } from './app/router';
+import { buildLegacyRouteElements } from './legacy/legacyRoutes';
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {newRouteElements}
-        {legacyRouteElements}
+        {primaryRouteElements}
+        {compatibilityRouteElements}
+        {buildLegacyRouteElements('/legacy')}
       </Routes>
     </BrowserRouter>
   );

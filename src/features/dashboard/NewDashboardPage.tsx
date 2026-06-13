@@ -12,7 +12,7 @@ import { TeamMark } from '../../ui/TeamMark';
 import styles from './NewDashboardPage.module.css';
 
 const standingsRoute = (conferenceName?: string) =>
-  `/__new/standings/${conferenceName === 'Independent' || !conferenceName ? 'independent' : conferenceName}`;
+  `/standings/${conferenceName === 'Independent' || !conferenceName ? 'independent' : conferenceName}`;
 
 const getOpponentLabel = (game: ScheduleGame | null) => {
   if (!game?.opponent) return 'Open date';
@@ -63,7 +63,7 @@ const GameCard = ({ game, label }: { game: ScheduleGame | null; label: string })
         </div>
       )}
       <div className={styles.gameFooter}>
-        <Button to={`/__new/game/${game.id}`} variant={isCompleted ? 'ghost' : 'secondary'}>
+        <Button to={`/game/${game.id}`} variant={isCompleted ? 'ghost' : 'secondary'}>
           {isCompleted ? 'Game Summary' : 'Game Preview'}
         </Button>
       </div>
@@ -133,7 +133,7 @@ export const NewDashboardPage = () => {
       eyebrow="Season Hub"
       title={`${team.ranking > 0 ? `#${team.ranking} ` : ''}${team.name} ${team.mascot}`}
       description={`Record: ${team.record}  •  Rating: ${team.rating}`}
-      actions={<Button to={`/__new`}>Back to Launch</Button>}
+      actions={<Button to={`/`}>Back to Launch</Button>}
       compact
     >
       <section className={styles.teamHeader} style={{ borderTopColor: team.colorPrimary || '#0f4c81' }}>
@@ -245,7 +245,7 @@ export const NewDashboardPage = () => {
             {topGameItems.length > 0 ? (
               topGameItems.map((game) => (
                 <article className={styles.headlineCard} key={game.id}>
-                  <a className={styles.headlineLink} href={`/__new/game/${game.id}`}>
+                  <a className={styles.headlineLink} href={`/game/${game.id}`}>
                     {game.headline}
                   </a>
                   {game.subtitle ? <p className={styles.headlineSubtitle}>{game.subtitle}</p> : null}

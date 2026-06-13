@@ -57,7 +57,7 @@ export const NewRosterCutsPage = () => {
       eyebrow="Offseason Setup"
       title="Roster Cuts"
       description="Projected cuts based on position limits and long-term roster balance."
-      actions={<Button to="/__new/recruiting_summary">Back to Recruiting Summary</Button>}
+      actions={<Button to="/recruiting_summary">Back to Recruiting Summary</Button>}
       compact
     >
       <div className={styles.layout}>
@@ -86,7 +86,7 @@ export const NewRosterCutsPage = () => {
                   {data.cuts.map((player, index) => (
                     <tr className={index % 2 === 1 ? styles.altRow : undefined} key={player.id}>
                       <td>
-                        <a className={styles.playerLink} href={`/__new/players/${player.id}`}>
+                        <a className={styles.playerLink} href={`/players/${player.id}`}>
                           {player.first} {player.last}
                         </a>
                       </td>

@@ -31,7 +31,7 @@ const NomineeRow = ({
     <div>
       <p className={styles.rankLabel}>{label}</p>
       {player ? (
-        <a className={styles.playerLink} href={`/__new/players/${player.id}`}>
+        <a className={styles.playerLink} href={`/players/${player.id}`}>
           {player.first} {player.last}
         </a>
       ) : (
@@ -134,7 +134,7 @@ export const NewAwardsPage = () => {
           ? 'Final award winners based on the completed season.'
           : 'Live award races updated from the current season results.'
       }
-      actions={<Button to="/__new/dashboard">Back to Dashboard</Button>}
+      actions={<Button to="/dashboard">Back to Dashboard</Button>}
       compact
     >
       <div className={styles.layout}>

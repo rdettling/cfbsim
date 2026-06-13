@@ -88,7 +88,7 @@ export const NewRecruitingSummaryPage = () => {
       eyebrow="Offseason Setup"
       title={`${data.info.currentYear} Recruiting Rankings`}
       description="Team classes and player rankings for the incoming freshman group."
-      actions={<Button to="/__new/roster_progression">Back to Progression</Button>}
+      actions={<Button to="/roster_progression">Back to Progression</Button>}
       compact
     >
       <div className={styles.layout}>
@@ -203,7 +203,7 @@ export const NewRecruitingSummaryPage = () => {
                               <tr className={index % 2 === 1 ? styles.altRow : undefined} key={player.id}>
                                 <td>#{index + 1}</td>
                                 <td>
-                                  <Link className={styles.playerLink} to={`/__new/players/${player.id}`}>
+                                  <Link className={styles.playerLink} to={`/players/${player.id}`}>
                                     {player.first} {player.last}
                                   </Link>
                                 </td>
@@ -239,12 +239,12 @@ export const NewRecruitingSummaryPage = () => {
                     <tr className={index % 2 === 1 ? styles.altRow : undefined} key={player.id}>
                       <td>#{index + 1}</td>
                       <td>
-                        <Link className={styles.playerLink} to={`/__new/players/${player.id}`}>
+                        <Link className={styles.playerLink} to={`/players/${player.id}`}>
                           {player.first} {player.last}
                         </Link>
                       </td>
                       <td>
-                        <Link className={styles.teamLink} to={`/__new/${player.teamName}/history`}>
+                        <Link className={styles.teamLink} to={`/${player.teamName}/history`}>
                           {player.teamName}
                         </Link>
                       </td>
@@ -267,7 +267,7 @@ export const NewRecruitingSummaryPage = () => {
           </Button>
         ) : null}
 
-        <Button to="/__new/roster_cuts">Continue to Roster Cuts</Button>
+        <Button to="/roster_cuts">Continue to Roster Cuts</Button>
       </div>
     </Page>
   );

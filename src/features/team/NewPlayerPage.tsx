@@ -91,7 +91,7 @@ export const NewPlayerPage = () => {
       eyebrow="Player View"
       title={`${player.first} ${player.last}`}
       description={`${player.pos.toUpperCase()}  •  ${player.year.toUpperCase()}  •  ${player.team}`}
-      actions={<Button to={`/__new/${player.team}/roster`}>Back to Roster</Button>}
+      actions={<Button to={`/${player.team}/roster`}>Back to Roster</Button>}
       compact
     >
       <section className={styles.header}>
@@ -214,7 +214,7 @@ export const NewPlayerPage = () => {
                         </div>
                       </td>
                       <td>
-                        <a className={styles.gameLink} href={`/__new/game/${game.id}`}>
+                        <a className={styles.gameLink} href={`/game/${game.id}`}>
                           {game.score}
                         </a>
                       </td>

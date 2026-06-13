@@ -27,8 +27,7 @@ const defaultPlayoffState: PlayoffState = {
 
 const getContinuePath = (data: LaunchProps | null) => {
   if (!data?.info) return null;
-  const legacyPath = STAGES.find((stage) => stage.id === data.info?.stage)?.path ?? '/';
-  return legacyPath === '/' ? '/__new' : `/__new${legacyPath}`;
+  return STAGES.find((stage) => stage.id === data.info?.stage)?.path ?? '/';
 };
 
 const hydratePlayoffState = (data: LaunchProps | null): PlayoffState => {
@@ -125,7 +124,7 @@ export const NewHomePage = () => {
   const selectedYearLabel = data?.selected_year ?? selectedYear;
 
   const handleStartLeague = (team: Team) => {
-    navigate('/__new/noncon', {
+    navigate('/noncon', {
       state: {
         fromHome: true,
         team: team.name,

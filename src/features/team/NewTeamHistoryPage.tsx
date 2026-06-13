@@ -104,7 +104,7 @@ export const NewTeamHistoryPage = () => {
         <div className={styles.controls}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Team</span>
-            <select className={styles.select} value={data.team.name} onChange={(event) => navigate(`/__new/${event.target.value}/history`)}>
+            <select className={styles.select} value={data.team.name} onChange={(event) => navigate(`/${event.target.value}/history`)}>
               {data.teams.map((name) => (
                 <option key={name} value={name}>
                   {name}
@@ -133,7 +133,7 @@ export const NewTeamHistoryPage = () => {
                 <tr key={year.year}>
                   <td>
                     {year.has_games ? (
-                      <button className={styles.linkButton} onClick={() => navigate(`/__new/${data.team.name}/schedule/${year.year}`)} type="button">
+                      <button className={styles.linkButton} onClick={() => navigate(`/${data.team.name}/schedule/${year.year}`)} type="button">
                         {year.year}
                       </button>
                     ) : (

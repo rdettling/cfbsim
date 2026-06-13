@@ -40,7 +40,7 @@ const GameSummary = ({ game }: { game: ScheduleGame | null }) => {
     <div className={styles.gameCell}>
       <span>{getOpponentLabel(game)}</span>
       {game.id ? (
-        <Link className={game.result ? resultToneClass(game.result) : styles.teamLink} to={`/__new/game/${game.id}`}>
+        <Link className={game.result ? resultToneClass(game.result) : styles.teamLink} to={`/game/${game.id}`}>
           {game.result ? `${game.result}: ${game.score}` : 'Preview'}
         </Link>
       ) : (
@@ -112,7 +112,7 @@ export const NewStandingsPage = () => {
       eyebrow="Conference View"
       title={titleFor(conferenceName)}
       description={`${data.info.currentYear} season through week ${data.info.currentWeek}`}
-      actions={<Button to="/__new/dashboard">Back to Dashboard</Button>}
+      actions={<Button to="/dashboard">Back to Dashboard</Button>}
       compact
     >
       <section className={styles.hero}>
@@ -125,7 +125,7 @@ export const NewStandingsPage = () => {
             <span className={styles.fieldLabel}>Conference</span>
             <select
               className={styles.select}
-              onChange={(event) => navigate(`/__new/standings/${normalizeConferenceName(event.target.value)}`)}
+              onChange={(event) => navigate(`/standings/${normalizeConferenceName(event.target.value)}`)}
               value={selectedValue}
             >
               {conferenceOptions.map((option) => (
@@ -156,7 +156,7 @@ export const NewStandingsPage = () => {
                 <tr className={index % 2 === 1 ? styles.altRow : undefined} key={team.id}>
                   <td className={styles.rankCell}>{index + 1}</td>
                   <td>
-                    <Link className={styles.teamLink} to={`/__new/${team.name}/history`}>
+                    <Link className={styles.teamLink} to={`/${team.name}/history`}>
                       <TeamMark
                         name={team.ranking > 0 ? `#${team.ranking} ${team.name}` : team.name}
                         meta={team.mascot}

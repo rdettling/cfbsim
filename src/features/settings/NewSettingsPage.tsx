@@ -68,7 +68,7 @@ export const NewSettingsPage = () => {
       eyebrow="League Setup"
       title="Game Settings"
       description="Current playoff and season-transition configuration for this save."
-      actions={<Button to="/__new/dashboard">Back to Dashboard</Button>}
+      actions={<Button to="/dashboard">Back to Dashboard</Button>}
       compact
     >
       <div className={styles.layout}>

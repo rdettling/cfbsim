@@ -39,7 +39,7 @@ export const NewNonConPage = () => {
     if (!usedLaunchState && launchState.fromHome && launchState.team && launchState.year) {
       const response = await startNewLeague(launchState.team, launchState.year, launchState.playoff);
       setUsedLaunchState(true);
-      navigate('/__new/noncon', { replace: true, state: {} });
+      navigate('/noncon', { replace: true, state: {} });
       return response;
     }
     return loadNonCon();
@@ -107,7 +107,7 @@ export const NewNonConPage = () => {
       eyebrow="Preseason"
       title={data.team.name}
       description="Build your non-conference slate. The remaining slots will auto-fill when you advance the season."
-      actions={<Button to="/__new/dashboard">Skip to Dashboard</Button>}
+      actions={<Button to="/dashboard">Skip to Dashboard</Button>}
       compact
     >
       <section className={styles.hero}>

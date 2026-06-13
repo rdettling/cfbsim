@@ -69,7 +69,7 @@ const TableBlock = ({
                 return (
                   <tr className={index % 2 === 1 ? styles.altRow : undefined} key={player.id}>
                     <td>
-                      <Link className={styles.playerLink} to={`/__new/players/${player.id}`}>
+                      <Link className={styles.playerLink} to={`/players/${player.id}`}>
                         {player.first} {player.last}
                       </Link>
                     </td>
@@ -162,7 +162,7 @@ export const NewRosterProgressionPage = () => {
       eyebrow="Offseason Setup"
       title="Roster Progression"
       description={`${data.info.currentYear} to ${data.info.currentYear + 1} season transition`}
-      actions={<Button to="/__new/realignment">Back to Realignment</Button>}
+      actions={<Button to="/realignment">Back to Realignment</Button>}
       compact
     >
       <div className={styles.layout}>
@@ -220,7 +220,7 @@ export const NewRosterProgressionPage = () => {
           {totalLeaving > 0 ? ` ${totalLeaving} seniors have graduated.` : ''}
         </div>
 
-        <Button to="/__new/recruiting_summary">Continue to Recruiting Summary</Button>
+        <Button to="/recruiting_summary">Continue to Recruiting Summary</Button>
       </div>
     </Page>
   );

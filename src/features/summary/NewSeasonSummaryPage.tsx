@@ -99,7 +99,7 @@ export const NewSeasonSummaryPage = () => {
       eyebrow="Season Review"
       title={`${data.info.currentYear} Season Summary`}
       description="Champions, awards, and prestige movement in one view."
-      actions={<Button to="/__new/dashboard">Back to Dashboard</Button>}
+      actions={<Button to="/dashboard">Back to Dashboard</Button>}
       compact
     >
       <div className={styles.workspace}>
@@ -111,7 +111,7 @@ export const NewSeasonSummaryPage = () => {
                 <div className={styles.championBadge}>{champion.abbreviation}</div>
                 <div>
                   <h2 className={styles.championName}>
-                    <Link className={styles.championLink} to={`/__new/${champion.name}/history`}>
+                    <Link className={styles.championLink} to={`/${champion.name}/history`}>
                       {champion.name} {champion.mascot}
                     </Link>
                   </h2>
@@ -133,7 +133,7 @@ export const NewSeasonSummaryPage = () => {
                 <p className={styles.nextStepTitle}>Realignment</p>
                 <p className={styles.nextStepMeta}>Check conference moves and postseason format changes for next year.</p>
                 <p className={styles.nextStepMeta}>
-                  <Link className={styles.teamLink} to="/__new/realignment">Open realignment setup</Link>
+                  <Link className={styles.teamLink} to="/realignment">Open realignment setup</Link>
                 </p>
               </div>
               <div className={styles.nextStepItem}>
@@ -164,7 +164,7 @@ export const NewSeasonSummaryPage = () => {
                         <div>
                           <p className={styles.awardTitle}>{award.category_name}</p>
                           {winner ? (
-                            <Link className={styles.awardWinner} to={`/__new/players/${winner.id}`}>
+                            <Link className={styles.awardWinner} to={`/players/${winner.id}`}>
                               {winner.first} {winner.last}
                             </Link>
                           ) : (
@@ -204,7 +204,7 @@ export const NewSeasonSummaryPage = () => {
                       return (
                         <tr className={index % 2 === 1 ? styles.altRow : undefined} key={team.name}>
                           <td>
-                            <Link className={styles.teamLink} to={`/__new/${team.name}/history`}>
+                            <Link className={styles.teamLink} to={`/${team.name}/history`}>
                               {team.name}
                             </Link>
                           </td>

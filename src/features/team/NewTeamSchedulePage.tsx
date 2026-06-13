@@ -86,11 +86,11 @@ export const NewTeamSchedulePage = () => {
 
   const handleTeamChange = (nextTeam: string) => {
     const nextYear = data.selected_year;
-    navigate(nextYear ? `/__new/${nextTeam}/schedule/${nextYear}` : `/__new/${nextTeam}/schedule`);
+    navigate(nextYear ? `/${nextTeam}/schedule/${nextYear}` : `/${nextTeam}/schedule`);
   };
 
   const handleYearChange = (nextYear: number) => {
-    navigate(`/__new/${data.team.name}/schedule/${nextYear}`);
+    navigate(`/${data.team.name}/schedule/${nextYear}`);
   };
 
   return (
@@ -183,7 +183,7 @@ export const NewTeamSchedulePage = () => {
                   <td>{game.spread || '-'}</td>
                   <td>
                     {game.id ? (
-                      <Button to={`/__new/game/${game.id}`} variant={game.result ? 'ghost' : 'secondary'}>
+                      <Button to={`/game/${game.id}`} variant={game.result ? 'ghost' : 'secondary'}>
                         {game.result ? `${game.result}: ${game.score}` : 'Preview'}
                       </Button>
                     ) : (

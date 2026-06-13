@@ -94,7 +94,7 @@ export const NewGamePage = () => {
       eyebrow={isFinal ? 'Game Result' : 'Game Preview'}
       title={game.name || game.base_label || 'Game Center'}
       description={neutral ? `${away.name} vs ${home.name}` : `${away.name} at ${home.name}`}
-      actions={<Button to="/__new/dashboard">Back to Dashboard</Button>}
+      actions={<Button to="/dashboard">Back to Dashboard</Button>}
       compact
     >
       <section className={styles.header}>

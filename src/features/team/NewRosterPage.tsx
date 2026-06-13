@@ -100,7 +100,7 @@ export const NewRosterPage = () => {
         <div className={styles.controls}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Team</span>
-            <select className={styles.select} value={data.team.name} onChange={(event) => navigate(`/__new/${event.target.value}/roster`)}>
+            <select className={styles.select} value={data.team.name} onChange={(event) => navigate(`/${event.target.value}/roster`)}>
               {data.teams.map((name) => (
                 <option key={name} value={name}>
                   {name}
@@ -144,7 +144,7 @@ export const NewRosterPage = () => {
                     {players.map((player) => (
                       <tr key={player.id}>
                         <td>
-                          <button className={styles.playerLink} onClick={() => navigate(`/__new/players/${player.id}`)} type="button">
+                          <button className={styles.playerLink} onClick={() => navigate(`/players/${player.id}`)} type="button">
                             {player.first} {player.last}
                           </button>
                         </td>

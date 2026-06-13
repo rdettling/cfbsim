@@ -109,7 +109,7 @@ export const NewRealignmentPage = () => {
       eyebrow="Offseason Setup"
       title="Configure Next Season"
       description="Review transition rules, proposed conference moves, and postseason format changes."
-      actions={<Button to="/__new/summary">Back to Summary</Button>}
+      actions={<Button to="/summary">Back to Summary</Button>}
       compact
     >
       <div className={styles.layout}>
@@ -219,7 +219,7 @@ export const NewRealignmentPage = () => {
                   {realignmentChanges.map(([team, confs], index) => (
                     <tr className={index % 2 === 1 ? styles.altRow : undefined} key={team}>
                       <td>
-                        <Link className={styles.teamLink} to={`/__new/${team}/history`}>
+                        <Link className={styles.teamLink} to={`/${team}/history`}>
                           {team}
                         </Link>
                       </td>
@@ -283,7 +283,7 @@ export const NewRealignmentPage = () => {
           <Button disabled={saving} onClick={handleSave} variant="secondary">
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
-          <Button onClick={() => navigate('/__new/roster_progression')}>Advance to Progression</Button>
+          <Button onClick={() => navigate('/roster_progression')}>Advance to Progression</Button>
         </div>
       </div>
     </Page>

@@ -193,7 +193,7 @@ export const NewTeamStatsPage = () => {
                     {row.isAverage ? (
                       <span className={styles.metaText}>League Average</span>
                     ) : (
-                      <Link className={styles.teamLink} to={`/__new/${row.teamName}/history`}>
+                      <Link className={styles.teamLink} to={`/${row.teamName}/history`}>
                         {row.teamName}
                       </Link>
                     )}
