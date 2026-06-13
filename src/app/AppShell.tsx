@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { STAGES } from '../constants/stages';
 import { loadLeagueOptional } from '../domain/league/leagueStore';
 import { advanceWeeks } from '../domain/sim/orchestrator';
+import { LiveSimLauncher } from '../features/liveSim/LiveSimLauncher';
 import type { LeagueState } from '../types/league';
 import './styles.css';
 
@@ -240,14 +241,17 @@ export const AppShell = () => {
             </NavLink>
 
             {league?.info.stage === 'season' ? (
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  isActive ? 'app-shell__nav-link app-shell__nav-link--active' : 'app-shell__nav-link'
-                }
-              >
-                Dashboard
-              </NavLink>
+              <>
+                <NavLink
+                  to="/dashboard"
+                  className={({ isActive }) =>
+                    isActive ? 'app-shell__nav-link app-shell__nav-link--active' : 'app-shell__nav-link'
+                  }
+                >
+                  Dashboard
+                </NavLink>
+                <LiveSimLauncher enabled />
+              </>
             ) : null}
 
             {navMenus.map((menu) => (
