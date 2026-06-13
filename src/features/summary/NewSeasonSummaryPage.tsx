@@ -132,6 +132,9 @@ export const NewSeasonSummaryPage = () => {
               <div className={styles.nextStepItem}>
                 <p className={styles.nextStepTitle}>Realignment</p>
                 <p className={styles.nextStepMeta}>Check conference moves and postseason format changes for next year.</p>
+                <p className={styles.nextStepMeta}>
+                  <Link className={styles.teamLink} to="/__new/realignment">Open realignment setup</Link>
+                </p>
               </div>
               <div className={styles.nextStepItem}>
                 <p className={styles.nextStepTitle}>Roster Progression</p>

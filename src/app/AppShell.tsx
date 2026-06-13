@@ -6,6 +6,7 @@ const navItems = [
   { to: '/__new/dashboard', label: 'Dashboard' },
   { to: '/__new/rankings', label: 'Rankings' },
   { to: '/__new/stats/team', label: 'Stats' },
+  { to: '/__new/playoff', label: 'Playoff' },
   { to: '/__new/summary', label: 'Summary' },
   { to: '/__new/settings', label: 'Settings' },
   { to: '/__new/schedule/1', label: 'Week Schedule' },

@@ -1,0 +1,130 @@
+.layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  padding: 1rem 1.05rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.cardMeta {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.chipPrimary,
+.chipSuccess {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.chipPrimary {
+  background: rgba(15, 76, 129, 0.1);
+  color: var(--accent);
+}
+
+.chipSuccess {
+  background: rgba(29, 107, 79, 0.1);
+  color: var(--success);
+}
+
+.nomineeList {
+  display: grid;
+  gap: 0;
+}
+
+.nomineeRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.nomineeRow:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.rankLabel {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.playerLink {
+  display: inline-block;
+  margin-top: 0.35rem;
+  color: var(--accent-strong);
+  font-size: 1rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.playerLink:hover {
+  text-decoration: underline;
+}
+
+.statsText {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.nomineeSide {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+}
+
+.score {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.pos {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

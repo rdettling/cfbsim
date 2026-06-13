@@ -1,0 +1,203 @@
+.layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.controls {
+  display: grid;
+  gap: 1rem;
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+}
+
+.toggleTitle {
+  margin: 0;
+  font-weight: 800;
+}
+
+.toggleMeta {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.switch {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.switch input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.fieldLabel {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.select {
+  min-height: 2.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  padding: 0.7rem 0.85rem;
+  color: var(--text);
+}
+
+.note {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(15, 76, 129, 0.18);
+  background: rgba(15, 76, 129, 0.08);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.warning {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: rgba(156, 106, 19, 0.12);
+  color: var(--warning);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.statusSuccess,
+.statusError {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+.statusSuccess {
+  color: var(--success);
+  background: rgba(29, 107, 79, 0.1);
+  border-color: rgba(29, 107, 79, 0.16);
+}
+
+.statusError {
+  color: var(--danger);
+  background: rgba(141, 42, 42, 0.08);
+  border-color: rgba(141, 42, 42, 0.16);
+}
+
+.tablePanel {
+  overflow: auto;
+  max-height: 44vh;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+.table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.85rem 0.95rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fbff;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.altRow {
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.teamLink {
+  color: var(--accent-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.teamLink:hover {
+  text-decoration: underline;
+}
+
+.chipOld,
+.chipNew {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.chipOld {
+  background: rgba(141, 42, 42, 0.08);
+  color: var(--danger);
+}
+
+.chipNew {
+  background: rgba(29, 107, 79, 0.1);
+  color: var(--success);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .formGrid,
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .toggleRow {
+    flex-direction: column;
+  }
+
+  .tablePanel {
+    max-height: none;
+  }
+}
