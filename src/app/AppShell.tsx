@@ -4,6 +4,8 @@ import './styles.css';
 const navItems = [
   { to: '/__new', label: 'Home' },
   { to: '/__new/dashboard', label: 'Dashboard' },
+  { to: '/__new/rankings', label: 'Rankings' },
+  { to: '/__new/schedule/1', label: 'Week Schedule' },
 ];
 
 export const AppShell = () => {
@@ -40,4 +42,3 @@ export const AppShell = () => {
     </div>
   );
 };
-
