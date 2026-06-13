@@ -5,18 +5,23 @@ type PageProps = {
   description?: string;
   eyebrow?: string;
   actions?: ReactNode;
+  compact?: boolean;
   children: ReactNode;
 };
 
-export const Page = ({ title, description, eyebrow, actions, children }: PageProps) => {
+export const Page = ({ title, description, eyebrow, actions, compact = false, children }: PageProps) => {
   return (
-    <div className="ui-page">
-      <header className="ui-page__header">
+    <div className={compact ? 'ui-page ui-page--compact' : 'ui-page'}>
+      <header className={compact ? 'ui-page__header ui-page__header--compact' : 'ui-page__header'}>
         {eyebrow ? <div className="ui-page__eyebrow">{eyebrow}</div> : null}
-        <div className="ui-page__title-row">
+        <div className={compact ? 'ui-page__title-row ui-page__title-row--compact' : 'ui-page__title-row'}>
           <div>
-            <h1 className="ui-page__title">{title}</h1>
-            {description ? <p className="ui-page__description">{description}</p> : null}
+            <h1 className={compact ? 'ui-page__title ui-page__title--compact' : 'ui-page__title'}>{title}</h1>
+            {description ? (
+              <p className={compact ? 'ui-page__description ui-page__description--compact' : 'ui-page__description'}>
+                {description}
+              </p>
+            ) : null}
           </div>
           {actions}
         </div>
@@ -25,4 +30,3 @@ export const Page = ({ title, description, eyebrow, actions, children }: PagePro
     </div>
   );
 };
-

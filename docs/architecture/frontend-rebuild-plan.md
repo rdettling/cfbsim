@@ -157,6 +157,7 @@ Design requirements:
 - consistent card and table styling
 - stronger navigation and information hierarchy
 - mobile-safe layouts without relying on huge fixed-width tables everywhere
+- desktop-first workspace layouts that usually fit within one viewport, with overflow handled inside panels instead of through long page scroll
 
 Implementation note:
 
@@ -233,6 +234,25 @@ Instead, group the app into a smaller set of screen families:
 - Settings
 
 This grouping is useful because each family can share layout patterns and reduce one-off UI decisions.
+
+## Desktop Workspace Rule
+
+Desktop screens should generally behave like contained workspaces rather than long scrolling documents.
+
+Default rule:
+
+- fit the primary page layout inside the viewport on desktop
+- avoid page-level scrolling where practical
+- allow scrolling inside panels, tables, lists, and detail regions
+
+Exceptions:
+
+- mobile layouts can scroll normally
+- unusually long detail views can opt out when forcing a viewport fit would clearly hurt usability
+
+Implication:
+
+- the shell and page layouts should be designed around viewport-aware grids and internal overflow regions, especially for hub and data-heavy screens
 
 ## Migration Plan
 

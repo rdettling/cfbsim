@@ -22,7 +22,7 @@ This document translates the rebuild plan and implementation conventions into co
 - [x] write the implementation conventions
 - [x] snapshot current route and page inventory into a migration map
 - [x] decide whether the new frontend will coexist beside the old UI temporarily or replace files in place
-- [ ] define a simple rule for naming new feature folders and files
+- [x] define a simple rule for naming new feature folders and files
 
 ### Exit Criteria
 
@@ -41,6 +41,7 @@ This document translates the rebuild plan and implementation conventions into co
 - [x] create router structure for the new shell
 - [x] define top-level navigation model
 - [ ] create shared page framing primitives:
+- [x] create shared page framing primitives:
   - [x] `Page`
   - [x] `Section`
   - [x] `Button`
@@ -48,10 +49,11 @@ This document translates the rebuild plan and implementation conventions into co
   - [x] `LoadingState`
   - [x] `EmptyState`
 - [ ] create first-pass data display primitives:
+- [x] create first-pass data display primitives:
   - [x] `StatCard`
   - [x] `DataTable`
   - [x] `TeamMark`
-- [ ] ensure the shell works on desktop and mobile widths
+- [x] ensure the shell works on desktop and mobile widths
 
 ### Exit Criteria
 
@@ -66,8 +68,8 @@ These screens establish the product language for the rest of the rewrite.
 
 ### Tasks
 
-- [ ] rebuild `Home`
-- [ ] rebuild `Dashboard`
+- [x] rebuild `Home`
+- [x] rebuild `Dashboard`
 - [ ] rebuild one team-centric screen
 - [ ] rebuild `Rankings`
 - [ ] rebuild one game screen
@@ -76,6 +78,7 @@ These screens establish the product language for the rest of the rewrite.
 
 - does the app now feel like a lightweight sports sim rather than a generic component-library app
 - do desktop and mobile both work without obvious layout failure
+- do desktop hub screens behave like contained workspaces rather than long scrolling pages
 - are the new screens simpler to understand than the old ones
 - are the primitives still small, or is the rewrite already drifting into abstraction growth
 
@@ -92,7 +95,7 @@ Migrate in this order unless implementation reality forces a change.
 
 ### 3A. Launch and League Setup
 
-- [ ] finalize new `Home` flow
+- [x] finalize new `Home` flow
 - [ ] rebuild new league setup flow
 - [ ] rebuild continue/load flow
 - [ ] remove old launch UI path once replaced

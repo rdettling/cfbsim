@@ -60,6 +60,7 @@ Practical meaning:
 - layouts should collapse cleanly
 - tables should degrade intentionally rather than merely overflow
 - touch targets and spacing should be sane
+- desktop and mobile do not need to share the same scrolling model
 
 Non-goal:
 
@@ -89,6 +90,23 @@ Practical meaning:
 - major flows should anchor around a small number of high-value hubs
 - supporting screens can still exist, but navigation should feel tighter and more intentional
 - route count may stay similar, but the information architecture should feel smaller
+
+## 4A. Desktop layout rule
+
+Decision:
+
+- on desktop, the default screen model should be a single-viewport workspace
+
+Practical meaning:
+
+- avoid long page scrolling on desktop where practical
+- push overflow into panels, lists, tables, and detail regions
+- make hub and data-heavy screens feel contained and operational
+
+Allowed exceptions:
+
+- mobile layouts can scroll normally
+- unusually long detail pages can opt out if internal scroll regions would be worse
 
 ## 5. Data and domain boundary
 
@@ -262,6 +280,7 @@ Rules:
 - use tables when comparison is the primary goal
 - convert some wide desktop tables into stacked cards or compact list rows on mobile
 - prefer reducing columns on small screens to forcing every table to remain 1200px wide
+- on desktop, place wide or dense tables inside bounded panels that can scroll internally instead of making the whole page scroll
 
 ## Migration Rules
 

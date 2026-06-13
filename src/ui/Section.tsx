@@ -4,14 +4,15 @@ type SectionProps = {
   title?: string;
   description?: string;
   actions?: ReactNode;
+  accent?: string;
   children: ReactNode;
 };
 
-export const Section = ({ title, description, actions, children }: SectionProps) => {
+export const Section = ({ title, description, actions, accent, children }: SectionProps) => {
   return (
     <section className="ui-section">
       {(title || description || actions) ? (
-        <header className="ui-section__header">
+        <header className="ui-section__header" style={accent ? { borderTopColor: accent } : undefined}>
           <div>
             {title ? <h2 className="ui-section__title">{title}</h2> : null}
             {description ? <p className="ui-section__description">{description}</p> : null}
@@ -23,4 +24,3 @@ export const Section = ({ title, description, actions, children }: SectionProps)
     </section>
   );
 };
-
