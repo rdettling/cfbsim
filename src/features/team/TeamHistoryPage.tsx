@@ -7,6 +7,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
+import { TeamPageHeader, TeamHeaderSelect } from './TeamPageHeader';
 import { TeamPageActions } from './TeamPageActions';
 import styles from './TeamHistoryPage.module.css';
 
@@ -89,35 +90,21 @@ export const TeamHistoryPage = () => {
       actions={<TeamPageActions current="history" teamName={data.team.name} />}
       compact
     >
-      <section className={styles.teamHeader} style={{ borderTopColor: data.team.colorPrimary || '#0f4c81' }}>
-        <div className={styles.teamHeaderLeft}>
-          <div className={styles.teamBadge} style={{ background: data.team.colorPrimary || '#0f4c81' }}>
-            {data.team.abbreviation}
-          </div>
-          <div>
-            <h2 className={styles.teamTitle}>
-              {data.team.ranking > 0 ? `#${data.team.ranking} ` : ''}{data.team.name} {data.team.mascot}
-            </h2>
-            <p className={styles.teamSubtitle}>All-Time: <strong>{totals.wins}-{totals.losses}</strong></p>
-          </div>
-        </div>
-        <div className={styles.controls}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Team</span>
-            <select className={styles.select} value={data.team.name} onChange={(event) => navigate(`/${event.target.value}/history`)}>
-              {data.teams.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </section>
+      <TeamPageHeader
+        team={data.team}
+        subtitle={<>All-Time: <strong>{totals.wins}-{totals.losses}</strong></>}
+      >
+        <TeamHeaderSelect
+          label="Team"
+          onChange={(event) => navigate(`/${event.target.value}/history`)}
+          options={data.teams.map((name) => ({ value: name, label: name }))}
+          value={data.team.name}
+        />
+      </TeamPageHeader>
 
       <Section title="Historical Seasons" accent={data.team.colorPrimary || '#0f4c81'}>
-        <div className={styles.tablePanel}>
-          <table className={styles.table}>
+        <div className={`ui-table-shell ui-table-shell--soft ${styles.tablePanel}`}>
+          <table className={`ui-table ${styles.table}`}>
             <thead>
               <tr>
                 <th>Year</th>
@@ -141,7 +128,7 @@ export const TeamHistoryPage = () => {
                     )}
                   </td>
                   <td><PrestigeStars prestige={year.prestige} /></td>
-                  <td>{year.rating != null ? <span className={styles.ratingChip}>{year.rating}</span> : <span className={styles.muted}>-</span>}</td>
+                  <td>{year.rating != null ? <span className="ui-chip ui-chip--compact">{year.rating}</span> : <span className={styles.muted}>-</span>}</td>
                   <td>{year.conference}</td>
                   <td>
                     <strong>

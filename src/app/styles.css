@@ -524,6 +524,18 @@ a {
   font-size: 0.92rem;
 }
 
+.ui-table-shell {
+  overflow: auto;
+  max-height: var(--ui-table-max-height, 68vh);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--ui-table-shell-bg, var(--surface-strong));
+}
+
+.ui-table-shell--soft {
+  --ui-table-shell-bg: rgba(255, 255, 255, 0.55);
+}
+
 .ui-table-wrap {
   overflow-x: auto;
 }
@@ -531,22 +543,77 @@ a {
 .ui-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 44rem;
+  min-width: var(--ui-table-min-width, 44rem);
 }
 
 .ui-table th,
 .ui-table td {
-  padding: 0.9rem 1rem;
+  padding: var(--ui-table-cell-padding, 0.9rem 1rem);
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
 
 .ui-table th {
+  position: sticky;
+  top: var(--ui-table-sticky-top, 0);
+  z-index: var(--ui-table-head-z, 1);
+  background: var(--ui-table-head-bg, #f8fbff);
   font-size: 0.78rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.ui-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--ui-chip-border, var(--border));
+  background: var(--ui-chip-bg, var(--surface));
+  color: var(--ui-chip-color, var(--text));
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ui-chip--compact {
+  min-height: 1.8rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+.ui-chip--neutral {
+  --ui-chip-bg: rgba(15, 23, 42, 0.06);
+  --ui-chip-color: var(--text-muted);
+}
+
+.ui-chip--primary {
+  --ui-chip-bg: rgba(15, 76, 129, 0.1);
+  --ui-chip-border: rgba(15, 76, 129, 0.16);
+  --ui-chip-color: var(--accent-strong);
+}
+
+.ui-chip--success {
+  --ui-chip-bg: rgba(29, 107, 79, 0.12);
+  --ui-chip-border: rgba(29, 107, 79, 0.18);
+  --ui-chip-color: var(--success);
+}
+
+.ui-chip--warning {
+  --ui-chip-bg: rgba(156, 106, 19, 0.14);
+  --ui-chip-border: rgba(156, 106, 19, 0.2);
+  --ui-chip-color: var(--warning);
 }
 
 .ui-modal-backdrop {
@@ -617,5 +684,11 @@ a {
 
   .ui-table {
     min-width: 34rem;
+  }
+}
+
+@media (max-width: 980px) {
+  .ui-table-shell {
+    max-height: none;
   }
 }

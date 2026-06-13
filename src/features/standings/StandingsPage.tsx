@@ -139,8 +139,8 @@ export const StandingsPage = () => {
       </section>
 
       <Section title={titleFor(conferenceName)} accent={data.team.colorPrimary || '#0f4c81'}>
-        <div className={styles.tablePanel}>
-          <table className={styles.table}>
+        <div className={`ui-table-shell ${styles.tablePanel}`}>
+          <table className={`ui-table ${styles.table}`}>
             <thead>
               <tr>
                 <th>Rank</th>

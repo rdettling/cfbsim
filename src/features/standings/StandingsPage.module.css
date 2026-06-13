@@ -52,36 +52,12 @@
 }
 
 .tablePanel {
-  overflow: auto;
-  max-height: 68vh;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface-strong);
+  --ui-table-max-height: 68vh;
 }
 
 .table {
-  width: 100%;
-  min-width: 62rem;
-  border-collapse: collapse;
-}
-
-.table th,
-.table td {
-  padding: 0.85rem 0.95rem;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  vertical-align: middle;
-}
-
-.table th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: #f8fbff;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  --ui-table-min-width: 62rem;
+  --ui-table-cell-padding: 0.85rem 0.95rem;
 }
 
 .altRow {

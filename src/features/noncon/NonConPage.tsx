@@ -113,10 +113,10 @@ export const NonConPage = () => {
       <section className={styles.hero}>
         <h2 className={styles.heroTitle}>{data.team.name}</h2>
         <p className={styles.heroMeta}>Build your non-conference slate. The remaining slots will auto-fill when you advance the season.</p>
-        <div className={styles.chipRow}>
-          <span className={styles.chipPrimary}>Non-Conf: {data.team.nonConfGames}/{data.team.nonConfLimit}</span>
-          <span className={styles.chip}>Weeks Scheduled: {scheduledWeeks}/{totalWeeks}</span>
-          <span className={styles.chipSuccess}>Bye Weeks: {byeWeeks}</span>
+        <div className={`ui-chip-row ${styles.chipRow}`}>
+          <span className="ui-chip ui-chip--primary">Non-Conf: {data.team.nonConfGames}/{data.team.nonConfLimit}</span>
+          <span className="ui-chip">Weeks Scheduled: {scheduledWeeks}/{totalWeeks}</span>
+          <span className="ui-chip ui-chip--success">Bye Weeks: {byeWeeks}</span>
         </div>
       </section>
 
@@ -135,7 +135,7 @@ export const NonConPage = () => {
                   <div className={styles.opponentBlock}>
                     {game.opponent ? (
                       <div className={styles.opponentRow}>
-                        {game.opponent.ranking ? <span className={styles.chip}>#{game.opponent.ranking}</span> : null}
+                        {game.opponent.ranking ? <span className="ui-chip">#{game.opponent.ranking}</span> : null}
                         <TeamMark name={game.opponent.name} meta={game.location || 'TBD'} accent="#0f4c81" />
                       </div>
                     ) : (
@@ -147,7 +147,7 @@ export const NonConPage = () => {
                     {!game.opponent && data.team.nonConfGames < data.team.nonConfLimit ? (
                       <Button onClick={() => handleOpenModal(game.weekPlayed)}>Schedule Game</Button>
                     ) : (
-                      <span className={styles.chip}>{game.opponent ? 'Locked' : 'Auto-fill'}</span>
+                      <span className="ui-chip">{game.opponent ? 'Locked' : 'Auto-fill'}</span>
                     )}
                   </div>
                 </div>

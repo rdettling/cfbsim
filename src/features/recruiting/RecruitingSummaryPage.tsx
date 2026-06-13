@@ -135,8 +135,8 @@ export const RecruitingSummaryPage = () => {
         >
           {view === 'teams' ? (
             <div className={styles.detailGrid}>
-              <div className={styles.tablePanel}>
-                <table className={styles.table}>
+              <div className={`ui-table-shell ${styles.tablePanel}`}>
+                <table className={`ui-table ${styles.table}`}>
                   <thead>
                     <tr>
                       <th>Rank</th>
@@ -184,8 +184,8 @@ export const RecruitingSummaryPage = () => {
                         {selectedClass.players.length} recruits • {selectedClass.team.conference} • Prestige {selectedClass.team.prestige}
                       </span>
                     </div>
-                    <div className={styles.tablePanel}>
-                      <table className={styles.table}>
+                    <div className={`ui-table-shell ${styles.tablePanel}`}>
+                      <table className={`ui-table ${styles.table}`}>
                         <thead>
                           <tr>
                             <th>Rank</th>
@@ -207,7 +207,7 @@ export const RecruitingSummaryPage = () => {
                                     {player.first} {player.last}
                                   </Link>
                                 </td>
-                                <td><span className={styles.chip}>{player.pos.toUpperCase()}</span></td>
+                                <td><span className="ui-chip">{player.pos.toUpperCase()}</span></td>
                                 <td>{player.rating}</td>
                                 <td><span className={styles.stars}>{starText(player.stars)}</span></td>
                               </tr>
@@ -222,8 +222,8 @@ export const RecruitingSummaryPage = () => {
               </Section>
             </div>
           ) : allFreshmen.length > 0 ? (
-            <div className={styles.tablePanel}>
-              <table className={styles.table}>
+            <div className={`ui-table-shell ${styles.tablePanel}`}>
+              <table className={`ui-table ${styles.table}`}>
                 <thead>
                   <tr>
                     <th>Rank</th>
@@ -248,7 +248,7 @@ export const RecruitingSummaryPage = () => {
                           {player.teamName}
                         </Link>
                       </td>
-                      <td><span className={styles.chip}>{player.pos.toUpperCase()}</span></td>
+                      <td><span className="ui-chip">{player.pos.toUpperCase()}</span></td>
                       <td>{player.rating}</td>
                       <td><span className={styles.stars}>{starText(player.stars)}</span></td>
                     </tr>

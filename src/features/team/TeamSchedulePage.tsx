@@ -9,6 +9,7 @@ import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
 import { Button } from '../../ui/Button';
 import { TeamPageActions } from './TeamPageActions';
+import { TeamPageHeader, TeamHeaderSelect } from './TeamPageHeader';
 import styles from './TeamSchedulePage.module.css';
 
 const locationLabel = (location?: 'Home' | 'Away' | 'Neutral') => {
@@ -101,51 +102,29 @@ export const TeamSchedulePage = () => {
       actions={<TeamPageActions current="schedule" teamName={data.team.name} />}
       compact
     >
-      <section className={styles.teamHeader} style={{ borderTopColor: data.team.colorPrimary || '#0f4c81' }}>
-        <div className={styles.teamHeaderLeft}>
-          <div className={styles.teamBadge} style={{ background: data.team.colorPrimary || '#0f4c81' }}>
-            {data.team.abbreviation}
-          </div>
-          <div>
-            <h2 className={styles.teamTitle}>
-              {data.team.ranking > 0 ? `#${data.team.ranking} ` : ''}{data.team.name} {data.team.mascot}
-            </h2>
-            <p className={styles.teamSubtitle}>Record: <strong>{data.team.record}</strong></p>
-          </div>
-        </div>
-        <div className={styles.teamHeaderControls}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Team</span>
-            <select className={styles.select} value={data.team.name} onChange={(event) => handleTeamChange(event.target.value)}>
-              {data.teams.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {data.years.length > 0 ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Year</span>
-              <select
-                className={styles.select}
-                value={data.selected_year ?? data.info.currentYear}
-                onChange={(event) => handleYearChange(Number(event.target.value))}
-              >
-                {data.years.map((seasonYear) => (
-                  <option key={seasonYear} value={seasonYear}>
-                    {seasonYear}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </div>
-      </section>
+      <TeamPageHeader
+        team={data.team}
+        subtitle={<>Record: <strong>{data.team.record}</strong></>}
+      >
+        <TeamHeaderSelect
+          label="Team"
+          onChange={(event) => handleTeamChange(event.target.value)}
+          options={data.teams.map((name) => ({ value: name, label: name }))}
+          value={data.team.name}
+        />
+        {data.years.length > 0 ? (
+          <TeamHeaderSelect
+            label="Year"
+            onChange={(event) => handleYearChange(Number(event.target.value))}
+            options={data.years.map((seasonYear) => ({ value: seasonYear, label: String(seasonYear) }))}
+            value={data.selected_year ?? data.info.currentYear}
+          />
+        ) : null}
+      </TeamPageHeader>
 
       <Section title={`${data.selected_year ?? data.info.currentYear} Schedule`} accent={data.team.colorPrimary || '#0f4c81'}>
-        <div className={styles.schedulePanel}>
-          <table className={styles.table}>
+        <div className={`ui-table-shell ui-table-shell--soft ${styles.schedulePanel}`}>
+          <table className={`ui-table ${styles.table}`}>
             <thead>
               <tr>
                 <th>Week</th>
@@ -163,7 +142,7 @@ export const TeamSchedulePage = () => {
                 <tr className={rowTone(game.result)} key={game.weekPlayed}>
                   <td>{game.weekPlayed}</td>
                   <td>
-                    <span className={`${styles.locationPill} ${locationTone(normalizeLocation(game.location))}`}>
+                    <span className={`ui-chip ui-chip--compact ${styles.locationPill} ${locationTone(normalizeLocation(game.location))}`}>
                       {locationLabel(normalizeLocation(game.location))}
                     </span>
                   </td>
@@ -191,7 +170,7 @@ export const TeamSchedulePage = () => {
                     )}
                   </td>
                   <td>
-                    {game.label ? <span className={styles.noteChip}>{game.label}</span> : '-'}
+                    {game.label ? <span className="ui-chip ui-chip--compact ui-chip--primary">{game.label}</span> : '-'}
                   </td>
                 </tr>
               ))}

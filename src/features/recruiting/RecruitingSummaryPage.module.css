@@ -54,36 +54,12 @@
 }
 
 .tablePanel {
-  overflow: auto;
-  max-height: 52vh;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface-strong);
+  --ui-table-max-height: 52vh;
 }
 
 .table {
-  width: 100%;
-  min-width: 52rem;
-  border-collapse: collapse;
-}
-
-.table th,
-.table td {
-  padding: 0.85rem 0.95rem;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  vertical-align: middle;
-}
-
-.table th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: #f8fbff;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  --ui-table-min-width: 52rem;
+  --ui-table-cell-padding: 0.85rem 0.95rem;
 }
 
 .altRow {
@@ -100,18 +76,6 @@
 .teamLink:hover,
 .playerLink:hover {
   text-decoration: underline;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.9rem;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  font-size: 0.78rem;
-  font-weight: 800;
 }
 
 .stars {

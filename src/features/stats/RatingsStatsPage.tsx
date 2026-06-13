@@ -69,8 +69,8 @@ export const RatingsStatsPage = () => {
             description="Average team quality and player star mix by prestige tier."
             accent={data.team.colorPrimary || '#0f4c81'}
           >
-            <div className={styles.tablePanel}>
-              <table className={`${styles.table} ${styles.compactTable}`}>
+            <div className={`ui-table-shell ${styles.tablePanel}`}>
+              <table className={`ui-table ${styles.table} ${styles.compactTable}`}>
                 <thead>
                   <tr>
                     <th>Tier</th>
@@ -90,7 +90,7 @@ export const RatingsStatsPage = () => {
                     .reverse()
                     .map((row, index) => (
                       <tr className={index % 2 === 1 ? styles.altRow : undefined} key={row.prestige}>
-                        <td><span className={styles.chip}>Tier {row.prestige}</span></td>
+                        <td><span className="ui-chip">Tier {row.prestige}</span></td>
                         <td>{row.team_count}</td>
                         <td>{row.avg_rating}</td>
                         <td>{row.average_stars}</td>
@@ -107,8 +107,8 @@ export const RatingsStatsPage = () => {
           </Section>
 
           <Section title="Star Rating Counts" description="Overall player counts and development curve by star band.">
-            <div className={styles.tablePanel}>
-              <table className={`${styles.table} ${styles.compactTable}`}>
+            <div className={`ui-table-shell ${styles.tablePanel}`}>
+              <table className={`ui-table ${styles.table} ${styles.compactTable}`}>
                 <thead>
                   <tr>
                     <th>Stars</th>
@@ -139,8 +139,8 @@ export const RatingsStatsPage = () => {
         </div>
 
         <Section title="Team Rating Ladder" description="Every team sorted by current overall rating." accent="#2e7d32">
-          <div className={styles.tablePanel}>
-            <table className={`${styles.table} ${styles.leaderTable}`}>
+          <div className={`ui-table-shell ${styles.tablePanel}`}>
+            <table className={`ui-table ${styles.table} ${styles.leaderTable}`}>
               <thead>
                 <tr>
                   <th>Rank</th>
@@ -159,7 +159,7 @@ export const RatingsStatsPage = () => {
                       </Link>
                     </td>
                     <td>{team.rating}</td>
-                    <td><span className={styles.chip}>Tier {team.prestige}</span></td>
+                    <td><span className="ui-chip">Tier {team.prestige}</span></td>
                   </tr>
                 ))}
               </tbody>

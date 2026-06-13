@@ -25,38 +25,7 @@
 }
 
 .chipRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
   margin-top: 1rem;
-}
-
-.chip,
-.chipPrimary,
-.chipSuccess {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.9rem;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.chip {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-
-.chipPrimary {
-  background: rgba(15, 76, 129, 0.1);
-  color: var(--accent);
-}
-
-.chipSuccess {
-  background: rgba(29, 107, 79, 0.1);
-  color: var(--success);
 }
 
 .scheduleStack {

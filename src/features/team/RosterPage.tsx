@@ -8,6 +8,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
+import { TeamPageHeader, TeamHeaderSelect } from './TeamPageHeader';
 import { TeamPageActions } from './TeamPageActions';
 import styles from './RosterPage.module.css';
 
@@ -85,46 +86,30 @@ export const RosterPage = () => {
       actions={<TeamPageActions current="roster" teamName={data.team.name} />}
       compact
     >
-      <section className={styles.teamHeader} style={{ borderTopColor: data.team.colorPrimary || '#0f4c81' }}>
-        <div className={styles.teamHeaderLeft}>
-          <div className={styles.teamBadge} style={{ background: data.team.colorPrimary || '#0f4c81' }}>
-            {data.team.abbreviation}
-          </div>
-          <div>
-            <h2 className={styles.teamTitle}>
-              {data.team.ranking > 0 ? `#${data.team.ranking} ` : ''}{data.team.name} {data.team.mascot}
-            </h2>
-            <p className={styles.teamSubtitle}>Record: <strong>{data.team.record}</strong></p>
-          </div>
-        </div>
-        <div className={styles.controls}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Team</span>
-            <select className={styles.select} value={data.team.name} onChange={(event) => navigate(`/${event.target.value}/roster`)}>
-              {data.teams.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Position</span>
-            <select className={styles.select} value={positionFilter} onChange={(event) => setPositionFilter(event.target.value)}>
-              <option value="">All Positions</option>
-              {data.positions.map((position) => (
-                <option key={position} value={position}>
-                  {position}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </section>
+      <TeamPageHeader
+        team={data.team}
+        subtitle={<>Record: <strong>{data.team.record}</strong></>}
+      >
+        <TeamHeaderSelect
+          label="Team"
+          onChange={(event) => navigate(`/${event.target.value}/roster`)}
+          options={data.teams.map((name) => ({ value: name, label: name }))}
+          value={data.team.name}
+        />
+        <TeamHeaderSelect
+          label="Position"
+          onChange={(event) => setPositionFilter(event.target.value)}
+          options={[
+            { value: '', label: 'All Positions' },
+            ...data.positions.map((position) => ({ value: position, label: position })),
+          ]}
+          value={positionFilter}
+        />
+      </TeamPageHeader>
 
       <Section title="Roster" accent={data.team.colorPrimary || '#0f4c81'}>
-        <div className={styles.tablePanel}>
-          <table className={styles.table}>
+        <div className={`ui-table-shell ui-table-shell--soft ${styles.tablePanel}`}>
+          <table className={`ui-table ${styles.table}`}>
             <thead>
               <tr>
                 <th>Name</th>
@@ -151,7 +136,7 @@ export const RosterPage = () => {
                         <td>{player.rating}</td>
                         <td>{yearLabels[player.year as keyof typeof yearLabels]}</td>
                         <td>
-                          <span className={player.starter ? styles.starterChip : styles.backupChip}>
+                          <span className={player.starter ? 'ui-chip ui-chip--compact ui-chip--success' : 'ui-chip ui-chip--compact ui-chip--neutral'}>
                             {player.starter ? 'Starter' : 'Backup'}
                           </span>
                         </td>
