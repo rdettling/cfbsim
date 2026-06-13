@@ -303,10 +303,6 @@ export const AppShell = () => {
             >
               Settings
             </NavLink>
-
-            <a className="app-shell__nav-link" href="/legacy">
-              Legacy App
-            </a>
           </nav>
         </div>
       </header>
