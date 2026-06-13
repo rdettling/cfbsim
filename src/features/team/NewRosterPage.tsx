@@ -8,6 +8,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
+import { TeamPageActions } from './TeamPageActions';
 import styles from './NewRosterPage.module.css';
 
 const yearLabels = {
@@ -81,7 +82,7 @@ export const NewRosterPage = () => {
       eyebrow="Team View"
       title="Team Roster"
       description={`${data.team.name} ${data.team.mascot}  •  ${data.roster.length} active players`}
-      actions={<Button to={`/__new/${data.team.name}/schedule`}>View Schedule</Button>}
+      actions={<TeamPageActions current="roster" teamName={data.team.name} />}
       compact
     >
       <section className={styles.teamHeader} style={{ borderTopColor: data.team.colorPrimary || '#0f4c81' }}>
@@ -143,7 +144,7 @@ export const NewRosterPage = () => {
                     {players.map((player) => (
                       <tr key={player.id}>
                         <td>
-                          <button className={styles.playerLink} onClick={() => navigate(`/players/${player.id}`)} type="button">
+                          <button className={styles.playerLink} onClick={() => navigate(`/__new/players/${player.id}`)} type="button">
                             {player.first} {player.last}
                           </button>
                         </td>

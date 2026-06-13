@@ -1,0 +1,170 @@
+.header {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow-card);
+}
+
+.headerMain {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.playerName {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.metaGrid {
+  display: grid;
+  gap: 0.6rem 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0.9rem;
+}
+
+.metaGrid div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.metaGrid span {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ratingCard {
+  display: grid;
+  gap: 0.2rem;
+  align-content: center;
+  justify-items: center;
+  min-width: 9rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: #fff;
+}
+
+.ratingValue {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.teamRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.awardRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.awardChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 76, 129, 0.16);
+  background: rgba(15, 76, 129, 0.08);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.tablePanel {
+  overflow: auto;
+  max-height: calc(100vh - 20rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 56rem;
+}
+
+.table th,
+.table td {
+  padding: 0.72rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: #f5f6f8;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.altRow {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.yearField {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.yearField span {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.yearField select {
+  min-height: 2.4rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+.opponentCell {
+  min-width: 16rem;
+}
+
+.gameLink {
+  font-weight: 700;
+}
+
+.gameLink:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 860px) {
+  .playerName {
+    font-size: 1.6rem;
+  }
+
+  .metaGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tablePanel {
+    max-height: none;
+  }
+}

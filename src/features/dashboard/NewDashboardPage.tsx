@@ -11,6 +11,9 @@ import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
 import styles from './NewDashboardPage.module.css';
 
+const standingsRoute = (conferenceName?: string) =>
+  `/__new/standings/${conferenceName === 'Independent' || !conferenceName ? 'independent' : conferenceName}`;
+
 const getOpponentLabel = (game: ScheduleGame | null) => {
   if (!game?.opponent) return 'Open date';
   const prefix = formatOpponentPrefix(game.location);
@@ -60,7 +63,7 @@ const GameCard = ({ game, label }: { game: ScheduleGame | null; label: string })
         </div>
       )}
       <div className={styles.gameFooter}>
-        <Button to={`/game/${game.id}`} variant={isCompleted ? 'ghost' : 'secondary'}>
+        <Button to={`/__new/game/${game.id}`} variant={isCompleted ? 'ghost' : 'secondary'}>
           {isCompleted ? 'Game Summary' : 'Game Preview'}
         </Button>
       </div>
@@ -167,7 +170,11 @@ export const NewDashboardPage = () => {
           </div>
         </Section>
 
-        <Section title={conferenceName ? `${conferenceName} Standings` : 'Independent Teams'} accent={team.colorPrimary || '#0f4c81'}>
+        <Section
+          title={conferenceName ? `${conferenceName} Standings` : 'Independent Teams'}
+          accent={team.colorPrimary || '#0f4c81'}
+          actions={<Button to={standingsRoute(conferenceName)} variant="secondary">Full Standings</Button>}
+        >
           <div className={styles.scrollPanel}>
             <table className={styles.table}>
               <thead>
@@ -238,7 +245,7 @@ export const NewDashboardPage = () => {
             {topGameItems.length > 0 ? (
               topGameItems.map((game) => (
                 <article className={styles.headlineCard} key={game.id}>
-                  <a className={styles.headlineLink} href={`/game/${game.id}`}>
+                  <a className={styles.headlineLink} href={`/__new/game/${game.id}`}>
                     {game.headline}
                   </a>
                   {game.subtitle ? <p className={styles.headlineSubtitle}>{game.subtitle}</p> : null}

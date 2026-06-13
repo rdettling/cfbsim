@@ -1,0 +1,142 @@
+.toggleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.toggleButton {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.toggleButton:hover {
+  border-color: var(--border-strong);
+}
+
+.toggleButtonActive {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tablePanel {
+  overflow: auto;
+  max-height: 68vh;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+.table {
+  width: 100%;
+  min-width: 56rem;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fbff;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.compactTable {
+  min-width: 44rem;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.altRow {
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.rankCell {
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.leagueAverageRow {
+  background: rgba(15, 76, 129, 0.08);
+}
+
+.teamLink,
+.playerLink {
+  color: var(--accent-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.teamLink:hover,
+.playerLink:hover {
+  text-decoration: underline;
+}
+
+.metaText {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.starCell {
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
+  gap: 1rem;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.leaderTable {
+  min-width: 32rem;
+}
+
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tablePanel {
+    max-height: none;
+  }
+}

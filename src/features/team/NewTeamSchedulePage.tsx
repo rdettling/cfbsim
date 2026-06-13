@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { loadTeamSchedule } from '../../domain/league';
 import type { TeamSchedulePageData } from '../../types/pages';
-import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
 import { LoadingState } from '../../ui/LoadingState';
 import { Page } from '../../ui/Page';
 import { Section } from '../../ui/Section';
 import { TeamMark } from '../../ui/TeamMark';
+import { Button } from '../../ui/Button';
+import { TeamPageActions } from './TeamPageActions';
 import styles from './NewTeamSchedulePage.module.css';
 
 const locationLabel = (location?: 'Home' | 'Away' | 'Neutral') => {
@@ -97,7 +98,7 @@ export const NewTeamSchedulePage = () => {
       eyebrow="Team View"
       title={`${data.selected_year ?? data.info.currentYear} Season Schedule`}
       description={`${data.team.name} ${data.team.mascot}  •  ${data.team.record}  •  Rating ${data.team.rating}`}
-      actions={<Button to="/__new/dashboard">Back to Dashboard</Button>}
+      actions={<TeamPageActions current="schedule" teamName={data.team.name} />}
       compact
     >
       <section className={styles.teamHeader} style={{ borderTopColor: data.team.colorPrimary || '#0f4c81' }}>
@@ -182,7 +183,7 @@ export const NewTeamSchedulePage = () => {
                   <td>{game.spread || '-'}</td>
                   <td>
                     {game.id ? (
-                      <Button to={`/game/${game.id}`} variant={game.result ? 'ghost' : 'secondary'}>
+                      <Button to={`/__new/game/${game.id}`} variant={game.result ? 'ghost' : 'secondary'}>
                         {game.result ? `${game.result}: ${game.score}` : 'Preview'}
                       </Button>
                     ) : (

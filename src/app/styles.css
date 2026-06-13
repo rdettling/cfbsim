@@ -292,6 +292,12 @@ a {
   background: var(--accent-soft);
 }
 
+.ui-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .ui-stat-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
