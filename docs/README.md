@@ -8,6 +8,9 @@ Technical documentation is organized into architecture, subsystem, interface, an
 - [System Overview](architecture/system-overview.md)
 - [Data Model and Persistence](architecture/data-model-and-persistence.md)
 - [Season State Machine](architecture/season-state-machine.md)
+- [Frontend Rebuild Plan](architecture/frontend-rebuild-plan.md)
+- [Frontend Implementation Conventions](architecture/frontend-implementation-conventions.md)
+- [Frontend Migration Checklist](architecture/frontend-migration-checklist.md)
 
 ## Systems
 

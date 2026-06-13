@@ -1,0 +1,39 @@
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.snapshot {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.snapshotCard {
+  grid-column: span 4;
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.8));
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metric {
+  font-size: 1.4rem;
+  letter-spacing: -0.04em;
+}
+
+@media (max-width: 860px) {
+  .snapshotCard {
+    grid-column: span 12;
+  }
+}

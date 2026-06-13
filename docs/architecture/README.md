@@ -7,6 +7,9 @@ This directory is the canonical technical reference for core runtime architectur
 - [System Overview](system-overview.md)
 - [Data Model and Persistence](data-model-and-persistence.md)
 - [Season State Machine](season-state-machine.md)
+- [Frontend Rebuild Plan](frontend-rebuild-plan.md)
+- [Frontend Implementation Conventions](frontend-implementation-conventions.md)
+- [Frontend Migration Checklist](frontend-migration-checklist.md)
 
 ## Relationship To Other Docs
 
