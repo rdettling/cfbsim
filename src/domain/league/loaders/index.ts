@@ -1,7 +1,6 @@
 import type { Team } from '../../../types/domain';
 import { getAllGames } from '../../../db/simRepo';
 import { ensureRosters } from '../../roster';
-import { ensureSettings, DEFAULT_SETTINGS } from '../../../types/league';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { saveLeague } from '../../../db/leagueRepo';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';
@@ -54,21 +53,5 @@ export const loadRankings = async () => {
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     rankings,
     conferences: league.conferences,
-  };
-};
-
-export const loadSettings = async () => {
-  const league = await loadLeagueOrThrow();
-
-  const changed = ensureSettings(league);
-  if (changed) {
-    await saveLeague(league);
-  }
-
-  return {
-    info: league.info,
-    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
-    conferences: league.conferences,
-    settings: league.settings ?? { ...DEFAULT_SETTINGS },
   };
 };

@@ -1,210 +1,249 @@
-import { useState, useEffect } from 'react';
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    List,
-    ListItem,
-    ListItemButton,
-    Box,
-    Typography,
-    CircularProgress,
-    IconButton,
-} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { TeamLogo } from '../team/TeamComponents';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  Stack,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
 import { getGamesToLiveSim } from '../../domain/sim';
-import type { GameSelectionModalProps, GameSelectionModalGame } from '../../types/components';
 import { resolveHomeAway } from '../../domain/utils/gameDisplay';
+import { TeamLogo } from '../team/TeamComponents';
 
-const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalProps) => {
-    const [games, setGames] = useState<GameSelectionModalGame[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [week, setWeek] = useState<number>(0);
+type GameSelectionData = Awaited<ReturnType<typeof getGamesToLiveSim>>;
+type GameSelectionRecord = GameSelectionData['games'][number];
 
-    useEffect(() => {
-        if (open) {
-            fetchGames();
-        }
-    }, [open]);
+type GameSelectionModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onGameSelect: (gameId: number) => void;
+};
 
-    const fetchGames = async () => {
-        setLoading(true);
-        try {
-            const response = await getGamesToLiveSim();
-            setGames(response.games);
-            setWeek(response.week);
-        } catch (error) {
-            console.error('Error fetching games:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+const TeamSummary = ({
+  team,
+  align,
+}: {
+  team: GameSelectionRecord['teamA'];
+  align: 'left' | 'right';
+}) => (
+  <Stack
+    direction={align === 'left' ? 'row-reverse' : 'row'}
+    spacing={1}
+    alignItems="center"
+    sx={{ minWidth: 0, flex: 1 }}
+  >
+    <TeamLogo name={team.name} size={40} />
+    <Box sx={{ minWidth: 0, textAlign: align }}>
+      <Typography
+        variant="subtitle2"
+        title={team.name}
+        sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+      >
+        {team.ranking > 0 && `#${team.ranking} `}
+        {team.name}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {team.record}
+      </Typography>
+    </Box>
+  </Stack>
+);
 
-    const handleGameClick = (game: GameSelectionModalGame) => {
-        onGameSelect(game.id, game.is_user_game || false);
-        onClose();
-    };
+const GameSelectionModal = ({
+  open,
+  onClose,
+  onGameSelect,
+}: GameSelectionModalProps) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const [data, setData] = useState<GameSelectionData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    return (
-        <Dialog 
-            open={open} 
-            onClose={onClose}
-            maxWidth="md"
-            fullWidth
-            PaperProps={{
-                sx: {
-                    borderRadius: 2,
-                }
-            }}
-        >
-            <DialogTitle sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                pb: 2
-            }}>
-                <Box component="span" sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                    Select Game to Simulate - Week {week}
-                </Box>
-                <IconButton onClick={onClose} size="small">
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            
-            <DialogContent sx={{ p: 0 }}>
-                {loading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                        <CircularProgress />
-                    </Box>
-                ) : games.length === 0 ? (
-                    <Box sx={{ p: 4, textAlign: 'center' }}>
-                        <Typography color="text.secondary">
-                            No games available to simulate this week
+  const loadGames = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await getGamesToLiveSim());
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error && loadError.message
+          ? loadError.message
+          : 'Games could not be loaded.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) void loadGames();
+  }, [loadGames, open]);
+
+  const handleGameSelect = (gameId: number) => {
+    onGameSelect(gameId);
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      fullScreen={fullScreen}
+      aria-labelledby="game-selection-title"
+      slotProps={{
+        paper: {
+          variant: 'outlined',
+          sx: { maxHeight: fullScreen ? '100%' : 'min(760px, 88vh)' },
+        },
+      }}
+    >
+      <Box
+        component="header"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          py: 1.5,
+          px: 3,
+        }}
+      >
+        <Box>
+          <DialogTitle id="game-selection-title" sx={{ p: 0 }}>
+            Select a game
+          </DialogTitle>
+          <Typography variant="body2" color="text.secondary">
+            {data ? `Week ${data.week}` : 'Current week'}
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} aria-label="Close game selection">
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      <DialogContent sx={{ p: 0 }}>
+        {loading ? (
+          <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 280 }}>
+            <CircularProgress size={32} />
+            <Typography variant="body2" color="text.secondary">
+              Loading available games…
+            </Typography>
+          </Stack>
+        ) : error ? (
+          <Stack spacing={2} sx={{ p: 3 }}>
+            <Alert severity="error">{error}</Alert>
+            <Button variant="outlined" onClick={() => void loadGames()} sx={{ alignSelf: 'flex-start' }}>
+              Try Again
+            </Button>
+          </Stack>
+        ) : !data || data.games.length === 0 ? (
+          <Stack alignItems="center" spacing={0.5} sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6">No games available</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Every game in this week has already been completed.
+            </Typography>
+          </Stack>
+        ) : (
+          <List disablePadding aria-label={`Week ${data.week} games`}>
+            {data.games.map((game, index) => {
+              const { home, away, neutral } = resolveHomeAway({
+                teamA: { id: game.teamAId, name: game.teamA.name },
+                teamB: { id: game.teamBId, name: game.teamB.name },
+                homeTeamId: game.homeTeamId ?? null,
+                awayTeamId: game.awayTeamId ?? null,
+                neutralSite: game.neutralSite ?? false,
+              });
+              const awayTeam = away.id === game.teamAId ? game.teamA : game.teamB;
+              const homeTeam = home.id === game.teamAId ? game.teamA : game.teamB;
+
+              return (
+                <ListItem
+                  key={game.id}
+                  disablePadding
+                  divider={index < data.games.length - 1}
+                  sx={{
+                    borderLeft: '3px solid',
+                    borderLeftColor: game.is_user_game ? 'primary.main' : 'transparent',
+                    backgroundColor: game.is_user_game ? 'action.selected' : 'background.paper',
+                  }}
+                >
+                  <ListItemButton
+                    onClick={() => handleGameSelect(game.id)}
+                    aria-label={`Simulate ${awayTeam.name} ${neutral ? 'versus' : 'at'} ${homeTeam.name}`}
+                    sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.5 }}
+                  >
+                    <Stack spacing={1} sx={{ width: '100%', minWidth: 0 }}>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+                          alignItems: 'center',
+                          gap: { xs: 1, sm: 2 },
+                        }}
+                      >
+                        <TeamSummary team={awayTeam} align="right" />
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                          {neutral ? 'VS' : 'AT'}
                         </Typography>
-                    </Box>
-                ) : (
-                    <List sx={{ p: 0 }}>
-                        {games.map((game, index) => (
-                            (() => {
-                                const { home, away, neutral } = resolveHomeAway({
-                                    teamA: { id: game.teamAId ?? 0, name: game.teamA.name },
-                                    teamB: { id: game.teamBId ?? 0, name: game.teamB.name },
-                                    homeTeamId: game.homeTeamId ?? null,
-                                    awayTeamId: game.awayTeamId ?? null,
-                                    neutralSite: game.neutralSite ?? false,
-                                });
-                                const awayInfo = away.id === (game.teamAId ?? away.id) ? game.teamA : game.teamB;
-                                const homeInfo = home.id === (game.teamAId ?? home.id) ? game.teamA : game.teamB;
-                                return (
-                            <ListItem 
-                                key={game.id} 
-                                disablePadding
-                                sx={{
-                                    borderBottom: index < games.length - 1 ? '1px solid' : 'none',
-                                    borderColor: 'divider',
-                                    ...(game.is_user_game && {
-                                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                                        borderLeft: '4px solid',
-                                        borderLeftColor: 'primary.main',
-                                    })
-                                }}
-                            >
-                                <ListItemButton 
-                                    onClick={() => handleGameClick(game)}
-                                    sx={{
-                                        py: 2,
-                                        px: 3,
-                                        '&:hover': {
-                                            backgroundColor: game.is_user_game 
-                                                ? 'rgba(25, 118, 210, 0.12)' 
-                                                : 'rgba(46, 125, 50, 0.04)'
-                                        }
-                                    }}
-                                >
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        width: '100%',
-                                        gap: 3
-                                    }}>
-                                        {/* Team A */}
-                                        <Box sx={{ 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            flex: 1,
-                                            justifyContent: 'flex-end',
-                                            gap: 2
-                                        }}>
-                                            <Box sx={{ textAlign: 'right' }}>
-                                                <Typography variant="h6" fontWeight="bold">
-                                                    {awayInfo.ranking > 0 && `#${awayInfo.ranking} `}
-                                                    {awayInfo.name}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {awayInfo.record}
-                                                </Typography>
-                                            </Box>
-                                            <TeamLogo name={awayInfo.name} size={50} />
-                                        </Box>
-
-                                        {/* VS divider */}
-                                        <Box sx={{ 
-                                            display: 'flex', 
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            minWidth: 80
-                                        }}>
-                                            <Typography 
-                                                variant="body2" 
-                                                fontWeight="bold" 
-                                                color={game.is_user_game ? 'primary.main' : 'text.secondary'}
-                                            >
-                                                {game.is_user_game ? 'YOUR GAME' : (neutral ? 'VS' : 'AT')}
-                                            </Typography>
-                                            {!game.is_user_game && (
-                                                <Typography 
-                                                    variant="caption" 
-                                                    color="success.main"
-                                                    fontWeight="bold"
-                                                    sx={{ mt: 0.5 }}
-                                                >
-                                                    {game.watchability}
-                                                </Typography>
-                                            )}
-                                        </Box>
-
-                                        {/* Team B */}
-                                        <Box sx={{ 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            flex: 1,
-                                            gap: 2
-                                        }}>
-                                            <TeamLogo name={homeInfo.name} size={50} />
-                                            <Box>
-                                                <Typography variant="h6" fontWeight="bold">
-                                                    {homeInfo.ranking > 0 && `#${homeInfo.ranking} `}
-                                                    {homeInfo.name}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {homeInfo.record}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    </Box>
-                                </ListItemButton>
-                            </ListItem>
-                                );
-                            })()
-                        ))}
-                    </List>
-                )}
-            </DialogContent>
-        </Dialog>
-    );
+                        <TeamSummary team={homeTeam} align="left" />
+                      </Box>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        {game.is_user_game ? (
+                          <Chip label="Your game · Coaching enabled" size="small" color="primary" />
+                        ) : (
+                          <Chip
+                            label={`Watchability ${game.watchability}`}
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                        {game.label && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              maxWidth: 220,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {game.label}
+                          </Typography>
+                        )}
+                      </Stack>
+                    </Stack>
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 export default GameSelectionModal;

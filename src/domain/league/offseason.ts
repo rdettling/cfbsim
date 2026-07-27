@@ -2,26 +2,12 @@ import type { LeagueState } from '../../types/league';
 import type { Conference, Team } from '../../types/domain';
 import type { YearData, TeamsData, ConferencesData } from '../../types/baseData';
 import { DEFAULT_SETTINGS, ensureSettings } from '../../types/league';
-import { getYearsIndex, getYearData, getTeamsData, getConferencesData } from '../../db/baseData';
+import { getTeamsData, getConferencesData } from '../../db/baseData';
 import { getLastWeekByPlayoffTeams } from './postseason';
-
-const getClosestYearForData = (years: string[], targetYear: number, startYear?: number) => {
-  const numericYears = years
-    .map(entry => Number(entry))
-    .filter(year => !Number.isNaN(year))
-    .sort((a, b) => a - b);
-
-  if (!numericYears.length) return targetYear;
-
-  const lowerBound = startYear ?? numericYears[0];
-  const candidates = numericYears.filter(year => year <= targetYear && year >= lowerBound);
-  if (candidates.length) return candidates[candidates.length - 1];
-
-  const fallback = numericYears.filter(year => year <= targetYear);
-  if (fallback.length) return fallback[fallback.length - 1];
-
-  return numericYears[0];
-};
+import {
+  resolveHistoricalData,
+  type ResolvedHistoricalData,
+} from './historicalData';
 
 const applyRealignment = (
   league: LeagueState,
@@ -203,26 +189,26 @@ const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFor
   league.playoff = { seeds: [] };
 };
 
-export const applyRealignmentAndPlayoff = async (league: LeagueState) => {
+export const applyRealignmentAndPlayoff = async (
+  league: LeagueState,
+  historicalData?: ResolvedHistoricalData,
+) => {
   ensureSettings(league);
 
-  league.info.currentYear += 1;
+  const targetYear = league.info.currentYear + 1;
+  const resolved =
+    historicalData ??
+    (await resolveHistoricalData(targetYear, league.info.startYear));
+
+  league.info.currentYear = targetYear;
   league.info.currentWeek = 1;
 
-  const yearsIndex = await getYearsIndex();
-  const dataYear = getClosestYearForData(
-    yearsIndex.years,
-    league.info.currentYear,
-    league.info.startYear
-  );
-
-  const [yearData, teamsData, conferencesData] = await Promise.all([
-    getYearData(String(dataYear)),
+  const [teamsData, conferencesData] = await Promise.all([
     getTeamsData(),
     getConferencesData(),
   ]);
 
-  const typedYearData = yearData as YearData;
+  const typedYearData = resolved.yearData;
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
 
@@ -230,83 +216,4 @@ export const applyRealignmentAndPlayoff = async (league: LeagueState) => {
 
   const updateFormat = league.settings?.auto_update_postseason_format ?? true;
   refreshPlayoffFormat(league, typedYearData, updateFormat);
-};
-
-type FreshmanPlayer = {
-  id: number;
-  first: string;
-  last: string;
-  pos: string;
-  rating: number;
-  stars: number;
-};
-
-export const calculateRecruitingRankings = (
-  freshmenByTeam: Record<string, { team: Team; players: FreshmanPlayer[] }>,
-  qualityFocus = 0.92
-) => {
-  const teamRankings: Array<{
-    team_name: string;
-    team: Team;
-    players: FreshmanPlayer[];
-    total_points: number;
-    avg_stars: number;
-    player_count: number;
-    five_stars: number;
-    four_stars: number;
-    three_stars: number;
-    two_stars: number;
-    one_stars: number;
-    weighted_score: number;
-  }> = [];
-
-  Object.entries(freshmenByTeam).forEach(([teamName, teamData]) => {
-    const players = teamData.players;
-    if (!players.length) return;
-
-    const total_points = players.reduce((sum, player) => sum + player.rating, 0);
-    const avg_stars = players.reduce((sum, player) => sum + player.stars, 0) / players.length;
-    const player_count = players.length;
-
-    const five_stars = players.filter(player => player.stars === 5).length;
-    const four_stars = players.filter(player => player.stars === 4).length;
-    const three_stars = players.filter(player => player.stars === 3).length;
-    const two_stars = players.filter(player => player.stars === 2).length;
-    const one_stars = players.filter(player => player.stars === 1).length;
-
-    const quantityWeight = 1.0 - qualityFocus;
-    const weighted_score = (qualityFocus * avg_stars) + (quantityWeight * player_count);
-
-    teamRankings.push({
-      team_name: teamName,
-      team: teamData.team,
-      players,
-      total_points,
-      avg_stars: Math.round(avg_stars * 100) / 100,
-      player_count,
-      five_stars,
-      four_stars,
-      three_stars,
-      two_stars,
-      one_stars,
-      weighted_score: Math.round(weighted_score * 10) / 10,
-    });
-  });
-
-  teamRankings.sort((a, b) => {
-    if (b.weighted_score !== a.weighted_score) return b.weighted_score - a.weighted_score;
-    return b.total_points - a.total_points;
-  });
-
-  if (teamRankings.length) {
-    const maxScore = teamRankings[0].weighted_score;
-    const minScore = teamRankings[teamRankings.length - 1].weighted_score;
-    const range = maxScore - minScore;
-    teamRankings.forEach(entry => {
-      const scaled = range > 0 ? ((entry.weighted_score - minScore) / range) * 100 : 100;
-      entry.weighted_score = Math.round(scaled * 10) / 10;
-    });
-  }
-
-  return teamRankings;
 };

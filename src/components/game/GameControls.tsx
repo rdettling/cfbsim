@@ -1,173 +1,156 @@
-import { Box, Button, Typography } from '@mui/material';
-import type { ReactNode } from 'react';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import FastForwardIcon from '@mui/icons-material/FastForward';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
-import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
-import type { GameControlsProps } from '../../types/components';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import SportsFootballIcon from '@mui/icons-material/SportsFootball';
+import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import type {
+  SimulationAdvanceScope,
+  SimulationDecision,
+  SimulationDecisionPrompt,
+  SimulationPhase,
+} from '../sim/useGameSim';
+
+type GameControlsProps = {
+  phase: SimulationPhase;
+  decisionPrompt: SimulationDecisionPrompt | null;
+  onAdvance: (scope: SimulationAdvanceScope) => void;
+  onDecision: (decision: SimulationDecision) => void;
+};
+
+const formatDown = (down: number) => {
+  if (down === 1) return '1st';
+  if (down === 2) return '2nd';
+  if (down === 3) return '3rd';
+  return '4th';
+};
+
+const formatFieldPosition = (fieldPosition: number) => {
+  const territory = fieldPosition <= 50 ? 'own' : 'opponent';
+  const yardLine = fieldPosition <= 50 ? fieldPosition : 100 - fieldPosition;
+  return `${territory} ${yardLine}`;
+};
 
 const GameControls = ({
-    isGameComplete,
-    handleNextPlay,
-    handleNextDrive,
-    handleSimToEnd,
-    decisionPrompt,
-    handleDecision,
-    submittingDecision = false
+  phase,
+  decisionPrompt,
+  onAdvance,
+  onDecision,
 }: GameControlsProps) => {
-    let decisionSection: ReactNode = null;
-    if (decisionPrompt && handleDecision) {
-        const { type, down, yards_left, field_position } = decisionPrompt;
+  const busy = phase === 'advancing' || phase === 'finalizing';
+  const disabled = phase !== 'ready';
+  const busyLabel = phase === 'finalizing' ? 'Saving final result…' : 'Simulating…';
 
-        if (type === 'run_pass') {
-            const location = field_position <= 50 ? 'OWN' : 'OPP';
-            const yardLine = field_position <= 50 ? field_position : 100 - field_position;
-
-            decisionSection = (
-                <Box sx={{ 
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    p: 2.5,
-                    background: 'linear-gradient(135deg, rgba(17,24,39,0.92) 0%, rgba(30,64,175,0.9) 55%, rgba(59,130,246,0.9) 100%)',
-                    color: 'white'
-                }}>
-                    <Typography variant="h6" fontWeight={700} textAlign="center" sx={{ mb: 2, fontFamily: '"Space Grotesk", sans-serif' }}>
-                        {down}st & {yards_left} at {location} {yardLine}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            startIcon={<DirectionsRunIcon />}
-                            onClick={() => handleDecision('run')}
-                            disabled={submittingDecision}
-                            sx={{ minWidth: 120, borderRadius: 2, fontWeight: 700 }}
-                        >
-                            RUN
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            startIcon={<SportsSoccerIcon />}
-                            onClick={() => handleDecision('pass')}
-                            disabled={submittingDecision}
-                            sx={{ minWidth: 120, borderRadius: 2, fontWeight: 700 }}
-                        >
-                            PASS
-                        </Button>
-                    </Box>
-                </Box>
-            );
-        }
-
-        if (type === 'fourth_down') {
-            const location = field_position <= 50 ? 'OWN' : 'OPP';
-            const yardLine = field_position <= 50 ? field_position : 100 - field_position;
-
-            decisionSection = (
-                <Box sx={{ 
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    p: 2.5,
-                    background: 'linear-gradient(135deg, rgba(120,53,15,0.92) 0%, rgba(217,119,6,0.9) 60%, rgba(245,158,11,0.9) 100%)',
-                    color: 'white'
-                }}>
-                    <Typography variant="h6" fontWeight={700} textAlign="center" sx={{ mb: 2, fontFamily: '"Space Grotesk", sans-serif' }}>
-                        4th & {yards_left} at {location} {yardLine}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            startIcon={<DirectionsRunIcon />}
-                            onClick={() => handleDecision('run')}
-                            disabled={submittingDecision}
-                            size="small"
-                            sx={{ borderRadius: 2, fontWeight: 700 }}
-                        >
-                            RUN
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            startIcon={<SportsSoccerIcon />}
-                            onClick={() => handleDecision('pass')}
-                            disabled={submittingDecision}
-                            size="small"
-                            sx={{ borderRadius: 2, fontWeight: 700 }}
-                        >
-                            PASS
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            color="inherit"
-                            onClick={() => handleDecision('punt')}
-                            disabled={submittingDecision}
-                            size="small"
-                            sx={{ borderRadius: 2, fontWeight: 700 }}
-                        >
-                            PUNT
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            color="inherit"
-                            onClick={() => handleDecision('field_goal')}
-                            disabled={submittingDecision}
-                            size="small"
-                            sx={{ borderRadius: 2, fontWeight: 700 }}
-                        >
-                            FG
-                        </Button>
-                    </Box>
-                </Box>
-            );
-        }
-    }
-
-    return (
-        <Box>
-            {decisionSection}
-            <Box sx={{ 
-                borderTop: decisionSection ? 'none' : '1px solid',
-                borderColor: 'divider',
-                p: 2,
-                display: 'flex',
-                gap: 2,
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(245,247,255,0.95) 100%)'
-            }}>
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        backgroundColor: 'background.paper',
+        overflow: 'hidden',
+      }}
+    >
+      {decisionPrompt && phase === 'ready' && (
+        <Stack
+          spacing={1}
+          sx={{
+            p: { xs: 1.25, sm: 1.5 },
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            backgroundColor: 'action.hover',
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle2">Call the next play</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {formatDown(decisionPrompt.down)} &amp; {decisionPrompt.yardsLeft}
+              {' · '}
+              {formatFieldPosition(decisionPrompt.fieldPosition)}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<DirectionsRunIcon />}
+              onClick={() => onDecision('run')}
+            >
+              Run
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<SportsFootballIcon />}
+              onClick={() => onDecision('pass')}
+            >
+              Pass
+            </Button>
+            {decisionPrompt.type === 'fourth_down' && (
+              <>
                 <Button
-                    variant="outlined"
-                    startIcon={<SkipNextIcon />}
-                    onClick={handleNextPlay}
-                    disabled={isGameComplete || submittingDecision}
-                    sx={{ borderRadius: 2, fontWeight: 600 }}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => onDecision('punt')}
                 >
-                    Sim Play
+                  Punt
                 </Button>
                 <Button
-                    variant="outlined"
-                    startIcon={<SkipNextIcon />}
-                    onClick={handleNextDrive}
-                    disabled={isGameComplete || submittingDecision}
-                    sx={{ borderRadius: 2, fontWeight: 600 }}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => onDecision('field_goal')}
                 >
-                    Sim Drive
+                  Field Goal
                 </Button>
-                <Button
-                    variant="contained"
-                    color="secondary"
-                    startIcon={<FastForwardIcon />}
-                    onClick={handleSimToEnd}
-                    disabled={isGameComplete || submittingDecision}
-                    sx={{ borderRadius: 2, fontWeight: 700 }}
-                >
-                    Sim to End of Game
-                </Button>
-            </Box>
+              </>
+            )}
+          </Stack>
+        </Stack>
+      )}
+
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        sx={{ p: { xs: 1.25, sm: 1.5 } }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="subtitle2">Simulation controls</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Automatic controls let the simulator make every decision in their scope.
+          </Typography>
         </Box>
-    );
+        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<SkipNextIcon />}
+            onClick={() => onAdvance('play')}
+            disabled={disabled}
+          >
+            Sim Play
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<SkipNextIcon />}
+            onClick={() => onAdvance('drive')}
+            disabled={disabled}
+          >
+            Sim Drive
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <FastForwardIcon />}
+            onClick={() => onAdvance('game')}
+            disabled={disabled}
+          >
+            {busy ? busyLabel : 'Sim to End'}
+          </Button>
+        </Stack>
+      </Stack>
+    </Box>
+  );
 };
 
 export default GameControls;

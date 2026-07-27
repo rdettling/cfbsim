@@ -1,393 +1,253 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Box,
-  Paper,
-  Typography,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Button,
   Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TableContainer,
-  Chip,
-  Card,
-  CardContent,
+  Box,
+  Button,
+  Paper,
+  Tab,
+  Tabs,
+  Typography,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
+import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { useDomainData } from '../domain/hooks';
-import { loadRealignment, updateRealignmentSettings } from '../domain/league';
-import { TeamLogo, TeamLink } from '../components/team/TeamComponents';
-import type { Settings } from '../types/domain';
+import {
+  normalizeNextSeasonConfiguration,
+  updateNextSeasonConfiguration,
+} from '../domain/league/nextSeasonConfiguration';
+import { loadRealignment } from '../domain/league/loaders/loadRealignment';
+import type { NextSeasonConfiguration } from '../types/domain';
+import { OffseasonStageMismatchError } from '../types/league';
 import type { RealignmentPageData } from '../types/pages';
+import { ConferencePreviewPanel } from './next-season-setup/ConferencePreviewPanel';
+import { NextSeasonConfigurationPanel } from './next-season-setup/NextSeasonConfigurationPanel';
+import { NextSeasonHeader } from './next-season-setup/NextSeasonHeader';
+import { PostseasonPreviewPanel } from './next-season-setup/PostseasonPreviewPanel';
 
-type RealignmentData = Record<string, { old: string; new: string }>;
-type PlayoffChanges = {
-  teams?: { old: number; new: number };
-  autobids?: { old: number; new: number };
-  conf_champ_top_4?: { old: boolean; new: boolean };
-};
+type SetupTab = 'setup' | 'conferences' | 'postseason';
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const Realignment = () => {
-  const navigate = useNavigate();
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [configuration, setConfiguration] =
+    useState<NextSeasonConfiguration | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<SetupTab>('setup');
+  const configurationSaveLock = useRef(false);
 
-  const { data, loading, error } = useDomainData<RealignmentPageData>({
-    fetcher: loadRealignment,
-    deps: [],
-  });
+  const { data, loading, error, refetch } =
+    useDomainData<RealignmentPageData>({
+      fetcher: loadRealignment,
+    });
 
   useEffect(() => {
-    if (data?.settings) {
-      setSettings(data.settings);
-    }
+    setConfiguration(data?.configuration ?? null);
   }, [data]);
 
-  const handlePlayoffTeamsChange = (teams: number) => {
-    if (!settings) return;
-    const updatedSettings: Settings = {
-      ...settings,
-      playoff_teams: teams,
-    };
-    if (teams !== 12) {
-      updatedSettings.playoff_autobids = undefined;
-      updatedSettings.playoff_conf_champ_top_4 = false;
-    } else {
-      updatedSettings.playoff_autobids = settings.playoff_autobids || 6;
-    }
-    setSettings(updatedSettings);
-  };
+  const handleConfigurationChange = async (
+    patch: Partial<NextSeasonConfiguration>,
+  ) => {
+    if (!configuration || configurationSaveLock.current) return;
+    configurationSaveLock.current = true;
 
-  const handleSave = async () => {
-    if (!settings) return;
-    setSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
-
+    const previous = configuration;
+    let optimistic: NextSeasonConfiguration;
     try {
-      await updateRealignmentSettings(settings);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err: any) {
-      setSaveError(err?.message || 'Failed to save settings');
-    } finally {
-      setSaving(false);
+      optimistic = normalizeNextSeasonConfiguration({
+        ...configuration,
+        ...patch,
+      });
+    } catch (configurationError) {
+      setSaveStatus('error');
+      setSaveError(
+        configurationError instanceof Error
+          ? configurationError.message
+          : 'The configuration is invalid.',
+      );
+      configurationSaveLock.current = false;
+      return;
     }
-  };
 
-  const handleAdvance = () => {
-    navigate('/roster_progression');
+    setConfiguration(optimistic);
+    setSaveStatus('saving');
+    setSaveError(null);
+    try {
+      const authoritative = await updateNextSeasonConfiguration(patch);
+      setConfiguration(authoritative);
+      setSaveStatus('saved');
+    } catch (configurationError) {
+      setConfiguration(previous);
+      setSaveStatus('error');
+      setSaveError(
+        configurationError instanceof Error
+          ? configurationError.message
+          : 'The configuration could not be saved.',
+      );
+      if (configurationError instanceof OffseasonStageMismatchError) {
+        await refetch();
+      }
+    } finally {
+      configurationSaveLock.current = false;
+    }
   };
 
   if (loading) {
     return (
-      <PageLayout loading={loading} error={null}>
+      <PageLayout loading error={null}>
         {null}
       </PageLayout>
     );
   }
 
-  if (error || !data || !settings) {
+  if (error || !data) {
     return (
-      <PageLayout loading={false} error={error || 'Failed to load realignment data'}>
+      <PageLayout
+        loading={false}
+        error={error || 'Next season setup could not be loaded.'}
+      >
         {null}
       </PageLayout>
     );
   }
 
-  const realignmentChanges = Object.entries(data.realignment || {});
-  const playoffChanges: PlayoffChanges = data.playoff_changes || {};
+  const navigationData = {
+    team: data.team,
+    currentStage: data.info.stage,
+    info: data.info,
+    conferences: data.conferences,
+    advanceDisabled:
+      saveStatus === 'saving' || Boolean(data.previewError),
+  };
+
+  if (data.info.stage !== 'realignment') {
+    return (
+      <PageLayout
+        loading={false}
+        error={null}
+        navbarData={navigationData}
+        containerMaxWidth="lg"
+      >
+        <StageUnavailableState
+          title="Next season setup unavailable"
+          description="These choices are available only during the Next Season Setup stage."
+          currentStage={data.info.stage}
+        />
+      </PageLayout>
+    );
+  }
+
+  if (!configuration) {
+    return (
+      <PageLayout
+        loading={false}
+        error="Next season configuration could not be loaded."
+        navbarData={navigationData}
+      >
+        {null}
+      </PageLayout>
+    );
+  }
+
+  const configurationPanel = (
+    <NextSeasonConfigurationPanel
+      configuration={configuration}
+      saving={saveStatus === 'saving'}
+      status={saveStatus}
+      error={saveError}
+      onChange={handleConfigurationChange}
+    />
+  );
+
+  const previewUnavailable = (
+    <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+      <Typography variant="h6">Historical preview unavailable</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        {data.previewError ??
+          'Historical data could not be prepared for this season.'}
+      </Typography>
+      <Button variant="outlined" onClick={refetch} sx={{ mt: 2 }}>
+        Retry
+      </Button>
+    </Paper>
+  );
+
+  const conferencePanel = data.preview ? (
+    <ConferencePreviewPanel
+      changes={data.preview.conferenceChanges}
+      policy={configuration.conferencePolicy}
+    />
+  ) : (
+    previewUnavailable
+  );
+
+  const postseasonPanel = data.preview ? (
+    <PostseasonPreviewPanel
+      configuration={configuration}
+      preview={data.preview}
+    />
+  ) : (
+    previewUnavailable
+  );
 
   return (
     <PageLayout
-      loading={loading}
-      error={error}
-      navbarData={{
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      }}
-      containerMaxWidth="lg"
+      loading={false}
+      error={null}
+      navbarData={navigationData}
+      containerMaxWidth="xl"
+      desktopViewportConstrained
     >
-      <Box sx={{ maxWidth: 1000, mx: 'auto', p: 2 }}>
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: 700, color: 'primary.main' }}>
-          Configure Next Season
-        </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: { lg: 1 },
+          minHeight: { lg: 0 },
+        }}
+      >
+        <NextSeasonHeader
+          targetYear={data.info.currentYear + 1}
+          dataSource={data.preview?.dataSource}
+          previewError={data.previewError}
+        />
 
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-            Season Transitions
-          </Typography>
+        <Box
+          sx={{
+            display: { xs: 'none', lg: 'grid' },
+            gridTemplateColumns:
+              'minmax(310px, 0.72fr) minmax(400px, 1.15fr) minmax(300px, 0.82fr)',
+            gap: 1.25,
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+          {configurationPanel}
+          {conferencePanel}
+          {postseasonPanel}
+        </Box>
 
-          <Box sx={{ mb: 2 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.auto_realignment}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      auto_realignment: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    Auto Realignment
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Automatically update conference assignments from year data
-                  </Typography>
-                </Box>
-              }
-            />
-          </Box>
+        <Box sx={{ display: { xs: 'block', lg: 'none' } }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, value: SetupTab) => setActiveTab(value)}
+            variant="fullWidth"
+            aria-label="Next season setup sections"
+            sx={{ mb: 1.25 }}
+          >
+            <Tab value="setup" label="Setup" />
+            <Tab value="conferences" label="Conferences" />
+            <Tab value="postseason" label="Postseason" />
+          </Tabs>
+          {activeTab === 'setup' && configurationPanel}
+          {activeTab === 'conferences' && conferencePanel}
+          {activeTab === 'postseason' && postseasonPanel}
+        </Box>
 
-          <Box sx={{ mb: 3 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.auto_update_postseason_format}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      auto_update_postseason_format: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    Auto Update Postseason Format
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Automatically update playoff format from year data
-                  </Typography>
-                </Box>
-              }
-            />
-          </Box>
-
-          {!settings.auto_update_postseason_format && (
-            <>
-              <Typography variant="h6" sx={{ mb: 2, mt: 3, color: 'primary.main' }}>
-                Playoff Format
-              </Typography>
-
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  Playoff Teams
-                </Typography>
-                <Select
-                  value={settings.playoff_teams}
-                  onChange={(e) => handlePlayoffTeamsChange(Number(e.target.value))}
-                  fullWidth
-                  size="small"
-                >
-                  <MenuItem value={2}>2 Teams (BCS)</MenuItem>
-                  <MenuItem value={4}>4 Teams</MenuItem>
-                  <MenuItem value={12}>12 Teams</MenuItem>
-                </Select>
-              </Box>
-
-              {settings.playoff_teams === 12 && (
-                <>
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                      Conference Champion Autobids
-                    </Typography>
-                    <Select
-                      value={settings.playoff_autobids || 6}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          playoff_autobids: Number(e.target.value),
-                        })
-                      }
-                      fullWidth
-                      size="small"
-                    >
-                      {Array.from({ length: 11 }, (_, i) => (
-                        <MenuItem key={i} value={i}>
-                          {i}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-
-                  <Box sx={{ mb: 3 }}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.playoff_conf_champ_top_4 || false}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              playoff_conf_champ_top_4: e.target.checked,
-                            })
-                          }
-                        />
-                      }
-                      label="Conference Champions in Top 4 Seeds"
-                    />
-                  </Box>
-                </>
-              )}
-            </>
-          )}
-        </Paper>
-
-        {realignmentChanges.length > 0 && (
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main', mb: 3 }}>
-                Proposed Conference Realignment
-                {!settings.auto_realignment && (
-                  <Chip
-                    label="Will not apply (Auto Realignment is OFF)"
-                    size="small"
-                    color="warning"
-                    sx={{ ml: 2 }}
-                  />
-                )}
-              </Typography>
-
-              <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Team</TableCell>
-                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Old Conference</TableCell>
-                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>New Conference</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {realignmentChanges.map(([team, confs]) => (
-                      <TableRow key={team} sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <TeamLogo name={team} size={30} />
-                            <TeamLink name={team} onTeamClick={() => {}} />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={confs.old} variant="outlined" color="error" size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={confs.new} variant="outlined" color="success" size="small" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {Object.keys(playoffChanges).length > 0 && (
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main', mb: 3 }}>
-                Proposed Playoff Format Changes
-                {!settings.auto_update_postseason_format && (
-                  <Chip
-                    label="Will not apply (Auto Update is OFF)"
-                    size="small"
-                    color="warning"
-                    sx={{ ml: 2 }}
-                  />
-                )}
-              </Typography>
-
-              <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Setting</TableCell>
-                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Current</TableCell>
-                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Proposed</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {playoffChanges.teams && (
-                      <TableRow sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
-                        <TableCell sx={{ fontWeight: 500 }}>Playoff Teams</TableCell>
-                        <TableCell>{playoffChanges.teams.old}</TableCell>
-                        <TableCell>
-                          <Chip label={playoffChanges.teams.new} variant="outlined" color="success" size="small" />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {playoffChanges.autobids && (
-                      <TableRow sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
-                        <TableCell sx={{ fontWeight: 500 }}>Conference Champion Autobids</TableCell>
-                        <TableCell>{playoffChanges.autobids.old}</TableCell>
-                        <TableCell>
-                          <Chip label={playoffChanges.autobids.new} variant="outlined" color="success" size="small" />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {playoffChanges.conf_champ_top_4 && (
-                      <TableRow sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
-                        <TableCell sx={{ fontWeight: 500 }}>Conference Champions in Top 4 Seeds</TableCell>
-                        <TableCell>{playoffChanges.conf_champ_top_4.old ? 'Yes' : 'No'}</TableCell>
-                        <TableCell>
-                          <Chip label={playoffChanges.conf_champ_top_4.new ? 'Yes' : 'No'} variant="outlined" color="success" size="small" />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {saveSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Settings saved successfully!
-          </Alert>
-        )}
-
-        {saveError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+        {saveStatus === 'error' && saveError && activeTab !== 'setup' && (
+          <Alert severity="error" sx={{ display: { lg: 'none' }, mt: 1 }}>
             {saveError}
           </Alert>
         )}
-
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={handleSave}
-            disabled={saving}
-            sx={{ flex: 1 }}
-          >
-            {saving ? 'Saving...' : 'Save Settings'}
-          </Button>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleAdvance}
-            sx={{ flex: 1 }}
-          >
-            Advance to Progression
-          </Button>
-        </Box>
       </Box>
     </PageLayout>
   );

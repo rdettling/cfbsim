@@ -2,7 +2,7 @@ export interface YearData {
   playoff: {
     teams: number;
     conf_champ_autobids?: number;
-    conf_champ_top_4?: boolean;
+    conf_champ_top_4?: boolean | null;
   };
   conferences: Record<string, { games: number; teams: Record<string, number> }>;
   Independent?: Record<string, number>;

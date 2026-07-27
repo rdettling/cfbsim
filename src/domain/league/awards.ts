@@ -1,7 +1,19 @@
 import type { LeagueState } from '../../types/league';
 import type { PlayerRecord, GameLogRecord } from '../../types/db';
 import type { Team } from '../../types/domain';
+import type {
+  AwardEntry,
+  AwardPlayer,
+  AwardsResult,
+  AwardStats,
+} from '../../types/awards';
 import { average } from './utils/statMath';
+
+type AwardCandidate = {
+  player: PlayerRecord;
+  score: number;
+  stats: AwardStats;
+};
 
 const AWARD_DEFINITIONS = [
   {
@@ -262,7 +274,7 @@ const buildStatCache = (
   return { passing, rushing, receiving, defensive, kicking };
 };
 
-const candidatePlayer = (player: PlayerRecord) => ({
+const candidatePlayer = (player: PlayerRecord): AwardPlayer => ({
   id: player.id,
   first: player.first,
   last: player.last,
@@ -273,7 +285,7 @@ const candidatePlayer = (player: PlayerRecord) => ({
 });
 
 const attachStatLines = (
-  candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }>,
+  candidates: AwardCandidate[],
   logsByPlayer: Map<number, GameLogRecord[]>
 ) => {
   candidates.forEach(entry => {
@@ -290,13 +302,13 @@ const calcHeisman = (
   teamsById: Map<number, Team>
 ) => {
   const totalTeams = league.teams.length;
-  const candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+  const candidates: AwardCandidate[] = [];
 
   players.filter(player => player.active && player.starter).forEach(player => {
     const team = teamsById.get(player.teamId);
     if (!team) return;
     let score = player.rating || 0;
-    const statsSummary: Record<string, any> = { team: team.name };
+    const statsSummary: AwardStats = { team: team.name };
 
     const passStats = statCache.passing.get(player.id);
     const rushStats = statCache.rushing.get(player.id);
@@ -331,7 +343,7 @@ const calcDaveyObrien = (
   statCache: ReturnType<typeof buildStatCache>,
   teamsById: Map<number, Team>
 ) => {
-  const candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+  const candidates: AwardCandidate[] = [];
   players.forEach(player => {
     if (player.pos !== 'qb' || !player.starter) return;
     const stats = statCache.passing.get(player.id);
@@ -353,7 +365,7 @@ const calcDoakWalker = (
   statCache: ReturnType<typeof buildStatCache>,
   teamsById: Map<number, Team>
 ) => {
-  const candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+  const candidates: AwardCandidate[] = [];
   players.forEach(player => {
     if (player.pos !== 'rb' || !player.starter) return;
     const stats = statCache.rushing.get(player.id);
@@ -375,7 +387,7 @@ const calcBiletnikoff = (
   statCache: ReturnType<typeof buildStatCache>,
   teamsById: Map<number, Team>
 ) => {
-  const candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+  const candidates: AwardCandidate[] = [];
   players.forEach(player => {
     if (player.pos !== 'wr' || !player.starter) return;
     const stats = statCache.receiving.get(player.id);
@@ -397,7 +409,7 @@ const calcDefensivePlayer = (
   statCache: ReturnType<typeof buildStatCache>,
   teamsById: Map<number, Team>
 ) => {
-  const candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+  const candidates: AwardCandidate[] = [];
   players.forEach(player => {
     if (!player.starter) return;
     if (!DEFENSIVE_POSITIONS.has(player.pos)) return;
@@ -423,7 +435,7 @@ const calcSpecificDefender = (
   allowedPositions: Set<string>,
   weights: Record<string, number>
 ) => {
-  const candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+  const candidates: AwardCandidate[] = [];
   players.forEach(player => {
     if (!player.starter) return;
     if (!allowedPositions.has(player.pos)) return;
@@ -431,7 +443,7 @@ const calcSpecificDefender = (
     if (!stats) return;
     const team = teamsById.get(player.teamId);
     let score = player.rating || 0;
-    const statsSummary: Record<string, any> = { team: team?.name ?? null };
+    const statsSummary: AwardStats = { team: team?.name ?? null };
     Object.entries(weights).forEach(([key, weight]) => {
       const value = (stats as Record<string, number>)[key] ?? 0;
       score += value * weight;
@@ -447,7 +459,7 @@ const calcKicking = (
   statCache: ReturnType<typeof buildStatCache>,
   teamsById: Map<number, Team>
 ) => {
-  const candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+  const candidates: AwardCandidate[] = [];
   players.forEach(player => {
     if (player.pos !== 'k' || !player.starter) return;
     const stats = statCache.kicking.get(player.id);
@@ -470,7 +482,7 @@ export const buildAwards = (
   league: LeagueState,
   players: PlayerRecord[],
   logs: GameLogRecord[]
-) => {
+): AwardsResult => {
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const logsByPlayer = new Map<number, GameLogRecord[]>();
   logs.forEach(log => {
@@ -481,7 +493,7 @@ export const buildAwards = (
 
   const statCache = buildStatCache(league, players, logs, teamsById);
 
-  const candidatesBySlug: Record<string, Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }>> = {
+  const candidatesBySlug: Record<string, AwardCandidate[]> = {
     heisman: calcHeisman(league, players, statCache, teamsById),
     davey_obrien: calcDaveyObrien(players, statCache, teamsById),
     doak_walker: calcDoakWalker(players, statCache, teamsById),
@@ -513,26 +525,33 @@ export const buildAwards = (
 
   Object.values(candidatesBySlug).forEach(candidates => attachStatLines(candidates, logsByPlayer));
 
-  const buildAwardEntry = (slug: string, candidates: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }>, isFinal: boolean) => {
+  const buildAwardEntry = (
+    slug: string,
+    candidates: AwardCandidate[],
+    isFinal: boolean
+  ): AwardEntry => {
     const def = AWARD_DEFINITIONS.find(defn => defn.slug === slug);
-    const entry = {
+    const entry: AwardEntry = {
       category_slug: slug,
       category_name: def?.name ?? slug,
       category_description: def?.description ?? '',
       is_final: isFinal,
       last_updated: new Date().toISOString(),
-      first_place: null as any,
-      first_score: null as number | null,
-      first_stats: null as Record<string, any> | null,
-      second_place: null as any,
-      second_score: null as number | null,
-      second_stats: null as Record<string, any> | null,
-      third_place: null as any,
-      third_score: null as number | null,
-      third_stats: null as Record<string, any> | null,
+      first_place: null,
+      first_score: null,
+      first_stats: null,
+      second_place: null,
+      second_score: null,
+      second_stats: null,
+      third_place: null,
+      third_score: null,
+      third_stats: null,
     };
 
-    const fillCandidate = (target: 'first' | 'second' | 'third', candidate?: { player: PlayerRecord; score: number; stats: Record<string, any> }) => {
+    const fillCandidate = (
+      target: 'first' | 'second' | 'third',
+      candidate?: AwardCandidate
+    ) => {
       if (!candidate) return;
       const teamName = teamsById.get(candidate.player.teamId)?.name ?? '';
       const player = { ...candidatePlayer(candidate.player), team_name: teamName };
@@ -561,7 +580,7 @@ export const buildAwards = (
   const favorites = AWARD_DEFINITIONS.map(def => buildAwardEntry(def.slug, candidatesBySlug[def.slug] ?? [], false));
 
   const blockedPlayers = new Set<number>();
-  const finals: typeof favorites = [];
+  const finals: AwardEntry[] = [];
   PRIORITY_ORDER.forEach(slug => {
     const candidates = candidatesBySlug[slug] ?? [];
     let firstCandidate: (typeof candidates)[number] | undefined = candidates[0];
@@ -571,7 +590,7 @@ export const buildAwards = (
     if (firstCandidate) {
       blockedPlayers.add(firstCandidate.player.id);
     }
-    const ordered: Array<{ player: PlayerRecord; score: number; stats: Record<string, any> }> = [];
+    const ordered: AwardCandidate[] = [];
     if (firstCandidate) {
       ordered.push(firstCandidate);
     }

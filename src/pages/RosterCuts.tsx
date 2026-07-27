@@ -1,36 +1,57 @@
+import { useMemo, useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
-  Chip,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Tab,
+  Tabs,
   Typography,
-  Link as MuiLink,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
+import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { useDomainData } from '../domain/hooks';
-import { loadRosterCuts } from '../domain/league';
+import { loadRosterCuts } from '../domain/league/loaders/loadRosterCuts';
 import type { RosterCutsPageData } from '../types/pages';
+import { PositionLimitsPanel } from './roster-cuts/PositionLimitsPanel';
+import { ProjectedCutsPanel } from './roster-cuts/ProjectedCutsPanel';
+import { RosterCutsSummaryStrip } from './roster-cuts/RosterCutsSummaryStrip';
+
+type RosterCutsTab = 'positions' | 'cuts';
 
 const RosterCuts = () => {
-  const { data, loading, error } = useDomainData<RosterCutsPageData>({
-    fetcher: loadRosterCuts,
-    deps: [],
-  });
+  const [selectedPosition, setSelectedPosition] = useState('');
+  const [activeTab, setActiveTab] =
+    useState<RosterCutsTab>('positions');
+  const { data, loading, error } =
+    useDomainData<RosterCutsPageData>({
+      fetcher: loadRosterCuts,
+    });
 
-  const totalCuts = data?.cuts.length || 0;
+  const cuts = useMemo(
+    () =>
+      data?.cuts.filter(
+        player =>
+          !selectedPosition ||
+          player.position === selectedPosition,
+      ) ?? [],
+    [data, selectedPosition],
+  );
+
+  const selectPosition = (
+    position: string,
+    hasCuts: boolean,
+  ) => {
+    setSelectedPosition(
+      current => (current === position ? '' : position),
+    );
+    if (hasCuts) setActiveTab('cuts');
+  };
 
   return (
     <PageLayout
       loading={loading}
       error={error}
+      containerMaxWidth="xl"
+      desktopViewportConstrained
       navbarData={
         data
           ? {
@@ -42,75 +63,115 @@ const RosterCuts = () => {
           : undefined
       }
     >
-      <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>
-        Roster Cuts
-      </Typography>
+      {data &&
+        (data.info.stage !== 'roster_cuts' ? (
+          <StageUnavailableState
+            title="Roster cuts unavailable"
+            description="The roster-cuts preview is available only during the Roster Cuts stage."
+            currentStage={data.info.stage}
+          />
+        ) : (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: { lg: 1 },
+              minHeight: { lg: 0 },
+            }}
+          >
+            <Box component="header" sx={{ mb: 1.25 }}>
+              <Typography component="h1" variant="h4">
+                Roster Cuts
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Projected automatic cuts for{' '}
+                {data.info.currentYear}. No cuts have been applied.
+                Advancing applies cuts to every team, selects
+                starters, recalculates ratings, resets the season,
+                and enters Preseason.
+              </Typography>
+            </Box>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6">Players Cut</Typography>
-            <Chip label={`${totalCuts} players`} color="warning" size="small" />
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Cuts are based on projected ratings and position limits.
-          </Typography>
-        </CardContent>
-      </Card>
+            <RosterCutsSummaryStrip summary={data.summary} />
 
-      {totalCuts > 0 ? (
-        <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: 'warning.main' }}>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Name</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Year</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Position</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rating</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Projected</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.cuts.map((player) => (
-                <TableRow key={player.id} sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>
-                    <MuiLink
-                      component={RouterLink}
-                      to={`/players/${player.id}`}
-                      underline="hover"
-                      sx={{ color: 'primary.main', fontWeight: 'bold' }}
+            {data.summary.activePlayers === 0 ? (
+              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6">
+                  No roster available
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.5 }}
+                >
+                  No active players were returned for your team.
+                </Typography>
+              </Paper>
+            ) : (
+              <>
+                <Box
+                  sx={{
+                    display: { xs: 'none', lg: 'grid' },
+                    gridTemplateColumns:
+                      'minmax(340px, 0.8fr) minmax(0, 1.45fr)',
+                    gap: 1.25,
+                    flex: 1,
+                    minHeight: 0,
+                  }}
+                >
+                  <PositionLimitsPanel
+                    positions={data.positions}
+                    selectedPosition={selectedPosition}
+                    onSelect={selectPosition}
+                  />
+                  <ProjectedCutsPanel
+                    cuts={cuts}
+                    selectedPosition={selectedPosition}
+                    totalCuts={data.summary.projectedCuts}
+                  />
+                </Box>
+
+                <Box
+                  sx={{
+                    display: { xs: 'flex', lg: 'none' },
+                    flexDirection: 'column',
+                    minHeight: 0,
+                  }}
+                >
+                  <Paper variant="outlined" sx={{ mb: 1.25 }}>
+                    <Tabs
+                      value={activeTab}
+                      onChange={(_, value: RosterCutsTab) =>
+                        setActiveTab(value)
+                      }
+                      variant="fullWidth"
+                      aria-label="Roster cuts preview sections"
                     >
-                      {player.first} {player.last}
-                    </MuiLink>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={player.year?.toUpperCase() || ''}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
+                      <Tab value="positions" label="Position Limits" />
+                      <Tab
+                        value="cuts"
+                        label={`Projected Cuts (${data.summary.projectedCuts})`}
+                      />
+                    </Tabs>
+                  </Paper>
+                  {activeTab === 'positions' ? (
+                    <PositionLimitsPanel
+                      positions={data.positions}
+                      selectedPosition={selectedPosition}
+                      onSelect={selectPosition}
                     />
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={player.pos.toUpperCase()} size="small" color="secondary" variant="outlined" />
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>{player.rating}</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>{player.rating_sr}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      ) : (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No cuts needed
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Your roster is within position limits.
-          </Typography>
-        </Box>
-      )}
+                  ) : (
+                    <ProjectedCutsPanel
+                      cuts={cuts}
+                      selectedPosition={selectedPosition}
+                      totalCuts={data.summary.projectedCuts}
+                    />
+                  )}
+                </Box>
+              </>
+            )}
+          </Box>
+        ))}
     </PageLayout>
   );
 };

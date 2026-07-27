@@ -1,481 +1,395 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../constants/routes";
-import type { PreviewData, Info } from "../types/domain";
-import { STAGES } from "../constants/stages";
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Typography,
-  Tabs,
-  Tab,
+  Alert,
   Box,
-  Select,
-  MenuItem,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Grid,
-} from "@mui/material";
-import { TeamLogo, ConfLogo } from "../components/team/TeamComponents";
-import { useDomainData } from "../domain/hooks";
-import { PageLayout } from "../components/layout/PageLayout";
-import { loadHomeData, type LaunchProps } from "../domain/league";
+  Container,
+  Tab,
+  Tabs,
+  Typography,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { PageLayout } from '../components/layout/PageLayout';
+import { ROUTES } from '../constants/routes';
+import { loadHomeData, startNewLeague } from '../domain/league';
+import type { PlayoffTeamCount, PreviewData } from '../types/domain';
+import type {
+  LaunchProps,
+  StartNewLeagueInput,
+} from '../types/league';
+import { HomeLoadPanel } from './home/HomeLoadPanel';
+import { HomeSetupPanel } from './home/HomeSetupPanel';
+import { HomeTeamBrowser } from './home/HomeTeamBrowser';
+
+type HomeTab = 'new' | 'load';
+type MobileStep = 'setup' | 'team';
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedConference, setSelectedConference] = useState<string>("ALL");
-  const [playoffTeams, setPlayoffTeams] = useState<number>(12);
-  const [playoffAutobids, setPlayoffAutobids] = useState<number>(5);
-  const [playoffConfChampTop4, setPlayoffConfChampTop4] = useState<boolean>(true);
-  const [launchData, setLaunchData] = useState<LaunchProps | null>(null);
   const navigate = useNavigate();
-  const pendingFetch = useRef(false);
+  const previewRequestId = useRef(0);
+  const creationLock = useRef(false);
+  const setupHeadingRef = useRef<HTMLHeadingElement>(null);
+  const setupErrorRef = useRef<HTMLDivElement>(null);
+  const mobileTeamHeadingRef = useRef<HTMLHeadingElement>(null);
+  const desktopCreationErrorRef = useRef<HTMLDivElement>(null);
+  const mobileCreationErrorRef = useRef<HTMLDivElement>(null);
 
-  const { data, loading, error } = useDomainData({
-    fetcher: () => loadHomeData(),
-    onData: (response) => setLaunchData(response),
-  });
+  const [activeTab, setActiveTab] = useState<HomeTab>('new');
+  const [mobileStep, setMobileStep] = useState<MobileStep>('setup');
+  const [data, setData] = useState<LaunchProps | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialError, setInitialError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [selectedConference, setSelectedConference] = useState('ALL');
+  const [teamSearch, setTeamSearch] = useState('');
+  const [playoffTeams, setPlayoffTeams] =
+    useState<PlayoffTeamCount>(12);
+  const [playoffAutobids, setPlayoffAutobids] = useState(5);
+  const [
+    conferenceChampionsReceiveTopSeeds,
+    setConferenceChampionsReceiveTopSeeds,
+  ] = useState(true);
+  const [creatingTeam, setCreatingTeam] = useState<string | null>(null);
+  const [creationError, setCreationError] = useState<string | null>(null);
+  const [lastAttempt, setLastAttempt] =
+    useState<StartNewLeagueInput | null>(null);
 
-  // Initialize data when it loads
-  if (launchData && !selectedYear && launchData.selected_year) {
-    setSelectedYear(launchData.selected_year);
-    if (launchData.preview?.playoff) {
-      setPlayoffTeams(launchData.preview.playoff.teams);
-      setPlayoffAutobids(launchData.preview.playoff.conf_champ_autobids || 0);
-      setPlayoffConfChampTop4(launchData.preview.playoff.conf_champ_top_4 || false);
-    }
-  }
+  const applyPreviewDefaults = useCallback((preview: PreviewData) => {
+    setPlayoffTeams(preview.playoff.teams);
+    setPlayoffAutobids(preview.playoff.conf_champ_autobids);
+    setConferenceChampionsReceiveTopSeeds(
+      preview.playoff.conf_champ_top_4,
+    );
+  }, []);
 
-  // Helper function to get filtered teams
-  const getFilteredTeams = (data: LaunchProps) => {
-    if (!data?.preview) return [];
-
-    if (selectedConference === "ALL") {
-      const conferenceTeams = Object.entries(data.preview.conferences).flatMap(
-        ([confName, confData]: [string, any]) =>
-          confData.teams.map((team: any) => ({ ...team, confName }))
+  const loadInitialData = useCallback(async () => {
+    setInitialLoading(true);
+    setInitialError(null);
+    try {
+      const response = await loadHomeData();
+      setData(response);
+      setSelectedYear(response.selected_year ?? '');
+      if (response.preview) {
+        applyPreviewDefaults(response.preview);
+      }
+    } catch (error) {
+      setInitialError(
+        getErrorMessage(error, 'Home data could not be loaded.'),
       );
-      const independentTeams = data.preview.independents.map((team: any) => ({
-        ...team,
-        confName: null,
-      }));
-      return [...conferenceTeams, ...independentTeams];
+    } finally {
+      setInitialLoading(false);
     }
+  }, [applyPreviewDefaults]);
 
-    if (selectedConference === "INDEPENDENTS") {
-      return data.preview.independents.map((team: any) => ({
-        ...team,
-        confName: null,
-      }));
+  useEffect(() => {
+    void loadInitialData();
+  }, [loadInitialData]);
+
+  const loadYearPreview = async (year: string) => {
+    const requestId = previewRequestId.current + 1;
+    previewRequestId.current = requestId;
+    setSelectedYear(year);
+    setSelectedConference('ALL');
+    setTeamSearch('');
+    setMobileStep('setup');
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setCreationError(null);
+    setData(current =>
+      current
+        ? { ...current, preview: null, selected_year: year }
+        : current,
+    );
+
+    try {
+      const response = await loadHomeData(year);
+      if (previewRequestId.current !== requestId) return;
+      setData(response);
+      if (response.preview) {
+        applyPreviewDefaults(response.preview);
+      }
+    } catch (error) {
+      if (previewRequestId.current !== requestId) return;
+      setPreviewError(
+        getErrorMessage(
+          error,
+          `The ${year} season could not be loaded.`,
+        ),
+      );
+      requestAnimationFrame(() => setupErrorRef.current?.focus());
+    } finally {
+      if (previewRequestId.current === requestId) {
+        setPreviewLoading(false);
+      }
     }
-
-    const confData = data.preview.conferences[selectedConference as keyof typeof data.preview.conferences] as PreviewData['conferences'][string];
-    return confData
-      ? confData.teams.map((team: any) => ({ ...team, confName: selectedConference }))
-      : [];
   };
 
-  // Helper function to get conference options
-  const getConferenceOptions = (data: LaunchProps) => {
-    if (!data?.preview?.conferences) return [];
-    return Object.entries(data.preview.conferences)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([confName, confData]) => ({
-        confName,
-        confData,
-      }));
-  };
-
-  // Helper function to handle playoff team change
-  const handlePlayoffTeamsChange = (teams: number) => {
+  const handlePlayoffTeamsChange = (teams: PlayoffTeamCount) => {
     setPlayoffTeams(teams);
-    const is12Team = teams === 12;
-    setPlayoffAutobids(is12Team ? 5 : 0);
-    setPlayoffConfChampTop4(is12Team);
+    if (teams === 12) {
+      setPlayoffAutobids(5);
+      setConferenceChampionsReceiveTopSeeds(true);
+    } else {
+      setPlayoffAutobids(0);
+      setConferenceChampionsReceiveTopSeeds(false);
+    }
   };
 
-  // Helper function to handle autobids change
-  const handleAutobidsChange = (autobids: number) => {
-    setPlayoffAutobids(autobids);
-  };
-
-  // Helper function to handle conf champ top 4 change
-  const handleConfChampTop4Change = (value: boolean) => {
-    setPlayoffConfChampTop4(value);
-    // If setting to true, ensure autobids is at least 4
-    if (value && playoffAutobids < 4) {
+  const handleTopSeedsChange = (enabled: boolean) => {
+    setConferenceChampionsReceiveTopSeeds(enabled);
+    if (enabled && playoffAutobids < 4) {
       setPlayoffAutobids(4);
     }
   };
 
-  // Helper function to start new game
-  const handleStartGame = async (team: any) => {
+  const runCreation = async (input: StartNewLeagueInput) => {
+    if (creationLock.current) return;
+    creationLock.current = true;
+    setLastAttempt(input);
+    setCreatingTeam(input.teamName);
+    setCreationError(null);
     try {
-      navigate(ROUTES.NONCON, {
-        state: {
-          fromHome: true,
-          team: team.name,
-          year: selectedYear,
-          playoff: {
-            teams: playoffTeams,
-            autobids: playoffAutobids,
-            conf_champ_top_4: playoffConfChampTop4,
-          },
-        },
+      await startNewLeague(input);
+      navigate(ROUTES.NONCON);
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        'The league could not be created.',
+      );
+      setCreationError(
+        data?.info
+          ? `${message} Your existing save is unchanged.`
+          : message,
+      );
+      setCreatingTeam(null);
+      requestAnimationFrame(() => {
+        const visibleError = [
+          desktopCreationErrorRef.current,
+          mobileCreationErrorRef.current,
+        ].find(element => element && element.offsetParent !== null);
+        visibleError?.focus();
       });
-    } catch (error) {
-      console.error("Error starting new game:", error);
-    }
-  };
-
-  // Handle year selection change
-  const handleYearChange = async (event: any) => {
-    const newYear = event.target.value;
-    setSelectedYear(newYear);
-
-    if (pendingFetch.current) return;
-    pendingFetch.current = true;
-
-    try {
-      const responseData = await loadHomeData(newYear);
-      setLaunchData(responseData);
-      // Update the data manually since we're not using DataPage for this specific fetch
-      if (responseData.preview?.playoff) {
-        setPlayoffTeams(responseData.preview.playoff.teams);
-        setPlayoffAutobids(responseData.preview.playoff.conf_champ_autobids || 0);
-        setPlayoffConfChampTop4(responseData.preview.playoff.conf_champ_top_4 || false);
-      }
-      setSelectedConference("ALL");
-    } catch (error) {
-      console.error("Error fetching year data:", error);
     } finally {
-      pendingFetch.current = false;
+      creationLock.current = false;
     }
   };
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  const handleStart = (team: PreviewData['teams'][number]) => {
+    void runCreation({
+      teamName: team.name,
+      year: selectedYear,
+      playoff: {
+        teams: playoffTeams,
+        autobids: playoffTeams === 12 ? playoffAutobids : undefined,
+        conferenceChampionsReceiveTopSeeds:
+          playoffTeams === 12
+            ? conferenceChampionsReceiveTopSeeds
+            : false,
+      },
+    });
   };
 
-  const getLoadGameLink = (info: Info) =>
-    STAGES.find((stage) => stage.id === info.stage)?.path || "/";
+  if (initialLoading) {
+    return (
+      <PageLayout loading error={null}>
+        {null}
+      </PageLayout>
+    );
+  }
 
-  const filteredTeams = launchData ? getFilteredTeams(launchData) : [];
-  const conferenceOptions = launchData ? getConferenceOptions(launchData) : [];
+  if (initialError || !data) {
+    return (
+      <PageLayout loading={false} error={null} containerMaxWidth="sm">
+        <Box sx={{ py: 8, textAlign: 'center' }}>
+          <Typography variant="h4">Home could not be loaded</Typography>
+          <Alert severity="error" sx={{ mt: 2, textAlign: 'left' }}>
+            {initialError ?? 'Home data is unavailable.'}
+          </Alert>
+          <Button variant="contained" onClick={loadInitialData} sx={{ mt: 2 }}>
+            Retry
+          </Button>
+        </Box>
+      </PageLayout>
+    );
+  }
+
+  const teamStepActive = activeTab === 'new' && mobileStep === 'team';
+  const creationLocked = Boolean(creatingTeam);
 
   return (
-    <PageLayout 
-      loading={loading} 
-      error={error}
-      containerMaxWidth={false}
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100dvh',
+        height: {
+          xs: teamStepActive ? '100dvh' : 'auto',
+          lg: '100vh',
+        },
+        overflow: {
+          xs: teamStepActive ? 'hidden' : 'visible',
+          lg: 'hidden',
+        },
+      }}
     >
-      {/* Header */}
-      <Typography
-        variant="h3"
-        align="center"
-        sx={{ mb: 3, fontWeight: "bold", color: "primary.main" }}
-      >
-        Welcome to CFB Sim
-      </Typography>
-
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} centered>
-          <Tab label="New Game" />
-          <Tab label="Load Game" />
-        </Tabs>
+      <Box sx={{ pt: { xs: 2, lg: 2.5 }, px: 2, textAlign: 'center' }}>
+        <Typography
+          component="h1"
+          variant="h3"
+          sx={{ fontSize: { xs: '2rem', sm: '2.5rem', lg: '3rem' } }}
+        >
+          CFB Sim
+        </Typography>
+        <Typography
+          color="text.secondary"
+          sx={{ display: { xs: teamStepActive ? 'none' : 'block', sm: 'block' } }}
+        >
+          Build a college football dynasty across history.
+        </Typography>
       </Box>
 
-      {/* New Game Flow */}
-      {activeTab === 0 && (
-        <Grid container spacing={2} sx={{ maxHeight: "80vh" }}>
-          {/* Left Panel: Configuration */}
-          <Grid size={{ xs: 12, lg: 4 }}>
-            <Paper sx={{ p: 2, height: "fit-content" }}>
-              {/* Year Selection */}
-              <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                1. Choose Season
-              </Typography>
-              <Select
-                value={selectedYear}
-                onChange={handleYearChange}
-                fullWidth
-                size="small"
-                sx={{ mb: 3 }}
-              >
-                {launchData?.years?.map((year: string) => (
-                  <MenuItem key={year} value={year}>
-                    {year} Season
-                  </MenuItem>
-                ))}
-              </Select>
+      <Tabs
+        value={activeTab}
+        onChange={(_, value: HomeTab) => {
+          if (!creationLocked) setActiveTab(value);
+        }}
+        centered
+        selectionFollowsFocus
+        aria-label="Home options"
+        sx={{ mt: 1, borderBottom: '1px solid', borderColor: 'divider' }}
+      >
+        <Tab value="new" label="New league" disabled={creationLocked} />
+        <Tab value="load" label="Load game" disabled={creationLocked} />
+      </Tabs>
 
-              {/* Playoff Configuration */}
-              {selectedYear && launchData?.preview && (
-                <>
-                  <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-                    2. Playoff Format
-                  </Typography>
+      <Container
+        maxWidth="xl"
+        sx={{
+          py: { xs: 2, lg: 2.5 },
+          display: 'flex',
+          flexDirection: 'column',
+          flex: { xs: teamStepActive ? 1 : 'initial', lg: 1 },
+          minHeight: { xs: teamStepActive ? 0 : 'auto', lg: 0 },
+        }}
+      >
+        {activeTab === 'load' ? (
+          <HomeLoadPanel
+            info={data.info}
+            onStartNew={() => setActiveTab('new')}
+          />
+        ) : (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              minHeight: 0,
+            }}
+          >
+            {data.info && (
+              <Alert severity="warning" sx={{ mb: 1.5 }}>
+                Starting a new league replaces the saved {data.info.currentYear}{' '}
+                {data.info.team} league.
+              </Alert>
+            )}
 
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Playoff Teams
-                  </Typography>
-                  <Select
-                    value={playoffTeams}
-                    onChange={(e) => handlePlayoffTeamsChange(Number(e.target.value))}
-                    fullWidth
-                    size="small"
-                    sx={{ mb: 2 }}
-                  >
-                    <MenuItem value={2}>2 Teams (BCS)</MenuItem>
-                    <MenuItem value={4}>4 Teams</MenuItem>
-                    <MenuItem value={12}>12 Teams</MenuItem>
-                  </Select>
+            <Box
+              sx={{
+                display: { xs: mobileStep === 'setup' ? 'block' : 'none', lg: 'grid' },
+                gridTemplateColumns: { lg: 'minmax(310px, 0.38fr) minmax(0, 1fr)' },
+                gap: 1.5,
+                flex: { lg: 1 },
+                minHeight: { lg: 0 },
+              }}
+            >
+              <HomeSetupPanel
+                years={data.years}
+                selectedYear={selectedYear}
+                playoffTeams={playoffTeams}
+                playoffAutobids={playoffAutobids}
+                conferenceChampionsReceiveTopSeeds={
+                  conferenceChampionsReceiveTopSeeds
+                }
+                preview={data.preview}
+                loading={previewLoading}
+                error={previewError}
+                headingRef={setupHeadingRef}
+                errorRef={setupErrorRef}
+                onYearChange={year => void loadYearPreview(year)}
+                onPlayoffTeamsChange={handlePlayoffTeamsChange}
+                onPlayoffAutobidsChange={setPlayoffAutobids}
+                onTopSeedsChange={handleTopSeedsChange}
+                onRetry={() => void loadYearPreview(selectedYear)}
+                onContinue={() => {
+                  setMobileStep('team');
+                  requestAnimationFrame(() =>
+                    mobileTeamHeadingRef.current?.focus(),
+                  );
+                }}
+              />
 
-                  {playoffTeams === 12 && (
-                    <>
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        Conference Champion Autobids
-                      </Typography>
-                      <Select
-                        value={playoffAutobids}
-                        onChange={(e) => handleAutobidsChange(Number(e.target.value))}
-                        fullWidth
-                        size="small"
-                        sx={{ mb: 2 }}
-                      >
-                        {Array.from(
-                          { length: Object.keys(launchData.preview?.conferences || {}).length + 1 },
-                          (_, i) => (
-                            <MenuItem 
-                              key={i} 
-                              value={i}
-                              disabled={playoffConfChampTop4 && i < 4}
-                            >
-                              {i}
-                            </MenuItem>
-                          )
-                        )}
-                      </Select>
-
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        Conference Champions Top 4 Seeds
-                      </Typography>
-                      <Select
-                        value={playoffConfChampTop4 ? "true" : "false"}
-                        onChange={(e) => handleConfChampTop4Change(e.target.value === "true")}
-                        fullWidth
-                        size="small"
-                        sx={{ mb: 2 }}
-                      >
-                        <MenuItem value="true">Yes</MenuItem>
-                        <MenuItem value="false">No</MenuItem>
-                      </Select>
-                    </>
-                  )}
-                </>
-              )}
-            </Paper>
-          </Grid>
-
-          {/* Right Panel: Team Selection */}
-          {selectedYear && launchData?.preview && (
-            <Grid size={{ xs: 12, lg: 8 }}>
-              <Paper sx={{ height: "75vh", display: "flex", flexDirection: "column" }}>
-                {/* Header */}
-                <Box sx={{ p: 2, bgcolor: "primary.main", color: "white" }}>
-                  <Typography variant="h6" sx={{ mb: 1 }}>
-                    3. Select Your Team
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Typography variant="body2">Filter:</Typography>
-                    <Select
-                      value={selectedConference}
-                      onChange={(e) => setSelectedConference(e.target.value)}
-                      size="small"
-                      sx={{ bgcolor: "white", minWidth: 200 }}
-                    >
-                      <MenuItem value="ALL">All Conferences</MenuItem>
-                      {conferenceOptions.map(({ confName }) => (
-                        <MenuItem key={confName} value={confName}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <ConfLogo name={confName} size={16} />
-                            {confName}
-                          </Box>
-                        </MenuItem>
-                      ))}
-                      <MenuItem value="INDEPENDENTS">Independents</MenuItem>
-                    </Select>
-                  </Box>
-                </Box>
-
-                {/* Team List */}
-                <Box sx={{ flex: 1, overflow: "auto", p: 1 }}>
-                  {filteredTeams.length === 0 ? (
-                    <Box sx={{ p: 4, textAlign: "center" }}>
-                      <Typography color="text.secondary">No teams available</Typography>
-                    </Box>
-                  ) : (
-                    filteredTeams
-                      .sort((a: any, b: any) => b.prestige - a.prestige)
-                      .map((team: any, index: number) => (
-                        <Box
-                          key={team.name}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            p: 1.5,
-                            m: 0.5,
-                            border: 1,
-                            borderColor: "divider",
-                            borderRadius: 1,
-                            "&:hover": { bgcolor: "action.hover" },
-                          }}
-                        >
-                          {/* Rank */}
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              minWidth: 40,
-                              color: "primary.main",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            #{index + 1}
-                          </Typography>
-
-                          {/* Team Logo */}
-                          <TeamLogo name={team.name} size={40} />
-
-                          {/* Team Info */}
-                          <Box sx={{ flex: 1, ml: 2 }}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                {team.name} {team.mascot}
-                              </Typography>
-                              {team.confName && <ConfLogo name={team.confName} size={20} />}
-                            </Box>
-
-                            {/* Ratings */}
-                            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                              {[
-                                {
-                                  label: "Current",
-                                  value: team.prestige,
-                                  color: "primary.main",
-                                  width: 45,
-                                },
-                                {
-                                  label: "Ceiling",
-                                  value: team.ceiling,
-                                  color: "success.main",
-                                  width: 35,
-                                },
-                                {
-                                  label: "Floor",
-                                  value: team.floor,
-                                  color: "warning.main",
-                                  width: 30,
-                                },
-                              ].map(({ label, value, color, width }) => (
-                                <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                                  <Typography variant="caption" sx={{ minWidth: width, color }}>
-                                    {label}:
-                                  </Typography>
-                                  <Box sx={{ display: "flex", gap: 0.25 }}>
-                                    {Array.from({ length: 7 }, (_, i) => (
-                                      <Box
-                                        key={i}
-                                        sx={{
-                                          width: 6,
-                                          height: 6,
-                                          borderRadius: "50%",
-                                          bgcolor: i < value ? color : "grey.300",
-                                        }}
-                                      />
-                                    ))}
-                                  </Box>
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
-
-                          {/* Select Button */}
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={async (e) => {
-                              const button = e.target as HTMLButtonElement;
-                              button.disabled = true;
-                              button.textContent = "Starting...";
-                              await handleStartGame(team);
-                            }}
-                          >
-                            Select
-                          </Button>
-                        </Box>
-                      ))
-                  )}
-                </Box>
-              </Paper>
-            </Grid>
-          )}
-        </Grid>
-      )}
-
-      {/* Load Game Tab */}
-      {activeTab === 1 && launchData?.info && (
-        <Paper sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
-          <Typography variant="h5" sx={{ mb: 2, color: "primary.main" }}>
-            Continue Your Journey
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Resume your saved game and continue building your dynasty
-          </Typography>
-
-          <Table sx={{ mb: 3 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Year</TableCell>
-                <TableCell>Stage</TableCell>
-                <TableCell>Team</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <TableRow>
-                <TableCell>{launchData.info.currentYear}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={
-                      launchData.info.stage === "season"
-                        ? `Season (Week ${launchData.info.currentWeek})`
-                        : launchData.info.stage
-                    }
-                    size="small"
-                    color="primary"
+              {data.preview && (
+                <Box sx={{ display: { xs: 'none', lg: 'flex' }, minHeight: 0 }}>
+                  <HomeTeamBrowser
+                    preview={data.preview}
+                    selectedConference={selectedConference}
+                    search={teamSearch}
+                    creatingTeam={creatingTeam}
+                    creationError={creationError}
+                    errorRef={desktopCreationErrorRef}
+                    onConferenceChange={setSelectedConference}
+                    onSearchChange={setTeamSearch}
+                    onStart={handleStart}
+                    onRetry={() => {
+                      if (lastAttempt) void runCreation(lastAttempt);
+                    }}
+                    onBack={() => {
+                      setMobileStep('setup');
+                      requestAnimationFrame(() => setupHeadingRef.current?.focus());
+                    }}
                   />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <TeamLogo name={launchData.info.team} size={24} />
-                    {launchData.info.team}
-                  </Box>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                </Box>
+              )}
+            </Box>
 
-          <Button variant="contained" size="large" href={getLoadGameLink(launchData.info)} fullWidth>
-            Continue Game
-          </Button>
-        </Paper>
-      )}
-    </PageLayout>
+            {mobileStep === 'team' && data.preview && (
+              <Box
+                sx={{
+                  display: { xs: 'flex', lg: 'none' },
+                  flex: 1,
+                  minHeight: 0,
+                }}
+              >
+                <HomeTeamBrowser
+                  preview={data.preview}
+                  selectedConference={selectedConference}
+                  search={teamSearch}
+                  creatingTeam={creatingTeam}
+                  creationError={creationError}
+                  headingRef={mobileTeamHeadingRef}
+                  errorRef={mobileCreationErrorRef}
+                  onConferenceChange={setSelectedConference}
+                  onSearchChange={setTeamSearch}
+                  onStart={handleStart}
+                  onRetry={() => {
+                    if (lastAttempt) void runCreation(lastAttempt);
+                  }}
+                  onBack={() => {
+                    setMobileStep('setup');
+                    requestAnimationFrame(() => setupHeadingRef.current?.focus());
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
+      </Container>
+    </Box>
   );
 };
 

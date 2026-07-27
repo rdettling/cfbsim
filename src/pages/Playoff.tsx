@@ -1,33 +1,44 @@
 import { useState } from 'react';
-import { Grid, Alert, Box, Typography } from '@mui/material';
-import { useDomainData } from '../domain/hooks';
-import { loadPlayoff } from '../domain/league';
+import { Alert, Box, Tab, Tabs } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamComponents';
-import ChampionshipPlayoff from '../components/playoff/ChampionshipPlayoff';
-import FourTeamPlayoff from '../components/playoff/FourTeamPlayoff';
-import TwelveTeamPlayoff from '../components/playoff/TwelveTeamPlayoff';
-import {
-  PlayoffSettings,
-  BowlGamesList,
-  RankingResumeList,
-} from '../components/playoff/PostseasonLists';
+import { useDomainData } from '../domain/hooks';
+import { loadPlayoff } from '../domain/league';
+import type { PlayoffPageData } from '../types/pages';
+import { PostseasonBowlView } from './playoff/PostseasonBowlView';
+import { PostseasonBracketView } from './playoff/PostseasonBracketView';
+import { PostseasonCommitteeView } from './playoff/PostseasonCommitteeView';
+import { PostseasonHeader } from './playoff/PostseasonHeader';
+import type { PostseasonFormat, PostseasonView } from './playoff/types';
+
+const POSTSEASON_TABS: Array<{ value: PostseasonView; label: string }> = [
+  { value: 'bracket', label: 'Bracket' },
+  { value: 'committee', label: 'Committee' },
+  { value: 'bowls', label: 'Bowls' },
+];
 
 const Playoff = () => {
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState<PostseasonView>('bracket');
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState('');
 
-  const { data, loading, error } = useDomainData({
+  const { data, loading, error } = useDomainData<PlayoffPageData>({
     fetcher: loadPlayoff,
   });
 
-  const handleTeamClick = (name: string) => {
-    setSelectedTeam(name);
+  const handleTeamClick = (teamName: string) => {
+    setSelectedTeam(teamName);
     setModalOpen(true);
   };
 
-  const bowlData = data
-    ? data.bowl_games.length
+  const handleGameClick = (gameId: number) => {
+    navigate(`/game/${gameId}`);
+  };
+
+  const bowlGames = data
+    ? data.bowl_games.length > 0
       ? data.bowl_games
       : data.bowl_projections
     : [];
@@ -36,6 +47,8 @@ const Playoff = () => {
     <PageLayout
       loading={loading}
       error={error}
+      containerMaxWidth="xl"
+      desktopViewportConstrained
       navbarData={
         data
           ? {
@@ -46,90 +59,105 @@ const Playoff = () => {
             }
           : undefined
       }
-      containerMaxWidth="xl"
     >
       {data && (
         <>
           <Box
             sx={{
-              mb: 3,
-              p: { xs: 2, md: 2.5 },
-              borderRadius: 3,
-              background: 'linear-gradient(120deg, #f6f2e9 0%, #eef3fb 100%)',
-              border: '1px solid',
-              borderColor: 'divider',
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 2,
+              flexDirection: 'column',
+              flex: { lg: 1 },
+              minHeight: { lg: 0 },
             }}
           >
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: -0.5 }}>
-                Postseason Hub
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Championship and bowl slate in a single, season‑defining view.
-              </Typography>
-            </Box>
-            <PlayoffSettings
-              settings={{
-                teams: data.playoff.teams,
-                autobids: data.playoff.autobids,
-                conf_champ_top_4: data.playoff.conf_champ_top_4,
-              }}
+            <PostseasonHeader
+              year={data.info.currentYear}
+              week={data.info.currentWeek}
+              format={data.playoff.teams}
+              autobids={data.playoff.autobids}
+              conferenceChampByes={data.playoff.conf_champ_top_4}
+              isProjection={data.is_projection}
             />
-          </Box>
 
-          {data.is_projection && (
-            <Alert severity="info" sx={{ mb: 3 }}>
-              This is a playoff projection based on current rankings. The actual playoff bracket will be determined after Week {data.info.lastWeek - 1}.
-            </Alert>
-          )}
+            {data.is_projection && (
+              <Alert severity="info" sx={{ mb: 1.25, py: 0, flexShrink: 0 }}>
+                This field is based on current rankings. The final bracket is set after
+                Week {data.info.lastWeek - 1}.
+              </Alert>
+            )}
 
-          <Grid container spacing={3} sx={{ mb: 2 }}>
-            <Grid size={{ xs: 12 }}>
-              {data.playoff.teams === 2 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <ChampionshipPlayoff
-                    playoffTeams={data.playoff_teams}
-                    bracket={data.bracket}
-                    onTeamClick={handleTeamClick}
-                  />
-                </Box>
-              )}
+            <Tabs
+              value={activeView}
+              onChange={(_, value: PostseasonView) => setActiveView(value)}
+              selectionFollowsFocus
+              aria-label="Postseason hub sections"
+              sx={{
+                minHeight: 42,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                flexShrink: 0,
+                mb: 1.25,
+              }}
+            >
+              {POSTSEASON_TABS.map((tab) => (
+                <Tab
+                  key={tab.value}
+                  id={`postseason-tab-${tab.value}`}
+                  aria-controls={`postseason-panel-${tab.value}`}
+                  value={tab.value}
+                  label={tab.label}
+                  sx={{ minHeight: 42 }}
+                />
+              ))}
+            </Tabs>
 
-              {data.playoff.teams === 4 && (
-                <FourTeamPlayoff
-                  playoffTeams={data.playoff_teams}
+            <Box
+              role="tabpanel"
+              id={`postseason-panel-${activeView}`}
+              aria-labelledby={`postseason-tab-${activeView}`}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: { lg: 1 },
+                minHeight: { lg: 0 },
+              }}
+            >
+              {activeView === 'bracket' && (
+                <PostseasonBracketView
                   bracket={data.bracket}
+                  format={data.playoff.teams as PostseasonFormat}
+                  hasTeams={data.playoff_teams.length > 0}
+                  onGameClick={handleGameClick}
                   onTeamClick={handleTeamClick}
                 />
               )}
-
-              {data.playoff.teams === 12 && (
-                <TwelveTeamPlayoff bracket={data.bracket} onTeamClick={handleTeamClick} />
+              {activeView === 'committee' && (
+                <PostseasonCommitteeView
+                  field={data.playoff_teams}
+                  bubbleTeams={data.bubble_teams}
+                  conferenceChampions={data.conference_champions}
+                  resumeTeams={data.resume_teams}
+                  format={data.playoff.teams}
+                  isProjection={data.is_projection}
+                  onTeamClick={handleTeamClick}
+                />
               )}
-            </Grid>
-          </Grid>
-
-          <Box sx={{ mt: 2, mb: 1 }}>
-            <Typography variant="overline" sx={{ letterSpacing: 2, fontWeight: 700, color: 'text.secondary' }}>
-              Committee Snapshot
-            </Typography>
-          </Box>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12 }}>
-              <RankingResumeList teams={data.resume_teams} onTeamClick={handleTeamClick} />
-            </Grid>
-          </Grid>
-
-          <Box sx={{ mt: 3 }}>
-            <BowlGamesList games={bowlData} onTeamClick={handleTeamClick} />
+              {activeView === 'bowls' && (
+                <PostseasonBowlView
+                  games={bowlGames}
+                  showingProjections={data.bowl_games.length === 0}
+                  onGameClick={handleGameClick}
+                  onTeamClick={handleTeamClick}
+                />
+              )}
+            </Box>
           </Box>
 
-          <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
+          <TeamInfoModal
+            teamName={selectedTeam}
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+          />
         </>
       )}
     </PageLayout>

@@ -1,9 +1,28 @@
 import { buildFullScheduleFromExisting } from '../../../scheduleBuilder';
 import { initializeSimData } from '../../../sim';
+import type { Conference, Info, ScheduleGame, Team } from '../../../../types/domain';
 import { loadLeagueOrThrow } from '../../leagueStore';
 import { getCurrentYearGames, getUserSchedule, getUserTeam } from './shared';
 
-export const loadDashboard = async () => {
+export interface DashboardHeadline {
+  id: number;
+  headline: string;
+  subtitle: string | null;
+  tags: string[];
+}
+
+export interface DashboardPageResult {
+  info: Info;
+  prev_game: ScheduleGame | null;
+  curr_game: ScheduleGame | null;
+  team: Team;
+  confTeams: Team[];
+  top_10: Team[];
+  top_games: DashboardHeadline[];
+  conferences: Conference[];
+}
+
+export const loadDashboard = async (): Promise<DashboardPageResult> => {
   const league = await loadLeagueOrThrow();
 
   if (!league.scheduleBuilt) {

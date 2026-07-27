@@ -1146,6 +1146,7 @@ export const buildGameData = (game: GameRecord, teamsById: Map<number, Team>): G
     headline_tags: game.headline_tags ?? null,
     homeTeamId: game.homeTeamId,
     awayTeamId: game.awayTeamId,
+    neutralSite: game.neutralSite,
     teamA: {
       id: teamA.id,
       name: teamA.name,

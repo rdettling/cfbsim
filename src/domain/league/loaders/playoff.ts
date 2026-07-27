@@ -6,7 +6,7 @@ import { loadLeagueOrThrow } from '../leagueStore';
 import { DEFAULT_SETTINGS } from '../../../types/league';
 import { REGULAR_SEASON_WEEKS } from '../postseason';
 
-type PlayoffTeamEntry = {
+export type PlayoffTeamEntry = {
   name: string;
   seed: number;
   ranking: number;
@@ -15,14 +15,14 @@ type PlayoffTeamEntry = {
   is_autobid: boolean;
 };
 
-type BubbleTeamEntry = {
+export type BubbleTeamEntry = {
   name: string;
   ranking: number;
   conference: string;
   record: string;
 };
 
-type ResumeTeamEntry = {
+export type ResumeTeamEntry = {
   name: string;
   ranking: number;
   conference: string;
@@ -34,7 +34,7 @@ type ResumeTeamEntry = {
   is_champ: boolean;
 };
 
-type ConferenceChampionEntry = {
+export type ConferenceChampionEntry = {
   name: string;
   ranking: number;
   conference: string;
@@ -42,7 +42,7 @@ type ConferenceChampionEntry = {
   seed: number | null;
 };
 
-type BowlGameEntry = {
+export type BowlGameEntry = {
   id: number;
   name: string;
   week: number;
@@ -62,6 +62,45 @@ type BowlGameEntry = {
   is_ny6: boolean;
   is_projection: boolean;
 };
+
+export type PlayoffMatchup = {
+  id?: string;
+  next_game?: string;
+  game_id?: number;
+  team1: string;
+  team2: string;
+  seed1: number | null;
+  seed2: number | null;
+  score1: number | null;
+  score2: number | null;
+  winner: string | null;
+};
+
+export type TwoTeamPlayoffBracket = {
+  championship: PlayoffMatchup;
+};
+
+export type FourTeamPlayoffBracket = {
+  semifinals: PlayoffMatchup[];
+  championship: PlayoffMatchup;
+};
+
+type TwelveTeamBracketSide = {
+  first_round: PlayoffMatchup[];
+  quarterfinals: PlayoffMatchup[];
+  semifinal: PlayoffMatchup;
+};
+
+export type TwelveTeamPlayoffBracket = {
+  left_bracket: TwelveTeamBracketSide;
+  right_bracket: TwelveTeamBracketSide;
+  championship: PlayoffMatchup;
+};
+
+export type PlayoffBracket =
+  | TwoTeamPlayoffBracket
+  | FourTeamPlayoffBracket
+  | TwelveTeamPlayoffBracket;
 
 const NY6_BOWLS = [
   'Rose Bowl',
@@ -277,7 +316,7 @@ const buildGameResult = (
   getSeed: (name: string) => number | null,
   teamsById: Map<number, Team>,
   isProjection: boolean
-) => {
+): PlayoffMatchup => {
   if (!game || isProjection) {
     return {
       team1: team1Name,
@@ -329,7 +368,7 @@ const buildBracket = async (
   league: LeagueState,
   playoffTeams: Team[],
   isProjection: boolean
-) => {
+): Promise<PlayoffBracket> => {
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const gameOrNull = async (id?: number) => (id ? (await getGameById(id)) ?? null : null);
   const getSeed = (name: string) => {

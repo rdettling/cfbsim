@@ -1,60 +1,65 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Typography,
   Box,
-  Button,
   Grid,
-  Card,
-  CardContent,
+  IconButton,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
 } from '@mui/material';
-import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import { TeamLogo, TeamInfoModal } from '../components/team/TeamComponents';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { PageLayout } from '../components/layout/PageLayout';
+import { TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadWeekSchedule } from '../domain/league';
-import { PageLayout } from '../components/layout/PageLayout';
-import { resolveHomeAway, resolveTeamSide, formatMatchup } from '../domain/utils/gameDisplay';
+import type { WeekSchedulePageData } from '../types/pages';
+import { WeekScheduleGameCard } from './week-schedule/WeekScheduleGameCard';
 
-export default function WeekSchedule() {
+const WeekSchedule = () => {
   const { week } = useParams();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState('');
 
-  const { data, loading, error } = useDomainData({
+  const parsedWeek = Number(week);
+  const selectedWeek =
+    Number.isInteger(parsedWeek) && parsedWeek > 0 ? parsedWeek : null;
+
+  const { data, loading, error } = useDomainData<WeekSchedulePageData>({
     fetcher: () => {
-      const currentWeek = window.location.pathname.split('/').pop();
-      if (!currentWeek) throw new Error('Week number is required');
-      const weekNum = parseInt(currentWeek, 10);
-      if (Number.isNaN(weekNum)) throw new Error('Invalid week number');
-      return loadWeekSchedule(weekNum);
+      if (selectedWeek === null) {
+        throw new Error('Invalid week number');
+      }
+      return loadWeekSchedule(selectedWeek);
     },
     deps: [week],
   });
 
   useEffect(() => {
-    document.title = week ? `Week ${week} Schedule` : 'College Football';
+    document.title = selectedWeek
+      ? `Week ${selectedWeek} Schedule`
+      : 'College Football';
     return () => {
       document.title = 'College Football';
     };
-  }, [week]);
+  }, [selectedWeek]);
 
   const handleTeamClick = (name: string) => {
     setSelectedTeam(name);
     setModalOpen(true);
   };
 
-  const handleWeekNavigation = (direction: 'prev' | 'next') => {
-    if (!data) return;
-    const currentWeek = parseInt(week || '1', 10);
-    const newWeek =
-      direction === 'prev'
-        ? Math.max(1, currentWeek - 1)
-        : Math.min(data.info.lastWeek, currentWeek + 1);
-    if (newWeek !== currentWeek) {
-      navigate(`/schedule/${newWeek}`);
-    }
+  const navigateToWeek = (newWeek: number) => {
+    navigate(`/schedule/${newWeek}`);
   };
+
+  const atFirstWeek = selectedWeek === 1;
+  const atLastWeek = Boolean(
+    data && selectedWeek !== null && selectedWeek >= data.info.lastWeek
+  );
 
   return (
     <PageLayout
@@ -71,184 +76,104 @@ export default function WeekSchedule() {
           : undefined
       }
       containerMaxWidth="xl"
+      desktopViewportConstrained
     >
-      {data && (
+      {data && selectedWeek !== null && (
         <>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-            <Button
-              onClick={() => handleWeekNavigation('prev')}
-              disabled={!data || parseInt(week || '1', 10) <= 1}
-              startIcon={<ChevronLeft />}
-              variant="outlined"
-              sx={{
-                color: 'primary.main',
-                borderColor: 'primary.main',
-                '&:hover': {
-                  backgroundColor: 'primary.light',
-                  color: 'white',
-                  borderColor: 'primary.light',
-                },
-                '&.Mui-disabled': {
-                  color: 'grey.400',
-                  borderColor: 'grey.400',
-                },
-              }}
-            >
-              Prev Week
-            </Button>
+          <Box
+            component="header"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '40px minmax(0, 1fr) 40px',
+              gap: 1,
+              alignItems: 'center',
+              mb: 1.5,
+            }}
+          >
+            <Tooltip title="Previous week">
+              <span>
+                <IconButton
+                  aria-label="Previous week"
+                  disabled={atFirstWeek}
+                  onClick={() => navigateToWeek(selectedWeek - 1)}
+                  size="small"
+                  sx={{ border: '1px solid', borderColor: 'divider' }}
+                >
+                  <ChevronLeftIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
 
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h2" sx={{ fontWeight: 700, mb: 1 }}>
-                Week {week} Schedule
+            <Box sx={{ minWidth: 0, textAlign: 'center' }}>
+              <Typography
+                component="h1"
+                variant="h4"
+                sx={{ fontSize: { xs: '1.7rem', sm: '2.125rem' } }}
+              >
+                Week {selectedWeek}
               </Typography>
-              <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-                {data.games.length} Games This Week
+              <Typography variant="body2" color="text.secondary">
+                {data.info.currentYear} season · {data.games.length}{' '}
+                {data.games.length === 1 ? 'game' : 'games'}
               </Typography>
             </Box>
 
-            <Button
-              onClick={() => handleWeekNavigation('next')}
-              disabled={!data || parseInt(week || '1', 10) >= (data.info.lastWeek || 1)}
-              endIcon={<ChevronRight />}
-              variant="outlined"
-              sx={{
-                color: 'primary.main',
-                borderColor: 'primary.main',
-                '&:hover': {
-                  backgroundColor: 'primary.light',
-                  color: 'white',
-                  borderColor: 'primary.light',
-                },
-                '&.Mui-disabled': {
-                  color: 'grey.400',
-                  borderColor: 'grey.400',
-                },
-              }}
-            >
-              Next Week
-            </Button>
+            <Tooltip title="Next week">
+              <span>
+                <IconButton
+                  aria-label="Next week"
+                  disabled={atLastWeek}
+                  onClick={() => navigateToWeek(selectedWeek + 1)}
+                  size="small"
+                  sx={{ border: '1px solid', borderColor: 'divider' }}
+                >
+                  <ChevronRightIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
           </Box>
 
-          <Grid container spacing={2}>
-            {data.games.map((game) => {
-              const { home, away, neutral } = resolveHomeAway(game);
-              const awaySide = resolveTeamSide(game, away.id);
-              const homeSide = resolveTeamSide(game, home.id);
-              return (
-              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={game.id}>
-                <Card
-                  sx={{
-                    borderRadius: 2,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                      transform: 'translateY(-2px)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 2 }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        mb: 2,
-                        pb: 1,
-                        borderBottom: '1px solid',
-                        borderColor: 'grey.200',
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                        {formatMatchup(home.name, away.name, neutral)}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        Watchability: {game.watchability}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ mb: 2 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          mb: 1,
-                          p: 1,
-                          borderRadius: 1,
-                          backgroundColor: 'grey.50',
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <TeamLogo name={away.name} size={24} />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 500,
-                              cursor: 'pointer',
-                              '&:hover': { textDecoration: 'underline' },
-                            }}
-                            onClick={() => handleTeamClick(away.name)}
-                          >
-                            {awaySide.rank > 0 && awaySide.rank < 26 ? `#${awaySide.rank} ${away.name}` : away.name}
-                          </Typography>
-                        </Box>
-                        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                          {game.winner ? awaySide.score : awaySide.spread}
-                        </Typography>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 1,
-                          borderRadius: 1,
-                          backgroundColor: 'grey.50',
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <TeamLogo name={home.name} size={24} />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 500,
-                              cursor: 'pointer',
-                              '&:hover': { textDecoration: 'underline' },
-                            }}
-                            onClick={() => handleTeamClick(home.name)}
-                          >
-                            {homeSide.rank > 0 && homeSide.rank < 26 ? `#${homeSide.rank} ${home.name}` : home.name}
-                          </Typography>
-                        </Box>
-                        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                          {game.winner ? homeSide.score : homeSide.spread}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        {game.winner
-                          ? `${game.base_label || 'VS'} - FINAL${
-                              game.overtime && game.overtime > 0 ? ` (${game.overtime > 1 ? `${game.overtime}OT` : 'OT'})` : ''
-                            }`
-                          : formatMatchup(home.name, away.name, neutral)}
-                      </Typography>
-                      <Button component={RouterLink} to={`/game/${game.id}`} size="small" variant="outlined" sx={{ fontSize: '0.75rem' }}>
-                        {game.winner ? 'Summary' : 'Preview'}
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
+          {data.games.length > 0 ? (
+            <Box
+              component="section"
+              aria-label={`Week ${selectedWeek} games`}
+              sx={{
+                flex: { lg: 1 },
+                minHeight: { lg: 0 },
+                overflowX: 'hidden',
+                overflowY: { lg: 'auto' },
+                pr: { lg: 0.5 },
+              }}
+            >
+              <Grid container spacing={1.5}>
+                {data.games.map((game) => (
+                  <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={game.id}>
+                    <WeekScheduleGameCard
+                      game={game}
+                      onTeamClick={handleTeamClick}
+                    />
+                  </Grid>
+                ))}
               </Grid>
-              );
-            })}
-          </Grid>
+            </Box>
+          ) : (
+            <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h6">No games scheduled</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                There are no games scheduled for Week {selectedWeek}.
+              </Typography>
+            </Paper>
+          )}
 
-          <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
+          <TeamInfoModal
+            teamName={selectedTeam}
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+          />
         </>
       )}
     </PageLayout>
   );
-}
+};
+
+export default WeekSchedule;

@@ -2,90 +2,143 @@
 
 ## Scope
 
-Defines the authoritative lifecycle stage graph, transition guards, side effects, and stage-gated loader behavior.
+Defines the authoritative lifecycle graph, transition guards, side effects, and
+stage-gated loader behavior.
 
 ## Entry Points
 
 - Initial stage creation: `startNewLeague(...)`.
-- Season advancement: `advanceWeeks(destWeek)` and postseason gate `handleSpecialWeeks(...)`.
-- Offseason stage loaders: `loadRealignment()`, `loadRosterProgression()`, `loadRecruitingSummary()`, `loadRosterCuts()`, `loadNonCon()`.
-- Stage transition helpers: `advanceToProgression()`, `advanceToRecruitingSummary()`, `advanceToRosterCuts()`, `advanceToPreseason()`.
+- Season advancement: `advanceWeeks(destWeek)` and postseason gate
+  `handleSpecialWeeks(...)`.
+- Offseason advancement: `advanceOffseasonStage(expectedStage)`.
+- Offseason route readers: `loadSeasonSummary()`, `loadRealignment()`,
+  `loadRosterProgression()`, `loadRecruitingSummary()`, `loadRosterCuts()`,
+  and `loadNonCon()`.
 
 ## Core Types and Stores
 
-- Stage holder: `LeagueState.info.stage`.
-- Week/year cursor: `LeagueState.info.currentWeek`, `currentYear`, `lastWeek`.
-- Postseason transition dependency: `LeagueState.playoff` and natty game winner state in `games` store.
-- Persistence location for state machine: `league/current` record in IndexedDB.
+- `LeagueStage` defines all persisted stages; `OffseasonStage` defines valid
+  command source stages.
+- `STAGES` exhaustively defines each stage's label, authoritative route, and
+  destination stage.
+- `LeagueState.info.stage` is the authoritative stage holder.
+- `LeagueState.info.currentWeek`, `currentYear`, and `lastWeek` hold the season
+  cursor.
+- The state machine is persisted in `league/current` in IndexedDB.
+- Offseason commits may also include history, players, games, drives, plays,
+  and game logs.
 
 ## Execution Flow
 
 1. **Initialization**
-- `startNewLeague()` sets `info.stage = 'preseason'`, seeds week/year, settings, playoff scaffold, and counters.
+- `startNewLeague()` creates `preseason`, settings, playoff state, counters,
+  rosters, and initial scheduling data.
 
-2. **Preseason to season enablement**
-- `loadDashboard()` sets stage to `season` when schedule is not built and initializes sim game records.
-- `advanceWeeks()` also enforces `season` bootstrap if schedule/sim are not initialized.
+2. **Preseason to season**
+- `loadDashboard()` builds the schedule and initializes simulation records when
+  needed.
+- `advanceWeeks()` enforces the same bootstrap before simulation.
 
-3. **Season progression and summary transition**
-- `advanceWeeks()` simulates week-by-week and invokes `handleSpecialWeeks()`.
-- `handleSpecialWeeks()` schedules postseason rounds/bowls by format; `ensureSummaryStage()` transitions to `summary` only after natty has a winner.
+3. **Season to summary**
+- `advanceWeeks()` invokes `handleSpecialWeeks()` while simulating.
+- The postseason gate enters `summary` only after the national championship has
+  a winner and final rankings are available.
 
-4. **Summary to offseason progression**
-- `loadRealignment()` transitions `summary -> realignment` and applies prestige updates.
-- `loadRosterProgression()` invokes `advanceToProgression()` to transition `realignment -> progression`.
-- `loadRecruitingSummary()` invokes `advanceToRecruitingSummary()` to transition `progression -> recruiting_summary`.
-- `loadRosterCuts()` invokes `advanceToRosterCuts()` to transition `recruiting_summary -> roster_cuts`.
+4. **Explicit offseason progression**
+- `AppNavigation` calls `advanceOffseasonStage()` with the stage returned by
+  the current loader.
+- The command verifies the expected stage, prepares the existing domain work,
+  and commits affected IndexedDB stores atomically.
+- The exhaustive stage catalog supplies the command's persisted destination
+  and returned route; transition handlers contain only stage-specific work.
+- The commit rechecks the persisted source stage and writes the destination
+  league record last.
+- Realignment commits also compare the persisted settings with the snapshot
+  used for calculation, preventing configuration edits from racing advancement.
+- The shell navigates only from the successful command result.
 
-5. **Offseason to next preseason**
-- `loadNonCon()` checks `stage === 'roster_cuts'` and invokes `advanceToPreseason()`.
-- `advanceToPreseason()` applies cuts/starters/rating recalculation, resets season data, and sets `stage = 'preseason'`.
+5. **Offseason route reads**
+- Route loaders never advance or reverse the lifecycle.
+- Off-stage reads return the authoritative navigation envelope and empty
+  page-specific payloads.
+- Summary, Next Season Setup, and Preseason gate before reading or shaping
+  lifecycle-specific page data.
+- Compatibility normalization, settings defaults, and missing legacy roster
+  initialization may persist without changing stage or year.
 
 ```mermaid
 stateDiagram-v2
   [*] --> preseason : startNewLeague()
-  preseason --> season : loadDashboard() / advanceWeeks() bootstrap
-  season --> summary : handleSpecialWeeks() + ensureSummaryStage() when natty winner
-  summary --> realignment : loadRealignment()
-  realignment --> progression : advanceToProgression() via loadRosterProgression()
-  progression --> recruiting_summary : advanceToRecruitingSummary() via loadRecruitingSummary()
-  recruiting_summary --> roster_cuts : advanceToRosterCuts() via loadRosterCuts()
-  roster_cuts --> preseason : advanceToPreseason() via loadNonCon()
+  preseason --> season : schedule/simulation bootstrap
+  season --> summary : completed national championship
+  summary --> realignment : advanceOffseasonStage(summary)
+  realignment --> progression : advanceOffseasonStage(realignment)
+  progression --> recruiting_summary : advanceOffseasonStage(progression)
+  recruiting_summary --> roster_cuts : advanceOffseasonStage(recruiting_summary)
+  roster_cuts --> preseason : advanceOffseasonStage(roster_cuts)
 ```
 
-## Invariants and Constraints
+## Invariants and Failure Behavior
 
-- Transition helpers are stage-guarded; mismatch returns false/no-op.
-- `summary` transition is postseason-result dependent, not purely week-count dependent.
-- Loader invocation order matters in offseason; loaders are used as transition triggers.
-- `preseason` reset preserves league identity/settings while resetting season counters/artifacts.
-
-## Failure/Edge Cases
-
-- If natty is not created or not completed, `summary` transition is deferred.
-- If offseason loader is opened out of order, guard functions prevent illegal stage jump.
-- `loadNonCon()` silently skips preseason transition unless currently in `roster_cuts`.
-- Postseason creation functions short-circuit when round game IDs already exist (idempotent scheduling protection).
+- Offseason commands are guarded before calculation and inside the final
+  read-write transaction.
+- A mismatch throws `OffseasonStageMismatchError`; it never becomes a no-op.
+- A settings race throws `OffseasonConfigurationConflictError`, refreshes the
+  setup data, and leaves the stage and year unchanged.
+- Repeated or concurrent commands may calculate, but only one matching command
+  can commit.
+- Player, history, game, artifact, and league writes either commit together or
+  roll back together.
+- Navigation, refresh, Back/Forward, and direct route access cannot advance the
+  offseason.
+- A persistence failure leaves the source stage and affected stores intact.
+- The preseason reset preserves league identity/settings while resetting
+  season counters and artifacts.
 
 ## Transition Table
 
-| From | To | Trigger | Guard | Side Effects |
-|---|---|---|---|---|
-| `none` | `preseason` | `startNewLeague()` | n/a | Initializes league info/settings/counters, non-con schedule seed, persists league |
-| `preseason` | `season` | `loadDashboard()` or `advanceWeeks()` bootstrap path | `!scheduleBuilt` or `!simInitialized` path | Builds schedule, initializes game records, sets `scheduleBuilt`, `simInitialized`, stage |
-| `season` | `summary` | `handleSpecialWeeks()` -> `ensureSummaryStage()` | natty exists and has `winnerId` | Sets stage to `summary`; finalizes postseason rankings |
-| `summary` | `realignment` | `loadRealignment()` | `league.info.stage === 'summary'` | Applies prestige changes; persists stage/settings context |
-| `realignment` | `progression` | `advanceToProgression()` via `loadRosterProgression()` | stage must be `realignment` | Applies realignment/playoff settings and advances stage |
-| `progression` | `recruiting_summary` | `advanceToRecruitingSummary()` via `loadRecruitingSummary()` | stage must be `progression` | Applies progression + recruiting cycle; persists players/league |
-| `recruiting_summary` | `roster_cuts` | `advanceToRosterCuts()` via `loadRosterCuts()` | stage must be `recruiting_summary` | Advances stage only |
-| `roster_cuts` | `preseason` | `advanceToPreseason()` via `loadNonCon()` | stage must be `roster_cuts` | Applies cuts, sets starters, recalculates ratings, resets season data, reinitializes non-con artifacts |
+| From | To | Trigger | Side effects |
+|---|---|---|---|
+| `none` | `preseason` | `startNewLeague()` | Initializes league, rosters, settings, counters, and scheduling |
+| `preseason` | `season` | Dashboard/season bootstrap | Builds the full schedule and simulation records |
+| `season` | `summary` | Completed national championship | Finalizes postseason rankings |
+| `summary` | `realignment` | `advanceOffseasonStage('summary')` | Finalizes history, calculates/applies prestige |
+| `realignment` | `progression` | `advanceOffseasonStage('realignment')` | Applies conference/playoff policy, increments year, resets postseason |
+| `progression` | `recruiting_summary` | `advanceOffseasonStage('progression')` | Applies progression and recruiting |
+| `recruiting_summary` | `roster_cuts` | `advanceOffseasonStage('recruiting_summary')` | Advances stage only |
+| `roster_cuts` | `preseason` | `advanceOffseasonStage('roster_cuts')` | Applies cuts/starters/ratings, resets season, creates rivalry games |
 
-## Source Map (file/function references)
+## Stage Semantics
 
-- `src/domain/league/loaders/season/startNewLeague.ts`: initialization to `preseason`
-- `src/domain/league/loaders/season/loadDashboard.ts`: preseason bootstrap to `season`
-- `src/domain/sim/orchestrator.ts`: `advanceWeeks` season advancement path
-- `src/domain/sim/postseason.ts`: `handleSpecialWeeks`, postseason scheduling, summary gate logic
-- `src/domain/league/loaders/offseason.ts`: `loadRealignment`, `loadRosterProgression`, `loadRecruitingSummary`, `loadRosterCuts`
-- `src/domain/league/loaders/season/loadNonCon.ts`: `roster_cuts` to `preseason` call path
-- `src/domain/league/stages.ts`: `advanceToProgression`, `advanceToRecruitingSummary`, `advanceToRosterCuts`, `advanceToPreseason`
+| Stage | Authoritative route | Page meaning |
+|---|---|---|
+| `preseason` | `/noncon` | Editable non-conference scheduling |
+| `season` | `/dashboard` | Active season simulation |
+| `summary` | `/summary` | Finalized season results and prestige preview |
+| `realignment` | `/realignment` | Editable Next Season Setup and historical preview |
+| `progression` | `/roster_progression` | Projected class, rating, and departure changes |
+| `recruiting_summary` | `/recruiting_summary` | Finalized recruiting results |
+| `roster_cuts` | `/roster_cuts` | Projected automatic cuts |
+
+The typed catalog in `src/constants/stages.ts` remains authoritative for labels,
+routes, and next-stage relationships.
+
+## Source Map
+
+- `src/domain/league/stages.ts`: guarded offseason command and transition
+  dispatch
+- `src/constants/stages.ts`: exhaustive stage label, route, and destination
+  definitions
+- `src/db/offseasonRepo.ts`: atomic commit and persisted-stage guard
+- `src/domain/league/loaders/loadRealignment.ts` and
+  `loadRosterProgression.ts`: migrated read-only preview contracts
+- `src/domain/league/loaders/loadRecruitingSummary.ts`: finalized recruiting
+  result contract
+- `src/domain/league/loaders/offseason.ts`: read-only Summary and awards
+  contracts
+- `src/domain/league/loaders/navigationEnvelope.ts`: shared stage-aware
+  navigation envelope
+- `src/domain/league/loaders/loadAuthoritativeStage.ts`: compatibility redirect
+  reader
+- `src/domain/league/loaders/season/loadNonCon.ts`: read-only preseason contract
+- `src/domain/sim/postseason.ts`: postseason scheduling and summary gate

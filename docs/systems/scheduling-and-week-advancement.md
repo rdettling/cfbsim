@@ -102,7 +102,7 @@ flowchart TD
 - `src/domain/scheduleBuilder.ts`
   - `buildSchedule`, `buildFullScheduleFromExisting`, `applyRivalriesToSchedule`, `listAvailableTeams`, `scheduleNonConGame`
 - `src/domain/league/seasonReset.ts`
-  - `initializeNonConScheduling`, `buildRivalryGameRecords`, `createNonConGameRecord`, `resetSeasonData`
+  - `initializeNonConScheduling`, `buildRivalryGameRecords`, `createNonConGameRecord`, `prepareSeasonReset`
 - `src/domain/league/loaders/season/loadDashboard.ts`
   - season bootstrap path
 - `src/domain/league/loaders/season/scheduleNonConGame.ts`

@@ -1,255 +1,299 @@
-import { Box, Typography } from '@mui/material';
-import type { FootballFieldProps } from '../../types/components';
+import { alpha, Box, Typography } from '@mui/material';
+
+type FieldTeam = {
+  name: string;
+  mascot?: string;
+  colorPrimary?: string;
+  colorSecondary?: string;
+};
+
+type FootballFieldProps = {
+  currentYardLine: number;
+  homeTeam: FieldTeam;
+  awayTeam: FieldTeam;
+  neutralSite: boolean;
+  isOffenseLeftToRight: boolean;
+  down: number;
+  yardsToGo: number;
+  previousPlayYards?: number;
+};
+
+const END_ZONE_YARDS = 10;
+const TOTAL_FIELD_YARDS = 120;
+const YARD_LINES = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+
+const clampYard = (yard: number) => Math.max(0, Math.min(100, yard));
+const yardToPercent = (yard: number) =>
+  ((END_ZONE_YARDS + clampYard(yard)) / TOTAL_FIELD_YARDS) * 100;
+
+const formatDown = (down: number) => {
+  if (down === 1) return '1st';
+  if (down === 2) return '2nd';
+  if (down === 3) return '3rd';
+  return '4th';
+};
+
+const FieldLine = ({
+  left,
+  color,
+  width = 2,
+}: {
+  left: number;
+  color: string;
+  width?: number;
+}) => (
+  <Box
+    sx={{
+      position: 'absolute',
+      left: `${left}%`,
+      top: 0,
+      bottom: 0,
+      width,
+      transform: 'translateX(-50%)',
+      backgroundColor: color,
+      zIndex: 4,
+    }}
+  />
+);
 
 const FootballField = ({
-    currentYardLine,
-    homeTeam,
-    awayTeam,
-    isOffenseLeftToRight,
-    down,
-    yardsToGo,
-    previousPlayYards
+  currentYardLine,
+  homeTeam,
+  awayTeam,
+  neutralSite,
+  isOffenseLeftToRight,
+  down,
+  yardsToGo,
+  previousPlayYards = 0,
 }: FootballFieldProps) => {
-    // Field dimensions based on yards
-    const PIXELS_PER_YARD = 5;
-    const END_ZONE_YARDS = 10;
-    const FIELD_YARDS = 100;
-    const FIELD_WIDTH_YARDS = 53;
-    const YARD_LINE_NUMBER_SIZE = '1.5rem';
-    const END_ZONE_TEXT_SIZE = '1.8rem';
-    
-    // Calculate dimensions in pixels
-    const endZoneWidth = END_ZONE_YARDS * PIXELS_PER_YARD;
-    const fieldWidth = FIELD_YARDS * PIXELS_PER_YARD;
-    const totalWidth = endZoneWidth + fieldWidth + endZoneWidth;
-    const fieldHeight = FIELD_WIDTH_YARDS * PIXELS_PER_YARD;
-    
-    // Helper function to convert yard line to pixel position
-    const yardToPixels = (yard: number): number => endZoneWidth + (yard * PIXELS_PER_YARD);
-    
-    // Calculate positions - flip field based on offense direction
-    const displayYardLine = isOffenseLeftToRight ? currentYardLine : 100 - currentYardLine;
-    const ballPosition = yardToPixels(displayYardLine);
-    
-    // Calculate first down line - both teams go forward from their current position
-    const firstDownYardLine = Math.min(100, currentYardLine + yardsToGo);
-    
-    // For display, we need to flip the first down line when Team B is on offense
-    const displayFirstDownYardLine = isOffenseLeftToRight ? firstDownYardLine : 100 - firstDownYardLine;
-    const firstDownPosition = yardToPixels(displayFirstDownYardLine);
-    
-    // Calculate previous play zone - flip based on offense team
-    const previousPlayZone = previousPlayYards && previousPlayYards !== 0 ? {
-        left: Math.min(
-            yardToPixels(Math.max(0, Math.min(100, displayYardLine - previousPlayYards * (isOffenseLeftToRight ? 1 : -1)))),
-            ballPosition
-        ),
-        width: Math.abs(previousPlayYards * PIXELS_PER_YARD),
-        isGain: previousPlayYards > 0,
-        yards: previousPlayYards
-    } : null;
-    
-    // Yard line markers (every 10 yards, excluding goal lines)
-    const yardLines = [10, 20, 30, 40, 50, 60, 70, 80, 90];
-    
-    // Helper to format down text
-    const getDownText = (d: number) => ['1st', '2nd', '3rd', '4th'][d - 1] || '4th';
-    
-    // Vertical line component
-    const VerticalLine = ({ left, width, color, zIndex, shadow }: { left: number; width: number; color: string; zIndex: number; shadow?: string }) => (
-        <Box sx={{ position: 'absolute', left, top: 0, bottom: 0, width, bgcolor: color, zIndex, ...(shadow && { boxShadow: shadow }) }} />
-    );
+  const displayYardLine = isOffenseLeftToRight
+    ? currentYardLine
+    : 100 - currentYardLine;
+  const firstDownYardLine = Math.min(100, currentYardLine + yardsToGo);
+  const displayFirstDown = isOffenseLeftToRight
+    ? firstDownYardLine
+    : 100 - firstDownYardLine;
+  const ballPosition = yardToPercent(displayYardLine);
+  const firstDownPosition = yardToPercent(displayFirstDown);
+  const previousPosition = yardToPercent(
+    displayYardLine - previousPlayYards * (isOffenseLeftToRight ? 1 : -1)
+  );
+  const previousPlayLeft = Math.min(previousPosition, ballPosition);
+  const previousPlayWidth = Math.abs(previousPosition - ballPosition);
+  const leftEndZoneTeam = neutralSite ? awayTeam : homeTeam;
+  const rightEndZoneLabel = neutralSite
+    ? homeTeam.name
+    : homeTeam.mascot || homeTeam.name;
 
-    const endZonePrimary = homeTeam.colorPrimary || awayTeam.colorPrimary || 'primary.main';
-    const endZoneSecondary = homeTeam.colorSecondary || awayTeam.colorSecondary || 'white';
-    const endZoneLeftText = homeTeam.name;
-    const endZoneRightText = homeTeam.mascot || homeTeam.name;
-    const midfieldLogoName = homeTeam.name;
+  return (
+    <Box
+      role="img"
+      aria-label={`${formatDown(down)} and ${yardsToGo} at yard line ${currentYardLine}`}
+      sx={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: '120 / 53',
+        minHeight: 150,
+        maxHeight: 310,
+        overflow: 'hidden',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        backgroundColor: 'success.dark',
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          background: theme =>
+            `repeating-linear-gradient(
+              0deg,
+              ${alpha(theme.palette.common.white, 0.035)},
+              ${alpha(theme.palette.common.white, 0.035)} 12px,
+              transparent 12px,
+              transparent 24px
+            )`,
+        }}
+      />
 
-    return (
-        <Box sx={{ 
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            py: 2,
-            overflowX: 'auto'
-        }}>
-            <Box sx={{ 
-                width: totalWidth,
-                height: fieldHeight,
-                position: 'relative',
-                bgcolor: '#255a3a',
-                borderRadius: 3,
-                overflow: 'hidden',
-                display: 'flex',
-                boxShadow: '0 14px 40px rgba(16, 24, 16, 0.25)',
-                backgroundImage: 'linear-gradient(120deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 60%)'
-            }}>
-                {/* Team A End Zone */}
-                <Box
-                    sx={{
-                        width: endZoneWidth,
-                        bgcolor: endZonePrimary,
-                        opacity: 0.95,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative'
-                    }}
-                >
-                    <Typography
-                        sx={{
-                            color: endZoneSecondary,
-                            fontWeight: 'bold',
-                            fontSize: END_ZONE_TEXT_SIZE,
-                            transform: 'rotate(-90deg)',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        {endZoneLeftText}
-                    </Typography>
-                </Box>
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: '0 auto 0 0',
+          width: `${(END_ZONE_YARDS / TOTAL_FIELD_YARDS) * 100}%`,
+          display: 'grid',
+          placeItems: 'center',
+          backgroundColor: leftEndZoneTeam.colorPrimary || 'primary.dark',
+          color: leftEndZoneTeam.colorSecondary || 'common.white',
+        }}
+      >
+        <Typography
+          sx={{
+            fontWeight: 700,
+            fontSize: { xs: '1rem', sm: '1.3rem', md: '1.5rem' },
+            transform: 'rotate(-90deg)',
+            whiteSpace: 'nowrap',
+            maxWidth: 180,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {leftEndZoneTeam.name}
+        </Typography>
+      </Box>
 
-                {/* Main Field (100 yards) */}
-                <Box
-                    sx={{
-                        width: fieldWidth,
-                        position: 'relative',
-                        height: '100%',
-                        backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.04), rgba(255,255,255,0.04) 12px, rgba(255,255,255,0.02) 12px, rgba(255,255,255,0.02) 24px)'
-                    }}
-                >
-                    {/* Yard line markers */}
-                    {yardLines.map((yard) => (
-                        <Box key={yard} sx={{ position: 'absolute', left: yard * PIXELS_PER_YARD, top: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 3 }}>
-                            <Box sx={{ width: 2, height: '100%', bgcolor: 'white', opacity: 0.8 }} />
-                            <Typography sx={{ position: 'absolute', top: 8, color: 'white', fontWeight: 700, fontSize: YARD_LINE_NUMBER_SIZE, textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}>
-                                {yard <= 50 ? yard : 100 - yard}
-                            </Typography>
-                        </Box>
-                    ))}
-                </Box>
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: '0 0 0 auto',
+          width: `${(END_ZONE_YARDS / TOTAL_FIELD_YARDS) * 100}%`,
+          display: 'grid',
+          placeItems: 'center',
+          backgroundColor: homeTeam.colorPrimary || 'primary.dark',
+          color: homeTeam.colorSecondary || 'common.white',
+        }}
+      >
+        <Typography
+          sx={{
+            fontWeight: 700,
+            fontSize: { xs: '1rem', sm: '1.3rem', md: '1.5rem' },
+            transform: 'rotate(90deg)',
+            whiteSpace: 'nowrap',
+            maxWidth: 180,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {rightEndZoneLabel}
+        </Typography>
+      </Box>
 
-                {/* Team B End Zone */}
-                <Box
-                    sx={{
-                        width: endZoneWidth,
-                        bgcolor: endZonePrimary,
-                        opacity: 0.95,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <Typography
-                        sx={{
-                            color: endZoneSecondary,
-                            fontWeight: 'bold',
-                            fontSize: END_ZONE_TEXT_SIZE,
-                            transform: 'rotate(90deg)',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        {endZoneRightText}
-                    </Typography>
-                </Box>
-
-                {/* Midfield Logo */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: '50%',
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 112,
-                        height: 112,
-                        opacity: 1,
-                        zIndex: 4,
-                        pointerEvents: 'none'
-                    }}
-                >
-                    <img
-                        src={`/logos/teams/${midfieldLogoName}.png`}
-                        alt={midfieldLogoName}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                </Box>
-
-                {/* Down and Distance Display */}
-                <Box sx={{
-                    position: 'absolute',
-                    left: ballPosition,
-                    top: 16,
-                    transform: 'translateX(-50%)',
-                    bgcolor: 'rgba(10, 20, 35, 0.85)',
-                    zIndex: 6,
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: '999px',
-                    border: '1px solid rgba(255,255,255,0.2)'
-                }}>
-                    <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
-                        {getDownText(down)} & {yardsToGo}
-                    </Typography>
-                </Box>
-
-                {/* Previous Play Yards Gained/Lost Zone */}
-                {previousPlayZone && (
-                    <Box sx={{
-                        position: 'absolute',
-                        left: previousPlayZone.left,
-                        bottom: 16,
-                        height: 22,
-                        width: previousPlayZone.width,
-                        bgcolor: previousPlayZone.isGain ? 'rgba(76, 175, 80, 0.75)' : 'rgba(244, 67, 54, 0.75)',
-                        zIndex: 3,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '999px'
-                    }}>
-                        <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '0.7rem' }}>
-                            {previousPlayZone.isGain ? '+' : ''}{previousPlayZone.yards} YDS
-                        </Typography>
-                    </Box>
-                )}
-
-                {/* Goal Lines */}
-                <VerticalLine left={endZoneWidth} width={3} color="rgba(255, 255, 255, 0.9)" zIndex={4} />
-                <VerticalLine left={endZoneWidth + fieldWidth} width={3} color="rgba(255, 255, 255, 0.9)" zIndex={4} />
-
-                {/* Line of Scrimmage (Blue) */}
-                <VerticalLine left={ballPosition} width={4} color="#4FC3F7" zIndex={5} shadow="0 0 12px rgba(79, 195, 247, 0.9)" />
-
-                {/* First Down Line (Yellow) */}
-                <VerticalLine left={firstDownPosition} width={4} color="#FFD54F" zIndex={5} shadow="0 0 12px rgba(255, 213, 79, 0.9)" />
-
-                {/* Ball position indicator */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: ballPosition,
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 28,
-                        height: 28,
-                        zIndex: 10
-                    }}
-                >
-                    <img 
-                        src="/logos/football.png" 
-                        alt="Football" 
-                        style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: 'contain',
-                            filter: 'drop-shadow(2px 2px 6px rgba(0,0,0,0.7))'
-                        }}
-                    />
-                </Box>
-            </Box>
+      {YARD_LINES.map(yard => (
+        <Box
+          key={yard}
+          sx={{
+            position: 'absolute',
+            left: `${yardToPercent(yard)}%`,
+            top: 0,
+            bottom: 0,
+            width: '1px',
+            transform: 'translateX(-50%)',
+            backgroundColor: theme => alpha(theme.palette.common.white, 0.62),
+            zIndex: 2,
+          }}
+        >
+          <Typography
+            component="span"
+            sx={{
+              position: 'absolute',
+              top: 5,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              color: 'common.white',
+              fontSize: { xs: '0.65rem', sm: '0.8rem' },
+              fontWeight: 700,
+            }}
+          >
+            {yard <= 50 ? yard : 100 - yard}
+          </Typography>
         </Box>
-    );
+      ))}
+
+      {!neutralSite && (
+        <Box
+          component="img"
+          src={`/logos/teams/${homeTeam.name}.png`}
+          alt=""
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: { xs: 58, sm: 88, md: 110 },
+            height: { xs: 58, sm: 88, md: 110 },
+            transform: 'translate(-50%, -50%)',
+            objectFit: 'contain',
+            pointerEvents: 'none',
+            zIndex: 3,
+          }}
+        />
+      )}
+
+      {previousPlayYards !== 0 && (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: `${previousPlayLeft}%`,
+            bottom: 12,
+            width: `${previousPlayWidth}%`,
+            minWidth: 2,
+            height: 18,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: 1,
+            backgroundColor: previousPlayYards > 0 ? 'success.main' : 'error.main',
+            color: 'common.white',
+            zIndex: 3,
+          }}
+        >
+          {previousPlayWidth > 5 && (
+            <Typography component="span" sx={{ fontSize: '0.65rem', fontWeight: 700 }}>
+              {previousPlayYards > 0 ? '+' : ''}{previousPlayYards}
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      <FieldLine left={yardToPercent(0)} color="common.white" />
+      <FieldLine left={yardToPercent(100)} color="common.white" />
+      <FieldLine left={ballPosition} color="primary.light" width={3} />
+      <FieldLine left={firstDownPosition} color="warning.main" width={3} />
+
+      <Box
+        sx={{
+          position: 'absolute',
+          left: `${ballPosition}%`,
+          top: 10,
+          transform: 'translateX(-50%)',
+          px: 0.75,
+          py: 0.25,
+          borderRadius: 1,
+          backgroundColor: 'background.paper',
+          color: 'text.primary',
+          border: '1px solid',
+          borderColor: 'divider',
+          zIndex: 6,
+        }}
+      >
+        <Typography
+          component="span"
+          sx={{
+            fontSize: { xs: '0.72rem', sm: '0.82rem' },
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {formatDown(down)} &amp; {yardsToGo}
+        </Typography>
+      </Box>
+
+      <Box
+        component="img"
+        src="/logos/football.png"
+        alt=""
+        sx={{
+          position: 'absolute',
+          left: `${ballPosition}%`,
+          top: '50%',
+          width: { xs: 20, sm: 26 },
+          height: { xs: 20, sm: 26 },
+          transform: 'translate(-50%, -50%)',
+          objectFit: 'contain',
+          zIndex: 7,
+        }}
+      />
+    </Box>
+  );
 };
 
 export default FootballField;

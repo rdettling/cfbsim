@@ -12,7 +12,8 @@ Validation is layered:
 2. **Lifecycle scenario checks**: confirm stage transitions and seasonal loop integrity.
 3. **Simulation behavior checks**: confirm game-level mechanics and statistical behavior remain plausible.
 4. **Subsystem consistency checks**: rankings/playoff/awards and roster/recruiting coherence.
-5. **Interface checks**: loader contracts still match UI expectations.
+5. **Interface checks**: exact on-stage and off-stage loader contracts still
+   match UI expectations.
 
 Because the simulator is stochastic, validation uses scenario sets and aggregated expectations, not single deterministic scores.
 
@@ -34,11 +35,14 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
 - Confirm offseason progression effects and downstream ranking/awards behavior align with expected mechanics.
 
 5. **Interface/refresh checks**
-- Confirm live sim and `pageDataRefresh`-based page synchronization is consistent.
+- Confirm live sim and `pageDataRefresh`-based page synchronization is
+  consistent. Background refresh must preserve shell feedback for stale or
+  conflicting offseason actions.
 
 ## Key Mechanics
 
 - **Available command checks**:
+  - `npm test`
   - `npm run typecheck`
   - `npm run eval:winrate`
   - `npm run tune:yards` (calibration run; use carefully because it can rewrite tuning)
@@ -70,6 +74,8 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
 | Area | Scenario | Expected Outcome | Verification Method |
 |---|---|---|---|
 | Lifecycle | New league creation | stage starts at `preseason`; non-con schedule exists; league persisted | Home/Noncon flow + reload check |
+| New-league failure | preparation or multi-store commit fails | previous league and every simulation artifact remain intact; same configuration can retry | Fake-IndexedDB command/repository tests + Home retry |
+| New-league validation | unsupported year/team or invalid playoff input | creation stops before replacement with an actionable error | Loader tests + Home configuration checks |
 | Lifecycle | Full annual loop | `preseason -> season -> summary -> realignment -> progression -> recruiting_summary -> roster_cuts -> preseason` | Navigate stage pages in sequence |
 | Week advancement | Simulate multi-week jump | games complete through destination week; rankings/standings update | Use Season banner advance + inspect schedule/rankings |
 | Postseason (2) | 2-team format run | conference championships, natty, bowls generated in expected week windows | Inspect Playoff + week schedule after CC week |
@@ -79,24 +85,35 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
 | Batch vs live consistency | Same game state class | completed games have coherent score/winner/clock/headline fields in both modes | Compare completed game pages from both paths |
 | Roster progression | Offseason progression | seniors depart, younger classes advance, ratings shift | Inspect Roster Progression + roster page |
 | Recruiting/cuts | Recruiting then cuts | freshmen added, then caps enforced by cuts, starters reset | Inspect Recruiting Summary + Roster Cuts + roster |
+| Roster-cut parity | Preview then advance | every projected user cut becomes inactive; every team satisfies caps; compliant user rosters do not skip other teams | Compare preview IDs with persisted players after advancement |
 | Rankings | Weekly poll movement | rank movement reflects latest outcomes, not random reshuffle | Check rankings across multiple weeks |
 | Awards | Late-season awards richness | favorites/final outputs expand with played-game logs | Inspect Awards page mid/late season |
-| Loader contracts | Route data completeness | pages receive expected `info/team/conferences` envelope + page payload | Spot-check main routes for missing sections |
-| Refresh sync | pageDataRefresh path | open pages refetch after advancement action | Advance week and observe dashboard/standings refresh |
+| Loader contracts | Route data completeness | pages receive expected `info/team/conferences` envelope + exact gated page payload | Run loader tests and spot-check stale routes |
+| Refresh sync | pageDataRefresh path | open pages refetch after actions without discarding recoverable shell feedback | Advance from a stale tab and observe refreshed unavailable state plus retry feedback |
+| Offseason concurrency | duplicate/stale/configuration race | only one consistent command commits; failures leave all affected stores unchanged | Run atomic integration tests and exercise a two-tab stale action |
+| Offseason navigation | refresh, Back/Forward, direct old URL, `/settings` | no lifecycle mutation; stale routes show the authoritative destination | Reload each lifecycle page and inspect compatibility redirect |
 
 ## Recommended Validation Sequence
 
-1. `npm run typecheck`
-2. New league -> preseason to season bootstrap validation.
-3. Run one complete seasonal cycle in 12-team mode.
-4. Repeat postseason-focused runs in 2-team and 4-team modes.
-5. Execute at least one full live-sim game and one batch-sim progression check.
-6. Run `npm run eval:winrate` for trend sanity on rating differential behavior.
+1. `npm test`
+2. `npm run typecheck`
+3. New league -> preseason to season bootstrap validation.
+4. Run one complete seasonal cycle in 12-team mode.
+5. Repeat postseason-focused runs in 2-team and 4-team modes.
+6. Execute at least one full live-sim game and one batch-sim progression check.
+7. Run `npm run eval:winrate` for trend sanity on rating differential behavior.
+
+For a migrated frontend route, also inspect approximately 1440×900, 1280×720,
+768×1024, and 390×844. At `lg`, verify document containment and intentional
+internal scrolling; below `lg`, verify no unintended horizontal overflow.
 
 ## Source Map (file/function references)
 
 - Lifecycle and stage transitions:
   - `src/domain/league/stages.ts`
+  - `src/domain/league/loaders/loadRealignment.ts`
+  - `src/domain/league/loaders/loadRosterProgression.ts`
+  - `src/domain/league/loaders/loadRecruitingSummary.ts`
   - `src/domain/league/loaders/offseason.ts`
   - `src/domain/league/loaders/season/loadNonCon.ts`
 - Week advancement and sim orchestration:

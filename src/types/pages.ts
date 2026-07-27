@@ -1,10 +1,14 @@
 import type { loadHomeData, loadNonCon, loadDashboard, loadTeamSchedule, loadWeekSchedule, loadGame, listAvailableTeams, startNewLeague } from '../domain/league/loaders/season';
-import type { loadAwards, loadSeasonSummary, loadRealignment, loadRosterProgression, loadRecruitingSummary, loadRosterCuts } from '../domain/league/loaders/offseason';
-import type { loadRankings, loadSettings } from '../domain/league/loaders';
-import type { loadRatingsStats, loadStandings } from '../domain/league/loaders/stats';
+import type { loadAwards, loadSeasonSummary } from '../domain/league/loaders/offseason';
+import type { loadRosterCuts } from '../domain/league/loaders/loadRosterCuts';
+import type { loadRealignment } from '../domain/league/loaders/loadRealignment';
+import type { loadRecruitingSummary } from '../domain/league/loaders/loadRecruitingSummary';
+import type { loadRosterProgression } from '../domain/league/loaders/loadRosterProgression';
+import type { loadAuthoritativeStage } from '../domain/league/loaders/loadAuthoritativeStage';
+import type { loadRankings } from '../domain/league/loaders';
+import type { loadRatingsStats, loadStandings, loadTeamStats, loadIndividualStats } from '../domain/league/loaders/stats';
 import type { loadTeamRoster, loadTeamHistory, loadPlayer, getTeamInfo } from '../domain/league/loaders/team';
 import type { loadPlayoff } from '../domain/league/loaders/playoff';
-import type { loadIndividualStats } from '../domain/league/stats';
 
 export type HomePageData = Awaited<ReturnType<typeof loadHomeData>>;
 export type NonConPageData = Awaited<ReturnType<typeof loadNonCon>>;
@@ -19,11 +23,12 @@ export type RosterProgressionPageData = Awaited<ReturnType<typeof loadRosterProg
 export type RecruitingSummaryPageData = Awaited<ReturnType<typeof loadRecruitingSummary>>;
 export type RosterCutsPageData = Awaited<ReturnType<typeof loadRosterCuts>>;
 export type RatingsStatsPageData = Awaited<ReturnType<typeof loadRatingsStats>>;
+export type TeamStatsPageData = Awaited<ReturnType<typeof loadTeamStats>>;
 export type StandingsPageData = Awaited<ReturnType<typeof loadStandings>>;
 export type TeamRosterPageData = Awaited<ReturnType<typeof loadTeamRoster>>;
 export type TeamHistoryPageData = Awaited<ReturnType<typeof loadTeamHistory>>;
 export type RankingsPageData = Awaited<ReturnType<typeof loadRankings>>;
-export type SettingsPageData = Awaited<ReturnType<typeof loadSettings>>;
+export type AuthoritativeStagePageData = Awaited<ReturnType<typeof loadAuthoritativeStage>>;
 export type PlayerPageData = Awaited<ReturnType<typeof loadPlayer>>;
 export type TeamInfoData = Awaited<ReturnType<typeof getTeamInfo>>;
 export type AvailableTeamsData = Awaited<ReturnType<typeof listAvailableTeams>>;

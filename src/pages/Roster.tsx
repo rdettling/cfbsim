@@ -1,165 +1,124 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   Box,
-  TableContainer,
-  Paper,
-  Link,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
-  Chip,
+  Paper,
+  Select,
+  Stack,
   Typography,
 } from '@mui/material';
+import { PageLayout } from '../components/layout/PageLayout';
 import TeamHeader from '../components/team/TeamHeader';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamRoster } from '../domain/league';
-import { PageLayout } from '../components/layout/PageLayout';
-import type { PlayerRecord } from '../types/db';
+import type { TeamRosterPageData } from '../types/pages';
+import { RosterDesktopTable } from './roster/RosterDesktopTable';
+import { RosterMobileList } from './roster/RosterMobileList';
 
 const Roster = () => {
   const { teamName } = useParams();
   const navigate = useNavigate();
   const [positionFilter, setPositionFilter] = useState('');
-
-  const { data, loading, error } = useDomainData({
+  const { data, loading, error } = useDomainData<TeamRosterPageData>({
     fetcher: () => loadTeamRoster(teamName),
     deps: [teamName],
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.title = teamName ? `${teamName} Roster` : 'Roster';
     return () => {
       document.title = 'College Football';
     };
   }, [teamName]);
 
-  const yearLabels = {
-    fr: 'Freshman',
-    so: 'Sophomore',
-    jr: 'Junior',
-    sr: 'Senior',
-  } as const;
+  const groups = useMemo(() => {
+    if (!data) return [];
+    return data.positions
+      .filter(position => !positionFilter || position === positionFilter)
+      .map(position => ({
+        position,
+        players: data.roster
+          .filter(player => player.pos === position)
+          .slice()
+          .sort((a, b) =>
+            b.rating !== a.rating
+              ? b.rating - a.rating
+              : `${a.last},${a.first}`.localeCompare(`${b.last},${b.first}`)
+          ),
+      }))
+      .filter(group => group.players.length > 0);
+  }, [data, positionFilter]);
 
   return (
     <PageLayout
       loading={loading}
       error={error}
       containerMaxWidth="xl"
-      navbarData={
-        data
-          ? {
-              team: data.team,
-              currentStage: data.info.stage,
-              info: data.info,
-              conferences: data.conferences,
-            }
-          : undefined
-      }
+      desktopViewportConstrained
+      navbarData={data ? {
+        team: data.team,
+        currentStage: data.info.stage,
+        info: data.info,
+        conferences: data.conferences,
+      } : undefined}
     >
       {data && (
         <>
           <TeamHeader
             team={data.team}
             teams={data.teams}
-            onTeamChange={(newTeam) => navigate(`/${newTeam}/roster`)}
+            onTeamChange={name => navigate(`/${name}/roster`)}
           />
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 2 }}>
-            <Typography variant="h5">Team Roster</Typography>
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Position Filter</InputLabel>
+          <Stack
+            component="header"
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            spacing={2}
+            sx={{ mb: 1.5 }}
+          >
+            <Box>
+              <Typography component="h2" variant="h5">Roster</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {data.roster.length} active players
+              </Typography>
+            </Box>
+            <FormControl size="small" sx={{ minWidth: { xs: 150, sm: 190 } }}>
+              <InputLabel id="roster-position-label">Position</InputLabel>
               <Select
+                labelId="roster-position-label"
                 value={positionFilter}
-                onChange={(event) => setPositionFilter(event.target.value as string)}
-                label="Position Filter"
+                label="Position"
+                onChange={event => setPositionFilter(event.target.value)}
               >
                 <MenuItem value="">All Positions</MenuItem>
-                {data.positions.map((pos: string) => (
-                  <MenuItem key={pos} value={pos}>
-                    {pos}
-                  </MenuItem>
+                {data.positions.map(position => (
+                  <MenuItem key={position} value={position}>{position.toUpperCase()}</MenuItem>
                 ))}
               </Select>
             </FormControl>
-          </Box>
+          </Stack>
 
-          <TableContainer component={Paper} elevation={2}>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: data.team.colorPrimary || 'primary.main' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Name</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rating</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Year</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {data.positions
-                  .filter((position: string) => positionFilter === '' || positionFilter === position)
-                  .map((position: string) => {
-                    const playersInPosition = data.roster
-                      .filter((player: PlayerRecord) => player.pos === position)
-                      .slice()
-                      .sort((a: PlayerRecord, b: PlayerRecord) => {
-                        if (b.rating !== a.rating) return b.rating - a.rating;
-                        return `${a.last},${a.first}`.localeCompare(`${b.last},${b.first}`);
-                      });
-                    return playersInPosition.length > 0 ? (
-                      <React.Fragment key={`pos-${position}`}>
-                        <TableRow>
-                          <TableCell
-                            colSpan={4}
-                            sx={{
-                              bgcolor: `${data.team.colorSecondary || 'grey.100'}20`,
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            {position.toUpperCase()}
-                          </TableCell>
-                        </TableRow>
-                        {playersInPosition.map((player: PlayerRecord) => (
-                          <TableRow
-                            key={`player-${player.id}`}
-                            sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}
-                          >
-                            <TableCell>
-                              <Link
-                                component="button"
-                                onClick={() => navigate(`/players/${player.id}`)}
-                                sx={{
-                                  cursor: 'pointer',
-                                  textDecoration: 'none',
-                                  fontWeight: player.starter ? 'bold' : 'normal',
-                                }}
-                              >
-                                {player.first} {player.last}
-                              </Link>
-                            </TableCell>
-                            <TableCell>{player.rating}</TableCell>
-                            <TableCell>{yearLabels[player.year as keyof typeof yearLabels]}</TableCell>
-                            <TableCell>
-                              {player.starter ? (
-                                <Chip label="Starter" size="small" color="success" variant="outlined" />
-                              ) : (
-                                <Chip label="Backup" size="small" color="default" variant="outlined" />
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </React.Fragment>
-                    ) : null;
-                  })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {groups.length > 0 ? (
+            <>
+              <RosterDesktopTable groups={groups} />
+              <RosterMobileList groups={groups} />
+            </>
+          ) : (
+            <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h6">
+                {positionFilter ? `No ${positionFilter.toUpperCase()} players` : 'No active roster'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {positionFilter
+                  ? 'No active players match the selected position.'
+                  : 'Active players will appear when the roster is available.'}
+              </Typography>
+            </Paper>
+          )}
         </>
       )}
     </PageLayout>

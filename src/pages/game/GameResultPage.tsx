@@ -1,107 +1,181 @@
 import { useState } from 'react';
-import {
-  Container,
-  Typography,
-  Box,
-  Grid,
-  Card,
-  CardContent,
-} from '@mui/material';
-import { TeamInfoModal } from '../../components/team/TeamComponents';
+import { Box, Tab, Tabs, useMediaQuery, useTheme } from '@mui/material';
 import DriveSummary from '../../components/game/DriveSummary';
-import GameHeader from '../../components/game/GameHeader';
-import TeamStatsCard from '../../components/game/TeamStatsCard';
-import PlayerBoxScoreCard from '../../components/game/PlayerBoxScoreCard';
-import type { GameResultProps } from '../../types/components';
-import { resolveHomeAway, resolveTeamSide } from '../../domain/utils/gameDisplay';
+import GameMatchupHeader from '../../components/game/GameMatchupHeader';
+import { TeamInfoModal } from '../../components/team/TeamComponents';
+import {
+  resolveHomeAway,
+  resolveTeamSide,
+} from '../../domain/utils/gameDisplay';
 import { buildSimMatchup } from '../../domain/utils/simMatchup';
+import type { GamePageData } from '../../types/pages';
+import { GamePlayerBoxScore } from './game-result/GamePlayerBoxScore';
+import { GameTeamComparison } from './game-result/GameTeamComparison';
 
-const CARD_SX = { height: '100%', border: '1px solid', borderColor: 'divider' } as const;
-const CARD_CONTENT_SX = { p: 1.5 } as const;
-const RESULT_PANEL_HEIGHT = 500;
+type ResultTab = 'drives' | 'team-stats' | 'box-score';
 
-const GameResultPage = ({ data }: GameResultProps) => {
+type GameResultPageProps = {
+  data: GamePageData;
+};
+
+const RESULT_TABS: Array<{ value: ResultTab; label: string }> = [
+  { value: 'drives', label: 'Drives' },
+  { value: 'team-stats', label: 'Team Stats' },
+  { value: 'box-score', label: 'Box Score' },
+];
+
+const GameResultPage = ({ data }: GameResultPageProps) => {
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  const [activeTab, setActiveTab] = useState<ResultTab>('drives');
+  const [selectedTeam, setSelectedTeam] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
-
-  const handleTeamClick = (name: string) => {
-    setSelectedTeam(name);
-    setModalOpen(true);
-  };
-
-  const { game, drives = [], resultSummary } = data;
+  const { game, drives, resultSummary } = data;
   const { home, away, neutral } = resolveHomeAway(game);
+  const awaySide = resolveTeamSide(game, away.id);
+  const homeSide = resolveTeamSide(game, home.id);
   const matchup = buildSimMatchup(
     game,
-    { scoreA: game.scoreA ?? 0, scoreB: game.scoreB ?? 0 },
+    { scoreA: game.scoreA, scoreB: game.scoreB },
     false,
     0
   );
-  const awaySide = resolveTeamSide(game, away.id);
-  const homeSide = resolveTeamSide(game, home.id);
   const awaySummary = resultSummary
-    ? (away.id === game.teamA.id ? resultSummary.teamA : resultSummary.teamB)
+    ? away.id === game.teamA.id
+      ? resultSummary.teamA
+      : resultSummary.teamB
     : null;
   const homeSummary = resultSummary
-    ? (home.id === game.teamA.id ? resultSummary.teamA : resultSummary.teamB)
+    ? home.id === game.teamA.id
+      ? resultSummary.teamA
+      : resultSummary.teamB
+    : null;
+  const awayBoxScore = resultSummary
+    ? away.id === game.teamA.id
+      ? resultSummary.boxScore.teamA
+      : resultSummary.boxScore.teamB
+    : null;
+  const homeBoxScore = resultSummary
+    ? home.id === game.teamA.id
+      ? resultSummary.boxScore.teamA
+      : resultSummary.boxScore.teamB
     : null;
 
-  return (
-    <Container maxWidth={false} sx={{ pt: 0.75, pb: 1.25, px: { xs: 1.5, md: 3 } }}>
-      <Box sx={{ display: 'grid', gap: 1.25 }}>
-        <GameHeader
-          game={game}
-          home={home}
-          away={away}
-          neutral={neutral}
-          mode="result"
-          awayScore={awaySide.score ?? 0}
-          homeScore={homeSide.score ?? 0}
-          headlineSubtitle={game.headline_subtitle ?? null}
-          homeSide={homeSide}
-          awaySide={awaySide}
-          onTeamClick={handleTeamClick}
+  const handleTeamClick = (teamName: string) => {
+    setSelectedTeam(teamName);
+    setModalOpen(true);
+  };
+
+  const renderPanel = (panel: ResultTab) => {
+    if (panel === 'drives') {
+      return (
+        <DriveSummary
+          drives={drives}
+          variant="page"
+          matchup={matchup}
         />
+      );
+    }
 
-        <Grid container spacing={1.25}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            {drives.length > 0 ? (
-              <DriveSummary drives={drives} variant="page" matchup={matchup} panelHeight={RESULT_PANEL_HEIGHT} />
-            ) : (
-              <Card elevation={1} sx={CARD_SX}>
-                <CardContent sx={CARD_CONTENT_SX}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                    Drive Summary
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Drive details are not available for this game.
-                  </Typography>
-                </CardContent>
-              </Card>
-            )}
-          </Grid>
+    if (panel === 'team-stats') {
+      return (
+        <GameTeamComparison
+          awayTeam={away}
+          homeTeam={home}
+          awaySummary={awaySummary}
+          homeSummary={homeSummary}
+        />
+      );
+    }
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TeamStatsCard
-              awaySummary={awaySummary}
-              homeSummary={homeSummary}
-              hasSummary={Boolean(resultSummary)}
-              awayTeamName={away.name}
-              homeTeamName={home.name}
-              panelHeight={RESULT_PANEL_HEIGHT}
-            />
-          </Grid>
+    return (
+      <GamePlayerBoxScore
+        awayTeam={away}
+        homeTeam={home}
+        awayBoxScore={awayBoxScore}
+        homeBoxScore={homeBoxScore}
+      />
+    );
+  };
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <PlayerBoxScoreCard
-              resultSummary={resultSummary}
-              game={game}
-              away={{ id: away.id, name: away.name }}
-              home={{ id: home.id, name: home.name }}
-              panelHeight={RESULT_PANEL_HEIGHT}
-            />
-          </Grid>
-        </Grid>
+  return (
+    <>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: { lg: 1 },
+          minHeight: { lg: 0 },
+          gap: 1.25,
+        }}
+      >
+        <Box sx={{ flexShrink: 0 }}>
+          <GameMatchupHeader
+            game={game}
+            home={{ team: home, rank: homeSide.rank }}
+            away={{ team: away, rank: awaySide.rank }}
+            neutral={neutral}
+            mode="result"
+            awayScore={awaySide.score}
+            homeScore={homeSide.score}
+            overtime={game.overtime}
+            headlineSubtitle={game.headline_subtitle}
+            onTeamClick={handleTeamClick}
+          />
+        </Box>
+
+        {isDesktop ? (
+          <Box
+            component="section"
+            aria-label="Game result details"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 3fr) minmax(0, 4fr)',
+              gap: 1.25,
+              flex: 1,
+              minHeight: 0,
+            }}
+          >
+            {renderPanel('drives')}
+            {renderPanel('team-stats')}
+            {renderPanel('box-score')}
+          </Box>
+        ) : (
+          <Box component="section" aria-label="Game result details">
+            <Tabs
+              value={activeTab}
+              onChange={(_, value: ResultTab) => setActiveTab(value)}
+              variant="fullWidth"
+              selectionFollowsFocus
+              aria-label="Game result sections"
+              sx={{
+                minHeight: 42,
+                mb: 1,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              {RESULT_TABS.map((tab) => (
+                <Tab
+                  key={tab.value}
+                  id={`game-result-tab-${tab.value}`}
+                  aria-controls={`game-result-panel-${tab.value}`}
+                  value={tab.value}
+                  label={tab.label}
+                  sx={{ minHeight: 42 }}
+                />
+              ))}
+            </Tabs>
+            <Box
+              role="tabpanel"
+              id={`game-result-panel-${activeTab}`}
+              aria-labelledby={`game-result-tab-${activeTab}`}
+              sx={{ height: 'clamp(420px, 65vh, 640px)', minHeight: 0 }}
+            >
+              {renderPanel(activeTab)}
+            </Box>
+          </Box>
+        )}
       </Box>
 
       <TeamInfoModal
@@ -109,7 +183,7 @@ const GameResultPage = ({ data }: GameResultProps) => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
       />
-    </Container>
+    </>
   );
 };
 

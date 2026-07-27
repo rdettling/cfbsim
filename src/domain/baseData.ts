@@ -1,4 +1,9 @@
-import type { Conference, Team, PreviewData } from '../types/domain';
+import type {
+  Conference,
+  Team,
+  PreviewData,
+  PlayoffTeamCount,
+} from '../types/domain';
 import type { YearData, TeamsData, ConferencesData } from '../types/baseData';
 import { getConferencesData, getTeamsData, getYearData } from '../db/baseData';
 
@@ -12,77 +17,59 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
 
-  const addTeamMetadata = (teamName: string, prestige: number): Team => {
+  const addTeamMetadata = (
+    teamName: string,
+    prestige: number,
+    conferenceName: string | null,
+  ): PreviewData['teams'][number] => {
     const meta = typedTeamsData.teams[teamName];
+    if (!meta) {
+      throw new Error(`Team metadata for ${teamName} is unavailable.`);
+    }
     return {
-      id: 0,
       name: teamName,
-      abbreviation: meta.abbreviation,
-      confGames: 0,
-      confLimit: 0,
-      nonConfGames: 0,
-      nonConfLimit: 0,
+      mascot: meta.mascot,
       prestige,
-      prestige_change: 0,
       ceiling: meta.ceiling,
       floor: meta.floor,
-      mascot: meta.mascot,
-      city: meta.city,
-      state: meta.state,
-      stadium: meta.stadium,
-      ranking: 0,
-      offense: 90,
-      defense: 90,
-      colorPrimary: meta.colorPrimary,
-      colorSecondary: meta.colorSecondary,
-      conference: '',
-      confName: '',
-      confWins: 0,
-      confLosses: 0,
-      nonConfWins: 0,
-      nonConfLosses: 0,
-      rating: 90,
-      totalWins: 0,
-      totalLosses: 0,
-      gamesPlayed: 0,
-      record: '0-0 (0-0)',
-      movement: 0,
-      poll_score: 0,
-      strength_of_record: 0,
-      strength_of_record_avg: 0,
-      last_game: null,
-      next_game: null,
+      conferenceName,
     };
   };
 
-  const conferences: PreviewData['conferences'] = {};
+  const conferences: PreviewData['conferences'] = [];
+  const teams: PreviewData['teams'] = [];
   Object.entries(typedYearData.conferences || {}).forEach(([confName, confData]) => {
-    const teams = Object.entries(confData.teams || {}).map(
-      ([teamName, prestige]) => addTeamMetadata(teamName, prestige as number)
+    teams.push(
+      ...Object.entries(confData.teams || {}).map(([teamName, prestige]) =>
+        addTeamMetadata(teamName, prestige as number, confName),
+      ),
     );
-    teams.sort((a, b) => b.prestige - a.prestige);
-
-    conferences[confName] = {
-      ...confData,
-      confName,
-      confFullName: typedConferencesData[confName] ?? confName,
-      confGames: confData.games,
-      teams,
-    };
+    conferences.push({
+      name: confName,
+      fullName: typedConferencesData[confName] ?? confName,
+    });
   });
 
-  const independents = Object.entries(typedYearData.Independent || {}).map(
-    ([teamName, prestige]) => addTeamMetadata(teamName, prestige as number)
+  teams.push(
+    ...Object.entries(typedYearData.Independent || {}).map(
+      ([teamName, prestige]) =>
+        addTeamMetadata(teamName, prestige as number, null),
+    ),
   );
+  teams.sort(
+    (left, right) =>
+      right.prestige - left.prestige || left.name.localeCompare(right.name),
+  );
+  conferences.sort((left, right) => left.name.localeCompare(right.name));
 
   return {
     playoff: {
-      teams: typedYearData.playoff.teams,
+      teams: typedYearData.playoff.teams as PlayoffTeamCount,
       conf_champ_autobids: typedYearData.playoff.conf_champ_autobids ?? 0,
       conf_champ_top_4: typedYearData.playoff.conf_champ_top_4 ?? false,
     },
     conferences,
-    independents,
+    teams,
   };
 };
 

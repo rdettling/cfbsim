@@ -1,9 +1,14 @@
 import type { Info, Team } from '../types/domain';
 import type { LeagueState } from '../types/league';
-import type { Recruit } from '../types/roster';
+import type {
+  PlayerProgressionProjection,
+  Recruit,
+} from '../types/roster';
 import { getNamesData, getStatesData } from '../db/baseData';
 import { savePlayers, getPlayersByTeam, clearPlayers } from '../db/simRepo';
 import type { PlayerRecord } from '../types/db';
+import { applyRosterCuts } from './rosterCuts';
+import { POSITION_ORDER, ROSTER } from './rosterConfig';
 
 const STARS_BASE: Record<number, number> = { 1: 40, 2: 55, 3: 68, 4: 82, 5: 92 };
 const STAR_STD_DEV: Record<number, number> = { 1: 6, 2: 6, 3: 5, 4: 4, 5: 4 };
@@ -32,22 +37,6 @@ const DEFENSIVE_WEIGHTS: Record<string, number> = {
   cb: 30,
   s: 15,
 };
-
-export const ROSTER: Record<string, { starters: number; total: number }> = {
-  qb: { starters: 1, total: 4 },
-  rb: { starters: 2, total: 5 },
-  wr: { starters: 3, total: 7 },
-  te: { starters: 1, total: 5 },
-  ol: { starters: 5, total: 12 },
-  dl: { starters: 4, total: 9 },
-  lb: { starters: 3, total: 7 },
-  cb: { starters: 2, total: 6 },
-  s: { starters: 2, total: 5 },
-  k: { starters: 1, total: 2 },
-  p: { starters: 1, total: 2 },
-};
-
-export const POSITION_ORDER = Object.keys(ROSTER);
 
 const gaussian = (mean: number, stdDev: number) => {
   let u = 0;
@@ -432,32 +421,6 @@ const recruitingCycle = async (
   });
 };
 
-export const applyRosterCuts = (teams: Team[], players: PlayerRecord[]) => {
-  const yearOrder: Record<string, number> = { fr: 1, so: 2, jr: 3, sr: 4 };
-  const cuts = new Set<number>();
-
-  teams.forEach(team => {
-    const teamPlayers = players.filter(player => player.active && player.teamId === team.id);
-    Object.entries(ROSTER).forEach(([pos, config]) => {
-      const posPlayers = teamPlayers.filter(player => player.pos === pos);
-      if (posPlayers.length <= config.total) return;
-      posPlayers.sort((a, b) => {
-        if (b.rating_sr !== a.rating_sr) return b.rating_sr - a.rating_sr;
-        if (b.rating !== a.rating) return b.rating - a.rating;
-        return (yearOrder[b.year] ?? 0) - (yearOrder[a.year] ?? 0);
-      });
-      posPlayers.slice(config.total).forEach(player => cuts.add(player.id));
-    });
-  });
-
-  players.forEach(player => {
-    if (cuts.has(player.id)) {
-      player.active = false;
-      player.starter = false;
-    }
-  });
-};
-
 export const setStarters = (teams: Team[], players: PlayerRecord[]) => {
   players.forEach(player => {
     if (player.active) player.starter = false;
@@ -524,25 +487,44 @@ export const recalculateTeamRatings = (teams: Team[], players: PlayerRecord[]) =
   });
 };
 
+export const projectPlayerProgression = (
+  player: PlayerRecord,
+): PlayerProgressionProjection | null => {
+  if (!player.active) return null;
+  if (player.year === 'sr') return { status: 'departing' };
+  if (player.year === 'fr') {
+    return {
+      status: 'returning',
+      projectedClass: 'so',
+      projectedRating: player.rating_so,
+    };
+  }
+  if (player.year === 'so') {
+    return {
+      status: 'returning',
+      projectedClass: 'jr',
+      projectedRating: player.rating_jr,
+    };
+  }
+  return {
+    status: 'returning',
+    projectedClass: 'sr',
+    projectedRating: player.rating_sr,
+  };
+};
+
 export const applyProgression = (players: PlayerRecord[]) => {
   players.forEach(player => {
-    if (!player.active) return;
-    if (player.year === 'sr') {
+    const projection = projectPlayerProgression(player);
+    if (!projection) return;
+    if (projection.status === 'departing') {
       player.active = false;
       player.starter = false;
       return;
     }
 
-    if (player.year === 'fr') {
-      player.year = 'so';
-      player.rating = player.rating_so;
-    } else if (player.year === 'so') {
-      player.year = 'jr';
-      player.rating = player.rating_jr;
-    } else if (player.year === 'jr') {
-      player.year = 'sr';
-      player.rating = player.rating_sr;
-    }
+    player.year = projection.projectedClass;
+    player.rating = projection.projectedRating;
   });
 };
 
@@ -563,26 +545,9 @@ export const runRecruitingCycle = async (
   await recruitingCycle(league, teams, players, names, states, stateWeights);
 };
 
-export const previewRosterCuts = (players: PlayerRecord[], teamId: number) => {
-  const yearOrder: Record<PlayerRecord['year'], number> = { fr: 1, so: 2, jr: 3, sr: 4 };
-  const cuts: PlayerRecord[] = [];
-  const activePlayers = players.filter(player => player.active && player.teamId === teamId);
-
-  Object.entries(ROSTER).forEach(([pos, config]) => {
-    const posPlayers = activePlayers.filter(player => player.pos === pos);
-    if (posPlayers.length <= config.total) return;
-    posPlayers.sort((a, b) => {
-      if (b.rating_sr !== a.rating_sr) return b.rating_sr - a.rating_sr;
-      if (b.rating !== a.rating) return b.rating - a.rating;
-      return (yearOrder[b.year] ?? 0) - (yearOrder[a.year] ?? 0);
-    });
-    cuts.push(...posPlayers.slice(config.total));
-  });
-
-  return cuts;
-};
-
-export const initializeRosters = async (league: LeagueState) => {
+export const prepareInitialRosters = async (
+  league: LeagueState,
+): Promise<PlayerRecord[]> => {
   const teams = league.teams;
   const names = await loadNames();
   const statesData = await getStatesData();
@@ -631,14 +596,20 @@ export const initializeRosters = async (league: LeagueState) => {
     team.last_rank = index + 1;
   });
 
+  return players;
+};
+
+export const initializeRosters = async (league: LeagueState) => {
+  const players = await prepareInitialRosters(league);
   await savePlayers(players);
 };
 
 export const ensureRosters = async (league: LeagueState) => {
   const sampleTeam = league.teams[0];
-  if (!sampleTeam) return;
+  if (!sampleTeam) return false;
   const existing = await getPlayersByTeam(sampleTeam.id);
-  if (existing.length && existing[0].year) return;
+  if (existing.length && existing[0].year) return false;
   await clearPlayers();
   await initializeRosters(league);
+  return true;
 };

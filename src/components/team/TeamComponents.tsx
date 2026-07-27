@@ -1,14 +1,30 @@
-import { Box, Link as MuiLink, Modal, Typography, Paper, Chip, Button, Stack, Divider } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import EventNoteIcon from '@mui/icons-material/EventNote';
+import GroupsIcon from '@mui/icons-material/Groups';
+import HistoryIcon from '@mui/icons-material/History';
+import {
+    Alert,
+    Box,
+    Button,
+    Chip,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    IconButton,
+    Link as MuiLink,
+    Stack,
+    Typography,
+} from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { getTeamInfo } from '../../domain/league';
+import type { Team } from '../../types/domain';
 import type {
     LogoProps,
-    TeamInfo,
     TeamInfoModalProps,
     TeamLinkProps,
-    StatItemProps,
-    ActionButtonProps,
     LogoWithTypeProps,
 } from '../../types/components';
 
@@ -31,7 +47,8 @@ const Logo = ({ type, name, size = 30 }: LogoWithTypeProps) => {
             }}
             sx={{
                 width: 'auto', height: size, maxWidth: size * 2,
-                border: hasError ? '1px dashed red' : 'none'
+                border: hasError ? '1px dashed' : 'none',
+                borderColor: hasError ? 'error.main' : 'transparent',
             }}
             alt={`${name} logo`}
         />
@@ -44,163 +61,144 @@ export const ConfLogo = (props: LogoProps) => <Logo type="conferences" {...props
 export const TeamLink = ({ name, onTeamClick }: TeamLinkProps) => (
     <MuiLink
         component="button"
+        type="button"
         onClick={() => onTeamClick(name)}
-        sx={{ cursor: 'pointer' }}
+        sx={{ cursor: 'pointer', textAlign: 'left' }}
     >
         {name}
     </MuiLink>
 );
 
-// Stat item component to reduce repetition
-const StatItem = ({ label, value }: StatItemProps) => (
-    <Box width="50%">
+const StatItem = ({ label, value }: { label: string; value: string | number }) => (
+    <Box>
         <Typography variant="body2" color="text.secondary">{label}</Typography>
-        <Typography variant="h6">{value}</Typography>
+        <Typography variant="body1" sx={{ fontWeight: 600 }}>{value}</Typography>
     </Box>
 );
 
-// Action button component to reduce repetition
-const ActionButton = ({ to, icon, label, color }: ActionButtonProps) => (
-    <Button 
-        component={RouterLink} 
-        to={to}
-        variant="outlined"
-        size="small"
-        startIcon={<Box>{icon}</Box>}
-        sx={{ borderColor: color, color }}
-    >
-        {label}
-    </Button>
-);
-
 export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) => {
-    const [teamInfo, setTeamInfo] = useState<TeamInfo | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [teamInfo, setTeamInfo] = useState<Team | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!open || !teamName) return;
 
+        let active = true;
+        setTeamInfo(null);
+        setError(null);
         setLoading(true);
         getTeamInfo(teamName)
-            .then(team => team && setTeamInfo(team as TeamInfo))
-            .catch(error => console.error('Error fetching team info:', error))
-            .finally(() => setLoading(false));
+            .then(team => {
+                if (!active) return;
+                if (team) setTeamInfo(team);
+                else setError('Team information is unavailable.');
+            })
+            .catch(() => {
+                if (active) setError('Team information could not be loaded.');
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
+
+        return () => {
+            active = false;
+        };
     }, [teamName, open]);
 
-    if (!open) return null;
+    const actions = teamInfo
+        ? [
+            { label: 'Schedule', to: `/${teamInfo.name}/schedule`, icon: <EventNoteIcon /> },
+            { label: 'Roster', to: `/${teamInfo.name}/roster`, icon: <GroupsIcon /> },
+            { label: 'History', to: `/${teamInfo.name}/history`, icon: <HistoryIcon /> },
+        ]
+        : [];
 
     return (
-        <Modal
+        <Dialog
             open={open}
             onClose={onClose}
-            aria-labelledby="team-info-modal"
+            aria-labelledby="team-info-dialog-title"
+            fullWidth
+            maxWidth="sm"
+            PaperProps={{
+                variant: 'outlined',
+                sx: {
+                    borderTop: '4px solid',
+                    borderTopColor: teamInfo?.colorPrimary || 'primary.main',
+                },
+            }}
         >
-            <Paper
-                elevation={24}
-                sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: { xs: '90%', sm: 450 },
-                    maxWidth: 500,
-                    bgcolor: 'background.paper',
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                }}
-            >
+            <DialogTitle sx={{ pr: 6 }}>
+                {teamInfo ? (
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                        <TeamLogo name={teamInfo.name} size={52} />
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography id="team-info-dialog-title" component="span" variant="h5">
+                                {teamInfo.name} {teamInfo.mascot}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {teamInfo.confName ?? teamInfo.conference}
+                            </Typography>
+                        </Box>
+                        {teamInfo.ranking > 0 && (
+                            <Chip label={`#${teamInfo.ranking}`} size="small" variant="outlined" />
+                        )}
+                    </Stack>
+                ) : (
+                    <Typography id="team-info-dialog-title" component="span" variant="h6">
+                        Team Information
+                    </Typography>
+                )}
+                <IconButton
+                    aria-label="Close team information"
+                    onClick={onClose}
+                    sx={{ position: 'absolute', right: 12, top: 12 }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
                 {loading ? (
-                    <Box sx={{ p: 4, textAlign: 'center' }}>
-                        <Typography>Loading team information...</Typography>
-                    </Box>
+                    <Stack alignItems="center" spacing={1.5} sx={{ py: 4 }}>
+                        <CircularProgress size={32} />
+                        <Typography color="text.secondary">Loading team information…</Typography>
+                    </Stack>
+                ) : error ? (
+                    <Alert severity="error">{error}</Alert>
                 ) : teamInfo ? (
                     <>
-                        {/* Header with team colors */}
-                        <Box 
-                            sx={{ 
-                                bgcolor: teamInfo.colorPrimary || 'primary.main',
-                                color: 'white',
-                                p: 2,
-                                display: 'flex',
-                                justifyContent: 'space-between',
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                                gap: 2,
                             }}
                         >
-                            <Stack direction="row" spacing={2} alignItems="center">
-                                <TeamLogo name={teamInfo.name} size={60} />
-                                <Box>
-                                    <Typography variant="h5" fontWeight="bold">
-                                        {teamInfo.name} {teamInfo.mascot}
-                                    </Typography>
-                                    <Typography variant="subtitle1">{teamInfo.conference}</Typography>
-                                </Box>
-                            </Stack>
-                            {teamInfo.ranking > 0 && (
-                                <Chip 
-                                    label={`#${teamInfo.ranking}`} 
-                                    sx={{ 
-                                        fontWeight: 'bold',
-                                        bgcolor: 'white',
-                                        color: teamInfo.colorPrimary || 'primary.main'
-                                    }} 
-                                />
-                            )}
-                        </Box>
-
-                        {/* Team information */}
-                        <Box sx={{ p: 3 }}>
-                            {/* Stats in flexbox layout */}
-                            <Stack 
-                                direction="row" 
-                                flexWrap="wrap" 
-                                justifyContent="space-between"
-                            >
-                                <StatItem label="Rating" value={teamInfo.rating} />
-                                <StatItem label="Prestige" value={teamInfo.prestige} />
-                                <StatItem label="Overall Record" value={`${teamInfo.totalWins}-${teamInfo.totalLosses}`} />
-                                {teamInfo.conference && (
-                                    <StatItem 
-                                        label="Conference Record" 
-                                        value={`${teamInfo.confWins}-${teamInfo.confLosses}`} 
-                                    />
-                                )}
-                            </Stack>
-
-                            <Divider sx={{ my: 2 }} />
-
-                            {/* Action buttons */}
-                            <Stack 
-                                direction="row" 
-                                spacing={1} 
-                                justifyContent="center"
-                                flexWrap="wrap"
-                            >
-                                <ActionButton 
-                                    to={`/${teamInfo.name}/schedule`} 
-                                    icon="📅" 
-                                    label="Schedule" 
-                                    color={teamInfo.colorPrimary || "primary.main"} 
-                                />
-                                <ActionButton 
-                                    to={`/${teamInfo.name}/roster`} 
-                                    icon="👥" 
-                                    label="Roster" 
-                                    color={teamInfo.colorPrimary || "primary.main"} 
-                                />
-                                <ActionButton 
-                                    to={`/${teamInfo.name}/history`} 
-                                    icon="📜" 
-                                    label="History" 
-                                    color={teamInfo.colorPrimary || "primary.main"} 
-                                />
-                            </Stack>
+                            <StatItem label="Rating" value={teamInfo.rating} />
+                            <StatItem label="Prestige" value={`${teamInfo.prestige}/7`} />
+                            <StatItem label="Overall Record" value={`${teamInfo.totalWins}-${teamInfo.totalLosses}`} />
+                            <StatItem label="Conference Record" value={`${teamInfo.confWins}-${teamInfo.confLosses}`} />
                         </Box>
                     </>
-                ) : (
-                    <Box sx={{ p: 4, textAlign: 'center' }}>
-                        <Typography color="error">Failed to load team information</Typography>
-                    </Box>
-                )}
-            </Paper>
-        </Modal>
+                ) : null}
+            </DialogContent>
+            {teamInfo && (
+                <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}>
+                    {actions.map(action => (
+                        <Button
+                            key={action.label}
+                            component={RouterLink}
+                            to={action.to}
+                            variant="outlined"
+                            startIcon={action.icon}
+                            onClick={onClose}
+                        >
+                            {action.label}
+                        </Button>
+                    ))}
+                </DialogActions>
+            )}
+        </Dialog>
     );
 };

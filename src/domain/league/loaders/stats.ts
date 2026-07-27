@@ -3,7 +3,14 @@ import { saveLeague } from '../../../db/leagueRepo';
 import { ensureRosters } from '../../roster';
 import { loadLeagueOrThrow } from '../leagueStore';
 import type { Team } from '../../../types/domain';
+import type {
+  RatingsStatsPageResult,
+  StarRating,
+  StarRatingRecord,
+} from '../../../types/stats';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';
+export { loadTeamStats } from './stats/teamStats';
+export { loadIndividualStats } from './stats/individualStats';
 
 const sortStandings = (teams: Team[]) => {
   return teams.slice().sort((a, b) => {
@@ -20,7 +27,7 @@ const sortStandings = (teams: Team[]) => {
   });
 };
 
-export const loadRatingsStats = async () => {
+export const loadRatingsStats = async (): Promise<RatingsStatsPageResult> => {
   const league = await loadLeagueOrThrow();
 
   await ensureRosters(league);
@@ -29,15 +36,15 @@ export const loadRatingsStats = async () => {
   const players = (await getAllPlayers()).filter(player => player.active);
   const teams = league.teams;
 
-  const totalCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  const totalRatings: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  const totalRatingsFr: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  const totalRatingsSo: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  const totalRatingsJr: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  const totalRatingsSr: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalCounts: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatings: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsFr: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsSo: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsJr: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const totalRatingsSr: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
   players.forEach(player => {
-    const star = Math.min(5, Math.max(1, player.stars || 1));
+    const star = Math.min(5, Math.max(1, player.stars || 1)) as StarRating;
     totalCounts[star] += 1;
     totalRatings[star] += player.rating;
     totalRatingsFr[star] += player.rating_fr;
@@ -99,7 +106,7 @@ export const loadRatingsStats = async () => {
     const teamIds = new Set(prestigeTeams.map(team => team.id));
     const prestigePlayers = players.filter(player => teamIds.has(player.teamId));
     const totalPlayers = prestigePlayers.length || 1;
-    const starCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const starCounts: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let starSum = 0;
     const teamRatingSum = prestigeTeams.reduce((sum, team) => sum + team.rating, 0);
     const teamRatingAvg = prestigeTeams.length
@@ -107,7 +114,7 @@ export const loadRatingsStats = async () => {
       : 0;
 
     prestigePlayers.forEach(player => {
-      const star = Math.min(5, Math.max(1, player.stars || 1));
+      const star = Math.min(5, Math.max(1, player.stars || 1)) as StarRating;
       starCounts[star] += 1;
       starSum += star;
     });

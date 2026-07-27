@@ -6,9 +6,9 @@ export const useDomainData = <T>({ fetcher, deps = [], onData }: UseDomainDataOp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
       const result = await fetcher();
       setData(result);
@@ -27,11 +27,13 @@ export const useDomainData = <T>({ fetcher, deps = [], onData }: UseDomainDataOp
 
   useEffect(() => {
     const handleRefresh = () => {
-      run();
+      void run(false);
     };
     window.addEventListener('pageDataRefresh', handleRefresh);
     return () => window.removeEventListener('pageDataRefresh', handleRefresh);
   }, [run]);
 
-  return { data, loading, error, refetch: run };
+  const refetch = useCallback(() => run(), [run]);
+
+  return { data, loading, error, refetch };
 };

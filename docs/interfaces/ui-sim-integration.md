@@ -19,6 +19,8 @@ This allows one game to run interactively while the broader league state remains
 1. **Game selection**
 - `GameSelectionModal` calls `getGamesToLiveSim()`.
 - Domain prioritizes user-team game first, then sorts others by watchability.
+- Selection passes only the chosen game ID. Prepared domain data determines
+  whether coaching decisions are available.
 
 2. **Session start**
 - `useGameSim.start()` calls `prepareInteractiveLiveGame(gameId)`.
@@ -27,6 +29,8 @@ This allows one game to run interactively while the broader league state remains
 
 3. **Interactive stepping**
 - Hook creates first drive via `startInteractiveDrive`.
+- Session state moves through `preparing`, `ready`, `advancing`, `finalizing`,
+  and terminal `complete` or `error` phases.
 - Progresses through `stepInteractiveDrive` either by:
   - user decisions (`handleDecision`), or
   - auto stepping (`simulateAutoPlays`, `simulateAutoDrive`, `simulateToEnd`).
@@ -40,10 +44,13 @@ This allows one game to run interactively while the broader league state remains
 5. **Final commit**
 - `finishInteractiveGame` calls `finalizeGameSimulation(...)`.
 - Domain writes game/drives/plays/gameLogs and returns final game + drives for UI.
-- Hook updates rendered game state with persisted final outputs.
+- Hook enters the complete phase only after final persistence succeeds and then
+  updates rendered game state with persisted final outputs.
 
 6. **Cross-page sync**
-- Season advancement path dispatches `pageDataRefresh` event.
+- Closing a successfully completed live simulation dispatches the
+  `pageDataRefresh` event.
+- Season advancement also dispatches `pageDataRefresh`.
 - Pages using `useDomainData` subscribe and refetch on this event.
 
 ```mermaid
@@ -72,6 +79,9 @@ sequenceDiagram
 
 - **Decision gating**:
   - User decision prompts only render when current offense is user team and decision mode is enabled.
+- **Serialized advancement**:
+  - Play, drive, and game advancement share one guarded action boundary so
+    overlapping clicks cannot mutate the same session.
 - **Shared core primitives**:
   - Interactive mode uses same underlying engine logic and artifacts as batch mode, reducing divergence.
 - **Derived UI state**:
@@ -91,13 +101,17 @@ sequenceDiagram
 - If preparation fails (missing game/league), session start aborts.
 - Completed games are returned in read-only replay mode without rerunning simulation.
 - Auto-drive and auto-end loops include guards to prevent runaway loops in pathological states.
-- `window.location.reload()` on modal close ensures full-page consistency after live sim sessions.
+- Unfinished sessions remain in memory and require confirmation before discard.
+- Finalization failures require application reload to reconcile the separate
+  IndexedDB writes; normal successful and cancelled closes do not reload.
 
 ## What You Can Observe in the App
 
 - User-team games can present decision prompts while non-user games can be fully auto-run.
+- Sim Play, Sim Drive, and Sim to End remain available in both cases.
 - Live game score/clock updates in real time and then becomes stable after finalization.
-- After closing live sim modal, league pages reflect committed outcomes due to persisted writes + refresh path.
+- After closing a successfully persisted live sim, league pages refetch through
+  the shared refresh event.
 
 ## Source Map (file/function references)
 

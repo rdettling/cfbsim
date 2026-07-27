@@ -1,11 +1,18 @@
 import type { Team } from '../../../types/domain';
 import type { GameRecord, GameLogRecord, PlayerRecord } from '../../../types/db';
 import type { RatingsData, HistoryData, YearData } from '../../../types/baseData';
+import type {
+  PlayerCareerSeason,
+  PlayerGameLog,
+  PlayerStatCategory,
+  PlayerStatValues,
+} from '../../../types/player';
 import { getRatingsData, getYearData, getHistoryData, getYearsIndex } from '../../../db/baseData';
 import { getAllGames, getAllPlayers, getAllGameLogs } from '../../../db/simRepo';
 import { saveLeague } from '../../../db/leagueRepo';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
-import { ensureRosters, POSITION_ORDER } from '../../roster';
+import { ensureRosters } from '../../roster';
+import { POSITION_ORDER } from '../../rosterConfig';
 import { buildAwards } from '../awards';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';
 import { average, percentage } from '../utils/statMath';
@@ -195,70 +202,79 @@ const getPlayerInfoForYear = (player: PlayerRecord, currentYear: number, year: n
   return { classYear: player.year, rating: player.rating };
 };
 
-const getPositionStats = (pos: string, stats: Record<string, any>) => {
-  const baseStats = {
-    class: stats.class,
-    rating: stats.rating,
-    games: stats.games,
-  };
-
-  if (pos === 'qb') {
-    return {
-      ...baseStats,
-      pass_completions: stats.pass_completions,
-      pass_attempts: stats.pass_attempts,
-      completion_percentage: stats.completion_percentage,
-      pass_yards: stats.pass_yards,
-      pass_touchdowns: stats.pass_touchdowns,
-      pass_interceptions: stats.pass_interceptions,
-      passer_rating: stats.passer_rating,
-      adjusted_pass_yards_per_attempt: stats.adjusted_pass_yards_per_attempt,
-    };
-  }
-
-  if (pos === 'rb') {
-    return {
-      ...baseStats,
-      rush_attempts: stats.rush_attempts,
-      rush_yards: stats.rush_yards,
-      yards_per_rush: stats.yards_per_rush,
-      rush_touchdowns: stats.rush_touchdowns,
-      receiving_catches: stats.receiving_catches,
-      receiving_yards: stats.receiving_yards,
-      yards_per_rec: stats.yards_per_rec,
-      receiving_touchdowns: stats.receiving_touchdowns,
-    };
-  }
-
-  if (pos === 'wr' || pos === 'te') {
-    return {
-      ...baseStats,
-      receiving_catches: stats.receiving_catches,
-      receiving_yards: stats.receiving_yards,
-      yards_per_rec: stats.yards_per_rec,
-      receiving_touchdowns: stats.receiving_touchdowns,
-    };
-  }
-
-  if (pos === 'k') {
-    return {
-      ...baseStats,
-      field_goals_made: stats.field_goals_made,
-      field_goals_attempted: stats.field_goals_attempted,
-      field_goal_percent: stats.field_goal_percent,
-    };
-  }
-
-  return baseStats;
+export const getPlayerStatCategory = (pos: string): PlayerStatCategory => {
+  if (pos === 'qb') return 'passing';
+  if (pos === 'rb') return 'rushing';
+  if (pos === 'wr' || pos === 'te') return 'receiving';
+  if (pos === 'k') return 'kicking';
+  if (['dl', 'lb', 'cb', 's'].includes(pos)) return 'defense';
+  return 'participation';
 };
 
-const getPositionGameLog = (pos: string, log: any) => {
-  if (pos === 'qb') {
-    return {
-      ...log,
+type YearlyStats = ReturnType<typeof calculateYearlyStats>;
+
+const getPositionStats = (pos: string, values: YearlyStats): PlayerCareerSeason => {
+  const category = getPlayerStatCategory(pos);
+  let stats: PlayerStatValues = {};
+
+  if (category === 'passing') {
+    stats = {
+      pass_completions: values.pass_completions,
+      pass_attempts: values.pass_attempts,
+      completion_percentage: values.completion_percentage,
+      pass_yards: values.pass_yards,
+      pass_touchdowns: values.pass_touchdowns,
+      pass_interceptions: values.pass_interceptions,
+      passer_rating: values.passer_rating,
+      adjusted_pass_yards_per_attempt: values.adjusted_pass_yards_per_attempt,
+    };
+  } else if (category === 'rushing') {
+    stats = {
+      rush_attempts: values.rush_attempts,
+      rush_yards: values.rush_yards,
+      yards_per_rush: values.rush_ypa,
+      rush_touchdowns: values.rush_touchdowns,
+      receiving_catches: values.receiving_catches,
+      receiving_yards: values.receiving_yards,
+      yards_per_rec: values.receiving_ypr,
+      receiving_touchdowns: values.receiving_touchdowns,
+    };
+  } else if (category === 'receiving') {
+    stats = {
+      receiving_catches: values.receiving_catches,
+      receiving_yards: values.receiving_yards,
+      yards_per_rec: values.receiving_ypr,
+      receiving_touchdowns: values.receiving_touchdowns,
+    };
+  } else if (category === 'kicking') {
+    stats = {
+      field_goals_made: values.field_goals_made,
+      field_goals_attempted: values.field_goals_attempted,
+      field_goal_percent: values.field_goal_percent,
+    };
+  }
+
+  return {
+    classYear: values.class,
+    rating: values.rating,
+    games: values.games,
+    stats,
+  };
+};
+
+const getPositionGameLog = (
+  pos: string,
+  log: GameLogRecord,
+  game: PlayerGameLog['game']
+): PlayerGameLog => {
+  const category = getPlayerStatCategory(pos);
+  let stats: PlayerStatValues = {};
+
+  if (category === 'passing') {
+    stats = {
       pass_completions: log.pass_completions,
       pass_attempts: log.pass_attempts,
-      completion_percent: percentage(log.pass_completions, log.pass_attempts),
+      completion_percentage: percentage(log.pass_completions, log.pass_attempts),
       pass_yards: log.pass_yards,
       pass_touchdowns: log.pass_touchdowns,
       pass_interceptions: log.pass_interceptions,
@@ -270,11 +286,8 @@ const getPositionGameLog = (pos: string, log: any) => {
         log.pass_interceptions
       ),
     };
-  }
-
-  if (pos === 'rb') {
-    return {
-      ...log,
+  } else if (category === 'rushing') {
+    stats = {
       rush_attempts: log.rush_attempts,
       rush_yards: log.rush_yards,
       rush_touchdowns: log.rush_touchdowns,
@@ -283,33 +296,35 @@ const getPositionGameLog = (pos: string, log: any) => {
       yards_per_rec: average(log.receiving_yards, log.receiving_catches),
       receiving_touchdowns: log.receiving_touchdowns,
     };
-  }
-
-  if (pos === 'wr' || pos === 'te') {
-    return {
-      ...log,
+  } else if (category === 'receiving') {
+    stats = {
       receiving_catches: log.receiving_catches,
       receiving_yards: log.receiving_yards,
       yards_per_rec: average(log.receiving_yards, log.receiving_catches),
       receiving_touchdowns: log.receiving_touchdowns,
     };
-  }
-
-  if (pos === 'k') {
-    return {
-      ...log,
+  } else if (category === 'kicking') {
+    stats = {
       field_goals_made: log.field_goals_made,
       field_goals_attempted: log.field_goals_attempted,
       field_goal_percent: percentage(log.field_goals_made, log.field_goals_attempted),
     };
+  } else if (category === 'defense') {
+    stats = {
+      tackles: log.tackles,
+      sacks: log.sacks,
+      interceptions: log.interceptions,
+      fumbles_forced: log.fumbles_forced,
+      fumbles_recovered: log.fumbles_recovered,
+    };
   }
 
-  return log;
+  return { game, stats };
 };
 
 const calculateYearlyStats = (
   player: PlayerRecord,
-  logs: Array<{ log: any }>,
+  logs: Array<{ log: GameLogRecord }>,
   currentYear: number,
   year: number
 ) => {
@@ -331,9 +346,23 @@ const calculateYearlyStats = (
   };
 
   logs.forEach(entry => {
-    Object.keys(yearStats).forEach(key => {
-      if (key === 'games') return;
-      yearStats[key as keyof typeof yearStats] += Number(entry.log[key] ?? 0);
+    const keys = [
+      'pass_completions',
+      'pass_attempts',
+      'pass_yards',
+      'pass_touchdowns',
+      'pass_interceptions',
+      'rush_attempts',
+      'rush_yards',
+      'rush_touchdowns',
+      'receiving_catches',
+      'receiving_yards',
+      'receiving_touchdowns',
+      'field_goals_made',
+      'field_goals_attempted',
+    ] as const;
+    keys.forEach(key => {
+      yearStats[key] += entry.log[key];
     });
   });
 
@@ -345,6 +374,10 @@ const calculateYearlyStats = (
     pass_ypa: average(yearStats.pass_yards, yearStats.pass_attempts),
     rush_ypa: average(yearStats.rush_yards, yearStats.rush_attempts),
     receiving_ypr: average(yearStats.receiving_yards, yearStats.receiving_catches),
+    field_goal_percent: percentage(
+      yearStats.field_goals_made,
+      yearStats.field_goals_attempted
+    ),
     passer_rating: passerRating(
       yearStats.pass_completions,
       yearStats.pass_attempts,
@@ -411,8 +444,8 @@ export const loadPlayer = async (playerId: string) => {
   const playerLogs = gameLogs.filter(log => log.playerId === player.id);
   const years = getPlayerYears(player, league.info.currentYear, playerLogs, gamesById);
 
-  const career_stats: Record<number, any> = {};
-  const game_logs: Record<number, any[]> = {};
+  const career_stats: Record<number, PlayerCareerSeason> = {};
+  const game_logs: Record<number, PlayerGameLog[]> = {};
 
   years.forEach(year => {
     const yearLogs = playerLogs
@@ -423,13 +456,13 @@ export const loadPlayer = async (playerId: string) => {
       .map(entry => {
         const scheduleGame = buildScheduleGameForTeam(team, entry.game!, teamsById);
         if (!scheduleGame) return null;
-        return getPositionGameLog(player.pos, { ...entry.log, game: scheduleGame });
+        return getPositionGameLog(player.pos, entry.log, scheduleGame);
       })
-      .filter(Boolean) as any[];
+      .filter((entry): entry is PlayerGameLog => entry !== null);
 
-    logsWithGames.sort((a, b) => (a.game?.weekPlayed ?? 0) - (b.game?.weekPlayed ?? 0));
+    logsWithGames.sort((a, b) => a.game.weekPlayed - b.game.weekPlayed);
 
-    const yearStats = calculateYearlyStats(player, yearLogs as any, league.info.currentYear, year);
+    const yearStats = calculateYearlyStats(player, yearLogs, league.info.currentYear, year);
     career_stats[year] = getPositionStats(player.pos, yearStats);
     game_logs[year] = logsWithGames;
   });
@@ -454,6 +487,7 @@ export const loadPlayer = async (playerId: string) => {
     conferences: league.conferences,
     career_stats,
     game_logs,
+    stat_category: getPlayerStatCategory(player.pos),
     awards,
   };
 };

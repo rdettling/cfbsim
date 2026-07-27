@@ -1,392 +1,37 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
-  Typography,
-  Card,
-  CardContent,
   Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-  TableHead,
-  MenuItem,
-  Select,
   FormControl,
   InputLabel,
+  MenuItem,
   Paper,
-  Link,
-  Chip,
-  Grid,
+  Select,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
+import { TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadPlayer } from '../domain/league';
-import type { PlayerPageData as PlayerPageDataType } from '../types/pages';
-import { TeamInfoModal, TeamLogo, TeamLink } from '../components/team/TeamComponents';
+import type { PlayerPageData } from '../types/pages';
+import { PlayerCareerDesktopTable } from './player-detail/PlayerCareerDesktopTable';
+import { PlayerCareerMobileList } from './player-detail/PlayerCareerMobileList';
+import { PlayerGameLogsDesktopTable } from './player-detail/PlayerGameLogsDesktopTable';
+import { PlayerGameLogsMobileList } from './player-detail/PlayerGameLogsMobileList';
+import { PlayerProfile } from './player-detail/PlayerProfile';
 
-type PlayerData = PlayerPageDataType['player'];
-type AwardsEntry = PlayerPageDataType['awards'][number];
-
-type GameLog = {
-  game: {
-    id: number;
-    weekPlayed: number;
-    opponent: {
-      name: string;
-      ranking: number;
-      rating: number;
-      record: string;
-    };
-    label: string;
-    result: string;
-    spread: string;
-    moneyline: string;
-    score: string;
-  };
-  [key: string]: any;
-};
-
-const formatStatLabel = (key: string) =>
-  key
-    .replace(/_/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
-const PlayerHeader = ({
-  player,
-  onTeamClick,
-  awards,
-}: {
-  player: PlayerData;
-  onTeamClick: (name: string) => void;
-  awards: AwardsEntry[];
-}) => {
-  return (
-    <Card elevation={3} sx={{ mb: 3 }}>
-      <CardContent>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 9 }}>
-            <Typography variant="h3" fontWeight="bold" gutterBottom>
-              {player.first} {player.last}
-            </Typography>
-
-            {awards.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                {awards.map(award => (
-                  <Chip
-                    key={award.slug}
-                    label={award.name}
-                    variant="outlined"
-                    color="secondary"
-                    sx={{ fontWeight: 600 }}
-                  />
-                ))}
-              </Box>
-            )}
-
-            <Table size="small" sx={{ maxWidth: 500 }}>
-              <TableBody>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Team</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TeamLogo name={player.team} size={30} />
-                      <TeamLink name={player.team} onTeamClick={onTeamClick} />
-                    </Box>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Position</TableCell>
-                  <TableCell>{player.pos}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Year</TableCell>
-                  <TableCell>{player.year.toUpperCase()}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Recruit Stars</TableCell>
-                  <TableCell>{player.stars > 0 ? `${'★'.repeat(player.stars)}` : 'N/A'}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Development Trait</TableCell>
-                  <TableCell>{player.development_trait}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Starter</TableCell>
-                  <TableCell>
-                    <Typography color={player.starter ? 'success.main' : 'error.main'}>
-                      {player.starter ? '✓' : '✗'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Active</TableCell>
-                  <TableCell>
-                    <Typography color={player.active ? 'success.main' : 'error.main'}>
-                      {player.active ? '✓' : '✗'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Paper
-              elevation={2}
-              sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}
-            >
-              <Typography variant="h2" fontWeight="bold">
-                {player.rating}
-              </Typography>
-              <Typography variant="body1">Overall Rating</Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-};
-
-const CareerStats = ({
-  careerStatsByYear,
-  years,
-}: {
-  careerStatsByYear: Record<number, any>;
-  years: number[];
-}) => {
-  if (years.length === 0) return null;
-  const firstYearStats = careerStatsByYear[years[0]];
-  if (!firstYearStats) return null;
-
-  const statKeys = Object.keys(firstYearStats).filter(
-    key => !['class', 'rating'].includes(key)
-  );
-
-  return (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h5" fontWeight="bold" gutterBottom>
-          Career Statistics
-        </Typography>
-
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'grey.100' }}>
-                <TableCell sx={{ fontWeight: 'bold' }}>Year</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Class</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Rating</TableCell>
-                {statKeys.map(key => (
-                  <TableCell key={key} align="right" sx={{ fontWeight: 'bold' }}>
-                    {formatStatLabel(key)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {years.map((year, idx) => {
-                const yearStats = careerStatsByYear[year];
-                if (!yearStats) return null;
-
-                return (
-                  <TableRow
-                    key={year}
-                    sx={{
-                      bgcolor: idx % 2 === 0 ? 'white' : 'grey.50',
-                      '&:hover': { bgcolor: 'grey.100' },
-                    }}
-                  >
-                    <TableCell sx={{ fontWeight: 'bold' }}>{year}</TableCell>
-                    <TableCell>{yearStats.class}</TableCell>
-                    <TableCell>{yearStats.rating}</TableCell>
-                    {statKeys.map(key => (
-                      <TableCell key={key} align="right">
-                        <Typography variant="body2">
-                          {yearStats[key] != null ? (
-                            typeof yearStats[key] === 'number' ? (
-                              Number.isInteger(yearStats[key]) ? (
-                                yearStats[key]
-                              ) : (
-                                yearStats[key].toFixed(1)
-                              )
-                            ) : (
-                              String(yearStats[key])
-                            )
-                          ) : (
-                            '-'
-                          )}
-                        </Typography>
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
-
-const GameLogs = ({
-  gameLogsByYear,
-  years,
-  selectedYear,
-  onYearChange,
-  onTeamClick,
-}: {
-  gameLogsByYear: Record<number, GameLog[]>;
-  years: number[];
-  selectedYear: number | null;
-  onYearChange: (year: number) => void;
-  onTeamClick: (name: string) => void;
-}) => {
-  const gameLogs = selectedYear ? gameLogsByYear[selectedYear] || [] : [];
-
-  const renderGameLogsTable = () => {
-    if (!gameLogs || gameLogs.length === 0) {
-      return (
-        <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-          No games played this season
-        </Typography>
-      );
-    }
-
-    const firstLog = gameLogs[0];
-    const statKeys = Object.keys(firstLog).filter(key => key !== 'game');
-
-    return (
-      <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ bgcolor: 'grey.100' }}>
-              <TableCell sx={{ fontWeight: 'bold' }}>Week</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Opponent</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Result</TableCell>
-              {statKeys.map(key => (
-                <TableCell key={key} align="right" sx={{ fontWeight: 'bold' }}>
-                  {formatStatLabel(key)}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {gameLogs.map((log, idx) => {
-              const game = log.game;
-              const isWin = game.result === 'W';
-
-              return (
-                <TableRow
-                  key={idx}
-                  sx={{
-                    bgcolor: isWin ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
-                    '&:hover': {
-                      bgcolor: isWin ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)',
-                    },
-                  }}
-                >
-                  <TableCell>{game.weekPlayed}</TableCell>
-                  <TableCell>
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                        {game.opponent.ranking > 0 && game.opponent.ranking <= 25 && (
-                          <Typography variant="body2" fontWeight="bold" color="primary">
-                            #{game.opponent.ranking}
-                          </Typography>
-                        )}
-                        <TeamLogo name={game.opponent.name} size={24} />
-                        <Box sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                          <TeamLink name={game.opponent.name} onTeamClick={onTeamClick} />
-                        </Box>
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {game.label}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      component={RouterLink}
-                      to={`/game/${game.id}`}
-                      sx={{
-                        textDecoration: 'none',
-                        fontWeight: 'bold',
-                        color: 'inherit',
-                        '&:hover': {
-                          textDecoration: 'underline',
-                          color: 'primary.main',
-                        },
-                      }}
-                    >
-                      {game.score}
-                    </Link>
-                  </TableCell>
-                  {statKeys.map(key => (
-                    <TableCell key={key} align="right">
-                      <Typography variant="body2">
-                        {log[key] != null ? (
-                          typeof log[key] === 'number' ? (
-                            Number.isInteger(log[key]) ? (
-                              log[key]
-                            ) : (
-                              log[key].toFixed(1)
-                            )
-                          ) : (
-                            String(log[key])
-                          )
-                        ) : (
-                          '-'
-                        )}
-                      </Typography>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Box>
-    );
-  };
-
-  return (
-    <Card elevation={2}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" fontWeight="bold">
-            Game Logs
-          </Typography>
-          <FormControl sx={{ minWidth: 120 }}>
-            <InputLabel>Year</InputLabel>
-            <Select
-              value={selectedYear || ''}
-              label="Year"
-              onChange={event => onYearChange(Number(event.target.value))}
-            >
-              {years.map(year => (
-                <MenuItem key={year} value={year}>
-                  {year}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-        {renderGameLogsTable()}
-      </CardContent>
-    </Card>
-  );
-};
+type PlayerTab = 'career' | 'logs';
 
 const Player = () => {
   const { playerId } = useParams();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState('');
+  const [activeTab, setActiveTab] = useState<PlayerTab>('career');
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-
-  const { data, loading, error } = useDomainData<PlayerPageDataType>({
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const { data, loading, error } = useDomainData<PlayerPageData>({
     fetcher: () => {
       if (!playerId) throw new Error('No player ID provided');
       return loadPlayer(playerId);
@@ -394,56 +39,115 @@ const Player = () => {
     deps: [playerId],
   });
 
-  const handleTeamClick = (name: string) => {
-    setSelectedTeam(name);
-    setModalOpen(true);
-  };
-
-  const player = data?.player;
-  const awards = data?.awards ?? [];
-  const careerStatsByYear = data?.career_stats || {};
-  const gameLogsByYear = data?.game_logs || {};
-
-  const years =
-    Object.keys(careerStatsByYear).length > 0
-      ? Object.keys(careerStatsByYear).map(Number).sort((a, b) => b - a)
-      : Object.keys(gameLogsByYear).map(Number).sort((a, b) => b - a);
+  const years = useMemo(
+    () => data
+      ? Array.from(new Set([
+          ...Object.keys(data.career_stats),
+          ...Object.keys(data.game_logs),
+        ].map(Number))).sort((a, b) => b - a)
+      : [],
+    [data]
+  );
+  const seasons = data
+    ? years
+        .map(year => ({ year, season: data.career_stats[year] }))
+        .filter((entry): entry is { year: number; season: NonNullable<typeof entry.season> } => Boolean(entry.season))
+    : [];
+  const gameLogs = data && selectedYear ? data.game_logs[selectedYear] ?? [] : [];
 
   useEffect(() => {
-    if (!selectedYear && years.length > 0) {
-      setSelectedYear(years[0]);
-    }
-  }, [years, selectedYear]);
+    setSelectedYear(years[0] ?? null);
+  }, [playerId, years[0]]);
+
+  const handleTeamClick = (teamName: string) => {
+    setSelectedTeam(teamName);
+    setModalOpen(true);
+  };
 
   return (
     <PageLayout
       loading={loading}
       error={error}
-      navbarData={
-        data
-          ? {
-              team: data.team,
-              currentStage: data.info.stage,
-              info: data.info,
-              conferences: data.conferences,
-            }
-          : undefined
-      }
       containerMaxWidth="xl"
+      desktopViewportConstrained
+      navbarData={data ? {
+        team: data.team,
+        currentStage: data.info.stage,
+        info: data.info,
+        conferences: data.conferences,
+      } : undefined}
     >
-      {data && player && (
+      {data && (
         <>
-          <PlayerHeader player={player} onTeamClick={handleTeamClick} awards={awards} />
-
-          <CareerStats careerStatsByYear={careerStatsByYear} years={years} />
-
-          <GameLogs
-            gameLogsByYear={gameLogsByYear}
-            years={years}
-            selectedYear={selectedYear}
-            onYearChange={setSelectedYear}
+          <PlayerProfile
+            player={data.player}
+            awards={data.awards}
+            teamColor={data.team.colorPrimary}
             onTeamClick={handleTeamClick}
           />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            justifyContent="space-between"
+            spacing={1}
+            sx={{ mb: 1.25, borderBottom: 1, borderColor: 'divider' }}
+          >
+            <Tabs
+              value={activeTab}
+              onChange={(_, value: PlayerTab) => setActiveTab(value)}
+              aria-label="Player statistics"
+              sx={{ minHeight: 40 }}
+            >
+              <Tab value="career" label="Career" sx={{ minHeight: 40 }} />
+              <Tab value="logs" label="Game Logs" sx={{ minHeight: 40 }} />
+            </Tabs>
+            {activeTab === 'logs' && years.length > 0 && (
+              <FormControl size="small" sx={{ minWidth: 116, mb: { xs: 1, sm: 0.75 } }}>
+                <InputLabel id="player-log-year-label">Year</InputLabel>
+                <Select
+                  labelId="player-log-year-label"
+                  value={selectedYear ?? ''}
+                  label="Year"
+                  onChange={event => setSelectedYear(Number(event.target.value))}
+                >
+                  {years.map(year => <MenuItem key={year} value={year}>{year}</MenuItem>)}
+                </Select>
+              </FormControl>
+            )}
+          </Stack>
+
+          {activeTab === 'career' ? (
+            seasons.length > 0 ? (
+              <>
+                <PlayerCareerDesktopTable seasons={seasons} category={data.stat_category} />
+                <PlayerCareerMobileList seasons={seasons} category={data.stat_category} />
+              </>
+            ) : (
+              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6">No career statistics available</Typography>
+              </Paper>
+            )
+          ) : gameLogs.length > 0 ? (
+            <>
+              <PlayerGameLogsDesktopTable
+                logs={gameLogs}
+                category={data.stat_category}
+                onTeamClick={handleTeamClick}
+              />
+              <PlayerGameLogsMobileList
+                logs={gameLogs}
+                category={data.stat_category}
+                onTeamClick={handleTeamClick}
+              />
+            </>
+          ) : (
+            <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h6">No games played this season</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Game logs will appear after this player records statistics.
+              </Typography>
+            </Paper>
+          )}
 
           <TeamInfoModal
             teamName={selectedTeam}

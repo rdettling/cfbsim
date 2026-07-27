@@ -1,84 +1,132 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
+import type { SimMatchup } from '../../types/components';
 import { TeamLogo } from '../team/TeamComponents';
-import type { SimHeaderProps } from '../../types/components';
+
+type GameScoreStripProps = {
+  matchup: SimMatchup;
+  isPlaybackComplete: boolean;
+};
+
+const formatClock = (totalSeconds: number) => {
+  const minutes = Math.max(0, Math.floor(totalSeconds / 60));
+  const seconds = Math.max(0, totalSeconds % 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const PossessionIndicator = () => (
+  <Box
+    component="img"
+    src="/logos/football.png"
+    alt="Possession"
+    sx={{ width: 18, height: 18, objectFit: 'contain', flexShrink: 0 }}
+  />
+);
+
+const TeamIdentity = ({
+  name,
+  record,
+  possession,
+  align,
+}: {
+  name: string;
+  record: string;
+  possession: boolean;
+  align: 'left' | 'right';
+}) => (
+  <Stack
+    direction={align === 'left' ? 'row' : 'row-reverse'}
+    spacing={{ xs: 0.75, sm: 1.25 }}
+    alignItems="center"
+    sx={{ minWidth: 0, justifySelf: align === 'left' ? 'start' : 'end' }}
+  >
+    <TeamLogo name={name} size={40} />
+    <Box sx={{ minWidth: 0, textAlign: align }}>
+      <Stack
+        direction={align === 'left' ? 'row' : 'row-reverse'}
+        spacing={0.5}
+        alignItems="center"
+      >
+        <Typography
+          variant="subtitle2"
+          title={name}
+          sx={{
+            maxWidth: { xs: 86, sm: 180, md: 240 },
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {name}
+        </Typography>
+        {possession && <PossessionIndicator />}
+      </Stack>
+      <Typography variant="caption" color="text.secondary">
+        {record}
+      </Typography>
+    </Box>
+  </Stack>
+);
 
 const GameScoreStrip = ({
   matchup,
   isPlaybackComplete,
-}: SimHeaderProps) => {
-  const PossessionIndicator = () => (
-    <img
-      src="/logos/football.png"
-      alt="Football"
-      style={{ width: 22, height: 22, objectFit: 'contain' }}
-    />
-  );
-
-  const scoreText = `${matchup.awayScore} - ${matchup.homeScore}`;
-  const isAwayOnOffense = matchup.isAwayOnOffense;
-  const isHomeOnOffense = !matchup.isAwayOnOffense;
-  const formatClock = (totalSeconds: number) => {
-    const minutes = Math.max(0, Math.floor(totalSeconds / 60));
-    const seconds = Math.max(0, totalSeconds % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+}: GameScoreStripProps) => {
   const periodLabel = matchup.inOvertime
-    ? (matchup.overtimeCount > 1 ? `${matchup.overtimeCount}OT` : 'OT')
+    ? matchup.overtimeCount > 1
+      ? `${matchup.overtimeCount}OT`
+      : 'OT'
     : `Q${matchup.quarter}`;
-  const clockLabel = matchup.inOvertime ? '' : formatClock(matchup.clockSecondsLeft);
+  const status = isPlaybackComplete
+    ? 'Final'
+    : matchup.inOvertime
+      ? periodLabel
+      : `${periodLabel} · ${formatClock(matchup.clockSecondsLeft)}`;
 
   return (
     <Box
       sx={{
-        background: 'linear-gradient(90deg, rgba(17,24,39,0.96) 0%, rgba(30,64,175,0.9) 50%, rgba(17,24,39,0.96) 100%)',
-        borderRadius: 3,
-        px: 3,
-        py: 2,
-        color: 'white',
         display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
         alignItems: 'center',
-        gap: 2,
-        boxShadow: '0 16px 32px rgba(15, 23, 42, 0.2)',
-        fontFamily: '"IBM Plex Sans", sans-serif',
+        gap: { xs: 1, sm: 2 },
+        px: { xs: 1.25, sm: 2 },
+        py: 1.25,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        backgroundColor: 'background.paper',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <TeamLogo name={matchup.awayTeam.name} size={44} />
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', fontFamily: '"Space Grotesk", sans-serif' }}>
-              {matchup.awayTeam.name}
-            </Typography>
-            {isAwayOnOffense && <PossessionIndicator />}
-          </Box>
-          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{matchup.awayTeam.record}</Typography>
-        </Box>
+      <TeamIdentity
+        name={matchup.awayTeam.name}
+        record={matchup.awayTeam.record}
+        possession={!isPlaybackComplete && matchup.isAwayOnOffense}
+        align="left"
+      />
+
+      <Box sx={{ textAlign: 'center', minWidth: { xs: 76, sm: 112 } }}>
+        <Typography
+          component="p"
+          sx={{
+            fontSize: { xs: '1.35rem', sm: '1.75rem' },
+            fontWeight: 700,
+            lineHeight: 1.1,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {matchup.awayScore}–{matchup.homeScore}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {status}
+        </Typography>
       </Box>
 
-      <Box sx={{ textAlign: 'center' }}>
-        <Typography sx={{ fontSize: '2rem', fontWeight: 700, fontFamily: '"Space Grotesk", sans-serif' }}>
-          {scoreText}
-        </Typography>
-        <Typography sx={{ fontSize: '0.9rem', opacity: 0.85 }}>
-          {isPlaybackComplete
-            ? 'FINAL'
-            : `${periodLabel}${clockLabel ? ` ${clockLabel}` : ''}`}
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'flex-end' }}>
-        <Box sx={{ textAlign: 'right' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-            {isHomeOnOffense && <PossessionIndicator />}
-            <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', fontFamily: '"Space Grotesk", sans-serif' }}>
-              {matchup.homeTeam.name}
-            </Typography>
-          </Box>
-          <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>{matchup.homeTeam.record}</Typography>
-        </Box>
-        <TeamLogo name={matchup.homeTeam.name} size={44} />
-      </Box>
+      <TeamIdentity
+        name={matchup.homeTeam.name}
+        record={matchup.homeTeam.record}
+        possession={!isPlaybackComplete && !matchup.isAwayOnOffense}
+        align="right"
+      />
     </Box>
   );
 };

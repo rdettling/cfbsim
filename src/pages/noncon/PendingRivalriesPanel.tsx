@@ -1,0 +1,75 @@
+import { Box, Paper, Stack, Typography } from '@mui/material';
+import { TeamLink } from '../../components/team/TeamComponents';
+import type { PendingRivalry, TeamSelectionHandler } from './types';
+
+type PendingRivalriesPanelProps = {
+  rivalries: PendingRivalry[];
+  onTeamClick: TeamSelectionHandler;
+};
+
+export const PendingRivalriesPanel = ({
+  rivalries,
+  onTeamClick,
+}: PendingRivalriesPanelProps) => (
+  <Paper
+    component="aside"
+    aria-label="Pending Rivalries"
+    variant="outlined"
+    sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      minHeight: 0,
+      overflow: 'hidden',
+    }}
+  >
+    <Box sx={{ px: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Typography component="h2" variant="h6">
+        Pending Rivalries
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Placed when the full schedule is generated
+      </Typography>
+    </Box>
+
+    <Stack sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+      {rivalries.length === 0 ? (
+        <Box sx={{ p: 2.5, textAlign: 'center' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+            No pending rivalries
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Every rivalry with a fixed week is already shown in the schedule.
+          </Typography>
+        </Box>
+      ) : (
+        rivalries.map((rivalry) => (
+          <Box
+            component="article"
+            key={rivalry.id}
+            sx={{
+              p: 1.5,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              '&:last-of-type': { borderBottom: 0 },
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+              {rivalry.name ?? 'Rivalry Game'}
+            </Typography>
+            <Stack direction="row" spacing={0.5} alignItems="center" useFlexGap flexWrap="wrap">
+              <TeamLink name={rivalry.teamA} onTeamClick={onTeamClick} />
+              <Typography variant="body2" color="text.secondary">vs.</Typography>
+              <TeamLink name={rivalry.teamB} onTeamClick={onTeamClick} />
+            </Stack>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+              {rivalry.homeTeam && rivalry.awayTeam
+                ? `${rivalry.homeTeam} hosts ${rivalry.awayTeam}`
+                : 'Week and site to be determined'}
+            </Typography>
+          </Box>
+        ))
+      )}
+    </Stack>
+  </Paper>
+);

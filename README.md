@@ -6,11 +6,6 @@ CFB Sim is a browser-based college football dynasty simulator where you run a pr
 
 All docs are under [`docs/`](docs/README.md).
 
-- Architecture: [`docs/architecture/`](docs/architecture/README.md)
-- Systems: [`docs/systems/`](docs/systems/README.md)
-- Interfaces: [`docs/interfaces/`](docs/interfaces/README.md)
-- Operations: [`docs/operations/`](docs/operations/README.md)
-
 ## What The App Does
 
 - Simulates games and full weeks

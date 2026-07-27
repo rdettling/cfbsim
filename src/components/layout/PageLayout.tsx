@@ -1,57 +1,66 @@
-import { Box, Container, CircularProgress, Alert } from '@mui/material';
-import Navbar from './Navbar';
-import type { PageLayoutProps } from '../../types/components';
+import { Alert, Box, CircularProgress, Container } from '@mui/material';
+import type { ContainerProps } from '@mui/material';
+import type { ReactNode } from 'react';
+import AppShell from './AppShell';
+import type { AppNavigationData } from './navigation';
 
-/**
- * PageLayout - A reusable layout component that handles:
- * - Loading states with centered spinner
- * - Error states with alert
- * - Optional navbar with consistent props
- * - Optional container with configurable maxWidth
- * 
- * This eliminates duplicated loading/error/navbar code across all pages.
- */
-export const PageLayout = ({ 
-    loading, 
-    error, 
-    navbarData,
-    containerMaxWidth = 'lg',
-    children 
+export interface PageLayoutProps {
+  loading: boolean;
+  error: string | null;
+  navbarData?: AppNavigationData;
+  containerMaxWidth?: ContainerProps['maxWidth'];
+  desktopViewportConstrained?: boolean;
+  children: ReactNode;
+}
+
+export const PageLayout = ({
+  loading,
+  error,
+  navbarData,
+  containerMaxWidth = 'lg',
+  desktopViewportConstrained = false,
+  children,
 }: PageLayoutProps) => {
-    // Loading state
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress size={60} />
-            </Box>
-        );
-    }
-
-    // Error state
-    if (error) {
-        return <Alert severity="error">{error}</Alert>;
-    }
-
-    // Main content
+  if (loading) {
     return (
-        <>
-            {navbarData && (
-                <Navbar
-                    team={navbarData.team}
-                    currentStage={navbarData.currentStage}
-                    info={navbarData.info}
-                    conferences={navbarData.conferences}
-                />
-            )}
-            {containerMaxWidth !== false ? (
-                <Container maxWidth={containerMaxWidth} sx={{ py: 4 }}>
-                    {children}
-                </Container>
-            ) : (
-                children
-            )}
-        </>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+        }}
+      >
+        <CircularProgress size={60} />
+      </Box>
     );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+  if (navbarData) {
+    return (
+      <AppShell
+        navigationData={navbarData}
+        containerMaxWidth={containerMaxWidth}
+        desktopViewportConstrained={desktopViewportConstrained}
+      >
+        {children}
+      </AppShell>
+    );
+  }
+
+  if (containerMaxWidth !== false) {
+    return (
+      <Container maxWidth={containerMaxWidth} sx={{ py: 4 }}>
+        {children}
+      </Container>
+    );
+  }
+
+  return children;
 };
 
 export default PageLayout;

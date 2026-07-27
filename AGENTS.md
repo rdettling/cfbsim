@@ -3,6 +3,7 @@
 This file is for Codex/agent context. For human‑readable docs, see:
 - `docs/README.md` for docs index
 - `docs/architecture/system-overview.md` for system overview
+- `docs/frontend/README.md` for frontend direction and migration status
 
 ## Conventions
 

@@ -22,7 +22,12 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 
 2. **League settings path**
 - `DEFAULT_SETTINGS` defines baseline playoff/realignment behavior.
-- Settings are initialized/normalized during league creation/load and can be updated in settings/realignment flows.
+- Settings are initialized/normalized during league creation/load. Upcoming-
+  season topology is edited only in the stage-gated Next Season Setup flow.
+- Next Season Setup and realignment advancement share one validated historical
+  resolver. It targets `currentYear + 1`, uses an exact bundled year when
+  available, otherwise uses the closest year, and identifies post-latest-year
+  fallback as the historical frontier.
 - Postseason week topology (`lastWeek`) is derived from playoff team count.
 
 3. **Calibration script path**
@@ -39,7 +44,10 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - **League topology controls (`Settings`)**:
   - `playoff_teams` determines postseason structure and `lastWeek` horizon.
   - `playoff_autobids` and `playoff_conf_champ_top_4` alter 12-team seeding behavior.
-  - `auto_realignment` and `auto_update_postseason_format` shape offseason automatic changes.
+  - `auto_realignment` stores the Next Season Setup choice to follow historical
+    conference membership rather than keep the current alignment.
+  - `auto_update_postseason_format` stores the choice to follow the historical
+    postseason format rather than use a custom supported format.
 - **Scripted calibration controls**:
   - `tune:yards` iteratively adjusts yard-distribution-related tuning fields.
   - `eval:winrate` measures win-rate and margin behavior under rating differentials.
@@ -50,6 +58,16 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - `SIM_TUNING` shape must remain compatible with `SimTuning` type contract.
 - Extreme tuning changes can destabilize downstream systems (rankings, postseason qualification realism) even when engine still runs.
 - Playoff/team settings must remain consistent with postseason assumptions (2/4/12 supported topology).
+- Next Season Setup accepts 0–10 automatic bids only for the 12-team format;
+  2- and 4-team formats normalize automatic bids and champion top seeds off.
+- New-league creation uses the same 0–10 automatic-bid range. Enabling
+  conference champions as the top four seeds requires at least four automatic
+  bids.
+- Missing or malformed historical data is an error, distinct from a valid
+  historical year with no conference or postseason changes.
+- Configuration writes require the persisted `realignment` stage. Advancement
+  compares the settings used for calculation with the persisted settings so a
+  concurrent edit cannot produce a mixed transition.
 - Any script that rewrites tracked JSON should be treated as a model change requiring regression review.
 
 ## Failure/Edge Cases
@@ -65,6 +83,8 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Outcome tuning changes alter yardage distributions, scoring frequency, and upset rates.
 - Playoff setting changes alter season length, postseason rounds, and ranking freeze behavior.
 - Realignment/postseason auto-update settings alter offseason structural evolution over years.
+- The Next Season Setup source badge identifies whether the upcoming year uses
+  exact bundled data or the closest historical fallback.
 
 ## Safe vs Behavior-Shifting Changes
 
@@ -84,6 +104,10 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - `src/domain/sim/clock.ts`, `playcalling.ts`, `outcomes.ts`, `kickoffs.ts`
 - League settings:
   - `src/types/league.ts` (`DEFAULT_SETTINGS`, `ensureSettings`)
+  - `src/domain/league/historicalData.ts` (historical source resolution)
+  - `src/domain/league/nextSeasonPreview.ts` (side-effect-free preview)
+  - `src/domain/league/nextSeasonConfiguration.ts` (settings mapping,
+    validation, and update command)
   - `src/domain/league/postseason.ts` (`getLastWeekByPlayoffTeams`, postseason state normalization)
   - `src/domain/league/offseason.ts` (auto realignment/postseason updates)
 - Scripts and commands:

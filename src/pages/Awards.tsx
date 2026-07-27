@@ -1,146 +1,52 @@
-import { Box, Paper, Typography, Chip, Stack, Link as MuiLink, Grid } from '@mui/material';
+import { useState } from 'react';
+import { Box, Paper, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
+import { TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadAwards } from '../domain/league';
 import type { AwardsPageData } from '../types/pages';
-import { TeamLogo } from '../components/team/TeamComponents';
-type AwardPlayer = AwardsPageData['favorites'][number]['first_place'];
-
-const RANK_LABELS = ['1st Favorite', '2nd Favorite', '3rd Favorite'];
-
-const getAwardStatLine = (stats?: Record<string, any> | null) => stats?.stat_line ?? 'No stats yet';
-
-const AwardRow = ({
-  label,
-  player,
-  score,
-  stats,
-}: {
-  label: string;
-  player: AwardPlayer | null;
-  score: number | null;
-  stats: Record<string, any> | null;
-}) => (
-  <Box
-    sx={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      gap: 2,
-      borderTop: '1px solid',
-      borderColor: 'divider',
-      py: 2,
-      '&:first-of-type': { borderTop: 'none', pt: 0 },
-    }}
-  >
-    <Box>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-        {label}
-      </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-        {player && <TeamLogo name={player.team_name} size={32} />}
-        {player ? (
-          <MuiLink
-            href={`/players/${player.id}`}
-            underline="hover"
-            sx={{ fontWeight: 700, fontSize: '1.1rem' }}
-          >
-            {`${player.first} ${player.last}`}
-          </MuiLink>
-        ) : (
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            TBD
-          </Typography>
-        )}
-      </Box>
-      <Typography variant="caption" color="text.secondary">
-        {getAwardStatLine(stats)}
-      </Typography>
-    </Box>
-    <Stack alignItems="flex-end" spacing={0.5}>
-      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-        {score !== null && score !== undefined ? score.toFixed(1) : '—'}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {player?.pos || '--'}
-      </Typography>
-    </Stack>
-  </Box>
-);
-
-const AwardCard = ({
-  award,
-  highlightLabel,
-  highlightColor,
-}: {
-  award: AwardsPageData['favorites'][number];
-  highlightLabel: string;
-  highlightColor: 'primary' | 'success';
-}) => {
-  const nominees = [award.first_place, award.second_place, award.third_place];
-
-  return (
-    <Paper
-      elevation={3}
-      sx={{
-        p: 3,
-        borderRadius: 3,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-      }}
-    >
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {award.category_name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {award.category_description}
-          </Typography>
-        </Box>
-        <Chip label={highlightLabel} color={highlightColor} variant="outlined" />
-      </Stack>
-
-      <Box>
-        {nominees.map((player, index) => (
-          <AwardRow
-            key={`${award.category_slug}-${index}`}
-            label={RANK_LABELS[index]}
-            player={player}
-            score={
-              index === 0
-                ? award.first_score
-                : index === 1
-                ? award.second_score
-                : award.third_score
-            }
-            stats={
-              index === 0
-                ? award.first_stats
-                : index === 1
-                ? award.second_stats
-                : award.third_stats
-            }
-          />
-        ))}
-      </Box>
-    </Paper>
-  );
-};
+import { AwardDetail } from './awards/AwardDetail';
+import { AwardsCategoryNavigation } from './awards/AwardsCategoryNavigation';
+import { AwardsHeader } from './awards/AwardsHeader';
+import type { AwardMode } from './awards/types';
 
 const Awards = () => {
+  const [selectedSlug, setSelectedSlug] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+
   const { data, loading, error } = useDomainData<AwardsPageData>({
     fetcher: loadAwards,
-    deps: [],
   });
 
-  const hasAwards = (data?.favorites?.length || 0) > 0 || (data?.final?.length || 0) > 0;
+  const mode: AwardMode = data?.info.stage === 'summary' ? 'final' : 'live';
+  const awards = data
+    ? mode === 'final'
+      ? data.final
+      : data.favorites
+    : [];
+  const selectedAward =
+    awards.find((award) => award.category_slug === selectedSlug) ??
+    awards[0] ??
+    null;
+  const hasAnyCandidate = awards.some(
+    (award) =>
+      award.first_place !== null ||
+      award.second_place !== null ||
+      award.third_place !== null
+  );
+
+  const handleTeamClick = (teamName: string) => {
+    setSelectedTeam(teamName);
+    setModalOpen(true);
+  };
 
   return (
     <PageLayout
       loading={loading}
       error={error}
+      containerMaxWidth="xl"
+      desktopViewportConstrained
       navbarData={
         data
           ? {
@@ -151,54 +57,69 @@ const Awards = () => {
             }
           : undefined
       }
-      containerMaxWidth="xl"
     >
       {data && (
-        <Box>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h2" sx={{ fontWeight: 700 }}>
-              Individual Awards
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {data.info.stage === 'summary'
-                ? 'Final award winners based on the completed season.'
-                : 'Live award races — the top favorites are updated each time you visit this page.'}
-            </Typography>
+        <>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: { lg: 1 },
+              minHeight: { lg: 0 },
+            }}
+          >
+            <AwardsHeader
+              year={data.info.currentYear}
+              week={data.info.currentWeek}
+              mode={mode}
+            />
+
+            {!hasAnyCandidate ? (
+              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6">No award candidates yet</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Awards will populate after eligible players record game statistics.
+                </Typography>
+              </Paper>
+            ) : selectedAward ? (
+              <Box
+                sx={{
+                  display: { xs: 'block', lg: 'grid' },
+                  gridTemplateColumns: { lg: 'minmax(250px, 0.3fr) minmax(0, 1fr)' },
+                  gridTemplateRows: { lg: 'minmax(0, 1fr)' },
+                  gap: 1.25,
+                  flex: { lg: 1 },
+                  minHeight: { lg: 0 },
+                }}
+              >
+                <AwardsCategoryNavigation
+                  awards={awards}
+                  selectedSlug={selectedAward.category_slug}
+                  mode={mode}
+                  onSelect={setSelectedSlug}
+                />
+                <AwardDetail
+                  award={selectedAward}
+                  mode={mode}
+                  onTeamClick={handleTeamClick}
+                />
+              </Box>
+            ) : (
+              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6">Awards are unavailable</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  No award categories were returned for this season.
+                </Typography>
+              </Paper>
+            )}
           </Box>
 
-          {!hasAwards && (
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="body1" color="text.secondary">
-                Awards will appear here once enough games have been played.
-              </Typography>
-            </Paper>
-          )}
-
-          {data.favorites.length > 0 && (
-            <Grid container spacing={3}>
-              {data.favorites.map((award) => (
-                <Grid size={{ xs: 12, md: 6 }} key={`${award.category_slug}-fav`}>
-                  <AwardCard award={award} highlightLabel="Live Favorites" highlightColor="primary" />
-                </Grid>
-              ))}
-            </Grid>
-          )}
-
-          {data.final.length > 0 && (
-            <Box sx={{ mt: 5 }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-                Final Award Winners
-              </Typography>
-              <Grid container spacing={3}>
-                {data.final.map((award) => (
-                  <Grid size={{ xs: 12, md: 6 }} key={`${award.category_slug}-final`}>
-                    <AwardCard award={award} highlightLabel="Final Winner" highlightColor="success" />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-        </Box>
+          <TeamInfoModal
+            teamName={selectedTeam}
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+          />
+        </>
       )}
     </PageLayout>
   );

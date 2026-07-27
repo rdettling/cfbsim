@@ -25,7 +25,6 @@ const DriveSummary = ({
   variant = 'page',
   includeCurrentDrive = false,
   matchup,
-  panelHeight,
 }: DriveSummaryProps) => {
   const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
   const [driveFilter, setDriveFilter] = useState<'all' | 'scoring'>('all');
@@ -94,7 +93,9 @@ const DriveSummary = ({
     });
   };
 
-  const getCompletedDrives = () => {
+  const displayDrives = useMemo(() => {
+    if (variant !== 'modal') return drives;
+
     const completed: Drive[] = [];
     let playCount = 0;
     for (const drive of drives) {
@@ -108,9 +109,8 @@ const DriveSummary = ({
       break;
     }
     return completed;
-  };
+  }, [currentPlayIndex, drives, includeCurrentDrive, variant]);
 
-  const displayDrives = variant === 'modal' ? getCompletedDrives() : drives;
   const visibleDrives = useMemo(
     () => (driveFilter === 'scoring' ? displayDrives.filter(drive => drive.points > 0) : displayDrives),
     [displayDrives, driveFilter]
@@ -123,22 +123,34 @@ const DriveSummary = ({
       prev.forEach(driveNum => {
         if (visibleDriveNums.has(driveNum)) next.add(driveNum);
       });
-      return next;
+      const unchanged =
+        next.size === prev.size &&
+        Array.from(next).every(driveNum => prev.has(driveNum));
+      return unchanged ? prev : next;
     });
   }, [visibleDrives]);
 
-  const containerSx =
-    variant === 'page'
-      ? { height: panelHeight ?? '100%', display: 'flex', flexDirection: 'column' }
-      : { height: '100%', display: 'flex', flexDirection: 'column' };
+  const containerSx = {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    ...(variant === 'page' && { minHeight: 0 }),
+  } as const;
 
   return (
-    <Card sx={containerSx}>
+    <Card variant={variant === 'page' ? 'outlined' : undefined} sx={containerSx}>
       <CardContent
         sx={
           variant === 'modal'
             ? { flex: 1, overflow: 'auto' }
-            : { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }
+            : {
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+                p: 1.5,
+                '&:last-child': { pb: 1.5 },
+              }
         }
       >
         <Stack
@@ -148,7 +160,11 @@ const DriveSummary = ({
           spacing={1}
           sx={{ mb: 1 }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>
+          <Typography
+            component={variant === 'page' ? 'h2' : 'div'}
+            variant={variant === 'page' ? 'h6' : 'h5'}
+            sx={{ fontWeight: variant === 'page' ? 600 : 800 }}
+          >
             Drive Summary
           </Typography>
           <ToggleButtonGroup
@@ -175,7 +191,8 @@ const DriveSummary = ({
             scrollbarWidth: 'thin',
             '&::-webkit-scrollbar': { width: 7 },
             '&::-webkit-scrollbar-thumb': {
-              backgroundColor: 'rgba(0,0,0,0.16)',
+              backgroundColor:
+                variant === 'page' ? 'divider' : 'rgba(0,0,0,0.16)',
               borderRadius: 8,
             },
           }}
@@ -183,10 +200,10 @@ const DriveSummary = ({
           {visibleDrives.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               {driveFilter === 'scoring'
-                ? 'No scoring drives'
-                : variant === 'modal'
+              ? 'No scoring drives'
+              : variant === 'modal'
                   ? 'No completed drives yet'
-                  : 'No drives available'}
+                  : 'No drives are available for this game.'}
             </Typography>
           ) : (
             visibleDrives.map((drive, idx) => {
@@ -208,7 +225,7 @@ const DriveSummary = ({
                 : { awayScore: scoreA ?? 0, homeScore: scoreB ?? 0 };
 
               return (
-                <Card key={idx} variant="outlined" sx={{ mb: 1.25 }}>
+                <Card key={drive.driveNum} variant="outlined" sx={{ mb: 1.25 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
                       <Stack direction="row" alignItems="center" spacing={1}>
@@ -216,7 +233,13 @@ const DriveSummary = ({
                           {getDriveStartTime(drive) || 'Start time unavailable'}
                         </Typography>
                         {hasPlays && (
-                          <IconButton size="small" onClick={() => toggleDriveExpansion(drive.driveNum)}>
+                          <IconButton
+                            size="small"
+                            aria-label={`${isExpanded ? 'Collapse' : 'Expand'} drive ${drive.driveNum + 1}`}
+                            aria-expanded={isExpanded}
+                            aria-controls={`drive-${drive.driveNum}-plays`}
+                            onClick={() => toggleDriveExpansion(drive.driveNum)}
+                          >
                             {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                           </IconButton>
                         )}
@@ -254,7 +277,12 @@ const DriveSummary = ({
                     </Stack>
 
                     {hasPlays && (
-                      <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                      <Collapse
+                        id={`drive-${drive.driveNum}-plays`}
+                        in={isExpanded}
+                        timeout="auto"
+                        unmountOnExit
+                      >
                         <Divider sx={{ my: 1.1 }} />
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.8, fontWeight: 700 }}>
                           Plays

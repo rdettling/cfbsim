@@ -4,7 +4,7 @@ import type { GameRecord } from '../../types/db';
 import { buildSchedule, applyRivalriesToSchedule } from '../scheduleBuilder';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
-import { clearNonGameArtifacts } from '../../db/simRepo';
+import { buildWatchability } from '../sim/games';
 import { getRivalriesData } from '../../db/baseData';
 
 export const createNonConGameRecord = async (
@@ -29,7 +29,7 @@ export const createNonConGameRecord = async (
   const id = league.idCounters.game ?? 1;
   league.idCounters.game = id + 1;
 
-  return {
+  const record: GameRecord = {
     id,
     teamAId: teamA.id,
     teamBId: teamB.id,
@@ -54,6 +54,8 @@ export const createNonConGameRecord = async (
     headline: null,
     watchability: null,
   };
+  record.watchability = buildWatchability(record, league.teams.length);
+  return record;
 };
 
 export const initializeNonConScheduling = async (league: LeagueState) => {
@@ -64,7 +66,7 @@ export const initializeNonConScheduling = async (league: LeagueState) => {
   return { schedule, gamesToSave };
 };
 
-export const resetSeasonData = async (league: LeagueState) => {
+export const prepareSeasonReset = async (league: LeagueState) => {
   league.teams.forEach(team => {
     team.nonConfGames = 0;
     team.confGames = 0;
@@ -84,7 +86,6 @@ export const resetSeasonData = async (league: LeagueState) => {
     team.strength_of_record_avg = 0;
   });
 
-  await clearNonGameArtifacts();
   league.scheduleBuilt = false;
   league.simInitialized = false;
   if (!league.idCounters) {

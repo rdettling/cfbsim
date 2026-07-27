@@ -1,10 +1,30 @@
-import type { Conference, Info, Team, Settings, PreviewData, ScheduleGame } from './domain';
+import type {
+  Conference,
+  Info,
+  LeagueStage,
+  OffseasonStage,
+  Team,
+  Settings,
+  PreviewData,
+  ScheduleGame,
+  PlayoffTeamCount,
+} from './domain';
 
 export interface LaunchProps {
   years: string[];
   info: Info | null;
   preview: PreviewData | null;
-  selected_year?: string | null;
+  selected_year: string | null;
+}
+
+export interface StartNewLeagueInput {
+  teamName: string;
+  year: string;
+  playoff: {
+    teams: PlayoffTeamCount;
+    autobids?: number;
+    conferenceChampionsReceiveTopSeeds?: boolean;
+  };
 }
 
 export interface NonConData {
@@ -54,6 +74,59 @@ export interface LeagueState {
     gameLog: number;
     player: number;
   };
+}
+
+export interface OffseasonAdvanceResult {
+  previousStage: OffseasonStage;
+  currentStage: Exclude<LeagueStage, 'season' | 'summary'>;
+  route: string;
+}
+
+export class OffseasonStageMismatchError extends Error {
+  readonly expectedStage: OffseasonStage;
+  readonly actualStage: LeagueStage;
+
+  constructor(expectedStage: OffseasonStage, actualStage: LeagueStage) {
+    super(
+      `Cannot advance offseason from ${expectedStage}; the persisted league is at ${actualStage}.`,
+    );
+    this.name = 'OffseasonStageMismatchError';
+    this.expectedStage = expectedStage;
+    this.actualStage = actualStage;
+  }
+}
+
+export class NextSeasonConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NextSeasonConfigurationError';
+  }
+}
+
+export class NewLeagueConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NewLeagueConfigurationError';
+  }
+}
+
+export class HistoricalDataError extends Error {
+  readonly targetYear: number;
+
+  constructor(targetYear: number, message: string) {
+    super(message);
+    this.name = 'HistoricalDataError';
+    this.targetYear = targetYear;
+  }
+}
+
+export class OffseasonConfigurationConflictError extends Error {
+  constructor() {
+    super(
+      'Next season settings changed while advancement was preparing. Review the refreshed setup and try again.',
+    );
+    this.name = 'OffseasonConfigurationConflictError';
+  }
 }
 
 export const DEFAULT_SETTINGS: Settings = {

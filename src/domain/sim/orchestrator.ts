@@ -97,7 +97,7 @@ export const getGamesToLiveSim = async () => {
   );
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
-  const unplayed = games.filter(game => !game.winnerId);
+  const unplayed = games.filter(game => game.winnerId === null);
   unplayed.sort((a, b) => (b.watchability ?? 0) - (a.watchability ?? 0));
 
   const userTeam = league.teams.find(team => team.name === league.info.team);
@@ -168,7 +168,7 @@ export const prepareInteractiveLiveGame = async (gameId: number): Promise<Prepar
   const userTeam = league.teams.find(team => team.name === league.info.team);
   const isUserGame = userTeam ? (record.teamAId === userTeam.id || record.teamBId === userTeam.id) : false;
 
-  if (record.winnerId) {
+  if (record.winnerId !== null) {
     const drives = await getDrivesByGame(gameId);
     const plays = await getPlaysByGame(gameId);
     return {
@@ -367,6 +367,7 @@ export const advanceWeeks = async (destWeek: number) => {
         if (!teamA || !teamB) return;
         game.rankATOG = teamA.ranking;
         game.rankBTOG = teamB.ranking;
+        game.watchability = buildWatchability(game, league.teams.length);
       });
 
       await saveGames(futureGames);

@@ -37,6 +37,7 @@ export interface GameData {
   headline_tags?: string[] | null;
   homeTeamId?: number | null;
   awayTeamId?: number | null;
+  neutralSite: boolean;
   teamA: {
     id: number;
     name: string;

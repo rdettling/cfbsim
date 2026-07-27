@@ -49,11 +49,22 @@ export interface Team {
   next_game: ScheduleGame | null;
 }
 
+export type LeagueStage =
+  | 'preseason'
+  | 'season'
+  | 'summary'
+  | 'realignment'
+  | 'progression'
+  | 'recruiting_summary'
+  | 'roster_cuts';
+
+export type OffseasonStage = Exclude<LeagueStage, 'preseason' | 'season'>;
+
 export interface Info {
   currentWeek: number;
   currentYear: number;
   startYear?: number;
-  stage: string;
+  stage: LeagueStage;
   team: string;
   lastWeek: number;
   averageTeamRating?: number;
@@ -86,19 +97,69 @@ export interface Settings {
   auto_update_postseason_format: boolean;
 }
 
-export interface PreviewData {
-  conferences: Record<
-    string,
-    {
-      confName: string;
-      confFullName: string;
-      confGames: number;
-      teams: Team[];
+export type ConferenceStructurePolicy = 'historical' | 'current';
+export type PostseasonFormatPolicy = 'historical' | 'custom';
+export type PlayoffTeamCount = 2 | 4 | 12;
+
+export interface NextSeasonConfiguration {
+  conferencePolicy: ConferenceStructurePolicy;
+  postseasonPolicy: PostseasonFormatPolicy;
+  playoffTeams: PlayoffTeamCount;
+  playoffAutobids?: number;
+  conferenceChampionsReceiveTopSeeds?: boolean;
+}
+
+export interface HistoricalDataResolution {
+  targetYear: number;
+  sourceYear: number;
+  resolution: 'exact' | 'fallback';
+  atHistoricalFrontier: boolean;
+}
+
+export interface ConferenceChange {
+  teamName: string;
+  fromConference: string;
+  toConference: string;
+}
+
+export type PostseasonChange =
+  | {
+      setting: 'playoffTeams' | 'playoffAutobids';
+      currentValue: number;
+      nextValue: number;
     }
-  >;
-  independents: Team[];
+  | {
+      setting: 'conferenceChampionsReceiveTopSeeds';
+      currentValue: boolean;
+      nextValue: boolean;
+    };
+
+export interface NextSeasonPreview {
+  dataSource: HistoricalDataResolution;
+  historicalPostseason: {
+    playoffTeams: PlayoffTeamCount;
+    playoffAutobids: number;
+    conferenceChampionsReceiveTopSeeds: boolean;
+  };
+  conferenceChanges: ConferenceChange[];
+  postseasonChanges: PostseasonChange[];
+}
+
+export interface PreviewData {
+  conferences: Array<{
+    name: string;
+    fullName: string;
+  }>;
+  teams: Array<{
+    name: string;
+    mascot: string;
+    prestige: number;
+    ceiling: number;
+    floor: number;
+    conferenceName: string | null;
+  }>;
   playoff: {
-    teams: number;
+    teams: PlayoffTeamCount;
     conf_champ_autobids: number;
     conf_champ_top_4: boolean;
   };

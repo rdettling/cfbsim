@@ -1,163 +1,133 @@
-import { Box, Stack, Typography, Button, Menu, MenuItem } from '@mui/material';
-import { ROUTES } from '../../constants/routes';
-import { useState } from 'react';
+import { Box, Button, Menu, MenuItem, Stack, Typography } from '@mui/material';
+import { useId, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingDialog from '../sim/LoadingDialog';
+import { ROUTES } from '../../constants/routes';
 import { advanceWeeks } from '../../domain/sim';
-import type { SeasonBannerProps } from '../../types/components';
+import type { Info } from '../../types/domain';
+import LoadingDialog from '../sim/LoadingDialog';
 
-const SeasonBanner = ({ info, primaryColor = '#1976d2', secondaryColor = '#ffffff' }: SeasonBannerProps) => {
-    const navigate = useNavigate();
-    const [isSimulating, setIsSimulating] = useState(false);
-    const [simulationMessage, setSimulationMessage] = useState('');
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const isEndOfSeason = info.currentWeek > info.lastWeek;
+interface SeasonBannerProps {
+  info: Info;
+  compact?: boolean;
+}
 
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        if (!isEndOfSeason) {
-            setAnchorEl(event.currentTarget);
-        } else {
-            handleEndOfSeason();
-        }
-    };
+const SeasonBanner = ({ info, compact = false }: SeasonBannerProps) => {
+  const navigate = useNavigate();
+  const menuId = useId();
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationMessage, setSimulationMessage] = useState('');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const isEndOfSeason = info.currentWeek > info.lastWeek;
 
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
+  const handleEndOfSeason = () => {
+    setSimulationMessage('Simulating to Season Summary');
+    setIsSimulating(true);
+    setTimeout(() => {
+      navigate(ROUTES.SEASON_SUMMARY);
+      setIsSimulating(false);
+    }, 500);
+  };
 
-    const handleEndOfSeason = () => {
-        setSimulationMessage('Simulating to Season Summary');
-        setIsSimulating(true);
-        setTimeout(() => {
-            navigate(ROUTES.SEASON_SUMMARY);
-            setIsSimulating(false);
-        }, 500);
-    };
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (isEndOfSeason) {
+      handleEndOfSeason();
+      return;
+    }
+    setAnchorEl(event.currentTarget);
+  };
 
-    const handleAdvance = async (destWeek: number) => {
-        setAnchorEl(null);
-        setSimulationMessage(`Simulating to Week ${destWeek}`);
-        setIsSimulating(true);
-        try {
-            await advanceWeeks(destWeek);
-            window.dispatchEvent(new Event('pageDataRefresh'));
-        } catch (error) {
-            console.error('Error simulating weeks:', error);
-        } finally {
-            setIsSimulating(false);
-        }
-    };
+  const handleAdvance = async (destWeek: number) => {
+    setAnchorEl(null);
+    setSimulationMessage(`Simulating to Week ${destWeek}`);
+    setIsSimulating(true);
+    try {
+      await advanceWeeks(destWeek);
+      window.dispatchEvent(new Event('pageDataRefresh'));
+    } catch (error) {
+      console.error('Error simulating weeks:', error);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
-    // Generate array of available weeks to simulate to, starting from next week
-    const availableWeeks = Array.from(
-        { length: info.lastWeek - info.currentWeek },
-        (_, i) => info.currentWeek + i + 1
-    );
+  const availableWeeks = Array.from(
+    { length: info.lastWeek - info.currentWeek },
+    (_, index) => info.currentWeek + index + 1,
+  );
+  const menuOpen = Boolean(anchorEl);
 
-    return (
-        <>
-            <Stack direction="row" spacing={0.9} alignItems="center">
-                <Box
-                    sx={{
-                        px: 1.2,
-                        py: 0.45,
-                        borderRadius: 1.4,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        backgroundColor: 'background.paper',
-                    }}
-                >
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            fontWeight: 700,
-                            color: 'text.secondary',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                        }}
-                    >
-                        {isEndOfSeason ? 'Season Complete' : `Week ${info.currentWeek}`}
-                    </Typography>
-                </Box>
-                <Button 
-                    variant="contained" 
-                    size="small"
-                    onClick={handleClick}
-                    aria-controls="week-menu"
-                    aria-haspopup="true"
-                    sx={{
-                        px: 1.8,
-                        py: 0.5,
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        textTransform: 'none',
-                        borderRadius: 1.4,
-                        minWidth: 'auto',
-                        backgroundColor: primaryColor,
-                        color: secondaryColor,
-                        boxShadow: 'none',
-                        '&:hover': {
-                            backgroundColor: primaryColor,
-                            opacity: 0.9,
-                            boxShadow: 'none'
-                        }
-                    }}
-                >
-                    {isEndOfSeason ? 'Season Summary' : 'Advance'}
-                </Button>
-                <Menu
-                    id="week-menu"
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleClose}
-                    PaperProps={{
-                        elevation: 3,
-                        sx: {
-                            mt: 1,
-                            borderRadius: 2,
-                            minWidth: 180
-                        }
-                    }}
-                >
-                    {availableWeeks.map((week) => (
-                        <MenuItem 
-                            key={week} 
-                            onClick={() => handleAdvance(week)}
-                            sx={{
-                                py: 1,
-                                px: 2,
-                                fontSize: '0.9rem',
-                                '&:hover': {
-                                    backgroundColor: `${primaryColor}15`
-                                }
-                            }}
-                        >
-                            Simulate to Week {week}
-                        </MenuItem>
-                    ))}
-                    {/* Add End of Season option */}
-                    <MenuItem 
-                        onClick={() => handleAdvance(info.lastWeek + 1)}
-                        sx={{ 
-                            borderTop: '1px solid rgba(0, 0, 0, 0.12)',
-                            py: 1,
-                            px: 2,
-                            fontSize: '0.9rem',
-                            '&:hover': {
-                                backgroundColor: `${primaryColor}15`
-                            }
-                        }}
-                    >
-                        End of Season
-                    </MenuItem>
-                </Menu>
-            </Stack>
-            <LoadingDialog 
-                open={isSimulating} 
-                message={simulationMessage}
-            />
-        </>
-    );
+  return (
+    <>
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        {!compact && (
+          <Box
+            sx={{
+              px: 1.25,
+              py: 0.5,
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: 'background.paper',
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {isEndOfSeason ? 'Season Complete' : `Week ${info.currentWeek}`}
+            </Typography>
+          </Box>
+        )}
+        <Button
+          variant="contained"
+          size="small"
+          onClick={handleClick}
+          aria-controls={menuOpen ? menuId : undefined}
+          aria-expanded={menuOpen ? 'true' : undefined}
+          aria-haspopup={isEndOfSeason ? undefined : 'menu'}
+          sx={{ whiteSpace: 'nowrap' }}
+        >
+          {isEndOfSeason ? 'Season Summary' : 'Advance'}
+        </Button>
+        <Menu
+          id={menuId}
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={() => setAnchorEl(null)}
+          slotProps={{
+            paper: {
+              elevation: 1,
+              sx: {
+                mt: 0.75,
+                minWidth: 180,
+                maxHeight: 420,
+                border: '1px solid',
+                borderColor: 'divider',
+              },
+            },
+          }}
+        >
+          {availableWeeks.map(week => (
+            <MenuItem key={week} onClick={() => handleAdvance(week)}>
+              Simulate to Week {week}
+            </MenuItem>
+          ))}
+          <MenuItem
+            onClick={() => handleAdvance(info.lastWeek + 1)}
+            sx={{ borderTop: '1px solid', borderColor: 'divider' }}
+          >
+            End of Season
+          </MenuItem>
+        </Menu>
+      </Stack>
+      <LoadingDialog open={isSimulating} message={simulationMessage} />
+    </>
+  );
 };
 
 export default SeasonBanner;
