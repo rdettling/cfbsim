@@ -1,13 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  Box,
-  Paper,
-  Tab,
-  Tabs,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { Box, Paper, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { useDomainData } from '../domain/hooks';
@@ -30,21 +22,20 @@ const RecruitingSummary = () => {
   const [positionFilter, setPositionFilter] = useState('');
   const [classDialogOpen, setClassDialogOpen] = useState(false);
 
-  const { data, loading, error } =
-    useDomainData<RecruitingSummaryPageData>({
-      fetcher: loadRecruitingSummary,
-    });
+  const { data, loading, error } = useDomainData<RecruitingSummaryPageData>({
+    fetcher: loadRecruitingSummary,
+  });
 
   const selectedTeam = data
-    ? data.teamRankings.find(team => team.teamId === selectedTeamId) ??
+    ? (data.teamRankings.find((team) => team.teamId === selectedTeamId) ??
       data.userTeam ??
       data.teamRankings[0] ??
-      null
+      null)
     : null;
   const filteredPlayers = useMemo(
     () =>
       data?.playerRankings.filter(
-        player =>
+        (player) =>
           (!teamFilter || player.teamId === teamFilter) &&
           (!positionFilter || player.position === positionFilter),
       ) ?? [],
@@ -97,38 +88,41 @@ const RecruitingSummary = () => {
                 <Typography component="h1" variant="h4">
                   Recruiting Summary
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Final recruiting results for {data.info.currentYear}.
-                  These recruits are already on their rosters; advancing
-                  only opens Roster Cuts.
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
+                  Final recruiting results for {data.info.currentYear}. These recruits are already
+                  on their rosters; advancing only opens Roster Cuts.
                 </Typography>
               </Box>
 
-              <RecruitingUserSummary
-                teamName={data.team.name}
-                result={data.userTeam}
-              />
+              <RecruitingUserSummary teamName={data.team.name} result={data.userTeam} />
 
               {!data.userTeam && data.summary.totalRecruits > 0 && (
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 1.25 }}
+                  sx={{
+                    color: 'text.secondary',
+                    mb: 1.25,
+                  }}
                 >
-                  {data.team.name} has no finalized recruits in this class.
-                  National results remain available below.
+                  {data.team.name} has no finalized recruits in this class. National results remain
+                  available below.
                 </Typography>
               )}
 
               {data.summary.totalRecruits === 0 ? (
                 <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography variant="h6">
-                    No recruiting results available
-                  </Typography>
+                  <Typography variant="h6">No recruiting results available</Typography>
                   <Typography
                     variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.5 }}
+                    sx={{
+                      color: 'text.secondary',
+                      mt: 0.5,
+                    }}
                   >
                     No finalized freshmen were returned for this season.
                   </Typography>
@@ -138,15 +132,10 @@ const RecruitingSummary = () => {
                   <Paper variant="outlined" sx={{ mb: 1.25 }}>
                     <Tabs
                       value={activeTab}
-                      onChange={(_, value: RecruitingTab) =>
-                        setActiveTab(value)
-                      }
+                      onChange={(_, value: RecruitingTab) => setActiveTab(value)}
                       aria-label="Recruiting result views"
                     >
-                      <Tab
-                        value="teams"
-                        label={`Team Rankings (${data.teamRankings.length})`}
-                      />
+                      <Tab value="teams" label={`Team Rankings (${data.teamRankings.length})`} />
                       <Tab
                         value="players"
                         label={`Player Rankings (${data.playerRankings.length})`}

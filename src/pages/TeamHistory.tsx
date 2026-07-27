@@ -33,37 +33,60 @@ const TeamHistory = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={data ? {
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      } : undefined}
+      navbarData={
+        data
+          ? {
+              team: data.team,
+              currentStage: data.info.stage,
+              info: data.info,
+              conferences: data.conferences,
+            }
+          : undefined
+      }
     >
       {data && (
         <>
           <TeamHeader
             team={data.team}
             teams={data.teams}
-            onTeamChange={name => navigate(`/${name}/history`)}
+            onTeamChange={(name) => navigate(`/${name}/history`)}
           />
           <Stack
             component="header"
             direction="row"
-            alignItems="center"
-            justifyContent="space-between"
             spacing={2}
-            sx={{ mb: 1.5 }}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1.5,
+            }}
           >
             <Box>
-              <Typography component="h2" variant="h5">History</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography component="h2" variant="h5">
+                History
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Season-by-season program results
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="caption" color="text.secondary" display="block">All-time record</Typography>
-              <Typography variant="h6">{totalWins}-{totalLosses}</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'block',
+                }}
+              >
+                All-time record
+              </Typography>
+              <Typography variant="h6">
+                {totalWins}-{totalLosses}
+              </Typography>
             </Box>
           </Stack>
           {data.years.length > 0 ? (
@@ -74,7 +97,13 @@ const TeamHistory = () => {
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6">No team history available</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 Completed seasons will appear here when history is available.
               </Typography>
             </Paper>

@@ -7,11 +7,7 @@ import {
 } from './ScheduleGameDetails';
 import type { ScheduleViewProps } from './types';
 
-export const MobileScheduleList = ({
-  games,
-  seasonYear,
-  onOpponentClick,
-}: ScheduleViewProps) => (
+export const MobileScheduleList = ({ games, seasonYear, onOpponentClick }: ScheduleViewProps) => (
   <Paper
     component="section"
     variant="outlined"
@@ -28,11 +24,30 @@ export const MobileScheduleList = ({
           borderColor: 'divider',
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-          <Typography variant="overline" color="text.secondary">
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Typography
+            variant="overline"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             Week {game.weekPlayed}
           </Typography>
-          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            sx={{
+              alignItems: 'center',
+              minWidth: 0,
+            }}
+          >
             {game.opponent && <ScheduleSiteBadge game={game} />}
             {game.label && <ScheduleGameLabel game={game} />}
           </Stack>
@@ -45,13 +60,21 @@ export const MobileScheduleList = ({
             </Box>
             <Stack
               direction="row"
-              justifyContent="space-between"
-              alignItems="flex-end"
               spacing={1.5}
-              sx={{ mt: 1.25 }}
+              sx={{
+                justifyContent: 'space-between',
+                alignItems: 'flex-end',
+                mt: 1.25,
+              }}
             >
               <Box>
-                <Typography variant="caption" color="text.secondary" display="block">
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    display: 'block',
+                  }}
+                >
                   Spread
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -62,7 +85,12 @@ export const MobileScheduleList = ({
             </Stack>
           </>
         ) : (
-          <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography
+            sx={{
+              color: 'text.secondary',
+              mt: 0.5,
+            }}
+          >
             Bye week
           </Typography>
         )}

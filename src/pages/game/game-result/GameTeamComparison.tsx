@@ -24,13 +24,11 @@ type ComparisonRow = {
 const formatRate = (value: number | undefined) =>
   typeof value === 'number' ? value.toFixed(1) : undefined;
 
-const formatFraction = (
-  value: { made: number; attempts: number } | undefined
-) => (value ? `${value.made}/${value.attempts}` : undefined);
+const formatFraction = (value: { made: number; attempts: number } | undefined) =>
+  value ? `${value.made}/${value.attempts}` : undefined;
 
-const formatRedZone = (
-  value: { tds: number; trips: number } | undefined
-) => (value ? `${value.tds}/${value.trips}` : undefined);
+const formatRedZone = (value: { tds: number; trips: number } | undefined) =>
+  value ? `${value.tds}/${value.trips}` : undefined;
 
 const formatPossession = (seconds: number | undefined) => {
   if (typeof seconds !== 'number') return undefined;
@@ -109,9 +107,14 @@ export const GameTeamComparison = ({
       <Typography component="h2" variant="h6">
         Team Stats
       </Typography>
-
       {!awaySummary || !homeSummary ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 1,
+          }}
+        >
           Team statistics are unavailable for this game.
         </Typography>
       ) : (
@@ -125,7 +128,14 @@ export const GameTeamComparison = ({
               pb: 0.75,
             }}
           >
-            <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              spacing={0.6}
+              sx={{
+                alignItems: 'center',
+                minWidth: 0,
+              }}
+            >
               <TeamLogo name={awayTeam.name} size={20} />
               <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                 {awayTeam.name}
@@ -134,9 +144,11 @@ export const GameTeamComparison = ({
             <Stack
               direction="row"
               spacing={0.6}
-              alignItems="center"
-              justifyContent="flex-end"
-              sx={{ minWidth: 0 }}
+              sx={{
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                minWidth: 0,
+              }}
             >
               <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                 {homeTeam.name}

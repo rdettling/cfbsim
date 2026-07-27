@@ -1,13 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Paper,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { useDomainData } from '../domain/hooks';
@@ -28,25 +20,21 @@ type SetupTab = 'setup' | 'conferences' | 'postseason';
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const Realignment = () => {
-  const [configuration, setConfiguration] =
-    useState<NextSeasonConfiguration | null>(null);
+  const [configuration, setConfiguration] = useState<NextSeasonConfiguration | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SetupTab>('setup');
   const configurationSaveLock = useRef(false);
 
-  const { data, loading, error, refetch } =
-    useDomainData<RealignmentPageData>({
-      fetcher: loadRealignment,
-    });
+  const { data, loading, error, refetch } = useDomainData<RealignmentPageData>({
+    fetcher: loadRealignment,
+  });
 
   useEffect(() => {
     setConfiguration(data?.configuration ?? null);
   }, [data]);
 
-  const handleConfigurationChange = async (
-    patch: Partial<NextSeasonConfiguration>,
-  ) => {
+  const handleConfigurationChange = async (patch: Partial<NextSeasonConfiguration>) => {
     if (!configuration || configurationSaveLock.current) return;
     configurationSaveLock.current = true;
 
@@ -101,10 +89,7 @@ const Realignment = () => {
 
   if (error || !data) {
     return (
-      <PageLayout
-        loading={false}
-        error={error || 'Next season setup could not be loaded.'}
-      >
+      <PageLayout loading={false} error={error || 'Next season setup could not be loaded.'}>
         {null}
       </PageLayout>
     );
@@ -115,18 +100,12 @@ const Realignment = () => {
     currentStage: data.info.stage,
     info: data.info,
     conferences: data.conferences,
-    advanceDisabled:
-      saveStatus === 'saving' || Boolean(data.previewError),
+    advanceDisabled: saveStatus === 'saving' || Boolean(data.previewError),
   };
 
   if (data.info.stage !== 'realignment') {
     return (
-      <PageLayout
-        loading={false}
-        error={null}
-        navbarData={navigationData}
-        containerMaxWidth="lg"
-      >
+      <PageLayout loading={false} error={null} navbarData={navigationData} containerMaxWidth="lg">
         <StageUnavailableState
           title="Next season setup unavailable"
           description="These choices are available only during the Next Season Setup stage."
@@ -161,9 +140,14 @@ const Realignment = () => {
   const previewUnavailable = (
     <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
       <Typography variant="h6">Historical preview unavailable</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        {data.previewError ??
-          'Historical data could not be prepared for this season.'}
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+          mt: 0.5,
+        }}
+      >
+        {data.previewError ?? 'Historical data could not be prepared for this season.'}
       </Typography>
       <Button variant="outlined" onClick={refetch} sx={{ mt: 2 }}>
         Retry
@@ -181,10 +165,7 @@ const Realignment = () => {
   );
 
   const postseasonPanel = data.preview ? (
-    <PostseasonPreviewPanel
-      configuration={configuration}
-      preview={data.preview}
-    />
+    <PostseasonPreviewPanel configuration={configuration} preview={data.preview} />
   ) : (
     previewUnavailable
   );

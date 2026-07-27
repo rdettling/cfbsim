@@ -18,19 +18,18 @@ type PostseasonCommitteeViewProps = {
   onTeamClick: TeamAction;
 };
 
-const SectionHeading = ({
-  title,
-  detail,
-}: {
-  title: string;
-  detail?: string;
-}) => (
+const SectionHeading = ({ title, detail }: { title: string; detail?: string }) => (
   <Box sx={{ mb: 1 }}>
     <Typography component="h2" variant="h6">
       {title}
     </Typography>
     {detail && (
-      <Typography variant="caption" color="text.secondary">
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         {detail}
       </Typography>
     )}
@@ -48,7 +47,14 @@ const TeamIdentity = ({
   secondary: string;
   onTeamClick: TeamAction;
 }) => (
-  <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+  <Stack
+    direction="row"
+    spacing={1}
+    sx={{
+      alignItems: 'center',
+      minWidth: 0,
+    }}
+  >
     <TeamLogo name={name} size={24} />
     <Box sx={{ minWidth: 0 }}>
       <Button
@@ -64,9 +70,16 @@ const TeamIdentity = ({
           whiteSpace: 'nowrap',
         }}
       >
-        {prefix}{name}
+        {prefix}
+        {name}
       </Button>
-      <Typography variant="caption" color="text.secondary" display="block">
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+          display: 'block',
+        }}
+      >
         {secondary}
       </Typography>
     </Box>
@@ -74,7 +87,13 @@ const TeamIdentity = ({
 );
 
 const EmptySection = ({ message }: { message: string }) => (
-  <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+  <Typography
+    variant="body2"
+    sx={{
+      color: 'text.secondary',
+      py: 1,
+    }}
+  >
     {message}
   </Typography>
 );
@@ -215,7 +234,10 @@ const ResumeBoard = ({
               key={team.name}
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'minmax(180px, 1.4fr) minmax(260px, 2fr) auto' },
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'minmax(180px, 1.4fr) minmax(260px, 2fr) auto',
+                },
                 gap: 1,
                 alignItems: 'center',
                 py: 0.9,
@@ -243,7 +265,13 @@ const ResumeBoard = ({
                   ['Losses', team.losses],
                 ].map(([label, value]) => (
                   <Box key={label}>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        display: 'block',
+                      }}
+                    >
                       {label}
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>

@@ -5,9 +5,7 @@ interface RosterCutsSummaryStripProps {
   summary: RosterCutsSummary;
 }
 
-export const RosterCutsSummaryStrip = ({
-  summary,
-}: RosterCutsSummaryStripProps) => {
+export const RosterCutsSummaryStrip = ({ summary }: RosterCutsSummaryStripProps) => {
   const metrics = [
     { label: 'Active Roster', value: summary.activePlayers },
     { label: 'Projected Cuts', value: summary.projectedCuts },
@@ -53,7 +51,12 @@ export const RosterCutsSummaryStrip = ({
             borderColor: 'divider',
           }}
         >
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {metric.label}
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>

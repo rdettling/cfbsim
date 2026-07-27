@@ -10,10 +10,7 @@ type DashboardGameRowProps = {
   onTeamClick: DashboardTeamClickHandler;
 };
 
-const DashboardGameRow = ({
-  game,
-  onTeamClick,
-}: DashboardGameRowProps) => {
+const DashboardGameRow = ({ game, onTeamClick }: DashboardGameRowProps) => {
   const opponent = game.opponent;
   if (!opponent) return null;
 
@@ -24,11 +21,18 @@ const DashboardGameRow = ({
     <Box sx={{ p: 1.5 }}>
       <Stack
         direction="row"
-        justifyContent="space-between"
-        alignItems="center"
         spacing={1}
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
       >
-        <Typography variant="overline" color="text.secondary">
+        <Typography
+          variant="overline"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Week {game.weekPlayed}
         </Typography>
         {isCompleted && (
@@ -41,13 +45,31 @@ const DashboardGameRow = ({
           />
         )}
       </Stack>
-
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          mt: 0.75,
+        }}
+      >
         <TeamLogo name={opponent.name} size={34} />
         <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Stack direction="row" spacing={0.5} alignItems="baseline" sx={{ minWidth: 0 }}>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{
+              alignItems: 'baseline',
+              minWidth: 0,
+            }}
+          >
             {prefix && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {prefix}
               </Typography>
             )}
@@ -55,7 +77,12 @@ const DashboardGameRow = ({
               <TeamLink name={opponent.name} onTeamClick={onTeamClick} />
             </Box>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {opponent.ranking > 0 && `#${opponent.ranking} · `}
             {opponent.record}
             {game.label ? ` · ${game.label}` : ''}
@@ -67,7 +94,6 @@ const DashboardGameRow = ({
           </Typography>
         )}
       </Stack>
-
       {!isCompleted && (
         <Box
           sx={{
@@ -81,20 +107,33 @@ const DashboardGameRow = ({
           }}
         >
           <Box>
-            <Typography variant="caption" color="text.secondary">Spread</Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
+              Spread
+            </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {game.spread || '—'}
             </Typography>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary">Moneyline</Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
+              Moneyline
+            </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {game.moneyline || '—'}
             </Typography>
           </Box>
         </Box>
       )}
-
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
         <Button
           component={RouterLink}
@@ -124,19 +163,18 @@ type GamePanelProps = {
   onTeamClick: DashboardTeamClickHandler;
 };
 
-const GamePanel = ({
-  title,
-  ariaLabel,
-  emptyMessage,
-  game,
-  onTeamClick,
-}: GamePanelProps) => (
+const GamePanel = ({ title, ariaLabel, emptyMessage, game, onTeamClick }: GamePanelProps) => (
   <DashboardPanel title={title} ariaLabel={ariaLabel}>
     {game?.opponent ? (
       <DashboardGameRow game={game} onTeamClick={onTeamClick} />
     ) : (
       <Box sx={{ p: 1.5 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {emptyMessage}
         </Typography>
       </Box>

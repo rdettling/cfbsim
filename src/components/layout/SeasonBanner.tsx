@@ -58,7 +58,13 @@ const SeasonBanner = ({ info, compact = false }: SeasonBannerProps) => {
 
   return (
     <>
-      <Stack direction="row" spacing={0.75} alignItems="center">
+      <Stack
+        direction="row"
+        spacing={0.75}
+        sx={{
+          alignItems: 'center',
+        }}
+      >
         {!compact && (
           <Box
             sx={{
@@ -112,7 +118,7 @@ const SeasonBanner = ({ info, compact = false }: SeasonBannerProps) => {
             },
           }}
         >
-          {availableWeeks.map(week => (
+          {availableWeeks.map((week) => (
             <MenuItem key={week} onClick={() => handleAdvance(week)}>
               Simulate to Week {week}
             </MenuItem>

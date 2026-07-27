@@ -72,25 +72,28 @@ const TeamSchedule = () => {
     >
       {data && seasonYear && (
         <>
-          <TeamHeader
-            team={data.team}
-            teams={data.teams}
-            onTeamChange={handleTeamChange}
-          />
+          <TeamHeader team={data.team} teams={data.teams} onTeamChange={handleTeamChange} />
 
           <Stack
             component="header"
             direction="row"
-            alignItems="center"
-            justifyContent="space-between"
             spacing={2}
-            sx={{ mb: 1.5 }}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1.5,
+            }}
           >
             <Box>
               <Typography component="h2" variant="h5" sx={{ fontWeight: 600 }}>
                 Schedule
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {seasonYear} season
               </Typography>
             </Box>
@@ -129,7 +132,13 @@ const TeamSchedule = () => {
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6">No schedule available</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 There are no games for the selected season.
               </Typography>
             </Paper>

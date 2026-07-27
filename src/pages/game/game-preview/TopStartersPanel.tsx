@@ -20,7 +20,13 @@ type TeamStartersProps = {
 
 const TeamStarters = ({ team, starters }: TeamStartersProps) => (
   <Box sx={{ minWidth: 0 }}>
-    <Stack direction="row" spacing={0.75} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={0.75}
+      sx={{
+        alignItems: 'center',
+      }}
+    >
       <TeamLogo name={team.name} size={24} />
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
         {team.name}
@@ -28,7 +34,13 @@ const TeamStarters = ({ team, starters }: TeamStartersProps) => (
     </Stack>
 
     {starters.length === 0 ? (
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+          mt: 1,
+        }}
+      >
         No eligible starters are available.
       </Typography>
     ) : (
@@ -64,7 +76,13 @@ const TeamStarters = ({ team, starters }: TeamStartersProps) => (
             >
               {player.first} {player.last}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+              }}
+            >
               {player.rating}
             </Typography>
           </Box>

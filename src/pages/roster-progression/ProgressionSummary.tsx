@@ -5,12 +5,9 @@ interface ProgressionSummaryProps {
   summary: RosterProgressionPageData['summary'];
 }
 
-const formatSigned = (value: number) =>
-  value > 0 ? `+${value}` : String(value);
+const formatSigned = (value: number) => (value > 0 ? `+${value}` : String(value));
 
-export const ProgressionSummary = ({
-  summary,
-}: ProgressionSummaryProps) => {
+export const ProgressionSummary = ({ summary }: ProgressionSummaryProps) => {
   const metrics = [
     {
       label: 'Returning',
@@ -62,7 +59,12 @@ export const ProgressionSummary = ({
             borderColor: 'divider',
           }}
         >
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {metric.label}
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>

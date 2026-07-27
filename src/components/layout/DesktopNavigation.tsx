@@ -70,11 +70,11 @@ const DesktopNavigation = ({
   const [menuAnchors, setMenuAnchors] = useState<Record<string, HTMLElement | null>>({});
 
   const openMenu = (groupId: string) => (event: MouseEvent<HTMLElement>) => {
-    setMenuAnchors(previous => ({ ...previous, [groupId]: event.currentTarget }));
+    setMenuAnchors((previous) => ({ ...previous, [groupId]: event.currentTarget }));
   };
 
   const closeMenu = (groupId: string) => {
-    setMenuAnchors(previous => ({ ...previous, [groupId]: null }));
+    setMenuAnchors((previous) => ({ ...previous, [groupId]: null }));
   };
 
   const navigateFromMenu = (path: string, groupId: string) => {
@@ -132,7 +132,7 @@ const DesktopNavigation = ({
             },
           }}
         >
-          {group.items.map(item => {
+          {group.items.map((item) => {
             const itemActive = isPathActive(currentPath, item.path);
             return (
               <MenuItem
@@ -165,7 +165,14 @@ const DesktopNavigation = ({
       }}
     >
       <Toolbar sx={{ minHeight: '64px !important', gap: 2.5, px: 3 }}>
-        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 190 }}>
+        <Stack
+          direction="row"
+          spacing={1.25}
+          sx={{
+            alignItems: 'center',
+            minWidth: 190,
+          }}
+        >
           <TeamLogo name={teamName} size={38} />
           <Typography
             variant="body2"
@@ -184,8 +191,20 @@ const DesktopNavigation = ({
 
         <Box sx={{ flex: 1 }} />
 
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Stack direction="row" spacing={1} alignItems="center">
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            alignItems: 'center',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+            }}
+          >
             <Typography sx={{ fontWeight: 600 }}>{data.info.currentYear}</Typography>
             <Chip
               label={currentStageInfo?.banner_label ?? data.currentStage}
@@ -205,7 +224,8 @@ const DesktopNavigation = ({
               </Button>
             </>
           ) : (
-            currentStageInfo && nextStageInfo && (
+            currentStageInfo &&
+            nextStageInfo && (
               <NonSeasonBanner
                 currentStage={currentStageInfo}
                 nextStage={nextStageInfo}
@@ -229,9 +249,7 @@ const DesktopNavigation = ({
           </Stack>
         </Stack>
       </Toolbar>
-
       <Divider />
-
       <Toolbar
         component="nav"
         aria-label="Primary navigation"

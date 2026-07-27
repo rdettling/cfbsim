@@ -6,15 +6,15 @@ interface RecruitingUserSummaryProps {
   result: RecruitingTeamResult | null;
 }
 
-const SummaryItem = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number;
-}) => (
+const SummaryItem = ({ label, value }: { label: string; value: string | number }) => (
   <Box sx={{ px: 1.5, py: 1.1, minWidth: 0 }}>
-    <Typography variant="caption" color="text.secondary" display="block">
+    <Typography
+      variant="caption"
+      sx={{
+        color: 'text.secondary',
+        display: 'block',
+      }}
+    >
       {label}
     </Typography>
     <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
@@ -23,10 +23,7 @@ const SummaryItem = ({
   </Box>
 );
 
-export const RecruitingUserSummary = ({
-  teamName,
-  result,
-}: RecruitingUserSummaryProps) => (
+export const RecruitingUserSummary = ({ teamName, result }: RecruitingUserSummaryProps) => (
   <Paper
     component="section"
     aria-label={`${teamName} recruiting class summary`}
@@ -48,18 +45,9 @@ export const RecruitingUserSummary = ({
       },
     }}
   >
-    <SummaryItem
-      label={`${teamName} class rank`}
-      value={result ? `#${result.rank}` : '—'}
-    />
+    <SummaryItem label={`${teamName} class rank`} value={result ? `#${result.rank}` : '—'} />
     <SummaryItem label="Recruits" value={result?.totalRecruits ?? 0} />
-    <SummaryItem
-      label="Average rating"
-      value={result?.averageRating ?? '—'}
-    />
-    <SummaryItem
-      label="Five-star recruits"
-      value={result?.starCounts.five ?? 0}
-    />
+    <SummaryItem label="Average rating" value={result?.averageRating ?? '—'} />
+    <SummaryItem label="Five-star recruits" value={result?.starCounts.five ?? 0} />
   </Paper>
 );

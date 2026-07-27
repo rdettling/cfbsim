@@ -37,19 +37,19 @@ const Roster = () => {
   const groups = useMemo(() => {
     if (!data) return [];
     return data.positions
-      .filter(position => !positionFilter || position === positionFilter)
-      .map(position => ({
+      .filter((position) => !positionFilter || position === positionFilter)
+      .map((position) => ({
         position,
         players: data.roster
-          .filter(player => player.pos === position)
+          .filter((player) => player.pos === position)
           .slice()
           .sort((a, b) =>
             b.rating !== a.rating
               ? b.rating - a.rating
-              : `${a.last},${a.first}`.localeCompare(`${b.last},${b.first}`)
+              : `${a.last},${a.first}`.localeCompare(`${b.last},${b.first}`),
           ),
       }))
-      .filter(group => group.players.length > 0);
+      .filter((group) => group.players.length > 0);
   }, [data, positionFilter]);
 
   return (
@@ -58,31 +58,44 @@ const Roster = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={data ? {
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      } : undefined}
+      navbarData={
+        data
+          ? {
+              team: data.team,
+              currentStage: data.info.stage,
+              info: data.info,
+              conferences: data.conferences,
+            }
+          : undefined
+      }
     >
       {data && (
         <>
           <TeamHeader
             team={data.team}
             teams={data.teams}
-            onTeamChange={name => navigate(`/${name}/roster`)}
+            onTeamChange={(name) => navigate(`/${name}/roster`)}
           />
           <Stack
             component="header"
             direction="row"
-            alignItems="center"
-            justifyContent="space-between"
             spacing={2}
-            sx={{ mb: 1.5 }}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1.5,
+            }}
           >
             <Box>
-              <Typography component="h2" variant="h5">Roster</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography component="h2" variant="h5">
+                Roster
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {data.roster.length} active players
               </Typography>
             </Box>
@@ -92,11 +105,13 @@ const Roster = () => {
                 labelId="roster-position-label"
                 value={positionFilter}
                 label="Position"
-                onChange={event => setPositionFilter(event.target.value)}
+                onChange={(event) => setPositionFilter(event.target.value)}
               >
                 <MenuItem value="">All Positions</MenuItem>
-                {data.positions.map(position => (
-                  <MenuItem key={position} value={position}>{position.toUpperCase()}</MenuItem>
+                {data.positions.map((position) => (
+                  <MenuItem key={position} value={position}>
+                    {position.toUpperCase()}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -112,7 +127,13 @@ const Roster = () => {
               <Typography variant="h6">
                 {positionFilter ? `No ${positionFilter.toUpperCase()} players` : 'No active roster'}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 {positionFilter
                   ? 'No active players match the selected position.'
                   : 'Active players will appear when the roster is available.'}

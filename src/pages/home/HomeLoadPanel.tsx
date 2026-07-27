@@ -12,12 +12,15 @@ type HomeLoadPanelProps = {
 export const HomeLoadPanel = ({ info, onStartNew }: HomeLoadPanelProps) => {
   if (!info) {
     return (
-      <Paper
-        variant="outlined"
-        sx={{ maxWidth: 640, mx: 'auto', p: 4, textAlign: 'center' }}
-      >
+      <Paper variant="outlined" sx={{ maxWidth: 640, mx: 'auto', p: 4, textAlign: 'center' }}>
         <Typography variant="h5">No saved league</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 0.75,
+          }}
+        >
           Create a league to begin a college football dynasty.
         </Typography>
         <Button variant="contained" onClick={onStartNew} sx={{ mt: 2.5 }}>
@@ -29,26 +32,37 @@ export const HomeLoadPanel = ({ info, onStartNew }: HomeLoadPanelProps) => {
 
   const stage = getStageDefinition(info.stage);
   const stageLabel =
-    info.stage === 'season'
-      ? `${stage.label} · Week ${info.currentWeek}`
-      : stage.label;
+    info.stage === 'season' ? `${stage.label} · Week ${info.currentWeek}` : stage.label;
 
   return (
     <Paper variant="outlined" sx={{ maxWidth: 680, mx: 'auto', p: { xs: 2.5, sm: 4 } }}>
-      <Typography variant="overline" color="text.secondary">
+      <Typography
+        variant="overline"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         Current save
       </Typography>
       <Typography variant="h4">Continue your league</Typography>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={2}
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        sx={{ my: 3 }}
+        sx={{
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          my: 3,
+        }}
       >
         <TeamLogo name={info.team} size={64} />
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5">{info.team}</Typography>
-          <Typography color="text.secondary">{info.currentYear} Season</Typography>
+          <Typography
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
+            {info.currentYear} Season
+          </Typography>
         </Box>
         <Chip label={stageLabel} color="primary" variant="outlined" />
       </Stack>

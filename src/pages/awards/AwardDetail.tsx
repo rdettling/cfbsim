@@ -1,23 +1,7 @@
-import {
-  Box,
-  Chip,
-  Link as MuiLink,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Chip, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import {
-  TeamLink,
-  TeamLogo,
-} from '../../components/team/TeamComponents';
-import type {
-  AwardEntry,
-  AwardMode,
-  AwardPlayer,
-  AwardStats,
-  TeamSelectionHandler,
-} from './types';
+import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import type { AwardEntry, AwardMode, AwardPlayer, AwardStats, TeamSelectionHandler } from './types';
 
 type AwardDetailProps = {
   award: AwardEntry;
@@ -53,10 +37,7 @@ const getPlacements = (award: AwardEntry): AwardPlacement[] => [
   },
 ];
 
-const getPlacementLabel = (
-  placement: AwardPlacement['key'],
-  mode: AwardMode
-) => {
+const getPlacementLabel = (placement: AwardPlacement['key'], mode: AwardMode) => {
   if (mode === 'final') {
     if (placement === 'first') return 'Winner';
     return placement === 'second' ? 'Second Place' : 'Third Place';
@@ -84,7 +65,11 @@ const ContenderRow = ({
       sx={{
         p: { xs: 1.5, md: 2 },
         borderLeft: '3px solid',
-        borderLeftColor: isWinner ? 'success.main' : placement.key === 'first' ? 'primary.main' : 'divider',
+        borderLeftColor: isWinner
+          ? 'success.main'
+          : placement.key === 'first'
+            ? 'primary.main'
+            : 'divider',
       }}
     >
       <Box
@@ -96,12 +81,24 @@ const ContenderRow = ({
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="overline" color="text.secondary">
+          <Typography
+            variant="overline"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {getPlacementLabel(placement.key, mode)}
           </Typography>
           {player ? (
             <>
-              <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mt: 0.25 }}>
+              <Stack
+                direction="row"
+                spacing={1.25}
+                sx={{
+                  alignItems: 'center',
+                  mt: 0.25,
+                }}
+              >
                 <TeamLogo name={player.team_name} size={38} />
                 <Box sx={{ minWidth: 0 }}>
                   <MuiLink
@@ -115,14 +112,25 @@ const ContenderRow = ({
                   <TeamLink name={player.team_name} onTeamClick={onTeamClick} />
                 </Box>
               </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 1,
+                }}
+              >
                 {stats?.stat_line ?? 'No stats yet'}
               </Typography>
             </>
           ) : (
             <Box sx={{ mt: 0.5 }}>
               <Typography variant="h6">No candidate</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 This placement will populate when an eligible player has recorded statistics.
               </Typography>
             </Box>
@@ -131,17 +139,23 @@ const ContenderRow = ({
 
         <Stack
           direction={{ xs: 'row', sm: 'column' }}
-          alignItems={{ xs: 'center', sm: 'flex-end' }}
           spacing={0.5}
+          sx={{
+            alignItems: { xs: 'center', sm: 'flex-end' },
+          }}
         >
           <Chip label={player?.pos.toUpperCase() ?? '—'} size="small" variant="outlined" />
           <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+              }}
+            >
               Award Score
             </Typography>
-            <Typography variant="h6">
-              {score === null ? '—' : score.toFixed(1)}
-            </Typography>
+            <Typography variant="h6">{score === null ? '—' : score.toFixed(1)}</Typography>
           </Box>
         </Stack>
       </Box>
@@ -149,11 +163,7 @@ const ContenderRow = ({
   );
 };
 
-export const AwardDetail = ({
-  award,
-  mode,
-  onTeamClick,
-}: AwardDetailProps) => {
+export const AwardDetail = ({ award, mode, onTeamClick }: AwardDetailProps) => {
   const placements = getPlacements(award);
   const hasCandidates = placements.some((placement) => placement.player !== null);
 
@@ -169,13 +179,27 @@ export const AwardDetail = ({
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ px: { xs: 1.5, md: 2 }, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
+      <Box
+        sx={{ px: { xs: 1.5, md: 2 }, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}
+      >
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+          }}
+        >
           <Box>
             <Typography id="selected-award-title" component="h2" variant="h5">
               {award.category_name}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {award.category_description}
             </Typography>
           </Box>
@@ -187,7 +211,6 @@ export const AwardDetail = ({
           />
         </Stack>
       </Box>
-
       <Stack spacing={1.25} sx={{ p: { xs: 1.5, md: 2 }, flex: 1, minHeight: 0, overflow: 'auto' }}>
         {hasCandidates ? (
           placements.map((placement) => (
@@ -201,7 +224,13 @@ export const AwardDetail = ({
         ) : (
           <Box sx={{ py: 4, textAlign: 'center' }}>
             <Typography variant="h6">No candidates yet</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                mt: 0.5,
+              }}
+            >
               Eligible players will appear after recorded game statistics are available.
             </Typography>
           </Box>

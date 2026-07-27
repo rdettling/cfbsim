@@ -35,7 +35,7 @@ export const PlayerGameLogsDesktopTable = ({
           <TableCell sx={{ width: 72 }}>Week</TableCell>
           <TableCell sx={{ minWidth: 210 }}>Opponent</TableCell>
           <TableCell sx={{ width: 120 }}>Result</TableCell>
-          {columns.map(column => (
+          {columns.map((column) => (
             <TableCell key={column.key} align="right" sx={{ minWidth: 82, whiteSpace: 'nowrap' }}>
               {column.label}
             </TableCell>
@@ -51,31 +51,56 @@ export const PlayerGameLogsDesktopTable = ({
               <TableCell sx={{ fontWeight: 600 }}>{log.game.weekPlayed}</TableCell>
               <TableCell>
                 {opponent ? (
-                  <Stack direction="row" spacing={0.75} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    sx={{
+                      alignItems: 'center',
+                    }}
+                  >
                     <TeamLogo name={opponent.name} size={28} />
                     <Box sx={{ minWidth: 0 }}>
                       <TeamLink name={opponent.name} onTeamClick={onTeamClick} />
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          display: 'block',
+                        }}
+                      >
                         {log.game.label}
                       </Typography>
                     </Box>
                   </Stack>
-                ) : '—'}
+                ) : (
+                  '—'
+                )}
               </TableCell>
               <TableCell>
-                <Stack direction="row" spacing={0.75} alignItems="center">
+                <Stack
+                  direction="row"
+                  spacing={0.75}
+                  sx={{
+                    alignItems: 'center',
+                  }}
+                >
                   <Chip
                     label={isWin ? 'W' : 'L'}
                     size="small"
                     color={isWin ? 'success' : 'error'}
                     variant="outlined"
                   />
-                  <Link component={RouterLink} to={`/game/${log.game.id}`} underline="hover" sx={{ fontWeight: 600 }}>
+                  <Link
+                    component={RouterLink}
+                    to={`/game/${log.game.id}`}
+                    underline="hover"
+                    sx={{ fontWeight: 600 }}
+                  >
                     {log.game.score}
                   </Link>
                 </Stack>
               </TableCell>
-              {columns.map(column => (
+              {columns.map((column) => (
                 <TableCell key={column.key} align="right">
                   {formatPlayerStat(log.stats, column)}
                 </TableCell>

@@ -11,9 +11,10 @@ export const DashboardHeader = ({ data }: DashboardHeaderProps) => {
   const { info, team } = data;
   const conferenceName = team.confName ?? team.conference;
   const stage = getStageDefinition(info.stage);
-  const seasonContext = info.stage === 'season'
-    ? `${info.currentYear} season · Week ${info.currentWeek}`
-    : `${info.currentYear} season · ${stage?.label ?? info.stage}`;
+  const seasonContext =
+    info.stage === 'season'
+      ? `${info.currentYear} season · Week ${info.currentWeek}`
+      : `${info.currentYear} season · ${stage?.label ?? info.stage}`;
 
   return (
     <Paper
@@ -27,7 +28,13 @@ export const DashboardHeader = ({ data }: DashboardHeaderProps) => {
         borderLeftColor: team.colorPrimary || 'primary.main',
       }}
     >
-      <Stack direction="row" spacing={1.5} alignItems="center">
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{
+          alignItems: 'center',
+        }}
+      >
         <TeamLogo name={team.name} size={52} />
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
@@ -41,25 +48,47 @@ export const DashboardHeader = ({ data }: DashboardHeaderProps) => {
             {team.ranking > 0 && `#${team.ranking} `}
             {team.name} {team.mascot}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              mt: 0.35,
+            }}
+          >
             {seasonContext}
           </Typography>
           <Stack
             direction="row"
             spacing={0.75}
-            alignItems="center"
-            sx={{ mt: 0.75, flexWrap: 'wrap', rowGap: 0.75 }}
+            sx={{
+              alignItems: 'center',
+              mt: 0.75,
+              flexWrap: 'wrap',
+              rowGap: 0.75,
+            }}
           >
             <Typography variant="body2">
-              Record <Box component="span" sx={{ fontWeight: 600 }}>{team.record}</Box>
+              Record{' '}
+              <Box component="span" sx={{ fontWeight: 600 }}>
+                {team.record}
+              </Box>
             </Typography>
             <Chip label={`Rating ${team.rating}`} size="small" variant="outlined" />
             {conferenceName && (
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                {conferenceName !== 'Independent' && (
-                  <ConfLogo name={conferenceName} size={22} />
-                )}
-                <Typography variant="body2" color="text.secondary">
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{
+                  alignItems: 'center',
+                }}
+              >
+                {conferenceName !== 'Independent' && <ConfLogo name={conferenceName} size={22} />}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   {conferenceName}
                 </Typography>
               </Stack>

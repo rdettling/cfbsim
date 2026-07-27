@@ -1,22 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, Container, Tab, Tabs, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { ROUTES } from '../constants/routes';
 import { loadHomeData, startNewLeague } from '../domain/league';
 import type { PlayoffTeamCount, PreviewData } from '../types/domain';
-import type {
-  LaunchProps,
-  StartNewLeagueInput,
-} from '../types/league';
+import type { LaunchProps, StartNewLeagueInput } from '../types/league';
 import { HomeLoadPanel } from './home/HomeLoadPanel';
 import { HomeSetupPanel } from './home/HomeSetupPanel';
 import { HomeTeamBrowser } from './home/HomeTeamBrowser';
@@ -47,24 +36,18 @@ const Home = () => {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [selectedConference, setSelectedConference] = useState('ALL');
   const [teamSearch, setTeamSearch] = useState('');
-  const [playoffTeams, setPlayoffTeams] =
-    useState<PlayoffTeamCount>(12);
+  const [playoffTeams, setPlayoffTeams] = useState<PlayoffTeamCount>(12);
   const [playoffAutobids, setPlayoffAutobids] = useState(5);
-  const [
-    conferenceChampionsReceiveTopSeeds,
-    setConferenceChampionsReceiveTopSeeds,
-  ] = useState(true);
+  const [conferenceChampionsReceiveTopSeeds, setConferenceChampionsReceiveTopSeeds] =
+    useState(true);
   const [creatingTeam, setCreatingTeam] = useState<string | null>(null);
   const [creationError, setCreationError] = useState<string | null>(null);
-  const [lastAttempt, setLastAttempt] =
-    useState<StartNewLeagueInput | null>(null);
+  const [lastAttempt, setLastAttempt] = useState<StartNewLeagueInput | null>(null);
 
   const applyPreviewDefaults = useCallback((preview: PreviewData) => {
     setPlayoffTeams(preview.playoff.teams);
     setPlayoffAutobids(preview.playoff.conf_champ_autobids);
-    setConferenceChampionsReceiveTopSeeds(
-      preview.playoff.conf_champ_top_4,
-    );
+    setConferenceChampionsReceiveTopSeeds(preview.playoff.conf_champ_top_4);
   }, []);
 
   const loadInitialData = useCallback(async () => {
@@ -78,9 +61,7 @@ const Home = () => {
         applyPreviewDefaults(response.preview);
       }
     } catch (error) {
-      setInitialError(
-        getErrorMessage(error, 'Home data could not be loaded.'),
-      );
+      setInitialError(getErrorMessage(error, 'Home data could not be loaded.'));
     } finally {
       setInitialLoading(false);
     }
@@ -100,11 +81,7 @@ const Home = () => {
     setPreviewLoading(true);
     setPreviewError(null);
     setCreationError(null);
-    setData(current =>
-      current
-        ? { ...current, preview: null, selected_year: year }
-        : current,
-    );
+    setData((current) => (current ? { ...current, preview: null, selected_year: year } : current));
 
     try {
       const response = await loadHomeData(year);
@@ -115,12 +92,7 @@ const Home = () => {
       }
     } catch (error) {
       if (previewRequestId.current !== requestId) return;
-      setPreviewError(
-        getErrorMessage(
-          error,
-          `The ${year} season could not be loaded.`,
-        ),
-      );
+      setPreviewError(getErrorMessage(error, `The ${year} season could not be loaded.`));
       requestAnimationFrame(() => setupErrorRef.current?.focus());
     } finally {
       if (previewRequestId.current === requestId) {
@@ -157,21 +129,13 @@ const Home = () => {
       await startNewLeague(input);
       navigate(ROUTES.NONCON);
     } catch (error) {
-      const message = getErrorMessage(
-        error,
-        'The league could not be created.',
-      );
-      setCreationError(
-        data?.info
-          ? `${message} Your existing save is unchanged.`
-          : message,
-      );
+      const message = getErrorMessage(error, 'The league could not be created.');
+      setCreationError(data?.info ? `${message} Your existing save is unchanged.` : message);
       setCreatingTeam(null);
       requestAnimationFrame(() => {
-        const visibleError = [
-          desktopCreationErrorRef.current,
-          mobileCreationErrorRef.current,
-        ].find(element => element && element.offsetParent !== null);
+        const visibleError = [desktopCreationErrorRef.current, mobileCreationErrorRef.current].find(
+          (element) => element && element.offsetParent !== null,
+        );
         visibleError?.focus();
       });
     } finally {
@@ -187,9 +151,7 @@ const Home = () => {
         teams: playoffTeams,
         autobids: playoffTeams === 12 ? playoffAutobids : undefined,
         conferenceChampionsReceiveTopSeeds:
-          playoffTeams === 12
-            ? conferenceChampionsReceiveTopSeeds
-            : false,
+          playoffTeams === 12 ? conferenceChampionsReceiveTopSeeds : false,
       },
     });
   };
@@ -246,13 +208,14 @@ const Home = () => {
           CFB Sim
         </Typography>
         <Typography
-          color="text.secondary"
-          sx={{ display: { xs: teamStepActive ? 'none' : 'block', sm: 'block' } }}
+          sx={{
+            color: 'text.secondary',
+            display: { xs: teamStepActive ? 'none' : 'block', sm: 'block' },
+          }}
         >
           Build a college football dynasty across history.
         </Typography>
       </Box>
-
       <Tabs
         value={activeTab}
         onChange={(_, value: HomeTab) => {
@@ -266,7 +229,6 @@ const Home = () => {
         <Tab value="new" label="New league" disabled={creationLocked} />
         <Tab value="load" label="Load game" disabled={creationLocked} />
       </Tabs>
-
       <Container
         maxWidth="xl"
         sx={{
@@ -278,10 +240,7 @@ const Home = () => {
         }}
       >
         {activeTab === 'load' ? (
-          <HomeLoadPanel
-            info={data.info}
-            onStartNew={() => setActiveTab('new')}
-          />
+          <HomeLoadPanel info={data.info} onStartNew={() => setActiveTab('new')} />
         ) : (
           <Box
             sx={{
@@ -293,8 +252,8 @@ const Home = () => {
           >
             {data.info && (
               <Alert severity="warning" sx={{ mb: 1.5 }}>
-                Starting a new league replaces the saved {data.info.currentYear}{' '}
-                {data.info.team} league.
+                Starting a new league replaces the saved {data.info.currentYear} {data.info.team}{' '}
+                league.
               </Alert>
             )}
 
@@ -312,24 +271,20 @@ const Home = () => {
                 selectedYear={selectedYear}
                 playoffTeams={playoffTeams}
                 playoffAutobids={playoffAutobids}
-                conferenceChampionsReceiveTopSeeds={
-                  conferenceChampionsReceiveTopSeeds
-                }
+                conferenceChampionsReceiveTopSeeds={conferenceChampionsReceiveTopSeeds}
                 preview={data.preview}
                 loading={previewLoading}
                 error={previewError}
                 headingRef={setupHeadingRef}
                 errorRef={setupErrorRef}
-                onYearChange={year => void loadYearPreview(year)}
+                onYearChange={(year) => void loadYearPreview(year)}
                 onPlayoffTeamsChange={handlePlayoffTeamsChange}
                 onPlayoffAutobidsChange={setPlayoffAutobids}
                 onTopSeedsChange={handleTopSeedsChange}
                 onRetry={() => void loadYearPreview(selectedYear)}
                 onContinue={() => {
                   setMobileStep('team');
-                  requestAnimationFrame(() =>
-                    mobileTeamHeadingRef.current?.focus(),
-                  );
+                  requestAnimationFrame(() => mobileTeamHeadingRef.current?.focus());
                 }}
               />
 

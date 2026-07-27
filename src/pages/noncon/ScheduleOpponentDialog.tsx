@@ -46,17 +46,29 @@ export const ScheduleOpponentDialog = ({
       maxWidth="sm"
       aria-labelledby="schedule-opponent-dialog-title"
     >
-      <DialogTitle id="schedule-opponent-dialog-title">
-        Schedule Week {week ?? '—'}
-      </DialogTitle>
+      <DialogTitle id="schedule-opponent-dialog-title">Schedule Week {week ?? '—'}</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Eligible opponents are outside your conference, have an open week, and
-          have remaining non-conference capacity. Manually scheduled games are at home.
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mb: 2,
+          }}
+        >
+          Eligible opponents are outside your conference, have an open week, and have remaining
+          non-conference capacity. Manually scheduled games are at home.
         </Typography>
 
-        {loadError && <Alert severity="error" sx={{ mb: 1.5 }}>{loadError}</Alert>}
-        {saveError && <Alert severity="error" sx={{ mb: 1.5 }}>{saveError}</Alert>}
+        {loadError && (
+          <Alert severity="error" sx={{ mb: 1.5 }}>
+            {loadError}
+          </Alert>
+        )}
+        {saveError && (
+          <Alert severity="error" sx={{ mb: 1.5 }}>
+            {saveError}
+          </Alert>
+        )}
         {noOptions && (
           <Alert severity="info" sx={{ mb: 1.5 }}>
             No eligible opponents are available for this week.
@@ -72,27 +84,18 @@ export const ScheduleOpponentDialog = ({
           noOptionsText="No eligible opponents"
           loadingText="Loading eligible opponents…"
           renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Opponent"
-              placeholder="Search teams"
-              autoFocus
-            />
+            <TextField {...params} label="Opponent" placeholder="Search teams" autoFocus />
           )}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={saving}>Cancel</Button>
+        <Button onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>
         <Button
           variant="contained"
           onClick={onSubmit}
-          disabled={
-            !selectedOpponent ||
-            loading ||
-            saving ||
-            Boolean(loadError) ||
-            noOptions
-          }
+          disabled={!selectedOpponent || loading || saving || Boolean(loadError) || noOptions}
         >
           {saving ? 'Scheduling…' : 'Schedule Game'}
         </Button>

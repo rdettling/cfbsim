@@ -11,16 +11,24 @@ export const AwardsHeader = ({ year, week, mode }: AwardsHeaderProps) => (
   <Stack
     component="header"
     direction="row"
-    alignItems="center"
-    justifyContent="space-between"
     spacing={2}
-    sx={{ mb: 1.25, flexShrink: 0 }}
+    sx={{
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      mb: 1.25,
+      flexShrink: 0,
+    }}
   >
     <Box>
       <Typography component="h1" variant="h4">
         Individual Awards
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         {year} season · Week {week} · {mode === 'final' ? 'Final results' : 'Live award races'}
       </Typography>
     </Box>

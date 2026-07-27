@@ -17,22 +17,15 @@ type OddsSnapshotProps = {
 
 const formatProbability = (value: number) => `${Math.round(value * 100)}%`;
 
-export const OddsSnapshot = ({
-  awayTeam,
-  homeTeam,
-  awaySide,
-  homeSide,
-}: OddsSnapshotProps) => {
+export const OddsSnapshot = ({ awayTeam, homeTeam, awaySide, homeSide }: OddsSnapshotProps) => {
   const hasProbabilities =
-    typeof awaySide.winProb === 'number' &&
-    typeof homeSide.winProb === 'number';
+    typeof awaySide.winProb === 'number' && typeof homeSide.winProb === 'number';
 
   return (
     <Paper component="section" variant="outlined" sx={{ p: 1.5, height: '100%' }}>
       <Typography component="h2" variant="h6">
         Odds Snapshot
       </Typography>
-
       <Box
         sx={{
           display: 'grid',
@@ -44,10 +37,22 @@ export const OddsSnapshot = ({
         }}
       >
         <Box />
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            textAlign: 'right',
+          }}
+        >
           Spread
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+            textAlign: 'right',
+          }}
+        >
           Moneyline
         </Typography>
 
@@ -56,7 +61,14 @@ export const OddsSnapshot = ({
           { team: homeTeam, side: homeSide },
         ].map(({ team, side }) => (
           <Box key={team.id} sx={{ display: 'contents' }}>
-            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{
+                alignItems: 'center',
+                minWidth: 0,
+              }}
+            >
               <TeamLogo name={team.name} size={22} />
               <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                 {team.abbreviation || team.name}
@@ -71,19 +83,21 @@ export const OddsSnapshot = ({
           </Box>
         ))}
       </Box>
-
       <Divider sx={{ my: 1.25 }} />
-
       {hasProbabilities ? (
         <Stack spacing={0.5}>
-          <Stack direction="row" justifyContent="space-between" spacing={1}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              justifyContent: 'space-between',
+            }}
+          >
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {awayTeam.abbreviation || awayTeam.name}{' '}
-              {formatProbability(awaySide.winProb!)}
+              {awayTeam.abbreviation || awayTeam.name} {formatProbability(awaySide.winProb!)}
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
-              {homeTeam.abbreviation || homeTeam.name}{' '}
-              {formatProbability(homeSide.winProb!)}
+              {homeTeam.abbreviation || homeTeam.name} {formatProbability(homeSide.winProb!)}
             </Typography>
           </Stack>
           <LinearProgress
@@ -94,7 +108,12 @@ export const OddsSnapshot = ({
           />
         </Stack>
       ) : (
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Win probabilities are unavailable for this matchup.
         </Typography>
       )}

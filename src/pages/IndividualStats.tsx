@@ -43,7 +43,7 @@ const IndividualStats = () => {
   const rows = useMemo(() => {
     if (!data) return [];
     return Object.values(data.stats[category])
-      .map(player => ({
+      .map((player) => ({
         id: player.id,
         first: player.first,
         last: player.last,
@@ -67,7 +67,7 @@ const IndividualStats = () => {
 
   const handleSort = (key: string) => {
     if (key === sortKey) {
-      setSortDirection(current => current === 'desc' ? 'asc' : 'desc');
+      setSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'));
     } else {
       setSortKey(key);
       setSortDirection('desc');
@@ -85,26 +85,39 @@ const IndividualStats = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={data ? {
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      } : undefined}
+      navbarData={
+        data
+          ? {
+              team: data.team,
+              currentStage: data.info.stage,
+              info: data.info,
+              conferences: data.conferences,
+            }
+          : undefined
+      }
     >
       {data && (
         <>
           <Stack
             component="header"
             direction={{ xs: 'column', sm: 'row' }}
-            alignItems={{ xs: 'stretch', sm: 'center' }}
-            justifyContent="space-between"
             spacing={1.5}
-            sx={{ mb: 1.25 }}
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'center' },
+              justifyContent: 'space-between',
+              mb: 1.25,
+            }}
           >
             <Box>
-              <Typography component="h1" variant="h4">Individual Statistics</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography component="h1" variant="h4">
+                Individual Statistics
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {data.info.currentYear} season · Week {data.info.currentWeek}
               </Typography>
             </Box>
@@ -114,16 +127,26 @@ const IndividualStats = () => {
                 labelId="individual-stat-sort-label"
                 value={sortKey}
                 label="Rank by"
-                onChange={event => handleSort(event.target.value)}
+                onChange={(event) => handleSort(event.target.value)}
               >
-                {columns.map(column => (
-                  <MenuItem key={column.key} value={column.key}>{column.mobileLabel}</MenuItem>
+                {columns.map((column) => (
+                  <MenuItem key={column.key} value={column.key}>
+                    {column.mobileLabel}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </Stack>
 
-          <Stack direction="row" alignItems="center" sx={{ mb: 1.25, borderBottom: 1, borderColor: 'divider' }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: 'center',
+              mb: 1.25,
+              borderBottom: 1,
+              borderColor: 'divider',
+            }}
+          >
             <Tabs
               value={category}
               onChange={(_, value: IndividualStatsCategory) => handleCategoryChange(value)}
@@ -132,7 +155,7 @@ const IndividualStats = () => {
               scrollButtons={false}
               sx={{ minHeight: 40, flex: 1 }}
             >
-              {(Object.keys(CATEGORY_LABELS) as IndividualStatsCategory[]).map(key => (
+              {(Object.keys(CATEGORY_LABELS) as IndividualStatsCategory[]).map((key) => (
                 <Tab key={key} value={key} label={CATEGORY_LABELS[key]} sx={{ minHeight: 40 }} />
               ))}
             </Tabs>
@@ -140,7 +163,7 @@ const IndividualStats = () => {
               <IconButton
                 sx={{ display: { xs: 'inline-flex', md: 'none' } }}
                 aria-label={`Sort ${sortDirection === 'desc' ? 'ascending' : 'descending'}`}
-                onClick={() => setSortDirection(current => current === 'desc' ? 'asc' : 'desc')}
+                onClick={() => setSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
               >
                 {sortDirection === 'desc' ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />}
               </IconButton>
@@ -168,8 +191,16 @@ const IndividualStats = () => {
             </>
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6">No {CATEGORY_LABELS[category].toLowerCase()} statistics available</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography variant="h6">
+                No {CATEGORY_LABELS[category].toLowerCase()} statistics available
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 Qualified players will appear after enough games have been completed.
               </Typography>
             </Paper>

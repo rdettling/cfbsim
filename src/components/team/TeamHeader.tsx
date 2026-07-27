@@ -37,9 +37,19 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={{ xs: 1.5, md: 2 }}
-        alignItems={{ xs: 'stretch', md: 'center' }}
+        sx={{
+          alignItems: { xs: 'stretch', md: 'center' },
+        }}
       >
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{
+            alignItems: 'center',
+            minWidth: 0,
+            flex: 1,
+          }}
+        >
           <Box sx={{ flexShrink: 0 }}>
             <TeamLogo name={team.name} size={52} />
           </Box>
@@ -59,10 +69,19 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
             <Stack
               direction="row"
               spacing={0.75}
-              alignItems="center"
-              sx={{ mt: 0.75, flexWrap: 'wrap', rowGap: 0.75 }}
+              sx={{
+                alignItems: 'center',
+                mt: 0.75,
+                flexWrap: 'wrap',
+                rowGap: 0.75,
+              }}
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Record{' '}
                 <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
                   {team.record}
@@ -74,12 +93,12 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
                 <Stack
                   direction="row"
                   spacing={0.5}
-                  alignItems="center"
-                  sx={{ color: 'text.secondary' }}
+                  sx={{
+                    alignItems: 'center',
+                    color: 'text.secondary',
+                  }}
                 >
-                  {conferenceName !== 'Independent' && (
-                    <ConfLogo name={conferenceName} size={22} />
-                  )}
+                  {conferenceName !== 'Independent' && <ConfLogo name={conferenceName} size={22} />}
                   <Typography variant="body2">{conferenceName}</Typography>
                 </Stack>
               )}

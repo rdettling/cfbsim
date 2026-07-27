@@ -17,10 +17,7 @@ import {
 } from '@mui/material';
 import { TeamLogo } from '../../components/team/TeamComponents';
 import { DataTable } from '../../components/ui/DataTable';
-import type {
-  RecruitingPlayerResult,
-  RecruitingTeamResult,
-} from '../../types/recruiting';
+import type { RecruitingPlayerResult, RecruitingTeamResult } from '../../types/recruiting';
 
 interface RecruitingPlayerRankingsProps {
   players: RecruitingPlayerResult[];
@@ -68,20 +65,23 @@ export const RecruitingPlayerRankings = ({
   >
     <Stack
       direction={{ xs: 'column', md: 'row' }}
-      alignItems={{ md: 'flex-end' }}
-      justifyContent="space-between"
       spacing={1.25}
-      sx={{ mb: 1.25 }}
+      sx={{
+        alignItems: { md: 'flex-end' },
+        justifyContent: 'space-between',
+        mb: 1.25,
+      }}
     >
       <Box>
-        <Typography
-          id="recruiting-player-rankings-title"
-          component="h2"
-          variant="h6"
-        >
+        <Typography id="recruiting-player-rankings-title" component="h2" variant="h6">
           Player Rankings
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {players.length} recruit{players.length === 1 ? '' : 's'} shown
         </Typography>
       </Box>
@@ -92,12 +92,10 @@ export const RecruitingPlayerRankings = ({
             labelId="recruiting-team-filter-label"
             value={teamFilter}
             label="Team"
-            onChange={event =>
-              onTeamFilterChange(event.target.value as number | '')
-            }
+            onChange={(event) => onTeamFilterChange(event.target.value as number | '')}
           >
             <MenuItem value="">All Teams</MenuItem>
-            {teams.map(team => (
+            {teams.map((team) => (
               <MenuItem key={team.teamId} value={team.teamId}>
                 {team.teamName}
               </MenuItem>
@@ -105,17 +103,15 @@ export const RecruitingPlayerRankings = ({
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
-          <InputLabel id="recruiting-position-filter-label">
-            Position
-          </InputLabel>
+          <InputLabel id="recruiting-position-filter-label">Position</InputLabel>
           <Select
             labelId="recruiting-position-filter-label"
             value={positionFilter}
             label="Position"
-            onChange={event => onPositionFilterChange(event.target.value)}
+            onChange={(event) => onPositionFilterChange(event.target.value)}
           >
             <MenuItem value="">All Positions</MenuItem>
-            {positions.map(position => (
+            {positions.map((position) => (
               <MenuItem key={position} value={position}>
                 {position.toUpperCase()}
               </MenuItem>
@@ -130,7 +126,13 @@ export const RecruitingPlayerRankings = ({
         <Typography variant="h6">
           {filtersActive ? 'No recruits match these filters' : 'No recruits found'}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 0.5,
+          }}
+        >
           {filtersActive
             ? 'Choose another team or position to view recruiting results.'
             : 'No finalized freshmen were returned for this season.'}
@@ -150,10 +152,12 @@ export const RecruitingPlayerRankings = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {players.map(player => (
+            {players.map((player) => (
               <TableRow key={player.id} hover>
                 <TableCell>#{player.rank}</TableCell>
-                <TableCell><PlayerLink player={player} /></TableCell>
+                <TableCell>
+                  <PlayerLink player={player} />
+                </TableCell>
                 <TableCell>
                   <ButtonBase
                     onClick={() => onTeamSelect(player.teamId)}
@@ -179,29 +183,24 @@ export const RecruitingPlayerRankings = ({
           </TableBody>
         </DataTable>
 
-        <Paper
-          variant="outlined"
-          sx={{ display: { xs: 'block', md: 'none' }, overflow: 'hidden' }}
-        >
+        <Paper variant="outlined" sx={{ display: { xs: 'block', md: 'none' }, overflow: 'hidden' }}>
           {players.map((player, index) => (
             <Stack
               component="article"
               key={player.id}
               direction="row"
-              alignItems="center"
               spacing={1}
               sx={{
+                alignItems: 'center',
                 px: 1.5,
                 py: 1.15,
-                borderBottom:
-                  index === players.length - 1 ? 0 : '1px solid',
+
+                borderBottom: index === players.length - 1 ? 0 : '1px solid',
+
                 borderColor: 'divider',
               }}
             >
-              <Typography
-                variant="body2"
-                sx={{ width: 34, flexShrink: 0, fontWeight: 700 }}
-              >
+              <Typography variant="body2" sx={{ width: 34, flexShrink: 0, fontWeight: 700 }}>
                 #{player.rank}
               </Typography>
               <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -222,7 +221,12 @@ export const RecruitingPlayerRankings = ({
               </Box>
               <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
                 <Typography sx={{ fontWeight: 700 }}>{player.rating}</Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   {player.stars}★
                 </Typography>
               </Box>

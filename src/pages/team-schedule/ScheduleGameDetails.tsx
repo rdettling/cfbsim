@@ -13,14 +13,29 @@ type ScheduleOpponentProps = GameDetailProps & {
 
 export const ScheduleOpponent = ({ game, onClick }: ScheduleOpponentProps) => {
   if (!game.opponent) {
-    return <Typography color="text.secondary">Bye week</Typography>;
+    return (
+      <Typography
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
+        Bye week
+      </Typography>
+    );
   }
 
   const { opponent } = game;
   const ranked = opponent.ranking > 0 && opponent.ranking <= 25;
 
   return (
-    <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{
+        alignItems: 'center',
+        minWidth: 0,
+      }}
+    >
       <TeamLogo name={opponent.name} size={32} />
       <Stack spacing={0.125} sx={{ minWidth: 0 }}>
         <Link
@@ -40,7 +55,12 @@ export const ScheduleOpponent = ({ game, onClick }: ScheduleOpponentProps) => {
           {ranked && `#${opponent.ranking} `}
           {opponent.name}
         </Link>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Rating {opponent.rating} · {opponent.record}
         </Typography>
       </Stack>
@@ -56,7 +76,16 @@ export const ScheduleSiteBadge = ({ game }: GameDetailProps) => {
 
 export const ScheduleGameLabel = ({ game }: GameDetailProps) => {
   if (!game.label) {
-    return <Typography variant="body2" color="text.secondary">—</Typography>;
+    return (
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
+        —
+      </Typography>
+    );
   }
 
   return (
@@ -86,19 +115,9 @@ export const ScheduleGameAction = ({ game }: GameDetailProps) => {
       component={RouterLink}
       to={`/game/${game.id}`}
       variant={isComplete ? 'outlined' : 'contained'}
-      color={
-        game.result === 'W'
-          ? 'success'
-          : game.result === 'L'
-            ? 'error'
-            : 'primary'
-      }
+      color={game.result === 'W' ? 'success' : game.result === 'L' ? 'error' : 'primary'}
       size="small"
-      aria-label={
-        isComplete
-          ? `View game result: ${resultLabel}`
-          : 'View game preview'
-      }
+      aria-label={isComplete ? `View game result: ${resultLabel}` : 'View game preview'}
       sx={{ minWidth: 92, whiteSpace: 'nowrap' }}
     >
       {isComplete ? resultLabel : 'Preview'}

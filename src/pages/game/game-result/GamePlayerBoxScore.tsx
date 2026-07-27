@@ -60,14 +60,24 @@ const PlayerRow = ({ entry }: { entry: BoxScoreEntry }) => (
       >
         {entry.name}
       </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+          display: 'block',
+        }}
+      >
         {entry.pos}
       </Typography>
     </Box>
     <Typography
       variant="body2"
-      color="text.secondary"
-      sx={{ fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}
+      sx={{
+        color: 'text.secondary',
+        fontWeight: 600,
+        textAlign: 'right',
+        whiteSpace: 'nowrap',
+      }}
     >
       {entry.statLine}
     </Typography>
@@ -81,8 +91,7 @@ export const GamePlayerBoxScore = ({
   homeBoxScore,
 }: GamePlayerBoxScoreProps) => {
   const [selectedTeam, setSelectedTeam] = useState<BoxScoreTeam>('away');
-  const selectedBoxScore =
-    selectedTeam === 'away' ? awayBoxScore : homeBoxScore;
+  const selectedBoxScore = selectedTeam === 'away' ? awayBoxScore : homeBoxScore;
 
   return (
     <Paper
@@ -100,9 +109,14 @@ export const GamePlayerBoxScore = ({
       <Typography component="h2" variant="h6">
         Box Score
       </Typography>
-
       {!awayBoxScore || !homeBoxScore ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 1,
+          }}
+        >
           Player statistics are unavailable for this game.
         </Typography>
       ) : (
@@ -125,22 +139,40 @@ export const GamePlayerBoxScore = ({
           >
             <Tab
               value="away"
-              label={(
-                <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+              label={
+                <Stack
+                  direction="row"
+                  spacing={0.6}
+                  sx={{
+                    alignItems: 'center',
+                    minWidth: 0,
+                  }}
+                >
                   <TeamLogo name={awayTeam.name} size={18} />
-                  <Typography variant="body2" noWrap>{awayTeam.name}</Typography>
+                  <Typography variant="body2" noWrap>
+                    {awayTeam.name}
+                  </Typography>
                 </Stack>
-              )}
+              }
               sx={TAB_SX}
             />
             <Tab
               value="home"
-              label={(
-                <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+              label={
+                <Stack
+                  direction="row"
+                  spacing={0.6}
+                  sx={{
+                    alignItems: 'center',
+                    minWidth: 0,
+                  }}
+                >
                   <TeamLogo name={homeTeam.name} size={18} />
-                  <Typography variant="body2" noWrap>{homeTeam.name}</Typography>
+                  <Typography variant="body2" noWrap>
+                    {homeTeam.name}
+                  </Typography>
                 </Stack>
-              )}
+              }
               sx={TAB_SX}
             />
           </Tabs>
@@ -152,13 +184,22 @@ export const GamePlayerBoxScore = ({
                 <Box key={section.key} sx={{ pt: sectionIndex === 0 ? 0 : 0.75 }}>
                   <Typography
                     variant="overline"
-                    color="text.secondary"
-                    sx={{ display: 'block', lineHeight: 1.8 }}
+                    sx={{
+                      color: 'text.secondary',
+                      display: 'block',
+                      lineHeight: 1.8,
+                    }}
                   >
                     {section.label}
                   </Typography>
                   {entries.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ py: 0.5 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        py: 0.5,
+                      }}
+                    >
                       No {section.label.toLowerCase()} entries.
                     </Typography>
                   ) : (

@@ -53,18 +53,32 @@ const BowlTeam = ({
           whiteSpace: 'nowrap',
         }}
       >
-        {rank > 0 ? `#${rank} ` : ''}{name}
+        {rank > 0 ? `#${rank} ` : ''}
+        {name}
       </Button>
-      <Typography variant="caption" color="text.secondary" display="block">
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+          display: 'block',
+        }}
+      >
         {record} · {conference}
       </Typography>
     </Box>
-    <Stack direction="row" spacing={0.5} alignItems="center">
-      {champion && (
-        <Chip label="Champion" size="small" color="success" variant="outlined" />
-      )}
+    <Stack
+      direction="row"
+      spacing={0.5}
+      sx={{
+        alignItems: 'center',
+      }}
+    >
+      {champion && <Chip label="Champion" size="small" color="success" variant="outlined" />}
       {score !== null && (
-        <Typography variant="body1" sx={{ minWidth: 24, textAlign: 'right', fontWeight: winner ? 700 : 500 }}>
+        <Typography
+          variant="body1"
+          sx={{ minWidth: 24, textAlign: 'right', fontWeight: winner ? 700 : 500 }}
+        >
           {score}
         </Typography>
       )}
@@ -85,13 +99,24 @@ const BowlRow = ({
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: 'minmax(150px, 0.8fr) minmax(0, 1fr) auto minmax(0, 1fr)' },
+        gridTemplateColumns: {
+          xs: '1fr',
+          md: 'minmax(150px, 0.8fr) minmax(0, 1fr) auto minmax(0, 1fr)',
+        },
         gap: 1.25,
         alignItems: 'center',
       }}
     >
       <Box>
-        <Stack direction="row" spacing={0.5} alignItems="center" useFlexGap flexWrap="wrap">
+        <Stack
+          direction="row"
+          spacing={0.5}
+          useFlexGap
+          sx={{
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           <Typography variant="body2" sx={{ fontWeight: 700 }}>
             {game.name}
           </Typography>
@@ -116,8 +141,11 @@ const BowlRow = ({
       />
       <Typography
         variant="caption"
-        color="text.secondary"
-        sx={{ textAlign: 'center', display: { xs: 'none', md: 'block' } }}
+        sx={{
+          color: 'text.secondary',
+          textAlign: 'center',
+          display: { xs: 'none', md: 'block' },
+        }}
       >
         VS
       </Typography>
@@ -150,8 +178,12 @@ const BowlSection = ({
     <Typography
       component="h2"
       variant="overline"
-      color="text.secondary"
-      sx={{ display: 'block', mb: 0.75, letterSpacing: 1 }}
+      sx={{
+        color: 'text.secondary',
+        display: 'block',
+        mb: 0.75,
+        letterSpacing: 1,
+      }}
     >
       {title}
     </Typography>
@@ -178,7 +210,12 @@ export const PostseasonBowlView = ({
     return (
       <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="h6">No bowl slate available</Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Bowl matchups will appear when eligible teams are available.
         </Typography>
       </Paper>
@@ -204,7 +241,12 @@ export const PostseasonBowlView = ({
         <Typography component="h2" variant="h6">
           {showingProjections ? 'Projected Bowl Slate' : 'Bowl Slate'}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {showingProjections
             ? 'Projected pairings based on the current field and bowl rotation.'
             : 'Scheduled postseason games and completed results.'}

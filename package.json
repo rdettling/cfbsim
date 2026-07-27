@@ -3,11 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
-    "start": "serve -s dist",
+    "start": "sirv dist --single --host 0.0.0.0",
     "preview": "vite preview",
     "generate:history": "tsx scripts/generate_history.ts",
     "generate:odds": "tsx scripts/generate_betting_odds.ts",
@@ -17,25 +20,25 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
-    "@mui/icons-material": "^7.3.8",
-    "@mui/material": "^7.3.8",
-    "idb": "^8.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.5",
-    "serve": "^14.2.4"
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@mui/icons-material": "9.2.0",
+    "@mui/material": "9.2.0",
+    "idb": "8.0.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router-dom": "7.18.1",
+    "sirv-cli": "3.0.1"
   },
   "devDependencies": {
-    "@types/node": "^25.2.3",
-    "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react": "^5.1.4",
-    "fake-indexeddb": "^6.2.5",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3",
-    "vite": "^7.3.1",
-    "vitest": "^4.1.10"
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.4",
+    "fake-indexeddb": "6.2.5",
+    "tsx": "4.23.1",
+    "typescript": "7.0.2",
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
   }
 }

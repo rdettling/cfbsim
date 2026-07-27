@@ -61,7 +61,7 @@ const MobileNavigationDrawer = ({
   };
 
   const toggleGroup = (groupId: string) => {
-    setExpandedGroups(previous => ({
+    setExpandedGroups((previous) => ({
       ...previous,
       [groupId]: !previous[groupId],
     }));
@@ -99,7 +99,15 @@ const MobileNavigationDrawer = ({
         },
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ minHeight: 64, px: 2 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          minHeight: 64,
+          px: 2,
+        }}
+      >
         <TeamLogo name={teamName} size={36} />
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
@@ -113,7 +121,12 @@ const MobileNavigationDrawer = ({
           >
             {teamName}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {data.info.currentYear} · {currentStageInfo?.banner_label ?? data.currentStage}
           </Typography>
         </Box>
@@ -121,13 +134,11 @@ const MobileNavigationDrawer = ({
           <CloseIcon />
         </IconButton>
       </Stack>
-
       <Divider />
-
       <List component="nav" aria-label="Primary navigation" sx={{ py: 1 }}>
         {model.leading.map(renderDirectItem)}
 
-        {model.groups.map(group => {
+        {model.groups.map((group) => {
           const expanded = Boolean(expandedGroups[group.id]);
           const active = isGroupActive(currentPath, group);
           const groupItemsId = `mobile-${group.id}-items`;
@@ -144,7 +155,7 @@ const MobileNavigationDrawer = ({
               </ListItemButton>
               <Collapse id={groupItemsId} in={expanded} timeout="auto" unmountOnExit>
                 <List disablePadding>
-                  {group.items.map(item => {
+                  {group.items.map((item) => {
                     const itemActive = isPathActive(currentPath, item.path);
                     return (
                       <ListItemButton
@@ -166,9 +177,7 @@ const MobileNavigationDrawer = ({
 
         {model.trailing.map(renderDirectItem)}
       </List>
-
       <Divider />
-
       <List subheader={<ListSubheader component="div">Actions and utilities</ListSubheader>}>
         {data.currentStage === 'season' && (
           <ListItemButton onClick={handleLiveSim}>

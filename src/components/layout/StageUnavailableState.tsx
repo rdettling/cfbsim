@@ -17,22 +17,19 @@ const StageUnavailableState = ({
   const currentStageInfo = getStageDefinition(currentStage);
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{ p: { xs: 2.5, md: 4 }, textAlign: 'center' }}
-    >
+    <Paper variant="outlined" sx={{ p: { xs: 2.5, md: 4 }, textAlign: 'center' }}>
       <Typography component="h1" variant="h5">
         {title}
       </Typography>
-      <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+      <Typography
+        sx={{
+          color: 'text.secondary',
+          mt: 0.75,
+        }}
+      >
         {description}
       </Typography>
-      <Button
-        component={RouterLink}
-        to={currentStageInfo.path}
-        variant="contained"
-        sx={{ mt: 2 }}
-      >
+      <Button component={RouterLink} to={currentStageInfo.path} variant="contained" sx={{ mt: 2 }}>
         Return to {currentStageInfo.label}
       </Button>
     </Paper>

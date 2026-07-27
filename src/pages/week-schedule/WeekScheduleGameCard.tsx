@@ -1,18 +1,7 @@
 import { Link as RouterLink } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  Link,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Link, Paper, Stack, Typography } from '@mui/material';
 import { TeamLogo } from '../../components/team/TeamComponents';
-import {
-  formatMatchup,
-  resolveHomeAway,
-  resolveTeamSide,
-} from '../../domain/utils/gameDisplay';
+import { formatMatchup, resolveHomeAway, resolveTeamSide } from '../../domain/utils/gameDisplay';
 import type { WeekScheduleGameCardProps } from './types';
 
 type TeamRowProps = {
@@ -24,14 +13,7 @@ type TeamRowProps = {
   onTeamClick: (name: string) => void;
 };
 
-const MatchupTeamRow = ({
-  name,
-  rank,
-  site,
-  value,
-  winner,
-  onTeamClick,
-}: TeamRowProps) => {
+const MatchupTeamRow = ({ name, rank, site, value, winner, onTeamClick }: TeamRowProps) => {
   const ranked = rank > 0 && rank <= 25;
 
   return (
@@ -47,10 +29,22 @@ const MatchupTeamRow = ({
         borderRadius: 1,
       }}
     >
-      <Typography variant="caption" color="text.secondary">
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         {site}
       </Typography>
-      <Stack direction="row" spacing={0.875} alignItems="center" sx={{ minWidth: 0 }}>
+      <Stack
+        direction="row"
+        spacing={0.875}
+        sx={{
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+      >
         <TeamLogo name={name} size={28} />
         <Link
           component="button"
@@ -74,34 +68,22 @@ const MatchupTeamRow = ({
           {name}
         </Link>
       </Stack>
-      <Typography
-        variant="body1"
-        sx={{ fontWeight: winner ? 700 : 600, whiteSpace: 'nowrap' }}
-      >
+      <Typography variant="body1" sx={{ fontWeight: winner ? 700 : 600, whiteSpace: 'nowrap' }}>
         {value}
       </Typography>
     </Box>
   );
 };
 
-export const WeekScheduleGameCard = ({
-  game,
-  onTeamClick,
-}: WeekScheduleGameCardProps) => {
+export const WeekScheduleGameCard = ({ game, onTeamClick }: WeekScheduleGameCardProps) => {
   const { home, away, neutral } = resolveHomeAway(game);
   const awaySide = resolveTeamSide(game, away.id);
   const homeSide = resolveTeamSide(game, home.id);
   const isComplete = game.winner;
   const awayWon = isComplete && awaySide.score > homeSide.score;
   const homeWon = isComplete && homeSide.score > awaySide.score;
-  const overtime = game.overtime > 0
-    ? game.overtime > 1
-      ? `${game.overtime}OT`
-      : 'OT'
-    : null;
-  const status = isComplete
-    ? `Final${overtime ? ` · ${overtime}` : ''}`
-    : 'Scheduled';
+  const overtime = game.overtime > 0 ? (game.overtime > 1 ? `${game.overtime}OT` : 'OT') : null;
+  const status = isComplete ? `Final${overtime ? ` · ${overtime}` : ''}` : 'Scheduled';
   const matchup = formatMatchup(home.name, away.name, neutral);
 
   return (
@@ -114,9 +96,11 @@ export const WeekScheduleGameCard = ({
       <Stack sx={{ height: '100%' }} spacing={1.25}>
         <Stack
           direction="row"
-          justifyContent="space-between"
-          alignItems="flex-start"
           spacing={1}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+          }}
         >
           <Box sx={{ minWidth: 0 }}>
             <Typography
@@ -130,14 +114,22 @@ export const WeekScheduleGameCard = ({
             >
               {game.label || 'Regular season'}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {neutral ? 'Neutral site' : matchup}
             </Typography>
           </Box>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+            sx={{
+              color: 'text.secondary',
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+            }}
           >
             Watchability {game.watchability}
           </Typography>
@@ -164,12 +156,19 @@ export const WeekScheduleGameCard = ({
 
         <Stack
           direction="row"
-          justifyContent="space-between"
-          alignItems="center"
           spacing={1}
-          sx={{ mt: 'auto' }}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mt: 'auto',
+          }}
         >
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {status}
           </Typography>
           <Button

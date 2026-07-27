@@ -34,18 +34,17 @@ type HomeTeamBrowserProps = {
   onBack: () => void;
 };
 
-const RatingDots = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) => (
+const RatingDots = ({ label, value }: { label: string; value: number }) => (
   <Box
     aria-label={`${label} ${value} of 7`}
     sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}
   >
-    <Typography variant="caption" color="text.secondary">
+    <Typography
+      variant="caption"
+      sx={{
+        color: 'text.secondary',
+      }}
+    >
       {label}
     </Typography>
     <Box aria-hidden sx={{ display: 'flex', gap: 0.25 }}>
@@ -90,7 +89,13 @@ const TeamRow = ({
   >
     <TeamLogo name={team.name} size={42} />
     <Box sx={{ minWidth: 0 }}>
-      <Stack direction="row" spacing={0.75} alignItems="center">
+      <Stack
+        direction="row"
+        spacing={0.75}
+        sx={{
+          alignItems: 'center',
+        }}
+      >
         <Typography
           variant="subtitle1"
           sx={{
@@ -103,16 +108,16 @@ const TeamRow = ({
         >
           {team.name} {team.mascot}
         </Typography>
-        {team.conferenceName && (
-          <ConfLogo name={team.conferenceName} size={18} />
-        )}
+        {team.conferenceName && <ConfLogo name={team.conferenceName} size={18} />}
       </Stack>
       <Stack
         direction="row"
         spacing={{ xs: 1, sm: 1.5 }}
         useFlexGap
-        flexWrap="wrap"
-        sx={{ mt: 0.25 }}
+        sx={{
+          flexWrap: 'wrap',
+          mt: 0.25,
+        }}
       >
         <RatingDots label="Current" value={team.prestige} />
         <RatingDots label="Ceiling" value={team.ceiling} />
@@ -155,7 +160,7 @@ export const HomeTeamBrowser = ({
   onBack,
 }: HomeTeamBrowserProps) => {
   const normalizedSearch = search.trim().toLocaleLowerCase();
-  const filteredTeams = preview.teams.filter(team => {
+  const filteredTeams = preview.teams.filter((team) => {
     const matchesConference =
       selectedConference === 'ALL' ||
       (selectedConference === 'INDEPENDENTS'
@@ -163,9 +168,7 @@ export const HomeTeamBrowser = ({
         : team.conferenceName === selectedConference);
     const matchesSearch =
       !normalizedSearch ||
-      `${team.name} ${team.mascot}`
-        .toLocaleLowerCase()
-        .includes(normalizedSearch);
+      `${team.name} ${team.mascot}`.toLocaleLowerCase().includes(normalizedSearch);
     return matchesConference && matchesSearch;
   });
 
@@ -190,41 +193,36 @@ export const HomeTeamBrowser = ({
         >
           League setup
         </Button>
-        <Typography variant="overline" color="text.secondary">
+        <Typography
+          variant="overline"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Step 2
         </Typography>
         <Typography ref={headingRef} tabIndex={-1} variant="h5">
           Choose your team
         </Typography>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          sx={{ mt: 1.5 }}
-        >
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
           <TextField
             label="Search teams"
             value={search}
-            onChange={event => onSearchChange(event.target.value)}
+            onChange={(event) => onSearchChange(event.target.value)}
             size="small"
             fullWidth
             disabled={Boolean(creatingTeam)}
           />
-          <FormControl
-            size="small"
-            fullWidth
-            disabled={Boolean(creatingTeam)}
-          >
-            <InputLabel id="home-conference-filter-label">
-              Conference
-            </InputLabel>
+          <FormControl size="small" fullWidth disabled={Boolean(creatingTeam)}>
+            <InputLabel id="home-conference-filter-label">Conference</InputLabel>
             <Select
               labelId="home-conference-filter-label"
               value={selectedConference}
               label="Conference"
-              onChange={event => onConferenceChange(event.target.value)}
+              onChange={(event) => onConferenceChange(event.target.value)}
             >
               <MenuItem value="ALL">All conferences</MenuItem>
-              {preview.conferences.map(conference => (
+              {preview.conferences.map((conference) => (
                 <MenuItem key={conference.name} value={conference.name}>
                   {conference.fullName}
                 </MenuItem>
@@ -234,7 +232,6 @@ export const HomeTeamBrowser = ({
           </FormControl>
         </Stack>
       </Box>
-
       {creationError && (
         <Alert
           ref={errorRef}
@@ -251,13 +248,11 @@ export const HomeTeamBrowser = ({
           {creationError}
         </Alert>
       )}
-
       {creatingTeam && (
         <Alert severity="info" aria-live="polite" sx={{ borderRadius: 0 }}>
           Building rosters and the preseason schedule for {creatingTeam}…
         </Alert>
       )}
-
       <Box
         sx={{
           flex: 1,
@@ -269,7 +264,7 @@ export const HomeTeamBrowser = ({
       >
         {filteredTeams.length ? (
           <Stack spacing={0.75}>
-            {filteredTeams.map(team => (
+            {filteredTeams.map((team) => (
               <TeamRow
                 key={team.name}
                 team={team}
@@ -282,7 +277,12 @@ export const HomeTeamBrowser = ({
         ) : (
           <Box sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="h6">No teams found</Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Change the search or conference filter.
             </Typography>
           </Box>

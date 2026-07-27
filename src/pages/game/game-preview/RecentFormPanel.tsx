@@ -25,7 +25,13 @@ const formatLocation = (location: RecentGame['location']) => {
 
 const TeamRecentForm = ({ team, games }: TeamRecentFormProps) => (
   <Box sx={{ minWidth: 0 }}>
-    <Stack direction="row" spacing={0.75} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={0.75}
+      sx={{
+        alignItems: 'center',
+      }}
+    >
       <TeamLogo name={team.name} size={24} />
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
         {team.name}
@@ -33,7 +39,13 @@ const TeamRecentForm = ({ team, games }: TeamRecentFormProps) => (
     </Stack>
 
     {games.length === 0 ? (
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+          mt: 1,
+        }}
+      >
         No completed games yet.
       </Typography>
     ) : (
@@ -55,7 +67,13 @@ const TeamRecentForm = ({ team, games }: TeamRecentFormProps) => (
               '&:hover': { bgcolor: 'action.hover' },
             }}
           >
-            <Stack direction="row" spacing={0.6} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={0.6}
+              sx={{
+                alignItems: 'center',
+              }}
+            >
               <Typography
                 variant="caption"
                 color={game.result === 'W' ? 'success.main' : 'error.main'}
@@ -63,11 +81,23 @@ const TeamRecentForm = ({ team, games }: TeamRecentFormProps) => (
               >
                 {game.result}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Wk {game.week}
               </Typography>
             </Stack>
-            <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              spacing={0.6}
+              sx={{
+                alignItems: 'center',
+                minWidth: 0,
+              }}
+            >
               <TeamLogo name={game.opponent} size={18} />
               <Typography variant="body2" noWrap>
                 {formatLocation(game.location)} {game.opponent}

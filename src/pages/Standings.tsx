@@ -11,10 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import {
-  ConfLogo,
-  TeamInfoModal,
-} from '../components/team/TeamComponents';
+import { ConfLogo, TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadStandings } from '../domain/league';
 import type { StandingsPageData } from '../types/pages';
@@ -68,27 +65,37 @@ const Standings = () => {
           <Stack
             component="header"
             direction={{ xs: 'column', sm: 'row' }}
-            alignItems={{ xs: 'stretch', sm: 'center' }}
-            justifyContent="space-between"
             spacing={2}
-            sx={{ mb: 1.5 }}
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'center' },
+              justifyContent: 'space-between',
+              mb: 1.5,
+            }}
           >
-            <Stack direction="row" spacing={1.25} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1.25}
+              sx={{
+                alignItems: 'center',
+              }}
+            >
               {!isIndependent && <ConfLogo name={data.conference} size={44} />}
               <Box>
                 <Typography component="h1" variant="h4">
                   {isIndependent ? 'Independent Standings' : `${data.conference} Standings`}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   {data.info.currentYear} season · Week {data.info.currentWeek}
                 </Typography>
               </Box>
             </Stack>
 
-            <FormControl
-              size="small"
-              sx={{ width: { xs: '100%', sm: 220 }, flexShrink: 0 }}
-            >
+            <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, flexShrink: 0 }}>
               <InputLabel id="standings-conference-label">Conference</InputLabel>
               <Select
                 labelId="standings-conference-label"
@@ -124,7 +131,13 @@ const Standings = () => {
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6">No standings available</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 There are no teams in the selected conference.
               </Typography>
             </Paper>

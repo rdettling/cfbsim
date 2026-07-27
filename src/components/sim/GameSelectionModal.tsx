@@ -41,8 +41,11 @@ const TeamSummary = ({
   <Stack
     direction={align === 'left' ? 'row-reverse' : 'row'}
     spacing={1}
-    alignItems="center"
-    sx={{ minWidth: 0, flex: 1 }}
+    sx={{
+      alignItems: 'center',
+      minWidth: 0,
+      flex: 1,
+    }}
   >
     <TeamLogo name={team.name} size={40} />
     <Box sx={{ minWidth: 0, textAlign: align }}>
@@ -54,18 +57,19 @@ const TeamSummary = ({
         {team.ranking > 0 && `#${team.ranking} `}
         {team.name}
       </Typography>
-      <Typography variant="caption" color="text.secondary">
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         {team.record}
       </Typography>
     </Box>
   </Stack>
 );
 
-const GameSelectionModal = ({
-  open,
-  onClose,
-  onGameSelect,
-}: GameSelectionModalProps) => {
+const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalProps) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [data, setData] = useState<GameSelectionData | null>(null);
@@ -81,7 +85,7 @@ const GameSelectionModal = ({
       setError(
         loadError instanceof Error && loadError.message
           ? loadError.message
-          : 'Games could not be loaded.'
+          : 'Games could not be loaded.',
       );
     } finally {
       setLoading(false);
@@ -129,7 +133,12 @@ const GameSelectionModal = ({
           <DialogTitle id="game-selection-title" sx={{ p: 0 }}>
             Select a game
           </DialogTitle>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {data ? `Week ${data.week}` : 'Current week'}
           </Typography>
         </Box>
@@ -137,26 +146,53 @@ const GameSelectionModal = ({
           <CloseIcon />
         </IconButton>
       </Box>
-
       <DialogContent sx={{ p: 0 }}>
         {loading ? (
-          <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 280 }}>
+          <Stack
+            spacing={1.5}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 280,
+            }}
+          >
             <CircularProgress size={32} />
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Loading available games…
             </Typography>
           </Stack>
         ) : error ? (
           <Stack spacing={2} sx={{ p: 3 }}>
             <Alert severity="error">{error}</Alert>
-            <Button variant="outlined" onClick={() => void loadGames()} sx={{ alignSelf: 'flex-start' }}>
+            <Button
+              variant="outlined"
+              onClick={() => void loadGames()}
+              sx={{ alignSelf: 'flex-start' }}
+            >
               Try Again
             </Button>
           </Stack>
         ) : !data || data.games.length === 0 ? (
-          <Stack alignItems="center" spacing={0.5} sx={{ p: 4, textAlign: 'center' }}>
+          <Stack
+            spacing={0.5}
+            sx={{
+              alignItems: 'center',
+              p: 4,
+              textAlign: 'center',
+            }}
+          >
             <Typography variant="h6">No games available</Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Every game in this week has already been completed.
             </Typography>
           </Stack>
@@ -199,7 +235,13 @@ const GameSelectionModal = ({
                         }}
                       >
                         <TeamSummary team={awayTeam} align="right" />
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.secondary',
+                            fontWeight: 700,
+                          }}
+                        >
                           {neutral ? 'VS' : 'AT'}
                         </Typography>
                         <TeamSummary team={homeTeam} align="left" />
@@ -207,8 +249,10 @@ const GameSelectionModal = ({
                       <Stack
                         direction="row"
                         spacing={1}
-                        alignItems="center"
-                        justifyContent="center"
+                        sx={{
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
                       >
                         {game.is_user_game ? (
                           <Chip label="Your game · Coaching enabled" size="small" color="primary" />
@@ -222,8 +266,8 @@ const GameSelectionModal = ({
                         {game.label && (
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: 'text.secondary',
                               maxWidth: 220,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',

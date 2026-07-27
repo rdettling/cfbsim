@@ -15,15 +15,22 @@ export const NextSeasonHeader = ({
   <Box sx={{ mb: 1.5 }}>
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
-      alignItems={{ sm: 'center' }}
-      justifyContent="space-between"
       spacing={1}
+      sx={{
+        alignItems: { sm: 'center' },
+        justifyContent: 'space-between',
+      }}
     >
       <Box>
         <Typography component="h1" variant="h4">
           Next Season Setup
         </Typography>
-        <Typography color="text.secondary" variant="body2">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Choose the conference structure and postseason format for {targetYear}.
         </Typography>
       </Box>
@@ -41,8 +48,8 @@ export const NextSeasonHeader = ({
     </Stack>
     {dataSource?.atHistoricalFrontier && (
       <Alert severity="info" sx={{ mt: 1 }}>
-        {targetYear} is beyond the bundled history. The newest available
-        structure from {dataSource.sourceYear} will be reused.
+        {targetYear} is beyond the bundled history. The newest available structure from{' '}
+        {dataSource.sourceYear} will be reused.
       </Alert>
     )}
     {previewError && (

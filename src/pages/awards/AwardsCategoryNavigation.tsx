@@ -1,16 +1,5 @@
-import {
-  Box,
-  ButtonBase,
-  Paper,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
-import type {
-  AwardEntry,
-  AwardMode,
-  AwardSelectionHandler,
-} from './types';
+import { Box, ButtonBase, Paper, Tab, Tabs, Typography } from '@mui/material';
+import type { AwardEntry, AwardMode, AwardSelectionHandler } from './types';
 
 type AwardsCategoryNavigationProps = {
   awards: AwardEntry[];
@@ -43,7 +32,12 @@ export const AwardsCategoryNavigation = ({
       }}
     >
       <Box sx={{ px: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="overline" color="text.secondary">
+        <Typography
+          variant="overline"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Award Categories
         </Typography>
       </Box>
@@ -74,8 +68,8 @@ export const AwardsCategoryNavigation = ({
               </Typography>
               <Typography
                 variant="caption"
-                color="text.secondary"
                 sx={{
+                  color: 'text.secondary',
                   display: 'block',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -105,11 +99,7 @@ export const AwardsCategoryNavigation = ({
         aria-label="Award categories"
       >
         {awards.map((award) => (
-          <Tab
-            key={award.category_slug}
-            value={award.category_slug}
-            label={award.category_name}
-          />
+          <Tab key={award.category_slug} value={award.category_slug} label={award.category_name} />
         ))}
       </Tabs>
     </Paper>

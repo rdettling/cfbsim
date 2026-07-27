@@ -13,10 +13,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import {
-  ConfLogo,
-  TeamLogo,
-} from '../../components/team/TeamComponents';
+import { ConfLogo, TeamLogo } from '../../components/team/TeamComponents';
 import type { RecruitingTeamResult } from '../../types/recruiting';
 
 interface RecruitingClassPanelProps {
@@ -44,9 +41,9 @@ export const RecruitingClassPanel = ({
       <>
         <Stack
           direction="row"
-          alignItems="center"
           spacing={1.25}
           sx={{
+            alignItems: 'center',
             px: { xs: 1.5, md: 2 },
             py: 1.25,
             borderBottom: '1px solid',
@@ -55,19 +52,16 @@ export const RecruitingClassPanel = ({
         >
           <TeamLogo name={team.teamName} size={38} />
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              id={headingId}
-              component="h2"
-              variant="h6"
-              noWrap
-            >
+            <Typography id={headingId} component="h2" variant="h6" noWrap>
               {team.teamName} Class
             </Typography>
             <Stack
               direction="row"
-              alignItems="center"
               spacing={0.75}
-              color="text.secondary"
+              sx={{
+                alignItems: 'center',
+                color: 'text.secondary',
+              }}
             >
               <ConfLogo name={team.conference} size={18} />
               <Typography variant="caption">
@@ -97,7 +91,7 @@ export const RecruitingClassPanel = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {team.recruits.map(player => (
+              {team.recruits.map((player) => (
                 <TableRow key={player.id} hover>
                   <TableCell>#{player.rank}</TableCell>
                   <TableCell>
@@ -131,22 +125,24 @@ export const RecruitingClassPanel = ({
               component="article"
               key={player.id}
               direction="row"
-              alignItems="center"
               spacing={1}
               sx={{
+                alignItems: 'center',
                 px: 1.5,
                 py: 1.1,
-                borderBottom:
-                  index === team.recruits.length - 1
-                    ? 0
-                    : '1px solid',
+
+                borderBottom: index === team.recruits.length - 1 ? 0 : '1px solid',
+
                 borderColor: 'divider',
               }}
             >
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ width: 34, flexShrink: 0 }}
+                sx={{
+                  color: 'text.secondary',
+                  width: 34,
+                  flexShrink: 0,
+                }}
               >
                 #{player.rank}
               </Typography>
@@ -159,13 +155,17 @@ export const RecruitingClassPanel = ({
                 >
                   {player.first} {player.last}
                 </Link>
-                <Typography variant="caption" color="text.secondary" display="block">
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    display: 'block',
+                  }}
+                >
                   {player.position.toUpperCase()} · {player.stars}★
                 </Typography>
               </Box>
-              <Typography sx={{ fontWeight: 700 }}>
-                {player.rating}
-              </Typography>
+              <Typography sx={{ fontWeight: 700 }}>{player.rating}</Typography>
             </Stack>
           ))}
         </Stack>
@@ -175,7 +175,12 @@ export const RecruitingClassPanel = ({
         <Typography id={headingId} variant="h6">
           No recruiting class selected
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Select a ranked team to inspect its recruits.
         </Typography>
       </Box>

@@ -36,15 +36,20 @@ const TeamIdentity = ({
   <Stack
     direction={align === 'left' ? 'row' : 'row-reverse'}
     spacing={{ xs: 0.75, sm: 1.25 }}
-    alignItems="center"
-    sx={{ minWidth: 0, justifySelf: align === 'left' ? 'start' : 'end' }}
+    sx={{
+      alignItems: 'center',
+      minWidth: 0,
+      justifySelf: align === 'left' ? 'start' : 'end',
+    }}
   >
     <TeamLogo name={name} size={40} />
     <Box sx={{ minWidth: 0, textAlign: align }}>
       <Stack
         direction={align === 'left' ? 'row' : 'row-reverse'}
         spacing={0.5}
-        alignItems="center"
+        sx={{
+          alignItems: 'center',
+        }}
       >
         <Typography
           variant="subtitle2"
@@ -60,17 +65,19 @@ const TeamIdentity = ({
         </Typography>
         {possession && <PossessionIndicator />}
       </Stack>
-      <Typography variant="caption" color="text.secondary">
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         {record}
       </Typography>
     </Box>
   </Stack>
 );
 
-const GameScoreStrip = ({
-  matchup,
-  isPlaybackComplete,
-}: GameScoreStripProps) => {
+const GameScoreStrip = ({ matchup, isPlaybackComplete }: GameScoreStripProps) => {
   const periodLabel = matchup.inOvertime
     ? matchup.overtimeCount > 1
       ? `${matchup.overtimeCount}OT`
@@ -103,7 +110,6 @@ const GameScoreStrip = ({
         possession={!isPlaybackComplete && matchup.isAwayOnOffense}
         align="left"
       />
-
       <Box sx={{ textAlign: 'center', minWidth: { xs: 76, sm: 112 } }}>
         <Typography
           component="p"
@@ -116,11 +122,15 @@ const GameScoreStrip = ({
         >
           {matchup.awayScore}–{matchup.homeScore}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {status}
         </Typography>
       </Box>
-
       <TeamIdentity
         name={matchup.homeTeam.name}
         record={matchup.homeTeam.record}

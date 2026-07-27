@@ -123,7 +123,7 @@ All entries retain the navigation envelope.
   - `src/domain/league/loaders/season/loadGame.ts`
   - `src/domain/league/loaders/season/scheduleNonConGame.ts`
   - `src/domain/league/loaders/season/startNewLeague.ts`
-- migrated offseason loaders:
+- offseason loaders:
   - `src/domain/league/loaders/navigationEnvelope.ts`
   - `src/domain/league/loaders/loadAuthoritativeStage.ts`
   - `src/domain/league/loaders/loadRealignment.ts`

@@ -36,11 +36,7 @@ type GameSimModalProps = {
 
 type NarrowPanel = 'game' | 'drives';
 
-const GameSimModal = ({
-  open,
-  gameId,
-  onClose,
-}: GameSimModalProps) => {
+const GameSimModal = ({ open, gameId, onClose }: GameSimModalProps) => {
   const theme = useTheme();
   const narrowLayout = useMediaQuery(theme.breakpoints.down('lg'));
   const [narrowPanel, setNarrowPanel] = useState<NarrowPanel>('game');
@@ -99,43 +95,57 @@ const GameSimModal = ({
           clockSecondsLeft: state.clockSecondsLeft,
           inOvertime: state.inOvertime,
           overtimeCount: state.overtimeCount,
-        }
+        },
       )
     : null;
 
-  const gamePanel = game && teams ? (
-    <Stack spacing={1.25}>
-      <FootballField
-        currentYardLine={state.fieldPosition}
-        homeTeam={teams.home}
-        awayTeam={teams.away}
-        neutralSite={teams.neutral}
-        isOffenseLeftToRight={state.isTeamAOnOffense === state.openingIsTeamA}
-        down={state.displayPlay?.down ?? 1}
-        yardsToGo={state.displayPlay?.yardsLeft ?? 10}
-        previousPlayYards={state.previousPlayYards}
-      />
-      <Paper variant="outlined" sx={{ p: 1.5 }}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          spacing={0.5}
-        >
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="subtitle2">
-              {state.displayPlay?.header ?? 'Waiting for the opening snap'}
+  const gamePanel =
+    game && teams ? (
+      <Stack spacing={1.25}>
+        <FootballField
+          currentYardLine={state.fieldPosition}
+          homeTeam={teams.home}
+          awayTeam={teams.away}
+          neutralSite={teams.neutral}
+          isOffenseLeftToRight={state.isTeamAOnOffense === state.openingIsTeamA}
+          down={state.displayPlay?.down ?? 1}
+          yardsToGo={state.displayPlay?.yardsLeft ?? 10}
+          previousPlayYards={state.previousPlayYards}
+        />
+        <Paper variant="outlined" sx={{ p: 1.5 }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={0.5}
+            sx={{
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle2">
+                {state.displayPlay?.header ?? 'Waiting for the opening snap'}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
+                {state.lastPlayText ? `Last play: ${state.lastPlayText}` : 'No plays yet'}
+              </Typography>
+            </Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                flexShrink: 0,
+              }}
+            >
+              Drive {(state.displayDrive?.driveNum ?? 0) + 1}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {state.lastPlayText ? `Last play: ${state.lastPlayText}` : 'No plays yet'}
-            </Typography>
-          </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-            Drive {(state.displayDrive?.driveNum ?? 0) + 1}
-          </Typography>
-        </Stack>
-      </Paper>
-    </Stack>
-  ) : null;
+          </Stack>
+        </Paper>
+      </Stack>
+    ) : null;
 
   const drivesPanel = matchup ? (
     state.drives.length > 0 ? (
@@ -147,24 +157,37 @@ const GameSimModal = ({
         matchup={matchup}
       />
     ) : (
-      <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 180, textAlign: 'center' }}>
+      <Stack
+        sx={{
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 180,
+          textAlign: 'center',
+        }}
+      >
         <Typography variant="subtitle1">No drives yet</Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Simulate the opening play to begin the drive log.
         </Typography>
       </Stack>
     )
   ) : null;
 
-  const errorActions = state.error?.kind === 'preparation' ? (
-    <Button variant="outlined" size="small" onClick={() => void actions.retryPreparation()}>
-      Try Again
-    </Button>
-  ) : state.error?.kind === 'finalization' ? (
-    <Button variant="outlined" size="small" onClick={() => window.location.reload()}>
-      Reload Application
-    </Button>
-  ) : null;
+  const errorActions =
+    state.error?.kind === 'preparation' ? (
+      <Button variant="outlined" size="small" onClick={() => void actions.retryPreparation()}>
+        Try Again
+      </Button>
+    ) : state.error?.kind === 'finalization' ? (
+      <Button variant="outlined" size="small" onClick={() => window.location.reload()}>
+        Reload Application
+      </Button>
+    ) : null;
 
   return (
     <>
@@ -213,13 +236,17 @@ const GameSimModal = ({
             backgroundColor: 'background.default',
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="stretch" sx={{ flexShrink: 0 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'stretch',
+              flexShrink: 0,
+            }}
+          >
             <Box sx={{ minWidth: 0, flex: 1 }}>
               {matchup ? (
-                <GameScoreStrip
-                  matchup={matchup}
-                  isPlaybackComplete={state.isPlaybackComplete}
-                />
+                <GameScoreStrip matchup={matchup} isPlaybackComplete={state.isPlaybackComplete} />
               ) : (
                 <Paper
                   variant="outlined"
@@ -246,11 +273,7 @@ const GameSimModal = ({
           </Stack>
 
           {state.error && (
-            <Alert
-              severity="error"
-              action={errorActions}
-              sx={{ flexShrink: 0 }}
-            >
+            <Alert severity="error" action={errorActions} sx={{ flexShrink: 0 }}>
               {state.error.kind === 'finalization'
                 ? 'The game finished, but its result could not be saved. Reload to reconcile with IndexedDB.'
                 : state.error.message}
@@ -259,13 +282,21 @@ const GameSimModal = ({
 
           {!game && state.phase !== 'error' ? (
             <Stack
-              alignItems="center"
-              justifyContent="center"
               spacing={1.5}
-              sx={{ minHeight: 0, flex: 1 }}
+              sx={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 0,
+                flex: 1,
+              }}
             >
               <CircularProgress size={36} />
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Preparing simulation…
               </Typography>
             </Stack>
@@ -314,13 +345,8 @@ const GameSimModal = ({
                     flex: 1,
                   }}
                 >
-                  <Box sx={{ minHeight: 0, overflowY: 'auto', pr: 0.5 }}>
-                    {gamePanel}
-                  </Box>
-                  <Paper
-                    variant="outlined"
-                    sx={{ minHeight: 0, overflowY: 'auto', p: 1.25 }}
-                  >
+                  <Box sx={{ minHeight: 0, overflowY: 'auto', pr: 0.5 }}>{gamePanel}</Box>
+                  <Paper variant="outlined" sx={{ minHeight: 0, overflowY: 'auto', p: 1.25 }}>
                     {drivesPanel}
                   </Paper>
                 </Box>
@@ -329,18 +355,15 @@ const GameSimModal = ({
               <Box sx={{ flexShrink: 0 }}>
                 <GameControls
                   phase={state.phase}
-                  decisionPrompt={
-                    state.isUserOffenseNow ? state.decisionPrompt : null
-                  }
-                  onAdvance={scope => void actions.advance(scope)}
-                  onDecision={decision => void actions.advance('play', decision)}
+                  decisionPrompt={state.isUserOffenseNow ? state.decisionPrompt : null}
+                  onAdvance={(scope) => void actions.advance(scope)}
+                  onDecision={(decision) => void actions.advance('play', decision)}
                 />
               </Box>
             </>
           ) : null}
         </DialogContent>
       </Dialog>
-
       <Dialog
         open={discardOpen}
         onClose={() => setDiscardOpen(false)}
@@ -348,9 +371,14 @@ const GameSimModal = ({
       >
         <DialogTitle id="discard-simulation-title">Discard this simulation?</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            This game has not been saved. Closing now will discard every simulated
-            play, and the game will restart from the beginning next time.
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
+            This game has not been saved. Closing now will discard every simulated play, and the
+            game will restart from the beginning next time.
           </Typography>
         </DialogContent>
         <DialogActions>

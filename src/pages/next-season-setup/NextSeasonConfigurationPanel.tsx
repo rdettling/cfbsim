@@ -54,7 +54,12 @@ export const NextSeasonConfigurationPanel = ({
           <Typography component="h2" variant="h6">
             Season policies
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             Changes save immediately. Structure is applied only when you advance.
           </Typography>
         </Box>
@@ -63,10 +68,9 @@ export const NextSeasonConfigurationPanel = ({
           <FormLabel>Conference structure</FormLabel>
           <RadioGroup
             value={configuration.conferencePolicy}
-            onChange={event =>
+            onChange={(event) =>
               onChange({
-                conferencePolicy: event.target
-                  .value as ConferenceStructurePolicy,
+                conferencePolicy: event.target.value as ConferenceStructurePolicy,
               })
             }
           >
@@ -76,7 +80,12 @@ export const NextSeasonConfigurationPanel = ({
               label={
                 <Box>
                   <Typography variant="body2">Follow historical alignment</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Use conference membership from the resolved historical year.
                   </Typography>
                 </Box>
@@ -88,7 +97,12 @@ export const NextSeasonConfigurationPanel = ({
               label={
                 <Box>
                   <Typography variant="body2">Keep current alignment</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Preserve every team’s current conference.
                   </Typography>
                 </Box>
@@ -101,10 +115,9 @@ export const NextSeasonConfigurationPanel = ({
           <FormLabel>Postseason format</FormLabel>
           <RadioGroup
             value={configuration.postseasonPolicy}
-            onChange={event =>
+            onChange={(event) =>
               onChange({
-                postseasonPolicy: event.target
-                  .value as PostseasonFormatPolicy,
+                postseasonPolicy: event.target.value as PostseasonFormatPolicy,
               })
             }
           >
@@ -114,7 +127,12 @@ export const NextSeasonConfigurationPanel = ({
               label={
                 <Box>
                   <Typography variant="body2">Follow historical format</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Use the playoff format from the resolved historical year.
                   </Typography>
                 </Box>
@@ -126,7 +144,12 @@ export const NextSeasonConfigurationPanel = ({
               label={
                 <Box>
                   <Typography variant="body2">Custom format</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Keep the supported playoff format selected below.
                   </Typography>
                 </Box>
@@ -139,10 +162,7 @@ export const NextSeasonConfigurationPanel = ({
           <Stack spacing={2}>
             <FormControl size="small" disabled={saving}>
               <FormLabel sx={{ mb: 0.75 }}>Playoff teams</FormLabel>
-              <Select
-                value={configuration.playoffTeams}
-                onChange={handlePlayoffTeams}
-              >
+              <Select value={configuration.playoffTeams} onChange={handlePlayoffTeams}>
                 <MenuItem value={2}>2 teams</MenuItem>
                 <MenuItem value={4}>4 teams</MenuItem>
                 <MenuItem value={12}>12 teams</MenuItem>
@@ -152,12 +172,10 @@ export const NextSeasonConfigurationPanel = ({
             {configuration.playoffTeams === 12 && (
               <>
                 <FormControl size="small" disabled={saving}>
-                  <FormLabel sx={{ mb: 0.75 }}>
-                    Conference champion automatic bids
-                  </FormLabel>
+                  <FormLabel sx={{ mb: 0.75 }}>Conference champion automatic bids</FormLabel>
                   <Select
                     value={configuration.playoffAutobids ?? 6}
-                    onChange={event =>
+                    onChange={(event) =>
                       onChange({
                         playoffAutobids: Number(event.target.value),
                       })
@@ -174,14 +192,10 @@ export const NextSeasonConfigurationPanel = ({
                   disabled={saving}
                   control={
                     <Switch
-                      checked={
-                        configuration.conferenceChampionsReceiveTopSeeds ??
-                        false
-                      }
-                      onChange={event =>
+                      checked={configuration.conferenceChampionsReceiveTopSeeds ?? false}
+                      onChange={(event) =>
                         onChange({
-                          conferenceChampionsReceiveTopSeeds:
-                            event.target.checked,
+                          conferenceChampionsReceiveTopSeeds: event.target.checked,
                         })
                       }
                     />
@@ -195,18 +209,26 @@ export const NextSeasonConfigurationPanel = ({
 
         <Box aria-live="polite">
           {status === 'saving' && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Saving…
             </Typography>
           )}
           {status === 'saved' && (
-            <Typography variant="caption" color="success.main">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'success.main',
+              }}
+            >
               Saved
             </Typography>
           )}
-          {status === 'error' && error && (
-            <Alert severity="error">{error}</Alert>
-          )}
+          {status === 'error' && error && <Alert severity="error">{error}</Alert>}
         </Box>
       </Stack>
     </Paper>

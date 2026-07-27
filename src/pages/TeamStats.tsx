@@ -22,16 +22,8 @@ import { TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamStats } from '../domain/league';
 import type { TeamStatsPageData } from '../types/pages';
-import type {
-  SortDirection,
-  TeamStatKey,
-  TeamStatsMode,
-} from '../types/stats';
-import {
-  getDefaultDirection,
-  TEAM_STAT_COLUMNS,
-  TEAM_STAT_GROUPS,
-} from './team-stats/config';
+import type { SortDirection, TeamStatKey, TeamStatsMode } from '../types/stats';
+import { getDefaultDirection, TEAM_STAT_COLUMNS, TEAM_STAT_GROUPS } from './team-stats/config';
 import { TeamStatsDesktopTable } from './team-stats/TeamStatsDesktopTable';
 import { TeamStatsMobileList } from './team-stats/TeamStatsMobileList';
 
@@ -59,7 +51,7 @@ const TeamStats = () => {
           stats: teamStats,
           rank: index + 1,
         })),
-    [sortDirection, sortKey, stats]
+    [sortDirection, sortKey, stats],
   );
 
   const handleModeChange = (nextMode: TeamStatsMode) => {
@@ -70,7 +62,7 @@ const TeamStats = () => {
 
   const handleSort = (key: TeamStatKey) => {
     if (key === sortKey) {
-      setSortDirection(current => current === 'desc' ? 'asc' : 'desc');
+      setSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'));
     } else {
       setSortKey(key);
       setSortDirection(getDefaultDirection(key, mode));
@@ -82,7 +74,7 @@ const TeamStats = () => {
     setModalOpen(true);
   };
 
-  const isPreseason = rows.length > 0 && rows.every(row => row.stats.games === 0);
+  const isPreseason = rows.length > 0 && rows.every((row) => row.stats.games === 0);
 
   return (
     <PageLayout
@@ -90,26 +82,39 @@ const TeamStats = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={data ? {
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      } : undefined}
+      navbarData={
+        data
+          ? {
+              team: data.team,
+              currentStage: data.info.stage,
+              info: data.info,
+              conferences: data.conferences,
+            }
+          : undefined
+      }
     >
       {data && (
         <>
           <Stack
             component="header"
             direction={{ xs: 'column', sm: 'row' }}
-            alignItems={{ xs: 'stretch', sm: 'center' }}
-            justifyContent="space-between"
             spacing={1.5}
-            sx={{ mb: 1.25 }}
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'center' },
+              justifyContent: 'space-between',
+              mb: 1.25,
+            }}
           >
             <Box>
-              <Typography component="h1" variant="h4">Team Statistics</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography component="h1" variant="h4">
+                Team Statistics
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {data.info.currentYear} season · Week {data.info.currentWeek}
               </Typography>
             </Box>
@@ -119,19 +124,29 @@ const TeamStats = () => {
                 labelId="team-stat-sort-label"
                 value={sortKey}
                 label="Rank by"
-                onChange={event => handleSort(event.target.value as TeamStatKey)}
+                onChange={(event) => handleSort(event.target.value as TeamStatKey)}
               >
-                {TEAM_STAT_GROUPS.flatMap(group => [
+                {TEAM_STAT_GROUPS.flatMap((group) => [
                   <ListSubheader key={`${group}-header`}>{group}</ListSubheader>,
-                  ...TEAM_STAT_COLUMNS.filter(column => column.group === group).map(column => (
-                    <MenuItem key={column.key} value={column.key}>{column.mobileLabel}</MenuItem>
+                  ...TEAM_STAT_COLUMNS.filter((column) => column.group === group).map((column) => (
+                    <MenuItem key={column.key} value={column.key}>
+                      {column.mobileLabel}
+                    </MenuItem>
                   )),
                 ])}
               </Select>
             </FormControl>
           </Stack>
 
-          <Stack direction="row" alignItems="center" sx={{ mb: 1.25, borderBottom: 1, borderColor: 'divider' }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: 'center',
+              mb: 1.25,
+              borderBottom: 1,
+              borderColor: 'divider',
+            }}
+          >
             <Tabs
               value={mode}
               onChange={(_, value: TeamStatsMode) => handleModeChange(value)}
@@ -145,7 +160,7 @@ const TeamStats = () => {
               <IconButton
                 sx={{ display: { xs: 'inline-flex', md: 'none' } }}
                 aria-label={`Sort ${sortDirection === 'desc' ? 'ascending' : 'descending'}`}
-                onClick={() => setSortDirection(current => current === 'desc' ? 'asc' : 'desc')}
+                onClick={() => setSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
               >
                 {sortDirection === 'desc' ? <ArrowDownwardIcon /> : <ArrowUpwardIcon />}
               </IconButton>
@@ -180,7 +195,13 @@ const TeamStats = () => {
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6">No team statistics available</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 Team statistics will appear when teams are available.
               </Typography>
             </Paper>

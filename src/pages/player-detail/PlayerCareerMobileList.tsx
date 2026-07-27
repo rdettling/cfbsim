@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {
-  Box,
-  Collapse,
-  IconButton,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Collapse, IconButton, Paper, Stack, Typography } from '@mui/material';
 import type { PlayerCareerSeason, PlayerStatCategory } from '../../types/player';
 import { formatPlayerStat, getCareerColumns } from './config';
 
@@ -16,10 +9,7 @@ type PlayerCareerMobileListProps = {
   category: PlayerStatCategory;
 };
 
-export const PlayerCareerMobileList = ({
-  seasons,
-  category,
-}: PlayerCareerMobileListProps) => {
+export const PlayerCareerMobileList = ({ seasons, category }: PlayerCareerMobileListProps) => {
   const [expandedYear, setExpandedYear] = useState<number | null>(seasons[0]?.year ?? null);
   const columns = getCareerColumns(category);
 
@@ -35,12 +25,29 @@ export const PlayerCareerMobileList = ({
         return (
           <Box
             key={year}
-            sx={{ borderBottom: index === seasons.length - 1 ? 0 : '1px solid', borderColor: 'divider' }}
+            sx={{
+              borderBottom: index === seasons.length - 1 ? 0 : '1px solid',
+              borderColor: 'divider',
+            }}
           >
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ p: 1.25 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: 'center',
+                p: 1.25,
+              }}
+            >
               <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontWeight: 600 }}>{year} · {season.classYear.toUpperCase()}</Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography sx={{ fontWeight: 600 }}>
+                  {year} · {season.classYear.toUpperCase()}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   {season.games} games · Rating {season.rating}
                 </Typography>
               </Box>
@@ -51,7 +58,12 @@ export const PlayerCareerMobileList = ({
                   aria-expanded={expanded}
                   onClick={() => setExpandedYear(expanded ? null : year)}
                 >
-                  <ExpandMoreIcon sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
+                  <ExpandMoreIcon
+                    sx={{
+                      transform: expanded ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 150ms',
+                    }}
+                  />
                 </IconButton>
               )}
             </Stack>
@@ -66,9 +78,18 @@ export const PlayerCareerMobileList = ({
                     pb: 1.5,
                   }}
                 >
-                  {columns.map(column => (
-                    <Box key={column.key} sx={{ p: 0.75, bgcolor: 'action.hover', borderRadius: 1 }}>
-                      <Typography variant="caption" color="text.secondary" display="block">
+                  {columns.map((column) => (
+                    <Box
+                      key={column.key}
+                      sx={{ p: 0.75, bgcolor: 'action.hover', borderRadius: 1 }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          display: 'block',
+                        }}
+                      >
                         {column.mobileLabel}
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>

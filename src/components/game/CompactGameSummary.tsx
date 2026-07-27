@@ -10,14 +10,15 @@ type CompactGameSummaryProps = {
   onOpponentClick: (name: string) => void;
 };
 
-export const CompactGameSummary = ({
-  game,
-  mode,
-  onOpponentClick,
-}: CompactGameSummaryProps) => {
+export const CompactGameSummary = ({ game, mode, onOpponentClick }: CompactGameSummaryProps) => {
   if (!game?.opponent) {
     return (
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         —
       </Typography>
     );
@@ -25,19 +26,23 @@ export const CompactGameSummary = ({
 
   const prefix = formatOpponentPrefix(game.location);
   const ranked = game.opponent.ranking > 0 && game.opponent.ranking <= 25;
-  const detail = mode === 'previous'
-    ? [game.result, game.score].filter(Boolean).join(' ')
-    : game.spread;
+  const detail =
+    mode === 'previous' ? [game.result, game.score].filter(Boolean).join(' ') : game.spread;
 
   return (
     <Stack
       direction="row"
       spacing={0.75}
-      alignItems="center"
-      sx={{ minWidth: 0, flexWrap: 'wrap', rowGap: 0.5 }}
+      sx={{
+        alignItems: 'center',
+        minWidth: 0,
+        flexWrap: 'wrap',
+        rowGap: 0.5,
+      }}
     >
-      {detail && mode === 'previous' && (
-        game.id ? (
+      {detail &&
+        mode === 'previous' &&
+        (game.id ? (
           <Link
             component={RouterLink}
             to={`/game/${game.id}`}
@@ -50,10 +55,14 @@ export const CompactGameSummary = ({
           <Typography variant="body2" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
             {detail}
           </Typography>
-        )
-      )}
+        ))}
       {prefix && (
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {prefix}
         </Typography>
       )}
@@ -74,8 +83,9 @@ export const CompactGameSummary = ({
         {ranked && `#${game.opponent.ranking} `}
         {game.opponent.name}
       </Link>
-      {detail && mode === 'upcoming' && (
-        game.id ? (
+      {detail &&
+        mode === 'upcoming' &&
+        (game.id ? (
           <Link
             component={RouterLink}
             to={`/game/${game.id}`}
@@ -88,8 +98,7 @@ export const CompactGameSummary = ({
           <Typography variant="body2" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
             {detail}
           </Typography>
-        )
-      )}
+        ))}
     </Stack>
   );
 };

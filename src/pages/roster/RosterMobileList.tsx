@@ -10,24 +10,35 @@ export const RosterMobileList = ({ groups }: RosterViewProps) => (
     spacing={1.25}
     sx={{ display: { xs: 'flex', md: 'none' } }}
   >
-    {groups.map(group => (
+    {groups.map((group) => (
       <Paper key={group.position} variant="outlined" sx={{ overflow: 'hidden' }}>
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ px: 1.5, py: 0.875, bgcolor: 'action.hover' }}
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 1.5,
+            py: 0.875,
+            bgcolor: 'action.hover',
+          }}
         >
           <Typography sx={{ fontWeight: 600 }}>{group.position.toUpperCase()}</Typography>
-          <Typography variant="caption" color="text.secondary">{group.players.length} players</Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
+            {group.players.length} players
+          </Typography>
         </Stack>
         {group.players.map((player, index) => (
           <Stack
             key={player.id}
             direction="row"
-            alignItems="center"
             spacing={1}
             sx={{
+              alignItems: 'center',
               px: 1.5,
               py: 1,
               borderBottom: index === group.players.length - 1 ? 0 : '1px solid',
@@ -43,18 +54,38 @@ export const RosterMobileList = ({ groups }: RosterViewProps) => (
               >
                 {player.first} {player.last}
               </Link>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'block',
+                }}
+              >
                 {PLAYER_YEAR_LABELS[player.year]}
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="caption" color="text.secondary" display="block">Rating</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'block',
+                }}
+              >
+                Rating
+              </Typography>
               <Typography sx={{ fontWeight: 700 }}>{player.rating}</Typography>
             </Box>
             {player.starter ? (
               <Chip label="Starter" size="small" color="success" variant="outlined" />
             ) : (
-              <Typography variant="caption" color="text.secondary" sx={{ width: 46 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  width: 46,
+                }}
+              >
                 Backup
               </Typography>
             )}

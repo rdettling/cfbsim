@@ -22,11 +22,7 @@ const Rankings = () => {
     setModalOpen(true);
   };
 
-  const displayedTeams = data
-    ? showAllTeams
-      ? data.rankings
-      : data.rankings.slice(0, 25)
-    : [];
+  const displayedTeams = data ? (showAllTeams ? data.rankings : data.rankings.slice(0, 25)) : [];
 
   return (
     <PageLayout
@@ -50,16 +46,23 @@ const Rankings = () => {
           <Stack
             component="header"
             direction="row"
-            alignItems="center"
-            justifyContent="space-between"
             spacing={2}
-            sx={{ mb: 1.5 }}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1.5,
+            }}
           >
             <Box>
               <Typography component="h1" variant="h4">
                 Rankings
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {data.info.currentYear} season · Week {data.info.currentWeek}
               </Typography>
             </Box>
@@ -77,19 +80,19 @@ const Rankings = () => {
 
           {displayedTeams.length > 0 ? (
             <>
-              <RankingsDesktopTable
-                teams={displayedTeams}
-                onTeamClick={handleTeamClick}
-              />
-              <RankingsMobileList
-                teams={displayedTeams}
-                onTeamClick={handleTeamClick}
-              />
+              <RankingsDesktopTable teams={displayedTeams} onTeamClick={handleTeamClick} />
+              <RankingsMobileList teams={displayedTeams} onTeamClick={handleTeamClick} />
             </>
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6">No rankings available</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 Rankings will appear when teams are available.
               </Typography>
             </Paper>

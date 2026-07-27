@@ -9,8 +9,7 @@ type PostseasonMatchupProps = {
   compact?: boolean;
 };
 
-const getDisplayTeam = (team: string) =>
-  team.startsWith('Winner of') ? 'TBD' : team;
+const getDisplayTeam = (team: string) => (team.startsWith('Winner of') ? 'TBD' : team);
 
 const MatchupTeam = ({
   name,
@@ -50,10 +49,23 @@ const MatchupTeam = ({
       >
         {seed ?? '—'}
       </Typography>
-      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+      <Stack
+        direction="row"
+        spacing={0.75}
+        sx={{
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+      >
         {!isTbd && <TeamLogo name={name} size={22} />}
         {isTbd ? (
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+            }}
+          >
             TBD
           </Typography>
         ) : (

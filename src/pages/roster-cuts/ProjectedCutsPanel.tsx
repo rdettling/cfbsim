@@ -21,11 +21,7 @@ interface ProjectedCutsPanelProps {
   totalCuts: number;
 }
 
-const PlayerLink = ({
-  player,
-}: {
-  player: RosterCutPlayerPreview;
-}) => (
+const PlayerLink = ({ player }: { player: RosterCutPlayerPreview }) => (
   <Link
     component={RouterLink}
     to={`/players/${player.id}`}
@@ -66,10 +62,10 @@ export const ProjectedCutsPanel = ({
     >
       <Stack
         direction="row"
-        alignItems="flex-start"
-        justifyContent="space-between"
         spacing={1}
         sx={{
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
           px: { xs: 1.5, md: 2 },
           py: 1.25,
           borderBottom: '1px solid',
@@ -77,27 +73,31 @@ export const ProjectedCutsPanel = ({
         }}
       >
         <Box>
-          <Typography
-            id="projected-cuts-title"
-            component="h2"
-            variant="h6"
-          >
+          <Typography id="projected-cuts-title" component="h2" variant="h6">
             {title}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Retained by senior rating, current rating, class
-            seniority, then lowest player ID.
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
+            Retained by senior rating, current rating, class seniority, then lowest player ID.
           </Typography>
         </Box>
         <Chip label={cuts.length} size="small" variant="outlined" />
       </Stack>
-
       {cuts.length === 0 ? (
         <Box sx={{ p: 3, textAlign: 'center' }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
             {emptyTitle}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {selectedPosition
               ? 'Select another position or select this position again to show all cuts.'
               : 'Your roster is within every configured position limit.'}
@@ -125,30 +125,17 @@ export const ProjectedCutsPanel = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {cuts.map(player => (
+                {cuts.map((player) => (
                   <TableRow key={player.id} hover>
                     <TableCell>
                       <PlayerLink player={player} />
                     </TableCell>
+                    <TableCell>{player.position.toUpperCase()}</TableCell>
+                    <TableCell>{player.currentClass.toUpperCase()}</TableCell>
+                    <TableCell align="right">{player.currentRating}</TableCell>
+                    <TableCell align="right">{player.seniorRating}</TableCell>
                     <TableCell>
-                      {player.position.toUpperCase()}
-                    </TableCell>
-                    <TableCell>
-                      {player.currentClass.toUpperCase()}
-                    </TableCell>
-                    <TableCell align="right">
-                      {player.currentRating}
-                    </TableCell>
-                    <TableCell align="right">
-                      {player.seniorRating}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label="Projected Cut"
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                      />
+                      <Chip label="Projected Cut" size="small" color="warning" variant="outlined" />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -168,13 +155,14 @@ export const ProjectedCutsPanel = ({
                 component="article"
                 key={player.id}
                 direction="row"
-                alignItems="center"
                 spacing={1}
                 sx={{
+                  alignItems: 'center',
                   px: 1.5,
                   py: 1.25,
-                  borderBottom:
-                    index === cuts.length - 1 ? 0 : '1px solid',
+
+                  borderBottom: index === cuts.length - 1 ? 0 : '1px solid',
+
                   borderColor: 'divider',
                 }}
               >
@@ -182,21 +170,16 @@ export const ProjectedCutsPanel = ({
                   <PlayerLink player={player} />
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
+                    sx={{
+                      color: 'text.secondary',
+                      display: 'block',
+                    }}
                   >
-                    {player.position.toUpperCase()} ·{' '}
-                    {player.currentClass.toUpperCase()} · Current{' '}
-                    {player.currentRating} · Senior{' '}
-                    {player.seniorRating}
+                    {player.position.toUpperCase()} · {player.currentClass.toUpperCase()} · Current{' '}
+                    {player.currentRating} · Senior {player.seniorRating}
                   </Typography>
                 </Box>
-                <Chip
-                  label="Projected Cut"
-                  size="small"
-                  color="warning"
-                  variant="outlined"
-                />
+                <Chip label="Projected Cut" size="small" color="warning" variant="outlined" />
               </Stack>
             ))}
           </Stack>

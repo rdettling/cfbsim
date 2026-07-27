@@ -1,14 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Box,
-  Grid,
-  IconButton,
-  Paper,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Box, Grid, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { PageLayout } from '../components/layout/PageLayout';
@@ -25,8 +17,7 @@ const WeekSchedule = () => {
   const [selectedTeam, setSelectedTeam] = useState('');
 
   const parsedWeek = Number(week);
-  const selectedWeek =
-    Number.isInteger(parsedWeek) && parsedWeek > 0 ? parsedWeek : null;
+  const selectedWeek = Number.isInteger(parsedWeek) && parsedWeek > 0 ? parsedWeek : null;
 
   const { data, loading, error } = useDomainData<WeekSchedulePageData>({
     fetcher: () => {
@@ -39,9 +30,7 @@ const WeekSchedule = () => {
   });
 
   useEffect(() => {
-    document.title = selectedWeek
-      ? `Week ${selectedWeek} Schedule`
-      : 'College Football';
+    document.title = selectedWeek ? `Week ${selectedWeek} Schedule` : 'College Football';
     return () => {
       document.title = 'College Football';
     };
@@ -57,9 +46,7 @@ const WeekSchedule = () => {
   };
 
   const atFirstWeek = selectedWeek === 1;
-  const atLastWeek = Boolean(
-    data && selectedWeek !== null && selectedWeek >= data.info.lastWeek
-  );
+  const atLastWeek = Boolean(data && selectedWeek !== null && selectedWeek >= data.info.lastWeek);
 
   return (
     <PageLayout
@@ -112,7 +99,12 @@ const WeekSchedule = () => {
               >
                 Week {selectedWeek}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {data.info.currentYear} season · {data.games.length}{' '}
                 {data.games.length === 1 ? 'game' : 'games'}
               </Typography>
@@ -148,10 +140,7 @@ const WeekSchedule = () => {
               <Grid container spacing={1.5}>
                 {data.games.map((game) => (
                   <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={game.id}>
-                    <WeekScheduleGameCard
-                      game={game}
-                      onTeamClick={handleTeamClick}
-                    />
+                    <WeekScheduleGameCard game={game} onTeamClick={handleTeamClick} />
                   </Grid>
                 ))}
               </Grid>
@@ -159,7 +148,13 @@ const WeekSchedule = () => {
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6">No games scheduled</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 There are no games scheduled for Week {selectedWeek}.
               </Typography>
             </Paper>

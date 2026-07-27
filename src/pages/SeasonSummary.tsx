@@ -29,13 +29,12 @@ const SeasonSummary = () => {
     .filter((team) => (team.prestige_change ?? 0) !== 0)
     .slice()
     .sort((a, b) => {
-      const changeDifference =
-        (b.prestige_change ?? 0) - (a.prestige_change ?? 0);
+      const changeDifference = (b.prestige_change ?? 0) - (a.prestige_change ?? 0);
       return changeDifference || a.name.localeCompare(b.name);
     });
 
   const userTeam = data
-    ? data.teams.find((team) => team.id === data.team.id) ?? data.teams[0]
+    ? (data.teams.find((team) => team.id === data.team.id) ?? data.teams[0])
     : null;
   return (
     <PageLayout
@@ -75,7 +74,12 @@ const SeasonSummary = () => {
                 <Typography component="h1" variant="h4" sx={{ fontWeight: 800 }}>
                   {data.info.currentYear} Season Summary
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   Champions, individual honors, and next season’s prestige movement.
                 </Typography>
               </Box>
@@ -132,15 +136,25 @@ const SeasonSummary = () => {
                   {activeDetail === 'awards' ? (
                     <SeasonAwardsPanel awards={data.awards} onTeamClick={handleTeamClick} />
                   ) : (
-                    <SeasonPrestigePanel teams={orderedPrestigeChanges} onTeamClick={handleTeamClick} />
+                    <SeasonPrestigePanel
+                      teams={orderedPrestigeChanges}
+                      onTeamClick={handleTeamClick}
+                    />
                   )}
                 </Box>
               </Box>
             </Box>
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-              <Typography component="h1" variant="h6">Season summary unavailable</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography component="h1" variant="h6">
+                Season summary unavailable
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Your team could not be found in the returned season data.
               </Typography>
             </Paper>

@@ -31,10 +31,7 @@ const PlayerLink = ({ player }: { player: DepartingPlayerPreview }) => (
   </Link>
 );
 
-export const DepartingPlayersPanel = ({
-  players,
-  filtered,
-}: DepartingPlayersPanelProps) => (
+export const DepartingPlayersPanel = ({ players, filtered }: DepartingPlayersPanelProps) => (
   <Paper
     component="section"
     aria-labelledby="departing-players-title"
@@ -49,10 +46,10 @@ export const DepartingPlayersPanel = ({
   >
     <Stack
       direction="row"
-      alignItems="flex-start"
-      justifyContent="space-between"
       spacing={1}
       sx={{
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
         px: { xs: 1.5, md: 2 },
         py: 1.25,
         borderBottom: '1px solid',
@@ -63,7 +60,12 @@ export const DepartingPlayersPanel = ({
         <Typography id="departing-players-title" component="h2" variant="h6">
           Departing Seniors
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Players projected to graduate
         </Typography>
       </Box>
@@ -75,7 +77,12 @@ export const DepartingPlayersPanel = ({
         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
           {filtered ? 'No departing seniors at this position' : 'No departing seniors'}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {filtered
             ? 'Choose another position to view projected departures.'
             : 'This roster has no active seniors.'}
@@ -101,20 +108,17 @@ export const DepartingPlayersPanel = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {players.map(player => (
+              {players.map((player) => (
                 <TableRow key={player.id} hover>
-                  <TableCell><PlayerLink player={player} /></TableCell>
+                  <TableCell>
+                    <PlayerLink player={player} />
+                  </TableCell>
                   <TableCell>{player.position.toUpperCase()}</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
                     {player.currentRating}
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label="Graduates"
-                      size="small"
-                      color="warning"
-                      variant="outlined"
-                    />
+                    <Chip label="Graduates" size="small" color="warning" variant="outlined" />
                   </TableCell>
                 </TableRow>
               ))}
@@ -134,29 +138,30 @@ export const DepartingPlayersPanel = ({
               component="article"
               key={player.id}
               direction="row"
-              alignItems="center"
               spacing={1}
               sx={{
+                alignItems: 'center',
                 px: 1.5,
                 py: 1.25,
-                borderBottom:
-                  index === players.length - 1 ? 0 : '1px solid',
+
+                borderBottom: index === players.length - 1 ? 0 : '1px solid',
+
                 borderColor: 'divider',
               }}
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <PlayerLink player={player} />
-                <Typography variant="caption" color="text.secondary" display="block">
-                  {player.position.toUpperCase()} · Senior · Rating{' '}
-                  {player.currentRating}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    display: 'block',
+                  }}
+                >
+                  {player.position.toUpperCase()} · Senior · Rating {player.currentRating}
                 </Typography>
               </Box>
-              <Chip
-                label="Graduates"
-                size="small"
-                color="warning"
-                variant="outlined"
-              />
+              <Chip label="Graduates" size="small" color="warning" variant="outlined" />
             </Stack>
           ))}
         </Stack>

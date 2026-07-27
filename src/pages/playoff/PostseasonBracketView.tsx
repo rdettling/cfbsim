@@ -25,13 +25,11 @@ type Round = {
   matchups: PlayoffMatchup[];
 };
 
-const isTwelveTeamBracket = (
-  bracket: PlayoffBracket
-): bracket is TwelveTeamPlayoffBracket => 'left_bracket' in bracket;
+const isTwelveTeamBracket = (bracket: PlayoffBracket): bracket is TwelveTeamPlayoffBracket =>
+  'left_bracket' in bracket;
 
-const isFourTeamBracket = (
-  bracket: PlayoffBracket
-): bracket is FourTeamPlayoffBracket => 'semifinals' in bracket;
+const isFourTeamBracket = (bracket: PlayoffBracket): bracket is FourTeamPlayoffBracket =>
+  'semifinals' in bracket;
 
 const getRounds = (bracket: PlayoffBracket): Round[] => {
   if (isTwelveTeamBracket(bracket)) {
@@ -39,26 +37,17 @@ const getRounds = (bracket: PlayoffBracket): Round[] => {
       {
         id: 'first-round',
         label: 'First Round',
-        matchups: [
-          ...bracket.left_bracket.first_round,
-          ...bracket.right_bracket.first_round,
-        ],
+        matchups: [...bracket.left_bracket.first_round, ...bracket.right_bracket.first_round],
       },
       {
         id: 'quarterfinals',
         label: 'Quarterfinals',
-        matchups: [
-          ...bracket.left_bracket.quarterfinals,
-          ...bracket.right_bracket.quarterfinals,
-        ],
+        matchups: [...bracket.left_bracket.quarterfinals, ...bracket.right_bracket.quarterfinals],
       },
       {
         id: 'semifinals',
         label: 'Semifinals',
-        matchups: [
-          bracket.left_bracket.semifinal,
-          bracket.right_bracket.semifinal,
-        ],
+        matchups: [bracket.left_bracket.semifinal, bracket.right_bracket.semifinal],
       },
       { id: 'championship', label: 'Championship', matchups: [bracket.championship] },
     ];
@@ -71,9 +60,7 @@ const getRounds = (bracket: PlayoffBracket): Round[] => {
     ];
   }
 
-  return [
-    { id: 'championship', label: 'Championship', matchups: [bracket.championship] },
-  ];
+  return [{ id: 'championship', label: 'Championship', matchups: [bracket.championship] }];
 };
 
 const DesktopRound = ({
@@ -98,8 +85,11 @@ const DesktopRound = ({
   >
     <Typography
       variant="overline"
-      color="text.secondary"
-      sx={{ textAlign: 'center', letterSpacing: 1 }}
+      sx={{
+        color: 'text.secondary',
+        textAlign: 'center',
+        letterSpacing: 1,
+      }}
     >
       {label}
     </Typography>
@@ -151,19 +141,55 @@ const DesktopBracket = ({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(188px, 1fr)) minmax(210px, 1.1fr) repeat(3, minmax(188px, 1fr))',
+          gridTemplateColumns:
+            'repeat(3, minmax(188px, 1fr)) minmax(210px, 1.1fr) repeat(3, minmax(188px, 1fr))',
           gap: 1.5,
           minWidth: 1390,
           minHeight: '100%',
         }}
       >
-        <DesktopRound label="First Round" matchups={bracket.left_bracket.first_round} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="Quarterfinals" matchups={bracket.left_bracket.quarterfinals} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="Semifinal" matchups={[bracket.left_bracket.semifinal]} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="Championship" matchups={[bracket.championship]} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="Semifinal" matchups={[bracket.right_bracket.semifinal]} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="Quarterfinals" matchups={bracket.right_bracket.quarterfinals} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="First Round" matchups={bracket.right_bracket.first_round} onGameClick={onGameClick} onTeamClick={onTeamClick} />
+        <DesktopRound
+          label="First Round"
+          matchups={bracket.left_bracket.first_round}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="Quarterfinals"
+          matchups={bracket.left_bracket.quarterfinals}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="Semifinal"
+          matchups={[bracket.left_bracket.semifinal]}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="Championship"
+          matchups={[bracket.championship]}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="Semifinal"
+          matchups={[bracket.right_bracket.semifinal]}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="Quarterfinals"
+          matchups={bracket.right_bracket.quarterfinals}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="First Round"
+          matchups={bracket.right_bracket.first_round}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
       </Box>
     );
   }
@@ -180,16 +206,36 @@ const DesktopBracket = ({
           minHeight: '100%',
         }}
       >
-        <DesktopRound label="Semifinal" matchups={[bracket.semifinals[0]]} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="Championship" matchups={[bracket.championship]} onGameClick={onGameClick} onTeamClick={onTeamClick} />
-        <DesktopRound label="Semifinal" matchups={[bracket.semifinals[1]]} onGameClick={onGameClick} onTeamClick={onTeamClick} />
+        <DesktopRound
+          label="Semifinal"
+          matchups={[bracket.semifinals[0]]}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="Championship"
+          matchups={[bracket.championship]}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
+        <DesktopRound
+          label="Semifinal"
+          matchups={[bracket.semifinals[1]]}
+          onGameClick={onGameClick}
+          onTeamClick={onTeamClick}
+        />
       </Box>
     );
   }
 
   return (
     <Box sx={{ maxWidth: 520, mx: 'auto', py: 2 }}>
-      <DesktopRound label="National Championship" matchups={[bracket.championship]} onGameClick={onGameClick} onTeamClick={onTeamClick} />
+      <DesktopRound
+        label="National Championship"
+        matchups={[bracket.championship]}
+        onGameClick={onGameClick}
+        onTeamClick={onTeamClick}
+      />
     </Box>
   );
 };
@@ -208,7 +254,12 @@ export const PostseasonBracketView = (props: PostseasonBracketViewProps) => {
     return (
       <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="h6">No playoff bracket available</Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           The bracket will appear when postseason teams are available.
         </Typography>
       </Paper>

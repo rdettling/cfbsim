@@ -1,10 +1,6 @@
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
 import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
-import type {
-  SeasonSummaryChampion,
-  SeasonSummaryTeam,
-  TeamSelectionHandler,
-} from './types';
+import type { SeasonSummaryChampion, SeasonSummaryTeam, TeamSelectionHandler } from './types';
 
 type SeasonOverviewProps = {
   champion: SeasonSummaryChampion | null;
@@ -12,8 +8,7 @@ type SeasonOverviewProps = {
   onTeamClick: TeamSelectionHandler;
 };
 
-const formatRank = (ranking: number) =>
-  ranking > 0 ? `#${ranking}` : 'Unranked';
+const formatRank = (ranking: number) => (ranking > 0 ? `#${ranking}` : 'Unranked');
 
 type OverviewTeam = Pick<
   SeasonSummaryTeam,
@@ -27,24 +22,31 @@ const TeamIdentity = ({
   team: OverviewTeam;
   onTeamClick: TeamSelectionHandler;
 }) => (
-  <Stack direction="row" spacing={1.5} alignItems="center">
+  <Stack
+    direction="row"
+    spacing={1.5}
+    sx={{
+      alignItems: 'center',
+    }}
+  >
     <TeamLogo name={team.name} size={48} />
     <Box sx={{ minWidth: 0 }}>
       <Typography component="div" variant="h6" sx={{ fontWeight: 800 }}>
         <TeamLink name={team.name} onTeamClick={onTeamClick} />
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         {team.totalWins}-{team.totalLosses} · {formatRank(team.ranking)}
       </Typography>
     </Box>
   </Stack>
 );
 
-export const SeasonOverview = ({
-  champion,
-  userTeam,
-  onTeamClick,
-}: SeasonOverviewProps) => {
+export const SeasonOverview = ({ champion, userTeam, onTeamClick }: SeasonOverviewProps) => {
   const prestigeChange = userTeam.prestige_change ?? 0;
   const nextPrestige = userTeam.prestige + prestigeChange;
   const isChampion = champion?.id === userTeam.id;
@@ -58,9 +60,21 @@ export const SeasonOverview = ({
       }}
     >
       <Paper component="section" variant="outlined" sx={{ p: { xs: 1.5, md: 2 } }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+          }}
+        >
           <Box>
-            <Typography variant="overline" color="text.secondary">
+            <Typography
+              variant="overline"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               National Champion
             </Typography>
             {champion ? (
@@ -72,7 +86,12 @@ export const SeasonOverview = ({
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                   Champion unavailable
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   No completed championship result was returned for this season.
                 </Typography>
               </Box>
@@ -83,20 +102,29 @@ export const SeasonOverview = ({
           )}
         </Stack>
       </Paper>
-
       <Paper component="section" variant="outlined" sx={{ p: { xs: 1.5, md: 2 } }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+          }}
+        >
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="overline" color="text.secondary">
+            <Typography
+              variant="overline"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Your Season
             </Typography>
             <Box sx={{ mt: 0.75 }}>
               <TeamIdentity team={userTeam} onTeamClick={onTeamClick} />
             </Box>
           </Box>
-          {isChampion && (
-            <Chip label="Champion" color="success" variant="outlined" size="small" />
-          )}
+          {isChampion && <Chip label="Champion" color="success" variant="outlined" size="small" />}
         </Stack>
         <Stack
           direction="row"
@@ -104,19 +132,37 @@ export const SeasonOverview = ({
           sx={{ mt: 1.25, pt: 1.25, borderTop: '1px solid', borderColor: 'divider' }}
         >
           <Box>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+              }}
+            >
               Current Prestige
             </Typography>
             <Typography variant="subtitle2">Tier {userTeam.prestige}</Typography>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+              }}
+            >
               Next Prestige
             </Typography>
             <Typography variant="subtitle2">Tier {nextPrestige}</Typography>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+              }}
+            >
               Movement
             </Typography>
             <Typography variant="subtitle2">

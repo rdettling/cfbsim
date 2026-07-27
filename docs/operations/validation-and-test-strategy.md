@@ -2,7 +2,8 @@
 
 ## Scope
 
-Defines a practical validation strategy for checking lifecycle correctness, simulation integrity, and interface consistency after documentation-informed model or configuration changes.
+Defines a practical validation strategy for checking lifecycle correctness,
+simulation integrity, and interface consistency after application changes.
 
 ## System Model
 
@@ -20,7 +21,7 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
 ## Execution Flow
 
 1. **Pre-checks**
-- Confirm clean docs-only diff intent.
+- Confirm the intended diff scope.
 - Run type safety/build sanity command.
 
 2. **Lifecycle matrix execution**
@@ -44,6 +45,7 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
 - **Available command checks**:
   - `npm test`
   - `npm run typecheck`
+  - `npm run build`
   - `npm run eval:winrate`
   - `npm run tune:yards` (calibration run; use carefully because it can rewrite tuning)
   - `npm run tune:winrate` (calibration run; rewrites tuning)
@@ -97,15 +99,34 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
 
 1. `npm test`
 2. `npm run typecheck`
-3. New league -> preseason to season bootstrap validation.
-4. Run one complete seasonal cycle in 12-team mode.
-5. Repeat postseason-focused runs in 2-team and 4-team modes.
-6. Execute at least one full live-sim game and one batch-sim progression check.
-7. Run `npm run eval:winrate` for trend sanity on rating differential behavior.
+3. `npm run build`
+4. New league -> preseason to season bootstrap validation.
+5. Run one complete seasonal cycle in 12-team mode.
+6. Repeat postseason-focused runs in 2-team and 4-team modes.
+7. Execute at least one full live-sim game and one batch-sim progression check.
+8. Run `npm run eval:winrate` for trend sanity on rating differential behavior.
 
-For a migrated frontend route, also inspect approximately 1440×900, 1280×720,
+For an affected frontend route, also inspect approximately 1440×900, 1280×720,
 768×1024, and 390×844. At `lg`, verify document containment and intentional
 internal scrolling; below `lg`, verify no unintended horizontal overflow.
+
+## Dependency Maintenance
+
+- Use Node 24 LTS, as recorded in `.nvmrc` and `package.json`.
+- Direct dependencies are pinned exactly; `package-lock.json` is the
+  reproducible install contract.
+- `npm run start` serves the built `dist/` application with SPA fallback and
+  honors the deployment-provided `PORT`.
+- Review updates manually with `npm outdated`, then run
+  `npm audit --omit=dev`, the standard validation sequence, and a production
+  server smoke test after changing the dependency graph.
+- Do not use forced audit fixes, version overrides, or compatibility packages
+  to hide unsupported combinations.
+- React Router advisory `GHSA-qwww-vcr4-c8h2` currently has no patched stable
+  release. It covers RSC action handling, while this application uses a
+  client-only `BrowserRouter` without React Server Components or router
+  actions. Keep React Router on the latest stable release, leave the advisory
+  visible, and remove this exception when upstream publishes a fix.
 
 ## Source Map (file/function references)
 

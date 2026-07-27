@@ -34,9 +34,7 @@ type ResultMatchupHeaderProps = MatchupHeaderBaseProps & {
   headlineSubtitle?: string | null;
 };
 
-export type GameMatchupHeaderProps =
-  | PreviewMatchupHeaderProps
-  | ResultMatchupHeaderProps;
+export type GameMatchupHeaderProps = PreviewMatchupHeaderProps | ResultMatchupHeaderProps;
 
 type TeamIdentityProps = MatchupTeam & {
   align: 'left' | 'right';
@@ -44,13 +42,7 @@ type TeamIdentityProps = MatchupTeam & {
   onTeamClick: (name: string) => void;
 };
 
-const TeamIdentity = ({
-  team,
-  rank,
-  align,
-  compact,
-  onTeamClick,
-}: TeamIdentityProps) => (
+const TeamIdentity = ({ team, rank, align, compact, onTeamClick }: TeamIdentityProps) => (
   <Box
     sx={{
       display: 'flex',
@@ -63,11 +55,12 @@ const TeamIdentity = ({
   >
     <Stack
       direction="row"
-      alignItems="center"
       spacing={compact ? 0.75 : 1}
       sx={{
+        alignItems: 'center',
         minWidth: 0,
         width: { xs: '100%', md: 'auto' },
+
         flexDirection: {
           xs: 'row',
           md: compact ? 'row' : align === 'right' ? 'row-reverse' : 'row',
@@ -86,10 +79,11 @@ const TeamIdentity = ({
       >
         <Stack
           direction="row"
-          alignItems="baseline"
           spacing={0.6}
           sx={{
+            alignItems: 'baseline',
             minWidth: 0,
+
             justifyContent: {
               xs: 'flex-start',
               md: align === 'right' ? 'flex-end' : 'flex-start',
@@ -98,8 +92,11 @@ const TeamIdentity = ({
         >
           <Typography
             variant={compact ? 'body1' : 'h6'}
-            color="text.secondary"
-            sx={{ fontWeight: 600, flexShrink: 0 }}
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+              flexShrink: 0,
+            }}
           >
             {rank > 0 ? `#${rank}` : 'NR'}
           </Typography>
@@ -123,7 +120,13 @@ const TeamIdentity = ({
             <TeamLink name={team.name} onTeamClick={onTeamClick} />
           </Box>
         </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 0.25,
+          }}
+        >
           {team.record} · OVR {team.rating}
         </Typography>
       </Box>
@@ -169,21 +172,24 @@ export default function GameMatchupHeader(props: GameMatchupHeaderProps) {
         }}
       >
         <Box sx={{ gridArea: 'away', minWidth: 0 }}>
-          <TeamIdentity
-            {...away}
-            align="left"
-            compact={isResult}
-            onTeamClick={onTeamClick}
-          />
+          <TeamIdentity {...away} align="left" compact={isResult} onTeamClick={onTeamClick} />
         </Box>
 
         <Box sx={{ gridArea: 'context', textAlign: 'center', minWidth: 0 }}>
           {isResult && (
             <>
-              <Typography variant="overline" color="text.secondary">
+              <Typography
+                variant="overline"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {resultStatus}
               </Typography>
-              <Typography variant="h3" sx={{ color: 'primary.main', fontWeight: 700, lineHeight: 1 }}>
+              <Typography
+                variant="h3"
+                sx={{ color: 'primary.main', fontWeight: 700, lineHeight: 1 }}
+              >
                 {props.awayScore} - {props.homeScore}
               </Typography>
             </>
@@ -197,7 +203,13 @@ export default function GameMatchupHeader(props: GameMatchupHeaderProps) {
               {game.label}
             </Typography>
           )}
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              mt: 0.35,
+            }}
+          >
             Week {game.weekPlayed} · {game.year} · {venue}
           </Typography>
           {isResult && game.headline && (
@@ -206,19 +218,21 @@ export default function GameMatchupHeader(props: GameMatchupHeaderProps) {
             </Typography>
           )}
           {isResult && props.headlineSubtitle && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.15, lineHeight: 1.2 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                mt: 0.15,
+                lineHeight: 1.2,
+              }}
+            >
               {props.headlineSubtitle}
             </Typography>
           )}
         </Box>
 
         <Box sx={{ gridArea: 'home', minWidth: 0 }}>
-          <TeamIdentity
-            {...home}
-            align="right"
-            compact={isResult}
-            onTeamClick={onTeamClick}
-          />
+          <TeamIdentity {...home} align="right" compact={isResult} onTeamClick={onTeamClick} />
         </Box>
       </Box>
     </Paper>

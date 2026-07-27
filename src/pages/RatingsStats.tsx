@@ -26,18 +26,29 @@ const RatingsStats = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={data ? {
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      } : undefined}
+      navbarData={
+        data
+          ? {
+              team: data.team,
+              currentStage: data.info.stage,
+              info: data.info,
+              conferences: data.conferences,
+            }
+          : undefined
+      }
     >
       {data && (
         <>
           <Box component="header" sx={{ mb: 1.5 }}>
-            <Typography component="h1" variant="h4">Ratings</Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography component="h1" variant="h4">
+              Ratings
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {data.info.currentYear} season · Program and player rating distribution
             </Typography>
           </Box>

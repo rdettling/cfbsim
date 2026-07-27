@@ -1,11 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  Box,
-  Paper,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
+import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { useDomainData } from '../domain/hooks';
@@ -19,30 +13,20 @@ type RosterCutsTab = 'positions' | 'cuts';
 
 const RosterCuts = () => {
   const [selectedPosition, setSelectedPosition] = useState('');
-  const [activeTab, setActiveTab] =
-    useState<RosterCutsTab>('positions');
-  const { data, loading, error } =
-    useDomainData<RosterCutsPageData>({
-      fetcher: loadRosterCuts,
-    });
+  const [activeTab, setActiveTab] = useState<RosterCutsTab>('positions');
+  const { data, loading, error } = useDomainData<RosterCutsPageData>({
+    fetcher: loadRosterCuts,
+  });
 
   const cuts = useMemo(
     () =>
-      data?.cuts.filter(
-        player =>
-          !selectedPosition ||
-          player.position === selectedPosition,
-      ) ?? [],
+      data?.cuts.filter((player) => !selectedPosition || player.position === selectedPosition) ??
+      [],
     [data, selectedPosition],
   );
 
-  const selectPosition = (
-    position: string,
-    hasCuts: boolean,
-  ) => {
-    setSelectedPosition(
-      current => (current === position ? '' : position),
-    );
+  const selectPosition = (position: string, hasCuts: boolean) => {
+    setSelectedPosition((current) => (current === position ? '' : position));
     if (hasCuts) setActiveTab('cuts');
   };
 
@@ -83,12 +67,15 @@ const RosterCuts = () => {
               <Typography component="h1" variant="h4">
                 Roster Cuts
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Projected automatic cuts for{' '}
-                {data.info.currentYear}. No cuts have been applied.
-                Advancing applies cuts to every team, selects
-                starters, recalculates ratings, resets the season,
-                and enters Preseason.
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
+                Projected automatic cuts for {data.info.currentYear}. No cuts have been applied.
+                Advancing applies cuts to every team, selects starters, recalculates ratings, resets
+                the season, and enters Preseason.
               </Typography>
             </Box>
 
@@ -96,13 +83,13 @@ const RosterCuts = () => {
 
             {data.summary.activePlayers === 0 ? (
               <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="h6">
-                  No roster available
-                </Typography>
+                <Typography variant="h6">No roster available</Typography>
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.5 }}
+                  sx={{
+                    color: 'text.secondary',
+                    mt: 0.5,
+                  }}
                 >
                   No active players were returned for your team.
                 </Typography>
@@ -112,8 +99,7 @@ const RosterCuts = () => {
                 <Box
                   sx={{
                     display: { xs: 'none', lg: 'grid' },
-                    gridTemplateColumns:
-                      'minmax(340px, 0.8fr) minmax(0, 1.45fr)',
+                    gridTemplateColumns: 'minmax(340px, 0.8fr) minmax(0, 1.45fr)',
                     gap: 1.25,
                     flex: 1,
                     minHeight: 0,
@@ -141,17 +127,12 @@ const RosterCuts = () => {
                   <Paper variant="outlined" sx={{ mb: 1.25 }}>
                     <Tabs
                       value={activeTab}
-                      onChange={(_, value: RosterCutsTab) =>
-                        setActiveTab(value)
-                      }
+                      onChange={(_, value: RosterCutsTab) => setActiveTab(value)}
                       variant="fullWidth"
                       aria-label="Roster cuts preview sections"
                     >
                       <Tab value="positions" label="Position Limits" />
-                      <Tab
-                        value="cuts"
-                        label={`Projected Cuts (${data.summary.projectedCuts})`}
-                      />
+                      <Tab value="cuts" label={`Projected Cuts (${data.summary.projectedCuts})`} />
                     </Tabs>
                   </Paper>
                   {activeTab === 'positions' ? (

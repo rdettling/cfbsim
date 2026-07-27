@@ -131,7 +131,7 @@ routes, and next-stage relationships.
   definitions
 - `src/db/offseasonRepo.ts`: atomic commit and persisted-stage guard
 - `src/domain/league/loaders/loadRealignment.ts` and
-  `loadRosterProgression.ts`: migrated read-only preview contracts
+  `loadRosterProgression.ts`: read-only preview contracts
 - `src/domain/league/loaders/loadRecruitingSummary.ts`: finalized recruiting
   result contract
 - `src/domain/league/loaders/offseason.ts`: read-only Summary and awards

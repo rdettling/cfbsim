@@ -15,14 +15,19 @@ const DashboardTeamIdentity = ({
   currentTeamName,
   onTeamClick,
 }: DashboardTeamIdentityProps) => (
-  <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+  <Stack
+    direction="row"
+    spacing={0.75}
+    sx={{
+      alignItems: 'center',
+      minWidth: 0,
+    }}
+  >
     <TeamLogo name={team.name} size={26} />
     <Box sx={{ minWidth: 0, flex: 1 }}>
       <TeamLink name={team.name} onTeamClick={onTeamClick} />
     </Box>
-    {team.name === currentTeamName && (
-      <Chip label="You" size="small" variant="outlined" />
-    )}
+    {team.name === currentTeamName && <Chip label="You" size="small" variant="outlined" />}
   </Stack>
 );
 
@@ -83,7 +88,9 @@ export const DashboardStandingsPanel = ({
 }: DashboardStandingsPanelProps) => (
   <DashboardPanel
     title={conferenceName === 'Independent' ? 'Independent Teams' : `${conferenceName} Standings`}
-    ariaLabel={conferenceName === 'Independent' ? 'Independent teams' : `${conferenceName} standings`}
+    ariaLabel={
+      conferenceName === 'Independent' ? 'Independent teams' : `${conferenceName} standings`
+    }
   >
     {teams.length > 0 ? (
       teams.map((team, index) => (
@@ -141,12 +148,22 @@ export const DashboardRankingsPanel = ({
         >
           <Stack
             direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mt: 0.75 }}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mt: 0.75,
+            }}
           >
-            <Typography variant="body2" color="text.secondary">
-              Rank <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{index + 1}</Box>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
+              Rank{' '}
+              <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                {index + 1}
+              </Box>
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {team.totalWins}-{team.totalLosses}
@@ -162,13 +179,29 @@ export const DashboardRankingsPanel = ({
 
 const TeamMetric = ({ label, value }: { label: string; value: number | string }) => (
   <Box>
-    <Typography variant="caption" color="text.secondary">{label}</Typography>
-    <Typography variant="body2" sx={{ fontWeight: 600 }}>{value}</Typography>
+    <Typography
+      variant="caption"
+      sx={{
+        color: 'text.secondary',
+      }}
+    >
+      {label}
+    </Typography>
+    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+      {value}
+    </Typography>
   </Box>
 );
 
 const PanelEmptyState = ({ message }: { message: string }) => (
   <Box sx={{ p: 2 }}>
-    <Typography variant="body2" color="text.secondary">{message}</Typography>
+    <Typography
+      variant="body2"
+      sx={{
+        color: 'text.secondary',
+      }}
+    >
+      {message}
+    </Typography>
   </Box>
 );

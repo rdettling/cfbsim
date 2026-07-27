@@ -20,8 +20,7 @@ interface ReturningPlayersPanelProps {
   filtered: boolean;
 }
 
-const formatSigned = (value: number) =>
-  value > 0 ? `+${value}` : String(value);
+const formatSigned = (value: number) => (value > 0 ? `+${value}` : String(value));
 
 const PlayerLink = ({ player }: { player: ReturningPlayerPreview }) => (
   <Link
@@ -34,10 +33,7 @@ const PlayerLink = ({ player }: { player: ReturningPlayerPreview }) => (
   </Link>
 );
 
-export const ReturningPlayersPanel = ({
-  players,
-  filtered,
-}: ReturningPlayersPanelProps) => (
+export const ReturningPlayersPanel = ({ players, filtered }: ReturningPlayersPanelProps) => (
   <Paper
     component="section"
     aria-labelledby="returning-players-title"
@@ -52,10 +48,10 @@ export const ReturningPlayersPanel = ({
   >
     <Stack
       direction="row"
-      alignItems="flex-start"
-      justifyContent="space-between"
       spacing={1}
       sx={{
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
         px: { xs: 1.5, md: 2 },
         py: 1.25,
         borderBottom: '1px solid',
@@ -66,7 +62,12 @@ export const ReturningPlayersPanel = ({
         <Typography id="returning-players-title" component="h2" variant="h6">
           Returning Players
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Projected class and rating changes
         </Typography>
       </Box>
@@ -78,7 +79,12 @@ export const ReturningPlayersPanel = ({
         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
           {filtered ? 'No returning players at this position' : 'No returning players'}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {filtered
             ? 'Choose another position to view projected progression.'
             : 'No active underclassmen are available to progress.'}
@@ -105,13 +111,14 @@ export const ReturningPlayersPanel = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {players.map(player => (
+              {players.map((player) => (
                 <TableRow key={player.id} hover>
-                  <TableCell><PlayerLink player={player} /></TableCell>
+                  <TableCell>
+                    <PlayerLink player={player} />
+                  </TableCell>
                   <TableCell>{player.position.toUpperCase()}</TableCell>
                   <TableCell>
-                    {player.currentClass.toUpperCase()} →{' '}
-                    {player.projectedClass.toUpperCase()}
+                    {player.currentClass.toUpperCase()} → {player.projectedClass.toUpperCase()}
                   </TableCell>
                   <TableCell>
                     {player.currentRating} → {player.projectedRating}
@@ -150,22 +157,28 @@ export const ReturningPlayersPanel = ({
               sx={{
                 px: 1.5,
                 py: 1.25,
-                borderBottom:
-                  index === players.length - 1 ? 0 : '1px solid',
+                borderBottom: index === players.length - 1 ? 0 : '1px solid',
                 borderColor: 'divider',
               }}
             >
               <Stack
                 direction="row"
-                alignItems="flex-start"
-                justifyContent="space-between"
                 spacing={1}
+                sx={{
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                }}
               >
                 <Box sx={{ minWidth: 0 }}>
                   <PlayerLink player={player} />
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    {player.position.toUpperCase()} ·{' '}
-                    {player.currentClass.toUpperCase()} →{' '}
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      display: 'block',
+                    }}
+                  >
+                    {player.position.toUpperCase()} · {player.currentClass.toUpperCase()} →{' '}
                     {player.projectedClass.toUpperCase()}
                   </Typography>
                 </Box>

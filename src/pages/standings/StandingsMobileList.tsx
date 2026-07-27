@@ -3,11 +3,7 @@ import { CompactGameSummary } from '../../components/game/CompactGameSummary';
 import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
 import type { StandingsViewProps } from './types';
 
-export const StandingsMobileList = ({
-  teams,
-  isIndependent,
-  onTeamClick,
-}: StandingsViewProps) => (
+export const StandingsMobileList = ({ teams, isIndependent, onTeamClick }: StandingsViewProps) => (
   <Paper
     component="section"
     variant="outlined"
@@ -23,17 +19,26 @@ export const StandingsMobileList = ({
           borderColor: 'divider',
         }}
       >
-        <Stack direction="row" spacing={1.25} alignItems="center">
-          <Typography
-            variant="h6"
-            sx={{ width: 28, flexShrink: 0, textAlign: 'center' }}
-          >
+        <Stack
+          direction="row"
+          spacing={1.25}
+          sx={{
+            alignItems: 'center',
+          }}
+        >
+          <Typography variant="h6" sx={{ width: 28, flexShrink: 0, textAlign: 'center' }}>
             {index + 1}
           </Typography>
           <TeamLogo name={team.name} size={36} />
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <TeamLink name={team.name} onTeamClick={onTeamClick} />
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+              }}
+            >
               {team.confName ?? team.conference}
             </Typography>
           </Box>
@@ -49,14 +54,28 @@ export const StandingsMobileList = ({
         >
           {!isIndependent && (
             <Box>
-              <Typography variant="caption" color="text.secondary">Conference</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
+                Conference
+              </Typography>
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {team.confWins}-{team.confLosses}
               </Typography>
             </Box>
           )}
           <Box>
-            <Typography variant="caption" color="text.secondary">Overall</Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
+              Overall
+            </Typography>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
               {team.totalWins}-{team.totalLosses}
             </Typography>
@@ -65,7 +84,14 @@ export const StandingsMobileList = ({
 
         <Stack spacing={1} sx={{ mt: 1.5 }}>
           <Box>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.25 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+                mb: 0.25,
+              }}
+            >
               Last week
             </Typography>
             <CompactGameSummary
@@ -75,7 +101,14 @@ export const StandingsMobileList = ({
             />
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.25 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+                mb: 0.25,
+              }}
+            >
               This week
             </Typography>
             <CompactGameSummary

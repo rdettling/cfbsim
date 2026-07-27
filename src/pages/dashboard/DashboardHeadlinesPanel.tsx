@@ -7,9 +7,7 @@ type DashboardHeadlinesPanelProps = {
   headlines: DashboardHeadline[];
 };
 
-export const DashboardHeadlinesPanel = ({
-  headlines,
-}: DashboardHeadlinesPanelProps) => (
+export const DashboardHeadlinesPanel = ({ headlines }: DashboardHeadlinesPanelProps) => (
   <DashboardPanel title="Headlines" ariaLabel="Top game headlines">
     {headlines.length > 0 ? (
       headlines.map((game, index) => (
@@ -37,7 +35,14 @@ export const DashboardHeadlinesPanel = ({
             {game.headline}
           </Typography>
           {game.subtitle && (
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.35 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+                mt: 0.35,
+              }}
+            >
               {game.subtitle}
             </Typography>
           )}
@@ -52,7 +57,12 @@ export const DashboardHeadlinesPanel = ({
       ))
     ) : (
       <Box sx={{ p: 2 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           No completed-game headlines are available for the previous week.
         </Typography>
       </Box>

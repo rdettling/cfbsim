@@ -40,20 +40,24 @@ const Player = () => {
   });
 
   const years = useMemo(
-    () => data
-      ? Array.from(new Set([
-          ...Object.keys(data.career_stats),
-          ...Object.keys(data.game_logs),
-        ].map(Number))).sort((a, b) => b - a)
-      : [],
-    [data]
+    () =>
+      data
+        ? Array.from(
+            new Set(
+              [...Object.keys(data.career_stats), ...Object.keys(data.game_logs)].map(Number),
+            ),
+          ).sort((a, b) => b - a)
+        : [],
+    [data],
   );
   const seasons = data
     ? years
-        .map(year => ({ year, season: data.career_stats[year] }))
-        .filter((entry): entry is { year: number; season: NonNullable<typeof entry.season> } => Boolean(entry.season))
+        .map((year) => ({ year, season: data.career_stats[year] }))
+        .filter((entry): entry is { year: number; season: NonNullable<typeof entry.season> } =>
+          Boolean(entry.season),
+        )
     : [];
-  const gameLogs = data && selectedYear ? data.game_logs[selectedYear] ?? [] : [];
+  const gameLogs = data && selectedYear ? (data.game_logs[selectedYear] ?? []) : [];
 
   useEffect(() => {
     setSelectedYear(years[0] ?? null);
@@ -70,12 +74,16 @@ const Player = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={data ? {
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      } : undefined}
+      navbarData={
+        data
+          ? {
+              team: data.team,
+              currentStage: data.info.stage,
+              info: data.info,
+              conferences: data.conferences,
+            }
+          : undefined
+      }
     >
       {data && (
         <>
@@ -87,10 +95,14 @@ const Player = () => {
           />
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
-            alignItems={{ xs: 'stretch', sm: 'center' }}
-            justifyContent="space-between"
             spacing={1}
-            sx={{ mb: 1.25, borderBottom: 1, borderColor: 'divider' }}
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'center' },
+              justifyContent: 'space-between',
+              mb: 1.25,
+              borderBottom: 1,
+              borderColor: 'divider',
+            }}
           >
             <Tabs
               value={activeTab}
@@ -108,9 +120,13 @@ const Player = () => {
                   labelId="player-log-year-label"
                   value={selectedYear ?? ''}
                   label="Year"
-                  onChange={event => setSelectedYear(Number(event.target.value))}
+                  onChange={(event) => setSelectedYear(Number(event.target.value))}
                 >
-                  {years.map(year => <MenuItem key={year} value={year}>{year}</MenuItem>)}
+                  {years.map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             )}
@@ -143,7 +159,13 @@ const Player = () => {
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6">No games played this season</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                }}
+              >
                 Game logs will appear after this player records statistics.
               </Typography>
             </Paper>

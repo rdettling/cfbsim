@@ -3,202 +3,244 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HistoryIcon from '@mui/icons-material/History';
 import {
-    Alert,
-    Box,
-    Button,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Link as MuiLink,
-    Stack,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Link as MuiLink,
+  Stack,
+  Typography,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { getTeamInfo } from '../../domain/league';
 import type { Team } from '../../types/domain';
 import type {
-    LogoProps,
-    TeamInfoModalProps,
-    TeamLinkProps,
-    LogoWithTypeProps,
+  LogoProps,
+  TeamInfoModalProps,
+  TeamLinkProps,
+  LogoWithTypeProps,
 } from '../../types/components';
 
 const getBasePath = () => {
-    const base = import.meta.env.BASE_URL ?? '/';
-    return base.endsWith('/') ? base.slice(0, -1) : base;
+  const base = import.meta.env.BASE_URL ?? '/';
+  return base.endsWith('/') ? base.slice(0, -1) : base;
 };
 
 const Logo = ({ type, name, size = 30 }: LogoWithTypeProps) => {
-    const [hasError, setHasError] = useState(false);
-    const logoPath = `${getBasePath()}/logos/${type}/${name}.png`;
+  const [hasError, setHasError] = useState(false);
+  const logoPath = `${getBasePath()}/logos/${type}/${name}.png`;
 
-    return (
-        <Box
-            component="img"
-            src={logoPath}
-            onError={() => {
-                console.error(`Failed to load ${type} logo for ${name} from ${logoPath}`);
-                setHasError(true);
-            }}
-            sx={{
-                width: 'auto', height: size, maxWidth: size * 2,
-                border: hasError ? '1px dashed' : 'none',
-                borderColor: hasError ? 'error.main' : 'transparent',
-            }}
-            alt={`${name} logo`}
-        />
-    );
+  return (
+    <Box
+      component="img"
+      src={logoPath}
+      onError={() => {
+        console.error(`Failed to load ${type} logo for ${name} from ${logoPath}`);
+        setHasError(true);
+      }}
+      sx={{
+        width: 'auto',
+        height: size,
+        maxWidth: size * 2,
+        border: hasError ? '1px dashed' : 'none',
+        borderColor: hasError ? 'error.main' : 'transparent',
+      }}
+      alt={`${name} logo`}
+    />
+  );
 };
 
 export const TeamLogo = (props: LogoProps) => <Logo type="teams" {...props} />;
 export const ConfLogo = (props: LogoProps) => <Logo type="conferences" {...props} />;
 
 export const TeamLink = ({ name, onTeamClick }: TeamLinkProps) => (
-    <MuiLink
-        component="button"
-        type="button"
-        onClick={() => onTeamClick(name)}
-        sx={{ cursor: 'pointer', textAlign: 'left' }}
-    >
-        {name}
-    </MuiLink>
+  <MuiLink
+    component="button"
+    type="button"
+    onClick={() => onTeamClick(name)}
+    sx={{ cursor: 'pointer', textAlign: 'left' }}
+  >
+    {name}
+  </MuiLink>
 );
 
 const StatItem = ({ label, value }: { label: string; value: string | number }) => (
-    <Box>
-        <Typography variant="body2" color="text.secondary">{label}</Typography>
-        <Typography variant="body1" sx={{ fontWeight: 600 }}>{value}</Typography>
-    </Box>
+  <Box>
+    <Typography
+      variant="body2"
+      sx={{
+        color: 'text.secondary',
+      }}
+    >
+      {label}
+    </Typography>
+    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+      {value}
+    </Typography>
+  </Box>
 );
 
 export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) => {
-    const [teamInfo, setTeamInfo] = useState<Team | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [teamInfo, setTeamInfo] = useState<Team | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!open || !teamName) return;
+  useEffect(() => {
+    if (!open || !teamName) return;
 
-        let active = true;
-        setTeamInfo(null);
-        setError(null);
-        setLoading(true);
-        getTeamInfo(teamName)
-            .then(team => {
-                if (!active) return;
-                if (team) setTeamInfo(team);
-                else setError('Team information is unavailable.');
-            })
-            .catch(() => {
-                if (active) setError('Team information could not be loaded.');
-            })
-            .finally(() => {
-                if (active) setLoading(false);
-            });
+    let active = true;
+    setTeamInfo(null);
+    setError(null);
+    setLoading(true);
+    getTeamInfo(teamName)
+      .then((team) => {
+        if (!active) return;
+        if (team) setTeamInfo(team);
+        else setError('Team information is unavailable.');
+      })
+      .catch(() => {
+        if (active) setError('Team information could not be loaded.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-        return () => {
-            active = false;
-        };
-    }, [teamName, open]);
+    return () => {
+      active = false;
+    };
+  }, [teamName, open]);
 
-    const actions = teamInfo
-        ? [
-            { label: 'Schedule', to: `/${teamInfo.name}/schedule`, icon: <EventNoteIcon /> },
-            { label: 'Roster', to: `/${teamInfo.name}/roster`, icon: <GroupsIcon /> },
-            { label: 'History', to: `/${teamInfo.name}/history`, icon: <HistoryIcon /> },
-        ]
-        : [];
+  const actions = teamInfo
+    ? [
+        { label: 'Schedule', to: `/${teamInfo.name}/schedule`, icon: <EventNoteIcon /> },
+        { label: 'Roster', to: `/${teamInfo.name}/roster`, icon: <GroupsIcon /> },
+        { label: 'History', to: `/${teamInfo.name}/history`, icon: <HistoryIcon /> },
+      ]
+    : [];
 
-    return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            aria-labelledby="team-info-dialog-title"
-            fullWidth
-            maxWidth="sm"
-            PaperProps={{
-                variant: 'outlined',
-                sx: {
-                    borderTop: '4px solid',
-                    borderTopColor: teamInfo?.colorPrimary || 'primary.main',
-                },
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby="team-info-dialog-title"
+      fullWidth
+      maxWidth="sm"
+      slotProps={{
+        paper: {
+          variant: 'outlined',
+          sx: {
+            borderTop: '4px solid',
+            borderTopColor: teamInfo?.colorPrimary || 'primary.main',
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pr: 6 }}>
+        {teamInfo ? (
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: 'center',
             }}
-        >
-            <DialogTitle sx={{ pr: 6 }}>
-                {teamInfo ? (
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                        <TeamLogo name={teamInfo.name} size={52} />
-                        <Box sx={{ minWidth: 0 }}>
-                            <Typography id="team-info-dialog-title" component="span" variant="h5">
-                                {teamInfo.name} {teamInfo.mascot}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {teamInfo.confName ?? teamInfo.conference}
-                            </Typography>
-                        </Box>
-                        {teamInfo.ranking > 0 && (
-                            <Chip label={`#${teamInfo.ranking}`} size="small" variant="outlined" />
-                        )}
-                    </Stack>
-                ) : (
-                    <Typography id="team-info-dialog-title" component="span" variant="h6">
-                        Team Information
-                    </Typography>
-                )}
-                <IconButton
-                    aria-label="Close team information"
-                    onClick={onClose}
-                    sx={{ position: 'absolute', right: 12, top: 12 }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                {loading ? (
-                    <Stack alignItems="center" spacing={1.5} sx={{ py: 4 }}>
-                        <CircularProgress size={32} />
-                        <Typography color="text.secondary">Loading team information…</Typography>
-                    </Stack>
-                ) : error ? (
-                    <Alert severity="error">{error}</Alert>
-                ) : teamInfo ? (
-                    <>
-                        <Box
-                            sx={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                                gap: 2,
-                            }}
-                        >
-                            <StatItem label="Rating" value={teamInfo.rating} />
-                            <StatItem label="Prestige" value={`${teamInfo.prestige}/7`} />
-                            <StatItem label="Overall Record" value={`${teamInfo.totalWins}-${teamInfo.totalLosses}`} />
-                            <StatItem label="Conference Record" value={`${teamInfo.confWins}-${teamInfo.confLosses}`} />
-                        </Box>
-                    </>
-                ) : null}
-            </DialogContent>
-            {teamInfo && (
-                <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}>
-                    {actions.map(action => (
-                        <Button
-                            key={action.label}
-                            component={RouterLink}
-                            to={action.to}
-                            variant="outlined"
-                            startIcon={action.icon}
-                            onClick={onClose}
-                        >
-                            {action.label}
-                        </Button>
-                    ))}
-                </DialogActions>
+          >
+            <TeamLogo name={teamInfo.name} size={52} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography id="team-info-dialog-title" component="span" variant="h5">
+                {teamInfo.name} {teamInfo.mascot}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
+                {teamInfo.confName ?? teamInfo.conference}
+              </Typography>
+            </Box>
+            {teamInfo.ranking > 0 && (
+              <Chip label={`#${teamInfo.ranking}`} size="small" variant="outlined" />
             )}
-        </Dialog>
-    );
+          </Stack>
+        ) : (
+          <Typography id="team-info-dialog-title" component="span" variant="h6">
+            Team Information
+          </Typography>
+        )}
+        <IconButton
+          aria-label="Close team information"
+          onClick={onClose}
+          sx={{ position: 'absolute', right: 12, top: 12 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        {loading ? (
+          <Stack
+            spacing={1.5}
+            sx={{
+              alignItems: 'center',
+              py: 4,
+            }}
+          >
+            <CircularProgress size={32} />
+            <Typography
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
+              Loading team information…
+            </Typography>
+          </Stack>
+        ) : error ? (
+          <Alert severity="error">{error}</Alert>
+        ) : teamInfo ? (
+          <>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 2,
+              }}
+            >
+              <StatItem label="Rating" value={teamInfo.rating} />
+              <StatItem label="Prestige" value={`${teamInfo.prestige}/7`} />
+              <StatItem
+                label="Overall Record"
+                value={`${teamInfo.totalWins}-${teamInfo.totalLosses}`}
+              />
+              <StatItem
+                label="Conference Record"
+                value={`${teamInfo.confWins}-${teamInfo.confLosses}`}
+              />
+            </Box>
+          </>
+        ) : null}
+      </DialogContent>
+      {teamInfo && (
+        <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}>
+          {actions.map((action) => (
+            <Button
+              key={action.label}
+              component={RouterLink}
+              to={action.to}
+              variant="outlined"
+              startIcon={action.icon}
+              onClick={onClose}
+            >
+              {action.label}
+            </Button>
+          ))}
+        </DialogActions>
+      )}
+    </Dialog>
+  );
 };

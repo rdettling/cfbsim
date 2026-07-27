@@ -46,7 +46,7 @@ const DriveSummary = ({
   const overtimeByDriveNum = useMemo(() => {
     const mapping = new Map<number, number>();
     let overtimeDriveCount = 0;
-    drives.forEach(drive => {
+    drives.forEach((drive) => {
       const firstPlay = drive.plays?.[0];
       if (firstPlay?.quarter === 4 && firstPlay.clockSecondsLeft === 0) {
         const overtimeNumber = Math.floor(overtimeDriveCount / 2) + 1;
@@ -75,17 +75,18 @@ const DriveSummary = ({
   };
 
   const getDriveDurationLabel = (drive: Drive) => {
-    const hasTimingData = drive.plays.some(play => typeof play.playSeconds === 'number');
+    const hasTimingData = drive.plays.some((play) => typeof play.playSeconds === 'number');
     if (!hasTimingData) return '';
     const totalSeconds = drive.plays.reduce(
-      (sum, play) => sum + (typeof play.playSeconds === 'number' ? Math.max(play.playSeconds, 0) : 0),
-      0
+      (sum, play) =>
+        sum + (typeof play.playSeconds === 'number' ? Math.max(play.playSeconds, 0) : 0),
+      0,
     );
     return formatDuration(totalSeconds);
   };
 
   const toggleDriveExpansion = (driveNum: number) => {
-    setExpandedDrives(prev => {
+    setExpandedDrives((prev) => {
       const next = new Set(prev);
       if (next.has(driveNum)) next.delete(driveNum);
       else next.add(driveNum);
@@ -112,20 +113,20 @@ const DriveSummary = ({
   }, [currentPlayIndex, drives, includeCurrentDrive, variant]);
 
   const visibleDrives = useMemo(
-    () => (driveFilter === 'scoring' ? displayDrives.filter(drive => drive.points > 0) : displayDrives),
-    [displayDrives, driveFilter]
+    () =>
+      driveFilter === 'scoring' ? displayDrives.filter((drive) => drive.points > 0) : displayDrives,
+    [displayDrives, driveFilter],
   );
 
   useEffect(() => {
-    const visibleDriveNums = new Set(visibleDrives.map(drive => drive.driveNum));
-    setExpandedDrives(prev => {
+    const visibleDriveNums = new Set(visibleDrives.map((drive) => drive.driveNum));
+    setExpandedDrives((prev) => {
       const next = new Set<number>();
-      prev.forEach(driveNum => {
+      prev.forEach((driveNum) => {
         if (visibleDriveNums.has(driveNum)) next.add(driveNum);
       });
       const unchanged =
-        next.size === prev.size &&
-        Array.from(next).every(driveNum => prev.has(driveNum));
+        next.size === prev.size && Array.from(next).every((driveNum) => prev.has(driveNum));
       return unchanged ? prev : next;
     });
   }, [visibleDrives]);
@@ -155,10 +156,12 @@ const DriveSummary = ({
       >
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
           spacing={1}
-          sx={{ mb: 1 }}
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 1,
+          }}
         >
           <Typography
             component={variant === 'page' ? 'h2' : 'div'}
@@ -191,17 +194,21 @@ const DriveSummary = ({
             scrollbarWidth: 'thin',
             '&::-webkit-scrollbar': { width: 7 },
             '&::-webkit-scrollbar-thumb': {
-              backgroundColor:
-                variant === 'page' ? 'divider' : 'rgba(0,0,0,0.16)',
+              backgroundColor: variant === 'page' ? 'divider' : 'rgba(0,0,0,0.16)',
               borderRadius: 8,
             },
           }}
         >
           {visibleDrives.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {driveFilter === 'scoring'
-              ? 'No scoring drives'
-              : variant === 'modal'
+                ? 'No scoring drives'
+                : variant === 'modal'
                   ? 'No completed drives yet'
                   : 'No drives are available for this game.'}
             </Typography>
@@ -227,9 +234,28 @@ const DriveSummary = ({
               return (
                 <Card key={drive.driveNum} variant="outlined" sx={{ mb: 1.25 }}>
                   <CardContent>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: 'text.secondary',
+                            fontWeight: 700,
+                          }}
+                        >
                           {getDriveStartTime(drive) || 'Start time unavailable'}
                         </Typography>
                         {hasPlays && (
@@ -251,18 +277,38 @@ const DriveSummary = ({
                       )}
                     </Stack>
 
-                    <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mt: 1 }}>
+                    <Stack
+                      direction="row"
+                      spacing={1.25}
+                      sx={{
+                        alignItems: 'center',
+                        mt: 1,
+                      }}
+                    >
                       <TeamLogo name={drive.offense} size={22} />
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {drive.offense}
                       </Typography>
                     </Stack>
 
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.85 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    <Stack
+                      direction="row"
+                      sx={{
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mt: 0.85,
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 600,
+                        }}
+                      >
                         {drive.result
                           .split(' ')
-                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                           .join(' ')}
                         {' • '}
                         {drive.plays?.length || 0} plays
@@ -270,7 +316,13 @@ const DriveSummary = ({
                         {driveDuration ? ` • ${driveDuration}` : ''}
                       </Typography>
                       {scoreA !== undefined && scoreB !== undefined && (
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'text.secondary',
+                            fontWeight: 700,
+                          }}
+                        >
                           {resolvedScore.awayScore}-{resolvedScore.homeScore}
                         </Typography>
                       )}
@@ -284,25 +336,61 @@ const DriveSummary = ({
                         unmountOnExit
                       >
                         <Divider sx={{ my: 1.1 }} />
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.8, fontWeight: 700 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: 'text.secondary',
+                            mb: 0.8,
+                            fontWeight: 700,
+                          }}
+                        >
                           Plays
                         </Typography>
                         <Stack spacing={0.65}>
                           {drive.plays?.map((play, playIdx) => (
                             <Box key={playIdx} sx={{ pb: 0.55 }}>
-                              <Stack direction="row" justifyContent="space-between" spacing={1} alignItems="center">
-                                <Typography variant="caption" color="text.secondary">
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                sx={{
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: 'text.secondary',
+                                  }}
+                                >
                                   {play.header}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: 'text.secondary',
+                                    fontWeight: 700,
+                                  }}
+                                >
                                   {formatPlayTime(play.quarter, play.clockSecondsLeft)}
                                 </Typography>
                               </Stack>
                               <Typography variant="body1" sx={{ mt: 0.2, fontWeight: 500 }}>
                                 {play.text}
                               </Typography>
-                              <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.2 }}>
-                                <Typography variant="caption" color="text.secondary">
+                              <Stack
+                                direction="row"
+                                sx={{
+                                  justifyContent: 'space-between',
+                                  mt: 0.2,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: 'text.secondary',
+                                  }}
+                                >
                                   {play.playType.charAt(0).toUpperCase() + play.playType.slice(1)}
                                 </Typography>
                                 <Typography
@@ -320,7 +408,9 @@ const DriveSummary = ({
                                   {play.yardsGained} yards
                                 </Typography>
                               </Stack>
-                              {playIdx !== (drive.plays?.length || 0) - 1 && <Divider sx={{ mt: 0.75 }} />}
+                              {playIdx !== (drive.plays?.length || 0) - 1 && (
+                                <Divider sx={{ mt: 0.75 }} />
+                              )}
                             </Box>
                           ))}
                         </Stack>

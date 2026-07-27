@@ -1,23 +1,10 @@
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {
-  Box,
-  Chip,
-  Collapse,
-  IconButton,
-  Link,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Chip, Collapse, IconButton, Link, Paper, Stack, Typography } from '@mui/material';
 import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
 import type { PlayerGameLog, PlayerStatCategory } from '../../types/player';
-import {
-  formatPlayerStat,
-  getGameColumns,
-  getPrimaryGameColumns,
-} from './config';
+import { formatPlayerStat, getGameColumns, getPrimaryGameColumns } from './config';
 
 type PlayerGameLogsMobileListProps = {
   logs: PlayerGameLog[];
@@ -49,22 +36,47 @@ export const PlayerGameLogsMobileList = ({
         return (
           <Box
             key={logKey}
-            sx={{ borderBottom: index === logs.length - 1 ? 0 : '1px solid', borderColor: 'divider' }}
+            sx={{
+              borderBottom: index === logs.length - 1 ? 0 : '1px solid',
+              borderColor: 'divider',
+            }}
           >
             <Box sx={{ p: 1.25 }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: 'center',
+                }}
+              >
                 <Typography sx={{ width: 28, textAlign: 'center', fontWeight: 600 }}>
                   {log.game.weekPlayed}
                 </Typography>
                 {opponent && <TeamLogo name={opponent.name} size={32} />}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   {opponent && <TeamLink name={opponent.name} onTeamClick={onTeamClick} />}
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      display: 'block',
+                    }}
+                  >
                     {log.game.label}
                   </Typography>
                 </Box>
-                <Chip label={isWin ? 'W' : 'L'} size="small" color={isWin ? 'success' : 'error'} variant="outlined" />
-                <Link component={RouterLink} to={`/game/${log.game.id}`} underline="hover" sx={{ fontWeight: 600 }}>
+                <Chip
+                  label={isWin ? 'W' : 'L'}
+                  size="small"
+                  color={isWin ? 'success' : 'error'}
+                  variant="outlined"
+                />
+                <Link
+                  component={RouterLink}
+                  to={`/game/${log.game.id}`}
+                  underline="hover"
+                  sx={{ fontWeight: 600 }}
+                >
                   {log.game.score}
                 </Link>
                 {columns.length > 0 && (
@@ -74,15 +86,35 @@ export const PlayerGameLogsMobileList = ({
                     aria-expanded={expanded}
                     onClick={() => setExpandedGame(expanded ? null : logKey)}
                   >
-                    <ExpandMoreIcon sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
+                    <ExpandMoreIcon
+                      sx={{
+                        transform: expanded ? 'rotate(180deg)' : 'none',
+                        transition: 'transform 150ms',
+                      }}
+                    />
                   </IconButton>
                 )}
               </Stack>
               {primaryColumns.length > 0 && (
-                <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${primaryColumns.length}, 1fr)`, gap: 0.75, mt: 1 }}>
-                  {primaryColumns.map(column => (
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${primaryColumns.length}, 1fr)`,
+                    gap: 0.75,
+                    mt: 1,
+                  }}
+                >
+                  {primaryColumns.map((column) => (
                     <Box key={column.key}>
-                      <Typography variant="caption" color="text.secondary" display="block">{column.label}</Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          display: 'block',
+                        }}
+                      >
+                        {column.label}
+                      </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {formatPlayerStat(log.stats, column)}
                       </Typography>
@@ -102,9 +134,20 @@ export const PlayerGameLogsMobileList = ({
                     pb: 1.5,
                   }}
                 >
-                  {columns.map(column => (
-                    <Box key={column.key} sx={{ p: 0.75, bgcolor: 'action.hover', borderRadius: 1 }}>
-                      <Typography variant="caption" color="text.secondary" display="block">{column.mobileLabel}</Typography>
+                  {columns.map((column) => (
+                    <Box
+                      key={column.key}
+                      sx={{ p: 0.75, bgcolor: 'action.hover', borderRadius: 1 }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          display: 'block',
+                        }}
+                      >
+                        {column.mobileLabel}
+                      </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {formatPlayerStat(log.stats, column)}
                       </Typography>

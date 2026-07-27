@@ -25,8 +25,7 @@ const METRICS: Array<{ key: MetricKey; label: string }> = [
 const formatValue = (value: number, gamesPlayed: number) =>
   gamesPlayed > 0 ? value.toFixed(1) : '—';
 
-const formatRank = (rank: number, gamesPlayed: number) =>
-  gamesPlayed > 0 ? `#${rank}` : '—';
+const formatRank = (rank: number, gamesPlayed: number) => (gamesPlayed > 0 ? `#${rank}` : '—');
 
 export const TeamStatComparison = ({
   awayTeam,
@@ -34,19 +33,22 @@ export const TeamStatComparison = ({
   awayPreview,
   homePreview,
 }: TeamStatComparisonProps) => {
-  const noPriorGames =
-    awayPreview.gamesPlayed === 0 && homePreview.gamesPlayed === 0;
+  const noPriorGames = awayPreview.gamesPlayed === 0 && homePreview.gamesPlayed === 0;
 
   return (
     <Paper component="section" variant="outlined" sx={{ p: 1.5, height: '100%' }}>
       <Typography component="h2" variant="h6">
         Team Stat Comparison
       </Typography>
-
       {noPriorGames ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          No prior games are available. Team comparisons will appear after the
-          season begins.
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 1,
+          }}
+        >
+          No prior games are available. Team comparisons will appear after the season begins.
         </Typography>
       ) : (
         <Stack spacing={0.5} sx={{ mt: 1 }}>
@@ -59,21 +61,35 @@ export const TeamStatComparison = ({
               pb: 0.5,
             }}
           >
-            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{
+                alignItems: 'center',
+                minWidth: 0,
+              }}
+            >
               <TeamLogo name={awayTeam.name} size={22} />
               <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                 {awayTeam.name}
               </Typography>
             </Stack>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Rank
             </Typography>
             <Stack
               direction="row"
               spacing={0.75}
-              alignItems="center"
-              justifyContent="flex-end"
-              sx={{ minWidth: 0 }}
+              sx={{
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                minWidth: 0,
+              }}
             >
               <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                 {homeTeam.name}
@@ -96,41 +112,30 @@ export const TeamStatComparison = ({
                 }}
               >
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {formatValue(
-                    awayPreview.stats[metric.key],
-                    awayPreview.gamesPlayed
-                  )}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {formatRank(
-                    awayPreview.ranks[metric.key],
-                    awayPreview.gamesPlayed
-                  )}
+                  {formatValue(awayPreview.stats[metric.key], awayPreview.gamesPlayed)}
                 </Typography>
                 <Typography
-                  variant="body2"
-                  sx={{ textAlign: 'center', fontWeight: 500 }}
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
                 >
+                  {formatRank(awayPreview.ranks[metric.key], awayPreview.gamesPlayed)}
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 500 }}>
                   {metric.label}
                 </Typography>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ textAlign: 'right' }}
+                  sx={{
+                    color: 'text.secondary',
+                    textAlign: 'right',
+                  }}
                 >
-                  {formatRank(
-                    homePreview.ranks[metric.key],
-                    homePreview.gamesPlayed
-                  )}
+                  {formatRank(homePreview.ranks[metric.key], homePreview.gamesPlayed)}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ textAlign: 'right', fontWeight: 600 }}
-                >
-                  {formatValue(
-                    homePreview.stats[metric.key],
-                    homePreview.gamesPlayed
-                  )}
+                <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600 }}>
+                  {formatValue(homePreview.stats[metric.key], homePreview.gamesPlayed)}
                 </Typography>
               </Box>
               {index < METRICS.length - 1 && <Divider />}

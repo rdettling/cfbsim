@@ -1,11 +1,5 @@
 import StarIcon from '@mui/icons-material/Star';
-import {
-  Box,
-  Chip,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
 import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
 import type { PlayerPageData } from '../../types/pages';
 
@@ -23,12 +17,7 @@ const classLabels = {
   sr: 'Senior',
 } as const;
 
-export const PlayerProfile = ({
-  player,
-  awards,
-  teamColor,
-  onTeamClick,
-}: PlayerProfileProps) => (
+export const PlayerProfile = ({ player, awards, teamColor, onTeamClick }: PlayerProfileProps) => (
   <Paper
     component="header"
     variant="outlined"
@@ -41,25 +30,49 @@ export const PlayerProfile = ({
   >
     <Stack
       direction={{ xs: 'column', md: 'row' }}
-      justifyContent="space-between"
       spacing={2}
+      sx={{
+        justifyContent: 'space-between',
+      }}
     >
       <Box sx={{ minWidth: 0 }}>
         <Typography component="h1" variant="h4">
           {player.first} {player.last}
         </Typography>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            alignItems: 'center',
+            mt: 1,
+          }}
+        >
           <TeamLogo name={player.team} size={32} />
           <TeamLink name={player.team} onTeamClick={onTeamClick} />
         </Stack>
       </Box>
       <Box sx={{ textAlign: { xs: 'left', md: 'right' }, flexShrink: 0 }}>
         <Typography variant="h3">{player.rating}</Typography>
-        <Typography variant="caption" color="text.secondary">Overall rating</Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
+          Overall rating
+        </Typography>
       </Box>
     </Stack>
 
-    <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75} sx={{ mt: 1.5 }}>
+    <Stack
+      direction="row"
+      useFlexGap
+      spacing={0.75}
+      sx={{
+        flexWrap: 'wrap',
+        mt: 1.5,
+      }}
+    >
       <Chip label={player.pos.toUpperCase()} size="small" variant="outlined" />
       <Chip label={classLabels[player.year]} size="small" variant="outlined" />
       <Chip
@@ -85,9 +98,23 @@ export const PlayerProfile = ({
     </Stack>
 
     {awards.length > 0 && (
-      <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75} sx={{ mt: 1.5 }}>
-        {awards.map(award => (
-          <Chip key={award.slug} label={award.name} size="small" color="primary" variant="outlined" />
+      <Stack
+        direction="row"
+        useFlexGap
+        spacing={0.75}
+        sx={{
+          flexWrap: 'wrap',
+          mt: 1.5,
+        }}
+      >
+        {awards.map((award) => (
+          <Chip
+            key={award.slug}
+            label={award.name}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
         ))}
       </Stack>
     )}

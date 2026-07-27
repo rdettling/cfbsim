@@ -2,24 +2,23 @@
 
 Technical documentation is organized into architecture, subsystem, interface, and operations references.
 
-## Continuing the Frontend Migration
+## Starting Frontend Work
 
-Start a new frontend task by reading:
+Start frontend work by reading:
 
-1. `AGENTS.md`
-2. [Frontend Overhaul](frontend/README.md)
+1. [`AGENTS.md`](../AGENTS.md)
+2. [Frontend Principles and Patterns](frontend/README.md)
 3. [System Overview](architecture/system-overview.md)
 4. [Loaders and Page Contracts](interfaces/loaders-and-page-contracts.md)
-5. The subsystem document named by the frontend milestone's source map
+5. The subsystem document relevant to the feature
 
-The offseason overhaul and Home/new-league migration are complete. Current
-behavior lives in the lifecycle, loader-contract, persistence, configuration,
-and validation references below. Consult the frontend overhaul document before
-planning the next frontend phase.
+Current lifecycle, loader, persistence, configuration, and validation behavior
+is recorded in the references below. New features should preserve those
+contracts unless the feature explicitly changes them.
 
 ## Frontend
 
-- [Frontend Overhaul](frontend/README.md)
+- [Frontend Principles and Patterns](frontend/README.md)
 
 ## Architecture
 

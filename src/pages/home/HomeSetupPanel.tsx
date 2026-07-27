@@ -65,17 +65,27 @@ export const HomeSetupPanel = ({
       }}
     >
       <Box>
-        <Typography variant="overline" color="text.secondary">
+        <Typography
+          variant="overline"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Step 1
         </Typography>
         <Typography ref={headingRef} tabIndex={-1} variant="h5">
           League setup
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 0.5,
+          }}
+        >
           Choose the historical season and postseason format.
         </Typography>
       </Box>
-
       <FormControl fullWidth size="small">
         <InputLabel id="home-season-label">Season</InputLabel>
         <Select
@@ -85,14 +95,13 @@ export const HomeSetupPanel = ({
           disabled={loading}
           onChange={handleYearChange}
         >
-          {years.map(year => (
+          {years.map((year) => (
             <MenuItem key={year} value={year}>
               {year} Season
             </MenuItem>
           ))}
         </Select>
       </FormControl>
-
       {error && (
         <Alert
           ref={errorRef}
@@ -107,50 +116,39 @@ export const HomeSetupPanel = ({
           {error}
         </Alert>
       )}
-
       {loading && (
         <Alert severity="info" aria-live="polite">
           Loading the {selectedYear} season…
         </Alert>
       )}
-
       <FormControl fullWidth size="small" disabled={!preview || loading}>
         <InputLabel id="home-playoff-size-label">Playoff teams</InputLabel>
         <Select
           labelId="home-playoff-size-label"
           value={String(playoffTeams)}
           label="Playoff teams"
-          onChange={event =>
-            onPlayoffTeamsChange(Number(event.target.value) as PlayoffTeamCount)
-          }
+          onChange={(event) => onPlayoffTeamsChange(Number(event.target.value) as PlayoffTeamCount)}
         >
           <MenuItem value="2">2 Teams (BCS)</MenuItem>
           <MenuItem value="4">4 Teams</MenuItem>
           <MenuItem value="12">12 Teams</MenuItem>
         </Select>
       </FormControl>
-
       {playoffTeams === 12 && (
         <>
           <FormControl fullWidth size="small" disabled={!preview || loading}>
-            <InputLabel id="home-autobids-label">
-              Conference champion autobids
-            </InputLabel>
+            <InputLabel id="home-autobids-label">Conference champion autobids</InputLabel>
             <Select
               labelId="home-autobids-label"
               value={String(playoffAutobids)}
               label="Conference champion autobids"
-              onChange={event =>
-                onPlayoffAutobidsChange(Number(event.target.value))
-              }
+              onChange={(event) => onPlayoffAutobidsChange(Number(event.target.value))}
             >
               {Array.from({ length: 11 }, (_, autobids) => (
                 <MenuItem
                   key={autobids}
                   value={String(autobids)}
-                  disabled={
-                    conferenceChampionsReceiveTopSeeds && autobids < 4
-                  }
+                  disabled={conferenceChampionsReceiveTopSeeds && autobids < 4}
                 >
                   {autobids}
                 </MenuItem>
@@ -166,7 +164,7 @@ export const HomeSetupPanel = ({
               labelId="home-top-seeds-label"
               value={conferenceChampionsReceiveTopSeeds ? 'true' : 'false'}
               label="Conference champions receive top four seeds"
-              onChange={event => onTopSeedsChange(event.target.value === 'true')}
+              onChange={(event) => onTopSeedsChange(event.target.value === 'true')}
             >
               <MenuItem value="true">Yes</MenuItem>
               <MenuItem value="false">No</MenuItem>
@@ -174,7 +172,6 @@ export const HomeSetupPanel = ({
           </FormControl>
         </>
       )}
-
       <Button
         variant="contained"
         disabled={!preview || loading || Boolean(error)}

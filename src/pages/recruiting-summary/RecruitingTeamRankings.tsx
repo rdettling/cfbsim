@@ -46,14 +46,15 @@ export const RecruitingTeamRankings = ({
         borderColor: 'divider',
       }}
     >
-      <Typography
-        id="recruiting-team-rankings-title"
-        component="h2"
-        variant="h6"
-      >
+      <Typography id="recruiting-team-rankings-title" component="h2" variant="h6">
         Team Rankings
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         Select a team to inspect its finalized class
       </Typography>
     </Box>
@@ -80,12 +81,8 @@ export const RecruitingTeamRankings = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {rankings.map(team => (
-            <TableRow
-              key={team.teamId}
-              hover
-              selected={team.teamId === selectedTeamId}
-            >
+          {rankings.map((team) => (
+            <TableRow key={team.teamId} hover selected={team.teamId === selectedTeamId}>
               <TableCell>#{team.rank}</TableCell>
               <TableCell>
                 <ButtonBase
@@ -129,15 +126,11 @@ export const RecruitingTeamRankings = ({
             gap: 1.25,
             justifyContent: 'flex-start',
             textAlign: 'left',
-            borderBottom:
-              index === rankings.length - 1 ? 0 : '1px solid',
+            borderBottom: index === rankings.length - 1 ? 0 : '1px solid',
             borderColor: 'divider',
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{ width: 32, flexShrink: 0, fontWeight: 700 }}
-          >
+          <Typography variant="body2" sx={{ width: 32, flexShrink: 0, fontWeight: 700 }}>
             #{team.rank}
           </Typography>
           <TeamLogo name={team.teamName} size={30} />
@@ -145,19 +138,23 @@ export const RecruitingTeamRankings = ({
             <Typography noWrap sx={{ fontWeight: 700 }}>
               {team.teamName}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {team.totalRecruits} recruits · {team.averageStars} avg stars
             </Typography>
           </Box>
-          <Stack alignItems="flex-end" spacing={0.25}>
-            <Typography sx={{ fontWeight: 700 }}>
-              {team.classScore}
-            </Typography>
-            <Chip
-              label={`${team.starCounts.five} 5★`}
-              size="small"
-              variant="outlined"
-            />
+          <Stack
+            spacing={0.25}
+            sx={{
+              alignItems: 'flex-end',
+            }}
+          >
+            <Typography sx={{ fontWeight: 700 }}>{team.classScore}</Typography>
+            <Chip label={`${team.starCounts.five} 5★`} size="small" variant="outlined" />
           </Stack>
         </ButtonBase>
       ))}

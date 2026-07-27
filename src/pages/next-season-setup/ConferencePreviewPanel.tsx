@@ -1,14 +1,5 @@
-import {
-  Box,
-  Chip,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
-import type {
-  ConferenceChange,
-  ConferenceStructurePolicy,
-} from '../../types/domain';
+import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
+import type { ConferenceChange, ConferenceStructurePolicy } from '../../types/domain';
 import { TeamLogo } from '../../components/team/TeamComponents';
 
 interface ConferencePreviewPanelProps {
@@ -16,10 +7,7 @@ interface ConferencePreviewPanelProps {
   policy: ConferenceStructurePolicy;
 }
 
-export const ConferencePreviewPanel = ({
-  changes,
-  policy,
-}: ConferencePreviewPanelProps) => (
+export const ConferencePreviewPanel = ({ changes, policy }: ConferencePreviewPanelProps) => (
   <Paper
     variant="outlined"
     sx={{
@@ -32,16 +20,23 @@ export const ConferencePreviewPanel = ({
   >
     <Stack
       direction="row"
-      justifyContent="space-between"
-      alignItems="flex-start"
       spacing={1}
-      sx={{ mb: 1.5 }}
+      sx={{
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        mb: 1.5,
+      }}
     >
       <Box>
         <Typography component="h2" variant="h6">
           Conference preview
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Historical membership changes for the upcoming season.
         </Typography>
       </Box>
@@ -55,7 +50,12 @@ export const ConferencePreviewPanel = ({
     {changes.length === 0 ? (
       <Box sx={{ py: 4, textAlign: 'center' }}>
         <Typography variant="body2">No conference changes</Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           The resolved historical membership matches the current league.
         </Typography>
       </Box>
@@ -69,13 +69,13 @@ export const ConferencePreviewPanel = ({
           borderColor: 'divider',
         }}
       >
-        {changes.map(change => (
+        {changes.map((change) => (
           <Stack
             key={change.teamName}
             direction="row"
-            alignItems="center"
             spacing={1.25}
             sx={{
+              alignItems: 'center',
               py: 1.1,
               borderBottom: '1px solid',
               borderColor: 'divider',
@@ -86,7 +86,12 @@ export const ConferencePreviewPanel = ({
               <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
                 {change.teamName}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {change.fromConference} → {change.toConference}
               </Typography>
             </Box>

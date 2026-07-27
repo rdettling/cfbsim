@@ -20,20 +20,12 @@ const Awards = () => {
   });
 
   const mode: AwardMode = data?.info.stage === 'summary' ? 'final' : 'live';
-  const awards = data
-    ? mode === 'final'
-      ? data.final
-      : data.favorites
-    : [];
+  const awards = data ? (mode === 'final' ? data.final : data.favorites) : [];
   const selectedAward =
-    awards.find((award) => award.category_slug === selectedSlug) ??
-    awards[0] ??
-    null;
+    awards.find((award) => award.category_slug === selectedSlug) ?? awards[0] ?? null;
   const hasAnyCandidate = awards.some(
     (award) =>
-      award.first_place !== null ||
-      award.second_place !== null ||
-      award.third_place !== null
+      award.first_place !== null || award.second_place !== null || award.third_place !== null,
   );
 
   const handleTeamClick = (teamName: string) => {
@@ -68,16 +60,18 @@ const Awards = () => {
               minHeight: { lg: 0 },
             }}
           >
-            <AwardsHeader
-              year={data.info.currentYear}
-              week={data.info.currentWeek}
-              mode={mode}
-            />
+            <AwardsHeader year={data.info.currentYear} week={data.info.currentWeek} mode={mode} />
 
             {!hasAnyCandidate ? (
               <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="h6">No award candidates yet</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    mt: 0.5,
+                  }}
+                >
                   Awards will populate after eligible players record game statistics.
                 </Typography>
               </Paper>
@@ -98,16 +92,18 @@ const Awards = () => {
                   mode={mode}
                   onSelect={setSelectedSlug}
                 />
-                <AwardDetail
-                  award={selectedAward}
-                  mode={mode}
-                  onTeamClick={handleTeamClick}
-                />
+                <AwardDetail award={selectedAward} mode={mode} onTeamClick={handleTeamClick} />
               </Box>
             ) : (
               <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="h6">Awards are unavailable</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    mt: 0.5,
+                  }}
+                >
                   No award categories were returned for this season.
                 </Typography>
               </Paper>

@@ -1,20 +1,14 @@
 import { Box, Chip, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
-import type {
-  SeasonSummaryAward,
-  TeamSelectionHandler,
-} from './types';
+import type { SeasonSummaryAward, TeamSelectionHandler } from './types';
 
 type SeasonAwardsPanelProps = {
   awards: SeasonSummaryAward[];
   onTeamClick: TeamSelectionHandler;
 };
 
-export const SeasonAwardsPanel = ({
-  awards,
-  onTeamClick,
-}: SeasonAwardsPanelProps) => (
+export const SeasonAwardsPanel = ({ awards, onTeamClick }: SeasonAwardsPanelProps) => (
   <Paper
     component="section"
     aria-labelledby="season-awards-title"
@@ -27,11 +21,18 @@ export const SeasonAwardsPanel = ({
       overflow: 'hidden',
     }}
   >
-    <Box sx={{ px: { xs: 1.5, md: 2 }, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+    <Box
+      sx={{ px: { xs: 1.5, md: 2 }, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}
+    >
       <Typography id="season-awards-title" component="h2" variant="h6">
         Award Winners
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         Final individual honors
       </Typography>
     </Box>
@@ -42,7 +43,12 @@ export const SeasonAwardsPanel = ({
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
             No finalized awards
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             Final award results were not returned for this season.
           </Typography>
         </Box>
@@ -66,12 +72,25 @@ export const SeasonAwardsPanel = ({
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="caption" color="text.secondary" display="block">
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    display: 'block',
+                  }}
+                >
                   {award.category_name}
                 </Typography>
                 {winner ? (
                   <>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{
+                        alignItems: 'center',
+                        mt: 0.25,
+                      }}
+                    >
                       <TeamLogo name={winner.team_name} size={28} />
                       <Box sx={{ minWidth: 0 }}>
                         <MuiLink
@@ -85,7 +104,13 @@ export const SeasonAwardsPanel = ({
                         <TeamLink name={winner.team_name} onTeamClick={onTeamClick} />
                       </Box>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        mt: 0.5,
+                      }}
+                    >
                       {award.first_stats?.stat_line ?? 'No final stat line available'}
                     </Typography>
                   </>
@@ -94,7 +119,12 @@ export const SeasonAwardsPanel = ({
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       Winner unavailable
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                      }}
+                    >
                       This category has no finalized winner.
                     </Typography>
                   </Box>
