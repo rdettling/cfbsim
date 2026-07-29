@@ -24,6 +24,7 @@ import {
   type AppNavigationData,
   type NavigationGroup,
   type NavigationModel,
+  type StageAdvanceAction,
   type StageInfo,
 } from './navigation';
 
@@ -38,6 +39,8 @@ interface DesktopNavigationProps {
   advancingStage: boolean;
   advanceDisabled: boolean;
   onAdvanceStage: () => void;
+  advanceActions?: StageAdvanceAction[];
+  advanceLabel?: string;
 }
 
 const navButtonSx = (active: boolean) => ({
@@ -65,6 +68,8 @@ const DesktopNavigation = ({
   advancingStage,
   advanceDisabled,
   onAdvanceStage,
+  advanceActions,
+  advanceLabel,
 }: DesktopNavigationProps) => {
   const navigate = useNavigate();
   const [menuAnchors, setMenuAnchors] = useState<Record<string, HTMLElement | null>>({});
@@ -232,6 +237,8 @@ const DesktopNavigation = ({
                 advancing={advancingStage}
                 disabled={advanceDisabled}
                 onAdvance={onAdvanceStage}
+                advanceActions={advanceActions}
+                advanceLabel={advanceLabel}
               />
             )
           )}

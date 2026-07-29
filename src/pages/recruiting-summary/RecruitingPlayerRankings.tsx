@@ -1,10 +1,8 @@
-import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   ButtonBase,
   FormControl,
   InputLabel,
-  Link,
   MenuItem,
   Paper,
   Select,
@@ -31,15 +29,10 @@ interface RecruitingPlayerRankingsProps {
   onTeamSelect: (teamId: number) => void;
 }
 
-const PlayerLink = ({ player }: { player: RecruitingPlayerResult }) => (
-  <Link
-    component={RouterLink}
-    to={`/players/${player.id}`}
-    underline="hover"
-    sx={{ fontWeight: 700 }}
-  >
+const PlayerName = ({ player }: { player: RecruitingPlayerResult }) => (
+  <Typography sx={{ fontWeight: 700 }}>
     {player.first} {player.last}
-  </Link>
+  </Typography>
 );
 
 export const RecruitingPlayerRankings = ({
@@ -147,16 +140,15 @@ export const RecruitingPlayerRankings = ({
               <TableCell>Player</TableCell>
               <TableCell>Team</TableCell>
               <TableCell>Pos</TableCell>
-              <TableCell align="right">Rating</TableCell>
               <TableCell align="right">Stars</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {players.map((player) => (
-              <TableRow key={player.id} hover>
+              <TableRow key={player.prospectId} hover>
                 <TableCell>#{player.rank}</TableCell>
                 <TableCell>
-                  <PlayerLink player={player} />
+                  <PlayerName player={player} />
                 </TableCell>
                 <TableCell>
                   <ButtonBase
@@ -176,7 +168,6 @@ export const RecruitingPlayerRankings = ({
                   </ButtonBase>
                 </TableCell>
                 <TableCell>{player.position.toUpperCase()}</TableCell>
-                <TableCell align="right">{player.rating}</TableCell>
                 <TableCell align="right">{player.stars}★</TableCell>
               </TableRow>
             ))}
@@ -187,7 +178,7 @@ export const RecruitingPlayerRankings = ({
           {players.map((player, index) => (
             <Stack
               component="article"
-              key={player.id}
+              key={player.prospectId}
               direction="row"
               spacing={1}
               sx={{
@@ -204,7 +195,7 @@ export const RecruitingPlayerRankings = ({
                 #{player.rank}
               </Typography>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <PlayerLink player={player} />
+                <PlayerName player={player} />
                 <ButtonBase
                   onClick={() => onTeamSelect(player.teamId)}
                   sx={{
@@ -219,17 +210,9 @@ export const RecruitingPlayerRankings = ({
                   </Typography>
                 </ButtonBase>
               </Box>
-              <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                <Typography sx={{ fontWeight: 700 }}>{player.rating}</Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                  }}
-                >
-                  {player.stars}★
-                </Typography>
-              </Box>
+              <Typography sx={{ fontWeight: 700, flexShrink: 0 }}>
+                {player.stars}★
+              </Typography>
             </Stack>
           ))}
         </Paper>

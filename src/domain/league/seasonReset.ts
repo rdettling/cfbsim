@@ -1,11 +1,36 @@
 import type { LeagueState } from '../../types/league';
 import type { ScheduleGame, Team } from '../../types/domain';
 import type { GameRecord } from '../../types/db';
-import { buildSchedule, applyRivalriesToSchedule } from '../scheduleBuilder';
+import {
+  buildSchedule,
+  applyRivalriesToSchedule,
+  applyRivalriesDataToSchedule,
+} from '../scheduleBuilder';
 import { buildBaseLabel } from '../utils/gameLabels';
-import { buildOddsFields, loadOddsContext } from '../odds';
+import {
+  buildOddsFields,
+  loadOddsContext,
+  type OddsContext,
+} from '../odds';
 import { buildWatchability } from '../sim/games';
 import { getRivalriesData } from '../../db/baseData';
+import type { RandomSource } from '../recruiting/random';
+
+export interface RivalriesData {
+  rivalries: [
+    string,
+    string,
+    number | null,
+    string | null,
+    boolean?,
+  ][];
+}
+
+export interface SeasonResetData {
+  rivalries: RivalriesData;
+  odds: OddsContext;
+  random?: RandomSource;
+}
 
 export const createNonConGameRecord = async (
   league: LeagueState,
@@ -13,9 +38,14 @@ export const createNonConGameRecord = async (
   teamB: Team,
   weekPlayed: number,
   name?: string | null,
-  options?: { neutralSite?: boolean; homeTeam?: Team | null; awayTeam?: Team | null }
+  options?: {
+    neutralSite?: boolean;
+    homeTeam?: Team | null;
+    awayTeam?: Team | null;
+    odds?: OddsContext;
+  },
 ): Promise<GameRecord> => {
-  const oddsContext = await loadOddsContext();
+  const oddsContext = options?.odds ?? await loadOddsContext();
 
   const neutralSite = options?.neutralSite ?? false;
   const homeTeam = neutralSite ? null : options?.homeTeam ?? teamA;
@@ -23,10 +53,7 @@ export const createNonConGameRecord = async (
 
   const oddsFields = buildOddsFields(teamA, teamB, homeTeam, neutralSite, oddsContext);
 
-  if (!league.idCounters) {
-    league.idCounters = { game: 1, drive: 1, play: 1, gameLog: 1, player: 1 };
-  }
-  const id = league.idCounters.game ?? 1;
+  const id = league.idCounters.game;
   league.idCounters.game = id + 1;
 
   const record: GameRecord = {
@@ -58,15 +85,28 @@ export const createNonConGameRecord = async (
   return record;
 };
 
-export const initializeNonConScheduling = async (league: LeagueState) => {
+export const initializeNonConScheduling = async (
+  league: LeagueState,
+  data?: SeasonResetData,
+) => {
   const schedule = buildSchedule();
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-  league.pending_rivalries = await applyRivalriesToSchedule(schedule, userTeam, league.teams);
-  const gamesToSave = await buildRivalryGameRecords(league);
+  league.pending_rivalries = data
+    ? applyRivalriesDataToSchedule(
+        schedule,
+        userTeam,
+        league.teams,
+        data.rivalries,
+      )
+    : await applyRivalriesToSchedule(schedule, userTeam, league.teams);
+  const gamesToSave = await buildRivalryGameRecords(league, data);
   return { schedule, gamesToSave };
 };
 
-export const prepareSeasonReset = async (league: LeagueState) => {
+export const prepareSeasonReset = async (
+  league: LeagueState,
+  data?: SeasonResetData,
+) => {
   league.teams.forEach(team => {
     team.nonConfGames = 0;
     team.confGames = 0;
@@ -88,23 +128,21 @@ export const prepareSeasonReset = async (league: LeagueState) => {
 
   league.scheduleBuilt = false;
   league.simInitialized = false;
-  if (!league.idCounters) {
-    league.idCounters = { game: 1, drive: 1, play: 1, gameLog: 1, player: 1 };
-  }
-
-  return initializeNonConScheduling(league);
+  return initializeNonConScheduling(league, data);
 };
 
-export const buildRivalryGameRecords = async (league: LeagueState): Promise<GameRecord[]> => {
-  const rivalries = await getRivalriesData();
+export const buildRivalryGameRecords = async (
+  league: LeagueState,
+  data?: SeasonResetData,
+): Promise<GameRecord[]> => {
+  const rivalries = data?.rivalries ?? await getRivalriesData();
   const teamByName = new Map(league.teams.map(team => [team.name, team]));
   const seen = new Set<string>();
   const games: GameRecord[] = [];
-  if (!league.rivalryHostSeeds) {
-    league.rivalryHostSeeds = {};
-  }
-  const startYear = league.info.startYear ?? league.info.currentYear;
-  const yearsSinceStart = Math.max(0, league.info.currentYear - startYear);
+  const yearsSinceStart = Math.max(
+    0,
+    league.info.currentYear - league.info.startYear,
+  );
 
   for (const [teamAName, teamBName, week, name, neutralSite = false] of rivalries.rivalries) {
     if (!week) continue;
@@ -119,7 +157,9 @@ export const buildRivalryGameRecords = async (league: LeagueState): Promise<Game
     const rivalryKey = [teamAName, teamBName].sort((a, b) => a.localeCompare(b)).join('::');
     const shouldAlternate = !neutralSite;
     if (shouldAlternate && !league.rivalryHostSeeds[rivalryKey]) {
-      league.rivalryHostSeeds[rivalryKey] = Math.random() < 0.5 ? teamAName : teamBName;
+      const draw = data?.random?.fork(`rivalry-host:${rivalryKey}`).next()
+        ?? Math.random();
+      league.rivalryHostSeeds[rivalryKey] = draw < 0.5 ? teamAName : teamBName;
     }
     const seedHomeName = league.rivalryHostSeeds[rivalryKey] ?? teamAName;
     const flipped = yearsSinceStart % 2 === 1;
@@ -147,7 +187,7 @@ export const buildRivalryGameRecords = async (league: LeagueState): Promise<Game
       teamB,
       week,
       name ?? null,
-      { neutralSite, homeTeam, awayTeam }
+      { neutralSite, homeTeam, awayTeam, odds: data?.odds },
     );
     games.push(record);
   }

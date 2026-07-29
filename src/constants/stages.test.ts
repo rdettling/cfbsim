@@ -13,6 +13,7 @@ const EXPECTED_STAGES: LeagueStage[] = [
   'summary',
   'realignment',
   'progression',
+  'recruiting',
   'recruiting_summary',
   'roster_cuts',
 ];
@@ -48,7 +49,8 @@ describe('stage catalog', () => {
       ['season', 'summary'],
       ['summary', 'realignment'],
       ['realignment', 'progression'],
-      ['progression', 'recruiting_summary'],
+      ['progression', 'recruiting'],
+      ['recruiting', 'recruiting_summary'],
       ['recruiting_summary', 'roster_cuts'],
       ['roster_cuts', 'preseason'],
     ]);

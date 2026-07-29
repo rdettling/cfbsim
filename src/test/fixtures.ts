@@ -1,6 +1,9 @@
 import type { PlayerRecord } from '../types/db';
 import type { LeagueStage, Team } from '../types/domain';
-import { DEFAULT_SETTINGS, type LeagueState } from '../types/league';
+import {
+  DEFAULT_NEXT_SEASON_CONFIGURATION,
+  type LeagueState,
+} from '../types/league';
 
 export const buildTestTeam = (overrides: Partial<Team> = {}): Team => ({
   id: 1,
@@ -72,7 +75,7 @@ export const buildTestLeague = (
     rivalryHostSeeds: {},
     scheduleBuilt: true,
     simInitialized: true,
-    settings: { ...DEFAULT_SETTINGS },
+    settings: { ...DEFAULT_NEXT_SEASON_CONFIGURATION },
     playoff: { seeds: [] },
     idCounters: {
       game: 2,

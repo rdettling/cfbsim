@@ -115,6 +115,23 @@ export const applyRivalriesToSchedule = async (
   teams: Team[]
 ): Promise<NonConData['pending_rivalries']> => {
   const rivalries = await getRivalriesData();
+  return applyRivalriesDataToSchedule(schedule, userTeam, teams, rivalries);
+};
+
+export const applyRivalriesDataToSchedule = (
+  schedule: ScheduleGame[],
+  userTeam: Team,
+  teams: Team[],
+  rivalries: {
+    rivalries: [
+      string,
+      string,
+      number | null,
+      string | null,
+      boolean?,
+    ][];
+  },
+): NonConData['pending_rivalries'] => {
   let pendingId = 1;
   const pending: NonConData['pending_rivalries'] = [];
 

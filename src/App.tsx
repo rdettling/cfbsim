@@ -9,7 +9,6 @@ import Standings from './pages/Standings';
 import WeekSchedule from './pages/WeekSchedule';
 import Roster from './pages/Roster';
 import TeamHistory from './pages/TeamHistory';
-import AuthoritativeStageRedirect from './pages/AuthoritativeStageRedirect';
 import Awards from './pages/Awards';
 import SeasonSummary from './pages/SeasonSummary';
 import GamePage from './pages/game/GamePage';
@@ -18,6 +17,7 @@ import IndividualStats from './pages/IndividualStats';
 import Player from './pages/Player';
 import Realignment from './pages/Realignment';
 import RosterProgression from './pages/RosterProgression';
+import Recruiting from './pages/Recruiting';
 import RecruitingSummary from './pages/RecruitingSummary';
 import RosterCuts from './pages/RosterCuts';
 import Playoff from './pages/Playoff';
@@ -38,10 +38,6 @@ const App = () => {
         <Route path={ROUTES.RANKINGS} element={<Rankings />} />
         <Route path={ROUTES.STANDINGS} element={<Standings />} />
         <Route path={ROUTES.WEEK_SCHEDULE} element={<WeekSchedule />} />
-        <Route
-          path={ROUTES.SETTINGS}
-          element={<AuthoritativeStageRedirect />}
-        />
         <Route path={ROUTES.AWARDS} element={<Awards />} />
         <Route path={ROUTES.SEASON_SUMMARY} element={<SeasonSummary />} />
         <Route path={ROUTES.REALIGNMENT} element={<Realignment />} />
@@ -49,6 +45,7 @@ const App = () => {
           path={ROUTES.ROSTER_PROGRESSION}
           element={<RosterProgression />}
         />
+        <Route path={ROUTES.RECRUITING} element={<Recruiting />} />
         <Route
           path={ROUTES.RECRUITING_SUMMARY}
           element={<RecruitingSummary />}

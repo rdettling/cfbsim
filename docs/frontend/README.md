@@ -135,6 +135,8 @@ Inspect affected routes at approximately:
 | Mobile roster browsing | Position-grouped sections |
 | Onboarding | Side-by-side desktop workspace; explicit local steps below `lg` |
 | Offseason actions | Stage-gated loader contract, guarded command, and authoritative route recovery |
+| Interactive recruiting | Board-first workspace at every breakpoint; prospect market and shared public prospect details in responsive dialogs |
+| Interactive roster cuts | Full active-roster selection with protected, recommended, selected, and blocked states |
 
 Use tables when cross-row and cross-column comparison is primary and sufficient
 width exists. Use compact rows for narrow layouts and constrained dashboard

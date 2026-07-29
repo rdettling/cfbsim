@@ -8,14 +8,12 @@ interface RosterCutsSummaryStripProps {
 export const RosterCutsSummaryStrip = ({ summary }: RosterCutsSummaryStripProps) => {
   const metrics = [
     { label: 'Active Roster', value: summary.activePlayers },
-    { label: 'Projected Cuts', value: summary.projectedCuts },
+    { label: 'Required Cuts', value: summary.requiredCuts },
+    { label: 'Selected', value: summary.selectedCuts },
+    { label: 'Remaining', value: summary.remainingCuts },
     {
-      label: 'Projected Roster',
+      label: 'Final Roster',
       value: summary.projectedRosterSize,
-    },
-    {
-      label: 'Positions Over Limit',
-      value: summary.positionsOverLimit,
     },
   ];
 
@@ -28,7 +26,7 @@ export const RosterCutsSummaryStrip = ({ summary }: RosterCutsSummaryStripProps)
         display: 'grid',
         gridTemplateColumns: {
           xs: 'repeat(2, minmax(0, 1fr))',
-          md: 'repeat(4, minmax(0, 1fr))',
+          md: 'repeat(5, minmax(0, 1fr))',
         },
         mb: 1.25,
         overflow: 'hidden',
@@ -45,7 +43,7 @@ export const RosterCutsSummaryStrip = ({ summary }: RosterCutsSummaryStripProps)
               md: index < metrics.length - 1 ? '1px solid' : 0,
             },
             borderBottom: {
-              xs: index < 2 ? '1px solid' : 0,
+              xs: index < 4 ? '1px solid' : 0,
               md: 0,
             },
             borderColor: 'divider',

@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
-import { buildTestLeague, buildTestPlayer } from '../../test/fixtures';
+import { buildTestLeague } from '../../test/fixtures';
 
 const state = vi.hoisted(() => ({
   league: null as unknown,
-  players: [] as unknown[],
 }));
 
 vi.mock('./leagueStore', () => ({
@@ -14,10 +12,6 @@ vi.mock('./leagueStore', () => ({
 
 vi.mock('../../db/offseasonRepo', () => ({
   commitOffseasonTransition: vi.fn(async () => undefined),
-}));
-
-vi.mock('../../db/simRepo', () => ({
-  getAllPlayers: vi.fn(async () => state.players),
 }));
 
 vi.mock('../../db/baseData', () => ({
@@ -36,34 +30,6 @@ vi.mock('../../db/baseData', () => ({
       },
     },
   })),
-}));
-
-vi.mock('../roster', () => ({
-  ensureRosters: vi.fn(async () => undefined),
-  applyProgression: vi.fn((players: PlayerRecord[]) => {
-    players.forEach(player => {
-      if (player.year === 'jr') {
-        player.year = 'sr';
-        player.rating = player.rating_sr;
-      }
-    });
-  }),
-  runRecruitingCycle: vi.fn(async (_league, _teams, players: PlayerRecord[]) => {
-    players.push(buildTestPlayer({ id: 2, year: 'fr', first: 'New' }));
-  }),
-  setStarters: vi.fn(),
-  recalculateTeamRatings: vi.fn((teams) => {
-    teams[0].rating = 85;
-  }),
-}));
-
-vi.mock('../rosterCuts', () => ({
-  applyRosterCuts: vi.fn((_teams, players: PlayerRecord[]) => {
-    players.forEach(player => {
-      player.active = false;
-      player.starter = false;
-    });
-  }),
 }));
 
 vi.mock('./offseason', () => ({
@@ -107,8 +73,19 @@ vi.mock('./prestige', () => ({
   }),
 }));
 
-vi.mock('./seasonReset', () => ({
-  prepareSeasonReset: vi.fn(async () => ({ gamesToSave: [] })),
+vi.mock('./recruiting', () => ({
+  initializeRecruiting: vi.fn(async () => ({
+    stage: 'recruiting',
+    route: '/recruiting',
+  })),
+}));
+
+vi.mock('./rosterFinalization', () => ({
+  initializeRosterFinalization: vi.fn(async () => ({
+    previousStage: 'recruiting_summary',
+    currentStage: 'roster_cuts',
+    route: '/roster_cuts',
+  })),
 }));
 
 import { commitOffseasonTransition } from '../../db/offseasonRepo';
@@ -122,7 +99,6 @@ const commitMock = vi.mocked(commitOffseasonTransition);
 describe('advanceOffseasonStage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    state.players = [buildTestPlayer()];
   });
 
   it('finalizes history and prestige for summary to realignment', async () => {
@@ -154,19 +130,16 @@ describe('advanceOffseasonStage', () => {
     expect(committed.league.info.stage).toBe('progression');
   });
 
-  it('applies progression and recruiting before recruiting summary', async () => {
+  it('delegates progression to atomic recruiting initialization', async () => {
     state.league = buildTestLeague('progression');
 
     await expect(advanceOffseasonStage('progression')).resolves.toEqual({
       previousStage: 'progression',
-      currentStage: 'recruiting_summary',
-      route: '/recruiting_summary',
+      currentStage: 'recruiting',
+      route: '/recruiting',
     });
 
-    const committed = commitMock.mock.calls[0][0];
-    expect(committed.players).toHaveLength(2);
-    expect(committed.players?.[0]).toMatchObject({ year: 'sr', rating: 85 });
-    expect(committed.players?.[1]).toMatchObject({ year: 'fr', first: 'New' });
+    expect(commitMock).not.toHaveBeenCalled();
   });
 
   it('enters roster cuts without mutating players', async () => {
@@ -178,28 +151,7 @@ describe('advanceOffseasonStage', () => {
       route: '/roster_cuts',
     });
 
-    const committed = commitMock.mock.calls[0][0];
-    expect(committed.league.info.stage).toBe('roster_cuts');
-    expect(committed.players).toBeUndefined();
-  });
-
-  it('applies cuts and reset work before entering preseason', async () => {
-    state.league = buildTestLeague('roster_cuts');
-
-    await expect(advanceOffseasonStage('roster_cuts')).resolves.toEqual({
-      previousStage: 'roster_cuts',
-      currentStage: 'preseason',
-      route: '/noncon',
-    });
-
-    const committed = commitMock.mock.calls[0][0];
-    expect(committed.league.info.stage).toBe('preseason');
-    expect(committed.league.teams[0].rating).toBe(85);
-    expect(committed.players?.[0]).toMatchObject({
-      active: false,
-      starter: false,
-    });
-    expect(committed.clearNonGameArtifacts).toBe(true);
+    expect(commitMock).not.toHaveBeenCalled();
   });
 
   it('rejects a stale expected stage without attempting a commit', async () => {

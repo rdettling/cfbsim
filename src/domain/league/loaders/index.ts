@@ -1,16 +1,11 @@
 import type { Team } from '../../../types/domain';
 import { getAllGames } from '../../../db/simRepo';
-import { ensureRosters } from '../../roster';
 import { loadLeagueOrThrow } from '../leagueStore';
-import { saveLeague } from '../../../db/leagueRepo';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';
 // loadLeagueOrThrow / loadLeagueOptional live in leagueStore.ts
 
 export const loadRankings = async () => {
   const league = await loadLeagueOrThrow();
-
-  await ensureRosters(league);
-  await saveLeague(league);
 
   const games = (await getAllGames()).filter(game => game.year === league.info.currentYear);
   const teamsById = new Map(league.teams.map(team => [team.id, team]));

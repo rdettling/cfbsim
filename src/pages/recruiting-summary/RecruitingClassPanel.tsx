@@ -1,8 +1,6 @@
-import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Chip,
-  Link,
   Paper,
   Stack,
   Table,
@@ -86,26 +84,19 @@ export const RecruitingClassPanel = ({
                 <TableCell>Natl.</TableCell>
                 <TableCell>Player</TableCell>
                 <TableCell>Pos</TableCell>
-                <TableCell align="right">Rating</TableCell>
                 <TableCell align="right">Stars</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {team.recruits.map((player) => (
-                <TableRow key={player.id} hover>
+                <TableRow key={player.prospectId} hover>
                   <TableCell>#{player.rank}</TableCell>
                   <TableCell>
-                    <Link
-                      component={RouterLink}
-                      to={`/players/${player.id}`}
-                      underline="hover"
-                      sx={{ fontWeight: 700 }}
-                    >
+                    <Typography sx={{ fontWeight: 700 }}>
                       {player.first} {player.last}
-                    </Link>
+                    </Typography>
                   </TableCell>
                   <TableCell>{player.position.toUpperCase()}</TableCell>
-                  <TableCell align="right">{player.rating}</TableCell>
                   <TableCell align="right">{player.stars}★</TableCell>
                 </TableRow>
               ))}
@@ -123,7 +114,7 @@ export const RecruitingClassPanel = ({
           {team.recruits.map((player, index) => (
             <Stack
               component="article"
-              key={player.id}
+            key={player.prospectId}
               direction="row"
               spacing={1}
               sx={{
@@ -147,14 +138,9 @@ export const RecruitingClassPanel = ({
                 #{player.rank}
               </Typography>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Link
-                  component={RouterLink}
-                  to={`/players/${player.id}`}
-                  underline="hover"
-                  sx={{ fontWeight: 700 }}
-                >
+                <Typography sx={{ fontWeight: 700 }}>
                   {player.first} {player.last}
-                </Link>
+                </Typography>
                 <Typography
                   variant="caption"
                   sx={{
@@ -165,7 +151,7 @@ export const RecruitingClassPanel = ({
                   {player.position.toUpperCase()} · {player.stars}★
                 </Typography>
               </Box>
-              <Typography sx={{ fontWeight: 700 }}>{player.rating}</Typography>
+              <Typography sx={{ fontWeight: 700 }}>{player.stars}★</Typography>
             </Stack>
           ))}
         </Stack>

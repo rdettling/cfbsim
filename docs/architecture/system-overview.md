@@ -2,126 +2,114 @@
 
 ## Scope
 
-Defines the runtime architecture for CFB Sim at the system boundary level: browser-only execution, persistence boundaries, domain orchestration flow, and UI integration points for season/offseason progression.
+The app is a client-side college football simulation. IndexedDB is the
+authoritative runtime state. React pages render projections returned by domain
+loaders, while commands and stage orchestrators own writes.
 
-## Entry Points
+## Runtime Layers
 
-- League creation and initialization: `startNewLeague(...)`.
-- Season command and schedule bootstrap: `loadDashboard()` and `advanceWeeks(destWeek)`.
-- Offseason lifecycle command: `advanceOffseasonStage(expectedStage)`.
-- Next-season configuration command: `updateNextSeasonConfiguration(patch)`.
-- Authoritative stage metadata: `STAGES`, `getStageDefinition()`,
-  `getStageRoute()`, and `getNextStageDefinition()`.
-- Offseason route readers: `loadRealignment()`, `loadRosterProgression()`,
-  `loadRecruitingSummary()`, `loadRosterCuts()`, `loadNonCon()`.
-- Live game orchestration: `getGamesToLiveSim()`, `prepareInteractiveLiveGame(gameId)`, `finalizeGameSimulation(...)`.
+- `src/pages/` and `src/components/`: presentation and user interaction.
+- `src/domain/league/loaders/`: read-only page projections.
+- `src/domain/league/`: league commands, lifecycle orchestration, and
+  cross-store rules.
+- `src/domain/recruiting/`, `src/domain/sim/`, and other domain modules: pure or
+  narrowly scoped calculations.
+- `src/db/`: IndexedDB schema, repositories, and explicit transactions.
+- `src/types/`: persisted and public contracts.
 
-## Core Types and Stores
+Modules are imported directly. There is no generalized transaction framework
+or service container.
 
-- Primary in-memory aggregate: `LeagueState` (`info`, `teams`, `conferences`, `settings`, `playoff`, `idCounters`).
-- Persistence source of truth: IndexedDB stores `baseData`, `league`, `games`, `drives`, `plays`, `gameLogs`, `players`.
-- Core runtime records:
-  - Game lifecycle: `GameRecord`, `DriveRecord`, `PlayRecord`, `GameLogRecord`.
-  - Roster lifecycle: `PlayerRecord`.
+## Authoritative State
+
+The current database contains:
+
+- `league`: one `current` `LeagueState`.
+- `recruiting`: one optional `current` `RecruitingState`.
+- `players`, `games`, `drives`, `plays`, and `gameLogs`: normalized simulation
+  records.
+- `baseData`: cached source datasets.
+
+`LeagueState` and `RecruitingState` are fully required current-schema objects.
+Repository reads validate their exact shapes before returning them.
+Roster-dependent reads also validate the complete player collection and its
+team ownership. Invalid persisted data throws an integrity error; reads never
+repair or replace it.
 
 ## Execution Flow
 
-1. **Runtime boot and league normalization**
-- Loaders use `loadLeagueOrThrow()` / `loadLeagueOptional()`.
-- `normalizeLeague()` repairs/derives fields (`startYear`, `rivalryHostSeeds`, postseason settings/playoff structure) before use.
+1. A page calls a loader.
+2. The loader reads a validated snapshot from IndexedDB.
+3. It builds a view-specific projection without writing.
+4. A user action invokes a command.
+5. The command opens an explicit read-write transaction, validates persisted
+   guards, calculates the result, and commits all authoritative writes
+   atomically.
 
-2. **League initialization path**
-- Home calls `startNewLeague()` with a typed exact year/team/playoff
-  configuration. The command clears/repopulates the base cache, prepares teams,
-  conferences, `LeagueState`, rosters, history, and preseason rivalry games,
-  then atomically replaces the league and simulation stores. Home navigates to
-  `/noncon` only after commit.
+Recruiting round advancement additionally builds one public-only AI snapshot
+from the guarded aggregate and rebuilt roster context. Submitted user
+allocations are minimums; the same AI strategy fills the feasible remainder
+and may expand the user board while all team decisions are planned and
+resolved simultaneously. Full AI completion repeats that pure flow through
+Signing Day and freshman creation inside one transaction.
 
-3. **Season bootstrap and week simulation path**
-- `loadDashboard()` ensures full schedule exists (`buildFullScheduleFromExisting`) and initializes sim data if needed.
-- `advanceWeeks()` simulates unplayed weekly games, writes drives/plays/logs/games, updates records/rankings/headlines, runs postseason hooks via `handleSpecialWeeks()`.
+The Recruiting and Roster Cuts pages load public, presentation-ready readonly
+projections. Recruiting keeps weekly allocation edits local until guarded
+advancement, while board and cut choices persist immediately. Stale command
+responses trigger a fresh authoritative read; pages never merge stale state
+into IndexedDB.
 
-4. **Postseason and summary transition path**
-- `handleSpecialWeeks()` creates conference championships, playoff rounds, bowls, and natty by configured playoff format.
-- `ensureSummaryStage()` transitions `league.info.stage` to `summary` once natty has a winner and finalizes postseason rankings.
+Roster finalization reads league, recruiting, players, rivalries, and odds
+inside its command transaction. Walk-ons and cut recommendations are pure
+seeded calculations. Only standard player records, pending user cut IDs,
+league results, and reset artifacts persist.
 
-5. **Offseason staged transition path**
-- `AppNavigation` calls `advanceOffseasonStage(expectedStage)` and navigates
-  from its successful result.
-- The command dispatches prestige/history, structure/year, progression and
-  recruiting, stage-only, or cuts/reset work for the expected boundary. The
-  exhaustive stage catalog supplies its persisted destination and route.
-- One multi-store IndexedDB transaction rechecks the persisted source stage and
-  commits the destination stage last.
-- Offseason route loaders are lifecycle-read-only and stage-gated.
+Offline recruiting balance evaluation reuses these pure domain operations in
+memory. Evaluation inputs, histories, projections, diagnostics, reports, and
+checksums are not application state and never enter IndexedDB.
 
-6. **UI integration boundary**
-- Page loaders in `src/domain/league/loaders/*` expose stage-aware data contracts.
-- A small shared navigation-envelope helper supplies the affected offseason
-  loaders and the `/settings` compatibility redirect.
-- UI actions trigger orchestration functions: `SeasonBanner` ->
-  `advanceWeeks()`, `AppNavigation` -> `advanceOffseasonStage()`, and game
-  views -> live sim preparation/finalization APIs.
+Home is the only normal no-save state: `loadLeagueOptional()` returns `null`
+when `league/current` does not exist. Required league contexts use
+`loadLeagueOrThrow()`.
 
-```mermaid
-flowchart TD
-  A["Home: validate and prepare startNewLeague()"] --> B["Atomic IndexedDB replacement"]
-  B --> C["Dashboard load: build schedule + initializeSimData()"]
-  C --> D["Season advanceWeeks(destWeek)"]
-  D --> E["Sim writes games/drives/plays/gameLogs"]
-  E --> F["handleSpecialWeeks(): postseason scheduling"]
-  F --> G["summary stage when natty winner"]
-  G --> H["advanceOffseasonStage(summary): enter Next Season Setup"]
-  H --> I["advanceOffseasonStage(realignment): structure/year -> progression"]
-  I --> J["advanceOffseasonStage(progression): progression/recruiting"]
-  J --> K["advanceOffseasonStage(recruiting_summary): enter roster cuts"]
-  K --> L["advanceOffseasonStage(roster_cuts): cuts/reset -> preseason"]
-  L --> C
-```
+## Annual Lifecycle
 
-## Invariants and Constraints
+The stage graph is:
 
-- Browser-only runtime; no backend transaction authority is present in this architecture path.
-- IndexedDB is authoritative; loaders and orchestrators persist explicitly after state mutation.
-- New-league preparation cannot partially replace an existing save; one
-  transaction owns all authoritative replacement writes.
-- `normalizeLeague()` is a compatibility guard and must run before using loaded league state.
-- `scheduleBuilt`/`simInitialized` gate whether the season sim graph has been materialized.
-- Stage transitions are guarded by current stage checks in transition helpers.
+`preseason → season → summary → realignment → progression → recruiting → recruiting_summary → roster_cuts → preseason`
 
-## Failure/Edge Cases
+Generic offseason advancement accepts `OffseasonAdvanceStage`, which excludes
+`recruiting` and `roster_cuts`. Recruiting commands and final roster completion
+are command-managed.
 
-- Missing league: loaders/orchestrators that require a league throw with start-new-game guidance.
-- Stale league schema: normalization backfills missing fields and persists corrected state.
-- Postseason scheduling idempotence: postseason creators short-circuit if round IDs already exist.
-- Overlap schedules: weekly sim logs warning if a team appears in multiple games in same week; flow continues.
+## Invariants
 
-## Source Map (file/function references)
+- The codebase supports one current architecture and persisted schema; obsolete
+  paths are removed rather than retained as compatibility layers.
+- Modules stay lean, explicit, directly imported, and easy for an LLM to
+  navigate.
+- IndexedDB is the source of truth.
+- Loaders are read-only.
+- Commands validate authoritative records inside their transaction.
+- Validation failure leaves every store unchanged.
+- Maps, indexes, recruiting context, and page projections are ephemeral.
+- New-league creation is the only roster bootstrap entry point.
+- Persisted settings use `NextSeasonConfiguration` directly.
+- Recruiting formulas and tuning remain isolated in pure recruiting modules.
+- Roster previews require an explicit year, seed, and persisted selection set.
+- Team-rating calculations require an explicit random source.
 
-- `src/domain/league/loaders/season/startNewLeague.ts`: `startNewLeague`
-- `src/db/newLeagueRepo.ts`: atomic new-league replacement
-- `src/domain/league/loaders/season/loadDashboard.ts`: `loadDashboard`
-- `src/domain/sim/orchestrator.ts`: `initializeSimData`, `advanceWeeks`, `prepareInteractiveLiveGame`, `finalizeGameSimulation`
-- `src/domain/sim/postseason.ts`: `handleSpecialWeeks`, `ensureSummaryStage` (internal), playoff/bowl builders
-- `src/domain/league/loaders/loadRealignment.ts`: Next Season Setup contract
-- `src/domain/league/loaders/loadAuthoritativeStage.ts`: compatibility redirect
-  contract
-- `src/domain/league/loaders/navigationEnvelope.ts`: shared navigation envelope
-- `src/domain/league/loaders/loadRosterProgression.ts`: progression preview contract
-- `src/domain/league/loaders/loadRecruitingSummary.ts`: finalized recruiting results contract
-- `src/domain/league/loaders/loadRosterCuts.ts`: automatic roster-cuts preview contract
-- `src/domain/league/loaders/offseason.ts`: summary and awards contracts
-- `src/domain/league/loaders/season/loadNonCon.ts`: read-only preseason page contract
-- `src/domain/league/stages.ts`: guarded offseason transition command
-- `src/constants/stages.ts`: exhaustive labels, routes, and next-stage catalog
-- `src/pages/AuthoritativeStageRedirect.tsx`: history-replacing `/settings`
-  compatibility route
-- `src/domain/rosterConfig.ts`: position order, caps, and starter counts
-- `src/domain/rosterCuts.ts`: shared deterministic cut selection, preview, and application
-- `src/domain/league/historicalData.ts`: historical source resolution
-- `src/domain/league/nextSeasonPreview.ts`: side-effect-free preview building
-- `src/domain/league/nextSeasonConfiguration.ts`: settings mapping, validation,
-  and stage-gated update command
-- `src/db/offseasonRepo.ts`: atomic transition commit and conflict guards
-- `src/domain/league/leagueStore.ts`, `src/domain/league/normalize.ts`: load normalization boundary
-- `src/components/layout/SeasonBanner.tsx`: season advance UI trigger
+## Source Map
+
+- `src/db/db.ts`: schema and store creation.
+- `src/db/leagueRepo.ts`: current league and roster integrity boundaries.
+- `src/db/recruitingRepo.ts`: recruiting singleton and readonly lifecycle
+  snapshot.
+- `src/domain/league/leagueStore.ts`: required and optional league readers.
+- `src/domain/league/stages.ts`: annual stage transitions.
+- `src/domain/league/season.ts`: preseason-to-season initialization command.
+- `src/domain/league/recruiting.ts`: recruiting commands.
+- `src/domain/league/rosterFinalization.ts`: roster-cut and preseason
+  finalization commands.
+- `src/domain/league/loaders/`: page projections.
+- `src/constants/stages.ts`: exhaustive stage catalog.

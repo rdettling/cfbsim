@@ -9,6 +9,12 @@ export interface AppNavigationData {
   advanceDisabled?: boolean;
 }
 
+export interface StageAdvanceAction {
+  label: string;
+  onSelect: () => void;
+  disabled?: boolean;
+}
+
 export interface NavigationItem {
   label: string;
   path: string;

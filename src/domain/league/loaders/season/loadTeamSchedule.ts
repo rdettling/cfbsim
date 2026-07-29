@@ -1,21 +1,10 @@
 import { getAllGames } from '../../../../db/simRepo';
-import { buildFullScheduleFromExisting } from '../../../scheduleBuilder';
-import { initializeSimData } from '../../../sim';
 import { loadLeagueOrThrow } from '../../leagueStore';
-import { getCurrentYearGames, getUserTeam } from './shared';
+import { getUserTeam } from './shared';
 
 export const loadTeamSchedule = async (teamName?: string, yearParam?: number) => {
   const league = await loadLeagueOrThrow();
   const requestedYear = yearParam ?? league.info.currentYear;
-
-  if (!league.scheduleBuilt && requestedYear === league.info.currentYear) {
-    const userTeam = getUserTeam(league);
-    const existingGames = await getCurrentYearGames(league);
-    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
-    league.info.stage = 'season';
-    league.scheduleBuilt = true;
-    await initializeSimData(league, newGames);
-  }
 
   const team =
     (teamName ? league.teams.find(entry => entry.name === teamName) : null) ??

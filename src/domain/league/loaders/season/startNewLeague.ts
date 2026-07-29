@@ -12,13 +12,12 @@ import type {
   StartNewLeagueInput,
 } from '../../../../types/league';
 import {
-  DEFAULT_SETTINGS,
+  DEFAULT_NEXT_SEASON_CONFIGURATION,
   NewLeagueConfigurationError,
 } from '../../../../types/league';
 import { buildTeamsAndConferences } from '../../../baseData';
 import { prepareInitialRosters } from '../../../roster';
 import { getLastWeekByPlayoffTeams } from '../../postseason';
-import { normalizeLeague } from '../../normalize';
 import { initializeNonConScheduling } from '../../seasonReset';
 import { primeHistoryData } from './shared';
 
@@ -76,14 +75,12 @@ export const startNewLeague = async (
   const resolvedPlayoffAutobids = resolvedPlayoffTeams === 12
     ? input.playoff.autobids ??
       yearPlayoff?.conf_champ_autobids ??
-      DEFAULT_SETTINGS.playoff_autobids ??
-      0
+      DEFAULT_NEXT_SEASON_CONFIGURATION.playoffAutobids
     : undefined;
   const resolvedPlayoffTop4 = resolvedPlayoffTeams === 12
     ? input.playoff.conferenceChampionsReceiveTopSeeds ??
       yearPlayoff?.conf_champ_top_4 ??
-      DEFAULT_SETTINGS.playoff_conf_champ_top_4 ??
-      false
+      DEFAULT_NEXT_SEASON_CONFIGURATION.conferenceChampionsReceiveTopSeeds
     : false;
 
   if (resolvedPlayoffTeams === 12) {
@@ -128,10 +125,10 @@ export const startNewLeague = async (
     scheduleBuilt: false,
     simInitialized: false,
     settings: {
-      ...DEFAULT_SETTINGS,
-      playoff_teams: resolvedPlayoffTeams,
-      playoff_autobids: normalizedPlayoffAutobids,
-      playoff_conf_champ_top_4: normalizedPlayoffTop4,
+      ...DEFAULT_NEXT_SEASON_CONFIGURATION,
+      playoffTeams: resolvedPlayoffTeams,
+      playoffAutobids: normalizedPlayoffAutobids ?? 0,
+      conferenceChampionsReceiveTopSeeds: normalizedPlayoffTop4,
     },
     playoff: { seeds: [] },
     idCounters: {
@@ -143,7 +140,6 @@ export const startNewLeague = async (
     },
   };
 
-  normalizeLeague(league);
   const players = await prepareInitialRosters(league);
   await primeHistoryData(startYear);
 

@@ -1,6 +1,5 @@
-import { getAllPlayers, getAllGames } from '../../../db/simRepo';
-import { saveLeague } from '../../../db/leagueRepo';
-import { ensureRosters } from '../../roster';
+import { getAllGames } from '../../../db/simRepo';
+import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import { loadLeagueOrThrow } from '../leagueStore';
 import type { Team } from '../../../types/domain';
 import type {
@@ -28,12 +27,9 @@ const sortStandings = (teams: Team[]) => {
 };
 
 export const loadRatingsStats = async (): Promise<RatingsStatsPageResult> => {
-  const league = await loadLeagueOrThrow();
-
-  await ensureRosters(league);
-  await saveLeague(league);
-
-  const players = (await getAllPlayers()).filter(player => player.active);
+  const { league, players: persistedPlayers } =
+    await loadLeaguePlayersSnapshot();
+  const players = persistedPlayers.filter(player => player.active);
   const teams = league.teams;
 
   const totalCounts: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -146,9 +142,6 @@ export const loadRatingsStats = async (): Promise<RatingsStatsPageResult> => {
 
 export const loadStandings = async (conferenceName: string) => {
   const league = await loadLeagueOrThrow();
-
-  await ensureRosters(league);
-  await saveLeague(league);
 
   const normalized = conferenceName.toLowerCase();
   const isIndependent = normalized === 'independent';

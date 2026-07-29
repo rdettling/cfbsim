@@ -3,7 +3,6 @@ import {
 } from '../../../types/league';
 import { resolveHistoricalData } from '../historicalData';
 import { loadLeagueOrThrow } from '../leagueStore';
-import { settingsToNextSeasonConfiguration } from '../nextSeasonConfiguration';
 import { buildNextSeasonPreview } from '../nextSeasonPreview';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
@@ -39,7 +38,7 @@ export const loadRealignment = async () => {
 
   return {
     ...envelope,
-    configuration: settingsToNextSeasonConfiguration(league.settings!),
+    configuration: league.settings,
     preview,
     previewError,
   };

@@ -4,20 +4,10 @@ import {
   getTeamsData,
 } from '../../db/baseData';
 import { commitOffseasonTransition } from '../../db/offseasonRepo';
-import { getAllPlayers } from '../../db/simRepo';
 import type { HistoryData } from '../../types/baseData';
-import type { GameRecord, PlayerRecord } from '../../types/db';
-import type { OffseasonStage } from '../../types/domain';
-import {
-  applyProgression,
-  ensureRosters,
-  recalculateTeamRatings,
-  runRecruitingCycle,
-  setStarters,
-} from '../roster';
-import { applyRosterCuts } from '../rosterCuts';
 import {
   OffseasonStageMismatchError,
+  type OffseasonAdvanceStage,
   type LeagueState,
   type OffseasonAdvanceResult,
 } from '../../types/league';
@@ -26,20 +16,20 @@ import { resolveHistoricalData } from './historicalData';
 import { loadLeagueOrThrow } from './leagueStore';
 import { updateHistoryForSeason } from './history';
 import { applyPrestigeChanges, calculatePrestigeChanges } from './prestige';
-import { prepareSeasonReset } from './seasonReset';
 import { getNextStageDefinition } from '../../constants/stages';
+import { initializeRecruiting } from './recruiting';
+import { initializeRosterFinalization } from './rosterFinalization';
 
-export const isOffseasonStage = (
+export const isOffseasonAdvanceStage = (
   stage: LeagueState['info']['stage'],
-): stage is OffseasonStage =>
+): stage is OffseasonAdvanceStage =>
   stage === 'summary' ||
   stage === 'realignment' ||
   stage === 'progression' ||
-  stage === 'recruiting_summary' ||
-  stage === 'roster_cuts';
+  stage === 'recruiting_summary';
 
 export const advanceOffseasonStage = async (
-  expectedStage: OffseasonStage,
+  expectedStage: OffseasonAdvanceStage,
 ): Promise<OffseasonAdvanceResult> => {
   const league = await loadLeagueOrThrow();
   if (league.info.stage !== expectedStage) {
@@ -48,10 +38,6 @@ export const advanceOffseasonStage = async (
   const destination = getNextStageDefinition(expectedStage);
 
   let history: HistoryData | undefined;
-  let players: PlayerRecord[] | undefined;
-  let games: GameRecord[] | undefined;
-  let clearNonGameArtifacts = false;
-
   switch (expectedStage) {
     case 'summary': {
       const [historyData, teamsData, prestigeConfig] = await Promise.all([
@@ -88,24 +74,22 @@ export const advanceOffseasonStage = async (
         route: destination.path,
       };
     }
-    case 'progression':
-      await ensureRosters(league);
-      players = await getAllPlayers();
-      applyProgression(players);
-      await runRecruitingCycle(league, league.teams, players);
-      break;
-    case 'recruiting_summary':
-      break;
-    case 'roster_cuts': {
-      await ensureRosters(league);
-      players = await getAllPlayers();
-      applyRosterCuts(league.teams, players);
-      setStarters(league.teams, players);
-      recalculateTeamRatings(league.teams, players);
-      const reset = await prepareSeasonReset(league);
-      games = reset.gamesToSave;
-      clearNonGameArtifacts = true;
-      break;
+    case 'progression': {
+      const result = await initializeRecruiting({
+        expectedStage,
+        expectedYear: league.info.currentYear,
+      });
+      return {
+        previousStage: expectedStage,
+        currentStage: result.stage,
+        route: result.route,
+      };
+    }
+    case 'recruiting_summary': {
+      return initializeRosterFinalization({
+        expectedStage,
+        expectedYear: league.info.currentYear,
+      });
     }
   }
 
@@ -114,9 +98,6 @@ export const advanceOffseasonStage = async (
     expectedStage,
     league,
     history,
-    players,
-    games,
-    clearNonGameArtifacts,
   });
 
   return {

@@ -1,8 +1,6 @@
-import { loadLeague, saveLeague } from '../../../../db/leagueRepo';
+import { loadLeague } from '../../../../db/leagueRepo';
 import { getAllGames, getAllPlays } from '../../../../db/simRepo';
-import { ensureRosters } from '../../../roster';
 import type { Team } from '../../../../types/domain';
-import type { LeagueState } from '../../../../types/league';
 import type { TeamStats, TeamStatsPageResult } from '../../../../types/stats';
 import { average, percentage } from '../../utils/statMath';
 
@@ -121,13 +119,10 @@ const calculateAverages = (stats: Record<string, TeamStats>): TeamStats => {
 };
 
 export const loadTeamStats = async (): Promise<TeamStatsPageResult> => {
-  const league = await loadLeague<LeagueState>();
+  const league = await loadLeague();
   if (!league) {
     throw new Error('No league found. Start a new game from the Home page.');
   }
-
-  await ensureRosters(league);
-  await saveLeague(league);
 
   const [games, plays] = await Promise.all([getAllGames(), getAllPlays()]);
   const playedGames = games.filter(

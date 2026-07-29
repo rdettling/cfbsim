@@ -17,7 +17,7 @@ export const commitNewLeague = async ({
 }: NewLeagueCommit): Promise<void> => {
   const db = await getDb();
   const tx = db.transaction(
-    ['league', 'games', 'drives', 'plays', 'gameLogs', 'players'],
+    ['league', 'recruiting', 'games', 'drives', 'plays', 'gameLogs', 'players'],
     'readwrite',
   );
 
@@ -28,6 +28,7 @@ export const commitNewLeague = async ({
       tx.objectStore('plays').clear(),
       tx.objectStore('gameLogs').clear(),
       tx.objectStore('players').clear(),
+      tx.objectStore('recruiting').clear(),
     ]);
 
     const playerStore = tx.objectStore('players');

@@ -1,144 +1,189 @@
 # Roster Progression and Recruiting
 
-## Scope
+## Purpose
 
-Explains how player pools are created, progressed, cut, and replenished across seasons, and how those roster changes feed team rating/ranking recalculation.
+This document owns the implementation flow from roster bootstrap through
+progression, recruiting, Signing Day, cuts, and preseason preparation. Product
+rules belong in the recruiting design documents; this document defines state,
+transaction, command, and loader ownership across the lifecycle.
 
-## System Model
+## Roster Bootstrap
 
-Roster lifecycle is cyclical:
+`prepareInitialRosters()` is the only roster bootstrap path. It is called by
+`startNewLeague()` before the new save is committed.
 
-1. **Initialize baseline roster populations** by team/position.
-2. **Set starters** from active players.
-3. **Run season** with current roster.
-4. **Progress classes** (`fr->so->jr->sr`, seniors exit).
-5. **Recruit new freshmen** to refill team needs.
-6. **Apply roster cuts** to enforce position caps.
-7. **Recompute team offense/defense/overall ratings** and ranking order.
+The bootstrap:
 
-This cycle is executed both at initial league creation (multi-class bootstrap) and in each offseason progression pass.
+1. loads recruiting name and state source data;
+2. creates four exact 20-player classes whose combined positions match the
+   configured 80-player roster;
+3. selects starters;
+4. calculates team ratings;
+5. returns player records for the atomic new-league commit.
 
-## Execution Flow
+No loader or simulation reader creates a roster. Missing or malformed roster
+data throws `INVALID_ROSTER_STATE`.
 
-1. **Roster presence guard**
-- `ensureRosters(league)` checks whether current schema-valid players exist.
-- If not, it clears players and runs `initializeRosters(league)`.
+## Progression
 
-2. **Initial roster creation (`initializeRosters`)**
-- Builds class targets from `ROSTER` positional totals.
-- Executes recruiting cycle repeatedly to synthesize multi-year class stacks.
-- Applies cuts, sets starters, computes team ratings, assigns team rankings.
-- Persists `players` store.
+Roster Progression is a read-only preview built from a league-plus-players
+snapshot. It identifies:
 
-3. **Offseason progression path**
-- `projectPlayerProgression(player)` returns the typed progression outcome
-  without mutation: inactive players are omitted, seniors depart, and
-  returning classes receive their next class and existing year-specific
-  rating.
-- `loadRosterProgression()` uses that projection to present the user team's
-  upcoming changes without applying them.
-- `applyProgression(players)` consumes the same projection when the shell
-  advances from `progression`, updating returning players and marking seniors
-  inactive.
+- seniors who will depart;
+- returning players' next class;
+- their next persisted class rating;
+- user-team position and summary totals.
 
-4. **Recruiting intake**
-- `runRecruitingCycle(league, teams, players)` loads names/states distributions and generates recruit pool.
-- Assignment process matches recruits to team positional needs and team context.
-- Assigned recruits are converted to `PlayerRecord` freshmen using league player ID counter.
-- `buildRecruitingResults(teams, players, userTeamId)` derives complete,
-  deterministic team and player rankings from the persisted active freshmen
-  without mutating them.
-- `loadRecruitingSummary()` exposes those finalized results only during
-  `recruiting_summary`.
+The transition from `progression` to `recruiting` calls
+`initializeRecruiting()`. Within one transaction it progresses returning
+players, marks departing seniors inactive, generates the seeded recruiting
+aggregate, and changes the stage.
 
-5. **Roster enforcement + team recalculation**
-- `selectTeamRosterCuts` deterministically identifies surplus players for one
-  team.
-- `buildRosterCutsPreview` shapes the user-team preview from that selection;
-  `loadRosterCuts` exposes it without mutation.
-- `applyRosterCuts` consumes the same selector for every team.
-- `setStarters` chooses top rated active players per position starter count.
-- `recalculateTeamRatings` recomputes team offense/defense/overall and resets rank ordering by rating.
+## Persistent Recruiting
 
-```mermaid
-flowchart TD
-  A["ensureRosters()"] --> B{"Roster exists + schema valid?"}
-  B -- yes --> C["Use existing players"]
-  B -- no --> D["clearPlayers() + initializeRosters()"]
-  D --> E["recruitingCycle() to build classes"]
-  E --> F["applyRosterCuts()"]
-  F --> G["setStarters()"]
-  G --> H["recalculateTeamRatings()"]
-  H --> I["savePlayers()"]
-  C --> J["Offseason: applyProgression()"]
-  J --> K["runRecruitingCycle()"]
-  K --> L["applyRosterCuts() + setStarters() + recalculateTeamRatings()"]
-```
+`RecruitingState` is a versioned singleton separate from `LeagueState`. It
+contains prospects, team recruiting state, the round cursor, status, seed,
+version, and pending cut IDs.
 
-## Key Mechanics
+Commands in `src/domain/league/recruiting.ts` own:
 
-- **Position structure source of truth**: `rosterConfig.ts` defines
-  `ROSTER` starter counts/total caps and `POSITION_ORDER`.
-- **Player quality generation**:
-  - Star-based rating priors (`STARS_BASE`, `STAR_STD_DEV`).
-  - Gaussian noise and development trait shape year-by-year rating curve.
-- **Recruit assignment model**:
-  - Team need is derived from active roster deficits vs position totals.
-  - Recruit pool contains position/star/state distribution; assignment uses weighted matching with prestige/randomness effects.
-- **Cut ordering**:
-  - Retention prioritizes long-term ceiling (`rating_sr`), current rating,
-    class seniority, then ascending player ID.
-- **Team rating model**:
-  - Starter-only weighted offense/defense aggregates with per-position weights.
-  - Overall rating is weighted blend of offense and defense plus noise.
+- initialization;
+- user-board changes;
+- assisted round advancement with submitted user allocations;
+- atomic completion of all remaining rounds with AI;
+- signing-day finalization.
 
-## Invariants and Constraints
+Each command checks expected stage, year, round, status, and version against
+records read inside its transaction. Stale or invalid commands leave all stores
+unchanged.
 
-- `player.id` allocation must be monotonic via league player counter.
-- Inactive players are excluded from starter selection and roster counts.
-- Position totals are enforced after recruiting/progression through mandatory cut pass.
-- Team ranking after recalculation is rating-sorted and rewritten for all teams.
+`RecruitingContext` is rebuilt after database reads from current league teams
+and players. Its maps and indexes are never persisted.
 
-## Failure/Edge Cases
+`loadRecruiting()` reads the league, recruiting aggregate, and players in one
+readonly snapshot. It returns the command cursor, user board, budget, capacity,
+positional needs, and public prospect fit and interest standings. Hidden
+ratings, development traits, the seed, persisted allocations, and AI planning
+data never enter the page contract.
 
-- Missing states dataset falls back to a synthetic `Unknown` state weight.
-- Missing name pools fall back to generic fallback names per generator logic.
-- If a team has fewer players than starter requirements at a position, starter assignment fills as many as available.
-- Preview and application consume the same `selectTeamRosterCuts` result.
+The Recruiting page persists board changes immediately and keeps weekly point
+edits local. `advanceRecruitingRound()` validates those edits as minimums,
+lets AI spend the feasible remainder, and resolves the week atomically.
+`completeRecruitingWithAi()` repeats the same public-information strategy
+through Signing Day in one transaction. Round six also supports separate
+guarded Signing Day resolution. Conflicts reload the authoritative snapshot
+instead of merging or repairing state.
 
-## What You Can Observe in the App
+## Finalization
 
-- Roster Progression shows projected class/rating changes and senior
-  departures; opening or reloading it does not apply those changes.
-- Advancing from Roster Progression applies the previewed progression and then
-  generates recruits atomically before Recruiting Summary opens.
-- Recruiting Summary shows the resulting freshmen classes that reflect team
-  need and quality profile. Its team and player rankings are complete rather
-  than display-limited, and reloading the page does not regenerate recruits.
-- Roster Cuts shows automatic changes before they are applied. Advancing cuts
-  every team, reassigns starters, recalculates ratings, resets the season, and
-  enters Preseason.
-- Team rank/rating shifts after offseason are often driven by starter turnover and recruiting replacement quality.
+Signing-day finalization:
 
-## Source Map (file/function references)
+1. requires round 6 and `ready_for_signing_day`;
+2. resolves remaining signing decisions;
+3. deterministically converts every commitment into one freshman;
+4. advances the player ID counter;
+5. marks recruiting finalized;
+6. enters `recruiting_summary`.
 
+These writes commit atomically. The finalized aggregate remains available
+through Recruiting Summary and Roster Cuts, and is deleted only by successful
+roster finalization. Recruiting Summary derives its public class results from
+that aggregate, preserves public national rank, and withholds exact freshman
+ratings. Roster Cuts is the first exact-rating reveal.
+
+## Roster Finalization
+
+The `recruiting_summary` transition calls
+`initializeRosterFinalization()` inside a league, recruiting, player, and base
+data transaction. It validates the finalized round-six aggregate, then gives
+teams below 80 standard one-star walk-ons. Starter shortages are filled before
+soft positional deficits. Team, slot, and position tie decisions use keyed
+forks of the persisted recruiting seed.
+
+Roster Cuts is command-managed. `selectRosterCut()` and `undoRosterCut()` read
+and validate authoritative records inside their transactions, persist only
+user cut IDs, and increment the recruiting version once. Active freshmen are
+protected, and every partial selection must preserve positional starter
+minimums.
+
+`finalizeRoster()` requires the user to select exactly enough returning players
+to reach 80. Non-user cuts are chosen iteratively from soft positional surplus,
+then lowest senior/current value and older class. The command validates every
+final roster, selects starters, recalculates ratings with team-keyed seed
+forks, prepares preseason, clears prior play-by-play, deletes recruiting state,
+and enters Preseason in one transaction.
+
+The Roster Cuts loader remains read-only and returns the full active roster,
+persisted selections, remaining recommendations, protected and blocked states,
+positional constraints, the current version, and finalization readiness. The
+page applies select and undo commands immediately and enables finalization only
+when the authoritative projection is ready.
+
+## Invariants
+
+- IndexedDB is authoritative.
+- Bootstrap and annual recruiting are separate paths.
+- Loaders never generate or repair players.
+- Freshmen are created exactly once.
+- Recruiting formulas and tuning stay in pure recruiting modules.
+- AI strategy receives a fresh public-only snapshot. Hidden prospect ratings,
+  future ratings, and development traits never cross that boundary.
+
+## AI Recruiting
+
+Each round-advancement command builds one public snapshot for every team. The
+pure strategy preserves submitted user allocations as minimums, fills the
+remaining feasible user budget, ranks eligible candidates, admits distinct
+new pursuits that can reach the meaningful threshold, and allocates the
+remaining points across active pursuits. AI boards contain only meaningful
+active pursuits; the user board retains unfunded player-selected targets. The
+command applies every board through the normal transformation and passes all
+allocations together to the round resolver.
+
+AI boards persist as ordinary team recruiting state; current-round allocations
+clear after resolution. Strategy scores, public projections, diagnostics, and
+random cursors remain ephemeral. Keyed forks of the offseason seed break exact
+ties without making team iteration order observable.
+
+## Balance Evaluation
+
+`eval:recruiting-balance` runs complete repeated recruiting years entirely in
+memory. It starts from a seeded use of the existing four-class bootstrap, then
+calls the production progression, all-AI recruiting, freshman conversion,
+walk-on, cut, starter, rating, history, and prestige functions. Roster-rating
+rank is the deterministic completed-season proxy.
+
+The default command is a one-year smoke run. The representative validation run
+uses three keyed seeds across four recruiting years with one seed replayed for
+reproducibility. The report includes structural checks, reproducibility
+checksums, class-score distribution and ties, class-size distribution,
+top-25 composition by prestige, signed and unsigned supply by star and position,
+commitments, meaningful and contested pursuits, admissions, unfilled fundable
+openings, target loss and replacement, capacity, walk-ons, cuts, roster
+ratings, and prestige mobility. It neither reads nor writes the application
+database, and its report types are not persisted.
+
+The evaluator reports structural failures separately from aggregate balance
+gates. Normal commitments require 55 interest and a 10-point lead. AI planning
+targets two oversignings even though authoritative capacity permits four.
+Signing Day share and low-prestige elite share remain informational because
+neither has a defensible universal threshold. Structural legality, completion,
+walk-ons, oversigning, hierarchy correlation, and mobility retain explicit
+gates. See [Recruiting Hierarchy](../design/recruiting-hierarchy.md)
+and [Roster and Recruit Supply](../design/roster-and-recruit-supply.md).
+
+## Source Map
+
+- `src/domain/rosterBootstrap.ts`
 - `src/domain/roster.ts`
-  - progression decision: `projectPlayerProgression`
-  - lifecycle: `ensureRosters`, `initializeRosters`, `applyProgression`, `runRecruitingCycle`, `setStarters`, `recalculateTeamRatings`
-  - core recruiting and rating constants
-- `src/domain/rosterConfig.ts`
-  - position order, roster caps, and starter counts
-- `src/domain/rosterCuts.ts`
-  - `selectTeamRosterCuts`, `buildRosterCutsPreview`, and `applyRosterCuts`
-- `src/domain/league/stages.ts`
-  - stage integration: `advanceOffseasonStage`
+- `src/db/leagueRepo.ts`
 - `src/domain/league/loaders/loadRosterProgression.ts`
-  - progression preview integration
-- `src/domain/league/recruitingResults.ts`
-  - finalized recruiting result shaping and ranking
-- `src/domain/league/loaders/loadRecruitingSummary.ts`
-  - finalized recruiting summary integration
-- `src/domain/league/loaders/loadRosterCuts.ts`
-  - typed user-team roster-cuts preview integration
-- `src/db/simRepo.ts`
-  - player persistence: `getAllPlayers`, `savePlayers`, `getPlayersByTeam`, `clearPlayers`
+- `src/domain/league/recruiting.ts`
+- `src/domain/league/rosterFinalization.ts`
+- `src/domain/recruiting/`
+- `src/domain/recruiting/classScoring.ts`
+- `src/domain/rosterCuts.ts`
+- `src/domain/walkOns.ts`
+- `src/domain/recruiting/evaluation.ts`
+- `scripts/eval_recruiting_balance.ts`
+- `src/db/recruitingRepo.ts`

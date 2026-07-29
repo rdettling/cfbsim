@@ -1,113 +1,107 @@
 # Data Model and Persistence
 
-## Scope
+## IndexedDB Schema
 
-Defines persistent schema, core state types, ID generation, and ownership of reads/writes across the architecture runtime.
+`src/db/db.ts` defines the current database at version 2.
 
-## Entry Points
+| Store | Key | Value |
+| --- | --- | --- |
+| `baseData` | string | cached source dataset |
+| `league` | `current` | required `LeagueState` |
+| `recruiting` | `current` | optional versioned `RecruitingState` |
+| `players` | player ID | `PlayerRecord` |
+| `games` | game ID | `GameRecord` |
+| `drives` | drive ID | `DriveRecord` |
+| `plays` | play ID | `PlayRecord` |
+| `gameLogs` | log ID | `GameLogRecord` |
 
-- DB bootstrap/schema creation: `getDb()`.
-- Atomic new-league replacement: `commitNewLeague(...)`.
-- League persistence API: `loadLeague<T>()`, `saveLeague<T>()`, `clearLeague()`.
-- Sim persistence API: `saveGames`, `saveDrives`, `savePlays`, `saveGameLogs`, `savePlayers` and corresponding reads.
-- Counter management: `normalizeCounters()`, `nextId()` and `createNonConGameRecord()` internal counter increment path.
+Store creation is idempotent. The runtime does not translate, normalize, or
+repair persisted records.
 
-## Core Types and Stores
+Balance evaluation has no store. Its repeated-season state and reports remain
+in memory and are emitted to stdout only.
 
-### IndexedDB Store Inventory
+## League State
 
-| Store | Key Path | Value Type | Indexes |
-|---|---|---|---|
-| `baseData` | `key` | `{ key: string; value: unknown }` | none |
-| `league` | `key` | `{ key: string; value: unknown }` | none |
-| `games` | `id` | `GameRecord` | `weekPlayed`, `teamAId`, `teamBId`, `winnerId` |
-| `drives` | `id` | `DriveRecord` | `gameId` |
-| `plays` | `id` | `PlayRecord` | `gameId`, `driveId` |
-| `gameLogs` | `id` | `GameLogRecord` | `gameId`, `playerId` |
-| `players` | `id` | `PlayerRecord` | `teamId`, `pos` |
+`LeagueState` requires:
 
-### Core State Types
+- current stage, week, year, start year, user team, and season horizon;
+- teams, conferences, pending rivalries, and rivalry host seeds;
+- schedule and simulation initialization flags;
+- `NextSeasonConfiguration`;
+- playoff state;
+- complete game, drive, play, game-log, and player ID counters.
 
-- `LeagueState`
-  - Mutable runtime aggregate for stage and season orchestration.
-  - Critical fields: `info`, `teams`, `conferences`, `settings`, `playoff`, `idCounters`, `scheduleBuilt`, `simInitialized`, `pending_rivalries`.
-- `Info`
-  - Stage and temporal cursor (`currentWeek`, `currentYear`, `stage`, `lastWeek`, user team/color context).
-- `Settings`
-  - Compatible persisted postseason fields and historical-policy flags
-    (`playoff_teams`, autobids, top-seed behavior, and legacy `auto_*` names).
-  - Next Season Setup exposes these through typed historical/current and
-    historical/custom policy aliases without migrating stored saves.
-- `PlayoffState`
-  - Persistent IDs of generated postseason games by round plus `seeds`.
-- `idCounters`
-  - Monotonic IDs for `game`, `drive`, `play`, `gameLog`, `player`.
+`NextSeasonConfiguration` is persisted directly with:
 
-### Record Types
+- `conferencePolicy`;
+- `postseasonPolicy`;
+- `playoffTeams`;
+- `playoffAutobids`;
+- `conferenceChampionsReceiveTopSeeds`.
 
-- `GameRecord`: matchup metadata + odds snapshot + score/outcome/headline fields + clock metadata.
-- `DriveRecord`: persisted per-drive scoring/field-position state.
-- `PlayRecord`: persisted per-play down/distance/outcome text + optional clock/quarter/play duration.
-- `GameLogRecord`: per-player game-stat line item.
-- `PlayerRecord`: roster identity + class + ratings progression + active/starter flags.
+## Integrity Boundary
 
-## Execution Flow
+`loadLeague()` validates `league/current` before returning it.
+`loadLeaguePlayersSnapshot()` reads league and players in one readonly
+transaction and then verifies:
 
-1. **Schema initialization**
-- `getDb()` opens DB `cfbsim` version `1`, creates stores/indexes if absent.
+- the league matches the required current schema;
+- the player collection is nonempty;
+- every player has the required current fields;
+- every player belongs to a persisted team;
+- every persisted team is represented in the roster.
 
-2. **League-level persistence boundary**
-- League aggregate is stored as a single logical record under `league/current`.
-- Every loader/orchestrator mutation path that changes `LeagueState` explicitly persists via `saveLeague()`.
-- New-league creation prepares the complete league, player roster, and rivalry
-  games before `commitNewLeague()` clears/replaces league and simulation stores
-  in one transaction.
+Failures throw `LeagueDataIntegrityError` with
+`INVALID_LEAGUE_STATE` or `INVALID_ROSTER_STATE`. The bad records remain stored
+for inspection; no write is attempted.
 
-3. **Simulation artifact persistence boundary**
-- `initializeSimData()` writes game skeleton records for the year.
-- `advanceWeeks()` batches writes for drives/plays/gameLogs and updates games records.
-- Live sim finalization path writes updated game + artifacts via `finalizeGameSimulation()`.
+`loadRecruitingLifecycleSnapshot()` reads league, recruiting, and players in one
+readonly transaction for Recruiting Summary and Roster Cuts.
+`assertCurrentRecruitingState()` validates the singleton's exact current
+top-level and nested shape on every repository read and before every repository
+write. Missing fields, extra aliases, malformed nested records, and duplicate
+persisted IDs throw `RecruitingDataIntegrityError`; no normalization is
+attempted.
 
-4. **Roster persistence boundary**
-- Roster setup/update writes use `savePlayers()` and read via `getAllPlayers()`/`getPlayersByTeam()`.
-- Full reset paths may clear players (`clearAllSimData`, `clearPlayers`) depending on flow.
+## Write Ownership
 
-5. **ID counter progression**
-- `nextId()` (postseason paths) and `createNonConGameRecord()` (non-con/rivalry paths) increment `league.idCounters.game`.
-- Counter normalization initializes missing counters to `1`.
+- `startNewLeague()` prepares a complete league, roster, and initial games,
+  then `commitNewLeague()` replaces all authoritative save stores atomically.
+- Simulation commands own simulation records and ID counter increments.
+- Generic offseason transitions use `commitOffseasonTransition()` only for
+  `baseData` and `league`. Recruiting, roster, and simulation mutations belong
+  to their dedicated commands.
+- Recruiting commands declare their transaction stores locally and write the
+  singleton through `recruitingRepo`.
+- Roster-finalization commands declare their stores locally, validate the
+  finalized recruiting cursor, and own walk-ons, cut selections, and preseason
+  reset.
 
-## Invariants and Constraints
+All command guards are checked against records read inside the same transaction
+that performs the writes.
 
-- IndexedDB is authoritative for all persisted league and sim artifacts.
-- `league` store is singleton by key `current`; no multi-slot league history in this schema.
-- `idCounters` must remain monotonic within a league to avoid key collisions across generated records.
-- `normalizeLeague()` must be run on loaded league state to enforce structural
-  defaults (`startYear`, postseason state, rivalry host seeds, and missing
-  legacy settings). Compatibility normalization may persist these repairs, but
-  it must not advance the lifecycle.
-- `clearNonGameArtifacts()` must preserve scheduled `games` while removing dependent sim artifacts.
-- New-league replacement must not expose a mixed save. League, games, players,
-  drives, plays, and game logs either all retain the old save or all contain the
-  prepared replacement.
+## Recruiting Retention
 
-## Failure/Edge Cases
+Signing-day finalization atomically writes freshmen, the finalized recruiting
+aggregate, the player counter, and `recruiting_summary`. The aggregate remains
+through `roster_cuts`.
 
-- Missing league record returns `null` in repo API; higher-level loaders may throw if required.
-- Backward compatibility for legacy league shapes handled through normalization and immediate save.
-- Empty batch saves are short-circuited for drives/plays/gameLogs/players.
-- Sim resets (`clearAllSimData`) clear `players` and all game artifacts; season resets (`clearNonGameArtifacts`) intentionally retain games.
-- Base-data cache clearing is reconstructible and occurs before new-league
-  preparation; it is not part of the authoritative replacement transaction.
+The summary-to-cuts transaction adds required walk-ons, advances the player
+counter, increments the recruiting version, and changes stage exactly once.
+Selection commands update only `pendingUserCutIds` and the version. Final
+roster completion writes cuts, starters, ratings, games, and league state,
+clears prior play-by-play, and deletes recruiting state in one transaction.
 
-## Source Map (file/function references)
+## Source Map
 
-- `src/db/db.ts`: `getDb`, `Frontend2DB` schema definitions
-- `src/db/newLeagueRepo.ts`: `commitNewLeague`
-- `src/db/leagueRepo.ts`: `loadLeague`, `saveLeague`, `clearLeague`
-- `src/db/simRepo.ts`: read/write/clear API for `games`, `drives`, `plays`, `gameLogs`, `players`
-- `src/types/league.ts`: `LeagueState`, `PlayoffState`, `DEFAULT_SETTINGS`, `ensureSettings`
-- `src/types/domain.ts`: `Info`, `Settings`, `Team`
-- `src/types/db.ts`: `GameRecord`, `DriveRecord`, `PlayRecord`, `GameLogRecord`, `PlayerRecord`
-- `src/domain/sim/ids.ts`: `normalizeCounters`, `nextId`
-- `src/domain/league/seasonReset.ts`: `createNonConGameRecord`, `prepareSeasonReset`
-- `src/domain/league/normalize.ts`: `normalizeLeague`
+- `src/types/league.ts`
+- `src/types/recruiting.ts`
+- `src/types/roster.ts`
+- `src/types/db.ts`
+- `src/db/db.ts`
+- `src/db/leagueRepo.ts`
+- `src/db/recruitingRepo.ts`
+- `src/db/newLeagueRepo.ts`
+- `src/db/offseasonRepo.ts`
+- `src/domain/league/rosterFinalization.ts`

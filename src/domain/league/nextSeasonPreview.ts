@@ -4,9 +4,8 @@ import type {
   PlayoffTeamCount,
   PostseasonChange,
 } from '../../types/domain';
-import { DEFAULT_SETTINGS, type LeagueState } from '../../types/league';
+import type { LeagueState } from '../../types/league';
 import type { ResolvedHistoricalData } from './historicalData';
-import { settingsToNextSeasonConfiguration } from './nextSeasonConfiguration';
 
 export const buildNextSeasonPreview = (
   league: LeagueState,
@@ -48,9 +47,7 @@ export const buildNextSeasonPreview = (
   });
   conferenceChanges.sort((a, b) => a.teamName.localeCompare(b.teamName));
 
-  const current = settingsToNextSeasonConfiguration(
-    league.settings ?? { ...DEFAULT_SETTINGS },
-  );
+  const current = league.settings;
   const historicalTeams =
     resolved.yearData.playoff.teams as PlayoffTeamCount;
   const historicalAutobids =

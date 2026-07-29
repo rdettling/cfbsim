@@ -1,144 +1,67 @@
 # Season State Machine
 
-## Scope
+## Stage Graph
 
-Defines the authoritative lifecycle graph, transition guards, side effects, and
-stage-gated loader behavior.
+`preseason → season → summary → realignment → progression → recruiting → recruiting_summary → roster_cuts → preseason`
 
-## Entry Points
+`src/constants/stages.ts` is the exhaustive stage catalog and owns each stage's
+route metadata.
 
-- Initial stage creation: `startNewLeague(...)`.
-- Season advancement: `advanceWeeks(destWeek)` and postseason gate
-  `handleSpecialWeeks(...)`.
-- Offseason advancement: `advanceOffseasonStage(expectedStage)`.
-- Offseason route readers: `loadSeasonSummary()`, `loadRealignment()`,
-  `loadRosterProgression()`, `loadRecruitingSummary()`, `loadRosterCuts()`,
-  and `loadNonCon()`.
+## Transition Ownership
 
-## Core Types and Stores
+| Source | Destination | Owner |
+| --- | --- | --- |
+| `preseason` | `season` | `initializeSeason` |
+| `season` | `summary` | season completion |
+| `summary` | `realignment` | `advanceOffseasonStage` |
+| `realignment` | `progression` | `advanceOffseasonStage` |
+| `progression` | `recruiting` | `initializeRecruiting` |
+| `recruiting` | `recruiting_summary` | recruiting round and finalization commands |
+| `recruiting_summary` | `roster_cuts` | `initializeRosterFinalization` through `advanceOffseasonStage` |
+| `roster_cuts` | `preseason` | `finalizeRoster` |
 
-- `LeagueStage` defines all persisted stages; `OffseasonStage` defines valid
-  command source stages.
-- `STAGES` exhaustively defines each stage's label, authoritative route, and
-  destination stage.
-- `LeagueState.info.stage` is the authoritative stage holder.
-- `LeagueState.info.currentWeek`, `currentYear`, and `lastWeek` hold the season
-  cursor.
-- The state machine is persisted in `league/current` in IndexedDB.
-- Offseason commits may also include history, players, games, drives, plays,
-  and game logs.
+`OffseasonAdvanceStage` excludes `recruiting` and `roster_cuts`, so the generic
+advance command cannot skip either command-managed lifecycle at compile time.
 
-## Execution Flow
+## Transition Rules
 
-1. **Initialization**
-- `startNewLeague()` creates `preseason`, settings, playoff state, counters,
-  rosters, and initial scheduling data.
+- Every command validates the persisted source stage.
+- `initializeSeason` builds and persists season simulation data; Dashboard and
+  Team Schedule loaders never initialize it.
+- Realignment commits guard the exact persisted next-season configuration.
+- Progression and recruiting initialization are one transaction: player
+  progression, recruiting generation, and the stage update commit together.
+- Recruiting Summary to Roster Cuts requires a finalized same-year round-six
+  aggregate, creates walk-ons inside the transaction, increments its version,
+  and retains it.
+- User cut selections use stage, year, round, status, and version guards.
+- Roster Cuts to Preseason validates exact user selections, resolves non-user
+  cuts, and resets the season atomically. Success deletes recruiting state;
+  failure retains every prior record.
+- Stage loaders may return an empty off-stage projection, but never advance or
+  repair the lifecycle.
 
-2. **Preseason to season**
-- `loadDashboard()` builds the schedule and initializes simulation records when
-  needed.
-- `advanceWeeks()` enforces the same bootstrap before simulation.
+## Read Behavior
 
-3. **Season to summary**
-- `advanceWeeks()` invokes `handleSpecialWeeks()` while simulating.
-- The postseason gate enters `summary` only after the national championship has
-  a winner and final rankings are available.
+Lifecycle loaders are projections:
 
-4. **Explicit offseason progression**
-- `AppNavigation` calls `advanceOffseasonStage()` with the stage returned by
-  the current loader.
-- The command verifies the expected stage, prepares the existing domain work,
-  and commits affected IndexedDB stores atomically.
-- The exhaustive stage catalog supplies the command's persisted destination
-  and returned route; transition handlers contain only stage-specific work.
-- The commit rechecks the persisted source stage and writes the destination
-  league record last.
-- Realignment commits also compare the persisted settings with the snapshot
-  used for calculation, preventing configuration edits from racing advancement.
-- The shell navigates only from the successful command result.
+- Roster Progression reads league and players in one readonly snapshot.
+- Recruiting reads league, recruiting, and players in one readonly snapshot.
+- Recruiting Summary and Roster Cuts read league, recruiting, and players in
+  one readonly snapshot.
+- Repeated, off-stage, and stale-route reads leave IndexedDB unchanged.
 
-5. **Offseason route reads**
-- Route loaders never advance or reverse the lifecycle.
-- Off-stage reads return the authoritative navigation envelope and empty
-  page-specific payloads.
-- Summary, Next Season Setup, and Preseason gate before reading or shaping
-  lifecycle-specific page data.
-- Compatibility normalization, settings defaults, and missing legacy roster
-  initialization may persist without changing stage or year.
-
-```mermaid
-stateDiagram-v2
-  [*] --> preseason : startNewLeague()
-  preseason --> season : schedule/simulation bootstrap
-  season --> summary : completed national championship
-  summary --> realignment : advanceOffseasonStage(summary)
-  realignment --> progression : advanceOffseasonStage(realignment)
-  progression --> recruiting_summary : advanceOffseasonStage(progression)
-  recruiting_summary --> roster_cuts : advanceOffseasonStage(recruiting_summary)
-  roster_cuts --> preseason : advanceOffseasonStage(roster_cuts)
-```
-
-## Invariants and Failure Behavior
-
-- Offseason commands are guarded before calculation and inside the final
-  read-write transaction.
-- A mismatch throws `OffseasonStageMismatchError`; it never becomes a no-op.
-- A settings race throws `OffseasonConfigurationConflictError`, refreshes the
-  setup data, and leaves the stage and year unchanged.
-- Repeated or concurrent commands may calculate, but only one matching command
-  can commit.
-- Player, history, game, artifact, and league writes either commit together or
-  roll back together.
-- Navigation, refresh, Back/Forward, and direct route access cannot advance the
-  offseason.
-- A persistence failure leaves the source stage and affected stores intact.
-- The preseason reset preserves league identity/settings while resetting
-  season counters and artifacts.
-
-## Transition Table
-
-| From | To | Trigger | Side effects |
-|---|---|---|---|
-| `none` | `preseason` | `startNewLeague()` | Initializes league, rosters, settings, counters, and scheduling |
-| `preseason` | `season` | Dashboard/season bootstrap | Builds the full schedule and simulation records |
-| `season` | `summary` | Completed national championship | Finalizes postseason rankings |
-| `summary` | `realignment` | `advanceOffseasonStage('summary')` | Finalizes history, calculates/applies prestige |
-| `realignment` | `progression` | `advanceOffseasonStage('realignment')` | Applies conference/playoff policy, increments year, resets postseason |
-| `progression` | `recruiting_summary` | `advanceOffseasonStage('progression')` | Applies progression and recruiting |
-| `recruiting_summary` | `roster_cuts` | `advanceOffseasonStage('recruiting_summary')` | Advances stage only |
-| `roster_cuts` | `preseason` | `advanceOffseasonStage('roster_cuts')` | Applies cuts/starters/ratings, resets season, creates rivalry games |
-
-## Stage Semantics
-
-| Stage | Authoritative route | Page meaning |
-|---|---|---|
-| `preseason` | `/noncon` | Editable non-conference scheduling |
-| `season` | `/dashboard` | Active season simulation |
-| `summary` | `/summary` | Finalized season results and prestige preview |
-| `realignment` | `/realignment` | Editable Next Season Setup and historical preview |
-| `progression` | `/roster_progression` | Projected class, rating, and departure changes |
-| `recruiting_summary` | `/recruiting_summary` | Finalized recruiting results |
-| `roster_cuts` | `/roster_cuts` | Projected automatic cuts |
-
-The typed catalog in `src/constants/stages.ts` remains authoritative for labels,
-routes, and next-stage relationships.
+Malformed league or roster data throws `LeagueDataIntegrityError`.
 
 ## Source Map
 
-- `src/domain/league/stages.ts`: guarded offseason command and transition
-  dispatch
-- `src/constants/stages.ts`: exhaustive stage label, route, and destination
-  definitions
-- `src/db/offseasonRepo.ts`: atomic commit and persisted-stage guard
-- `src/domain/league/loaders/loadRealignment.ts` and
-  `loadRosterProgression.ts`: read-only preview contracts
-- `src/domain/league/loaders/loadRecruitingSummary.ts`: finalized recruiting
-  result contract
-- `src/domain/league/loaders/offseason.ts`: read-only Summary and awards
-  contracts
-- `src/domain/league/loaders/navigationEnvelope.ts`: shared stage-aware
-  navigation envelope
-- `src/domain/league/loaders/loadAuthoritativeStage.ts`: compatibility redirect
-  reader
-- `src/domain/league/loaders/season/loadNonCon.ts`: read-only preseason contract
-- `src/domain/sim/postseason.ts`: postseason scheduling and summary gate
+- `src/constants/stages.ts`
+- `src/constants/routes.ts`
+- `src/domain/league/stages.ts`
+- `src/domain/league/season.ts`
+- `src/domain/league/recruiting.ts`
+- `src/domain/league/rosterFinalization.ts`
+- `src/db/offseasonRepo.ts`
+- `src/domain/league/loaders/loadRosterProgression.ts`
+- `src/domain/league/loaders/loadRecruitingSummary.ts`
+- `src/domain/league/loaders/loadRosterCuts.ts`

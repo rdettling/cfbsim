@@ -2,33 +2,15 @@ import { getDb } from '../../db/db';
 import type {
   NextSeasonConfiguration,
   PlayoffTeamCount,
-  Settings,
 } from '../../types/domain';
 import {
-  DEFAULT_SETTINGS,
   NextSeasonConfigurationError,
   OffseasonStageMismatchError,
-  type LeagueState,
 } from '../../types/league';
+import { assertCurrentLeagueState } from '../../db/leagueRepo';
 
 const isPlayoffTeamCount = (value: number): value is PlayoffTeamCount =>
   value === 2 || value === 4 || value === 12;
-
-export const settingsToNextSeasonConfiguration = (
-  settings: Settings,
-): NextSeasonConfiguration =>
-  normalizeNextSeasonConfiguration({
-    conferencePolicy:
-      settings.auto_realignment === false ? 'current' : 'historical',
-    postseasonPolicy:
-      settings.auto_update_postseason_format === false
-        ? 'custom'
-        : 'historical',
-    playoffTeams: settings.playoff_teams as PlayoffTeamCount,
-    playoffAutobids: settings.playoff_autobids,
-    conferenceChampionsReceiveTopSeeds:
-      settings.playoff_conf_champ_top_4,
-  });
 
 export const normalizeNextSeasonConfiguration = (
   configuration: NextSeasonConfiguration,
@@ -63,8 +45,7 @@ export const normalizeNextSeasonConfiguration = (
     };
   }
 
-  const playoffAutobids =
-    configuration.playoffAutobids ?? DEFAULT_SETTINGS.playoff_autobids ?? 6;
+  const playoffAutobids = configuration.playoffAutobids;
   if (
     !Number.isInteger(playoffAutobids) ||
     playoffAutobids < 0 ||
@@ -79,25 +60,9 @@ export const normalizeNextSeasonConfiguration = (
     ...configuration,
     playoffAutobids,
     conferenceChampionsReceiveTopSeeds:
-      configuration.conferenceChampionsReceiveTopSeeds ??
-      DEFAULT_SETTINGS.playoff_conf_champ_top_4 ??
-      true,
+      configuration.conferenceChampionsReceiveTopSeeds,
   };
 };
-
-export const configurationToSettings = (
-  current: Settings,
-  configuration: NextSeasonConfiguration,
-): Settings => ({
-  ...current,
-  auto_realignment: configuration.conferencePolicy === 'historical',
-  auto_update_postseason_format:
-    configuration.postseasonPolicy === 'historical',
-  playoff_teams: configuration.playoffTeams,
-  playoff_autobids: configuration.playoffAutobids,
-  playoff_conf_champ_top_4:
-    configuration.conferenceChampionsReceiveTopSeeds,
-});
 
 export const updateNextSeasonConfiguration = async (
   patch: Partial<NextSeasonConfiguration>,
@@ -107,10 +72,11 @@ export const updateNextSeasonConfiguration = async (
 
   try {
     const record = await tx.objectStore('league').get('current');
-    const league = record?.value as LeagueState | undefined;
-    if (!league) {
+    if (!record) {
       throw new Error('No league found. Start a new game from the Home page.');
     }
+    assertCurrentLeagueState(record.value);
+    const league = record.value;
     if (league.info.stage !== 'realignment') {
       throw new OffseasonStageMismatchError(
         'realignment',
@@ -118,17 +84,11 @@ export const updateNextSeasonConfiguration = async (
       );
     }
 
-    const current = settingsToNextSeasonConfiguration(
-      league.settings ?? { ...DEFAULT_SETTINGS },
-    );
     const configuration = normalizeNextSeasonConfiguration({
-      ...current,
+      ...league.settings,
       ...patch,
     });
-    league.settings = configurationToSettings(
-      league.settings ?? { ...DEFAULT_SETTINGS },
-      configuration,
-    );
+    league.settings = configuration;
     await tx.objectStore('league').put({ key: 'current', value: league });
     await tx.done;
     return configuration;

@@ -1,8 +1,10 @@
-import { buildFullScheduleFromExisting } from '../../../scheduleBuilder';
-import { initializeSimData } from '../../../sim';
 import type { Conference, Info, ScheduleGame, Team } from '../../../../types/domain';
 import { loadLeagueOrThrow } from '../../leagueStore';
-import { getCurrentYearGames, getUserSchedule, getUserTeam } from './shared';
+import {
+  getCurrentYearGames,
+  getUserSchedule,
+  getUserTeam,
+} from './shared';
 
 export interface DashboardHeadline {
   id: number;
@@ -24,15 +26,6 @@ export interface DashboardPageResult {
 
 export const loadDashboard = async (): Promise<DashboardPageResult> => {
   const league = await loadLeagueOrThrow();
-
-  if (!league.scheduleBuilt) {
-    const userTeam = getUserTeam(league);
-    const existingGames = await getCurrentYearGames(league);
-    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
-    league.info.stage = 'season';
-    league.scheduleBuilt = true;
-    await initializeSimData(league, newGames);
-  }
 
   const userTeam = getUserTeam(league);
   const confTeams = league.teams

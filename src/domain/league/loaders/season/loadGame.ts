@@ -1,14 +1,13 @@
 import {
   getAllGameLogs,
   getAllGames,
-  getAllPlayers,
   getAllPlays,
   getDrivesByGame,
   getGameById,
   getPlaysByGame,
 } from '../../../../db/simRepo';
+import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { buildDriveResponse } from '../../../sim';
-import { loadLeagueOrThrow } from '../../leagueStore';
 import {
   buildLastFiveGamesForTeam,
   buildTeamStatsAndRanks,
@@ -18,7 +17,7 @@ import { buildGameResultSummary } from '../../utils/gameResult';
 import { getUserTeam } from './shared';
 
 export const loadGame = async (gameId: number) => {
-  const league = await loadLeagueOrThrow();
+  const { league, players } = await loadLeaguePlayersSnapshot();
 
   const record = await getGameById(gameId);
   if (!record) {
@@ -63,10 +62,9 @@ export const loadGame = async (gameId: number) => {
     headline_tags: record.headline_tags ?? null,
   };
 
-  const [allGames, allPlays, allPlayers] = await Promise.all([
+  const [allGames, allPlays] = await Promise.all([
     getAllGames(),
     getAllPlays(),
-    getAllPlayers(),
   ]);
   const pregameGames = allGames.filter(
     game =>
@@ -91,14 +89,14 @@ export const loadGame = async (gameId: number) => {
       gamesPlayed: pregameGamesPlayedByTeamId.get(teamA.id) ?? 0,
       stats: teamStatsById.get(teamA.id)!,
       ranks: ranksByTeamId.get(teamA.id)!,
-      topStarters: buildTopStartersForTeam(teamA.id, allPlayers),
+      topStarters: buildTopStartersForTeam(teamA.id, players),
       lastFiveGames: buildLastFiveGamesForTeam(teamA.id, allGames, teamsById, record),
     },
     teamB: {
       gamesPlayed: pregameGamesPlayedByTeamId.get(teamB.id) ?? 0,
       stats: teamStatsById.get(teamB.id)!,
       ranks: ranksByTeamId.get(teamB.id)!,
-      topStarters: buildTopStartersForTeam(teamB.id, allPlayers),
+      topStarters: buildTopStartersForTeam(teamB.id, players),
       lastFiveGames: buildLastFiveGamesForTeam(teamB.id, allGames, teamsById, record),
     },
   };
@@ -108,7 +106,7 @@ export const loadGame = async (gameId: number) => {
     ? (await getAllGameLogs()).filter(log => log.gameId === gameId)
     : [];
   const resultSummary = record.winnerId
-    ? buildGameResultSummary(game, gamePlays, gameLogs, allPlayers, teamsById)
+    ? buildGameResultSummary(game, gamePlays, gameLogs, players, teamsById)
     : null;
 
   const drives = record.winnerId

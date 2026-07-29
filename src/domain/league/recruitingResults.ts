@@ -1,27 +1,25 @@
-import type { PlayerRecord } from '../../types/db';
 import type { Team } from '../../types/domain';
 import type {
   RecruitingPlayerResult,
+  RecruitingProspect,
   RecruitingResults,
   RecruitingStarCounts,
   RecruitingTeamResult,
 } from '../../types/recruiting';
 import { POSITION_ORDER } from '../rosterConfig';
+import {
+  calculateRecruitingClassScore,
+  displayRecruitingClassScore,
+} from '../recruiting/classScoring';
 
-const QUALITY_FOCUS = 0.92;
-
-const roundToOne = (value: number) => Math.round(value * 10) / 10;
 const roundToTwo = (value: number) => Math.round(value * 100) / 100;
 
 const comparePlayers = (
-  left: Omit<RecruitingPlayerResult, 'rank'>,
-  right: Omit<RecruitingPlayerResult, 'rank'>,
+  left: RecruitingPlayerResult,
+  right: RecruitingPlayerResult,
 ) =>
-  right.rating - left.rating ||
-  right.stars - left.stars ||
-  left.last.localeCompare(right.last) ||
-  left.first.localeCompare(right.first) ||
-  left.id - right.id;
+  left.rank - right.rank ||
+  left.prospectId - right.prospectId;
 
 const countStars = (
   players: RecruitingPlayerResult[],
@@ -35,37 +33,34 @@ const countStars = (
 
 type TeamCandidate = Omit<RecruitingTeamResult, 'rank' | 'classScore'> & {
   rawScore: number;
-  totalRating: number;
 };
 
 export const buildRecruitingResults = (
   teams: Team[],
-  players: PlayerRecord[],
+  prospects: RecruitingProspect[],
   userTeamId: number,
 ): RecruitingResults => {
   const teamsById = new Map(teams.map(team => [team.id, team]));
-  const rankedPlayers = players
+  const rankedPlayers = prospects
     .filter(
-      player =>
-        player.active &&
-        player.year === 'fr' &&
-        teamsById.has(player.teamId),
+      prospect =>
+        prospect.committedTeamId !== null &&
+        teamsById.has(prospect.committedTeamId),
     )
-    .map(player => {
-      const team = teamsById.get(player.teamId)!;
+    .map(prospect => {
+      const team = teamsById.get(prospect.committedTeamId!)!;
       return {
-        id: player.id,
-        first: player.first,
-        last: player.last,
-        position: player.pos,
-        rating: player.rating,
-        stars: player.stars,
+        rank: prospect.nationalRank,
+        prospectId: prospect.id,
+        first: prospect.first,
+        last: prospect.last,
+        position: prospect.position,
+        stars: prospect.stars,
         teamId: team.id,
         teamName: team.name,
       };
     })
-    .sort(comparePlayers)
-    .map((player, index) => ({ ...player, rank: index + 1 }));
+    .sort(comparePlayers);
 
   const playersByTeam = new Map<number, RecruitingPlayerResult[]>();
   rankedPlayers.forEach(player => {
@@ -79,19 +74,12 @@ export const buildRecruitingResults = (
     const team = teamsById.get(teamId);
     if (!team) return;
 
-    const totalRating = recruits.reduce(
-      (sum, player) => sum + player.rating,
-      0,
-    );
     const totalStars = recruits.reduce(
       (sum, player) => sum + player.stars,
       0,
     );
     const averageStars = totalStars / recruits.length;
-    const rawScore = roundToOne(
-      QUALITY_FOCUS * averageStars +
-        (1 - QUALITY_FOCUS) * recruits.length,
-    );
+    const rawScore = calculateRecruitingClassScore(recruits);
 
     candidates.push({
       teamId,
@@ -100,33 +88,23 @@ export const buildRecruitingResults = (
       prestige: team.prestige,
       recruits,
       totalRecruits: recruits.length,
-      averageRating: roundToOne(totalRating / recruits.length),
       averageStars: roundToTwo(averageStars),
       starCounts: countStars(recruits),
       rawScore,
-      totalRating,
     });
   });
 
   candidates.sort(
     (left, right) =>
       right.rawScore - left.rawScore ||
-      right.totalRating - left.totalRating ||
       left.teamName.localeCompare(right.teamName),
   );
 
-  const maxScore = candidates[0]?.rawScore ?? 0;
-  const minScore = candidates[candidates.length - 1]?.rawScore ?? 0;
-  const scoreRange = maxScore - minScore;
   const teamRankings: RecruitingTeamResult[] = candidates.map(
-    ({ rawScore, totalRating: _totalRating, ...candidate }, index) => ({
+    ({ rawScore, ...candidate }, index) => ({
       ...candidate,
       rank: index + 1,
-      classScore: roundToOne(
-        scoreRange > 0
-          ? ((rawScore - minScore) / scoreRange) * 100
-          : 100,
-      ),
+      classScore: displayRecruitingClassScore(rawScore),
     }),
   );
 
@@ -148,15 +126,6 @@ export const buildRecruitingResults = (
       teamRankings.find(team => team.teamId === userTeamId) ?? null,
     summary: {
       totalRecruits: rankedPlayers.length,
-      averageRating: rankedPlayers.length
-        ? roundToOne(
-            rankedPlayers.reduce(
-              (sum, player) => sum + player.rating,
-              0,
-            ) / rankedPlayers.length,
-          )
-        : 0,
-      highestRating: rankedPlayers[0]?.rating ?? 0,
     },
   };
 };

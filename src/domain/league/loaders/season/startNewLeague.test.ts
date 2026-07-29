@@ -7,8 +7,11 @@ import type {
   StartNewLeagueInput,
 } from '../../../../types/league';
 import { buildTestLeague, buildTestPlayer } from '../../../../test/fixtures';
+import { initializeSeason } from '../../season';
 import { loadHomeData } from '../season';
+import { loadDashboard } from './loadDashboard';
 import { loadNonCon } from './loadNonCon';
+import { loadTeamSchedule } from './loadTeamSchedule';
 import { startNewLeague } from './startNewLeague';
 
 const yearData = (teams: 2 | 4 | 12 = 12) => ({
@@ -79,6 +82,7 @@ const resetDatabase = async () => {
   const stores = [
     'baseData',
     'league',
+    'recruiting',
     'players',
     'games',
     'drives',
@@ -88,6 +92,19 @@ const resetDatabase = async () => {
   const tx = db.transaction([...stores], 'readwrite');
   await Promise.all(stores.map(store => tx.objectStore(store).clear()));
   await tx.done;
+};
+
+const snapshotSave = async () => {
+  const db = await getDb();
+  return {
+    league: await db.getAll('league'),
+    recruiting: await db.getAll('recruiting'),
+    players: await db.getAll('players'),
+    games: await db.getAll('games'),
+    drives: await db.getAll('drives'),
+    plays: await db.getAll('plays'),
+    gameLogs: await db.getAll('gameLogs'),
+  };
 };
 
 const buildOldGame = (): GameRecord => ({
@@ -119,7 +136,7 @@ const buildOldGame = (): GameRecord => ({
   watchability: 80,
 });
 
-const seedOldSave = async () => {
+const seedExistingLeague = async () => {
   const db = await getDb();
   await db.put('league', {
     key: 'current',
@@ -250,6 +267,27 @@ describe('loadHomeData', () => {
 });
 
 describe('startNewLeague', () => {
+  it('keeps season loaders read-only and initializes the season by command', async () => {
+    await startNewLeague(buildInput());
+    const before = await snapshotSave();
+
+    await loadDashboard();
+    await loadTeamSchedule();
+    expect(await snapshotSave()).toEqual(before);
+
+    await expect(initializeSeason(2025)).resolves.toMatchObject({
+      stage: 'season',
+      year: 2025,
+      route: '/dashboard',
+    });
+    const db = await getDb();
+    expect((await db.get('league', 'current'))?.value).toMatchObject({
+      info: { stage: 'season' },
+      scheduleBuilt: true,
+      simInitialized: true,
+    });
+  });
+
   it.each([
     { teams: 2 as const, lastWeek: 16 },
     { teams: 4 as const, lastWeek: 17 },
@@ -257,7 +295,7 @@ describe('startNewLeague', () => {
   ])(
     'creates a reloadable $teams-team preseason league',
     async ({ teams, lastWeek }) => {
-      await seedOldSave();
+      await seedExistingLeague();
       const result = await startNewLeague(buildInput(teams));
       const db = await getDb();
       const leagueRecord = await db.get('league', 'current');
@@ -270,11 +308,13 @@ describe('startNewLeague', () => {
         lastWeek,
       });
       expect(league.settings).toMatchObject({
-        playoff_teams: teams,
-        playoff_autobids: teams === 12 ? 5 : undefined,
-        playoff_conf_champ_top_4: teams === 12,
+        conferencePolicy: 'historical',
+        postseasonPolicy: 'historical',
+        playoffTeams: teams,
+        playoffAutobids: teams === 12 ? 5 : 0,
+        conferenceChampionsReceiveTopSeeds: teams === 12,
       });
-      expect(league.idCounters?.player).toBeGreaterThan(1);
+      expect(league.idCounters.player).toBeGreaterThan(1);
       expect(await db.getAll('players')).not.toEqual([
         buildTestPlayer({ id: 99 }),
       ]);
@@ -321,8 +361,8 @@ describe('startNewLeague', () => {
       },
       message: 'requires at least four automatic bids',
     },
-  ])('rejects $name without replacing the old save', async ({ input, message }) => {
-    await seedOldSave();
+  ])('rejects $name without replacing the existing league', async ({ input, message }) => {
+    await seedExistingLeague();
     await expect(startNewLeague(input)).rejects.toThrow(message);
 
     const db = await getDb();
@@ -338,8 +378,8 @@ describe('startNewLeague', () => {
     expect(await db.getAll('gameLogs')).toHaveLength(1);
   });
 
-  it('keeps the old save after preparation failure and succeeds on retry', async () => {
-    await seedOldSave();
+  it('keeps the existing league after preparation failure and succeeds on retry', async () => {
+    await seedExistingLeague();
     const names = responses.get('/data/names.json');
     responses.delete('/data/names.json');
 

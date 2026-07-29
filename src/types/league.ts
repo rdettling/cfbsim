@@ -4,10 +4,10 @@ import type {
   LeagueStage,
   OffseasonStage,
   Team,
-  Settings,
   PreviewData,
   ScheduleGame,
   PlayoffTeamCount,
+  NextSeasonConfiguration,
 } from './domain';
 
 export interface LaunchProps {
@@ -62,12 +62,12 @@ export interface LeagueState {
   teams: Team[];
   conferences: Conference[];
   pending_rivalries: NonConData['pending_rivalries'];
-  rivalryHostSeeds?: Record<string, string>;
-  scheduleBuilt?: boolean;
-  simInitialized?: boolean;
-  settings?: Settings;
-  playoff?: PlayoffState;
-  idCounters?: {
+  rivalryHostSeeds: Record<string, string>;
+  scheduleBuilt: boolean;
+  simInitialized: boolean;
+  settings: NextSeasonConfiguration;
+  playoff: PlayoffState;
+  idCounters: {
     game: number;
     drive: number;
     play: number;
@@ -77,16 +77,35 @@ export interface LeagueState {
 }
 
 export interface OffseasonAdvanceResult {
-  previousStage: OffseasonStage;
+  previousStage: OffseasonAdvanceStage;
   currentStage: Exclude<LeagueStage, 'season' | 'summary'>;
   route: string;
 }
 
+export type OffseasonAdvanceStage = Exclude<
+  OffseasonStage,
+  'recruiting' | 'roster_cuts'
+>;
+
+export type LeagueDataIntegrityCode =
+  | 'INVALID_LEAGUE_STATE'
+  | 'INVALID_ROSTER_STATE';
+
+export class LeagueDataIntegrityError extends Error {
+  constructor(
+    readonly code: LeagueDataIntegrityCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'LeagueDataIntegrityError';
+  }
+}
+
 export class OffseasonStageMismatchError extends Error {
-  readonly expectedStage: OffseasonStage;
+  readonly expectedStage: OffseasonAdvanceStage;
   readonly actualStage: LeagueStage;
 
-  constructor(expectedStage: OffseasonStage, actualStage: LeagueStage) {
+  constructor(expectedStage: OffseasonAdvanceStage, actualStage: LeagueStage) {
     super(
       `Cannot advance offseason from ${expectedStage}; the persisted league is at ${actualStage}.`,
     );
@@ -129,18 +148,10 @@ export class OffseasonConfigurationConflictError extends Error {
   }
 }
 
-export const DEFAULT_SETTINGS: Settings = {
-  playoff_teams: 12,
-  playoff_autobids: 6,
-  playoff_conf_champ_top_4: true,
-  auto_realignment: true,
-  auto_update_postseason_format: true,
-};
-
-export const ensureSettings = (league: LeagueState) => {
-  if (!league.settings) {
-    league.settings = { ...DEFAULT_SETTINGS };
-    return true;
-  }
-  return false;
+export const DEFAULT_NEXT_SEASON_CONFIGURATION: NextSeasonConfiguration = {
+  conferencePolicy: 'historical',
+  postseasonPolicy: 'historical',
+  playoffTeams: 12,
+  playoffAutobids: 6,
+  conferenceChampionsReceiveTopSeeds: true,
 };

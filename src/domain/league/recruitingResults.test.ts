@@ -1,53 +1,53 @@
 import { describe, expect, it } from 'vitest';
-import { buildTestPlayer, buildTestTeam } from '../../test/fixtures';
+import { buildTestTeam } from '../../test/fixtures';
+import { buildRecruitingProspect } from '../../test/recruitingFixtures';
+import {
+  calculateRecruitingClassScore,
+  displayRecruitingClassScore,
+} from '../recruiting/classScoring';
 import { buildRecruitingResults } from './recruitingResults';
 
 describe('buildRecruitingResults', () => {
-  it('preserves the class-score formula and normalizes rankings', () => {
+  it('ranks star-only class scores without season normalization', () => {
     const teams = [
       buildTestTeam({ id: 1, name: 'Alpha' }),
       buildTestTeam({ id: 2, name: 'Beta' }),
       buildTestTeam({ id: 3, name: 'Charlie' }),
     ];
-    const players = [
-      buildTestPlayer({
+    const prospects = [
+      buildRecruitingProspect({
         id: 1,
-        teamId: 1,
-        year: 'fr',
+        nationalRank: 1,
+        committedTeamId: 1,
         stars: 5,
-        rating: 90,
       }),
-      buildTestPlayer({
+      buildRecruitingProspect({
         id: 2,
-        teamId: 1,
-        year: 'fr',
+        nationalRank: 2,
+        committedTeamId: 1,
         stars: 4,
-        rating: 80,
       }),
-      buildTestPlayer({
+      buildRecruitingProspect({
         id: 3,
-        teamId: 2,
-        year: 'fr',
+        nationalRank: 3,
+        committedTeamId: 2,
         stars: 5,
-        rating: 88,
       }),
-      buildTestPlayer({
+      buildRecruitingProspect({
         id: 4,
-        teamId: 3,
-        year: 'fr',
+        nationalRank: 4,
+        committedTeamId: 3,
         stars: 4,
-        rating: 84,
       }),
-      buildTestPlayer({
+      buildRecruitingProspect({
         id: 5,
-        teamId: 3,
-        year: 'fr',
+        nationalRank: 5,
+        committedTeamId: 3,
         stars: 4,
-        rating: 82,
       }),
     ];
 
-    const result = buildRecruitingResults(teams, players, 1);
+    const result = buildRecruitingResults(teams, prospects, 1);
 
     expect(
       result.teamRankings.map(team => ({
@@ -56,38 +56,49 @@ describe('buildRecruitingResults', () => {
         score: team.classScore,
       })),
     ).toEqual([
-      { name: 'Beta', rank: 1, score: 100 },
-      { name: 'Alpha', rank: 2, score: 55.6 },
-      { name: 'Charlie', rank: 3, score: 0 },
+      {
+        name: 'Alpha',
+        rank: 1,
+        score: displayRecruitingClassScore(
+          calculateRecruitingClassScore([{ stars: 5 }, { stars: 4 }]),
+        ),
+      },
+      {
+        name: 'Charlie',
+        rank: 2,
+        score: displayRecruitingClassScore(
+          calculateRecruitingClassScore([{ stars: 4 }, { stars: 4 }]),
+        ),
+      },
+      { name: 'Beta', rank: 3, score: 25 },
     ]);
     expect(result.userTeam?.teamName).toBe('Alpha');
   });
 
-  it('returns complete team and national player metrics', () => {
+  it('returns star metrics and preserves public national ranks', () => {
     const team = buildTestTeam();
-    const players = [
-      buildTestPlayer({
+    const prospects = [
+      buildRecruitingProspect({
         id: 1,
-        year: 'fr',
-        pos: 'wr',
-        rating: 91,
+        nationalRank: 3,
+        committedTeamId: team.id,
+        position: 'wr',
         stars: 5,
       }),
-      buildTestPlayer({
+      buildRecruitingProspect({
         id: 2,
-        year: 'fr',
-        pos: 'qb',
-        rating: 79,
+        nationalRank: 11,
+        committedTeamId: team.id,
+        position: 'qb',
         stars: 4,
       }),
     ];
 
-    const result = buildRecruitingResults([team], players, team.id);
+    const result = buildRecruitingResults([team], prospects, team.id);
 
     expect(result.teamRankings[0]).toMatchObject({
       rank: 1,
       totalRecruits: 2,
-      averageRating: 85,
       averageStars: 4.5,
       starCounts: {
         five: 1,
@@ -96,75 +107,123 @@ describe('buildRecruitingResults', () => {
         two: 0,
         one: 0,
       },
-      classScore: 100,
     });
-    expect(result.playerRankings.map(player => player.rank)).toEqual([1, 2]);
+    expect(result.playerRankings.map(player => player.rank)).toEqual([3, 11]);
     expect(result.positions).toEqual(['qb', 'wr']);
     expect(result.summary).toEqual({
       totalRecruits: 2,
-      averageRating: 85,
-      highestRating: 91,
     });
+    expect(result.playerRankings[0]).not.toHaveProperty('rating');
   });
 
-  it('sorts ties deterministically and excludes ineligible players', () => {
+  it('scores identical star profiles equally and sorts exact ties by team name', () => {
     const teams = [
       buildTestTeam({ id: 1, name: 'Zulu' }),
       buildTestTeam({ id: 2, name: 'Alpha' }),
-      buildTestTeam({ id: 3, name: 'Gamma' }),
     ];
-    const players = [
-      buildTestPlayer({
+    const prospects = [
+      buildRecruitingProspect({
         id: 4,
-        teamId: 1,
-        first: 'Zed',
-        last: 'Same',
-        year: 'fr',
-        rating: 80,
+        nationalRank: 20,
+        committedTeamId: 1,
         stars: 4,
       }),
-      buildTestPlayer({
+      buildRecruitingProspect({
         id: 3,
-        teamId: 2,
-        first: 'Amy',
-        last: 'Same',
-        year: 'fr',
-        rating: 80,
-        stars: 4,
-      }),
-      buildTestPlayer({
-        id: 2,
-        teamId: 3,
-        year: 'fr',
-        rating: 80,
+        nationalRank: 10,
+        committedTeamId: 1,
         stars: 3,
       }),
-      buildTestPlayer({ id: 5, year: 'so', rating: 99 }),
-      buildTestPlayer({ id: 6, year: 'fr', active: false, rating: 99 }),
-      buildTestPlayer({ id: 7, teamId: 999, year: 'fr', rating: 99 }),
+      buildRecruitingProspect({
+        id: 2,
+        nationalRank: 2,
+        committedTeamId: 2,
+        stars: 3,
+      }),
+      buildRecruitingProspect({
+        id: 1,
+        nationalRank: 1,
+        committedTeamId: 2,
+        stars: 4,
+      }),
     ];
 
-    const result = buildRecruitingResults(teams, players, 999);
+    const result = buildRecruitingResults(teams, prospects, 999);
 
-    expect(result.playerRankings.map(player => player.id)).toEqual([3, 4, 2]);
     expect(result.teamRankings.map(team => team.teamName)).toEqual([
       'Alpha',
       'Zulu',
-      'Gamma',
+    ]);
+    expect(result.teamRankings[0].classScore).toBe(
+      result.teamRankings[1].classScore,
+    );
+    expect(result.playerRankings.map(player => player.rank)).toEqual([
+      1,
+      2,
+      10,
+      20,
     ]);
     expect(result.userTeam).toBeNull();
   });
 
-  it('returns a zeroed result for an empty class', () => {
-    expect(buildRecruitingResults([buildTestTeam()], [], 1)).toEqual({
+  it('ranks by the unrounded score when displayed scores match', () => {
+    const teams = [
+      buildTestTeam({ id: 1, name: 'Five Star' }),
+      buildTestTeam({ id: 2, name: 'Depth' }),
+    ];
+    const result = buildRecruitingResults(
+      teams,
+      [
+        buildRecruitingProspect({
+          id: 1,
+          nationalRank: 1,
+          committedTeamId: 1,
+          stars: 5,
+        }),
+        buildRecruitingProspect({
+          id: 2,
+          nationalRank: 2,
+          committedTeamId: 2,
+          stars: 4,
+        }),
+        buildRecruitingProspect({
+          id: 3,
+          nationalRank: 3,
+          committedTeamId: 2,
+          stars: 3,
+        }),
+      ],
+      1,
+    );
+
+    expect(result.teamRankings.map(team => team.teamName)).toEqual([
+      'Five Star',
+      'Depth',
+    ]);
+    expect(result.teamRankings.map(team => team.classScore)).toEqual([
+      25,
+      25,
+    ]);
+  });
+
+  it('excludes uncommitted prospects and commitments to unknown teams', () => {
+    const team = buildTestTeam();
+    const result = buildRecruitingResults(
+      [team],
+      [
+        buildRecruitingProspect({ id: 1, committedTeamId: null }),
+        buildRecruitingProspect({ id: 2, committedTeamId: 999 }),
+      ],
+      team.id,
+    );
+
+    expect(result).toEqual({
       teamRankings: [],
       playerRankings: [],
       positions: [],
       userTeam: null,
       summary: {
         totalRecruits: 0,
-        averageRating: 0,
-        highestRating: 0,
       },
     });
   });

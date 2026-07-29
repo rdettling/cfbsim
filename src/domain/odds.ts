@@ -18,12 +18,35 @@ export type OddsContext = {
   maxDiff: number;
 };
 
+export const buildOddsContext = (value: unknown): OddsContext => {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('odds' in value) ||
+    typeof value.odds !== 'object' ||
+    value.odds === null
+  ) {
+    throw new Error('The saved betting-odds data is malformed.');
+  }
+  const source = value as {
+    odds: OddsContext['oddsMap'];
+    max_diff?: number;
+  };
+  if (
+    source.max_diff !== undefined &&
+    (!Number.isFinite(source.max_diff) || source.max_diff < 0)
+  ) {
+    throw new Error('The saved betting-odds maximum difference is malformed.');
+  }
+  return {
+    oddsMap: source.odds,
+    maxDiff: source.max_diff ?? 100,
+  };
+};
+
 export const loadOddsContext = async (): Promise<OddsContext> => {
   const oddsData = await getBettingOddsData();
-  return {
-    oddsMap: oddsData.odds ?? {},
-    maxDiff: oddsData.max_diff ?? 100,
-  };
+  return buildOddsContext(oddsData);
 };
 
 export const buildOddsFields = (

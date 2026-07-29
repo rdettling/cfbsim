@@ -16,9 +16,9 @@ export const ROUTES = {
   RATINGS_STATS: '/stats/ratings',
   SEASON_SUMMARY: '/summary',
   ROSTER_PROGRESSION: '/roster_progression',
+  RECRUITING: '/recruiting',
   RECRUITING_SUMMARY: '/recruiting_summary',
   ROSTER_CUTS: '/roster_cuts',
   REALIGNMENT: '/realignment',
-  SETTINGS: '/settings',
   AWARDS: '/awards',
 } as const;

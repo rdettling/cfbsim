@@ -5,7 +5,6 @@ import type { LeagueState } from '../../types/league';
 import {
   buildTestLeague,
   buildTestPlayer,
-  buildTestTeam,
 } from '../../test/fixtures';
 import { advanceOffseasonStage } from './stages';
 import { updateNextSeasonConfiguration } from './nextSeasonConfiguration';
@@ -15,13 +14,24 @@ import { loadRosterCuts } from './loaders/loadRosterCuts';
 import { loadRosterProgression } from './loaders/loadRosterProgression';
 import { loadSeasonSummary } from './loaders/offseason';
 import { loadNonCon } from './loaders/season/loadNonCon';
-import { POSITION_ORDER, ROSTER } from '../rosterConfig';
+import {
+  FINAL_ROSTER_SIZE,
+  POSITION_ORDER,
+  ROSTER,
+} from '../rosterConfig';
+import {
+  advanceRecruitingRound,
+  finalizeRecruiting,
+} from './recruiting';
+import { finalizeRoster } from './rosterFinalization';
+import { loadRecruitingState } from '../../db/recruitingRepo';
 
 const resetDatabase = async () => {
   const db = await getDb();
   const stores = [
     'baseData',
     'league',
+    'recruiting',
     'players',
     'games',
     'drives',
@@ -105,6 +115,7 @@ const seedFullCycle = async () => {
     },
     { key: 'states', value: { TS: 1 } },
     { key: 'rivalries', value: { rivalries: [] } },
+    { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
   ];
 
   for (const record of baseRecords) {
@@ -157,7 +168,7 @@ describe('offseason lifecycle integration', () => {
       stage: 'progression',
       currentYear: 2026,
     });
-    expect(league.settings?.playoff_teams).toBe(4);
+    expect(league.settings.playoffTeams).toBe(4);
     await expect(
       advanceOffseasonStage('realignment'),
     ).rejects.toMatchObject({
@@ -171,36 +182,75 @@ describe('offseason lifecycle integration', () => {
     await advanceOffseasonStage('progression');
     league = await loadPersistedLeague();
     const db = await getDb();
-    const recruitedPlayers = await db.getAll('players');
-    expect(league.info.stage).toBe('recruiting_summary');
-    expect(recruitedPlayers.length).toBeGreaterThan(1);
-    expect(recruitedPlayers.find(player => player.id === 1)).toMatchObject({
+    expect(league.info.stage).toBe('recruiting');
+    expect((await loadRecruitingState())?.version).toBe(1);
+    expect((await db.get('players', 1))).toMatchObject({
       year: 'sr',
       rating: 85,
     });
     await expect(
       advanceOffseasonStage('progression'),
     ).rejects.toMatchObject({
-      actualStage: 'recruiting_summary',
+      actualStage: 'recruiting',
     });
 
+    for (let round = 1; round <= 6; round += 1) {
+      const state = await loadRecruitingState();
+      await advanceRecruitingRound({
+        expectedStage: 'recruiting',
+        expectedYear: 2026,
+        expectedRound: round as 1 | 2 | 3 | 4 | 5 | 6,
+        expectedVersion: state!.version,
+        allocations: {},
+      });
+    }
+    const ready = await loadRecruitingState();
+    await finalizeRecruiting({
+      expectedStage: 'recruiting',
+      expectedYear: 2026,
+      expectedRound: 6,
+      expectedVersion: ready!.version,
+    });
+    const recruitedPlayers = await db.getAll('players');
+    expect((await loadPersistedLeague()).info.stage).toBe(
+      'recruiting_summary',
+    );
+    const finalizedRecruiting = (await loadRecruitingState())!;
     const recruitingSummary = await loadRecruitingSummary();
-    const persistedFreshmanIds = recruitedPlayers
+    const persistedFreshmen = recruitedPlayers
       .filter(player => player.active && player.year === 'fr')
-      .map(player => player.id)
-      .sort((left, right) => left - right);
+      .length;
+    const committedProspects = finalizedRecruiting.prospects
+      .filter(prospect => prospect.committedTeamId !== null)
+      .sort(
+        (left, right) =>
+          left.nationalRank - right.nationalRank || left.id - right.id,
+      );
+    expect(recruitingSummary.playerRankings).toHaveLength(
+      persistedFreshmen,
+    );
     expect(
-      recruitingSummary.playerRankings
-        .map(player => player.id)
-        .sort((left, right) => left - right),
-    ).toEqual(persistedFreshmanIds);
+      recruitingSummary.playerRankings.map(player => ({
+        id: player.prospectId,
+        rank: player.rank,
+      })),
+    ).toEqual(
+      committedProspects.map(prospect => ({
+        id: prospect.id,
+        rank: prospect.nationalRank,
+      })),
+    );
     await expect(loadRecruitingSummary()).resolves.toEqual(
       recruitingSummary,
     );
 
     await advanceOffseasonStage('recruiting_summary');
     expect((await loadPersistedLeague()).info.stage).toBe('roster_cuts');
-    expect(await db.getAll('players')).toEqual(recruitedPlayers);
+    expect(await loadRecruitingState()).not.toBeNull();
+    const rosterCutPlayers = await db.getAll('players');
+    recruitedPlayers.forEach(player => {
+      expect(rosterCutPlayers).toContainEqual(player);
+    });
     await expect(
       advanceOffseasonStage('recruiting_summary'),
     ).rejects.toMatchObject({
@@ -209,12 +259,24 @@ describe('offseason lifecycle integration', () => {
 
     const cutsPreview = await loadRosterCuts();
     await expect(loadRosterCuts()).resolves.toEqual(cutsPreview);
-    await advanceOffseasonStage('roster_cuts');
+    expect(cutsPreview.summary).toMatchObject({
+      activePlayers: FINAL_ROSTER_SIZE,
+      requiredCuts: 0,
+      readyToFinalize: true,
+    });
+    const finalizationGuard = {
+      expectedStage: 'roster_cuts' as const,
+      expectedYear: 2026,
+      expectedRound: 6 as const,
+      expectedStatus: 'finalized' as const,
+      expectedVersion: cutsPreview.cursor!.version,
+    };
+    await finalizeRoster(finalizationGuard);
     league = await loadPersistedLeague();
     const preseasonPlayers = await db.getAll('players');
-    cutsPreview.cuts.forEach(projected => {
+    cutsPreview.recommendedCutIds.forEach(projectedId => {
       expect(
-        preseasonPlayers.find(player => player.id === projected.id),
+        preseasonPlayers.find(player => player.id === projectedId),
       ).toMatchObject({
         active: false,
         starter: false,
@@ -228,22 +290,26 @@ describe('offseason lifecycle integration', () => {
             player.teamId === team.id &&
             player.pos === position,
         );
-        expect(active.length).toBeLessThanOrEqual(
-          ROSTER[position].total,
+        expect(active.length).toBeGreaterThanOrEqual(
+          ROSTER[position].starters,
         );
         expect(active.filter(player => player.starter)).toHaveLength(
-          Math.min(active.length, ROSTER[position].starters),
+          ROSTER[position].starters,
         );
       });
+      expect(
+        preseasonPlayers.filter(
+          player => player.active && player.teamId === team.id,
+        ),
+      ).toHaveLength(FINAL_ROSTER_SIZE);
     });
     expect(league.info.stage).toBe('preseason');
+    expect(await loadRecruitingState()).toBeNull();
     expect(league.scheduleBuilt).toBe(false);
     expect(league.simInitialized).toBe(false);
     await expect(
-      advanceOffseasonStage('roster_cuts'),
-    ).rejects.toMatchObject({
-      actualStage: 'preseason',
-    });
+      finalizeRoster(finalizationGuard),
+    ).rejects.toBeDefined();
     const preseason = await loadNonCon();
     await expect(loadNonCon()).resolves.toEqual(preseason);
   });
@@ -261,13 +327,13 @@ describe('offseason lifecycle integration', () => {
     const league = await loadPersistedLeague();
     if (league.info.stage === 'progression') {
       expect(league.info.currentYear).toBe(2026);
-      expect(league.settings?.auto_realignment).toBe(true);
+      expect(league.settings.conferencePolicy).toBe('historical');
     } else {
       expect(league.info).toMatchObject({
         stage: 'realignment',
         currentYear: 2025,
       });
-      expect(league.settings?.auto_realignment).toBe(false);
+      expect(league.settings.conferencePolicy).toBe('current');
     }
   });
 
@@ -342,97 +408,8 @@ describe('offseason lifecycle integration', () => {
     await expect(
       advanceOffseasonStage('progression'),
     ).rejects.toMatchObject({
-      actualStage: 'recruiting_summary',
+      actualStage: 'recruiting',
     });
   });
 
-  it('processes other-team cuts for a compliant user roster and creates rivalry games', async () => {
-    await seedFullCycle();
-    const db = await getDb();
-    const userTeam = buildTestTeam({ id: 1 });
-    const rival = buildTestTeam({
-      id: 2,
-      name: 'Rival State',
-      abbreviation: 'RIV',
-      conference: 'Other Conference',
-      confName: 'Other Conference',
-    });
-    const league = buildTestLeague('roster_cuts', {
-      teams: [userTeam, rival],
-      idCounters: {
-        game: 10,
-        drive: 1,
-        play: 1,
-        gameLog: 1,
-        player: 30,
-      },
-    });
-    await db.put('league', { key: 'current', value: league });
-    await db.put('baseData', {
-      key: 'rivalries',
-      value: {
-        rivalries: [
-          ['Test State', 'Rival State', 3, 'State Rivalry', false],
-        ],
-      },
-    });
-    await db.put('baseData', {
-      key: 'betting_odds',
-      value: { odds: {}, max_diff: 100 },
-    });
-    await db.clear('players');
-    const players = [userTeam, rival].flatMap((team, teamIndex) =>
-      Array.from({
-        length:
-          ROSTER.qb.total + (teamIndex === 0 ? 0 : 1),
-      }, (_, index) =>
-        buildTestPlayer({
-          id: teamIndex * 10 + index + 1,
-          teamId: team.id,
-          pos: 'qb',
-          rating: 85 - index,
-          rating_sr: 90 - index,
-          starter: index === ROSTER.qb.total,
-        }),
-      ),
-    );
-    const tx = db.transaction('players', 'readwrite');
-    for (const player of players) {
-      await tx.objectStore('players').put(player);
-    }
-    await tx.done;
-
-    const preview = await loadRosterCuts();
-    expect(preview.cuts).toEqual([]);
-    expect(preview.summary.projectedCuts).toBe(0);
-
-    await advanceOffseasonStage('roster_cuts');
-
-    const persisted = await db.getAll('players');
-    expect(
-      persisted
-        .filter(player => !player.active)
-        .map(player => player.id),
-    ).toEqual([15]);
-    [userTeam.id, rival.id].forEach(teamId => {
-      const activeQbs = persisted.filter(
-        player =>
-          player.active &&
-          player.teamId === teamId &&
-          player.pos === 'qb',
-      );
-      expect(activeQbs).toHaveLength(ROSTER.qb.total);
-      expect(activeQbs.filter(player => player.starter)).toHaveLength(
-        ROSTER.qb.starters,
-      );
-    });
-    expect((await loadPersistedLeague()).info.stage).toBe('preseason');
-    expect(await db.getAll('games')).toEqual([
-      expect.objectContaining({
-        id: 10,
-        name: 'State Rivalry',
-        weekPlayed: 3,
-      }),
-    ]);
-  });
 });

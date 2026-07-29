@@ -6,11 +6,14 @@ Explains the active configuration and tuning surfaces that shape simulation beha
 
 ## System Model
 
-Configuration exists at three levels:
+Configuration exists at four levels:
 
 1. **Runtime sim tuning constants**: affect in-game behavior (clock, playcalling, outcomes, kickoffs).
-2. **League settings**: affect season topology and lifecycle behavior (playoff format, realignment automation).
-3. **Offline calibration/generation scripts**: produce or calibrate datasets/constants used by runtime.
+2. **Next-season configuration**: affects season topology and lifecycle
+   behavior.
+3. **Recruiting configuration**: locked product rules and explicitly tunable
+   balance defaults used by the pure recruiting engine and AI.
+4. **Offline calibration/generation scripts**: produce or calibrate datasets/constants used by runtime.
 
 The tuning model is intentionally stochastic: many mechanisms rely on probabilistic sampling (`Math.random` and Gaussian draws), so changes should be validated statistically, not by single-run outcomes.
 
@@ -21,9 +24,10 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Sim modules (`clock`, `playcalling`, `outcomes`, `kickoffs`) read these values at execution time.
 
 2. **League settings path**
-- `DEFAULT_SETTINGS` defines baseline playoff/realignment behavior.
-- Settings are initialized/normalized during league creation/load. Upcoming-
-  season topology is edited only in the stage-gated Next Season Setup flow.
+- `DEFAULT_NEXT_SEASON_CONFIGURATION` defines new-league defaults.
+- The fully required configuration is persisted directly on `LeagueState`.
+  Upcoming-season topology is edited only in the stage-gated Next Season Setup
+  flow.
 - Next Season Setup and realignment advancement share one validated historical
   resolver. It targets `currentYear + 1`, uses an exact bundled year when
   available, otherwise uses the closest year, and identifies post-latest-year
@@ -34,6 +38,19 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Tune/eval scripts run offline via npm scripts and can rewrite `tuning.json`.
 - Generation scripts create data assets (odds/history) used by app runtime.
 
+4. **Recruiting evaluation path**
+- `src/domain/recruiting/config.ts` contains recruiting and AI constants.
+- `src/domain/rosterConfig.ts` owns positional totals and derives the
+  80-player final size, four-player allowance, and 84-player maximum.
+- `src/domain/recruiting/classScoring.ts` owns the current fixed star values
+  and class-depth curve; these are scoring behavior, not AI tuning.
+- `eval:recruiting-balance` reads those constants and reports a fixed-seed
+  repeated-season evaluation without rewriting them.
+- Normal commitments require 55 interest and a 10-point lead. AI planning
+  targets two oversignings.
+- Annual supply is 32 five-stars, 340 four-stars, 2,800 three-stars, and
+  200 two-stars.
+
 ## Key Mechanics
 
 - **High-impact runtime controls (`tuning.json`)**:
@@ -41,21 +58,36 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - `playcalling.*`: pass/run probability adjustments by situation.
   - `outcomes.*`: completion/sack/interception/fumble baselines, yardage scaling, field-goal probabilities.
   - `kickoffs.*`: touchback vs return behavior and starting field position distribution.
-- **League topology controls (`Settings`)**:
-  - `playoff_teams` determines postseason structure and `lastWeek` horizon.
-  - `playoff_autobids` and `playoff_conf_champ_top_4` alter 12-team seeding behavior.
-  - `auto_realignment` stores the Next Season Setup choice to follow historical
-    conference membership rather than keep the current alignment.
-  - `auto_update_postseason_format` stores the choice to follow the historical
-    postseason format rather than use a custom supported format.
+- **League topology controls (`NextSeasonConfiguration`)**:
+  - `playoffTeams` determines postseason structure and `lastWeek`.
+  - `playoffAutobids` and `conferenceChampionsReceiveTopSeeds` alter 12-team
+    seeding.
+  - `conferencePolicy` chooses historical conference membership or the current
+    alignment.
+  - `postseasonPolicy` chooses the historical format or a supported custom
+    format.
 - **Scripted calibration controls**:
   - `tune:yards` iteratively adjusts yard-distribution-related tuning fields.
   - `eval:winrate` measures win-rate and margin behavior under rating differentials.
   - `tune:winrate` adjusts differential scaling terms for target win-rate curve.
+- **Recruiting controls**:
+  - Locked rules include six rounds, the 25-player board, prestige budget
+    table, meaningful-pursuit minimum, rating-range width, four-player
+    oversign allowance, final roster size, and starter constraints.
+  - Elite prospects blend 10% ordinary preference fit with 90% squared
+    prestige fit. There is no prestige eligibility cutoff.
+  - Potentially tunable defaults include commitment threshold and lead,
+    initial-interest and linear point-effectiveness coefficients, and AI
+    ranking, admission, and allocation constants.
+  - The four-player oversign allowance is authoritative legality; the
+    two-player AI target controls planning only.
+  - Aggregate gates are evaluated independently from structural invariants.
+    Signing Day share and low-prestige elite share are informational rather
+    than hard gates. Evaluation never rewrites constants automatically.
 
 ## Invariants and Constraints
 
-- `SIM_TUNING` shape must remain compatible with `SimTuning` type contract.
+- `SIM_TUNING` must satisfy the `SimTuning` type contract.
 - Extreme tuning changes can destabilize downstream systems (rankings, postseason qualification realism) even when engine still runs.
 - Playoff/team settings must remain consistent with postseason assumptions (2/4/12 supported topology).
 - Next Season Setup accepts 0–10 automatic bids only for the 12-team format;
@@ -69,6 +101,7 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   compares the settings used for calculation with the persisted settings so a
   concurrent edit cannot produce a mixed transition.
 - Any script that rewrites tracked JSON should be treated as a model change requiring regression review.
+- Recruiting evaluation never writes IndexedDB, tracked JSON, or configuration.
 
 ## Failure/Edge Cases
 
@@ -82,7 +115,7 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Clock/tempo tuning changes alter game pace and number of drives.
 - Outcome tuning changes alter yardage distributions, scoring frequency, and upset rates.
 - Playoff setting changes alter season length, postseason rounds, and ranking freeze behavior.
-- Realignment/postseason auto-update settings alter offseason structural evolution over years.
+- Conference and postseason policies alter offseason structural evolution.
 - The Next Season Setup source badge identifies whether the upcoming year uses
   exact bundled data or the closest historical fallback.
 
@@ -102,14 +135,19 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - `src/domain/sim/tuning.json`
   - `src/domain/sim/config.ts` (`SIM_TUNING`, `applySimTuning`)
   - `src/domain/sim/clock.ts`, `playcalling.ts`, `outcomes.ts`, `kickoffs.ts`
+- Recruiting tuning/evaluation:
+  - `src/domain/recruiting/config.ts`
+  - `src/domain/recruiting/classScoring.ts`
+  - `src/domain/recruiting/evaluation.ts`
+  - `scripts/eval_recruiting_balance.ts`
 - League settings:
-  - `src/types/league.ts` (`DEFAULT_SETTINGS`, `ensureSettings`)
+  - `src/types/league.ts` (`DEFAULT_NEXT_SEASON_CONFIGURATION`)
   - `src/domain/league/historicalData.ts` (historical source resolution)
   - `src/domain/league/nextSeasonPreview.ts` (side-effect-free preview)
-  - `src/domain/league/nextSeasonConfiguration.ts` (settings mapping,
-    validation, and update command)
-  - `src/domain/league/postseason.ts` (`getLastWeekByPlayoffTeams`, postseason state normalization)
-  - `src/domain/league/offseason.ts` (auto realignment/postseason updates)
+  - `src/domain/league/nextSeasonConfiguration.ts` (validation and update
+    command)
+  - `src/domain/league/postseason.ts` (`getLastWeekByPlayoffTeams`)
+  - `src/domain/league/offseason.ts` (policy-driven structural updates)
 - Scripts and commands:
   - `package.json` scripts: `tune:yards`, `eval:winrate`, `tune:winrate`, `generate:odds`, `generate:history`, `typecheck`
   - `scripts/tune_yards.ts`, `scripts/eval_winrate.ts`, `scripts/tune_winrate.ts`, `scripts/generate_betting_odds.ts`, `scripts/generate_history.ts`

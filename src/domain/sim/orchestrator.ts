@@ -5,7 +5,11 @@ import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord }
 import type { GameData, Drive } from '../../types/game';
 import type { Team } from '../../types/domain';
 import { buildFullScheduleFromExisting } from '../scheduleBuilder';
-import { loadLeague, saveLeague } from '../../db/leagueRepo';
+import {
+  loadLeague,
+  requireCurrentRoster,
+  saveLeague,
+} from '../../db/leagueRepo';
 import {
   getGameById,
   getGamesByWeek,
@@ -18,9 +22,7 @@ import {
   savePlays,
   clearNonGameArtifacts,
 } from '../../db/simRepo';
-import { ensureRosters } from '../roster';
 import { buildOddsFields, loadOddsContext } from '../odds';
-import { normalizeLeague } from '../league/normalize';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { buildWatchability } from './games';
 import {
@@ -36,11 +38,10 @@ import {
 } from './engine';
 import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
 import { handleSpecialWeeks } from './postseason';
-import { normalizeCounters } from './ids';
 
 export const initializeSimData = async (league: LeagueState, fullGames: FullGame[]) => {
-  const counters = normalizeCounters(league);
-  await ensureRosters(league);
+  const counters = league.idCounters;
+  await requireCurrentRoster(league);
   await clearNonGameArtifacts();
   const oddsContext = await loadOddsContext();
 
@@ -86,12 +87,8 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
 };
 
 export const getGamesToLiveSim = async () => {
-  const league = await loadLeague<LeagueState>();
+  const league = await loadLeague();
   if (!league) throw new Error('No league found. Start a new game.');
-  const changed = normalizeLeague(league);
-  if (changed) {
-    await saveLeague(league);
-  }
   const games = (await getGamesByWeek(league.info.currentWeek)).filter(
     game => game.year === league.info.currentYear
   );
@@ -155,12 +152,9 @@ export type PreparedInteractiveLiveGameReady = {
 export type PreparedInteractiveLiveGame = PreparedInteractiveLiveGameComplete | PreparedInteractiveLiveGameReady;
 
 export const prepareInteractiveLiveGame = async (gameId: number): Promise<PreparedInteractiveLiveGame> => {
-  const league = await loadLeague<LeagueState>();
+  const league = await loadLeague();
   if (!league) throw new Error('No league found. Start a new game.');
-  const changed = normalizeLeague(league);
-  if (changed) {
-    await saveLeague(league);
-  }
+  await requireCurrentRoster(league);
   const record = await getGameById(gameId);
   if (!record) throw new Error('Game not found.');
 
@@ -265,12 +259,9 @@ export const finalizeGameSimulation = async (params: {
 };
 
 export const advanceWeeks = async (destWeek: number) => {
-  const league = await loadLeague<LeagueState>();
+  const league = await loadLeague();
   if (!league) throw new Error('No league found. Start a new game.');
-  const changed = normalizeLeague(league);
-  if (changed) {
-    await saveLeague(league);
-  }
+  await requireCurrentRoster(league);
   if (!league.scheduleBuilt || !league.simInitialized) {
     const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
     const existingGames = (await getAllGames()).filter(

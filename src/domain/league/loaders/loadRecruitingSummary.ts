@@ -1,8 +1,6 @@
-import { saveLeague } from '../../../db/leagueRepo';
-import { getAllPlayers } from '../../../db/simRepo';
+import { loadRecruitingLifecycleSnapshot } from '../../../db/recruitingRepo';
 import type { RecruitingResults } from '../../../types/recruiting';
-import { ensureRosters } from '../../roster';
-import { loadLeagueOrThrow } from '../leagueStore';
+import { requireFinalizedRecruitingState } from '../recruiting';
 import { buildRecruitingResults } from '../recruitingResults';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
@@ -13,17 +11,12 @@ const EMPTY_RESULTS: RecruitingResults = {
   userTeam: null,
   summary: {
     totalRecruits: 0,
-    averageRating: 0,
-    highestRating: 0,
   },
 };
 
 export const loadRecruitingSummary = async () => {
-  const league = await loadLeagueOrThrow();
-
-  if (await ensureRosters(league)) {
-    await saveLeague(league);
-  }
+  const { league, recruiting } =
+    await loadRecruitingLifecycleSnapshot();
 
   const envelope = buildLeagueNavigationEnvelope(league);
   const { team } = envelope;
@@ -35,11 +28,15 @@ export const loadRecruitingSummary = async () => {
     };
   }
 
+  const finalizedRecruiting = requireFinalizedRecruitingState(
+    recruiting,
+    league.info.currentYear,
+  );
   return {
     ...envelope,
     ...buildRecruitingResults(
       league.teams,
-      await getAllPlayers(),
+      finalizedRecruiting.prospects,
       team.id,
     ),
   };

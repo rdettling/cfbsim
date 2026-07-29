@@ -1,6 +1,18 @@
-import { Box, Button, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Menu,
+  MenuItem,
+  Stack,
+  Typography,
+} from '@mui/material';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { StageInfo } from './navigation';
+import type {
+  StageAdvanceAction,
+  StageInfo,
+} from './navigation';
 
 interface NonSeasonBannerProps {
   currentStage: StageInfo;
@@ -9,6 +21,8 @@ interface NonSeasonBannerProps {
   advancing: boolean;
   disabled?: boolean;
   onAdvance: () => void;
+  advanceActions?: StageAdvanceAction[];
+  advanceLabel?: string;
 }
 
 const NonSeasonBanner = ({
@@ -18,8 +32,20 @@ const NonSeasonBanner = ({
   advancing,
   disabled = false,
   onAdvance,
+  advanceActions,
+  advanceLabel,
 }: NonSeasonBannerProps) => {
   const navigate = useNavigate();
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const hasMenu = Boolean(advanceActions?.length);
+
+  const handleAdvanceClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (hasMenu) {
+      setMenuAnchor(event.currentTarget);
+    } else {
+      onAdvance();
+    }
+  };
 
   return (
     <Stack
@@ -56,8 +82,11 @@ const NonSeasonBanner = ({
       <Button
         variant="contained"
         size="small"
-        onClick={onAdvance}
+        onClick={handleAdvanceClick}
         disabled={advancing || disabled}
+        endIcon={hasMenu ? <ArrowDropDownIcon /> : undefined}
+        aria-haspopup={hasMenu ? 'menu' : undefined}
+        aria-expanded={hasMenu ? Boolean(menuAnchor) : undefined}
         sx={{
           flexShrink: 0,
           maxWidth: compact ? '58%' : 'none',
@@ -65,8 +94,30 @@ const NonSeasonBanner = ({
           whiteSpace: compact ? 'normal' : 'nowrap',
         }}
       >
-        {advancing ? 'Advancing…' : `Next: ${nextStage.label}`}
+        {advancing
+          ? 'Advancing…'
+          : advanceLabel ?? `Next: ${nextStage.label}`}
       </Button>
+      {hasMenu && (
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={() => setMenuAnchor(null)}
+        >
+          {advanceActions?.map(action => (
+            <MenuItem
+              key={action.label}
+              disabled={action.disabled}
+              onClick={() => {
+                setMenuAnchor(null);
+                action.onSelect();
+              }}
+            >
+              {action.label}
+            </MenuItem>
+          ))}
+        </Menu>
+      )}
       {!compact && (
         <Button
           variant="outlined"

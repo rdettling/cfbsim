@@ -3,8 +3,8 @@ import type { loadAwards, loadSeasonSummary } from '../domain/league/loaders/off
 import type { loadRosterCuts } from '../domain/league/loaders/loadRosterCuts';
 import type { loadRealignment } from '../domain/league/loaders/loadRealignment';
 import type { loadRecruitingSummary } from '../domain/league/loaders/loadRecruitingSummary';
+import type { loadRecruiting } from '../domain/league/loaders/loadRecruiting';
 import type { loadRosterProgression } from '../domain/league/loaders/loadRosterProgression';
-import type { loadAuthoritativeStage } from '../domain/league/loaders/loadAuthoritativeStage';
 import type { loadRankings } from '../domain/league/loaders';
 import type { loadRatingsStats, loadStandings, loadTeamStats, loadIndividualStats } from '../domain/league/loaders/stats';
 import type { loadTeamRoster, loadTeamHistory, loadPlayer, getTeamInfo } from '../domain/league/loaders/team';
@@ -21,6 +21,7 @@ export type SeasonSummaryPageData = Awaited<ReturnType<typeof loadSeasonSummary>
 export type RealignmentPageData = Awaited<ReturnType<typeof loadRealignment>>;
 export type RosterProgressionPageData = Awaited<ReturnType<typeof loadRosterProgression>>;
 export type RecruitingSummaryPageData = Awaited<ReturnType<typeof loadRecruitingSummary>>;
+export type RecruitingPageData = Awaited<ReturnType<typeof loadRecruiting>>;
 export type RosterCutsPageData = Awaited<ReturnType<typeof loadRosterCuts>>;
 export type RatingsStatsPageData = Awaited<ReturnType<typeof loadRatingsStats>>;
 export type TeamStatsPageData = Awaited<ReturnType<typeof loadTeamStats>>;
@@ -28,7 +29,6 @@ export type StandingsPageData = Awaited<ReturnType<typeof loadStandings>>;
 export type TeamRosterPageData = Awaited<ReturnType<typeof loadTeamRoster>>;
 export type TeamHistoryPageData = Awaited<ReturnType<typeof loadTeamHistory>>;
 export type RankingsPageData = Awaited<ReturnType<typeof loadRankings>>;
-export type AuthoritativeStagePageData = Awaited<ReturnType<typeof loadAuthoritativeStage>>;
 export type PlayerPageData = Awaited<ReturnType<typeof loadPlayer>>;
 export type TeamInfoData = Awaited<ReturnType<typeof getTeamInfo>>;
 export type AvailableTeamsData = Awaited<ReturnType<typeof listAvailableTeams>>;

@@ -55,6 +55,7 @@ export type LeagueStage =
   | 'summary'
   | 'realignment'
   | 'progression'
+  | 'recruiting'
   | 'recruiting_summary'
   | 'roster_cuts';
 
@@ -63,7 +64,7 @@ export type OffseasonStage = Exclude<LeagueStage, 'preseason' | 'season'>;
 export interface Info {
   currentWeek: number;
   currentYear: number;
-  startYear?: number;
+  startYear: number;
   stage: LeagueStage;
   team: string;
   lastWeek: number;
@@ -89,14 +90,6 @@ export interface ScheduleGame {
   location?: 'Home' | 'Away' | 'Neutral';
 }
 
-export interface Settings {
-  playoff_teams: number;
-  playoff_autobids?: number;
-  playoff_conf_champ_top_4?: boolean;
-  auto_realignment: boolean;
-  auto_update_postseason_format: boolean;
-}
-
 export type ConferenceStructurePolicy = 'historical' | 'current';
 export type PostseasonFormatPolicy = 'historical' | 'custom';
 export type PlayoffTeamCount = 2 | 4 | 12;
@@ -105,8 +98,8 @@ export interface NextSeasonConfiguration {
   conferencePolicy: ConferenceStructurePolicy;
   postseasonPolicy: PostseasonFormatPolicy;
   playoffTeams: PlayoffTeamCount;
-  playoffAutobids?: number;
-  conferenceChampionsReceiveTopSeeds?: boolean;
+  playoffAutobids: number;
+  conferenceChampionsReceiveTopSeeds: boolean;
 }
 
 export interface HistoricalDataResolution {

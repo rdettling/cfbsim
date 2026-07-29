@@ -4,14 +4,11 @@ import { getDb } from '../../db/db';
 import type { LeagueState } from '../../types/league';
 import { buildTestLeague } from '../../test/fixtures';
 import {
-  configurationToSettings,
   normalizeNextSeasonConfiguration,
-  settingsToNextSeasonConfiguration,
   updateNextSeasonConfiguration,
 } from './nextSeasonConfiguration';
 import { resolveHistoricalData } from './historicalData';
 import { buildNextSeasonPreview } from './nextSeasonPreview';
-import { DEFAULT_SETTINGS } from '../../types/league';
 
 const validYearData = {
   playoff: {
@@ -201,65 +198,7 @@ describe('next-season configuration', () => {
     },
   );
 
-  it('supplies supported defaults for a 12-team format', () => {
-    expect(
-      normalizeNextSeasonConfiguration({
-        conferencePolicy: 'current',
-        postseasonPolicy: 'custom',
-        playoffTeams: 12,
-      }),
-    ).toMatchObject({
-      playoffAutobids: 6,
-      conferenceChampionsReceiveTopSeeds: true,
-    });
-  });
-
-  it.each([
-    ['historical', 'historical', true, true],
-    ['historical', 'custom', true, false],
-    ['current', 'historical', false, true],
-    ['current', 'custom', false, false],
-  ] as const)(
-    'maps %s conferences and %s postseason to compatible settings',
-    (
-      conferencePolicy,
-      postseasonPolicy,
-      autoRealignment,
-      autoPostseason,
-    ) => {
-      const settings = configurationToSettings(DEFAULT_SETTINGS, {
-        conferencePolicy,
-        postseasonPolicy,
-        playoffTeams: 12,
-        playoffAutobids: 5,
-        conferenceChampionsReceiveTopSeeds: true,
-      });
-
-      expect(settings).toMatchObject({
-        auto_realignment: autoRealignment,
-        auto_update_postseason_format: autoPostseason,
-      });
-      expect(settingsToNextSeasonConfiguration(settings)).toMatchObject({
-        conferencePolicy,
-        postseasonPolicy,
-      });
-    },
-  );
-
   it('persists a partial update and returns the authoritative configuration', async () => {
-    const db = await getDb();
-    const seeded = await db.get('league', 'current');
-    const leagueWithLegacyField = seeded?.value as LeagueState & {
-      settings: NonNullable<LeagueState['settings']> & {
-        legacy_note: string;
-      };
-    };
-    leagueWithLegacyField.settings.legacy_note = 'preserve me';
-    await db.put('league', {
-      key: 'current',
-      value: leagueWithLegacyField,
-    });
-
     await expect(
       updateNextSeasonConfiguration({
         conferencePolicy: 'current',
@@ -274,12 +213,14 @@ describe('next-season configuration', () => {
       conferenceChampionsReceiveTopSeeds: false,
     });
 
+    const db = await getDb();
     const persisted = await db.get('league', 'current');
     expect((persisted?.value as LeagueState).settings).toMatchObject({
-      auto_realignment: false,
-      auto_update_postseason_format: false,
-      playoff_teams: 4,
-      legacy_note: 'preserve me',
+      conferencePolicy: 'current',
+      postseasonPolicy: 'custom',
+      playoffTeams: 4,
+      playoffAutobids: 0,
+      conferenceChampionsReceiveTopSeeds: false,
     });
   });
 
@@ -292,8 +233,8 @@ describe('next-season configuration', () => {
     const db = await getDb();
     const persisted = await db.get('league', 'current');
     expect((persisted?.value as LeagueState).settings).toMatchObject({
-      auto_realignment: false,
-      auto_update_postseason_format: false,
+      conferencePolicy: 'current',
+      postseasonPolicy: 'custom',
     });
   });
 

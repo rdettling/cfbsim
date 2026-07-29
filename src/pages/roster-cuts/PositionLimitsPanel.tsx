@@ -41,7 +41,7 @@ export const PositionLimitsPanel = ({
           color: 'text.secondary',
         }}
       >
-        Select a position to filter projected cuts.
+        Select a position to filter the active roster.
       </Typography>
     </Box>
 

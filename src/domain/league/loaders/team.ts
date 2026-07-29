@@ -8,10 +8,9 @@ import type {
   PlayerStatValues,
 } from '../../../types/player';
 import { getRatingsData, getYearData, getHistoryData, getYearsIndex } from '../../../db/baseData';
-import { getAllGames, getAllPlayers, getAllGameLogs } from '../../../db/simRepo';
-import { saveLeague } from '../../../db/leagueRepo';
+import { getAllGames, getAllGameLogs } from '../../../db/simRepo';
+import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
-import { ensureRosters } from '../../roster';
 import { POSITION_ORDER } from '../../rosterConfig';
 import { buildAwards } from '../awards';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';
@@ -19,17 +18,14 @@ import { average, percentage } from '../utils/statMath';
 
 
 export const loadTeamRoster = async (teamName?: string) => {
-  const league = await loadLeagueOrThrow();
-
-  await ensureRosters(league);
-  await saveLeague(league);
+  const { league, players } = await loadLeaguePlayersSnapshot();
 
   const team =
     (teamName ? league.teams.find(entry => entry.name === teamName) : null) ??
     league.teams.find(entry => entry.name === league.info.team) ??
     league.teams[0];
 
-  const roster = (await getAllPlayers()).filter(
+  const roster = players.filter(
     player => player.active && player.teamId === team.id
   );
 
@@ -418,12 +414,9 @@ const getPlayerYears = (
 };
 
 export const loadPlayer = async (playerId: string) => {
-  const league = await loadLeagueOrThrow();
-  await ensureRosters(league);
-  await saveLeague(league);
+  const { league, players } = await loadLeaguePlayersSnapshot();
 
-  const [players, gameLogs, games] = await Promise.all([
-    getAllPlayers(),
+  const [gameLogs, games] = await Promise.all([
     getAllGameLogs(),
     getAllGames(),
   ]);

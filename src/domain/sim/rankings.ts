@@ -2,7 +2,6 @@ import type { Info, Team } from '../../types/domain';
 import type { SimGame } from '../../types/sim';
 import type { LeagueState } from '../../types/league';
 import type { GameRecord } from '../../types/db';
-import { DEFAULT_SETTINGS } from '../../types/league';
 import type { OddsContext } from '../odds';
 import { getWinProbForRatings, HOME_FIELD_ADVANTAGE } from '../odds';
 import { REGULAR_SEASON_WEEKS } from '../league/postseason';
@@ -197,9 +196,9 @@ export const updateTeamRecords = (
 export const updateRankings = (
   info: Info,
   teams: Team[],
-  settings?: LeagueState['settings']
+  settings: LeagueState['settings']
 ) => {
-  const playoffTeams = settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const playoffTeams = settings.playoffTeams;
   const skipWeeks = getRankingFreezeWeeks(playoffTeams);
   if (skipWeeks.includes(info.currentWeek)) {
     return;

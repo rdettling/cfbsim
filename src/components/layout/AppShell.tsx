@@ -2,10 +2,16 @@ import { Box, Container } from '@mui/material';
 import type { ContainerProps } from '@mui/material';
 import type { ReactNode } from 'react';
 import AppNavigation from './AppNavigation';
-import type { AppNavigationData } from './navigation';
+import type {
+  AppNavigationData,
+  StageAdvanceAction,
+} from './navigation';
 
 export interface AppShellProps {
   navigationData: AppNavigationData;
+  onAdvanceStage?: () => void;
+  advanceActions?: StageAdvanceAction[];
+  advanceLabel?: string;
   containerMaxWidth?: ContainerProps['maxWidth'];
   desktopViewportConstrained?: boolean;
   children: ReactNode;
@@ -13,6 +19,9 @@ export interface AppShellProps {
 
 const AppShell = ({
   navigationData,
+  onAdvanceStage,
+  advanceActions,
+  advanceLabel,
   containerMaxWidth = 'lg',
   desktopViewportConstrained = false,
   children,
@@ -30,7 +39,12 @@ const AppShell = ({
       }),
     }}
   >
-    <AppNavigation data={navigationData} />
+    <AppNavigation
+      data={navigationData}
+      onAdvanceStage={onAdvanceStage}
+      advanceActions={advanceActions}
+      advanceLabel={advanceLabel}
+    />
     {containerMaxWidth !== false ? (
       <Container
         component="main"

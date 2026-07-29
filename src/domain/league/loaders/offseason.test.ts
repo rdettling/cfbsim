@@ -5,18 +5,28 @@ import type { LeagueStage } from '../../../types/domain';
 import type { LeagueState } from '../../../types/league';
 import { buildTestLeague, buildTestPlayer } from '../../../test/fixtures';
 import {
+  buildRecruitingProspect,
+  buildRecruitingState,
+} from '../../../test/recruitingFixtures';
+import {
   loadSeasonSummary,
 } from './offseason';
 import { loadRosterCuts } from './loadRosterCuts';
-import { loadAuthoritativeStage } from './loadAuthoritativeStage';
 import { loadRecruitingSummary } from './loadRecruitingSummary';
+import { loadRecruiting } from './loadRecruiting';
 import { loadRealignment } from './loadRealignment';
 import { loadRosterProgression } from './loadRosterProgression';
 import { loadNonCon } from './season/loadNonCon';
+import {
+  FINAL_ROSTER_SIZE,
+  POSITION_ORDER,
+  ROSTER,
+} from '../../rosterConfig';
 
 const stores = [
   'baseData',
   'league',
+  'recruiting',
   'players',
   'games',
   'drives',
@@ -31,14 +41,50 @@ const resetDatabase = async () => {
   await tx.done;
 };
 
+const buildCompliantRoster = () => {
+  let id = 1;
+  return POSITION_ORDER.flatMap(position =>
+    Array.from({ length: ROSTER[position].total }, (_, index) =>
+      buildTestPlayer({
+        id: id++,
+        pos: position,
+        year: index % 2 ? 'jr' : 'sr',
+        rating: 70 + index,
+        rating_sr: 78 + index,
+        starter: false,
+      }),
+    ),
+  );
+};
+
 const seedScenario = async (stage: LeagueStage) => {
   const db = await getDb();
-  const tx = db.transaction(['baseData', 'league', 'players'], 'readwrite');
+  const tx = db.transaction(['baseData', 'league', 'recruiting', 'players'], 'readwrite');
   await tx.objectStore('league').put({
     key: 'current',
     value: buildTestLeague(stage),
   });
-  await tx.objectStore('players').put(buildTestPlayer());
+  if (stage === 'roster_cuts') {
+    for (const player of buildCompliantRoster()) {
+      await tx.objectStore('players').put(player);
+    }
+  } else {
+    await tx.objectStore('players').put(buildTestPlayer());
+  }
+  if (
+    stage === 'recruiting' ||
+    stage === 'recruiting_summary' ||
+    stage === 'roster_cuts'
+  ) {
+    await tx.objectStore('recruiting').put({
+      key: 'current',
+      value: buildRecruitingState(
+        stage === 'recruiting'
+          ? { round: 1, status: 'active' }
+          : undefined,
+      ),
+    });
+  }
   await tx.objectStore('baseData').put({
     key: 'history',
     value: {
@@ -117,6 +163,7 @@ const snapshotLifecycleStores = async () => {
   const history = await db.get('baseData', 'history');
   return {
     league: league?.value as LeagueState,
+    recruiting: await db.get('recruiting', 'current'),
     history: history?.value,
     players: await db.getAll('players'),
     games: await db.getAll('games'),
@@ -133,6 +180,7 @@ describe('offseason loaders', () => {
     ['summary', loadSeasonSummary],
     ['realignment', loadRealignment],
     ['progression', loadRosterProgression],
+    ['recruiting', loadRecruiting],
     ['recruiting_summary', loadRecruitingSummary],
     ['roster_cuts', loadRosterCuts],
     ['preseason', loadNonCon],
@@ -153,13 +201,13 @@ describe('offseason loaders', () => {
 
   it('returns exact empty page payloads from every off-stage lifecycle loader', async () => {
     await seedScenario('season');
-    await loadAuthoritativeStage();
     const before = await snapshotLifecycleStores();
 
     const summary = await loadSeasonSummary();
     const realignment = await loadRealignment();
     const progression = await loadRosterProgression();
     const recruiting = await loadRecruitingSummary();
+    const interactiveRecruiting = await loadRecruiting();
     const cuts = await loadRosterCuts();
     const preseason = await loadNonCon();
 
@@ -191,12 +239,17 @@ describe('offseason loaders', () => {
       userTeam: null,
       summary: {
         totalRecruits: 0,
-        averageRating: 0,
-        highestRating: 0,
       },
     });
+    expect(interactiveRecruiting).toMatchObject({
+      cursor: null,
+      userRecruiting: null,
+      prospects: [],
+      positions: [],
+      rules: null,
+    });
     expect(cuts).toMatchObject({
-      cuts: [],
+      players: [],
       positions: [],
       summary: {
         activePlayers: 0,
@@ -227,68 +280,6 @@ describe('offseason loaders', () => {
     expect(result).not.toHaveProperty('playoff_changes');
   });
 
-  it.each([
-    'preseason',
-    'season',
-    'summary',
-    'realignment',
-    'progression',
-    'recruiting_summary',
-    'roster_cuts',
-  ] as const)(
-    'loads the authoritative navigation envelope at %s',
-    async stage => {
-      await seedScenario(stage);
-
-      const result = await loadAuthoritativeStage();
-
-      expect(result.info.stage).toBe(stage);
-      expect(result.team.name).toBe('Test State');
-      expect(result.conferences).toHaveLength(1);
-      expect(result).not.toHaveProperty('settings');
-    },
-  );
-
-  it('normalizes missing settings through the authoritative-stage redirect loader', async () => {
-    await seedScenario('summary');
-    const db = await getDb();
-    const record = await db.get('league', 'current');
-    const league = record?.value as LeagueState;
-    delete league.settings;
-    await db.put('league', { key: 'current', value: league });
-
-    const result = await loadAuthoritativeStage();
-    const persisted = await db.get('league', 'current');
-
-    expect(result.info.stage).toBe('summary');
-    expect((persisted?.value as LeagueState).settings).toMatchObject({
-      playoff_teams: 12,
-      auto_realignment: true,
-    });
-  });
-
-  it('initializes missing settings without advancing an older save', async () => {
-    await seedScenario('realignment');
-    const db = await getDb();
-    const record = await db.get('league', 'current');
-    const league = record?.value as LeagueState;
-    delete league.settings;
-    await db.put('league', { key: 'current', value: league });
-
-    const result = await loadRealignment();
-    const persisted = await db.get('league', 'current');
-
-    expect(result.configuration).toMatchObject({
-      conferencePolicy: 'historical',
-      playoffTeams: 12,
-    });
-    expect((persisted?.value as LeagueState).settings).toMatchObject({
-      playoff_teams: 12,
-      auto_realignment: true,
-    });
-    expect((persisted?.value as LeagueState).info.stage).toBe('realignment');
-  });
-
   it('returns an explicit preview error for malformed historical data', async () => {
     await seedScenario('realignment');
     const db = await getDb();
@@ -304,47 +295,33 @@ describe('offseason loaders', () => {
     expect(result.info.stage).toBe('realignment');
   });
 
-  it('initializes missing legacy rosters without advancing the stage or year', async () => {
+  it('rejects missing rosters without writing a replacement', async () => {
     await seedScenario('progression');
     const db = await getDb();
     await db.clear('players');
+    const before = await snapshotLifecycleStores();
 
-    const result = await loadRosterProgression();
-    const persisted = await db.get('league', 'current');
+    await expect(loadRosterProgression()).rejects.toMatchObject({
+      code: 'INVALID_ROSTER_STATE',
+    });
 
-    expect(await db.count('players')).toBeGreaterThan(0);
-    expect(result.info).toMatchObject({
-      stage: 'progression',
-      currentYear: 2025,
-    });
-    expect((persisted?.value as LeagueState).info).toMatchObject({
-      stage: 'progression',
-      currentYear: 2025,
-    });
+    expect(await snapshotLifecycleStores()).toEqual(before);
   });
 
   it('returns a focused deterministic roster-cuts preview', async () => {
     await seedScenario('roster_cuts');
     const db = await getDb();
     await db.clear('players');
-    const players = Array.from({ length: 5 }, (_, index) =>
-      buildTestPlayer({
-        id: index + 1,
-        first: `Quarterback ${index + 1}`,
-        pos: 'qb',
-        rating: 84 - index,
-        rating_sr: 90 - index,
-      }),
-    );
+    const players = buildCompliantRoster();
     players.push(
       buildTestPlayer({
-        id: 10,
-        pos: 'rb',
-        rating: 75,
-        rating_sr: 85,
+        id: 100,
+        first: 'Extra Quarterback',
+        pos: 'qb',
+        rating: 40,
+        rating_sr: 45,
       }),
-      buildTestPlayer({ id: 11, active: false }),
-      buildTestPlayer({ id: 12, teamId: 999 }),
+      buildTestPlayer({ id: 101, active: false }),
     );
     const tx = db.transaction('players', 'readwrite');
     for (const player of players) {
@@ -354,29 +331,40 @@ describe('offseason loaders', () => {
 
     const result = await loadRosterCuts();
 
-    expect(result.cuts).toEqual([
+    expect(result.players.find(player => player.id === 100)).toEqual(
       {
-        id: 5,
-        first: 'Quarterback 5',
+        id: 100,
+        first: 'Extra Quarterback',
         last: 'Player',
         position: 'qb',
         currentClass: 'jr',
-        currentRating: 80,
-        seniorRating: 86,
+        currentRating: 40,
+        seniorRating: 45,
+        selected: false,
+        recommended: true,
+        protected: false,
+        canSelect: true,
+        blockedReason: null,
       },
-    ]);
+    );
     expect(result.positions[0]).toEqual({
       position: 'qb',
-      activePlayers: 5,
-      rosterLimit: 4,
+      activePlayers: ROSTER.qb.total + 1,
+      rosterLimit: ROSTER.qb.total,
+      starterMinimum: 1,
+      selectedCuts: 0,
       projectedCuts: 1,
-      projectedPlayers: 4,
+      projectedPlayers: ROSTER.qb.total,
     });
     expect(result.summary).toEqual({
-      activePlayers: 6,
+      activePlayers: FINAL_ROSTER_SIZE + 1,
+      requiredCuts: 1,
+      selectedCuts: 0,
+      remainingCuts: 1,
       projectedCuts: 1,
-      projectedRosterSize: 5,
+      projectedRosterSize: FINAL_ROSTER_SIZE,
       positionsOverLimit: 1,
+      readyToFinalize: false,
     });
   });
 
@@ -425,13 +413,6 @@ describe('offseason loaders', () => {
         first: 'Inactive',
         last: 'Player',
         active: false,
-        rating: 99,
-      }),
-      buildTestPlayer({
-        id: 6,
-        first: 'Other',
-        last: 'Team',
-        teamId: 999,
         rating: 99,
       }),
       buildTestPlayer({
@@ -513,7 +494,7 @@ describe('offseason loaders', () => {
     });
   });
 
-  it('returns complete typed recruiting results without legacy fields', async () => {
+  it('returns complete typed recruiting results', async () => {
     await seedScenario('recruiting_summary');
     const db = await getDb();
     await db.clear('players');
@@ -537,36 +518,81 @@ describe('offseason loaders', () => {
         year: 'so',
         rating: 99,
       }),
-      buildTestPlayer({
-        id: 23,
-        teamId: 999,
-        year: 'fr',
-        rating: 99,
-      }),
     ];
     const tx = db.transaction('players', 'readwrite');
     for (const player of players) {
       await tx.objectStore('players').put(player);
     }
     await tx.done;
+    const recruiting = (await db.get('recruiting', 'current'))!;
+    await db.put('recruiting', {
+      ...recruiting,
+      value: {
+        ...recruiting.value,
+        prospects: [
+          buildRecruitingProspect({
+            id: 20,
+            nationalRank: 1,
+            committedTeamId: 1,
+            committedRound: 5,
+            position: 'wr',
+            stars: 5,
+          }),
+          buildRecruitingProspect({
+            id: 21,
+            nationalRank: 4,
+            committedTeamId: 1,
+            committedRound: 'signing_day',
+            position: 'qb',
+            stars: 4,
+          }),
+        ],
+        teams: recruiting.value.teams.map(team => ({
+          ...team,
+          commitmentIds:
+            team.teamId === 1 ? [20, 21] : team.commitmentIds,
+        })),
+      },
+    });
 
     const result = await loadRecruitingSummary();
 
-    expect(result.playerRankings.map(player => player.id)).toEqual([20, 21]);
+    expect(result.playerRankings.map(player => player.prospectId)).toEqual([
+      20,
+      21,
+    ]);
+    expect(result.playerRankings.map(player => player.rank)).toEqual([1, 4]);
     expect(result.teamRankings).toHaveLength(1);
     expect(result.userTeam).toMatchObject({
       teamId: 1,
       totalRecruits: 2,
-      averageRating: 85,
+      averageStars: 4.5,
       starCounts: { five: 1, four: 1 },
     });
     expect(result.positions).toEqual(['qb', 'wr']);
     expect(result.summary).toEqual({
       totalRecruits: 2,
-      averageRating: 85,
-      highestRating: 88,
     });
+    expect(result.playerRankings[0]).not.toHaveProperty('rating');
     expect(result).not.toHaveProperty('team_rankings');
     expect(result).not.toHaveProperty('summary_stats');
   });
+
+  it.each([
+    ['recruiting_summary', loadRecruitingSummary],
+    ['roster_cuts', loadRosterCuts],
+  ] as const)(
+    'rejects unsupported %s saves without recruiting state',
+    async (stage, loader) => {
+      await seedScenario(stage);
+      const db = await getDb();
+      await db.clear('recruiting');
+      const before = await snapshotLifecycleStores();
+
+      await expect(loader()).rejects.toMatchObject({
+        code: 'STATE_MISSING',
+      });
+      expect(await snapshotLifecycleStores()).toEqual(before);
+    },
+  );
 });

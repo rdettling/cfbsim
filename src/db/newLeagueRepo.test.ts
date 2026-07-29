@@ -4,6 +4,7 @@ import type { GameRecord, PlayerRecord } from '../types/db';
 import { buildTestLeague, buildTestPlayer } from '../test/fixtures';
 import { getDb } from './db';
 import { commitNewLeague } from './newLeagueRepo';
+import { buildRecruitingState } from '../test/recruitingFixtures';
 
 const buildTestGame = (): GameRecord => ({
   id: 1,
@@ -39,6 +40,7 @@ const resetDatabase = async () => {
   const stores = [
     'baseData',
     'league',
+    'recruiting',
     'players',
     'games',
     'drives',
@@ -58,6 +60,10 @@ describe('commitNewLeague', () => {
     await db.put('league', {
       key: 'current',
       value: buildTestLeague('season'),
+    });
+    await db.put('recruiting', {
+      key: 'current',
+      value: buildRecruitingState(),
     });
     await db.put('players', buildTestPlayer({ id: 99 }));
     await db.put('games', { ...buildTestGame(), id: 99 });
@@ -90,6 +96,7 @@ describe('commitNewLeague', () => {
     expect(await db.getAll('drives')).toEqual([]);
     expect(await db.getAll('plays')).toEqual([]);
     expect(await db.getAll('gameLogs')).toEqual([]);
+    expect(await db.getAll('recruiting')).toEqual([]);
   });
 
   it('rolls back cleared stores when a prepared record cannot be written', async () => {
@@ -97,7 +104,12 @@ describe('commitNewLeague', () => {
     const oldLeague = buildTestLeague('season');
     const oldPlayer = buildTestPlayer({ id: 99 });
     const oldGame = { ...buildTestGame(), id: 99 };
+    const oldRecruiting = buildRecruitingState();
     await db.put('league', { key: 'current', value: oldLeague });
+    await db.put('recruiting', {
+      key: 'current',
+      value: oldRecruiting,
+    });
     await db.put('players', oldPlayer);
     await db.put('games', oldGame);
 
@@ -112,5 +124,8 @@ describe('commitNewLeague', () => {
     expect((await db.get('league', 'current'))?.value).toEqual(oldLeague);
     expect(await db.getAll('players')).toEqual([oldPlayer]);
     expect(await db.getAll('games')).toEqual([oldGame]);
+    expect((await db.get('recruiting', 'current'))?.value).toEqual(
+      oldRecruiting,
+    );
   });
 });

@@ -2,12 +2,18 @@ import { Alert, Box, CircularProgress, Container } from '@mui/material';
 import type { ContainerProps } from '@mui/material';
 import type { ReactNode } from 'react';
 import AppShell from './AppShell';
-import type { AppNavigationData } from './navigation';
+import type {
+  AppNavigationData,
+  StageAdvanceAction,
+} from './navigation';
 
 export interface PageLayoutProps {
   loading: boolean;
   error: string | null;
   navbarData?: AppNavigationData;
+  onAdvanceStage?: () => void;
+  advanceActions?: StageAdvanceAction[];
+  advanceLabel?: string;
   containerMaxWidth?: ContainerProps['maxWidth'];
   desktopViewportConstrained?: boolean;
   children: ReactNode;
@@ -17,6 +23,9 @@ export const PageLayout = ({
   loading,
   error,
   navbarData,
+  onAdvanceStage,
+  advanceActions,
+  advanceLabel,
   containerMaxWidth = 'lg',
   desktopViewportConstrained = false,
   children,
@@ -44,6 +53,9 @@ export const PageLayout = ({
     return (
       <AppShell
         navigationData={navbarData}
+        onAdvanceStage={onAdvanceStage}
+        advanceActions={advanceActions}
+        advanceLabel={advanceLabel}
         containerMaxWidth={containerMaxWidth}
         desktopViewportConstrained={desktopViewportConstrained}
       >

@@ -1,16 +1,11 @@
-import { saveLeague } from '../../../db/leagueRepo';
-import { getAllPlayers } from '../../../db/simRepo';
+import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import type {
   DepartingPlayerPreview,
   ReturningPlayerPreview,
   RosterProgressionSummary,
 } from '../../../types/roster';
-import {
-  ensureRosters,
-  projectPlayerProgression,
-} from '../../roster';
+import { projectPlayerProgression } from '../../roster';
 import { POSITION_ORDER } from '../../rosterConfig';
-import { loadLeagueOrThrow } from '../leagueStore';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
 const EMPTY_SUMMARY: RosterProgressionSummary = {
@@ -32,11 +27,7 @@ const sortPlayers = <
   );
 
 export const loadRosterProgression = async () => {
-  const league = await loadLeagueOrThrow();
-
-  if (await ensureRosters(league)) {
-    await saveLeague(league);
-  }
+  const { league, players } = await loadLeaguePlayersSnapshot();
 
   const envelope = buildLeagueNavigationEnvelope(league);
   const { team } = envelope;
@@ -50,7 +41,6 @@ export const loadRosterProgression = async () => {
     };
   }
 
-  const players = await getAllPlayers();
   const teamPlayers = players.filter(
     player => player.active && player.teamId === team.id,
   );

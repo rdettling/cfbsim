@@ -1,24 +1,26 @@
 import type { HistoryData } from '../types/baseData';
-import type { GameRecord, PlayerRecord } from '../types/db';
-import type { OffseasonStage } from '../types/domain';
 import {
   OffseasonConfigurationConflictError,
   OffseasonStageMismatchError,
+  type OffseasonAdvanceStage,
   type LeagueState,
 } from '../types/league';
-import type { Settings } from '../types/domain';
+import type { NextSeasonConfiguration } from '../types/domain';
 import { getDb } from './db';
+import { assertCurrentLeagueState } from './leagueRepo';
 
 const LEAGUE_KEY = 'current';
 
+type GenericOffseasonTransitionStage = Extract<
+  OffseasonAdvanceStage,
+  'summary' | 'realignment'
+>;
+
 export interface OffseasonTransitionCommit {
-  expectedStage: OffseasonStage;
-  expectedSettings?: Settings;
+  expectedStage: GenericOffseasonTransitionStage;
+  expectedSettings?: NextSeasonConfiguration;
   league: LeagueState;
   history?: HistoryData;
-  players?: PlayerRecord[];
-  games?: GameRecord[];
-  clearNonGameArtifacts?: boolean;
 }
 
 export const commitOffseasonTransition = async ({
@@ -26,22 +28,17 @@ export const commitOffseasonTransition = async ({
   expectedSettings,
   league,
   history,
-  players,
-  games,
-  clearNonGameArtifacts = false,
 }: OffseasonTransitionCommit) => {
   const db = await getDb();
-  const tx = db.transaction(
-    ['baseData', 'league', 'players', 'games', 'drives', 'plays', 'gameLogs'],
-    'readwrite',
-  );
+  const tx = db.transaction(['baseData', 'league'], 'readwrite');
 
   try {
     const persisted = await tx.objectStore('league').get(LEAGUE_KEY);
-    const persistedLeague = persisted?.value as LeagueState | undefined;
-    if (!persistedLeague) {
+    if (!persisted) {
       throw new Error('No league found. Start a new game from the Home page.');
     }
+    assertCurrentLeagueState(persisted.value);
+    const persistedLeague = persisted.value;
 
     if (persistedLeague.info.stage !== expectedStage) {
       throw new OffseasonStageMismatchError(
@@ -62,28 +59,6 @@ export const commitOffseasonTransition = async ({
         key: 'history',
         value: history,
       });
-    }
-
-    if (clearNonGameArtifacts) {
-      await Promise.all([
-        tx.objectStore('drives').clear(),
-        tx.objectStore('plays').clear(),
-        tx.objectStore('gameLogs').clear(),
-      ]);
-    }
-
-    if (players) {
-      const playerStore = tx.objectStore('players');
-      for (const player of players) {
-        await playerStore.put(player);
-      }
-    }
-
-    if (games) {
-      const gameStore = tx.objectStore('games');
-      for (const game of games) {
-        await gameStore.put(game);
-      }
     }
 
     await tx.objectStore('league').put({

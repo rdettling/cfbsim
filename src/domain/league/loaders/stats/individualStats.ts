@@ -1,7 +1,7 @@
-import { loadLeague, saveLeague } from '../../../../db/leagueRepo';
-import { getAllGameLogs, getAllGames, getAllPlayers } from '../../../../db/simRepo';
-import { ensureRosters } from '../../../roster';
-import type { LeagueState } from '../../../../types/league';
+import {
+  loadLeaguePlayersSnapshot,
+} from '../../../../db/leagueRepo';
+import { getAllGameLogs, getAllGames } from '../../../../db/simRepo';
 import type {
   IndividualStatsPageResult,
   PassingStats,
@@ -38,16 +38,9 @@ const adjustedPassYardsPerAttempt = (
     : 0;
 
 export const loadIndividualStats = async (): Promise<IndividualStatsPageResult> => {
-  const league = await loadLeague<LeagueState>();
-  if (!league) {
-    throw new Error('No league found. Start a new game from the Home page.');
-  }
+  const { league, players } = await loadLeaguePlayersSnapshot();
 
-  await ensureRosters(league);
-  await saveLeague(league);
-
-  const [players, gameLogs, games] = await Promise.all([
-    getAllPlayers(),
+  const [gameLogs, games] = await Promise.all([
     getAllGameLogs(),
     getAllGames(),
   ]);

@@ -3,7 +3,6 @@ import type { GameRecord } from '../../../types/db';
 import type { LeagueState } from '../../../types/league';
 import { getAllGames, getGameById } from '../../../db/simRepo';
 import { loadLeagueOrThrow } from '../leagueStore';
-import { DEFAULT_SETTINGS } from '../../../types/league';
 import { REGULAR_SEASON_WEEKS } from '../postseason';
 
 export type PlayoffTeamEntry = {
@@ -263,9 +262,9 @@ const getConferenceChampion = async (
 };
 
 const getPlayoffTeamOrder = async (league: LeagueState) => {
-  const playoffAutobids = league.settings?.playoff_autobids ?? DEFAULT_SETTINGS.playoff_autobids ?? 0;
+  const playoffAutobids = league.settings.playoffAutobids;
   const playoffConfChampTop4 =
-    league.settings?.playoff_conf_champ_top_4 ?? DEFAULT_SETTINGS.playoff_conf_champ_top_4 ?? false;
+    league.settings.conferenceChampionsReceiveTopSeeds;
 
   const conferenceNames = league.conferences
     .map(conf => conf.confName)
@@ -376,8 +375,8 @@ const buildBracket = async (
     return index >= 0 ? index + 1 : null;
   };
 
-  const format = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
-  const playoffState = league.playoff ?? { seeds: [] };
+  const format = league.settings.playoffTeams;
+  const playoffState = league.playoff;
 
   if (format === 2) {
     const natty = await gameOrNull(playoffState.natty);
@@ -519,7 +518,7 @@ const buildBracket = async (
 
 export const loadPlayoff = async () => {
   const league = await loadLeagueOrThrow();
-  const format = league.settings?.playoff_teams ?? DEFAULT_SETTINGS.playoff_teams;
+  const format = league.settings.playoffTeams;
   const isProjection = league.info.currentWeek < REGULAR_SEASON_WEEKS;
 
   const conferenceNames = league.conferences
@@ -696,9 +695,9 @@ export const loadPlayoff = async () => {
     conferences: league.conferences,
     playoff: {
       teams: format,
-      autobids: league.settings?.playoff_autobids ?? DEFAULT_SETTINGS.playoff_autobids ?? 0,
+      autobids: league.settings.playoffAutobids,
       conf_champ_top_4:
-        league.settings?.playoff_conf_champ_top_4 ?? DEFAULT_SETTINGS.playoff_conf_champ_top_4 ?? false,
+        league.settings.conferenceChampionsReceiveTopSeeds,
     },
     playoff_teams,
     bubble_teams,

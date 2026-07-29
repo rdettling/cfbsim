@@ -1,7 +1,10 @@
 import type { LeagueState } from '../../types/league';
-import type { Conference, Team } from '../../types/domain';
+import type {
+  Conference,
+  PlayoffTeamCount,
+  Team,
+} from '../../types/domain';
 import type { YearData, TeamsData, ConferencesData } from '../../types/baseData';
-import { DEFAULT_SETTINGS, ensureSettings } from '../../types/league';
 import { getTeamsData, getConferencesData } from '../../db/baseData';
 import { getLastWeekByPlayoffTeams } from './postseason';
 import {
@@ -15,7 +18,7 @@ const applyRealignment = (
   teamsData: TeamsData,
   conferencesData: ConferencesData
 ) => {
-  if (league.settings && league.settings.auto_realignment === false) return;
+  if (league.settings.conferencePolicy === 'current') return;
 
   const teamsByName = new Map(league.teams.map(team => [team.name, team]));
   const conferencesByName = new Map(league.conferences.map(conf => [conf.confName, conf]));
@@ -165,13 +168,15 @@ const applyRealignment = (
 };
 
 const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFormat: boolean) => {
-  if (!league.settings) {
-    league.settings = { ...DEFAULT_SETTINGS };
-  }
-
   if (updateFormat) {
-    const playoffConfig = yearData.playoff ?? { teams: league.settings.playoff_teams };
-    let nextTeams = playoffConfig.teams ?? league.settings.playoff_teams;
+    const playoffConfig = yearData.playoff ?? { teams: league.settings.playoffTeams };
+    const historicalTeams = playoffConfig.teams;
+    const nextTeams: PlayoffTeamCount =
+      historicalTeams === 2 ||
+      historicalTeams === 4 ||
+      historicalTeams === 12
+        ? historicalTeams
+        : league.settings.playoffTeams;
     let nextAutobids = playoffConfig.conf_champ_autobids ?? 0;
     let nextTop4 = playoffConfig.conf_champ_top_4 ?? false;
 
@@ -180,12 +185,12 @@ const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFor
       nextTop4 = false;
     }
 
-    league.settings.playoff_teams = nextTeams;
-    league.settings.playoff_autobids = nextAutobids;
-    league.settings.playoff_conf_champ_top_4 = nextTop4;
+    league.settings.playoffTeams = nextTeams;
+    league.settings.playoffAutobids = nextAutobids;
+    league.settings.conferenceChampionsReceiveTopSeeds = nextTop4;
   }
 
-  league.info.lastWeek = getLastWeekByPlayoffTeams(league.settings.playoff_teams);
+  league.info.lastWeek = getLastWeekByPlayoffTeams(league.settings.playoffTeams);
   league.playoff = { seeds: [] };
 };
 
@@ -193,8 +198,6 @@ export const applyRealignmentAndPlayoff = async (
   league: LeagueState,
   historicalData?: ResolvedHistoricalData,
 ) => {
-  ensureSettings(league);
-
   const targetYear = league.info.currentYear + 1;
   const resolved =
     historicalData ??
@@ -214,6 +217,6 @@ export const applyRealignmentAndPlayoff = async (
 
   applyRealignment(league, typedYearData, typedTeamsData, typedConferencesData);
 
-  const updateFormat = league.settings?.auto_update_postseason_format ?? true;
+  const updateFormat = league.settings.postseasonPolicy === 'historical';
   refreshPlayoffFormat(league, typedYearData, updateFormat);
 };

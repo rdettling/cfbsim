@@ -5,7 +5,12 @@ import { TeamLogo } from '../team/TeamComponents';
 import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';
 import MobileNavigationDrawer from './MobileNavigationDrawer';
-import type { AppNavigationData, NavigationModel, StageInfo } from './navigation';
+import type {
+  AppNavigationData,
+  NavigationModel,
+  StageAdvanceAction,
+  StageInfo,
+} from './navigation';
 
 interface MobileNavigationProps {
   data: AppNavigationData;
@@ -18,6 +23,8 @@ interface MobileNavigationProps {
   advancingStage: boolean;
   advanceDisabled: boolean;
   onAdvanceStage: () => void;
+  advanceActions?: StageAdvanceAction[];
+  advanceLabel?: string;
 }
 
 const MobileNavigation = ({
@@ -31,6 +38,8 @@ const MobileNavigation = ({
   advancingStage,
   advanceDisabled,
   onAdvanceStage,
+  advanceActions,
+  advanceLabel,
 }: MobileNavigationProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerId = 'application-navigation-drawer';
@@ -139,6 +148,8 @@ const MobileNavigation = ({
               advancing={advancingStage}
               disabled={advanceDisabled}
               onAdvance={onAdvanceStage}
+              advanceActions={advanceActions}
+              advanceLabel={advanceLabel}
             />
           )
         )}

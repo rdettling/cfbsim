@@ -47,7 +47,7 @@ export const RecruitingUserSummary = ({ teamName, result }: RecruitingUserSummar
   >
     <SummaryItem label={`${teamName} class rank`} value={result ? `#${result.rank}` : '—'} />
     <SummaryItem label="Recruits" value={result?.totalRecruits ?? 0} />
-    <SummaryItem label="Average rating" value={result?.averageRating ?? '—'} />
+    <SummaryItem label="Average stars" value={result?.averageStars ?? '—'} />
     <SummaryItem label="Five-star recruits" value={result?.starCounts.five ?? 0} />
   </Paper>
 );

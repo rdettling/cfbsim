@@ -9,11 +9,25 @@ This file is for Codex/agent context. For human‑readable docs, see:
 
 - Active app lives at repo root `src/`
 - Frontend visuals stay clean, simple, and utilitarian
-- Frontend code stays lean, explicit, and easy for an LLM to navigate
+- All code stays lean, explicit, directly imported, and easy for an LLM to
+  navigate
 - Domain logic goes under `src/domain/`
 - Page data loaders live under `src/domain/league/loaders/`
 - Shared helpers live under `src/domain/league/utils/` or `src/domain/utils/`
 - Types live under `src/types/`
+
+## Current-Version Policy
+
+- Support exactly one current architecture, persisted schema, and internal API
+  shape
+- Do not add migrations, compatibility aliases, fallback fields, legacy
+  adapters, synthesized persisted state, or repair-on-read behavior
+- Remove obsolete paths when replacing behavior instead of retaining parallel
+  implementations
+- Prefer small domain modules, explicit transaction ownership, and direct
+  dependencies over generalized frameworks or indirection
+- Only introduce backward compatibility when a current product requirement
+  explicitly calls for it
 
 ## Gotchas
 

@@ -11,7 +11,8 @@ import {
 } from '../../constants/stages';
 import {
   advanceOffseasonStage,
-  isOffseasonStage,
+  initializeSeason,
+  isOffseasonAdvanceStage,
   OffseasonConfigurationConflictError,
   OffseasonStageMismatchError,
 } from '../../domain/league';
@@ -22,13 +23,22 @@ import {
   getNavigationTeamName,
   normalizePath,
   type AppNavigationData,
+  type StageAdvanceAction,
 } from './navigation';
 
 export interface AppNavigationProps {
   data: AppNavigationData;
+  onAdvanceStage?: () => void;
+  advanceActions?: StageAdvanceAction[];
+  advanceLabel?: string;
 }
 
-const AppNavigation = ({ data }: AppNavigationProps) => {
+const AppNavigation = ({
+  data,
+  onAdvanceStage,
+  advanceActions,
+  advanceLabel,
+}: AppNavigationProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [gameSelectionOpen, setGameSelectionOpen] = useState(false);
@@ -46,6 +56,9 @@ const AppNavigation = ({ data }: AppNavigationProps) => {
   const currentPath = normalizePath(location.pathname);
   const currentStageInfo = getStageDefinition(data.currentStage);
   const nextStageInfo = getNextStageDefinition(data.currentStage);
+  const commandManagedStage =
+    currentStageInfo?.id === 'recruiting' ||
+    currentStageInfo?.id === 'roster_cuts';
   const teamAccent = data.info.colorPrimary || data.team.colorPrimary || 'primary.main';
 
   const handleGameSelect = (gameId: number) => {
@@ -66,10 +79,21 @@ const AppNavigation = ({ data }: AppNavigationProps) => {
       !currentStageInfo ||
       !nextStageInfo ||
       data.advanceDisabled ||
+      (commandManagedStage &&
+        !onAdvanceStage &&
+        !advanceActions?.length) ||
       stageAdvanceLock.current
     ) return;
 
-    if (!isOffseasonStage(currentStageInfo.id)) {
+    if (commandManagedStage) {
+      onAdvanceStage?.();
+      return;
+    }
+
+    if (
+      currentStageInfo.id !== 'preseason' &&
+      !isOffseasonAdvanceStage(currentStageInfo.id)
+    ) {
       navigate(nextStageInfo.path);
       return;
     }
@@ -78,7 +102,10 @@ const AppNavigation = ({ data }: AppNavigationProps) => {
     setAdvancingStage(true);
     setAdvanceError(null);
     try {
-      const result = await advanceOffseasonStage(currentStageInfo.id);
+      const result =
+        currentStageInfo.id === 'preseason'
+          ? await initializeSeason(data.info.currentYear)
+          : await advanceOffseasonStage(currentStageInfo.id);
       navigate(result.route);
     } catch (error) {
       if (
@@ -120,8 +147,15 @@ const AppNavigation = ({ data }: AppNavigationProps) => {
           nextStageInfo={nextStageInfo}
           onLiveSim={() => setGameSelectionOpen(true)}
           advancingStage={advancingStage}
-          advanceDisabled={data.advanceDisabled ?? false}
+          advanceDisabled={
+            (data.advanceDisabled ?? false) ||
+            (commandManagedStage &&
+              !onAdvanceStage &&
+              !advanceActions?.length)
+          }
           onAdvanceStage={handleAdvanceStage}
+          advanceActions={advanceActions}
+          advanceLabel={advanceLabel}
         />
         <MobileNavigation
           data={data}
@@ -132,8 +166,15 @@ const AppNavigation = ({ data }: AppNavigationProps) => {
           nextStageInfo={nextStageInfo}
           onLiveSim={() => setGameSelectionOpen(true)}
           advancingStage={advancingStage}
-          advanceDisabled={data.advanceDisabled ?? false}
+          advanceDisabled={
+            (data.advanceDisabled ?? false) ||
+            (commandManagedStage &&
+              !onAdvanceStage &&
+              !advanceActions?.length)
+          }
           onAdvanceStage={handleAdvanceStage}
+          advanceActions={advanceActions}
+          advanceLabel={advanceLabel}
         />
       </Box>
 

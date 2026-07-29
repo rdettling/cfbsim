@@ -3,173 +3,257 @@ import {
   buildTestPlayer,
   buildTestTeam,
 } from '../test/fixtures';
-import { buildRosterCutsPreview, applyRosterCuts, selectTeamRosterCuts } from './rosterCuts';
-import { POSITION_ORDER, ROSTER } from './rosterConfig';
+import {
+  applyRosterCutIds,
+  assertFinalRosters,
+  buildRosterCutsPreview,
+  recommendRosterCuts,
+  validateRosterCutSelection,
+} from './rosterCuts';
+import {
+  FINAL_ROSTER_SIZE,
+  POSITION_ORDER,
+  ROSTER,
+} from './rosterConfig';
 
-describe('roster cut selection', () => {
-  it.each(POSITION_ORDER)(
-    'enforces the configured %s limit at, below, and above the cap',
-    position => {
-      const limit = ROSTER[position].total;
-      const players = Array.from(
-        { length: limit + 1 },
-        (_, index) =>
-          buildTestPlayer({
-            id: index + 1,
-            pos: position,
-            rating: 90 - index,
-            rating_sr: 95 - index,
-          }),
-      );
-
-      expect(
-        selectTeamRosterCuts(players.slice(0, limit - 1), 1),
-      ).toEqual([]);
-      expect(
-        selectTeamRosterCuts(players.slice(0, limit), 1),
-      ).toEqual([]);
-      expect(
-        selectTeamRosterCuts(players, 1).map(player => player.id),
-      ).toEqual([limit + 1]);
-    },
+const buildCompliantRoster = (
+  teamId = 1,
+  startId = 1,
+) => {
+  let id = startId;
+  return POSITION_ORDER.flatMap(position =>
+    Array.from({ length: ROSTER[position].total }, (_, index) =>
+      buildTestPlayer({
+        id: id++,
+        teamId,
+        pos: position,
+        year: index % 3 === 0 ? 'so' : index % 3 === 1 ? 'jr' : 'sr',
+        rating: 70 + index,
+        rating_sr: 78 + index,
+        starter: false,
+      }),
+    ),
   );
+};
 
-  it('uses senior rating, current rating, class seniority, and ascending ID in order', () => {
-    const players = [
-      buildTestPlayer({ id: 8, rating_sr: 99, rating: 60, year: 'fr' }),
-      buildTestPlayer({ id: 7, rating_sr: 98, rating: 99, year: 'sr' }),
-      buildTestPlayer({ id: 6, rating_sr: 90, rating: 90, year: 'sr' }),
-      buildTestPlayer({ id: 2, rating_sr: 90, rating: 90, year: 'so' }),
-      buildTestPlayer({ id: 3, rating_sr: 90, rating: 90, year: 'so' }),
-      buildTestPlayer({ id: 4, rating_sr: 90, rating: 89, year: 'sr' }),
+describe('exact roster cut selection', () => {
+  it('prefers the largest soft surplus and reaches the configured size', () => {
+    const base = buildCompliantRoster();
+    const extras = [
+      buildTestPlayer({
+        id: 100,
+        pos: 'qb',
+        year: 'sr',
+        rating: 55,
+        rating_sr: 60,
+      }),
+      buildTestPlayer({
+        id: 101,
+        pos: 'qb',
+        year: 'jr',
+        rating: 50,
+        rating_sr: 59,
+      }),
+      buildTestPlayer({
+        id: 102,
+        pos: 'rb',
+        year: 'sr',
+        rating: 40,
+        rating_sr: 50,
+      }),
     ];
 
-    expect(
-      selectTeamRosterCuts(players, 1).map(player => player.id),
-    ).toEqual([3, 4]);
+    const cuts = recommendRosterCuts({
+      players: [...base, ...extras],
+      teamId: 1,
+      year: 2026,
+      seed: 9,
+      selectedCutIds: [],
+    });
+
+    expect(cuts).toHaveLength(3);
+    expect(cuts.map(player => player.pos)).toEqual(['qb', 'rb', 'qb']);
+    expect(cuts[1].id).toBe(102);
   });
 
-  it('ignores inactive players, other teams, and unconfigured positions', () => {
+  it('orders equal-position candidates by future, current, and older class', () => {
     const players = [
-      ...Array.from({ length: ROSTER.qb.total + 1 }, (_, index) =>
-        buildTestPlayer({ id: index + 1, rating_sr: 90 - index }),
-      ),
-      buildTestPlayer({ id: 20, active: false, rating_sr: 1 }),
-      buildTestPlayer({ id: 21, teamId: 2, rating_sr: 1 }),
-      buildTestPlayer({ id: 22, pos: 'ath', rating_sr: 1 }),
+      ...buildCompliantRoster(),
+      buildTestPlayer({
+        id: 100,
+        pos: 'qb',
+        year: 'so',
+        rating: 60,
+        rating_sr: 70,
+      }),
+      buildTestPlayer({
+        id: 101,
+        pos: 'qb',
+        year: 'sr',
+        rating: 60,
+        rating_sr: 70,
+      }),
+      buildTestPlayer({
+        id: 102,
+        pos: 'qb',
+        year: 'sr',
+        rating: 59,
+        rating_sr: 70,
+      }),
     ];
-
     expect(
-      selectTeamRosterCuts(players, 1).map(player => player.id),
-    ).toEqual([5]);
+      recommendRosterCuts({
+        players,
+        teamId: 1,
+        year: 2026,
+        seed: 5,
+        selectedCutIds: [],
+      }).map(player => player.id),
+    ).toEqual([102, 101, 100]);
   });
-});
 
-describe('roster cuts preview and application', () => {
-  it('returns ordered positions, exact cuts, and summary totals', () => {
-    const players = [
-      ...Array.from({ length: ROSTER.qb.total + 1 }, (_, index) =>
-        buildTestPlayer({
-          id: index + 1,
-          pos: 'qb',
-          rating: 85 - index,
-          rating_sr: 90 - index,
-        }),
-      ),
-      buildTestPlayer({ id: 20, pos: 'rb' }),
-      buildTestPlayer({ id: 21, pos: 'ath' }),
-      buildTestPlayer({ id: 22, active: false }),
-      buildTestPlayer({ id: 23, teamId: 2 }),
-    ];
+  it('protects freshmen and preserves starter minima', () => {
+    const roster = buildCompliantRoster();
+    const freshman = buildTestPlayer({
+      id: 100,
+      pos: 'qb',
+      year: 'fr',
+      rating: 30,
+      rating_sr: 40,
+    });
+    const cut = recommendRosterCuts({
+      players: [...roster, freshman],
+      teamId: 1,
+      year: 2026,
+      seed: 1,
+      selectedCutIds: [],
+    });
+    expect(cut).toHaveLength(1);
+    expect(cut[0].year).not.toBe('fr');
 
-    const preview = buildRosterCutsPreview(players, 1);
-
-    expect(preview.positions.map(position => position.position)).toEqual(
-      POSITION_ORDER,
+    const onlyReturningPunter = roster.find(
+      player => player.pos === 'p' && player.year !== 'fr',
+    )!;
+    const protectedPosition = roster.map(player =>
+      player.pos === 'p' && player.id !== onlyReturningPunter.id
+        ? { ...player, active: false }
+        : player,
     );
-    expect(preview.positions[0]).toEqual({
-      position: 'qb',
-      activePlayers: 5,
-      rosterLimit: 4,
-      projectedCuts: 1,
-      projectedPlayers: 4,
-    });
-    expect(preview.cuts).toEqual([
-      {
-        id: 5,
-        first: 'Pat',
-        last: 'Player',
-        position: 'qb',
-        currentClass: 'jr',
-        currentRating: 81,
-        seniorRating: 86,
-      },
-    ]);
-    expect(preview.summary).toEqual({
-      activePlayers: 7,
-      projectedCuts: 1,
-      projectedRosterSize: 6,
-      positionsOverLimit: 1,
-    });
+    expect(() =>
+      validateRosterCutSelection(
+        [
+          ...protectedPosition,
+          buildTestPlayer({ id: 100, pos: 'rb' }),
+          buildTestPlayer({ id: 101, pos: 'rb' }),
+        ],
+        1,
+        [onlyReturningPunter.id],
+      ),
+    ).toThrow(/starter minimum/);
   });
 
-  it('returns a compliant empty-roster preview', () => {
-    expect(buildRosterCutsPreview([], 1)).toEqual({
-      cuts: [],
-      positions: POSITION_ORDER.map(position => ({
-        position,
-        activePlayers: 0,
-        rosterLimit: ROSTER[position].total,
-        projectedCuts: 0,
-        projectedPlayers: 0,
-      })),
-      summary: {
-        activePlayers: 0,
-        projectedCuts: 0,
-        projectedRosterSize: 0,
-        positionsOverLimit: 0,
-      },
-    });
+  it('validates partial selections and rejects duplicate or excess cuts', () => {
+    const players = [
+      ...buildCompliantRoster(),
+      buildTestPlayer({ id: 100, pos: 'qb' }),
+      buildTestPlayer({ id: 101, pos: 'rb' }),
+    ];
+    expect(
+      validateRosterCutSelection(players, 1, [100]),
+    ).toMatchObject({ requiredCuts: 2 });
+    expect(() =>
+      validateRosterCutSelection(players, 1, [100, 100]),
+    ).toThrow(/duplicate/i);
+    expect(() =>
+      validateRosterCutSelection(players, 1, [100, 101, 1]),
+    ).toThrow(/requires only 2/);
+    expect(() =>
+      validateRosterCutSelection(players, 1, [100], true),
+    ).toThrow(/requires 2 cuts/);
   });
 
-  it('applies exactly the shared selection for every team', () => {
+  it('accounts for persisted selections in the loader preview', () => {
+    const players = [
+      ...buildCompliantRoster(),
+      buildTestPlayer({ id: 100, pos: 'qb', rating_sr: 40 }),
+      buildTestPlayer({ id: 101, pos: 'rb', rating_sr: 41 }),
+    ];
+    const preview = buildRosterCutsPreview({
+      players,
+      teamId: 1,
+      year: 2026,
+      seed: 10,
+      selectedCutIds: [100],
+    });
+    expect(preview.selectedCutIds).toEqual([100]);
+    expect(preview.recommendedCutIds).toHaveLength(1);
+    expect(preview.summary).toMatchObject({
+      activePlayers: FINAL_ROSTER_SIZE + 2,
+      requiredCuts: 2,
+      selectedCuts: 1,
+      remainingCuts: 1,
+      projectedRosterSize: FINAL_ROSTER_SIZE,
+      readyToFinalize: false,
+    });
+    expect(preview.players.find(player => player.id === 100)?.selected).toBe(true);
+  });
+
+  it('applies cuts without mutating protected players and validates final rosters', () => {
     const teams = [
       buildTestTeam({ id: 1 }),
       buildTestTeam({ id: 2, name: 'Other State' }),
     ];
-    const players = teams.flatMap((team, teamIndex) =>
-      Array.from({ length: ROSTER.qb.total + 1 }, (_, index) =>
+    const players = teams.flatMap((team, index) => [
+      ...buildCompliantRoster(team.id, index * 200 + 1),
+      buildTestPlayer({
+        id: index * 200 + 100,
+        teamId: team.id,
+        pos: 'qb',
+      }),
+    ]);
+    const cuts = teams.flatMap(team =>
+      recommendRosterCuts({
+        players,
+        teamId: team.id,
+        year: 2026,
+        seed: 3,
+        selectedCutIds: [],
+      }).map(player => player.id),
+    );
+    applyRosterCutIds(players, cuts);
+    expect(() => assertFinalRosters(teams, players)).not.toThrow();
+    expect(players.filter(player => player.active)).toHaveLength(
+      FINAL_ROSTER_SIZE * teams.length,
+    );
+  });
+
+  it('is deterministic across player ordering and does not mutate inputs', () => {
+    const players = [
+      ...buildCompliantRoster(),
+      ...Array.from({ length: 4 }, (_, index) =>
         buildTestPlayer({
-          id: teamIndex * 10 + index + 1,
-          teamId: team.id,
-          rating_sr: 90 - index,
-          starter: true,
+          id: 100 + index,
+          pos: 'qb',
+          year: 'sr',
+          rating: 40,
+          rating_sr: 45,
         }),
       ),
-    );
-    const projectedIds = teams.flatMap(team =>
-      selectTeamRosterCuts(players, team.id).map(player => player.id),
-    );
-
-    applyRosterCuts(teams, players);
-
-    expect(
-      players
-        .filter(player => !player.active)
-        .map(player => player.id),
-    ).toEqual(projectedIds);
-    expect(
-      players.filter(player => !projectedIds.includes(player.id)),
-    ).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ active: true, starter: true }),
-      ]),
-    );
-    projectedIds.forEach(id => {
-      expect(players.find(player => player.id === id)).toMatchObject({
-        active: false,
-        starter: false,
-      });
-    });
+    ];
+    const before = structuredClone(players);
+    const input = {
+      players,
+      teamId: 1,
+      year: 2026,
+      seed: 123,
+      selectedCutIds: [],
+    };
+    const first = recommendRosterCuts(input).map(player => player.id);
+    const reordered = recommendRosterCuts({
+      ...input,
+      players: [...players].reverse(),
+    }).map(player => player.id);
+    expect(reordered).toEqual(first);
+    expect(players).toEqual(before);
   });
 });

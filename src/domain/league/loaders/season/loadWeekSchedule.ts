@@ -1,14 +1,9 @@
 import { getAllGames } from '../../../../db/simRepo';
-import { saveLeague } from '../../../../db/leagueRepo';
 import { loadLeagueOrThrow } from '../../leagueStore';
-import { ensureRosters } from '../../../roster';
 import { getUserTeam } from './shared';
 
 export const loadWeekSchedule = async (week: number) => {
   const league = await loadLeagueOrThrow();
-
-  await ensureRosters(league);
-  await saveLeague(league);
 
   const games = await getAllGames();
   const teamsById = new Map(league.teams.map(team => [team.id, team]));

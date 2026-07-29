@@ -1,21 +1,14 @@
 import type { Team } from '../../../types/domain';
 import { getHistoryData, getPrestigeConfig, getTeamsData } from '../../../db/baseData';
-import { saveLeague } from '../../../db/leagueRepo';
-import { getAllGames, getAllGameLogs, getAllPlayers, getGameById } from '../../../db/simRepo';
+import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
+import { getAllGames, getAllGameLogs, getGameById } from '../../../db/simRepo';
 import { buildAwards } from '../awards';
-import { loadLeagueOrThrow } from '../leagueStore';
 import { calculatePrestigeChanges, getPrestigeAvgRanks } from '../prestige';
-import { ensureRosters } from '../../roster';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
 export const loadAwards = async () => {
-  const league = await loadLeagueOrThrow();
-  const initializedRosters = await ensureRosters(league);
-  if (initializedRosters) {
-    await saveLeague(league);
-  }
-  const [players, gameLogs, games] = await Promise.all([
-    getAllPlayers(),
+  const { league, players } = await loadLeaguePlayersSnapshot();
+  const [gameLogs, games] = await Promise.all([
     getAllGameLogs(),
     getAllGames(),
   ]);
@@ -36,12 +29,7 @@ export const loadAwards = async () => {
 };
 
 export const loadSeasonSummary = async () => {
-  const league = await loadLeagueOrThrow();
-
-  const initializedRosters = await ensureRosters(league);
-  if (initializedRosters) {
-    await saveLeague(league);
-  }
+  const { league, players } = await loadLeaguePlayersSnapshot();
   const envelope = buildLeagueNavigationEnvelope(league);
 
   if (league.info.stage !== 'summary') {
@@ -53,8 +41,7 @@ export const loadSeasonSummary = async () => {
     };
   }
 
-  const [players, gameLogs, games, historyData, teamsData, prestigeConfig] = await Promise.all([
-    getAllPlayers(),
+  const [gameLogs, games, historyData, teamsData, prestigeConfig] = await Promise.all([
     getAllGameLogs(),
     getAllGames(),
     getHistoryData(),
@@ -69,9 +56,9 @@ export const loadSeasonSummary = async () => {
   const { final } = buildAwards(league, players, yearLogs);
 
   let champion: Team | null = null;
-  if (league.playoff?.natty) {
+  if (league.playoff.natty) {
     const nattyGame =
-      games.find(game => game.id === league.playoff?.natty) ??
+      games.find(game => game.id === league.playoff.natty) ??
       (await getGameById(league.playoff.natty));
     if (nattyGame?.winnerId) {
       champion = league.teams.find(team => team.id === nattyGame.winnerId) ?? null;

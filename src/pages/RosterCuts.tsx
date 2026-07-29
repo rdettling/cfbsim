@@ -1,33 +1,82 @@
 import { useMemo, useState } from 'react';
-import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Snackbar,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
+} from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { useDomainData } from '../domain/hooks';
 import { loadRosterCuts } from '../domain/league/loaders/loadRosterCuts';
+import { FINAL_ROSTER_SIZE } from '../domain/rosterConfig';
 import type { RosterCutsPageData } from '../types/pages';
 import { PositionLimitsPanel } from './roster-cuts/PositionLimitsPanel';
-import { ProjectedCutsPanel } from './roster-cuts/ProjectedCutsPanel';
 import { RosterCutsSummaryStrip } from './roster-cuts/RosterCutsSummaryStrip';
+import { RosterSelectionPanel } from './roster-cuts/RosterSelectionPanel';
+import { useRosterCutsActions } from './roster-cuts/useRosterCutsActions';
 
-type RosterCutsTab = 'positions' | 'cuts';
+type RosterCutsTab = 'positions' | 'roster';
+type StatusFilter =
+  | ''
+  | 'selected'
+  | 'recommended'
+  | 'protected'
+  | 'available';
 
 const RosterCuts = () => {
   const [selectedPosition, setSelectedPosition] = useState('');
-  const [activeTab, setActiveTab] = useState<RosterCutsTab>('positions');
-  const { data, loading, error } = useDomainData<RosterCutsPageData>({
-    fetcher: loadRosterCuts,
-  });
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
+  const [activeTab, setActiveTab] = useState<RosterCutsTab>('roster');
 
-  const cuts = useMemo(
+  const { data, loading, error, refetch } =
+    useDomainData<RosterCutsPageData>({
+      fetcher: loadRosterCuts,
+    });
+  const {
+    busyPlayerId,
+    finalizing,
+    confirmFinalize,
+    setConfirmFinalize,
+    notice,
+    setNotice,
+    mutateCut,
+    completeRoster,
+  } = useRosterCutsActions(data, refetch);
+
+  const players = useMemo(
     () =>
-      data?.cuts.filter((player) => !selectedPosition || player.position === selectedPosition) ??
-      [],
-    [data, selectedPosition],
+      data?.players.filter(player => {
+        const positionMatches =
+          !selectedPosition || player.position === selectedPosition;
+        const statusMatches =
+          !statusFilter ||
+          (statusFilter === 'selected' && player.selected) ||
+          (statusFilter === 'recommended' && player.recommended) ||
+          (statusFilter === 'protected' && player.protected) ||
+          (statusFilter === 'available' && player.canSelect);
+        return positionMatches && statusMatches;
+      }) ?? [],
+    [data, selectedPosition, statusFilter],
   );
 
-  const selectPosition = (position: string, hasCuts: boolean) => {
-    setSelectedPosition((current) => (current === position ? '' : position));
-    if (hasCuts) setActiveTab('cuts');
+  const selectPosition = (position: string) => {
+    setSelectedPosition(current => (current === position ? '' : position));
+    setActiveTab('roster');
   };
 
   return (
@@ -48,10 +97,10 @@ const RosterCuts = () => {
       }
     >
       {data &&
-        (data.info.stage !== 'roster_cuts' ? (
+        (data.info.stage !== 'roster_cuts' || !data.cursor ? (
           <StageUnavailableState
             title="Roster cuts unavailable"
-            description="The roster-cuts preview is available only during the Roster Cuts stage."
+            description="Roster selections are available only during the Roster Cuts stage."
             currentStage={data.info.stage}
           />
         ) : (
@@ -63,96 +112,148 @@ const RosterCuts = () => {
               minHeight: { lg: 0 },
             }}
           >
-            <Box component="header" sx={{ mb: 1.25 }}>
-              <Typography component="h1" variant="h4">
-                Roster Cuts
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                Projected automatic cuts for {data.info.currentYear}. No cuts have been applied.
-                Advancing applies cuts to every team, selects starters, recalculates ratings, resets
-                the season, and enters Preseason.
-              </Typography>
-            </Box>
+            <Stack
+              component="header"
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              sx={{
+                alignItems: { sm: 'flex-end' },
+                justifyContent: 'space-between',
+                mb: 1.25,
+              }}
+            >
+              <Box>
+                <Typography component="h1" variant="h4">
+                  Roster Cuts
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Select exactly {data.summary.requiredCuts} returning player
+                  {data.summary.requiredCuts === 1 ? '' : 's'} to reach the final {FINAL_ROSTER_SIZE}-player roster.
+                </Typography>
+              </Box>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <InputLabel id="roster-cut-status-label">Status</InputLabel>
+                  <Select
+                    labelId="roster-cut-status-label"
+                    value={statusFilter}
+                    label="Status"
+                    onChange={event =>
+                      setStatusFilter(event.target.value as StatusFilter)
+                    }
+                  >
+                    <MenuItem value="">All Players</MenuItem>
+                    <MenuItem value="selected">Selected</MenuItem>
+                    <MenuItem value="recommended">Recommended</MenuItem>
+                    <MenuItem value="protected">Protected</MenuItem>
+                    <MenuItem value="available">Available</MenuItem>
+                  </Select>
+                </FormControl>
+                <Button
+                  variant="contained"
+                  onClick={() => setConfirmFinalize(true)}
+                  disabled={!data.summary.readyToFinalize || finalizing}
+                >
+                  {finalizing ? 'Finalizing…' : 'Finalize Roster'}
+                </Button>
+              </Stack>
+            </Stack>
 
             <RosterCutsSummaryStrip summary={data.summary} />
 
-            {data.summary.activePlayers === 0 ? (
-              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="h6">No roster available</Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                    mt: 0.5,
-                  }}
-                >
-                  No active players were returned for your team.
-                </Typography>
-              </Paper>
-            ) : (
-              <>
-                <Box
-                  sx={{
-                    display: { xs: 'none', lg: 'grid' },
-                    gridTemplateColumns: 'minmax(340px, 0.8fr) minmax(0, 1.45fr)',
-                    gap: 1.25,
-                    flex: 1,
-                    minHeight: 0,
-                  }}
-                >
-                  <PositionLimitsPanel
-                    positions={data.positions}
-                    selectedPosition={selectedPosition}
-                    onSelect={selectPosition}
-                  />
-                  <ProjectedCutsPanel
-                    cuts={cuts}
-                    selectedPosition={selectedPosition}
-                    totalCuts={data.summary.projectedCuts}
-                  />
-                </Box>
+            <Box
+              sx={{
+                display: { xs: 'none', lg: 'grid' },
+                gridTemplateColumns: 'minmax(330px, 0.72fr) minmax(0, 1.65fr)',
+                gap: 1.25,
+                flex: 1,
+                minHeight: 0,
+              }}
+            >
+              <PositionLimitsPanel
+                positions={data.positions}
+                selectedPosition={selectedPosition}
+                onSelect={position => selectPosition(position)}
+              />
+              <RosterSelectionPanel
+                players={players}
+                filtered={Boolean(selectedPosition || statusFilter)}
+                busyPlayerId={busyPlayerId}
+                onSelect={playerId => void mutateCut(playerId, 'select')}
+                onUndo={playerId => void mutateCut(playerId, 'undo')}
+              />
+            </Box>
 
-                <Box
-                  sx={{
-                    display: { xs: 'flex', lg: 'none' },
-                    flexDirection: 'column',
-                    minHeight: 0,
-                  }}
+            <Box
+              sx={{
+                display: { xs: 'flex', lg: 'none' },
+                flexDirection: 'column',
+                minHeight: 0,
+              }}
+            >
+              <Paper variant="outlined" sx={{ mb: 1.25 }}>
+                <Tabs
+                  value={activeTab}
+                  onChange={(_, value: RosterCutsTab) => setActiveTab(value)}
+                  variant="fullWidth"
+                  aria-label="Roster cuts sections"
                 >
-                  <Paper variant="outlined" sx={{ mb: 1.25 }}>
-                    <Tabs
-                      value={activeTab}
-                      onChange={(_, value: RosterCutsTab) => setActiveTab(value)}
-                      variant="fullWidth"
-                      aria-label="Roster cuts preview sections"
-                    >
-                      <Tab value="positions" label="Position Limits" />
-                      <Tab value="cuts" label={`Projected Cuts (${data.summary.projectedCuts})`} />
-                    </Tabs>
-                  </Paper>
-                  {activeTab === 'positions' ? (
-                    <PositionLimitsPanel
-                      positions={data.positions}
-                      selectedPosition={selectedPosition}
-                      onSelect={selectPosition}
-                    />
-                  ) : (
-                    <ProjectedCutsPanel
-                      cuts={cuts}
-                      selectedPosition={selectedPosition}
-                      totalCuts={data.summary.projectedCuts}
-                    />
-                  )}
-                </Box>
-              </>
-            )}
+                  <Tab value="positions" label="Positions" />
+                  <Tab value="roster" label={`Roster (${players.length})`} />
+                </Tabs>
+              </Paper>
+              {activeTab === 'positions' ? (
+                <PositionLimitsPanel
+                  positions={data.positions}
+                  selectedPosition={selectedPosition}
+                  onSelect={position => selectPosition(position)}
+                />
+              ) : (
+                <RosterSelectionPanel
+                  players={players}
+                  filtered={Boolean(selectedPosition || statusFilter)}
+                  busyPlayerId={busyPlayerId}
+                  onSelect={playerId => void mutateCut(playerId, 'select')}
+                  onUndo={playerId => void mutateCut(playerId, 'undo')}
+                />
+              )}
+            </Box>
           </Box>
         ))}
+
+      <Dialog open={confirmFinalize} onClose={() => setConfirmFinalize(false)}>
+        <DialogTitle>Finalize the roster?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This applies every team’s cuts, selects starters, recalculates ratings, and begins
+            Preseason. The completed roster will contain exactly {FINAL_ROSTER_SIZE} active players.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmFinalize(false)}>Cancel</Button>
+          <Button variant="contained" onClick={() => void completeRoster()}>
+            Finalize and Begin Preseason
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={Boolean(notice)}
+        autoHideDuration={8000}
+        onClose={() => setNotice(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {notice ? (
+          <Alert
+            severity={notice.severity}
+            variant="filled"
+            onClose={() => setNotice(null)}
+            role="status"
+          >
+            {notice.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
     </PageLayout>
   );
 };

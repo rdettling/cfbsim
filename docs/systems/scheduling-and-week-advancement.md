@@ -38,7 +38,8 @@ Week advancement is not only “simulate games”; it is also an ordering pipeli
 - After loop, persist all accumulated drives/plays/gameLogs and final league state.
 
 4. **Postseason scheduling hooks**
-- `handleSpecialWeeks(...)` selects action by `playoff_teams` and current week:
+- `handleSpecialWeeks(...)` selects action by `settings.playoffTeams` and the
+  current week:
   - **2-team**: conference championships -> natty (+ bowls).
   - **4-team**: conference championships -> semis (+ bowls) -> natty.
   - **12-team**: conference championships -> round 1 (+ bowls) -> quarters -> semis -> natty.
