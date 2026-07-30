@@ -93,11 +93,11 @@ const seedFullCycle = async () => {
         },
         conferences: {
           'Test Conference': {
-            games: 8,
+            games: 0,
             teams: { 'Test State': 4 },
           },
         },
-        Independent: {},
+        independents: {},
       },
     },
     {
@@ -262,7 +262,6 @@ describe('offseason lifecycle integration', () => {
     expect(cutsPreview.summary).toMatchObject({
       activePlayers: FINAL_ROSTER_SIZE,
       requiredCuts: 0,
-      readyToFinalize: true,
     });
     const finalizationGuard = {
       expectedStage: 'roster_cuts' as const,

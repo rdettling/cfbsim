@@ -1,10 +1,10 @@
-import { openDB } from 'idb';
+import { deleteDB, openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../types/db';
 import type { RecruitingState } from '../types/recruiting';
 
 export const DB_NAME = 'cfbsim';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export interface Frontend2DB extends DBSchema {
   baseData: {
@@ -53,51 +53,80 @@ export interface Frontend2DB extends DBSchema {
 
 let dbPromise: Promise<IDBPDatabase<Frontend2DB>> | null = null;
 
-export const upgradeDatabase = (db: IDBPDatabase<Frontend2DB>) => {
-  if (!db.objectStoreNames.contains('baseData')) {
-    db.createObjectStore('baseData', { keyPath: 'key' });
+type CurrentStoreName =
+  | 'baseData'
+  | 'league'
+  | 'recruiting'
+  | 'games'
+  | 'drives'
+  | 'plays'
+  | 'gameLogs'
+  | 'players';
+
+const createCurrentSchema = (db: IDBPDatabase<Frontend2DB>) => {
+  db.createObjectStore('baseData', { keyPath: 'key' });
+  db.createObjectStore('league', { keyPath: 'key' });
+  db.createObjectStore('recruiting', { keyPath: 'key' });
+
+  const games = db.createObjectStore('games', { keyPath: 'id' });
+  games.createIndex('weekPlayed', 'weekPlayed');
+  games.createIndex('teamAId', 'teamAId');
+  games.createIndex('teamBId', 'teamBId');
+  games.createIndex('winnerId', 'winnerId');
+
+  const drives = db.createObjectStore('drives', { keyPath: 'id' });
+  drives.createIndex('gameId', 'gameId');
+
+  const plays = db.createObjectStore('plays', { keyPath: 'id' });
+  plays.createIndex('gameId', 'gameId');
+  plays.createIndex('driveId', 'driveId');
+
+  const gameLogs = db.createObjectStore('gameLogs', { keyPath: 'id' });
+  gameLogs.createIndex('gameId', 'gameId');
+  gameLogs.createIndex('playerId', 'playerId');
+
+  const players = db.createObjectStore('players', { keyPath: 'id' });
+  players.createIndex('teamId', 'teamId');
+  players.createIndex('pos', 'pos');
+};
+
+export const upgradeDatabase = (
+  db: IDBPDatabase<Frontend2DB>,
+  oldVersion: number,
+) => {
+  if (oldVersion > 0) {
+    for (const storeName of Array.from(db.objectStoreNames)) {
+      db.deleteObjectStore(storeName as CurrentStoreName);
+    }
   }
-  if (!db.objectStoreNames.contains('league')) {
-    db.createObjectStore('league', { keyPath: 'key' });
-  }
-  if (!db.objectStoreNames.contains('recruiting')) {
-    db.createObjectStore('recruiting', { keyPath: 'key' });
-  }
-  if (!db.objectStoreNames.contains('games')) {
-    const store = db.createObjectStore('games', { keyPath: 'id' });
-    store.createIndex('weekPlayed', 'weekPlayed');
-    store.createIndex('teamAId', 'teamAId');
-    store.createIndex('teamBId', 'teamBId');
-    store.createIndex('winnerId', 'winnerId');
-  }
-  if (!db.objectStoreNames.contains('drives')) {
-    const store = db.createObjectStore('drives', { keyPath: 'id' });
-    store.createIndex('gameId', 'gameId');
-  }
-  if (!db.objectStoreNames.contains('plays')) {
-    const store = db.createObjectStore('plays', { keyPath: 'id' });
-    store.createIndex('gameId', 'gameId');
-    store.createIndex('driveId', 'driveId');
-  }
-  if (!db.objectStoreNames.contains('gameLogs')) {
-    const store = db.createObjectStore('gameLogs', { keyPath: 'id' });
-    store.createIndex('gameId', 'gameId');
-    store.createIndex('playerId', 'playerId');
-  }
-  if (!db.objectStoreNames.contains('players')) {
-    const store = db.createObjectStore('players', { keyPath: 'id' });
-    store.createIndex('teamId', 'teamId');
-    store.createIndex('pos', 'pos');
-  }
+  createCurrentSchema(db);
 };
 
 export const getDb = () => {
   if (!dbPromise) {
-    dbPromise = openDB<Frontend2DB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        upgradeDatabase(db);
+    const opening = openDB<Frontend2DB>(DB_NAME, DB_VERSION, {
+      upgrade(db, oldVersion) {
+        upgradeDatabase(db, oldVersion);
+      },
+      blocking(_currentVersion, _blockedVersion, event) {
+        (event.target as IDBDatabase).close();
+        if (dbPromise === opening) dbPromise = null;
+      },
+      terminated() {
+        if (dbPromise === opening) dbPromise = null;
       },
     });
+    dbPromise = opening;
   }
   return dbPromise;
+};
+
+export const deleteCurrentDatabase = async () => {
+  const opening = dbPromise;
+  dbPromise = null;
+  if (opening) {
+    const db = await opening.catch(() => null);
+    db?.close();
+  }
+  await deleteDB(DB_NAME);
 };

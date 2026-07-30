@@ -1,72 +1,49 @@
 /// <reference types="node" />
-import { mkdir, readFile, writeFile, readdir, access } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-type RatingsTeam = {
-  team: string;
-  conference: string;
-  rank: number;
-  wins: number;
-  losses: number;
-};
-
-type RatingsData = {
-  year: number;
-  total_teams: number;
-  teams: RatingsTeam[];
-};
-
-type YearData = {
-  conferences: Record<string, { games: number; teams: Record<string, number> }>;
-  Independent?: Record<string, number>;
-};
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { validateYearData } from '../src/domain/yearDataValidation';
+import type {
+  HistoryData,
+  SeasonResultsData,
+  YearData,
+} from '../src/types/baseData';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(SCRIPT_DIR, '..', '..');
-const RATINGS_DIR = join(ROOT, 'legacy', 'backend', 'data', 'ratings');
-const YEARS_DIR = join(ROOT, 'legacy', 'backend', 'data', 'years');
-const OUTPUT_PATH = join(ROOT, 'frontend2', 'public', 'data', 'history.json');
+export const DATA_ROOT = join(SCRIPT_DIR, '..', 'public', 'data');
 
-const readJson = async <T>(path: string) => JSON.parse(await readFile(path, 'utf-8')) as T;
-
-const loadRatings = async (year: number) =>
-  readJson<RatingsData>(join(RATINGS_DIR, `ratings_${year}.json`));
-
-const loadYearData = async (year: number) => {
-  const path = join(YEARS_DIR, `${year}.json`);
-  await access(path);
-  return readJson<YearData>(path);
-};
+export const readJson = async <T>(path: string): Promise<T> =>
+  JSON.parse(await readFile(path, 'utf-8')) as T;
 
 const getPrestige = (teamName: string, yearData: YearData) => {
-  for (const conf of Object.values(yearData.conferences ?? {})) {
-    if (teamName in conf.teams) {
-      return conf.teams[teamName];
-    }
+  for (const conference of Object.values(yearData.conferences)) {
+    if (teamName in conference.teams) return conference.teams[teamName];
   }
-  if (yearData.Independent && teamName in yearData.Independent) {
-    return yearData.Independent[teamName];
-  }
-  return null;
+  return yearData.independents[teamName];
 };
 
-const main = async () => {
-  const yearFileNames = await readdir(YEARS_DIR);
-  const years = yearFileNames
-    .filter(name => name.endsWith('.json'))
-    .map(name => Number(name.replace('.json', '')))
-    .filter(year => !Number.isNaN(year))
-    .sort((a, b) => b - a);
-
-  if (!years.length) {
-    throw new Error(`No year files found in ${YEARS_DIR}`);
+export const buildHistoryData = async (
+  dataRoot = DATA_ROOT,
+): Promise<HistoryData> => {
+  const index = await readJson<{ years: string[] }>(
+    join(dataRoot, 'years', 'index.json'),
+  );
+  const indexedYears = new Set(index.years);
+  const resultYears = (await readdir(join(dataRoot, 'season-results')))
+    .filter(name => /^\d{4}\.json$/.test(name))
+    .map(name => name.slice(0, 4))
+    .sort((left, right) => Number(right) - Number(left));
+  const unexpectedYears = resultYears.filter(year => !indexedYears.has(year));
+  if (unexpectedYears.length) {
+    throw new Error(
+      `Season results exist for unsupported years: ${unexpectedYears.join(', ')}.`,
+    );
   }
-
-  const historyByTeam: Record<string, number[][]> = {};
+  const years = resultYears.map(Number);
+  const historyByTeam: HistoryData['teams'] = {};
   const confIndex = new Map<string, number>();
 
-  const getConfId = (name: string) => {
+  const getConferenceId = (name: string) => {
     const key = name || 'Independent';
     const existing = confIndex.get(key);
     if (existing !== undefined) return existing;
@@ -76,37 +53,57 @@ const main = async () => {
   };
 
   for (const year of years) {
-    const ratings = await loadRatings(year);
-    const yearData = await loadYearData(year);
+    const [rawYearData, results] = await Promise.all([
+      readJson<unknown>(join(dataRoot, 'years', `${year}.json`)),
+      readJson<SeasonResultsData>(
+        join(dataRoot, 'season-results', `${year}.json`),
+      ),
+    ]);
+    const yearData = validateYearData(rawYearData, `Year ${year}`);
 
-    ratings.teams.forEach(teamEntry => {
-      const prestige = getPrestige(teamEntry.team, yearData);
-      if (!historyByTeam[teamEntry.team]) historyByTeam[teamEntry.team] = [];
-      const confId = getConfId(teamEntry.conference ?? 'Independent');
-      historyByTeam[teamEntry.team].push([
+    for (const result of results.teams) {
+      const prestige = getPrestige(result.team, yearData);
+      if (prestige === undefined) {
+        throw new Error(
+          `Season results ${year}: ${result.team} is not in the year data.`,
+        );
+      }
+      if (!historyByTeam[result.team]) historyByTeam[result.team] = [];
+      historyByTeam[result.team].push([
         year,
-        confId,
-        teamEntry.rank ?? 0,
-        teamEntry.wins ?? 0,
-        teamEntry.losses ?? 0,
-        prestige ?? null,
+        getConferenceId(result.conference),
+        result.rank,
+        result.wins,
+        result.losses,
+        prestige,
       ]);
-    });
+    }
   }
 
-  const payload = {
+  return {
     generated_at: new Date().toISOString(),
     years,
-    conf_index: Object.fromEntries(confIndex.entries()),
+    conf_index: Object.fromEntries(confIndex),
     teams: historyByTeam,
   };
-
-  await mkdir(dirname(OUTPUT_PATH), { recursive: true });
-  await writeFile(OUTPUT_PATH, JSON.stringify(payload, null, 2));
-  console.log(`Wrote history data to ${OUTPUT_PATH}`);
 };
 
-main().catch(error => {
-  console.error(error);
-  process.exit(1);
-});
+export const comparableHistory = ({
+  generated_at: _generatedAt,
+  ...history
+}: HistoryData) => history;
+
+const main = async () => {
+  const outputPath = join(DATA_ROOT, 'history.json');
+  const payload = await buildHistoryData();
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, JSON.stringify(payload, null, 2));
+  console.log(`Wrote history data to ${outputPath}`);
+};
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main().catch(error => {
+    console.error(error);
+    process.exit(1);
+  });
+}

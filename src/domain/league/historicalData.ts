@@ -1,93 +1,13 @@
 import { getYearData, getYearsIndex } from '../../db/baseData';
 import type { YearData } from '../../types/baseData';
-import type {
-  HistoricalDataResolution,
-  PlayoffTeamCount,
-} from '../../types/domain';
+import { YearDataValidationError } from '../yearDataValidation';
+import type { HistoricalDataResolution } from '../../types/domain';
 import { HistoricalDataError } from '../../types/league';
 
 export interface ResolvedHistoricalData {
   dataSource: HistoricalDataResolution;
   yearData: YearData;
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const isPlayoffTeamCount = (value: number): value is PlayoffTeamCount =>
-  value === 2 || value === 4 || value === 12;
-
-const validateYearData = (value: unknown, targetYear: number): YearData => {
-  if (
-    !isRecord(value) ||
-    !isRecord(value.playoff) ||
-    !isRecord(value.conferences)
-  ) {
-    throw new HistoricalDataError(
-      targetYear,
-      `Historical data for ${targetYear} is malformed.`,
-    );
-  }
-
-  const playoffTeams = value.playoff.teams;
-  if (typeof playoffTeams !== 'number' || !isPlayoffTeamCount(playoffTeams)) {
-    throw new HistoricalDataError(
-      targetYear,
-      `Historical postseason data for ${targetYear} is malformed.`,
-    );
-  }
-  const playoffAutobids = value.playoff.conf_champ_autobids;
-  const playoffTopSeeds = value.playoff.conf_champ_top_4;
-  if (
-    (playoffAutobids !== undefined &&
-      (typeof playoffAutobids !== 'number' ||
-        !Number.isInteger(playoffAutobids) ||
-        playoffAutobids < 0 ||
-        playoffAutobids > 10)) ||
-    (playoffTopSeeds !== undefined &&
-      playoffTopSeeds !== null &&
-      typeof playoffTopSeeds !== 'boolean')
-  ) {
-    throw new HistoricalDataError(
-      targetYear,
-      `Historical postseason data for ${targetYear} is malformed.`,
-    );
-  }
-
-  for (const conference of Object.values(value.conferences)) {
-    if (
-      !isRecord(conference) ||
-      typeof conference.games !== 'number' ||
-      !Number.isFinite(conference.games) ||
-      !isRecord(conference.teams) ||
-      Object.values(conference.teams).some(
-        prestige =>
-          typeof prestige !== 'number' || !Number.isFinite(prestige),
-      )
-    ) {
-      throw new HistoricalDataError(
-        targetYear,
-        `Historical conference data for ${targetYear} is malformed.`,
-      );
-    }
-  }
-
-  if (
-    value.Independent !== undefined &&
-    (!isRecord(value.Independent) ||
-      Object.values(value.Independent).some(
-        prestige =>
-          typeof prestige !== 'number' || !Number.isFinite(prestige),
-      ))
-  ) {
-    throw new HistoricalDataError(
-      targetYear,
-      `Historical independent-team data for ${targetYear} is malformed.`,
-    );
-  }
-
-  return value as unknown as YearData;
-};
 
 const selectClosestYear = (
   years: number[],
@@ -137,10 +57,16 @@ export const resolveHistoricalData = async (
     ? targetYear
     : selectClosestYear(years, targetYear, startYear);
 
-  let rawYearData: unknown;
+  let yearData: YearData;
   try {
-    rawYearData = await getYearData(String(sourceYear));
-  } catch {
+    yearData = await getYearData(String(sourceYear));
+  } catch (error) {
+    if (error instanceof YearDataValidationError) {
+      throw new HistoricalDataError(
+        targetYear,
+        `Historical data for ${sourceYear} is malformed.`,
+      );
+    }
     throw new HistoricalDataError(
       targetYear,
       `Historical data for ${sourceYear} could not be loaded.`,
@@ -154,6 +80,6 @@ export const resolveHistoricalData = async (
       resolution: sourceYear === targetYear ? 'exact' : 'fallback',
       atHistoricalFrontier: targetYear > years[years.length - 1],
     },
-    yearData: validateYearData(rawYearData, sourceYear),
+    yearData,
   };
 };

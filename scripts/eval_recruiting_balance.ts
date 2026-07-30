@@ -178,8 +178,8 @@ const buildLeague = (
   Object.entries(yearData.conferences).forEach(([confName, conference]) => {
     addConference(confName, conference.games, conference.teams);
   });
-  if (yearData.Independent && Object.keys(yearData.Independent).length) {
-    addConference('Independent', 0, yearData.Independent);
+  if (yearData.independents && Object.keys(yearData.independents).length) {
+    addConference('Independent', 0, yearData.independents);
   }
 
   const league: LeagueState = {

@@ -106,18 +106,19 @@ user cut IDs, and increment the recruiting version once. Active freshmen are
 protected, and every partial selection must preserve positional starter
 minimums.
 
-`finalizeRoster()` requires the user to select exactly enough returning players
-to reach 80. Non-user cuts are chosen iteratively from soft positional surplus,
-then lowest senior/current value and older class. The command validates every
-final roster, selects starters, recalculates ratings with team-keyed seed
-forks, prepares preseason, clears prior play-by-play, deletes recruiting state,
-and enters Preseason in one transaction.
+`finalizeRoster()` preserves the user's selected cuts and fills any remaining
+cuts with the recommendation engine. Non-user cuts are chosen by the same
+engine, iteratively from soft positional surplus, then lowest estimated senior
+value, current value, and older class. Estimated senior value uses only current
+rating and class-based expected growth; exact future ratings remain private.
+The command validates every final roster, selects starters, recalculates
+ratings with team-keyed seed forks, prepares preseason, clears prior
+play-by-play, deletes recruiting state, and enters Preseason in one transaction.
 
 The Roster Cuts loader remains read-only and returns the full active roster,
 persisted selections, remaining recommendations, protected and blocked states,
-positional constraints, the current version, and finalization readiness. The
-page applies select and undo commands immediately and enables finalization only
-when the authoritative projection is ready.
+positional constraints, and the current version. The page applies select and
+undo commands immediately; advancing to the next stage finalizes the roster.
 
 ## Invariants
 

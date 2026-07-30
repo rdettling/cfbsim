@@ -22,7 +22,8 @@ Commands are the only mutation entry points.
   and players in one readonly transaction.
 
 Invalid records throw `LeagueDataIntegrityError`; they are never treated as an
-absent save.
+absent save by a loader. The application startup boundary runs before page
+loaders and discards an invalid authoritative save as a whole.
 
 ## Lifecycle Loaders
 

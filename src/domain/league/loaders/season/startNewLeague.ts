@@ -1,10 +1,10 @@
 import {
   clearBaseDataCache,
+  getHistoryData,
   getYearData,
   getYearsIndex,
 } from '../../../../db/baseData';
 import { commitNewLeague } from '../../../../db/newLeagueRepo';
-import type { YearData } from '../../../../types/baseData';
 import type { Info, PlayoffTeamCount } from '../../../../types/domain';
 import type {
   LeagueState,
@@ -19,7 +19,6 @@ import { buildTeamsAndConferences } from '../../../baseData';
 import { prepareInitialRosters } from '../../../roster';
 import { getLastWeekByPlayoffTeams } from '../../postseason';
 import { initializeNonConScheduling } from '../../seasonReset';
-import { primeHistoryData } from './shared';
 
 const isPlayoffTeamCount = (value: number): value is PlayoffTeamCount =>
   value === 2 || value === 4 || value === 12;
@@ -55,6 +54,7 @@ export const startNewLeague = async (
   const [yearData, teamsAndConferences] = await Promise.all([
     getYearData(year),
     buildTeamsAndConferences(year),
+    getHistoryData(),
   ]);
   const { teams, conferences } = teamsAndConferences;
   const userTeam = teams.find(team => team.name === input.teamName);
@@ -69,18 +69,14 @@ export const startNewLeague = async (
     throw new NewLeagueConfigurationError(`The ${year} season is invalid.`);
   }
 
-  const typedYearData = yearData as YearData;
-  const yearPlayoff = typedYearData.playoff ?? null;
+  const yearPlayoff = yearData.playoff;
   const resolvedPlayoffTeams = input.playoff.teams;
   const resolvedPlayoffAutobids = resolvedPlayoffTeams === 12
-    ? input.playoff.autobids ??
-      yearPlayoff?.conf_champ_autobids ??
-      DEFAULT_NEXT_SEASON_CONFIGURATION.playoffAutobids
+    ? input.playoff.autobids ?? yearPlayoff.conf_champ_autobids
     : undefined;
   const resolvedPlayoffTop4 = resolvedPlayoffTeams === 12
     ? input.playoff.conferenceChampionsReceiveTopSeeds ??
-      yearPlayoff?.conf_champ_top_4 ??
-      DEFAULT_NEXT_SEASON_CONFIGURATION.conferenceChampionsReceiveTopSeeds
+      yearPlayoff.conf_champ_top_4
     : false;
 
   if (resolvedPlayoffTeams === 12) {
@@ -141,7 +137,6 @@ export const startNewLeague = async (
   };
 
   const players = await prepareInitialRosters(league);
-  await primeHistoryData(startYear);
 
   const { schedule, gamesToSave } = await initializeNonConScheduling(league);
   await commitNewLeague({

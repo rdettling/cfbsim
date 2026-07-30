@@ -1,13 +1,12 @@
 import type { Team } from '../../../types/domain';
 import type { GameRecord, GameLogRecord, PlayerRecord } from '../../../types/db';
-import type { RatingsData, HistoryData, YearData } from '../../../types/baseData';
 import type {
   PlayerCareerSeason,
   PlayerGameLog,
   PlayerStatCategory,
   PlayerStatValues,
 } from '../../../types/player';
-import { getRatingsData, getYearData, getHistoryData, getYearsIndex } from '../../../db/baseData';
+import { getHistoryData } from '../../../db/baseData';
 import { getAllGames, getAllGameLogs } from '../../../db/simRepo';
 import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
@@ -65,67 +64,24 @@ export const loadTeamHistory = async (teamName?: string) => {
     has_games: boolean;
   }> = [];
 
-  try {
-    const historyData = (await getHistoryData()) as HistoryData;
-    const teamHistory = historyData.teams[team.name] ?? [];
-    const confById = new Map(
-      Object.entries(historyData.conf_index).map(([name, id]) => [id, name])
-    );
-    historicalRows = teamHistory
-      .filter(entry => entry[0] <= cutoffYear)
-      .sort((a, b) => b[0] - a[0])
-      .map(entry => ({
-        year: entry[0],
-        prestige: (entry[5] ?? team.prestige) as number,
-        rating: null,
-        conference: confById.get(entry[1]) ?? 'Independent',
-        wins: entry[3] ?? 0,
-        losses: entry[4] ?? 0,
-        rank: entry[2] ?? 0,
-        has_games: false,
-      }));
-  } catch (error) {
-    const yearsIndex = await getYearsIndex();
-    const historicalYears = yearsIndex.years
-      .map(entry => Number(entry))
-      .filter(year => year <= cutoffYear)
-      .sort((a, b) => b - a);
-
-    const computed = await Promise.all(
-      historicalYears.map(async year => {
-        const ratingsData = (await getRatingsData(String(year))) as RatingsData;
-        const yearData = (await getYearData(String(year))) as YearData;
-        const teamEntry = ratingsData.teams.find(entry => entry.team === team.name);
-        if (!teamEntry) return null;
-
-        let prestige: number | null = null;
-        const conferenceValues = Object.values(yearData.conferences ?? {}) as Array<{ teams: Record<string, number> }>;
-        conferenceValues.some(confData => {
-          if (team.name in confData.teams) {
-            prestige = confData.teams[team.name];
-            return true;
-          }
-          return false;
-        });
-        if (prestige == null && yearData.Independent && team.name in yearData.Independent) {
-          prestige = yearData.Independent[team.name];
-        }
-
-        return {
-          year,
-          prestige: prestige ?? team.prestige,
-          rating: null,
-          conference: teamEntry.conference ?? 'Independent',
-          wins: teamEntry.wins ?? 0,
-          losses: teamEntry.losses ?? 0,
-          rank: teamEntry.rank ?? 0,
-          has_games: false,
-        };
-      })
-    );
-    historicalRows = computed.filter(Boolean) as typeof historicalRows;
-    console.warn('History data preload missing, using ratings fallback.', error);
-  }
+  const historyData = await getHistoryData();
+  const teamHistory = historyData.teams[team.name] ?? [];
+  const confById = new Map(
+    Object.entries(historyData.conf_index).map(([name, id]) => [id, name]),
+  );
+  historicalRows = teamHistory
+    .filter(entry => entry[0] <= cutoffYear)
+    .sort((a, b) => b[0] - a[0])
+    .map(entry => ({
+      year: entry[0],
+      prestige: entry[5],
+      rating: null,
+      conference: confById.get(entry[1]) ?? 'Independent',
+      wins: entry[3],
+      losses: entry[4],
+      rank: entry[2],
+      has_games: false,
+    }));
 
   const years = historicalRows.slice();
   const shouldIncludeCurrentYear = league.info.stage === 'summary';

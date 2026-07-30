@@ -130,11 +130,11 @@ const seedScenario = async (stage: LeagueStage) => {
       },
       conferences: {
         'Test Conference': {
-          games: 8,
+          games: 0,
           teams: { 'Test State': 4 },
         },
       },
-      Independent: {},
+      independents: {},
     },
   });
   await tx.objectStore('baseData').put({
@@ -339,7 +339,6 @@ describe('offseason loaders', () => {
         position: 'qb',
         currentClass: 'jr',
         currentRating: 40,
-        seniorRating: 45,
         selected: false,
         recommended: true,
         protected: false,
@@ -364,7 +363,6 @@ describe('offseason loaders', () => {
       projectedCuts: 1,
       projectedRosterSize: FINAL_ROSTER_SIZE,
       positionsOverLimit: 1,
-      readyToFinalize: false,
     });
   });
 

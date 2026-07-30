@@ -105,7 +105,7 @@ export const RosterSelectionPanel = ({
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {players.length} player{players.length === 1 ? '' : 's'} shown. Freshmen are protected;
-        recommendations prioritize legal future value.
+        recommendations prioritize roster balance, current ability, and remaining eligibility.
       </Typography>
     </Box>
     {players.length === 0 ? (
@@ -131,7 +131,6 @@ export const RosterSelectionPanel = ({
                 <TableCell>Pos</TableCell>
                 <TableCell>Class</TableCell>
                 <TableCell align="right">Current</TableCell>
-                <TableCell align="right">Senior</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Action</TableCell>
               </TableRow>
@@ -145,7 +144,6 @@ export const RosterSelectionPanel = ({
                   <TableCell>{player.position.toUpperCase()}</TableCell>
                   <TableCell>{player.currentClass.toUpperCase()}</TableCell>
                   <TableCell align="right">{player.currentRating}</TableCell>
-                  <TableCell align="right">{player.seniorRating}</TableCell>
                   <TableCell>
                     <Status player={player} />
                   </TableCell>
@@ -205,7 +203,7 @@ export const RosterSelectionPanel = ({
                 <PlayerLink player={player} />
                 <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                   {player.position.toUpperCase()} · {player.currentClass.toUpperCase()} · Current{' '}
-                  {player.currentRating} · Senior {player.seniorRating}
+                  {player.currentRating}
                 </Typography>
                 <Status player={player} />
               </Box>

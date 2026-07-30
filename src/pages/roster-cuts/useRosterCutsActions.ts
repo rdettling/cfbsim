@@ -15,7 +15,6 @@ export const useRosterCutsActions = (
   const navigate = useNavigate();
   const [busyPlayerId, setBusyPlayerId] = useState<number | null>(null);
   const [finalizing, setFinalizing] = useState(false);
-  const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [notice, setNotice] = useState<{
     severity: 'success' | 'error';
     message: string;
@@ -69,7 +68,6 @@ export const useRosterCutsActions = (
 
   const completeRoster = async () => {
     if (!guard || actionLock.current) return;
-    setConfirmFinalize(false);
     actionLock.current = true;
     setFinalizing(true);
     try {
@@ -95,8 +93,6 @@ export const useRosterCutsActions = (
   return {
     busyPlayerId,
     finalizing,
-    confirmFinalize,
-    setConfirmFinalize,
     notice,
     setNotice,
     mutateCut,

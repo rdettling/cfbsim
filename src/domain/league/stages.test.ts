@@ -50,7 +50,7 @@ vi.mock('./historicalData', () => ({
     yearData: {
       playoff: { teams: 4 },
       conferences: {},
-      Independent: {},
+      independents: {},
     },
   })),
 }));

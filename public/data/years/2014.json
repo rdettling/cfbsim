@@ -1,7 +1,7 @@
 {
     "playoff": {
         "teams": 4,
-        "conf_champ_top_4": null,
+        "conf_champ_top_4": false,
         "conf_champ_autobids": 0
     },
     "conferences": {
@@ -180,7 +180,7 @@
             }
         }
     },
-    "Independent": {
+    "independents": {
         "Notre Dame": 6,
         "BYU": 5,
         "Navy": 4,

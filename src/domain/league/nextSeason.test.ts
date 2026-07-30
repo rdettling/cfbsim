@@ -18,11 +18,11 @@ const validYearData = {
   },
   conferences: {
     'Test Conference': {
-      games: 8,
+      games: 0,
       teams: { 'Test State': 4 },
     },
   },
-  Independent: {},
+  independents: {},
 };
 
 const resetDatabase = async () => {

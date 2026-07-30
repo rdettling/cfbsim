@@ -114,14 +114,16 @@ export const WeekScheduleGameCard = ({ game, onTeamClick }: WeekScheduleGameCard
             >
               {game.label || 'Regular season'}
             </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-              }}
-            >
-              {neutral ? 'Neutral site' : matchup}
-            </Typography>
+            {neutral && (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
+                Neutral site
+              </Typography>
+            )}
           </Box>
           <Typography
             variant="caption"

@@ -13,7 +13,7 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
     getTeamsData(),
     getConferencesData(),
   ]);
-  const typedYearData = yearData as YearData;
+  const typedYearData: YearData = yearData;
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
 
@@ -38,7 +38,7 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
 
   const conferences: PreviewData['conferences'] = [];
   const teams: PreviewData['teams'] = [];
-  Object.entries(typedYearData.conferences || {}).forEach(([confName, confData]) => {
+  Object.entries(typedYearData.conferences).forEach(([confName, confData]) => {
     teams.push(
       ...Object.entries(confData.teams || {}).map(([teamName, prestige]) =>
         addTeamMetadata(teamName, prestige as number, confName),
@@ -51,7 +51,7 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   });
 
   teams.push(
-    ...Object.entries(typedYearData.Independent || {}).map(
+    ...Object.entries(typedYearData.independents).map(
       ([teamName, prestige]) =>
         addTeamMetadata(teamName, prestige as number, null),
     ),
@@ -65,8 +65,8 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   return {
     playoff: {
       teams: typedYearData.playoff.teams as PlayoffTeamCount,
-      conf_champ_autobids: typedYearData.playoff.conf_champ_autobids ?? 0,
-      conf_champ_top_4: typedYearData.playoff.conf_champ_top_4 ?? false,
+      conf_champ_autobids: typedYearData.playoff.conf_champ_autobids,
+      conf_champ_top_4: typedYearData.playoff.conf_champ_top_4,
     },
     conferences,
     teams,
@@ -79,7 +79,7 @@ export const buildTeamsAndConferences = async (year: string): Promise<{ teams: T
     getTeamsData(),
     getConferencesData(),
   ]);
-  const typedYearData = yearData as YearData;
+  const typedYearData: YearData = yearData;
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
 
@@ -158,7 +158,7 @@ export const buildTeamsAndConferences = async (year: string): Promise<{ teams: T
     conferenceId += 1;
   });
 
-  const independents = typedYearData.Independent ?? {};
+  const independents = typedYearData.independents;
   if (Object.keys(independents).length) {
     const confTeams: Team[] = [];
     Object.entries(independents).forEach(([teamName, prestige]) => {

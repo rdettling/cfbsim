@@ -1,5 +1,5 @@
 import type { LeagueState } from '../../types/league';
-import type { HistoryData } from '../../types/baseData';
+import type { HistoryData, HistoryRow } from '../../types/baseData';
 
 const normalizeConferenceKey = (confName: string | null | undefined) =>
   confName && confName.length ? confName : 'Independent';
@@ -27,7 +27,7 @@ export const updateHistoryForSeason = (
     }
 
     const confId = confIndex[confName];
-    const entry = [
+    const entry: HistoryRow = [
       year,
       confId,
       team.ranking ?? 0,

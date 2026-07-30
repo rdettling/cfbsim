@@ -246,7 +246,6 @@ describe('persistent roster finalization', () => {
       version: 9,
       pendingUserCutIds: [100],
       requiredCuts: 1,
-      readyToFinalize: true,
     });
     expect((await loadRecruitingState())?.pendingUserCutIds).toEqual([100]);
 
@@ -260,7 +259,6 @@ describe('persistent roster finalization', () => {
     expect(undone).toMatchObject({
       version: 10,
       pendingUserCutIds: [],
-      readyToFinalize: false,
     });
   });
 
@@ -279,11 +277,31 @@ describe('persistent roster finalization', () => {
     expect(await snapshot()).toEqual(before);
   });
 
-  it('applies user and AI cuts atomically and protects freshmen', async () => {
+  it('fills every user cut when finalizing without selections', async () => {
     await seedRosterCuts();
+    await finalizeRoster(guard(8));
+    const db = await getDb();
+    const players = await db.getAll('players');
+
+    expect(players.find(player => player.id === 100)?.active).toBe(false);
+  });
+
+  it('preserves user selections and fills only the remaining cuts', async () => {
+    await seedRosterCuts();
+    const db = await getDb();
+    await db.put(
+      'players',
+      buildTestPlayer({
+        id: 101,
+        teamId: 1,
+        pos: 'rb',
+        year: 'jr',
+        rating: 41,
+        rating_sr: 99,
+      }),
+    );
     const selected = await selectRosterCut(guard(8), 100);
     await finalizeRoster(guard(selected.version));
-    const db = await getDb();
     const league = (await db.get('league', 'current'))?.value as LeagueState;
     const players = await db.getAll('players');
     expect(league.info.stage).toBe('preseason');
@@ -302,6 +320,7 @@ describe('persistent roster finalization', () => {
       }
     }
     expect(players.find(player => player.id === 100)?.active).toBe(false);
+    expect(players.find(player => player.id === 101)?.active).toBe(false);
     expect(players.find(player => player.id === 301)?.active).toBe(true);
   });
 

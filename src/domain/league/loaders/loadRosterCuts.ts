@@ -16,7 +16,6 @@ const EMPTY_SUMMARY: RosterCutsSummary = {
   projectedCuts: 0,
   projectedRosterSize: 0,
   positionsOverLimit: 0,
-  readyToFinalize: false,
 };
 
 export const loadRosterCuts = async () => {
@@ -60,7 +59,6 @@ export const loadRosterCuts = async () => {
       version: state.version,
       pendingUserCutIds: [...state.pendingUserCutIds],
       requiredCuts: preview.summary.requiredCuts,
-      readyToFinalize: preview.summary.readyToFinalize,
     },
   };
 };

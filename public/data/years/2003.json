@@ -1,7 +1,7 @@
 {
     "playoff": {
         "teams": 2,
-        "conf_champ_top_4": null,
+        "conf_champ_top_4": false,
         "conf_champ_autobids": 0
     },
     "conferences": {
@@ -174,7 +174,7 @@
             }
         }
     },
-    "Independent": {
+    "independents": {
         "Connecticut": 3,
         "Notre Dame": 5,
         "Navy": 2,

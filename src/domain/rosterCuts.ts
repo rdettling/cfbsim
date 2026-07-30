@@ -20,10 +20,31 @@ const CLASS_SENIORITY: Record<PlayerRecord['year'], number> = {
   sr: 4,
 };
 
-const activeTeamPlayers = (players: PlayerRecord[], teamId: number) =>
+const EXPECTED_REMAINING_RATING_GROWTH: Record<
+  PlayerRecord['year'],
+  number
+> = {
+  fr: 10,
+  so: 5,
+  jr: 2,
+  sr: 0,
+};
+
+export type RosterCutCandidate = Pick<
+  PlayerRecord,
+  'id' | 'teamId' | 'year' | 'pos' | 'rating' | 'active'
+>;
+
+const activeTeamPlayers = <TPlayer extends RosterCutCandidate>(
+  players: TPlayer[],
+  teamId: number,
+) =>
   players.filter(player => player.active && player.teamId === teamId);
 
-const assertKnownPositions = (players: PlayerRecord[], teamId: number) => {
+const assertKnownPositions = (
+  players: RosterCutCandidate[],
+  teamId: number,
+) => {
   const invalid = players.find(player => !(player.pos in ROSTER));
   if (invalid) {
     throw new RosterFinalizationRuleError(
@@ -36,7 +57,7 @@ const assertKnownPositions = (players: PlayerRecord[], teamId: number) => {
 };
 
 const countsAfterCuts = (
-  active: PlayerRecord[],
+  active: RosterCutCandidate[],
   selectedIds: ReadonlySet<number>,
 ) =>
   Object.fromEntries(
@@ -49,12 +70,12 @@ const countsAfterCuts = (
   ) as Record<string, number>;
 
 export const requiredRosterCuts = (
-  players: PlayerRecord[],
+  players: RosterCutCandidate[],
   teamId: number,
 ) => Math.max(0, activeTeamPlayers(players, teamId).length - FINAL_ROSTER_SIZE);
 
 export const validateRosterCutSelection = (
-  players: PlayerRecord[],
+  players: RosterCutCandidate[],
   teamId: number,
   selectedCutIds: number[],
   requireComplete = false,
@@ -151,21 +172,31 @@ export const validateRosterCutSelection = (
   return { requiredCuts: required, counts };
 };
 
-export interface RecommendRosterCutsInput {
-  players: PlayerRecord[];
+export interface RecommendRosterCutsInput<
+  TPlayer extends RosterCutCandidate = RosterCutCandidate,
+> {
+  players: TPlayer[];
   teamId: number;
   year: number;
   seed: number;
   selectedCutIds: number[];
 }
 
-export const recommendRosterCuts = ({
+const estimateSeniorValue = (player: RosterCutCandidate) =>
+  Math.min(
+    99,
+    player.rating + EXPECTED_REMAINING_RATING_GROWTH[player.year],
+  );
+
+export const recommendRosterCuts = <
+  TPlayer extends RosterCutCandidate,
+>({
   players,
   teamId,
   year,
   seed,
   selectedCutIds,
-}: RecommendRosterCutsInput): PlayerRecord[] => {
+}: RecommendRosterCutsInput<TPlayer>): TPlayer[] => {
   const active = activeTeamPlayers(players, teamId);
   const { requiredCuts } = validateRosterCutSelection(
     players,
@@ -173,7 +204,7 @@ export const recommendRosterCuts = ({
     selectedCutIds,
   );
   const selected = new Set(selectedCutIds);
-  const recommendations: PlayerRecord[] = [];
+  const recommendations: TPlayer[] = [];
 
   while (selected.size < requiredCuts) {
     const counts = countsAfterCuts(active, selected);
@@ -208,7 +239,7 @@ export const recommendRosterCuts = ({
     );
     const choice = [...pool].sort(
       (left, right) =>
-        left.rating_sr - right.rating_sr ||
+        estimateSeniorValue(left) - estimateSeniorValue(right) ||
         left.rating - right.rating ||
         CLASS_SENIORITY[right.year] - CLASS_SENIORITY[left.year] ||
         tie.fork(left.id).next() - tie.fork(right.id).next() ||
@@ -221,7 +252,7 @@ export const recommendRosterCuts = ({
 };
 
 const toPlayerPreview = (
-  player: PlayerRecord,
+  player: RosterCutCandidate & Pick<PlayerRecord, 'first' | 'last'>,
   selected: boolean,
   recommended: boolean,
   canSelect: boolean,
@@ -233,7 +264,6 @@ const toPlayerPreview = (
   position: player.pos,
   currentClass: player.year,
   currentRating: player.rating,
-  seniorRating: player.rating_sr,
   selected,
   recommended,
   protected: player.year === 'fr',
@@ -371,7 +401,6 @@ export const buildRosterCutsPreview = ({
       positionsOverLimit: POSITION_ORDER.filter(
         position => counts[position] > ROSTER[position].total,
       ).length,
-      readyToFinalize: selectedCutIds.length === requiredCuts,
     },
   };
 };

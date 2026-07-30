@@ -22,11 +22,11 @@ const yearData = (teams: 2 | 4 | 12 = 12) => ({
   },
   conferences: {
     'Test Conference': {
-      games: 8,
+      games: 0,
       teams: { 'Test State': 4 },
     },
   },
-  Independent: {},
+  independents: {},
 });
 
 const baseResponses = () =>
@@ -35,8 +35,13 @@ const baseResponses = () =>
     ['/data/years/2025.json', yearData(12)],
     ['/data/years/2024.json', yearData(4)],
     [
-      '/data/ratings/ratings_2024.json',
-      { year: 2024, total_teams: 1, teams: [] },
+      '/data/history.json',
+      {
+        generated_at: '2026-01-01T00:00:00.000Z',
+        years: [2025, 2024],
+        conf_index: { 'Test Conference': 0 },
+        teams: {},
+      },
     ],
     [
       '/data/teams.json',
@@ -264,11 +269,39 @@ describe('loadHomeData', () => {
       'The 1999 season is not supported.',
     );
   });
+
+  it('rejects malformed preview data through the shared year validator', async () => {
+    responses.set('/data/years/2024.json', {
+      ...yearData(4),
+      Independent: {},
+    });
+
+    await expect(loadHomeData('2024')).rejects.toThrow(
+      'Year 2024: year data has invalid fields',
+    );
+  });
 });
 
 describe('startNewLeague', () => {
+  it('rejects malformed creation data through the shared year validator', async () => {
+    responses.set('/data/years/2025.json', {
+      ...yearData(),
+      playoff: { teams: 6 },
+    });
+
+    await expect(startNewLeague(buildInput())).rejects.toThrow(
+      'Year 2025: playoff has invalid fields',
+    );
+  });
+
   it('keeps season loaders read-only and initializes the season by command', async () => {
     await startNewLeague(buildInput());
+    expect(fetch).toHaveBeenCalledWith('/data/history.json');
+    expect(
+      vi.mocked(fetch).mock.calls.some(([input]) =>
+        String(input).includes('/season-results/'),
+      ),
+    ).toBe(false);
     const before = await snapshotSave();
 
     await loadDashboard();

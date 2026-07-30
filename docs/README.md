@@ -27,6 +27,7 @@ For recruiting balance work, start with
 | [Interactive Recruiting and Roster Finalization](design/interactive-recruiting.md) | Defines current player-facing recruiting and roster rules. |
 | [Recruiting Hierarchy](design/recruiting-hierarchy.md) | Defines public talent, prestige effects, AI policy, class scoring, and balance validation. |
 | [Roster and Recruit Supply](design/roster-and-recruit-supply.md) | Defines the 80-player roster economy, positional totals, recruit pool, and elite hierarchy. |
+| [Product Improvement Roadmap](design/product-improvement-roadmap.md) | Collects proposed immersion, realism, and long-term product improvements. |
 | [Simulation Engine](systems/simulation-engine.md) | Explains game simulation inputs, execution, mechanics, and invariants. |
 | [Scheduling and Week Advancement](systems/scheduling-and-week-advancement.md) | Defines schedule creation, week progression, and postseason orchestration. |
 | [Roster Progression and Recruiting](systems/roster-progression-and-recruiting.md) | Defines roster and recruiting implementation flow. |

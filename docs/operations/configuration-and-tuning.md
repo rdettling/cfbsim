@@ -149,5 +149,22 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - `src/domain/league/postseason.ts` (`getLastWeekByPlayoffTeams`)
   - `src/domain/league/offseason.ts` (policy-driven structural updates)
 - Scripts and commands:
-  - `package.json` scripts: `tune:yards`, `eval:winrate`, `tune:winrate`, `generate:odds`, `generate:history`, `typecheck`
-  - `scripts/tune_yards.ts`, `scripts/eval_winrate.ts`, `scripts/tune_winrate.ts`, `scripts/generate_betting_odds.ts`, `scripts/generate_history.ts`
+  - `package.json` scripts: `tune:yards`, `eval:winrate`, `tune:winrate`, `generate:odds`, `generate:history`, `check:data`, `typecheck`
+  - `scripts/tune_yards.ts`, `scripts/eval_winrate.ts`, `scripts/tune_winrate.ts`, `scripts/generate_betting_odds.ts`, `scripts/generate_history.ts`, `scripts/check_data.ts`
+
+## Historical Data Generation
+
+`npm run generate:history` rebuilds `public/data/history.json` from the
+repository's `public/data/years/` and `public/data/season-results/`
+directories. The latest indexed year may omit a season-results file while its
+season is still unplayed; generated history contains only completed seasons.
+Every older indexed year must have matching completed results.
+
+Use `npm run check:data` to validate the year index and schemas, metadata and
+logo coverage, starting prestige against team bounds and the configured tier
+distribution, season results, and the committed history asset without
+rewriting it. Year prestige distributions may vary by at most three percentage
+points per tier from `prestige_config.json`, preserving curated historical
+snapshots while catching broad distribution drift. When public data assets
+change, also increment `STATIC_DATA_VERSION` in `src/db/baseData.ts` so
+existing installations discard stale cached copies.

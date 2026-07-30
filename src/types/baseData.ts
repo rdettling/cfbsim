@@ -1,11 +1,11 @@
 export interface YearData {
   playoff: {
     teams: number;
-    conf_champ_autobids?: number;
-    conf_champ_top_4?: boolean | null;
+    conf_champ_autobids: number;
+    conf_champ_top_4: boolean;
   };
   conferences: Record<string, { games: number; teams: Record<string, number> }>;
-  Independent?: Record<string, number>;
+  independents: Record<string, number>;
 }
 
 export interface TeamsData {
@@ -27,7 +27,7 @@ export interface TeamsData {
 
 export type ConferencesData = Record<string, string>;
 
-export interface RatingsData {
+export interface SeasonResultsData {
   year: number;
   total_teams: number;
   teams: Array<{
@@ -39,11 +39,20 @@ export interface RatingsData {
   }>;
 }
 
+export type HistoryRow = [
+  year: number,
+  conferenceId: number,
+  rank: number,
+  wins: number,
+  losses: number,
+  prestige: number,
+];
+
 export interface HistoryData {
   generated_at: string;
   years: number[];
   conf_index: Record<string, number>;
-  teams: Record<string, number[][]>;
+  teams: Record<string, HistoryRow[]>;
 }
 
 export type PrestigeConfig = Record<string, number>;

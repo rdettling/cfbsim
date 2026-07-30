@@ -40,13 +40,10 @@ export const getNavigationTeamName = ({ team, info }: AppNavigationData) =>
 
 export const buildNavigationModel = ({
   team,
-  currentStage,
   info,
   conferences,
 }: AppNavigationData): NavigationModel => ({
-  leading: currentStage === 'season'
-    ? [{ label: 'Dashboard', path: '/dashboard' }]
-    : [],
+  leading: [{ label: 'Dashboard', path: '/dashboard' }],
   groups: [
     {
       id: 'team',

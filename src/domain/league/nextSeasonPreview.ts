@@ -19,7 +19,7 @@ export const buildNextSeasonPreview = (
       });
     },
   );
-  Object.keys(resolved.yearData.Independent ?? {}).forEach(teamName => {
+  Object.keys(resolved.yearData.independents).forEach(teamName => {
     assignments.set(teamName, 'Independent');
   });
 
@@ -52,11 +52,11 @@ export const buildNextSeasonPreview = (
     resolved.yearData.playoff.teams as PlayoffTeamCount;
   const historicalAutobids =
     historicalTeams === 12
-      ? resolved.yearData.playoff.conf_champ_autobids ?? 0
+      ? resolved.yearData.playoff.conf_champ_autobids
       : 0;
   const historicalTopSeeds =
     historicalTeams === 12
-      ? resolved.yearData.playoff.conf_champ_top_4 ?? false
+      ? resolved.yearData.playoff.conf_champ_top_4
       : false;
   const postseasonChanges: PostseasonChange[] = [];
 

@@ -76,7 +76,7 @@ describe('exact roster cut selection', () => {
     expect(cuts[1].id).toBe(102);
   });
 
-  it('orders equal-position candidates by future, current, and older class', () => {
+  it('protects underclassmen with an observable senior-value estimate', () => {
     const players = [
       ...buildCompliantRoster(),
       buildTestPlayer({
@@ -84,30 +84,49 @@ describe('exact roster cut selection', () => {
         pos: 'qb',
         year: 'so',
         rating: 60,
-        rating_sr: 70,
+        rating_sr: 40,
       }),
       buildTestPlayer({
         id: 101,
         pos: 'qb',
-        year: 'sr',
-        rating: 60,
-        rating_sr: 70,
+        year: 'jr',
+        rating: 62,
+        rating_sr: 99,
       }),
       buildTestPlayer({
         id: 102,
         pos: 'qb',
         year: 'sr',
-        rating: 59,
-        rating_sr: 70,
+        rating: 63,
+        rating_sr: 99,
       }),
     ];
+    const input = {
+      players,
+      teamId: 1,
+      year: 2026,
+      seed: 5,
+      selectedCutIds: [],
+    };
+
+    expect(recommendRosterCuts(input).map(player => player.id)).toEqual([
+      102,
+      101,
+      100,
+    ]);
+
+    const differentHiddenRatings = players.map(player =>
+      player.id >= 100
+        ? {
+            ...player,
+            rating_sr: player.id === 100 ? 99 : 40,
+          }
+        : player,
+    );
     expect(
       recommendRosterCuts({
-        players,
-        teamId: 1,
-        year: 2026,
-        seed: 5,
-        selectedCutIds: [],
+        ...input,
+        players: differentHiddenRatings,
       }).map(player => player.id),
     ).toEqual([102, 101, 100]);
   });
@@ -193,7 +212,6 @@ describe('exact roster cut selection', () => {
       selectedCuts: 1,
       remainingCuts: 1,
       projectedRosterSize: FINAL_ROSTER_SIZE,
-      readyToFinalize: false,
     });
     expect(preview.players.find(player => player.id === 100)?.selected).toBe(true);
   });

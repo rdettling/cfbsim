@@ -1,7 +1,7 @@
 {
     "playoff": {
         "teams": 2,
-        "conf_champ_top_4": null,
+        "conf_champ_top_4": false,
         "conf_champ_autobids": 0
     },
     "conferences": {
@@ -181,7 +181,7 @@
             }
         }
     },
-    "Independent": {
+    "independents": {
         "BYU": 5,
         "Army": 2,
         "Navy": 4,

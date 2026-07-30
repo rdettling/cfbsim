@@ -157,7 +157,6 @@ const cursor = (
     version: state.version,
     pendingUserCutIds: [...state.pendingUserCutIds],
     requiredCuts,
-    readyToFinalize: state.pendingUserCutIds.length === requiredCuts,
     route: ROUTES.ROSTER_CUTS,
   };
 };
@@ -368,9 +367,19 @@ export const finalizeRoster = async (
       players,
       humanTeamId,
       state.pendingUserCutIds,
-      true,
     );
-    const cutIds = [...state.pendingUserCutIds];
+    const humanCutIds = [
+      ...state.pendingUserCutIds,
+      ...recommendRosterCuts({
+        players,
+        teamId: humanTeamId,
+        year: state.year,
+        seed: state.seed,
+        selectedCutIds: state.pendingUserCutIds,
+      }).map(player => player.id),
+    ];
+    validateRosterCutSelection(players, humanTeamId, humanCutIds, true);
+    const cutIds = [...humanCutIds];
     for (const team of [...league.teams].sort(
       (left, right) => left.id - right.id,
     )) {

@@ -1506,6 +1506,39 @@
             "city": "Newark",
             "state": "Delaware",
             "stadium": "Delaware Stadium"
+        },
+        "North Dakota State": {
+            "mascot": "Bison",
+            "abbreviation": "NDSU",
+            "ceiling": 5,
+            "floor": 2,
+            "colorPrimary": "#00583D",
+            "colorSecondary": "#FFC425",
+            "city": "Fargo",
+            "state": "North Dakota",
+            "stadium": "Gate City Bank Field at the Fargodome"
+        },
+        "Sacramento State": {
+            "mascot": "Hornets",
+            "abbreviation": "SAC",
+            "ceiling": 4,
+            "floor": 1,
+            "colorPrimary": "#043927",
+            "colorSecondary": "#C4B581",
+            "city": "Sacramento",
+            "state": "California",
+            "stadium": "Hornet Stadium"
+        },
+        "Florida A&M": {
+            "mascot": "Rattlers",
+            "abbreviation": "FAMU",
+            "ceiling": 2,
+            "floor": 1,
+            "colorPrimary": "#00843D",
+            "colorSecondary": "#FF8200",
+            "city": "Tallahassee",
+            "state": "Florida",
+            "stadium": "Ken Riley Field at Bragg Memorial Stadium"
         }
     }
-} 
+}

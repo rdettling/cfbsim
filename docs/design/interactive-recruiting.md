@@ -104,8 +104,8 @@ receive standard one-star walk-ons, prioritizing starter shortages and then
 soft positional deficits.
 
 The user selects cuts immediately through guarded commands. AI teams cut from
-soft positional surplus using future value, current value, and class while
-preserving starter minimums. Finalization:
+soft positional surplus using estimated senior value, current value, and class
+while preserving starter minimums. Finalization:
 
 1. reaches exactly 80 active players per team;
 2. selects starters;

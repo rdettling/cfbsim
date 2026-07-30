@@ -1,4 +1,15 @@
 import { getDb } from './db';
+import { validateYearData } from '../domain/yearDataValidation';
+import type {
+  ConferencesData,
+  HistoryData,
+  TeamsData,
+  YearData,
+} from '../types/baseData';
+
+export const STATIC_DATA_VERSION = 3;
+const STATIC_DATA_VERSION_KEY = 'static_data_version';
+const MUTABLE_BASE_DATA_KEYS = new Set(['history']);
 
 const fetchJson = async <T,>(url: string): Promise<T> => {
   const response = await fetch(url);
@@ -20,16 +31,18 @@ export const getBaseData = async <T,>(key: string, url: string): Promise<T> => {
 
 export const getYearsIndex = () =>
   getBaseData<{ years: string[] }>('years:index', '/data/years/index.json');
-export const getTeamsData = () => getBaseData<any>('teams', '/data/teams.json');
+export const getTeamsData = () =>
+  getBaseData<TeamsData>('teams', '/data/teams.json');
 export const getConferencesData = () =>
-  getBaseData<any>('conferences', '/data/conferences.json');
-export const getYearData = (year: string) =>
-  getBaseData<any>(`years:${year}`, `/data/years/${year}.json`);
-export const getRatingsData = (year: string) =>
-  getBaseData<any>(`ratings:${year}`, `/data/ratings/ratings_${year}.json`);
+  getBaseData<ConferencesData>('conferences', '/data/conferences.json');
+export const getYearData = async (year: string): Promise<YearData> =>
+  validateYearData(
+    await getBaseData<unknown>(`years:${year}`, `/data/years/${year}.json`),
+    `Year ${year}`,
+  );
 export const getHistoryData = () =>
-  getBaseData<any>('history', '/data/history.json');
-export const setHistoryData = async (value: any) => {
+  getBaseData<HistoryData>('history', '/data/history.json');
+export const setHistoryData = async (value: HistoryData) => {
   const db = await getDb();
   await db.put('baseData', { key: 'history', value });
   return value;
@@ -67,7 +80,37 @@ export const getBettingOddsData = () =>
     >;
   }>('betting_odds', '/data/betting_odds.json');
 
+export const initializeBaseDataCache = async () => {
+  const db = await getDb();
+  const tx = db.transaction('baseData', 'readwrite');
+  const store = tx.store;
+  const versionRecord = await store.get(STATIC_DATA_VERSION_KEY);
+  if (versionRecord?.value === STATIC_DATA_VERSION) {
+    await tx.done;
+    return;
+  }
+
+  let cursor = await store.openCursor();
+  while (cursor) {
+    if (!MUTABLE_BASE_DATA_KEYS.has(cursor.key)) {
+      await cursor.delete();
+    }
+    cursor = await cursor.continue();
+  }
+  await store.put({
+    key: STATIC_DATA_VERSION_KEY,
+    value: STATIC_DATA_VERSION,
+  });
+  await tx.done;
+};
+
 export const clearBaseDataCache = async () => {
   const db = await getDb();
-  await db.clear('baseData');
+  const tx = db.transaction('baseData', 'readwrite');
+  await tx.store.clear();
+  await tx.store.put({
+    key: STATIC_DATA_VERSION_KEY,
+    value: STATIC_DATA_VERSION,
+  });
+  await tx.done;
 };

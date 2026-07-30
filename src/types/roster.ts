@@ -45,7 +45,6 @@ export interface RosterCutPlayerPreview {
   position: string;
   currentClass: PlayerRecord['year'];
   currentRating: number;
-  seniorRating: number;
   selected: boolean;
   recommended: boolean;
   protected: boolean;
@@ -75,7 +74,6 @@ export interface RosterCutsSummary {
   projectedCuts: number;
   projectedRosterSize: number;
   positionsOverLimit: number;
-  readyToFinalize: boolean;
 }
 
 export interface RosterCutsPreview {
@@ -102,7 +100,6 @@ export interface RosterFinalizationCursor {
   version: number;
   pendingUserCutIds: number[];
   requiredCuts: number;
-  readyToFinalize: boolean;
   route: string;
 }
 

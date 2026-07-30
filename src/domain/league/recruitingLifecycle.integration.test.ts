@@ -264,7 +264,6 @@ describe('complete persisted recruiting lifecycle', () => {
       );
     }
     const readyCuts = await loadRosterCuts();
-    expect(readyCuts.summary.readyToFinalize).toBe(true);
     const finalGuard = {
       expectedStage: 'roster_cuts' as const,
       expectedYear: 2025,

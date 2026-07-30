@@ -92,7 +92,7 @@ const applyRealignment = (
 
   const conferences: Conference[] = [];
 
-  Object.entries(yearData.conferences ?? {}).forEach(([confName, confData]) => {
+  Object.entries(yearData.conferences).forEach(([confName, confData]) => {
     const confTeams: Team[] = [];
     Object.entries(confData.teams ?? {}).forEach(([teamName, prestige]) => {
       const team = ensureTeam(teamName, Number(prestige), confName, confData.games);
@@ -113,7 +113,7 @@ const applyRealignment = (
     });
   });
 
-  const independents = yearData.Independent ?? {};
+  const independents = yearData.independents;
   if (Object.keys(independents).length) {
     const confName = 'Independent';
     const confTeams: Team[] = [];
@@ -169,7 +169,7 @@ const applyRealignment = (
 
 const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFormat: boolean) => {
   if (updateFormat) {
-    const playoffConfig = yearData.playoff ?? { teams: league.settings.playoffTeams };
+    const playoffConfig = yearData.playoff;
     const historicalTeams = playoffConfig.teams;
     const nextTeams: PlayoffTeamCount =
       historicalTeams === 2 ||
@@ -177,8 +177,8 @@ const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFor
       historicalTeams === 12
         ? historicalTeams
         : league.settings.playoffTeams;
-    let nextAutobids = playoffConfig.conf_champ_autobids ?? 0;
-    let nextTop4 = playoffConfig.conf_champ_top_4 ?? false;
+    let nextAutobids = playoffConfig.conf_champ_autobids;
+    let nextTop4 = playoffConfig.conf_champ_top_4;
 
     if (nextTeams === 2 || nextTeams === 4) {
       nextAutobids = 0;

@@ -50,7 +50,7 @@ const AppNavigation = ({
 
   const model = useMemo(
     () => buildNavigationModel(data),
-    [data.team, data.currentStage, data.info.lastWeek, data.info.team, data.conferences],
+    [data.team, data.info.lastWeek, data.info.team, data.conferences],
   );
   const navigationTeamName = getNavigationTeamName(data);
   const currentPath = normalizePath(location.pathname);

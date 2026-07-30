@@ -36,6 +36,11 @@ Roster-dependent reads also validate the complete player collection and its
 team ownership. Invalid persisted data throws an integrity error; reads never
 repair or replace it.
 
+Application startup is the destructive recovery boundary. Before React
+renders, it validates the authoritative save. An integrity failure deletes the
+entire database and recreates the current empty schema. Opening an older
+IndexedDB version likewise discards all old stores instead of migrating them.
+
 ## Execution Flow
 
 1. A page calls a loader.
@@ -91,7 +96,8 @@ are command-managed.
 - IndexedDB is the source of truth.
 - Loaders are read-only.
 - Commands validate authoritative records inside their transaction.
-- Validation failure leaves every store unchanged.
+- Command and repository validation failures leave every store unchanged;
+  startup integrity failure discards the database.
 - Maps, indexes, recruiting context, and page projections are ephemeral.
 - New-league creation is the only roster bootstrap entry point.
 - Persisted settings use `NextSeasonConfiguration` directly.
@@ -102,6 +108,7 @@ are command-managed.
 ## Source Map
 
 - `src/db/db.ts`: schema and store creation.
+- `src/db/databaseLifecycle.ts`: startup validation and destructive recovery.
 - `src/db/leagueRepo.ts`: current league and roster integrity boundaries.
 - `src/db/recruitingRepo.ts`: recruiting singleton and readonly lifecycle
   snapshot.

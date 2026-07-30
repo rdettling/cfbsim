@@ -1,7 +1,11 @@
 import type { Team } from '../../types/domain';
 import type { LeagueState } from '../../types/league';
 import type { GameRecord } from '../../types/db';
-import { CONFERENCE_CHAMPIONSHIP_WEEK, REGULAR_SEASON_WEEKS } from '../league/postseason';
+import {
+  BOWL_WEEK,
+  CONFERENCE_CHAMPIONSHIP_WEEK,
+  REGULAR_SEASON_WEEKS,
+} from '../league/postseason';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
@@ -134,12 +138,10 @@ const buildBowlMatchups = (
 
 const setBowls = async (
   league: LeagueState,
-  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
-  weekOverride?: number
+  oddsContext: Awaited<ReturnType<typeof loadOddsContext>>
 ) => {
   const playoffTeams = league.settings.playoffTeams;
-  const week = weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK + 1;
-  const existing = (await getGamesByWeek(week)).filter(
+  const existing = (await getGamesByWeek(BOWL_WEEK)).filter(
     game => game.year === league.info.currentYear
   );
   if (existing.some(game => game.name?.includes('Bowl'))) {
@@ -155,7 +157,9 @@ const setBowls = async (
   if (!matchups.length) return;
 
   const gamesToCreate = matchups.map(({ name, teamA, teamB }) =>
-    createGameRecord(league, teamA, teamB, week, name, oddsContext, { neutralSite: true })
+    createGameRecord(league, teamA, teamB, BOWL_WEEK, name, oddsContext, {
+      neutralSite: true,
+    })
   );
 
   await saveGames(gamesToCreate);
@@ -522,14 +526,14 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
       [baseWeek]: setConferenceChampionships,
       [ccWeek]: async (leagueState, context) => {
         await setNatty(leagueState, context);
-        await setBowls(leagueState, context, ccWeek + 1);
+        await setBowls(leagueState, context);
       },
     },
     4: {
       [baseWeek]: setConferenceChampionships,
       [ccWeek]: async (leagueState, context) => {
         await setPlayoffSemi(leagueState, context);
-        await setBowls(leagueState, context, ccWeek + 1);
+        await setBowls(leagueState, context);
       },
       [ccWeek + 1]: setNatty,
     },
@@ -537,7 +541,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
       [baseWeek]: setConferenceChampionships,
       [ccWeek]: async (leagueState, context) => {
         await setPlayoffR1(leagueState, context);
-        await setBowls(leagueState, context, ccWeek + 1);
+        await setBowls(leagueState, context);
       },
       [ccWeek + 1]: setPlayoffQuarter,
       [ccWeek + 2]: setPlayoffSemi,
@@ -550,10 +554,6 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
     await action(league, oddsContext);
     await ensureSummaryStage(league);
     return;
-  }
-
-  if (league.info.currentWeek >= ccWeek + 1) {
-    await setBowls(league, oddsContext, league.info.currentWeek);
   }
 
   const currentWeek = league.info.currentWeek;

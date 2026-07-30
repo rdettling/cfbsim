@@ -2,12 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   Alert,
   Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -50,8 +44,6 @@ const RosterCuts = () => {
   const {
     busyPlayerId,
     finalizing,
-    confirmFinalize,
-    setConfirmFinalize,
     notice,
     setNotice,
     mutateCut,
@@ -92,9 +84,14 @@ const RosterCuts = () => {
               currentStage: data.info.stage,
               info: data.info,
               conferences: data.conferences,
+              advanceDisabled: busyPlayerId !== null || finalizing,
             }
           : undefined
       }
+      onAdvanceStage={
+        data?.cursor ? () => void completeRoster() : undefined
+      }
+      advanceLabel={finalizing ? 'Finalizing roster…' : undefined}
     >
       {data &&
         (data.info.stage !== 'roster_cuts' || !data.cursor ? (
@@ -127,8 +124,9 @@ const RosterCuts = () => {
                   Roster Cuts
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Select exactly {data.summary.requiredCuts} returning player
-                  {data.summary.requiredCuts === 1 ? '' : 's'} to reach the final {FINAL_ROSTER_SIZE}-player roster.
+                  Choose any returning players you want to cut. When you advance,
+                  recommendations will complete the remaining cuts and finalize
+                  the {FINAL_ROSTER_SIZE}-player roster.
                 </Typography>
               </Box>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
@@ -149,13 +147,6 @@ const RosterCuts = () => {
                     <MenuItem value="available">Available</MenuItem>
                   </Select>
                 </FormControl>
-                <Button
-                  variant="contained"
-                  onClick={() => setConfirmFinalize(true)}
-                  disabled={!data.summary.readyToFinalize || finalizing}
-                >
-                  {finalizing ? 'Finalizing…' : 'Finalize Roster'}
-                </Button>
               </Stack>
             </Stack>
 
@@ -220,22 +211,6 @@ const RosterCuts = () => {
             </Box>
           </Box>
         ))}
-
-      <Dialog open={confirmFinalize} onClose={() => setConfirmFinalize(false)}>
-        <DialogTitle>Finalize the roster?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            This applies every team’s cuts, selects starters, recalculates ratings, and begins
-            Preseason. The completed roster will contain exactly {FINAL_ROSTER_SIZE} active players.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmFinalize(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => void completeRoster()}>
-            Finalize and Begin Preseason
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Snackbar
         open={Boolean(notice)}
