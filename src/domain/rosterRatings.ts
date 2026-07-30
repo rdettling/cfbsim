@@ -20,7 +20,7 @@ const DEFENSIVE_WEIGHTS: Record<string, number> = {
 };
 export const setStarters = (teams: Team[], players: PlayerRecord[]) => {
   players.forEach(player => {
-    if (player.active) player.starter = false;
+    player.starter = false;
   });
 
   teams.forEach(team => {
@@ -28,7 +28,6 @@ export const setStarters = (teams: Team[], players: PlayerRecord[]) => {
       players
         .filter(
           player =>
-            player.active &&
             player.teamId === team.id &&
             player.pos === position,
         )
@@ -83,7 +82,7 @@ export const recalculateTeamRatings = (
 ) => {
   teams.forEach(team => {
     const ratings = calculateTeamRating(
-      players.filter(player => player.active && player.teamId === team.id),
+      players.filter(player => player.teamId === team.id),
       random.fork(`team:${team.id}`),
     );
     team.offense = ratings.offense;

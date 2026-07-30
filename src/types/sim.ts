@@ -53,6 +53,7 @@ export interface InteractiveDriveState {
   fieldPosition: number;
   down: number;
   yardsLeft: number;
+  playCount: number;
 }
 
 export interface InteractiveStepResult {

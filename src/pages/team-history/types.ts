@@ -5,6 +5,7 @@ export type TeamHistoryYear = TeamHistoryPageData['years'][number];
 export type TeamHistoryViewProps = {
   years: TeamHistoryYear[];
   teamName: string;
+  startYear: number;
 };
 
 export const rankLabel = (rank: number) => rank > 0 ? `#${rank}` : 'Unranked';

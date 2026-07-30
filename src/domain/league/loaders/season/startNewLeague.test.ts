@@ -9,6 +9,7 @@ import type {
 import { buildTestLeague, buildTestPlayer } from '../../../../test/fixtures';
 import { initializeSeason } from '../../season';
 import { loadHomeData } from '../season';
+import { loadPlayer } from '../team';
 import { loadDashboard } from './loadDashboard';
 import { loadNonCon } from './loadNonCon';
 import { loadTeamSchedule } from './loadTeamSchedule';
@@ -90,9 +91,11 @@ const resetDatabase = async () => {
     'recruiting',
     'players',
     'games',
-    'drives',
-    'plays',
-    'gameLogs',
+    'gameDetails',
+    'playerSeasons',
+  'historicalPlayers',
+  'playerOrigins',
+    'seasonMemories',
   ] as const;
   const tx = db.transaction([...stores], 'readwrite');
   await Promise.all(stores.map(store => tx.objectStore(store).clear()));
@@ -106,9 +109,10 @@ const snapshotSave = async () => {
     recruiting: await db.getAll('recruiting'),
     players: await db.getAll('players'),
     games: await db.getAll('games'),
-    drives: await db.getAll('drives'),
-    plays: await db.getAll('plays'),
-    gameLogs: await db.getAll('gameLogs'),
+    drives: await db.getAll('gameDetails'),
+    plays: await db.getAll('playerSeasons'),
+    gameLogs: await db.getAll('historicalPlayers'),
+    seasonMemories: await db.getAll('seasonMemories'),
   };
 };
 
@@ -149,40 +153,20 @@ const seedExistingLeague = async () => {
   });
   await db.put('players', buildTestPlayer({ id: 99 }));
   await db.put('games', buildOldGame());
-  await db.put('drives', {
-    id: 99,
+  await db.put('gameDetails', {
     gameId: 99,
-    driveNum: 1,
-    offenseId: 1,
-    defenseId: 2,
-    startingFP: 25,
-    result: 'Touchdown',
-    points: 7,
-    points_needed: 7,
-    scoreAAfter: 7,
-    scoreBAfter: 0,
+    year: 2024,
+    drives: [],
+    playerStats: [],
   });
-  await db.put('plays', {
-    id: 99,
-    gameId: 99,
-    driveId: 99,
-    offenseId: 1,
-    defenseId: 2,
-    startingFP: 25,
-    down: 1,
-    yardsLeft: 10,
-    playType: 'run',
-    yardsGained: 5,
-    result: 'gain',
-    text: 'Run for five',
-    header: '1st & 10',
-    scoreA: 0,
-    scoreB: 0,
-  });
-  await db.put('gameLogs', {
-    id: 99,
+  await db.put('playerSeasons', {
+    year: 2024,
     playerId: 99,
-    gameId: 99,
+    teamId: 1,
+    position: 'qb',
+    classYear: 'jr',
+    rating: 80,
+    games: 1,
     pass_yards: 0,
     pass_attempts: 0,
     pass_completions: 0,
@@ -204,6 +188,20 @@ const seedExistingLeague = async () => {
     field_goals_attempted: 0,
     extra_points_made: 0,
     extra_points_attempted: 0,
+  });
+  await db.put('historicalPlayers', {
+    id: 100,
+    first: 'Old',
+    last: 'Player',
+    pos: 'qb',
+    stars: 3,
+    development_trait: 2,
+  });
+  await db.put('seasonMemories', {
+    year: 2025,
+    playoffTeams: 12,
+    events: [],
+    awards: [],
   });
 };
 
@@ -352,9 +350,25 @@ describe('startNewLeague', () => {
         buildTestPlayer({ id: 99 }),
       ]);
       expect(await db.getAll('games')).toEqual([]);
-      expect(await db.getAll('drives')).toEqual([]);
-      expect(await db.getAll('plays')).toEqual([]);
-      expect(await db.getAll('gameLogs')).toEqual([]);
+      expect(await db.getAll('gameDetails')).toEqual([]);
+      expect(await db.getAll('playerSeasons')).toEqual([]);
+      expect(await db.getAll('historicalPlayers')).toEqual([]);
+      const persistedPlayers = await db.getAll('players');
+      const origins = await db.getAll('playerOrigins');
+      expect(origins).toHaveLength(persistedPlayers.length);
+      expect(origins.every(origin =>
+        origin.kind === 'initial_roster' &&
+        origin.acquisitionYear === 2025 &&
+        origin.originalTeamId > 0
+      )).toBe(true);
+      const playerPage = await loadPlayer(String(persistedPlayers[0].id));
+      expect(playerPage.origin).toMatchObject({
+        playerId: persistedPlayers[0].id,
+        kind: 'initial_roster',
+        acquisitionYear: 2025,
+        originalTeam: 'Test State',
+      });
+      expect(await db.getAll('seasonMemories')).toEqual([]);
       expect(await loadNonCon()).toEqual(result);
     },
   );
@@ -406,9 +420,9 @@ describe('startNewLeague', () => {
       buildTestPlayer({ id: 99 }),
     ]);
     expect(await db.getAll('games')).toEqual([buildOldGame()]);
-    expect(await db.getAll('drives')).toHaveLength(1);
-    expect(await db.getAll('plays')).toHaveLength(1);
-    expect(await db.getAll('gameLogs')).toHaveLength(1);
+    expect(await db.getAll('gameDetails')).toHaveLength(1);
+    expect(await db.getAll('playerSeasons')).toHaveLength(1);
+    expect(await db.getAll('historicalPlayers')).toHaveLength(1);
   });
 
   it('keeps the existing league after preparation failure and succeeds on retry', async () => {
@@ -428,9 +442,9 @@ describe('startNewLeague', () => {
       buildTestPlayer({ id: 99 }),
     ]);
     expect(await db.getAll('games')).toEqual([buildOldGame()]);
-    expect(await db.getAll('drives')).toHaveLength(1);
-    expect(await db.getAll('plays')).toHaveLength(1);
-    expect(await db.getAll('gameLogs')).toHaveLength(1);
+    expect(await db.getAll('gameDetails')).toHaveLength(1);
+    expect(await db.getAll('playerSeasons')).toHaveLength(1);
+    expect(await db.getAll('historicalPlayers')).toHaveLength(1);
 
     responses.set('/data/names.json', names);
     await expect(startNewLeague(buildInput())).resolves.toMatchObject({

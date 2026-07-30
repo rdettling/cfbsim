@@ -57,7 +57,7 @@ const buildTeamNeeds = (teams: Team[], players: PlayerRecord[]) => {
     ]),
   );
   players.forEach(player => {
-    if (player.active && counts[player.teamId]?.[player.pos] !== undefined) {
+    if (counts[player.teamId]?.[player.pos] !== undefined) {
       counts[player.teamId][player.pos] += 1;
     }
   });
@@ -111,7 +111,6 @@ const recruitClass = (
         stars: candidate.stars,
         development_trait: candidate.development_trait,
         starter: false,
-        active: true,
       });
     });
   });

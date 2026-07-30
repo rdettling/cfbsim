@@ -8,6 +8,7 @@ import { loadTeamHistory } from '../domain/league';
 import type { TeamHistoryPageData } from '../types/pages';
 import { TeamHistoryDesktopTable } from './team-history/TeamHistoryDesktopTable';
 import { TeamHistoryMobileList } from './team-history/TeamHistoryMobileList';
+import { DynastyOverview } from './team-history/DynastyOverview';
 
 const TeamHistory = () => {
   const { teamName } = useParams();
@@ -23,9 +24,6 @@ const TeamHistory = () => {
       document.title = 'College Football';
     };
   }, [teamName]);
-
-  const totalWins = data?.years.reduce((sum, year) => sum + year.wins, 0) ?? 0;
-  const totalLosses = data?.years.reduce((sum, year) => sum + year.losses, 0) ?? 0;
 
   return (
     <PageLayout
@@ -74,25 +72,20 @@ const TeamHistory = () => {
                 Season-by-season program results
               </Typography>
             </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                  display: 'block',
-                }}
-              >
-                All-time record
-              </Typography>
-              <Typography variant="h6">
-                {totalWins}-{totalLosses}
-              </Typography>
-            </Box>
           </Stack>
+          <DynastyOverview overview={data.dynastyOverview} />
           {data.years.length > 0 ? (
             <>
-              <TeamHistoryDesktopTable years={data.years} teamName={data.team.name} />
-              <TeamHistoryMobileList years={data.years} teamName={data.team.name} />
+              <TeamHistoryDesktopTable
+                years={data.years}
+                teamName={data.team.name}
+                startYear={data.startYear}
+              />
+              <TeamHistoryMobileList
+                years={data.years}
+                teamName={data.team.name}
+                startYear={data.startYear}
+              />
             </>
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>

@@ -9,7 +9,6 @@ export { recalculateTeamRatings, setStarters } from './rosterRatings';
 export const projectPlayerProgression = (
   player: PlayerRecord,
 ): PlayerProgressionProjection | null => {
-  if (!player.active) return null;
   if (player.year === 'sr') return { status: 'departing' };
   if (player.year === 'fr') {
     return {
@@ -33,16 +32,16 @@ export const projectPlayerProgression = (
 };
 
 export const applyProgression = (players: PlayerRecord[]) => {
-  players.forEach(player => {
+  for (let index = players.length - 1; index >= 0; index -= 1) {
+    const player = players[index];
     const projection = projectPlayerProgression(player);
-    if (!projection) return;
+    if (!projection) continue;
     if (projection.status === 'departing') {
-      player.active = false;
-      player.starter = false;
-      return;
+      players.splice(index, 1);
+      continue;
     }
 
     player.year = projection.projectedClass;
     player.rating = projection.projectedRating;
-  });
+  }
 };

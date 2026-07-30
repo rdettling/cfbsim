@@ -7,6 +7,7 @@ import {
   generatePlayerRatings,
 } from './recruiting/generation';
 import { createSeededRandom } from './recruiting/random';
+import { buildWalkOnOrigins } from './playerOrigins';
 import {
   FINAL_ROSTER_SIZE,
   MAX_ROSTER_SIZE,
@@ -146,7 +147,7 @@ export const generateWalkOns = ({
   let cursor = nextPlayerId;
   for (const team of [...teams].sort((left, right) => left.id - right.id)) {
     const active = players
-      .filter(player => player.active && player.teamId === team.id)
+      .filter(player => player.teamId === team.id)
       .map(player => ({ ...player }));
     assertActivePositions(active, team.id);
     if (active.length > MAX_ROSTER_SIZE) {
@@ -195,12 +196,15 @@ export const generateWalkOns = ({
         stars: 1,
         development_trait: ratings.developmentTrait,
         starter: false,
-        active: true,
       });
       cursor += 1;
       counts[position] += 1;
     }
   }
 
-  return { players: additions, nextPlayerId: cursor };
+  return {
+    players: additions,
+    origins: buildWalkOnOrigins(additions, year),
+    nextPlayerId: cursor,
+  };
 };

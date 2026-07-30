@@ -1,4 +1,5 @@
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { Fragment } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -15,8 +16,8 @@ import { ConfLogo } from '../../components/team/TeamComponents';
 import { DataTable } from '../../components/ui/DataTable';
 import { rankLabel, type TeamHistoryViewProps } from './types';
 
-export const TeamHistoryDesktopTable = ({ years, teamName }: TeamHistoryViewProps) => (
-  <DataTable ariaLabel={`${teamName} team history`} minWidth={820}>
+export const TeamHistoryDesktopTable = ({ years, teamName, startYear }: TeamHistoryViewProps) => (
+  <DataTable ariaLabel={`${teamName} team history`} minWidth={1120}>
     <TableHead>
       <TableRow sx={{ bgcolor: 'background.default' }}>
         <TableCell sx={{ width: 110 }}>Year</TableCell>
@@ -31,11 +32,30 @@ export const TeamHistoryDesktopTable = ({ years, teamName }: TeamHistoryViewProp
         <TableCell align="center" sx={{ width: 150 }}>
           Final Rank
         </TableCell>
+        <TableCell sx={{ minWidth: 210 }}>Accomplishments</TableCell>
+        <TableCell sx={{ minWidth: 250 }}>Signature Games</TableCell>
       </TableRow>
     </TableHead>
     <TableBody>
-      {years.map((year) => (
-        <TableRow key={year.year} hover>
+      {years.map((year, index) => {
+        const previous = years[index - 1];
+        const showDynastyLabel = year.year >= startYear && index === 0;
+        const showHistoricalLabel =
+          year.year < startYear && (!previous || previous.year >= startYear);
+        return (
+        <Fragment key={year.year}>
+          {(showDynastyLabel || showHistoricalLabel) && (
+            <TableRow>
+              <TableCell colSpan={8} sx={{ bgcolor: 'background.default', py: 1 }}>
+                <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+                  {showDynastyLabel
+                    ? 'Dynasty Era'
+                    : 'Historical Archive — season results only'}
+                </Typography>
+              </TableCell>
+            </TableRow>
+          )}
+        <TableRow hover>
           <TableCell>
             {year.has_games ? (
               <Link
@@ -72,7 +92,7 @@ export const TeamHistoryDesktopTable = ({ years, teamName }: TeamHistoryViewProp
             {year.wins}-{year.losses}
           </TableCell>
           <TableCell align="center">
-            {year.rank === 1 ? (
+            {year.isChampion ? (
               <Chip
                 icon={<EmojiEventsIcon />}
                 label="Champion"
@@ -89,8 +109,40 @@ export const TeamHistoryDesktopTable = ({ years, teamName }: TeamHistoryViewProp
               </Box>
             )}
           </TableCell>
+          <TableCell>
+            <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+              {year.accomplishments.length
+                ? year.accomplishments.map(accomplishment => (
+                    <Chip
+                      key={`${accomplishment.type}-${accomplishment.label}`}
+                      label={accomplishment.label}
+                      size="small"
+                      variant="outlined"
+                    />
+                  ))
+                : '—'}
+            </Stack>
+          </TableCell>
+          <TableCell>
+            <Stack spacing={0.25}>
+              {year.signatureGames.length
+                ? year.signatureGames.map(game => (
+                    <Link
+                      key={game.id}
+                      component={RouterLink}
+                      to={`/game/${game.id}`}
+                      variant="body2"
+                      underline="hover"
+                    >
+                      {game.label}
+                    </Link>
+                  ))
+                : '—'}
+            </Stack>
+          </TableCell>
         </TableRow>
-      ))}
+        </Fragment>
+      )})}
     </TableBody>
   </DataTable>
 );

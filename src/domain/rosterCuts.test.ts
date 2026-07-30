@@ -153,10 +153,8 @@ describe('exact roster cut selection', () => {
     const onlyReturningPunter = roster.find(
       player => player.pos === 'p' && player.year !== 'fr',
     )!;
-    const protectedPosition = roster.map(player =>
-      player.pos === 'p' && player.id !== onlyReturningPunter.id
-        ? { ...player, active: false }
-        : player,
+    const protectedPosition = roster.filter(
+      player => player.pos !== 'p' || player.id === onlyReturningPunter.id,
     );
     expect(() =>
       validateRosterCutSelection(
@@ -240,7 +238,7 @@ describe('exact roster cut selection', () => {
     );
     applyRosterCutIds(players, cuts);
     expect(() => assertFinalRosters(teams, players)).not.toThrow();
-    expect(players.filter(player => player.active)).toHaveLength(
+    expect(players).toHaveLength(
       FINAL_ROSTER_SIZE * teams.length,
     );
   });

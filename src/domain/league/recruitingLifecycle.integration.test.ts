@@ -38,9 +38,10 @@ const STORES = [
   'recruiting',
   'players',
   'games',
-  'drives',
-  'plays',
-  'gameLogs',
+  'gameDetails',
+  'playerSeasons',
+  'historicalPlayers',
+  'playerOrigins',
 ] as const;
 
 const resetDatabase = async () => {
@@ -87,9 +88,6 @@ const seedProgression = async () => {
     teams: [user, ai],
     idCounters: {
       game: 10,
-      drive: 10,
-      play: 10,
-      gameLog: 10,
       player: 500,
     },
   });
@@ -112,16 +110,27 @@ const seedProgression = async () => {
     { key: 'rivalries', value: { rivalries: [] } },
     { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
   ];
-  const tx = db.transaction(['baseData', 'league', 'players'], 'readwrite');
+  const tx = db.transaction(
+    ['baseData', 'league', 'players', 'playerOrigins'],
+    'readwrite',
+  );
   await tx.objectStore('league').put({ key: 'current', value: league });
   for (const record of baseData) {
     await tx.objectStore('baseData').put(record);
   }
-  for (const player of [
+  const players = [
     ...buildRoster(user.id, 1),
     ...buildRoster(ai.id, 101),
-  ]) {
+  ];
+  for (const player of players) {
     await tx.objectStore('players').put(player);
+    await tx.objectStore('playerOrigins').put({
+      playerId: player.id,
+      kind: 'initial_roster',
+      acquisitionYear: league.info.startYear,
+      originalTeamId: player.teamId,
+      classAtStart: player.year,
+    });
   }
   await tx.done;
 };
@@ -150,6 +159,10 @@ describe('complete persisted recruiting lifecycle', () => {
       version: 1,
       round: 1,
     });
+    const progressedDb = await getDb();
+    expect(await progressedDb.count('playerOrigins')).toBe(
+      await progressedDb.count('players'),
+    );
 
     let staleRoundGuard:
       | Parameters<typeof advanceRecruitingRound>[0]
@@ -296,7 +309,7 @@ describe('complete persisted recruiting lifecycle', () => {
     );
     finalLeague.teams.forEach(team => {
       const active = finalPlayers.filter(
-        player => player.active && player.teamId === team.id,
+        player => player.teamId === team.id,
       );
       expect(active).toHaveLength(FINAL_ROSTER_SIZE);
       POSITION_ORDER.forEach(position => {

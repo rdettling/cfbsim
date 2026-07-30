@@ -130,7 +130,7 @@ const RosterProgression = () => {
                     mt: 0.5,
                   }}
                 >
-                  No active players were returned for this roster.
+                  No players were returned for this roster.
                 </Typography>
               </Paper>
             ) : (

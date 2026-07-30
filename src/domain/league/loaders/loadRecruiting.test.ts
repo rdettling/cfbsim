@@ -17,9 +17,10 @@ const stores = [
   'recruiting',
   'players',
   'games',
-  'drives',
-  'plays',
-  'gameLogs',
+  'gameDetails',
+  'playerSeasons',
+  'historicalPlayers',
+  'playerOrigins',
 ] as const;
 
 const resetDatabase = async () => {

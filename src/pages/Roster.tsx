@@ -96,7 +96,7 @@ const Roster = () => {
                   color: 'text.secondary',
                 }}
               >
-                {data.roster.length} active players
+                {data.roster.length} players
               </Typography>
             </Box>
             <FormControl size="small" sx={{ minWidth: { xs: 150, sm: 190 } }}>
@@ -135,8 +135,8 @@ const Roster = () => {
                 }}
               >
                 {positionFilter
-                  ? 'No active players match the selected position.'
-                  : 'Active players will appear when the roster is available.'}
+                  ? 'No players match the selected position.'
+                  : 'Players will appear when the roster is available.'}
               </Typography>
             </Paper>
           )}

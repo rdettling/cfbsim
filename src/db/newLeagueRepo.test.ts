@@ -43,9 +43,10 @@ const resetDatabase = async () => {
     'recruiting',
     'players',
     'games',
-    'drives',
-    'plays',
-    'gameLogs',
+    'gameDetails',
+    'playerSeasons',
+    'historicalPlayers',
+    'playerOrigins',
   ] as const;
   const tx = db.transaction([...stores], 'readwrite');
   await Promise.all(stores.map(store => tx.objectStore(store).clear()));
@@ -67,18 +68,17 @@ describe('commitNewLeague', () => {
     });
     await db.put('players', buildTestPlayer({ id: 99 }));
     await db.put('games', { ...buildTestGame(), id: 99 });
-    await db.put('drives', {
-      id: 99,
+    await db.put('gameDetails', {
       gameId: 99,
-      driveNum: 1,
-      offenseId: 1,
-      defenseId: 2,
-      startingFP: 25,
-      result: 'Punt',
-      points: 0,
-      points_needed: 7,
-      scoreAAfter: 0,
-      scoreBAfter: 0,
+      year: 2025,
+      drives: [],
+      playerStats: [],
+    });
+    await db.put('playerOrigins', {
+      playerId: 99,
+      kind: 'walk_on',
+      acquisitionYear: 2025,
+      originalTeamId: 1,
     });
 
     const nextLeague = buildTestLeague('preseason');
@@ -88,14 +88,28 @@ describe('commitNewLeague', () => {
       league: nextLeague,
       players: [nextPlayer],
       games: [nextGame],
+      playerOrigins: [{
+        playerId: nextPlayer.id,
+        kind: 'initial_roster',
+        acquisitionYear: nextLeague.info.startYear,
+        originalTeamId: nextPlayer.teamId,
+        classAtStart: nextPlayer.year,
+      }],
     });
 
     expect((await db.get('league', 'current'))?.value).toEqual(nextLeague);
     expect(await db.getAll('players')).toEqual([nextPlayer]);
     expect(await db.getAll('games')).toEqual([nextGame]);
-    expect(await db.getAll('drives')).toEqual([]);
-    expect(await db.getAll('plays')).toEqual([]);
-    expect(await db.getAll('gameLogs')).toEqual([]);
+    expect(await db.getAll('gameDetails')).toEqual([]);
+    expect(await db.getAll('playerSeasons')).toEqual([]);
+    expect(await db.getAll('historicalPlayers')).toEqual([]);
+    expect(await db.getAll('playerOrigins')).toEqual([{
+      playerId: nextPlayer.id,
+      kind: 'initial_roster',
+      acquisitionYear: nextLeague.info.startYear,
+      originalTeamId: nextPlayer.teamId,
+      classAtStart: nextPlayer.year,
+    }]);
     expect(await db.getAll('recruiting')).toEqual([]);
   });
 
@@ -118,6 +132,7 @@ describe('commitNewLeague', () => {
         league: buildTestLeague('preseason'),
         players: [{} as PlayerRecord],
         games: [],
+        playerOrigins: [],
       }),
     ).rejects.toBeDefined();
 

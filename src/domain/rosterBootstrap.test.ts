@@ -38,16 +38,14 @@ describe('seeded initial-roster preparation', () => {
     const second = prepareInitialRostersFromData(buildInput());
 
     expect(first).toEqual(second);
-    expect(first.filter(player => player.active)).toHaveLength(
-      FINAL_ROSTER_SIZE,
-    );
+    expect(first).toHaveLength(FINAL_ROSTER_SIZE);
     expect(new Set(first.map(player => player.id)).size).toBe(first.length);
     expect(new Set(first.map(player => player.year))).toEqual(
       new Set(['fr', 'so', 'jr', 'sr']),
     );
     POSITION_ORDER.forEach(position => {
       expect(
-        first.filter(player => player.active && player.pos === position),
+        first.filter(player => player.pos === position),
       ).toHaveLength(ROSTER[position].total);
     });
     (['fr', 'so', 'jr', 'sr'] as const).forEach(year => {

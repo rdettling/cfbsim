@@ -15,7 +15,7 @@ type AwardCandidate = {
   stats: AwardStats;
 };
 
-const AWARD_DEFINITIONS = [
+export const AWARD_DEFINITIONS = [
   {
     slug: 'heisman',
     name: 'Heisman Trophy',
@@ -62,6 +62,9 @@ const AWARD_DEFINITIONS = [
     description: 'Honors the top placekicker.',
   },
 ];
+
+export const getAwardName = (slug: string) =>
+  AWARD_DEFINITIONS.find(definition => definition.slug === slug)?.name ?? slug;
 
 const PRIORITY_ORDER = [
   'heisman',
@@ -304,7 +307,7 @@ const calcHeisman = (
   const totalTeams = league.teams.length;
   const candidates: AwardCandidate[] = [];
 
-  players.filter(player => player.active && player.starter).forEach(player => {
+  players.filter(player => player.starter).forEach(player => {
     const team = teamsById.get(player.teamId);
     if (!team) return;
     let score = player.rating || 0;

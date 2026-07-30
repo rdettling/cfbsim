@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamComponents';
 import { useDomainData } from '../domain/hooks';
@@ -9,11 +9,13 @@ import { AwardDetail } from './awards/AwardDetail';
 import { AwardsCategoryNavigation } from './awards/AwardsCategoryNavigation';
 import { AwardsHeader } from './awards/AwardsHeader';
 import type { AwardMode } from './awards/types';
+import { AwardsHistory } from './awards/AwardsHistory';
 
 const Awards = () => {
   const [selectedSlug, setSelectedSlug] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [view, setView] = useState<'current' | 'history'>('current');
 
   const { data, loading, error } = useDomainData<AwardsPageData>({
     fetcher: loadAwards,
@@ -61,8 +63,19 @@ const Awards = () => {
             }}
           >
             <AwardsHeader year={data.info.currentYear} week={data.info.currentWeek} mode={mode} />
+            <Tabs
+              value={view}
+              onChange={(_, value: 'current' | 'history') => setView(value)}
+              aria-label="Awards views"
+              sx={{ mb: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}
+            >
+              <Tab value="current" label="Current Season" />
+              <Tab value="history" label="History" />
+            </Tabs>
 
-            {!hasAnyCandidate ? (
+            {view === 'history' ? (
+              <AwardsHistory history={data.history} onTeamClick={handleTeamClick} />
+            ) : !hasAnyCandidate ? (
               <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="h6">No award candidates yet</Typography>
                 <Typography

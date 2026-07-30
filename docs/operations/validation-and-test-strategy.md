@@ -114,7 +114,7 @@ The representative checksum is `8476564c`.
 | Postseason (2) | 2-team format run | conference championships, natty, bowls generated in expected week windows | Inspect Playoff + week schedule after CC week |
 | Postseason (4) | 4-team format run | semis then natty generated; summary after natty winner | Inspect Playoff + summary transition |
 | Postseason (12) | 12-team format run | R1 -> quarters -> semis -> natty sequence with catch-up if needed | Inspect Playoff rounds and week schedules |
-| Live sim | User-game interactive completion | final game persisted; drives/plays visible; league context updated | Run GameSimModal to completion, then reopen game/schedule |
+| Live sim | User-game interactive completion | final game and nested detail persisted; drive/play presentation visible; league context updated | Run GameSimModal to completion, then reopen game/schedule |
 | Batch vs live consistency | Same game state class | completed games have coherent score/winner/clock/headline fields in both modes | Compare completed game pages from both paths |
 | Roster progression | Offseason progression | seniors depart, younger classes advance, ratings shift | Inspect Roster Progression + roster page |
 | Recruiting/cuts | Recruiting then cuts | freshmen and required walk-ons added; protected user selections persist; every final roster reaches 80 | Inspect Recruiting Summary + Roster Cuts + roster |

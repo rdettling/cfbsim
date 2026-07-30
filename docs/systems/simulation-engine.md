@@ -15,7 +15,9 @@ A play combines:
 - Outcome: yards/result event (completion, sack, fumble, touchdown, etc.).
 - Time effect: play duration, possible clock stops, quarter rollover.
 
-The game result is produced by accumulating drive outcomes into `scoreA/scoreB`, updating winner/result metadata, and then persisting game artifacts (`drives`, `plays`, `gameLogs`).
+The game result is produced by accumulating drive outcomes into `scoreA/scoreB`,
+updating winner/result metadata, and then persisting one nested
+`GameDetailRecord`.
 
 ## Execution Flow
 
@@ -24,8 +26,9 @@ The game result is produced by accumulating drive outcomes into `scoreA/scoreB`,
 - `SimContext` binds `league`, `game`, `starters`, offense/defense sides, current lead, and whether clock rules are active.
 
 2. **Drive simulation loop**
-- `simDrive` creates a `DriveRecord` ID (`nextId(league, 'drive')`) and initializes drive state.
-- For each down, engine chooses play type, runs outcome simulation, applies clock, and appends a `PlayRecord` (`nextId(league, 'play')`).
+- `simDrive` creates game-local drive/play identities for in-memory orchestration.
+- For each down, the engine chooses play type, runs outcome simulation, applies
+  clock, and appends a play.
 - Loop exits when drive result is resolved (touchdown, FG attempt outcome, turnover, turnover on downs, safety, half/game end, etc.).
 
 3. **Game-level orchestration**
@@ -34,12 +37,14 @@ The game result is produced by accumulating drive outcomes into `scoreA/scoreB`,
 
 4. **Batch integration path**
 - `advanceWeeks` executes `simGame` for all unplayed games in target weeks.
-- Batch path accumulates drives/plays/logs in arrays, updates game records, updates team records/rankings/headlines, triggers postseason hooks, then bulk-persists artifacts.
+- Batch path builds nested game detail, updates games, records, rankings, and
+  headlines, then commits the simulation batch explicitly.
 
 5. **Interactive integration path**
 - `prepareInteractiveLiveGame` loads/hydrates the game and supporting caches.
 - `useGameSim` executes `startInteractiveDrive` + repeated `stepInteractiveDrive` calls (auto or user decision).
-- On completion, `finalizeGameSimulation` writes game + artifacts and returns UI-ready game/drive response.
+- On completion, `finalizeGameSimulation` atomically writes the game, nested
+  detail, and league state, then returns the UI-ready response.
 
 ```mermaid
 flowchart TD
@@ -62,7 +67,7 @@ flowchart TD
 ```mermaid
 flowchart TD
   A["GameSelectionModal -> prepareInteractiveLiveGame"] --> B{"Already completed?"}
-  B -- yes --> C["Return persisted drives/plays"]
+  B -- yes --> C["Return nested persisted detail"]
   B -- no --> D["useGameSim.start(): reset sim state"]
   D --> E["startInteractiveDrive()"]
   E --> F{"Decision mode?"}

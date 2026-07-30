@@ -79,9 +79,6 @@ export const buildTestLeague = (
     playoff: { seeds: [] },
     idCounters: {
       game: 2,
-      drive: 2,
-      play: 2,
-      gameLog: 2,
       player: 2,
     },
     ...overrides,
@@ -105,6 +102,5 @@ export const buildTestPlayer = (
   stars: 3,
   development_trait: 3,
   starter: true,
-  active: true,
   ...overrides,
 });

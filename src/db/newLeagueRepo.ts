@@ -1,4 +1,4 @@
-import type { GameRecord, PlayerRecord } from '../types/db';
+import type { GameRecord, PlayerOrigin, PlayerRecord } from '../types/db';
 import type { LeagueState } from '../types/league';
 import { getDb } from './db';
 
@@ -8,32 +8,50 @@ export interface NewLeagueCommit {
   league: LeagueState;
   players: PlayerRecord[];
   games: GameRecord[];
+  playerOrigins: PlayerOrigin[];
 }
 
 export const commitNewLeague = async ({
   league,
   players,
   games,
+  playerOrigins,
 }: NewLeagueCommit): Promise<void> => {
   const db = await getDb();
   const tx = db.transaction(
-    ['league', 'recruiting', 'games', 'drives', 'plays', 'gameLogs', 'players'],
+    [
+      'league',
+      'recruiting',
+      'games',
+      'gameDetails',
+      'players',
+      'seasonMemories',
+      'playerSeasons',
+      'historicalPlayers',
+      'playerOrigins',
+    ],
     'readwrite',
   );
 
   try {
     await Promise.all([
       tx.objectStore('games').clear(),
-      tx.objectStore('drives').clear(),
-      tx.objectStore('plays').clear(),
-      tx.objectStore('gameLogs').clear(),
+      tx.objectStore('gameDetails').clear(),
       tx.objectStore('players').clear(),
       tx.objectStore('recruiting').clear(),
+      tx.objectStore('seasonMemories').clear(),
+      tx.objectStore('playerSeasons').clear(),
+      tx.objectStore('historicalPlayers').clear(),
+      tx.objectStore('playerOrigins').clear(),
     ]);
 
     const playerStore = tx.objectStore('players');
     for (const player of players) {
       await playerStore.put(player);
+    }
+    const originStore = tx.objectStore('playerOrigins');
+    for (const origin of playerOrigins) {
+      await originStore.put(origin);
     }
 
     const gameStore = tx.objectStore('games');

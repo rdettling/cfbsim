@@ -32,14 +32,14 @@ const EXPECTED_REMAINING_RATING_GROWTH: Record<
 
 export type RosterCutCandidate = Pick<
   PlayerRecord,
-  'id' | 'teamId' | 'year' | 'pos' | 'rating' | 'active'
+  'id' | 'teamId' | 'year' | 'pos' | 'rating' | 'rating_sr'
 >;
 
 const activeTeamPlayers = <TPlayer extends RosterCutCandidate>(
   players: TPlayer[],
   teamId: number,
 ) =>
-  players.filter(player => player.active && player.teamId === teamId);
+  players.filter(player => player.teamId === teamId);
 
 const assertKnownPositions = (
   players: RosterCutCandidate[],
@@ -135,14 +135,6 @@ export const validateRosterCutSelection = (
       throw new RosterFinalizationRuleError(
         'WRONG_TEAM',
         `Player ${id} is not on team ${teamId}.`,
-        id,
-        teamId,
-      );
-    }
-    if (!player.active) {
-      throw new RosterFinalizationRuleError(
-        'PLAYER_INACTIVE',
-        `Player ${id} is inactive.`,
         id,
         teamId,
       );
@@ -410,11 +402,9 @@ export const applyRosterCutIds = (
   cutIds: Iterable<number>,
 ) => {
   const selected = new Set(cutIds);
-  players.forEach(player => {
-    if (!selected.has(player.id)) return;
-    player.active = false;
-    player.starter = false;
-  });
+  for (let index = players.length - 1; index >= 0; index -= 1) {
+    if (selected.has(players[index].id)) players.splice(index, 1);
+  }
 };
 
 export const assertFinalRosters = (

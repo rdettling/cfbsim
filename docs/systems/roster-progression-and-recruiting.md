@@ -36,8 +36,9 @@ snapshot. It identifies:
 
 The transition from `progression` to `recruiting` calls
 `initializeRecruiting()`. Within one transaction it progresses returning
-players, marks departing seniors inactive, generates the seeded recruiting
-aggregate, and changes the stage.
+players, removes departing seniors from the live roster, archives historically
+relevant identities, generates the seeded recruiting aggregate, and changes
+the stage.
 
 ## Persistent Recruiting
 

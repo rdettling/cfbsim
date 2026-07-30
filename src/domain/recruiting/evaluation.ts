@@ -314,7 +314,6 @@ const assertStarters = (league: LeagueState, players: PlayerRecord[]) => {
     for (const position of POSITION_ORDER) {
       const count = players.filter(
         player =>
-          player.active &&
           player.starter &&
           player.teamId === team.id &&
           player.pos === position,
@@ -446,6 +445,7 @@ export const runRecruitingEvaluation = ({
       prospects: cycle.state.prospects,
       existingPlayers: players,
       nextPlayerId,
+      acquisitionYear: year,
     });
     if (converted.players.length !== committedProspectIds.length) {
       throw new Error(

@@ -1,4 +1,5 @@
 import type { Team } from '../../../types/domain';
+import type { HistoryRow } from '../../../types/baseData';
 import type { GameRecord, GameLogRecord, PlayerRecord } from '../../../types/db';
 import type {
   PlayerCareerSeason,
@@ -6,14 +7,31 @@ import type {
   PlayerStatCategory,
   PlayerStatValues,
 } from '../../../types/player';
-import { getHistoryData } from '../../../db/baseData';
-import { getAllGames, getAllGameLogs } from '../../../db/simRepo';
+import { getHistoryData, getRivalriesData } from '../../../db/baseData';
+import {
+  getAllGames,
+  getAllGameLogs,
+  getAllHistoricalPlayers,
+  getGameDetailsByYear,
+  getGamesByTeam,
+  getGamesByYear,
+  getPlayerSeasons,
+} from '../../../db/simRepo';
+import { getAllSeasonMemories } from '../../../db/seasonMemoryRepo';
 import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import { loadLeagueOptional, loadLeagueOrThrow } from '../leagueStore';
 import { POSITION_ORDER } from '../../rosterConfig';
-import { buildAwards } from '../awards';
+import { buildAwards, getAwardName } from '../awards';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';
 import { average, percentage } from '../utils/statMath';
+import { buildSeasonMemory } from '../memory';
+import {
+  buildDynastyOverview,
+  buildTeamAccomplishments,
+  selectSignatureGames,
+} from '../memoryProjection';
+import { buildPlayerSeasons } from '../gameDetails';
+import { getPlayerOrigin } from '../../../db/playerOriginRepo';
 
 
 export const loadTeamRoster = async (teamName?: string) => {
@@ -25,7 +43,7 @@ export const loadTeamRoster = async (teamName?: string) => {
     league.teams[0];
 
   const roster = players.filter(
-    player => player.active && player.teamId === team.id
+    player => player.teamId === team.id
   );
 
   const positionSet = new Set(roster.map(player => player.pos));
@@ -45,7 +63,7 @@ export const loadTeamRoster = async (teamName?: string) => {
 };
 
 export const loadTeamHistory = async (teamName?: string) => {
-  const league = await loadLeagueOrThrow();
+  const { league, players } = await loadLeaguePlayersSnapshot();
 
   const team =
     (teamName ? league.teams.find(entry => entry.name === teamName) : null) ??
@@ -62,9 +80,51 @@ export const loadTeamHistory = async (teamName?: string) => {
     losses: number;
     rank: number;
     has_games: boolean;
+    era: 'historical' | 'dynasty';
+    isChampion: boolean;
+    accomplishments: ReturnType<typeof buildTeamAccomplishments>;
+    signatureGames: ReturnType<typeof selectSignatureGames>;
   }> = [];
 
-  const historyData = await getHistoryData();
+  const [
+    historyData,
+    teamGames,
+    currentYearGames,
+    persistedMemories,
+    rivalries,
+    gameLogs,
+  ] =
+    await Promise.all([
+      getHistoryData(),
+      getGamesByTeam(team.id),
+      league.info.stage === 'summary'
+        ? getGamesByYear(league.info.currentYear)
+        : Promise.resolve([]),
+      getAllSeasonMemories(),
+      getRivalriesData(),
+      getAllGameLogs(),
+    ]);
+  const allGames = Array.from(
+    new Map([...teamGames, ...currentYearGames].map(game => [game.id, game])).values(),
+  );
+  const currentMemory =
+    league.info.stage === 'summary'
+      ? buildSeasonMemory(league, allGames, players, gameLogs)
+      : null;
+  const memories = currentMemory
+    ? [
+        currentMemory,
+        ...persistedMemories.filter(memory => memory.year !== currentMemory.year),
+      ]
+    : persistedMemories;
+  const memoriesByYear = new Map(memories.map(memory => [memory.year, memory]));
+  const gamesById = new Map(allGames.map(game => [game.id, game]));
+  const gamesByYear = new Map<number, typeof allGames>();
+  for (const game of allGames) {
+    const yearGames = gamesByYear.get(game.year) ?? [];
+    yearGames.push(game);
+    gamesByYear.set(game.year, yearGames);
+  }
   const teamHistory = historyData.teams[team.name] ?? [];
   const confById = new Map(
     Object.entries(historyData.conf_index).map(([name, id]) => [id, name]),
@@ -72,21 +132,51 @@ export const loadTeamHistory = async (teamName?: string) => {
   historicalRows = teamHistory
     .filter(entry => entry[0] <= cutoffYear)
     .sort((a, b) => b[0] - a[0])
-    .map(entry => ({
-      year: entry[0],
-      prestige: entry[5],
-      rating: null,
-      conference: confById.get(entry[1]) ?? 'Independent',
-      wins: entry[3],
-      losses: entry[4],
-      rank: entry[2],
-      has_games: false,
-    }));
+    .map(entry => {
+      const memory = memoriesByYear.get(entry[0]);
+      const yearGames = gamesByYear.get(entry[0]) ?? [];
+      const accomplishments = memory
+        ? buildTeamAccomplishments(team.id, memory, gamesById)
+        : [];
+      return {
+        year: entry[0],
+        prestige: entry[5],
+        rating: null,
+        conference: confById.get(entry[1]) ?? 'Independent',
+        wins: entry[3],
+        losses: entry[4],
+        rank: entry[2],
+        has_games: yearGames.some(game =>
+          game.teamAId === team.id || game.teamBId === team.id),
+        era: entry[0] >= league.info.startYear
+          ? 'dynasty' as const
+          : 'historical' as const,
+        isChampion: accomplishments.some(
+          accomplishment => accomplishment.type === 'national_champion',
+        ),
+        accomplishments,
+        signatureGames: memory
+          ? selectSignatureGames({
+              teamId: team.id,
+              memory,
+              games: yearGames,
+              teams: league.teams,
+              rivalries,
+            })
+          : [],
+      };
+    });
 
   const years = historicalRows.slice();
   const shouldIncludeCurrentYear = league.info.stage === 'summary';
   const hasCurrentYearRow = years.some(entry => entry.year === league.info.currentYear);
   if (shouldIncludeCurrentYear && !hasCurrentYearRow) {
+    const memory = memoriesByYear.get(league.info.currentYear)!;
+    const accomplishments = buildTeamAccomplishments(
+      team.id,
+      memory,
+      gamesById,
+    );
     years.push({
       year: league.info.currentYear,
       prestige: team.prestige,
@@ -96,15 +186,49 @@ export const loadTeamHistory = async (teamName?: string) => {
       losses: team.totalLosses,
       rank: team.ranking ?? 0,
       has_games: team.totalWins + team.totalLosses > 0,
+      era: 'dynasty',
+      isChampion: accomplishments.some(
+        accomplishment => accomplishment.type === 'national_champion',
+      ),
+      accomplishments,
+      signatureGames: selectSignatureGames({
+        teamId: team.id,
+        memory,
+        games: gamesByYear.get(league.info.currentYear) ?? [],
+        teams: league.teams,
+        rivalries,
+      }),
     });
     years.sort((a, b) => b.year - a.year);
   }
+
+  const dynastyHistoryRows: HistoryRow[] = years
+    .filter(entry => entry.era === 'dynasty')
+    .map(entry => {
+      const conferenceId =
+        historyData.conf_index[entry.conference] ?? 0;
+      return [
+        entry.year,
+        conferenceId,
+        entry.rank,
+        entry.wins,
+        entry.losses,
+        entry.prestige,
+      ] satisfies HistoryRow;
+    });
 
   return {
     info: league.info,
     team,
     conferences: league.conferences,
     years,
+    startYear: league.info.startYear,
+    dynastyOverview: buildDynastyOverview({
+      teamId: team.id,
+      historyRows: dynastyHistoryRows,
+      memories,
+      games: allGames,
+    }),
     teams: league.teams.map(entry => entry.name).sort((a, b) => a.localeCompare(b)),
   };
 };
@@ -371,30 +495,81 @@ const getPlayerYears = (
 
 export const loadPlayer = async (playerId: string) => {
   const { league, players } = await loadLeaguePlayersSnapshot();
-
-  const [gameLogs, games] = await Promise.all([
+  const numericPlayerId = Number(playerId);
+  const [gameLogs, games, historicalPlayers, finalizedSeasons, memories, origin] = await Promise.all([
     getAllGameLogs(),
     getAllGames(),
+    getAllHistoricalPlayers(),
+    getPlayerSeasons(numericPlayerId),
+    getAllSeasonMemories(),
+    getPlayerOrigin(numericPlayerId),
   ]);
 
-  const player = players.find(entry => entry.id === Number(playerId));
-  if (!player) {
+  const currentPlayer = players.find(entry => entry.id === numericPlayerId);
+  const historicalPlayer = historicalPlayers.find(entry => entry.id === numericPlayerId);
+  if (!currentPlayer && !historicalPlayer) {
     throw new Error('Player not found.');
   }
-
-  const team = league.teams.find(entry => entry.id === player.teamId);
+  if (!origin) {
+    throw new Error('Player origin not found.');
+  }
+  const latestSeason = finalizedSeasons.slice().sort((a, b) => b.year - a.year)[0];
+  const teamId = currentPlayer?.teamId ?? latestSeason?.teamId;
+  const team = league.teams.find(entry => entry.id === teamId);
   if (!team) {
     throw new Error('Team not found for player.');
   }
+  const player: PlayerRecord = currentPlayer ?? {
+    id: historicalPlayer!.id,
+    teamId: team.id,
+    first: historicalPlayer!.first,
+    last: historicalPlayer!.last,
+    year: latestSeason?.classYear ?? 'sr',
+    pos: historicalPlayer!.pos,
+    rating: latestSeason?.rating ?? 0,
+    rating_fr: latestSeason?.rating ?? 0,
+    rating_so: latestSeason?.rating ?? 0,
+    rating_jr: latestSeason?.rating ?? 0,
+    rating_sr: latestSeason?.rating ?? 0,
+    stars: historicalPlayer!.stars,
+    development_trait: historicalPlayer!.development_trait,
+    starter: false,
+  };
 
   const gamesById = new Map(games.map(game => [game.id, game]));
   const teamsById = new Map(league.teams.map(entry => [entry.id, entry]));
+  const originalTeam = teamsById.get(origin.originalTeamId);
+  if (!originalTeam) {
+    throw new Error('Original team not found for player.');
+  }
 
   const playerLogs = gameLogs.filter(log => log.playerId === player.id);
-  const years = getPlayerYears(player, league.info.currentYear, playerLogs, gamesById);
-
   const career_stats: Record<number, PlayerCareerSeason> = {};
   const game_logs: Record<number, PlayerGameLog[]> = {};
+
+  const currentYearLogs = playerLogs.filter(
+    log => gamesById.get(log.gameId)?.year === league.info.currentYear,
+  );
+  const seasonRows = [...finalizedSeasons];
+  if (currentPlayer && currentYearLogs.length) {
+    const currentDetails = await getGameDetailsByYear(league.info.currentYear);
+    const [currentSeason] = buildPlayerSeasons(
+      league.info.currentYear,
+      currentDetails,
+      players,
+    ).filter(season => season.playerId === player.id);
+    if (currentSeason) seasonRows.push(currentSeason);
+  }
+  const seasonsByYear = new Map(seasonRows.map(season => [season.year, season]));
+  const years = Array.from(
+    new Set([
+      ...seasonRows.map(season => season.year),
+      ...playerLogs.flatMap(log => {
+        const game = gamesById.get(log.gameId);
+        return game ? [game.year] : [];
+      }),
+    ]),
+  ).sort((a, b) => b - a);
 
   years.forEach(year => {
     const yearLogs = playerLogs
@@ -411,20 +586,63 @@ export const loadPlayer = async (playerId: string) => {
 
     logsWithGames.sort((a, b) => a.game.weekPlayed - b.game.weekPlayed);
 
-    const yearStats = calculateYearlyStats(player, yearLogs, league.info.currentYear, year);
-    career_stats[year] = getPositionStats(player.pos, yearStats);
+    const season = seasonsByYear.get(year);
+    if (season) {
+      const yearStats = {
+        ...season,
+        class: season.classYear,
+        completion_percentage: percentage(
+          season.pass_completions,
+          season.pass_attempts,
+        ),
+        pass_ypa: average(season.pass_yards, season.pass_attempts),
+        rush_ypa: average(season.rush_yards, season.rush_attempts),
+        receiving_ypr: average(
+          season.receiving_yards,
+          season.receiving_catches,
+        ),
+        field_goal_percent: percentage(
+          season.field_goals_made,
+          season.field_goals_attempted,
+        ),
+        passer_rating: passerRating(
+          season.pass_completions,
+          season.pass_attempts,
+          season.pass_yards,
+          season.pass_touchdowns,
+          season.pass_interceptions,
+        ),
+        adjusted_pass_yards_per_attempt: adjustedPassYardsPerAttempt(
+          season.pass_yards,
+          season.pass_touchdowns,
+          season.pass_interceptions,
+          season.pass_attempts,
+        ),
+      };
+      career_stats[year] = getPositionStats(player.pos, yearStats);
+    }
     game_logs[year] = logsWithGames;
   });
 
-  const awards =
-    league.info.stage === 'summary'
+  const archivedAwards = memories.flatMap(memory =>
+    memory.awards
+      .filter(entry => entry.playerId === player.id)
+      .map(entry => ({
+        slug: entry.categorySlug,
+        name: getAwardName(entry.categorySlug),
+      })),
+  );
+  const awards = [
+    ...archivedAwards,
+    ...(league.info.stage === 'summary' && currentPlayer
       ? buildAwards(league, players, gameLogs.filter(log => {
           const game = gamesById.get(log.gameId);
           return game?.year === league.info.currentYear && game.winnerId !== null;
         }))
           .final.filter(entry => entry.first_place?.id === player.id)
           .map(entry => ({ slug: entry.category_slug, name: entry.category_name }))
-      : [];
+      : []),
+  ];
 
   return {
     info: league.info,
@@ -438,6 +656,15 @@ export const loadPlayer = async (playerId: string) => {
     game_logs,
     stat_category: getPlayerStatCategory(player.pos),
     awards,
+    origin: {
+      ...origin,
+      originalTeam: originalTeam.name,
+    },
+    gameLogScope: currentPlayer || team.id === (
+      league.teams.find(entry => entry.name === league.info.team)?.id
+    )
+      ? 'complete'
+      : 'retained_postseason_only',
   };
 };
 

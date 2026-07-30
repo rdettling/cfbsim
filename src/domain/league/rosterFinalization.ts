@@ -169,7 +169,6 @@ const assertStarterAssignments = (
     for (const position of POSITION_ORDER) {
       const starters = players.filter(
         player =>
-          player.active &&
           player.starter &&
           player.teamId === team.id &&
           player.pos === position,
@@ -199,7 +198,7 @@ export const initializeRosterFinalization = async ({
 }> => {
   const db = await getDb();
   const tx = db.transaction(
-    ['baseData', 'league', 'recruiting', 'players'],
+    ['baseData', 'league', 'recruiting', 'players', 'playerOrigins'],
     'readwrite',
   );
   try {
@@ -243,6 +242,10 @@ export const initializeRosterFinalization = async ({
     const playerStore = tx.objectStore('players');
     for (const player of generated.players) {
       await playerStore.add(player);
+    }
+    const originStore = tx.objectStore('playerOrigins');
+    for (const origin of generated.origins) {
+      await originStore.add(origin);
     }
     league.idCounters.player = generated.nextPlayerId;
     league.info.stage = 'roster_cuts';
@@ -334,9 +337,10 @@ export const finalizeRoster = async (
     'recruiting',
     'players',
     'games',
-    'drives',
-    'plays',
-    'gameLogs',
+    'playerSeasons',
+    'historicalPlayers',
+    'seasonMemories',
+    'playerOrigins',
   ] as const;
   const tx = db.transaction([...stores], 'readwrite');
   try {
@@ -403,6 +407,7 @@ export const finalizeRoster = async (
         'Finalization attempted to cut a protected freshman.',
       );
     }
+    const cutPlayers = players.filter(player => cutIds.includes(player.id));
     applyRosterCutIds(players, cutIds);
     assertFinalRosters(league.teams, players);
     setStarters(league.teams, players);
@@ -422,12 +427,32 @@ export const finalizeRoster = async (
     });
     league.info.stage = 'preseason';
 
-    await Promise.all([
-      tx.objectStore('drives').clear(),
-      tx.objectStore('plays').clear(),
-      tx.objectStore('gameLogs').clear(),
-    ]);
     const playerStore = tx.objectStore('players');
+    const historicalStore = tx.objectStore('historicalPlayers');
+    const playerSeasonStore = tx.objectStore('playerSeasons');
+    const originStore = tx.objectStore('playerOrigins');
+    const memories = await tx.objectStore('seasonMemories').getAll();
+    const honoredIds = new Set(
+      memories.flatMap(memory => memory.awards.map(award => award.playerId)),
+    );
+    for (const player of cutPlayers) {
+      const hasSeason = Boolean(
+        await playerSeasonStore.index('playerId').getKey(player.id),
+      );
+      if (hasSeason || honoredIds.has(player.id)) {
+        await historicalStore.put({
+          id: player.id,
+          first: player.first,
+          last: player.last,
+          pos: player.pos,
+          stars: player.stars,
+          development_trait: player.development_trait,
+        });
+      } else {
+        await originStore.delete(player.id);
+      }
+      await playerStore.delete(player.id);
+    }
     for (const player of players) {
       await playerStore.put(player);
     }

@@ -18,7 +18,7 @@ const LEAGUE_STAGES = new Set<LeagueStage>([
   'recruiting_summary',
   'roster_cuts',
 ]);
-const ID_COUNTER_KEYS = ['game', 'drive', 'play', 'gameLog', 'player'] as const;
+const ID_COUNTER_KEYS = ['game', 'player'] as const;
 const PLAYOFF_KEYS = [
   'seeds',
   'left_r1_1',
@@ -174,7 +174,7 @@ const isCurrentPlayerRecord = (value: unknown): value is PlayerRecord => {
     isFiniteNumber(value.stars) &&
     isFiniteNumber(value.development_trait) &&
     typeof value.starter === 'boolean' &&
-    typeof value.active === 'boolean'
+    Object.keys(value).length === 14
   );
 };
 

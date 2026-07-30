@@ -2,10 +2,13 @@ import {
   getAllGameLogs,
   getAllGames,
   getAllPlays,
-  getDrivesByGame,
+  getAllHistoricalPlayers,
+  getAllPlayerSeasons,
+  getGameDetail,
   getGameById,
-  getPlaysByGame,
 } from '../../../../db/simRepo';
+import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
+import { getRivalriesData } from '../../../../db/baseData';
 import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { buildDriveResponse } from '../../../sim';
 import {
@@ -15,6 +18,8 @@ import {
 } from '../../utils/gamePreview';
 import { buildGameResultSummary } from '../../utils/gameResult';
 import { getUserTeam } from './shared';
+import { buildDynastySeriesContext } from '../../memoryProjection';
+import { flattenGameDetail } from '../../gameDetails';
 
 export const loadGame = async (gameId: number) => {
   const { league, players } = await loadLeaguePlayersSnapshot();
@@ -66,6 +71,31 @@ export const loadGame = async (gameId: number) => {
     getAllGames(),
     getAllPlays(),
   ]);
+  const userTeam = getUserTeam(league);
+  const involvesUser =
+    record.teamAId === userTeam.id || record.teamBId === userTeam.id;
+  let dynastyContext = null;
+  if (involvesUser) {
+    const [memories, rivalries] = await Promise.all([
+      getAllSeasonMemories(),
+      getRivalriesData(),
+    ]);
+    const opponent = record.teamAId === userTeam.id ? teamB : teamA;
+    const rivalry = rivalries.rivalries.find(
+      ([left, right]) =>
+        (left === userTeam.name && right === opponent.name) ||
+        (right === userTeam.name && left === opponent.name),
+    );
+    dynastyContext = buildDynastySeriesContext({
+      userTeamId: userTeam.id,
+      opponentTeamId: opponent.id,
+      targetGame: record,
+      games: allGames.filter(game => game.year >= league.info.startYear),
+      memories,
+      teams: league.teams,
+      rivalryName: rivalry?.[3] ?? null,
+    });
+  }
   const pregameGames = allGames.filter(
     game =>
       game.year === record.year &&
@@ -101,17 +131,46 @@ export const loadGame = async (gameId: number) => {
     },
   };
 
-  const gamePlays = await getPlaysByGame(gameId);
-  const gameLogs = record.winnerId
-    ? (await getAllGameLogs()).filter(log => log.gameId === gameId)
-    : [];
-  const resultSummary = record.winnerId
-    ? buildGameResultSummary(game, gamePlays, gameLogs, players, teamsById)
+  const detail = await getGameDetail(gameId);
+  const flattened = detail ? flattenGameDetail(detail) : null;
+  const gamePlays = flattened?.plays ?? [];
+  const hasDetailedArtifacts = record.winnerId !== null && Boolean(detail);
+  const gameLogs = flattened?.logs ?? [];
+  const [historicalPlayers, playerSeasons] = hasDetailedArtifacts
+    ? await Promise.all([getAllHistoricalPlayers(), getAllPlayerSeasons()])
+    : [[], []];
+  const latestSeasonByPlayer = new Map<number, (typeof playerSeasons)[number]>();
+  playerSeasons.forEach(season => {
+    const previous = latestSeasonByPlayer.get(season.playerId);
+    if (!previous || season.year > previous.year) {
+      latestSeasonByPlayer.set(season.playerId, season);
+    }
+  });
+  const resultPlayers = [
+    ...players,
+    ...historicalPlayers.map(player => {
+      const season = latestSeasonByPlayer.get(player.id);
+      const rating = season?.rating ?? 0;
+      return {
+        ...player,
+        teamId: season?.teamId ?? 0,
+        year: season?.classYear ?? 'sr' as const,
+        rating,
+        rating_fr: rating,
+        rating_so: rating,
+        rating_jr: rating,
+        rating_sr: rating,
+        starter: false,
+      };
+    }),
+  ];
+  const resultSummary = hasDetailedArtifacts
+    ? buildGameResultSummary(game, gamePlays, gameLogs, resultPlayers, teamsById)
     : null;
 
-  const drives = record.winnerId
+  const drives = hasDetailedArtifacts
     ? buildDriveResponse(
-        await getDrivesByGame(gameId),
+        flattened!.drives,
         gamePlays,
         teamsById
       )
@@ -119,11 +178,13 @@ export const loadGame = async (gameId: number) => {
 
   return {
     info: league.info,
-    team: getUserTeam(league),
+    team: userTeam,
     conferences: league.conferences,
     game,
     preview,
     resultSummary,
     drives,
+    dynastyContext,
+    detailUnavailable: record.winnerId !== null && !hasDetailedArtifacts,
   };
 };

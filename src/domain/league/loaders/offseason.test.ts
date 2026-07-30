@@ -29,9 +29,11 @@ const stores = [
   'recruiting',
   'players',
   'games',
-  'drives',
-  'plays',
-  'gameLogs',
+  'gameDetails',
+  'playerSeasons',
+  'historicalPlayers',
+  'playerOrigins',
+  'seasonMemories',
 ] as const;
 
 const resetDatabase = async () => {
@@ -93,6 +95,10 @@ const seedScenario = async (stage: LeagueStage) => {
       conf_index: { 'Test Conference': 1 },
       teams: {},
     },
+  });
+  await tx.objectStore('baseData').put({
+    key: 'rivalries',
+    value: { rivalries: [] },
   });
   await tx.objectStore('baseData').put({
     key: 'prestige_config',
@@ -167,9 +173,9 @@ const snapshotLifecycleStores = async () => {
     history: history?.value,
     players: await db.getAll('players'),
     games: await db.getAll('games'),
-    drives: await db.getAll('drives'),
-    plays: await db.getAll('plays'),
-    gameLogs: await db.getAll('gameLogs'),
+    drives: await db.getAll('gameDetails'),
+    plays: await db.getAll('playerSeasons'),
+    gameLogs: await db.getAll('historicalPlayers'),
   };
 };
 
@@ -321,7 +327,6 @@ describe('offseason loaders', () => {
         rating: 40,
         rating_sr: 45,
       }),
-      buildTestPlayer({ id: 101, active: false }),
     );
     const tx = db.transaction('players', 'readwrite');
     for (const player of players) {
@@ -407,13 +412,6 @@ describe('offseason loaders', () => {
         rating: 88,
       }),
       buildTestPlayer({
-        id: 5,
-        first: 'Inactive',
-        last: 'Player',
-        active: false,
-        rating: 99,
-      }),
-      buildTestPlayer({
         id: 7,
         first: 'Alex',
         last: 'Alpha',
@@ -469,26 +467,6 @@ describe('offseason loaders', () => {
       departingSeniors: 1,
       averageRatingChange: 5,
       maximumRatingChange: 6,
-    });
-  });
-
-  it('returns a valid empty preview when the user team has no active players', async () => {
-    await seedScenario('progression');
-    const db = await getDb();
-    await db.clear('players');
-    await db.put(
-      'players',
-      buildTestPlayer({ id: 10, active: false }),
-    );
-
-    await expect(loadRosterProgression()).resolves.toMatchObject({
-      returning: [],
-      departing: [],
-      positions: [],
-      summary: {
-        returningPlayers: 0,
-        departingSeniors: 0,
-      },
     });
   });
 

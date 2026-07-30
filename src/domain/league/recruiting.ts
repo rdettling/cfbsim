@@ -199,7 +199,16 @@ export const initializeRecruiting = async ({
 }: InitializeRecruitingInput): Promise<RecruitingCommandCursor> => {
   const db = await getDb();
   const tx = db.transaction(
-    ['baseData', 'league', 'players', 'recruiting'],
+    [
+      'baseData',
+      'league',
+      'players',
+      'recruiting',
+      'playerSeasons',
+      'historicalPlayers',
+      'seasonMemories',
+      'playerOrigins',
+    ],
     'readwrite',
   );
 
@@ -238,6 +247,7 @@ export const initializeRecruiting = async ({
     const states = statesRecord.value as Record<string, number>;
     const players = await tx.objectStore('players').getAll();
     assertCurrentRosterState(league, players);
+    const departing = players.filter(player => player.year === 'sr');
     applyProgression(players);
     const context = buildRecruitingContext(league.teams, players);
     const state: RecruitingState = {
@@ -259,6 +269,31 @@ export const initializeRecruiting = async ({
     };
 
     const playerStore = tx.objectStore('players');
+    const historicalStore = tx.objectStore('historicalPlayers');
+    const playerSeasonStore = tx.objectStore('playerSeasons');
+    const originStore = tx.objectStore('playerOrigins');
+    const memories = await tx.objectStore('seasonMemories').getAll();
+    const honoredIds = new Set(
+      memories.flatMap(memory => memory.awards.map(award => award.playerId)),
+    );
+    for (const player of departing) {
+      const hasSeason = Boolean(
+        await playerSeasonStore.index('playerId').getKey(player.id),
+      );
+      if (hasSeason || honoredIds.has(player.id)) {
+        await historicalStore.put({
+          id: player.id,
+          first: player.first,
+          last: player.last,
+          pos: player.pos,
+          stars: player.stars,
+          development_trait: player.development_trait,
+        });
+      } else {
+        await originStore.delete(player.id);
+      }
+      await playerStore.delete(player.id);
+    }
     for (const player of players) {
       await playerStore.put(player);
     }
@@ -409,7 +444,10 @@ export const completeRecruitingWithAi = async ({
   ...guard
 }: CompleteRecruitingWithAiInput): Promise<RecruitingCommandCursor> => {
   const db = await getDb();
-  const tx = db.transaction(['league', 'players', 'recruiting'], 'readwrite');
+  const tx = db.transaction(
+    ['league', 'players', 'recruiting', 'playerOrigins'],
+    'readwrite',
+  );
   try {
     const { league, state } = loadGuardedRecruitingRecords(
       await tx.objectStore('league').get(LEAGUE_KEY),
@@ -456,6 +494,7 @@ export const completeRecruitingWithAi = async ({
       prospects: next.prospects,
       existingPlayers,
       nextPlayerId: league.idCounters.player,
+      acquisitionYear: next.year,
     });
     league.idCounters.player = freshmen.nextPlayerId;
     league.info.stage = 'recruiting_summary';
@@ -463,6 +502,10 @@ export const completeRecruitingWithAi = async ({
     const playerStore = tx.objectStore('players');
     for (const player of freshmen.players) {
       await playerStore.add(player);
+    }
+    const originStore = tx.objectStore('playerOrigins');
+    for (const origin of freshmen.origins) {
+      await originStore.add(origin);
     }
     await tx.objectStore('recruiting').put(toRecruitingRecord(next));
     await tx.objectStore('league').put({ key: LEAGUE_KEY, value: league });
@@ -478,7 +521,10 @@ export const finalizeRecruiting = async (
   guard: RecruitingCommandGuard & { expectedRound: 6 },
 ): Promise<RecruitingCommandCursor> => {
   const db = await getDb();
-  const tx = db.transaction(['league', 'players', 'recruiting'], 'readwrite');
+  const tx = db.transaction(
+    ['league', 'players', 'recruiting', 'playerOrigins'],
+    'readwrite',
+  );
   try {
     const { league, state } = loadGuardedRecruitingRecords(
       await tx.objectStore('league').get(LEAGUE_KEY),
@@ -495,6 +541,7 @@ export const finalizeRecruiting = async (
       prospects: next.prospects,
       existingPlayers,
       nextPlayerId: league.idCounters.player,
+      acquisitionYear: next.year,
     });
     league.idCounters.player = freshmen.nextPlayerId;
     league.info.stage = 'recruiting_summary';
@@ -502,6 +549,10 @@ export const finalizeRecruiting = async (
     const playerStore = tx.objectStore('players');
     for (const player of freshmen.players) {
       await playerStore.add(player);
+    }
+    const originStore = tx.objectStore('playerOrigins');
+    for (const origin of freshmen.origins) {
+      await originStore.add(origin);
     }
     await tx.objectStore('recruiting').put(toRecruitingRecord(next));
     await tx.objectStore('league').put({ key: LEAGUE_KEY, value: league });

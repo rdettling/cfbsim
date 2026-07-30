@@ -24,7 +24,7 @@ This allows one game to run interactively while the broader league state remains
 
 2. **Session start**
 - `useGameSim.start()` calls `prepareInteractiveLiveGame(gameId)`.
-- If game already complete, hook loads persisted drives/plays and marks session complete.
+- If game already complete, the hook loads its nested detail and marks the session complete.
 - Otherwise, it resets in-memory state and hydrates runtime context (`league`, `record`, teams map, starters cache, players map, `SimGame` state).
 
 3. **Interactive stepping**
@@ -43,7 +43,8 @@ This allows one game to run interactively while the broader league state remains
 
 5. **Final commit**
 - `finishInteractiveGame` calls `finalizeGameSimulation(...)`.
-- Domain writes game/drives/plays/gameLogs and returns final game + drives for UI.
+- Domain atomically writes the compact game, nested detail, and league state,
+  then returns the final game and drives for UI.
 - Hook enters the complete phase only after final persistence succeeds and then
   updates rendered game state with persisted final outputs.
 

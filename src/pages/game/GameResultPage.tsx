@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Tab, Tabs, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Paper, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
 import DriveSummary from '../../components/game/DriveSummary';
 import GameMatchupHeader from '../../components/game/GameMatchupHeader';
 import { TeamInfoModal } from '../../components/team/TeamComponents';
@@ -124,7 +124,15 @@ const GameResultPage = ({ data }: GameResultPageProps) => {
           />
         </Box>
 
-        {isDesktop ? (
+        {!resultSummary && drives.length === 0 ? (
+          <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="h6">Detailed game data is no longer available</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+              The final score and dynasty memory are preserved, but play-by-play and
+              player logs are retained for user-program games and major postseason games.
+            </Typography>
+          </Paper>
+        ) : isDesktop ? (
           <Box
             component="section"
             aria-label="Game result details"

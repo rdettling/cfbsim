@@ -24,13 +24,15 @@ describe('current database schema', () => {
 
     expect(Array.from(db.objectStoreNames)).toEqual([
       'baseData',
-      'drives',
-      'gameLogs',
+      'gameDetails',
       'games',
+      'historicalPlayers',
       'league',
+      'playerOrigins',
+      'playerSeasons',
       'players',
-      'plays',
       'recruiting',
+      'seasonMemories',
     ]);
 
     db.close();
@@ -56,13 +58,15 @@ describe('current database schema', () => {
 
     expect(Array.from(current.objectStoreNames)).toEqual([
       'baseData',
-      'drives',
-      'gameLogs',
+      'gameDetails',
       'games',
+      'historicalPlayers',
       'league',
+      'playerOrigins',
+      'playerSeasons',
       'players',
-      'plays',
       'recruiting',
+      'seasonMemories',
     ]);
     expect(await current.getAll('league')).toEqual([]);
     expect(Array.from(current.transaction('games').store.indexNames)).toEqual([
@@ -70,6 +74,7 @@ describe('current database schema', () => {
       'teamBId',
       'weekPlayed',
       'winnerId',
+      'year',
     ]);
 
     current.close();

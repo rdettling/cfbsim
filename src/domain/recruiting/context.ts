@@ -30,7 +30,6 @@ export const buildRecruitingContext = (
   );
 
   players.forEach(player => {
-    if (!player.active) return;
     const roster = rostersByTeamId.get(player.teamId);
     if (!roster) return;
     roster.activeCount += 1;

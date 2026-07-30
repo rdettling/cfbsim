@@ -14,6 +14,27 @@ vi.mock('../../db/offseasonRepo', () => ({
   commitOffseasonTransition: vi.fn(async () => undefined),
 }));
 
+vi.mock('../../db/leagueRepo', () => ({
+  loadLeaguePlayersSnapshot: vi.fn(async () => ({
+    league: state.league,
+    players: [],
+  })),
+}));
+
+vi.mock('../../db/simRepo', () => ({
+  getGamesByYear: vi.fn(async () => []),
+  getGameDetailsByYear: vi.fn(async () => []),
+}));
+
+vi.mock('./memory', () => ({
+  buildSeasonMemory: vi.fn(league => ({
+    year: league.info.currentYear,
+    playoffTeams: league.settings.playoffTeams,
+    events: [],
+    awards: [],
+  })),
+}));
+
 vi.mock('../../db/baseData', () => ({
   getHistoryData: vi.fn(async () => ({
     generated_at: 'test',

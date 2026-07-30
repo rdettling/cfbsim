@@ -34,9 +34,11 @@ const resetDatabase = async () => {
     'recruiting',
     'players',
     'games',
-    'drives',
-    'plays',
-    'gameLogs',
+    'gameDetails',
+    'playerSeasons',
+    'historicalPlayers',
+    'playerOrigins',
+    'seasonMemories',
   ] as const;
   const tx = db.transaction([...stores], 'readwrite');
   await Promise.all(stores.map(store => tx.objectStore(store).clear()));
@@ -151,6 +153,12 @@ describe('offseason lifecycle integration', () => {
     });
     await advanceOffseasonStage('summary');
     let league = await loadPersistedLeague();
+    const memoryDb = await getDb();
+    expect(await memoryDb.get('seasonMemories', 2025)).toMatchObject({
+      year: 2025,
+      playoffTeams: 12,
+      events: [],
+    });
     expect(league.info.stage).toBe('realignment');
     expect(league.teams[0]).toMatchObject({
       prestige: 5,
@@ -159,6 +167,7 @@ describe('offseason lifecycle integration', () => {
     await expect(advanceOffseasonStage('summary')).rejects.toMatchObject({
       actualStage: 'realignment',
     });
+    expect(await memoryDb.count('seasonMemories')).toBe(1);
 
     const setupPreview = await loadRealignment();
     await expect(loadRealignment()).resolves.toEqual(setupPreview);
@@ -218,7 +227,7 @@ describe('offseason lifecycle integration', () => {
     const finalizedRecruiting = (await loadRecruitingState())!;
     const recruitingSummary = await loadRecruitingSummary();
     const persistedFreshmen = recruitedPlayers
-      .filter(player => player.active && player.year === 'fr')
+      .filter(player => player.year === 'fr')
       .length;
     const committedProspects = finalizedRecruiting.prospects
       .filter(prospect => prospect.committedTeamId !== null)
@@ -277,7 +286,6 @@ describe('offseason lifecycle integration', () => {
       expect(
         preseasonPlayers.find(player => player.id === projectedId),
       ).toMatchObject({
-        active: false,
         starter: false,
       });
     });
@@ -285,7 +293,6 @@ describe('offseason lifecycle integration', () => {
       POSITION_ORDER.forEach(position => {
         const active = preseasonPlayers.filter(
           player =>
-            player.active &&
             player.teamId === team.id &&
             player.pos === position,
         );
@@ -298,7 +305,7 @@ describe('offseason lifecycle integration', () => {
       });
       expect(
         preseasonPlayers.filter(
-          player => player.active && player.teamId === team.id,
+          player => player.teamId === team.id,
         ),
       ).toHaveLength(FINAL_ROSTER_SIZE);
     });
@@ -394,15 +401,9 @@ describe('offseason lifecycle integration', () => {
       ).toMatchObject({
         year: projected.projectedClass,
         rating: projected.projectedRating,
-        active: true,
       });
     });
-    expect(
-      persistedPlayers.find(player => player.id === 13),
-    ).toMatchObject({
-      active: false,
-      starter: false,
-    });
+    expect(persistedPlayers.some(player => player.id === 13)).toBe(false);
 
     await expect(
       advanceOffseasonStage('progression'),

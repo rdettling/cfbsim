@@ -22,6 +22,7 @@ import { PlayerCareerMobileList } from './player-detail/PlayerCareerMobileList';
 import { PlayerGameLogsDesktopTable } from './player-detail/PlayerGameLogsDesktopTable';
 import { PlayerGameLogsMobileList } from './player-detail/PlayerGameLogsMobileList';
 import { PlayerProfile } from './player-detail/PlayerProfile';
+import { PlayerOrigin } from './player-detail/PlayerOrigin';
 
 type PlayerTab = 'career' | 'logs';
 
@@ -93,6 +94,7 @@ const Player = () => {
             teamColor={data.team.colorPrimary}
             onTeamClick={handleTeamClick}
           />
+          <PlayerOrigin origin={data.origin} onTeamClick={handleTeamClick} />
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
@@ -145,6 +147,14 @@ const Player = () => {
             )
           ) : gameLogs.length > 0 ? (
             <>
+              {data.gameLogScope === 'retained_postseason_only' && (
+                <Paper variant="outlined" sx={{ p: 1.25, mb: 1 }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    Career totals are complete. Game-by-game history is limited to retained
+                    conference championship and playoff games.
+                  </Typography>
+                </Paper>
+              )}
               <PlayerGameLogsDesktopTable
                 logs={gameLogs}
                 category={data.stat_category}
@@ -166,7 +176,9 @@ const Player = () => {
                   mt: 0.5,
                 }}
               >
-                Game logs will appear after this player records statistics.
+                {data.gameLogScope === 'retained_postseason_only'
+                  ? 'Career totals are complete; ordinary historical game detail is not retained.'
+                  : 'Game logs will appear after this player records statistics.'}
               </Typography>
             </Paper>
           )}

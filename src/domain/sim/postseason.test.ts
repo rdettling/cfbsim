@@ -51,9 +51,6 @@ const buildPostseasonLeague = (playoffTeams: PlayoffTeamCount) => {
     playoff: { seeds: [] },
     idCounters: {
       game: 1,
-      drive: 1,
-      play: 1,
-      gameLog: 1,
       player: 1,
     },
   });

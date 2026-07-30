@@ -6,6 +6,8 @@ import {
   type LeagueState,
 } from '../types/league';
 import type { NextSeasonConfiguration } from '../types/domain';
+import type { SeasonMemory } from '../types/memory';
+import type { PlayerSeasonStats } from '../types/db';
 import { getDb } from './db';
 import { assertCurrentLeagueState } from './leagueRepo';
 
@@ -21,6 +23,9 @@ export interface OffseasonTransitionCommit {
   expectedSettings?: NextSeasonConfiguration;
   league: LeagueState;
   history?: HistoryData;
+  memory?: SeasonMemory;
+  playerSeasons?: PlayerSeasonStats[];
+  retainedGameIds?: Set<number>;
 }
 
 export const commitOffseasonTransition = async ({
@@ -28,9 +33,15 @@ export const commitOffseasonTransition = async ({
   expectedSettings,
   league,
   history,
+  memory,
+  playerSeasons,
+  retainedGameIds,
 }: OffseasonTransitionCommit) => {
   const db = await getDb();
-  const tx = db.transaction(['baseData', 'league'], 'readwrite');
+  const tx = db.transaction(
+    ['baseData', 'league', 'seasonMemories', 'playerSeasons', 'gameDetails'],
+    'readwrite',
+  );
 
   try {
     const persisted = await tx.objectStore('league').get(LEAGUE_KEY);
@@ -59,6 +70,34 @@ export const commitOffseasonTransition = async ({
         key: 'history',
         value: history,
       });
+    }
+
+    if (memory) {
+      const existing = await tx.objectStore('seasonMemories').get(memory.year);
+      if (existing) {
+        throw new Error(`Dynasty memory for ${memory.year} already exists.`);
+      }
+      await tx.objectStore('seasonMemories').put(memory);
+    }
+
+    if (playerSeasons) {
+      const store = tx.objectStore('playerSeasons');
+      for (const season of playerSeasons) {
+        if (await store.get([season.year, season.playerId])) {
+          throw new Error(
+            `Player season ${season.year}/${season.playerId} already exists.`,
+          );
+        }
+        await store.put(season);
+      }
+    }
+
+    if (memory && retainedGameIds) {
+      const detailStore = tx.objectStore('gameDetails');
+      const keys = await detailStore.index('year').getAllKeys(memory.year);
+      for (const key of keys) {
+        if (!retainedGameIds.has(Number(key))) await detailStore.delete(key);
+      }
     }
 
     await tx.objectStore('league').put({

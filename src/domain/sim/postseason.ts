@@ -10,7 +10,11 @@ import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
 import { buildWatchability } from './games';
-import { getGameById, getGamesByWeek, saveGames } from '../../db/simRepo';
+import {
+  getGameById,
+  getGamesByWeek,
+  saveGamesAndLeague,
+} from '../../db/simRepo';
 import { finalizePostseasonRankings } from './rankings';
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
@@ -162,7 +166,7 @@ const setBowls = async (
     })
   );
 
-  await saveGames(gamesToCreate);
+  await saveGamesAndLeague(gamesToCreate, league);
 };
 
 const createGameRecord = (
@@ -330,7 +334,7 @@ const setConferenceChampionships = async (
   });
 
   if (gamesToCreate.length) {
-    await saveGames(gamesToCreate);
+    await saveGamesAndLeague(gamesToCreate, league);
   }
 };
 
@@ -364,7 +368,7 @@ const setPlayoffR1 = async (
   league.playoff.right_r1_1 = gamesToCreate[2].id;
   league.playoff.right_r1_2 = gamesToCreate[3].id;
 
-  await saveGames(gamesToCreate);
+  await saveGamesAndLeague(gamesToCreate, league);
 };
 
 const setPlayoffQuarter = async (
@@ -407,7 +411,7 @@ const setPlayoffQuarter = async (
   league.playoff.right_quarter_1 = gamesToCreate[2].id;
   league.playoff.right_quarter_2 = gamesToCreate[3].id;
 
-  await saveGames(gamesToCreate);
+  await saveGamesAndLeague(gamesToCreate, league);
 };
 
 const setPlayoffSemi = async (
@@ -462,7 +466,7 @@ const setPlayoffSemi = async (
   league.playoff.right_semi = gamesToCreate[1]?.id;
 
   if (gamesToCreate.length) {
-    await saveGames(gamesToCreate);
+    await saveGamesAndLeague(gamesToCreate, league);
   }
 };
 
@@ -504,7 +508,7 @@ const setNatty = async (
   if (!teamA || !teamB) return;
   const game = createGameRecord(league, teamA, teamB, week, 'National Championship', oddsContext, { neutralSite: true });
   league.playoff.natty = game.id;
-  await saveGames([game]);
+  await saveGamesAndLeague([game], league);
 };
 
 const ensureSummaryStage = async (league: LeagueState) => {

@@ -68,7 +68,6 @@ export interface PlayRecord {
 }
 
 export interface GameLogRecord {
-  id: number;
   playerId: number;
   gameId: number;
   pass_yards: number;
@@ -109,5 +108,72 @@ export interface PlayerRecord {
   stars: number;
   development_trait: number;
   starter: boolean;
-  active: boolean;
+}
+
+export type PlayerSeasonStats = Omit<GameLogRecord, 'gameId'> & {
+  year: number;
+  teamId: number;
+  position: string;
+  classYear: PlayerRecord['year'];
+  rating: number;
+  games: number;
+};
+
+export interface HistoricalPlayerRecord {
+  id: number;
+  first: string;
+  last: string;
+  pos: string;
+  stars: number;
+  development_trait: number;
+}
+
+interface PlayerOriginBase {
+  playerId: number;
+  acquisitionYear: number;
+  originalTeamId: number;
+}
+
+export interface RecruitPlayerOrigin extends PlayerOriginBase {
+  kind: 'recruit';
+  homeState: string;
+  nationalRank: number;
+  positionRank: number;
+  commitmentRound: 1 | 2 | 3 | 4 | 5 | 6 | 'signing_day';
+  publicRatingMin: number;
+  publicRatingMax: number;
+}
+
+export interface WalkOnPlayerOrigin extends PlayerOriginBase {
+  kind: 'walk_on';
+}
+
+export interface InitialRosterPlayerOrigin extends PlayerOriginBase {
+  kind: 'initial_roster';
+  classAtStart: PlayerRecord['year'];
+}
+
+export type PlayerOrigin =
+  | RecruitPlayerOrigin
+  | WalkOnPlayerOrigin
+  | InitialRosterPlayerOrigin;
+
+export type GameDetailPlay = Omit<
+  PlayRecord,
+  'id' | 'gameId' | 'driveId' | 'offenseId' | 'defenseId'
+> & {
+  quarter: number;
+  clockSecondsLeft: number;
+  playSeconds: number;
+};
+
+export type GameDetailDrive = Omit<DriveRecord, 'id' | 'gameId'> & {
+  plays: GameDetailPlay[];
+};
+
+export interface GameDetailRecord {
+  gameId: number;
+  year: number;
+  drives: GameDetailDrive[];
+  playerStats: Array<Omit<GameLogRecord, 'gameId'>>;
 }

@@ -89,12 +89,6 @@ export const PlayerProfile = ({ player, awards, teamColor, onTeamClick }: Player
         color={player.starter ? 'success' : 'default'}
         variant="outlined"
       />
-      <Chip
-        label={player.active ? 'Active' : 'Inactive'}
-        size="small"
-        color={player.active ? 'success' : 'default'}
-        variant="outlined"
-      />
     </Stack>
 
     {awards.length > 0 && (

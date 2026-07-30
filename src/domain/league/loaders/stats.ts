@@ -29,7 +29,7 @@ const sortStandings = (teams: Team[]) => {
 export const loadRatingsStats = async (): Promise<RatingsStatsPageResult> => {
   const { league, players: persistedPlayers } =
     await loadLeaguePlayersSnapshot();
-  const players = persistedPlayers.filter(player => player.active);
+  const players = persistedPlayers;
   const teams = league.teams;
 
   const totalCounts: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };

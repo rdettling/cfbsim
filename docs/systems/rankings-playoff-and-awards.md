@@ -12,7 +12,9 @@ This subsystem has three linked layers:
 2. **Postseason layer**: schedules conference championships, playoff rounds, bowls, and national championship according to format settings.
 3. **Awards layer**: aggregates player game logs into award candidate scoring and final selections.
 
-The layers are connected by shared state (`teams`, `games`, `settings`, `playoff`, `gameLogs`) and run repeatedly as season weeks advance.
+The layers are connected by shared state (`teams`, `games`, `settings`,
+`playoff`, and per-game player statistics in `gameDetails`) and run repeatedly
+as season weeks advance.
 
 ## Execution Flow
 
@@ -45,7 +47,7 @@ flowchart TD
   E --> F{"Natty winner exists?"}
   F -- yes --> G["summary stage + finalizePostseasonRankings()"]
   F -- no --> H["remain in season stage"]
-  A --> I["gameLogs accumulation"]
+  A --> I["Per-game player-stat accumulation"]
   I --> J["buildAwards()"]
   J --> K["awards favorites/final"]
 ```
@@ -78,6 +80,9 @@ flowchart TD
 - If postseason round prerequisites are incomplete, next round creation is deferred.
 - If natty does not resolve, stage remains non-summary and summary-specific outputs are withheld.
 - Award pages can show empty/fewer outputs early when insufficient games/logs exist.
+- Final award winners are copied into the completed season's compact
+  `SeasonMemory` before detailed game logs are cleared. Historical finalists
+  and generated award prose are not retained.
 
 ## What You Can Observe in the App
 

@@ -56,6 +56,14 @@ describe('walk-on generation', () => {
     expect(result.players[0].pos).toBe('p');
     expect(result.players.every(player => player.year === 'fr')).toBe(true);
     expect(result.players.every(player => player.stars === 1)).toBe(true);
+    expect(result.origins).toEqual(
+      result.players.map(player => ({
+        playerId: player.id,
+        kind: 'walk_on',
+        acquisitionYear: 2026,
+        originalTeamId: player.teamId,
+      })),
+    );
   });
 
   it('is deterministic and independent of team/player input ordering', () => {

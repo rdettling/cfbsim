@@ -17,6 +17,7 @@ import {
 } from '../../../../types/league';
 import { buildTeamsAndConferences } from '../../../baseData';
 import { prepareInitialRosters } from '../../../roster';
+import { buildInitialRosterOrigins } from '../../../playerOrigins';
 import { getLastWeekByPlayoffTeams } from '../../postseason';
 import { initializeNonConScheduling } from '../../seasonReset';
 
@@ -129,20 +130,19 @@ export const startNewLeague = async (
     playoff: { seeds: [] },
     idCounters: {
       game: 1,
-      drive: 1,
-      play: 1,
-      gameLog: 1,
       player: 1,
     },
   };
 
   const players = await prepareInitialRosters(league);
+  const playerOrigins = buildInitialRosterOrigins(players, startYear);
 
   const { schedule, gamesToSave } = await initializeNonConScheduling(league);
   await commitNewLeague({
     league,
     players,
     games: gamesToSave,
+    playerOrigins,
   });
 
   return {

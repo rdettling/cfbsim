@@ -30,12 +30,13 @@ Week advancement is not only “simulate games”; it is also an ordering pipeli
 - While `currentWeek < destWeek`:
   - Load games for `currentWeek` and filter current-year records.
   - Simulate unplayed games only.
-  - Aggregate drive/play/log artifacts.
+  - Build one nested detail record per completed game.
   - Update team records (`updateTeamRecords`), headlines (`generateHeadlines`), and rankings (`updateRankings`).
   - Rewrite current/future game rank snapshots (`rankATOG`, `rankBTOG`) for unplayed games.
-  - Persist games and run `handleSpecialWeeks(...)` for postseason scheduling.
+  - Atomically persist games, detail, rankings, and league state, then run
+    `handleSpecialWeeks(...)` for postseason scheduling.
   - Increment `currentWeek`.
-- After loop, persist all accumulated drives/plays/gameLogs and final league state.
+- After loop, persist the final guarded league state.
 
 4. **Postseason scheduling hooks**
 - `handleSpecialWeeks(...)` selects action by `settings.playoffTeams` and the
@@ -57,7 +58,7 @@ flowchart TD
   H --> I["Increment week"]
   I --> J{"Reached destWeek?"}
   J -- no --> D
-  J -- yes --> K["Persist drives/plays/logs + league"]
+  J -- yes --> K["Persist games + nested detail + league"]
 ```
 
 ## Key Mechanics

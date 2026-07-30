@@ -10,6 +10,7 @@ import { SeasonAwardsPanel } from './season-summary/SeasonAwardsPanel';
 import { SeasonOverview } from './season-summary/SeasonOverview';
 import { SeasonPrestigePanel } from './season-summary/SeasonPrestigePanel';
 import type { SeasonSummaryDetail } from './season-summary/types';
+import { SeasonLegacyPanel } from './season-summary/SeasonLegacyPanel';
 
 const SeasonSummary = () => {
   const [activeDetail, setActiveDetail] = useState<SeasonSummaryDetail>('awards');
@@ -89,6 +90,7 @@ const SeasonSummary = () => {
                 userTeam={userTeam}
                 onTeamClick={handleTeamClick}
               />
+              {data.legacy && <SeasonLegacyPanel legacy={data.legacy} />}
 
               <Box
                 sx={{

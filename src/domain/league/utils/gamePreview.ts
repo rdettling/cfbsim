@@ -136,7 +136,7 @@ export const buildTeamStatsAndRanks = (
 
 export const buildTopStartersForTeam = (teamId: number, allPlayers: PlayerRecord[]) =>
   allPlayers
-    .filter(player => player.active && player.starter && player.teamId === teamId)
+    .filter(player => player.starter && player.teamId === teamId)
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 5)
     .map(player => ({

@@ -29,9 +29,10 @@ const STORES = [
   'recruiting',
   'players',
   'games',
-  'drives',
-  'plays',
-  'gameLogs',
+  'gameDetails',
+  'playerSeasons',
+  'historicalPlayers',
+  'playerOrigins',
 ] as const;
 
 const resetDatabase = async () => {
@@ -101,6 +102,7 @@ const snapshot = async () => {
     league: await db.get('league', 'current'),
     recruiting: await db.get('recruiting', 'current'),
     players: await db.getAll('players'),
+    playerOrigins: await db.getAll('playerOrigins'),
   };
 };
 
@@ -496,6 +498,9 @@ describe('persistent recruiting commands', () => {
       status: 'finalized',
       version: finalWeek.version + 1,
     });
+    const origins = await (await getDb()).getAll('playerOrigins');
+    expect(origins.length).toBeGreaterThan(0);
+    expect(origins.every(origin => origin.kind === 'recruit')).toBe(true);
   }, 30_000);
 
   it('rolls back AI completion when freshman persistence fails', async () => {
@@ -531,9 +536,6 @@ describe('persistent recruiting commands', () => {
     const league = buildTestLeague('recruiting', {
       idCounters: {
         game: 1,
-        drive: 1,
-        play: 1,
-        gameLog: 1,
         player: 2,
       },
     });
@@ -574,7 +576,13 @@ describe('persistent recruiting commands', () => {
     expect((await db.getAll('players')).find(player => player.year === 'fr')).toMatchObject({
       id: 11,
       teamId: 1,
-      active: true,
+    });
+    expect(await db.get('playerOrigins', 11)).toMatchObject({
+      playerId: 11,
+      kind: 'recruit',
+      acquisitionYear: 2025,
+      originalTeamId: 1,
+      commitmentRound: 4,
     });
     expect(await loadRecruitingState()).toMatchObject({
       status: 'finalized',

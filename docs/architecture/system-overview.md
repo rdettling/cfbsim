@@ -26,8 +26,14 @@ The current database contains:
 
 - `league`: one `current` `LeagueState`.
 - `recruiting`: one optional `current` `RecruitingState`.
-- `players`, `games`, `drives`, `plays`, and `gameLogs`: normalized simulation
-  records.
+- `players`: current rosters only.
+- `games`: compact permanent schedule and result facts.
+- `gameDetails`: nested drive, play, and player-game detail keyed by game.
+- `playerSeasons` and `historicalPlayers`: compact permanent player history.
+- `playerOrigins`: immutable dynasty-era acquisition provenance for every
+  current or historical player.
+- `seasonMemories`: compact typed postseason and award facts keyed by
+  completed simulated year.
 - `baseData`: cached source datasets.
 
 `LeagueState` and `RecruitingState` are fully required current-schema objects.
@@ -86,6 +92,11 @@ The stage graph is:
 Generic offseason advancement accepts `OffseasonAdvanceStage`, which excludes
 `recruiting` and `roster_cuts`. Recruiting commands and final roster completion
 are command-managed.
+
+The summary-to-realignment transition is also the dynasty-memory capture
+boundary. It builds one record from the completed season while player game
+logs are still available, then commits that record with team history and
+league advancement.
 
 ## Invariants
 

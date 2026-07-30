@@ -28,9 +28,11 @@ const currentSaveCounts = async () => {
     db.count('recruiting'),
     db.count('players'),
     db.count('games'),
-    db.count('drives'),
-    db.count('plays'),
-    db.count('gameLogs'),
+    db.count('gameDetails'),
+    db.count('playerSeasons'),
+    db.count('historicalPlayers'),
+    db.count('playerOrigins'),
+    db.count('seasonMemories'),
   ]);
 };
 
@@ -43,6 +45,13 @@ describe('database startup lifecycle', () => {
     const player = buildTestPlayer();
     await db.put('league', { key: 'current', value: league });
     await db.put('players', player);
+    await db.put('playerOrigins', {
+      playerId: player.id,
+      kind: 'initial_roster',
+      acquisitionYear: league.info.startYear,
+      originalTeamId: player.teamId,
+      classAtStart: player.year,
+    });
 
     await initializeDatabase();
 
@@ -61,7 +70,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
     expect(await (await getDb()).get('baseData', 'marker')).toBeUndefined();
   });
 
@@ -75,7 +84,28 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it('deletes the database when a player origin is missing or orphaned', async () => {
+    const db = await getDb();
+    const league = buildTestLeague('season');
+    const player = buildTestPlayer();
+    await db.put('league', { key: 'current', value: league });
+    await db.put('players', player);
+
+    await initializeDatabase();
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+    const current = await getDb();
+    await current.put('playerOrigins', {
+      playerId: 999,
+      kind: 'walk_on',
+      acquisitionYear: league.info.startYear,
+      originalTeamId: player.teamId,
+    });
+    await initializeDatabase();
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('deletes the database when recruiting state is malformed', async () => {
@@ -93,7 +123,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('deletes orphaned save records without a league', async () => {
@@ -102,7 +132,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('recreates a malformed current-version store schema', async () => {
@@ -119,13 +149,15 @@ describe('database startup lifecycle', () => {
     const current = await getDb();
     expect(Array.from(current.objectStoreNames)).toEqual([
       'baseData',
-      'drives',
-      'gameLogs',
+      'gameDetails',
       'games',
+      'historicalPlayers',
       'league',
+      'playerOrigins',
+      'playerSeasons',
       'players',
-      'plays',
       'recruiting',
+      'seasonMemories',
     ]);
   });
 });

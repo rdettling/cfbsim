@@ -3,7 +3,6 @@ import type { LeagueState } from '../../types/league';
 import type { SimGame, SimDrive, StartersCache } from '../../types/sim';
 import type { Drive, GameData } from '../../types/game';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
-import { nextId } from './ids';
 import { getHeadlinesData } from '../../db/baseData';
 import { getPlayersByTeam } from '../../db/simRepo';
 import {
@@ -81,7 +80,7 @@ export const simDrive = (
     clockRunning: game.clockRunning,
   };
   const needed = clockEnabled ? pointsNeeded(lead, totalSecondsLeft(clock)) : 0;
-  const driveId = nextId(league, 'drive');
+  const driveId = game.id * 1000 + driveNum;
 
   const drive: DriveRecord = {
     id: driveId,
@@ -113,7 +112,7 @@ export const simDrive = (
 
   while (!drive.result) {
     for (let down = 1; down <= 4; down += 1) {
-      const playId = nextId(league, 'play');
+      const playId = driveId * 1000 + plays.length + 1;
       if (down === 1) {
         yardsLeft = startingYardsLeft(fieldPosition);
       }
@@ -310,7 +309,7 @@ export const startInteractiveDrive = (
       })
     )
     : 0;
-  const driveId = nextId(league, 'drive');
+  const driveId = game.id * 1000 + driveNum;
 
   const drive: DriveRecord = {
     id: driveId,
@@ -331,6 +330,7 @@ export const startInteractiveDrive = (
     fieldPosition,
     down: 1,
     yardsLeft: startingYardsLeft(fieldPosition),
+    playCount: 0,
   };
 };
 
@@ -341,6 +341,7 @@ export const stepInteractiveDrive = (
     fieldPosition: number;
     down: number;
     yardsLeft: number;
+    playCount: number;
   },
   decision: 'run' | 'pass' | 'punt' | 'field_goal' | 'auto',
   clockEnabledOverride?: boolean
@@ -349,7 +350,8 @@ export const stepInteractiveDrive = (
   const applyClockEnabled = clockEnabledOverride ?? clockEnabled;
   const clockState = { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning };
   const tempo = getTempo(lead, clockState);
-  const playId = nextId(league, 'play');
+  const playId = state.drive.id * 1000 + state.playCount + 1;
+  state.playCount += 1;
   const down = state.down;
   const fieldPosition = state.fieldPosition;
   const yardsLeft = down === 1 ? startingYardsLeft(fieldPosition) : state.yardsLeft;
@@ -742,7 +744,6 @@ export const createGameLogsFromPlays = (
       startersForPos.forEach(player => {
         if (logByPlayerId.has(player.id)) return;
         const log: GameLogRecord = {
-          id: nextId(league, 'gameLog'),
           playerId: player.id,
           gameId: game.id,
           pass_yards: 0,
@@ -1064,7 +1065,7 @@ export const buildStartersCache = async (teams: Team[]) => {
   const byTeamPos = new Map<string, PlayerRecord[]>();
   for (const team of teams) {
     const players = await getPlayersByTeam(team.id);
-    players.filter(player => player.active && player.starter).forEach(player => {
+    players.filter(player => player.starter).forEach(player => {
       const key = `${team.id}:${player.pos}`;
       const list = byTeamPos.get(key) ?? [];
       list.push(player);

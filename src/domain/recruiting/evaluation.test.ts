@@ -76,7 +76,6 @@ const players: PlayerRecord[] = teams.flatMap(team => {
         stars: Math.max(1, Math.min(5, Math.round(team.prestige / 1.5))),
         development_trait: 3,
         starter: index < ROSTER[position].starters,
-        active: true,
       };
     }),
   );
@@ -115,9 +114,6 @@ const input = {
     teams,
     idCounters: {
       game: 1,
-      drive: 1,
-      play: 1,
-      gameLog: 1,
       player: playerId,
     },
   }),

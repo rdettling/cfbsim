@@ -7,7 +7,8 @@ import {
   OffseasonStageMismatchError,
   type LeagueState,
 } from '../types/league';
-import { buildTestLeague } from '../test/fixtures';
+import { buildTestLeague, buildTestPlayer } from '../test/fixtures';
+import { buildGameDetail, buildPlayerSeasons } from '../domain/league/gameDetails';
 
 const resetDatabase = async () => {
   const db = await getDb();
@@ -114,6 +115,67 @@ describe('commitOffseasonTransition', () => {
     expect(
       (persisted?.value as LeagueState).settings.conferencePolicy,
     ).toBe('current');
+  });
+
+  it('atomically writes annual aggregates and prunes non-retained detail', async () => {
+    const source = buildTestLeague('summary');
+    await seedLeague(source);
+    const db = await getDb();
+    const player = buildTestPlayer();
+    const stats = {
+      playerId: player.id,
+      gameId: 1,
+      pass_yards: 100,
+      pass_attempts: 10,
+      pass_completions: 7,
+      pass_touchdowns: 1,
+      pass_interceptions: 0,
+      rush_yards: 5,
+      rush_attempts: 2,
+      rush_touchdowns: 0,
+      receiving_yards: 0,
+      receiving_catches: 0,
+      receiving_touchdowns: 0,
+      fumbles: 0,
+      tackles: 0,
+      sacks: 0,
+      interceptions: 0,
+      fumbles_forced: 0,
+      fumbles_recovered: 0,
+      field_goals_made: 0,
+      field_goals_attempted: 0,
+      extra_points_made: 0,
+      extra_points_attempted: 0,
+    };
+    const details = [
+      buildGameDetail(1, 2025, [], [], [stats]),
+      buildGameDetail(2, 2025, [], [], []),
+      buildGameDetail(3, 2025, [], [], []),
+    ];
+    for (const detail of details) await db.put('gameDetails', detail);
+    const playerSeasons = buildPlayerSeasons(2025, details, [player]);
+    const memory = {
+      year: 2025,
+      playoffTeams: 12 as const,
+      events: [{ type: 'playoff_semifinal' as const, gameId: 3 }],
+      awards: [],
+    };
+    const destination = buildTestLeague('realignment');
+
+    await commitOffseasonTransition({
+      expectedStage: 'summary',
+      league: destination,
+      memory,
+      playerSeasons,
+      retainedGameIds: new Set([1, 3]),
+    });
+
+    expect(await db.getAllKeys('gameDetails')).toEqual([1, 3]);
+    expect(await db.getAll('playerSeasons')).toEqual(playerSeasons);
+    expect(await db.get('seasonMemories', 2025)).toEqual(memory);
+    expect(
+      ((await db.get('league', 'current'))?.value as LeagueState).info.stage,
+    ).toBe('realignment');
   });
 
 });

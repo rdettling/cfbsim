@@ -1,10 +1,18 @@
 import { deleteDB, openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
-import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../types/db';
+import type {
+  GameDetailRecord,
+  GameRecord,
+  HistoricalPlayerRecord,
+  PlayerOrigin,
+  PlayerRecord,
+  PlayerSeasonStats,
+} from '../types/db';
 import type { RecruitingState } from '../types/recruiting';
+import type { SeasonMemory } from '../types/memory';
 
 export const DB_NAME = 'cfbsim';
-export const DB_VERSION = 3;
+export const DB_VERSION = 6;
 
 export interface Frontend2DB extends DBSchema {
   baseData: {
@@ -23,31 +31,44 @@ export interface Frontend2DB extends DBSchema {
     key: number;
     value: GameRecord;
     indexes: {
+      year: number;
       weekPlayed: number;
       teamAId: number;
       teamBId: number;
       winnerId: number;
     };
   };
-  drives: {
+  gameDetails: {
     key: number;
-    value: DriveRecord;
-    indexes: { gameId: number };
-  };
-  plays: {
-    key: number;
-    value: PlayRecord;
-    indexes: { gameId: number; driveId: number };
-  };
-  gameLogs: {
-    key: number;
-    value: GameLogRecord;
-    indexes: { gameId: number; playerId: number };
+    value: GameDetailRecord;
+    indexes: { year: number };
   };
   players: {
     key: number;
     value: PlayerRecord;
     indexes: { teamId: number; pos: string };
+  };
+  seasonMemories: {
+    key: number;
+    value: SeasonMemory;
+  };
+  playerSeasons: {
+    key: [number, number];
+    value: PlayerSeasonStats;
+    indexes: {
+      playerId: number;
+      year: number;
+      teamId: number;
+      yearTeamId: [number, number];
+    };
+  };
+  historicalPlayers: {
+    key: number;
+    value: HistoricalPlayerRecord;
+  };
+  playerOrigins: {
+    key: number;
+    value: PlayerOrigin;
   };
 }
 
@@ -58,10 +79,12 @@ type CurrentStoreName =
   | 'league'
   | 'recruiting'
   | 'games'
-  | 'drives'
-  | 'plays'
-  | 'gameLogs'
-  | 'players';
+  | 'gameDetails'
+  | 'players'
+  | 'seasonMemories'
+  | 'playerSeasons'
+  | 'historicalPlayers'
+  | 'playerOrigins';
 
 const createCurrentSchema = (db: IDBPDatabase<Frontend2DB>) => {
   db.createObjectStore('baseData', { keyPath: 'key' });
@@ -69,25 +92,31 @@ const createCurrentSchema = (db: IDBPDatabase<Frontend2DB>) => {
   db.createObjectStore('recruiting', { keyPath: 'key' });
 
   const games = db.createObjectStore('games', { keyPath: 'id' });
+  games.createIndex('year', 'year');
   games.createIndex('weekPlayed', 'weekPlayed');
   games.createIndex('teamAId', 'teamAId');
   games.createIndex('teamBId', 'teamBId');
   games.createIndex('winnerId', 'winnerId');
 
-  const drives = db.createObjectStore('drives', { keyPath: 'id' });
-  drives.createIndex('gameId', 'gameId');
-
-  const plays = db.createObjectStore('plays', { keyPath: 'id' });
-  plays.createIndex('gameId', 'gameId');
-  plays.createIndex('driveId', 'driveId');
-
-  const gameLogs = db.createObjectStore('gameLogs', { keyPath: 'id' });
-  gameLogs.createIndex('gameId', 'gameId');
-  gameLogs.createIndex('playerId', 'playerId');
+  const gameDetails = db.createObjectStore('gameDetails', { keyPath: 'gameId' });
+  gameDetails.createIndex('year', 'year');
 
   const players = db.createObjectStore('players', { keyPath: 'id' });
   players.createIndex('teamId', 'teamId');
   players.createIndex('pos', 'pos');
+
+  db.createObjectStore('seasonMemories', { keyPath: 'year' });
+
+  const playerSeasons = db.createObjectStore('playerSeasons', {
+    keyPath: ['year', 'playerId'],
+  });
+  playerSeasons.createIndex('playerId', 'playerId');
+  playerSeasons.createIndex('year', 'year');
+  playerSeasons.createIndex('teamId', 'teamId');
+  playerSeasons.createIndex('yearTeamId', ['year', 'teamId']);
+
+  db.createObjectStore('historicalPlayers', { keyPath: 'id' });
+  db.createObjectStore('playerOrigins', { keyPath: 'playerId' });
 };
 
 export const upgradeDatabase = (

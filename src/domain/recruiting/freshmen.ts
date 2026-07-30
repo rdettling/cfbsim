@@ -1,22 +1,30 @@
-import type { PlayerRecord } from '../../types/db';
+import type { PlayerOrigin, PlayerRecord } from '../../types/db';
 import type { RecruitingProspect } from '../../types/recruiting';
+import {
+  buildPositionRanks,
+  buildRecruitOrigin,
+} from '../playerOrigins';
 
 export interface BuildCommittedFreshmenInput {
   prospects: RecruitingProspect[];
   existingPlayers: PlayerRecord[];
   nextPlayerId: number | undefined;
+  acquisitionYear: number;
 }
 
 export const buildCommittedFreshmen = ({
   prospects,
   existingPlayers,
   nextPlayerId,
+  acquisitionYear,
 }: BuildCommittedFreshmenInput) => {
   const highestExistingId = existingPlayers.reduce(
     (highest, player) => Math.max(highest, player.id),
     0,
   );
   let cursor = Math.max(nextPlayerId ?? 1, highestExistingId + 1);
+  const positionRanks = buildPositionRanks(prospects);
+  const origins: PlayerOrigin[] = [];
   const players = prospects
     .filter(
       (prospect): prospect is RecruitingProspect & { committedTeamId: number } =>
@@ -42,11 +50,18 @@ export const buildCommittedFreshmen = ({
         stars: prospect.stars,
         development_trait: prospect.developmentTrait,
         starter: false,
-        active: true,
       };
+      origins.push(
+        buildRecruitOrigin({
+          playerId: player.id,
+          prospect,
+          acquisitionYear,
+          positionRank: positionRanks.get(prospect.id)!,
+        }),
+      );
       cursor += 1;
       return player;
     });
 
-  return { players, nextPlayerId: cursor };
+  return { players, origins, nextPlayerId: cursor };
 };

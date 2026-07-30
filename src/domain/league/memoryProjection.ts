@@ -1,0 +1,477 @@
+import type { HistoryRow } from '../../types/baseData';
+import type { GameRecord } from '../../types/db';
+import type { Team } from '../../types/domain';
+import type {
+  SeasonMemory,
+  SeasonMemoryEvent,
+  SeasonMemoryEventType,
+} from '../../types/memory';
+
+export interface MemoryAccomplishment {
+  type:
+    | 'national_champion'
+    | 'national_runner_up'
+    | 'playoff'
+    | 'conference_champion'
+    | 'bowl_win'
+    | 'award_winner';
+  label: string;
+}
+
+export interface SignatureGame {
+  id: number;
+  year: number;
+  opponent: string;
+  result: 'W' | 'L';
+  score: string;
+  label: string;
+}
+
+export interface DynastyOverview {
+  wins: number;
+  losses: number;
+  bestFinalRank: number | null;
+  conferenceTitles: number;
+  playoffAppearances: number;
+  bowlWins: number;
+  nationalTitles: number;
+  awardWinners: number;
+}
+
+export interface DynastySeriesContext {
+  wins: number;
+  losses: number;
+  streak: string | null;
+  lastMeeting: SignatureGame | null;
+  callback: string;
+}
+
+const PLAYOFF_TYPES = new Set<SeasonMemoryEventType>([
+  'playoff_first_round',
+  'playoff_quarterfinal',
+  'playoff_semifinal',
+  'national_championship',
+]);
+
+const POSTSEASON_PRIORITY: Record<SeasonMemoryEventType, number> = {
+  national_championship: 6,
+  playoff_semifinal: 5,
+  playoff_quarterfinal: 4,
+  playoff_first_round: 3,
+  conference_championship: 2,
+  bowl: 1,
+};
+
+const eventForGame = (
+  memory: SeasonMemory | undefined,
+  gameId: number,
+) => memory?.events.find(event => event.gameId === gameId);
+
+const includesTeam = (game: GameRecord, teamId: number) =>
+  game.teamAId === teamId || game.teamBId === teamId;
+
+const opponentId = (game: GameRecord, teamId: number) =>
+  game.teamAId === teamId ? game.teamBId : game.teamAId;
+
+const teamScore = (game: GameRecord, teamId: number) =>
+  game.teamAId === teamId ? game.scoreA ?? 0 : game.scoreB ?? 0;
+
+const opponentScore = (game: GameRecord, teamId: number) =>
+  game.teamAId === teamId ? game.scoreB ?? 0 : game.scoreA ?? 0;
+
+const teamWinProbability = (game: GameRecord, teamId: number) =>
+  game.teamAId === teamId ? game.winProbA : game.winProbB;
+
+const opponentRank = (game: GameRecord, teamId: number) =>
+  game.teamAId === teamId ? game.rankBTOG : game.rankATOG;
+
+const toSignatureGame = (
+  game: GameRecord,
+  teamId: number,
+  teamsById: Map<number, Team>,
+): SignatureGame => {
+  const opponent = teamsById.get(opponentId(game, teamId));
+  const result = game.winnerId === teamId ? 'W' : 'L';
+  return {
+    id: game.id,
+    year: game.year,
+    opponent: opponent?.name ?? 'Unknown',
+    result,
+    score: `${teamScore(game, teamId)}-${opponentScore(game, teamId)}`,
+    label: `${result} ${teamScore(game, teamId)}-${opponentScore(game, teamId)} vs ${opponent?.name ?? 'Unknown'}`,
+  };
+};
+
+const eventPriority = (
+  memory: SeasonMemory | undefined,
+  gameId: number,
+) => {
+  const event = eventForGame(memory, gameId);
+  return event ? POSTSEASON_PRIORITY[event.type] : 0;
+};
+
+const rivalryPairs = (
+  rivalries: { rivalries: [string, string, number | null, string | null, boolean?][] },
+) =>
+  new Set(
+    rivalries.rivalries.map(([left, right]) =>
+      [left, right].sort((a, b) => a.localeCompare(b)).join('::'),
+    ),
+  );
+
+export const buildTeamAccomplishments = (
+  teamId: number,
+  memory: SeasonMemory,
+  gamesById: Map<number, GameRecord>,
+): MemoryAccomplishment[] => {
+  const results: MemoryAccomplishment[] = [];
+  const events = memory.events
+    .map(event => ({ event, game: gamesById.get(event.gameId) }))
+    .filter(
+      (
+        entry,
+      ): entry is { event: SeasonMemoryEvent; game: GameRecord } =>
+        Boolean(entry.game && includesTeam(entry.game, teamId)),
+    );
+  const national = events.find(
+    entry => entry.event.type === 'national_championship',
+  );
+  if (national) {
+    results.push(
+      national.game.winnerId === teamId
+        ? { type: 'national_champion', label: 'National Champion' }
+        : { type: 'national_runner_up', label: 'National Runner-up' },
+    );
+  }
+  if (events.some(entry => PLAYOFF_TYPES.has(entry.event.type))) {
+    results.push({ type: 'playoff', label: 'Playoff' });
+  }
+  for (const { event, game } of events) {
+    if (
+      event.type === 'conference_championship' &&
+      game.winnerId === teamId
+    ) {
+      results.push({
+        type: 'conference_champion',
+        label: `${event.conferenceName} Champion`,
+      });
+    }
+    if (event.type === 'bowl' && game.winnerId === teamId) {
+      results.push({ type: 'bowl_win', label: `${event.bowlName} Winner` });
+    }
+  }
+  const awards = memory.awards.filter(award => award.teamId === teamId);
+  if (awards.length) {
+    results.push({
+      type: 'award_winner',
+      label: awards.length === 1 ? '1 Award Winner' : `${awards.length} Award Winners`,
+    });
+  }
+  return results;
+};
+
+export const selectSignatureGames = ({
+  teamId,
+  memory,
+  games,
+  teams,
+  rivalries,
+}: {
+  teamId: number;
+  memory: SeasonMemory;
+  games: GameRecord[];
+  teams: Team[];
+  rivalries: { rivalries: [string, string, number | null, string | null, boolean?][] };
+}): SignatureGame[] => {
+  const teamsById = new Map(teams.map(team => [team.id, team]));
+  const team = teamsById.get(teamId);
+  if (!team) return [];
+  const pairs = rivalryPairs(rivalries);
+  const completed = games.filter(
+    game => game.winnerId !== null && includesTeam(game, teamId),
+  );
+  const selected: GameRecord[] = [];
+  const add = (game?: GameRecord) => {
+    if (game && !selected.some(entry => entry.id === game.id)) selected.push(game);
+  };
+
+  add(
+    completed
+      .filter(game => eventPriority(memory, game.id) > 0)
+      .sort(
+        (left, right) =>
+          eventPriority(memory, right.id) - eventPriority(memory, left.id) ||
+          right.id - left.id,
+      )[0],
+  );
+
+  add(
+    completed
+      .filter(game => game.winnerId === teamId)
+      .sort(
+        (left, right) =>
+          teamWinProbability(left, teamId) -
+            teamWinProbability(right, teamId) ||
+          (opponentRank(left, teamId) || Number.MAX_SAFE_INTEGER) -
+            (opponentRank(right, teamId) || Number.MAX_SAFE_INTEGER) ||
+          left.id - right.id,
+      )[0],
+  );
+
+  add(
+    completed
+      .filter(game => game.winnerId !== teamId)
+      .sort((left, right) => {
+        const eventDifference =
+          eventPriority(memory, right.id) - eventPriority(memory, left.id);
+        if (eventDifference) return eventDifference;
+        const leftOpponent = teamsById.get(opponentId(left, teamId));
+        const rightOpponent = teamsById.get(opponentId(right, teamId));
+        const leftRivalry = leftOpponent
+          ? Number(
+              pairs.has(
+                [team.name, leftOpponent.name]
+                  .sort((a, b) => a.localeCompare(b))
+                  .join('::'),
+              ),
+            )
+          : 0;
+        const rightRivalry = rightOpponent
+          ? Number(
+              pairs.has(
+                [team.name, rightOpponent.name]
+                  .sort((a, b) => a.localeCompare(b))
+                  .join('::'),
+              ),
+            )
+          : 0;
+        return (
+          rightRivalry - leftRivalry ||
+          right.overtime - left.overtime ||
+          Math.abs(teamScore(left, teamId) - opponentScore(left, teamId)) -
+            Math.abs(teamScore(right, teamId) - opponentScore(right, teamId)) ||
+          left.id - right.id
+        );
+      })[0],
+  );
+
+  const fillers = completed
+    .filter(game => !selected.some(entry => entry.id === game.id))
+    .sort(
+      (left, right) =>
+        eventPriority(memory, right.id) - eventPriority(memory, left.id) ||
+        right.overtime - left.overtime ||
+        Number(opponentRank(right, teamId) > 0) -
+          Number(opponentRank(left, teamId) > 0) ||
+        (right.watchability ?? 0) - (left.watchability ?? 0) ||
+        left.id - right.id,
+    );
+  for (const game of fillers) {
+    if (selected.length >= 3) break;
+    add(game);
+  }
+  return selected.slice(0, 3).map(game =>
+    toSignatureGame(game, teamId, teamsById),
+  );
+};
+
+export const buildDynastyOverview = ({
+  teamId,
+  historyRows,
+  memories,
+  games,
+}: {
+  teamId: number;
+  historyRows: HistoryRow[];
+  memories: SeasonMemory[];
+  games: GameRecord[];
+}): DynastyOverview => {
+  const gamesById = new Map(games.map(game => [game.id, game]));
+  let conferenceTitles = 0;
+  let playoffAppearances = 0;
+  let bowlWins = 0;
+  let nationalTitles = 0;
+  for (const memory of memories) {
+    const achievements = buildTeamAccomplishments(teamId, memory, gamesById);
+    conferenceTitles += Number(
+      achievements.some(entry => entry.type === 'conference_champion'),
+    );
+    playoffAppearances += Number(
+      achievements.some(entry => entry.type === 'playoff'),
+    );
+    bowlWins += Number(
+      achievements.some(entry => entry.type === 'bowl_win'),
+    );
+    nationalTitles += Number(
+      achievements.some(entry => entry.type === 'national_champion'),
+    );
+  }
+  const ranked = historyRows.map(row => row[2]).filter(rank => rank > 0);
+  return {
+    wins: historyRows.reduce((sum, row) => sum + row[3], 0),
+    losses: historyRows.reduce((sum, row) => sum + row[4], 0),
+    bestFinalRank: ranked.length ? Math.min(...ranked) : null,
+    conferenceTitles,
+    playoffAppearances,
+    bowlWins,
+    nationalTitles,
+    awardWinners: memories.reduce(
+      (sum, memory) =>
+        sum + memory.awards.filter(award => award.teamId === teamId).length,
+      0,
+    ),
+  };
+};
+
+export const buildDynastySeriesContext = ({
+  userTeamId,
+  opponentTeamId,
+  targetGame,
+  games,
+  memories,
+  teams,
+  rivalryName,
+}: {
+  userTeamId: number;
+  opponentTeamId: number;
+  targetGame: GameRecord;
+  games: GameRecord[];
+  memories: SeasonMemory[];
+  teams: Team[];
+  rivalryName: string | null;
+}): DynastySeriesContext => {
+  const teamsById = new Map(teams.map(team => [team.id, team]));
+  const prior = games
+    .filter(
+      game =>
+        game.winnerId !== null &&
+        ((game.teamAId === userTeamId && game.teamBId === opponentTeamId) ||
+          (game.teamAId === opponentTeamId && game.teamBId === userTeamId)) &&
+        (game.year < targetGame.year ||
+          (game.year === targetGame.year &&
+            (game.weekPlayed < targetGame.weekPlayed ||
+              (game.weekPlayed === targetGame.weekPlayed &&
+                game.id < targetGame.id)))),
+    )
+    .sort(
+      (left, right) =>
+        left.year - right.year ||
+        left.weekPlayed - right.weekPlayed ||
+        left.id - right.id,
+    );
+  const wins = prior.filter(game => game.winnerId === userTeamId).length;
+  const losses = prior.length - wins;
+  let streak: string | null = null;
+  if (prior.length) {
+    const latestWinner = prior[prior.length - 1].winnerId;
+    let length = 0;
+    for (let index = prior.length - 1; index >= 0; index -= 1) {
+      if (prior[index].winnerId !== latestWinner) break;
+      length += 1;
+    }
+    streak = `${teamsById.get(latestWinner!)?.name ?? 'Unknown'} ${length}`;
+  }
+  const last = prior[prior.length - 1];
+  const lastMeeting = last
+    ? toSignatureGame(last, userTeamId, teamsById)
+    : null;
+  if (!last) {
+    return {
+      wins,
+      losses,
+      streak,
+      lastMeeting,
+      callback: 'First meeting of the dynasty era.',
+    };
+  }
+  const lastMemory = memories.find(memory => memory.year === last.year);
+  const lastEvent = eventForGame(lastMemory, last.id);
+  const opponent = teamsById.get(opponentTeamId)?.name ?? 'this opponent';
+  let callback: string;
+  if (lastEvent && PLAYOFF_TYPES.has(lastEvent.type)) {
+    callback = `Postseason rematch of the ${last.year} meeting.`;
+  } else if (rivalryName) {
+    callback = `${rivalryName}: ${streak ?? 'series even'} in the current streak.`;
+  } else {
+    callback = `Last meeting: ${lastMeeting!.label} in ${last.year}.`;
+  }
+  return { wins, losses, streak, lastMeeting, callback };
+};
+
+export const buildSeasonMilestones = ({
+  teamId,
+  current,
+  previous,
+  games,
+  currentWins,
+  currentRank,
+  previousRows,
+}: {
+  teamId: number;
+  current: SeasonMemory;
+  previous: SeasonMemory[];
+  games: GameRecord[];
+  currentWins: number;
+  currentRank: number;
+  previousRows: HistoryRow[];
+}) => {
+  const gamesById = new Map(games.map(game => [game.id, game]));
+  const currentAchievements = buildTeamAccomplishments(
+    teamId,
+    current,
+    gamesById,
+  );
+  const priorAchievements = previous.flatMap(memory =>
+    buildTeamAccomplishments(teamId, memory, gamesById),
+  );
+  const milestones: string[] = [];
+  if (
+    currentAchievements.some(entry => entry.type === 'national_champion') &&
+    !priorAchievements.some(entry => entry.type === 'national_champion')
+  ) {
+    milestones.push('First national championship of the dynasty era.');
+  }
+  if (
+    currentAchievements.some(entry => entry.type === 'conference_champion') &&
+    !priorAchievements.some(entry => entry.type === 'conference_champion')
+  ) {
+    milestones.push('First conference championship of the dynasty era.');
+  }
+  if (
+    currentAchievements.some(entry => entry.type === 'playoff') &&
+    !priorAchievements.some(entry => entry.type === 'playoff')
+  ) {
+    milestones.push('First playoff appearance of the dynasty era.');
+  }
+  const previousRanks = previousRows.map(row => row[2]).filter(rank => rank > 0);
+  if (
+    currentRank > 0 &&
+    previousRanks.length > 0 &&
+    currentRank < Math.min(...previousRanks)
+  ) {
+    milestones.push(`New dynasty-best final ranking: #${currentRank}.`);
+  }
+  const previousBestWins = Math.max(0, ...previousRows.map(row => row[3]));
+  if (previousRows.length && currentWins > previousBestWins) {
+    milestones.push(`New dynasty record with ${currentWins} wins.`);
+  }
+  return milestones.slice(0, 3);
+};
+
+export const formatAwardStats = (
+  stats: import('../../types/db').PlayerSeasonStats,
+) => {
+  if (stats.pass_attempts) {
+    return `${stats.pass_completions}/${stats.pass_attempts}, ${stats.pass_yards} pass yds, ${stats.pass_touchdowns} TD`;
+  }
+  if (stats.rush_attempts) {
+    return `${stats.rush_attempts} carries, ${stats.rush_yards} rush yds, ${stats.rush_touchdowns} TD`;
+  }
+  if (stats.receiving_catches) {
+    return `${stats.receiving_catches} catches, ${stats.receiving_yards} rec yds, ${stats.receiving_touchdowns} TD`;
+  }
+  if (stats.tackles || stats.sacks || stats.interceptions) {
+    return `${stats.tackles} tackles, ${stats.sacks} sacks, ${stats.interceptions} INT`;
+  }
+  return `${stats.field_goals_made}/${stats.field_goals_attempted} FG`;
+};

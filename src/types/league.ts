@@ -69,9 +69,6 @@ export interface LeagueState {
   playoff: PlayoffState;
   idCounters: {
     game: number;
-    drive: number;
-    play: number;
-    gameLog: number;
     player: number;
   };
 }

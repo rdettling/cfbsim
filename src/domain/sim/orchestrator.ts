@@ -1,7 +1,14 @@
 import type { FullGame } from '../../types/scheduleTypes';
 import type { LeagueState } from '../../types/league';
 import type { SimGame, StartersCache } from '../../types/sim';
-import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
+import type {
+  GameDetailRecord,
+  GameRecord,
+  DriveRecord,
+  PlayRecord,
+  GameLogRecord,
+  PlayerRecord,
+} from '../../types/db';
 import type { GameData, Drive } from '../../types/game';
 import type { Team } from '../../types/domain';
 import { buildFullScheduleFromExisting } from '../scheduleBuilder';
@@ -14,13 +21,9 @@ import {
   getGameById,
   getGamesByWeek,
   getAllGames,
-  getDrivesByGame,
-  getPlaysByGame,
-  saveDrives,
-  saveGameLogs,
-  saveGames,
-  savePlays,
-  clearNonGameArtifacts,
+  getGameDetail,
+  clearCurrentGameDetails,
+  commitSimulationBatch,
 } from '../../db/simRepo';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { buildBaseLabel } from '../utils/gameLabels';
@@ -38,11 +41,12 @@ import {
 } from './engine';
 import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
 import { handleSpecialWeeks } from './postseason';
+import { buildGameDetail, flattenGameDetail } from '../league/gameDetails';
 
 export const initializeSimData = async (league: LeagueState, fullGames: FullGame[]) => {
   const counters = league.idCounters;
   await requireCurrentRoster(league);
-  await clearNonGameArtifacts();
+  await clearCurrentGameDetails(league.info.currentYear);
   const oddsContext = await loadOddsContext();
 
   const gameRecords: GameRecord[] = [];
@@ -80,10 +84,8 @@ export const initializeSimData = async (league: LeagueState, fullGames: FullGame
     counters.game += 1;
   });
 
-  await saveGames(gameRecords);
-
   league.simInitialized = true;
-  await saveLeague(league);
+  await commitSimulationBatch({ league, games: gameRecords, details: [] });
 };
 
 export const getGamesToLiveSim = async () => {
@@ -163,8 +165,9 @@ export const prepareInteractiveLiveGame = async (gameId: number): Promise<Prepar
   const isUserGame = userTeam ? (record.teamAId === userTeam.id || record.teamBId === userTeam.id) : false;
 
   if (record.winnerId !== null) {
-    const drives = await getDrivesByGame(gameId);
-    const plays = await getPlaysByGame(gameId);
+    const detail = await getGameDetail(gameId);
+    if (!detail) throw new Error('Completed game detail is unavailable.');
+    const { drives, plays } = flattenGameDetail(detail);
     return {
       status: 'complete',
       drives: buildDriveResponse(drives, plays, teamsById),
@@ -238,10 +241,13 @@ export const finalizeGameSimulation = async (params: {
     headline_tone: simGame.headline_tone ?? null,
   };
 
-  await saveGames([updatedRecord]);
-  await saveDrives(driveRecords);
-  await savePlays(playRecords);
-  await saveGameLogs(logs);
+  await commitSimulationBatch({
+    league,
+    games: [updatedRecord],
+    details: [
+      buildGameDetail(record.id, record.year, driveRecords, playRecords, logs),
+    ],
+  });
   await handleSpecialWeeks(league, await loadOddsContext());
 
   league.teams.forEach(team => (team.record = formatRecord(team)));
@@ -277,9 +283,7 @@ export const advanceWeeks = async (destWeek: number) => {
   const starters = await buildStartersCache(league.teams);
   const playersById = await loadPlayersMap(league.teams);
 
-  const drivesToSave: DriveRecord[] = [];
-  const playsToSave: PlayRecord[] = [];
-  const logsToSave: GameLogRecord[] = [];
+  const detailsToSave: GameDetailRecord[] = [];
   const oddsContext = await loadOddsContext();
 
   while (league.info.currentWeek < destWeek) {
@@ -316,9 +320,15 @@ export const advanceWeeks = async (destWeek: number) => {
       const playRecords = simDrives.flatMap(drive => drive.plays);
       const logs = createGameLogsFromPlays(league, simGameObj, playRecords, starters);
 
-      drivesToSave.push(...driveRecords);
-      playsToSave.push(...playRecords);
-      logsToSave.push(...logs);
+      detailsToSave.push(
+        buildGameDetail(
+          gameRecord.id,
+          gameRecord.year,
+          driveRecords,
+          playRecords,
+          logs,
+        ),
+      );
       gameLogsByGame.set(simGameObj.id, logs);
 
       gameRecord.scoreA = simGameObj.scoreA;
@@ -361,16 +371,21 @@ export const advanceWeeks = async (destWeek: number) => {
         game.watchability = buildWatchability(game, league.teams.length);
       });
 
-      await saveGames(futureGames);
+      const weekGameIds = new Set(unplayed.map(game => game.id));
+      const weekDetails = detailsToSave.filter(detail =>
+        weekGameIds.has(detail.gameId),
+      );
+      await commitSimulationBatch({
+        league,
+        games: futureGames,
+        details: weekDetails,
+      });
       await handleSpecialWeeks(league, oddsContext);
     }
 
     league.info.currentWeek += 1;
   }
 
-  await saveDrives(drivesToSave);
-  await savePlays(playsToSave);
-  await saveGameLogs(logsToSave);
   await saveLeague(league);
 };
 

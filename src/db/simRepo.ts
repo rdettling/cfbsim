@@ -1,107 +1,145 @@
 import { getDb } from './db';
-import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../types/db';
+import type {
+  DriveRecord,
+  GameDetailRecord,
+  GameLogRecord,
+  GameRecord,
+  HistoricalPlayerRecord,
+  PlayerRecord,
+  PlayerSeasonStats,
+  PlayRecord,
+} from '../types/db';
+import type { LeagueState } from '../types/league';
+import { flattenGameDetail } from '../domain/league/gameDetails';
 
-export const clearNonGameArtifacts = async () => {
+export const clearCurrentGameDetails = async (year: number) => {
   const db = await getDb();
-  const tx = db.transaction(['drives', 'plays', 'gameLogs'], 'readwrite');
-  await Promise.all([
-    tx.objectStore('drives').clear(),
-    tx.objectStore('plays').clear(),
-    tx.objectStore('gameLogs').clear(),
-    tx.done,
-  ]);
+  const tx = db.transaction('gameDetails', 'readwrite');
+  const keys = await tx.store.index('year').getAllKeys(year);
+  await Promise.all(keys.map(key => tx.store.delete(key)));
+  await tx.done;
 };
 
 export const saveGames = async (games: GameRecord[]) => {
   const db = await getDb();
   const tx = db.transaction('games', 'readwrite');
-  for (const game of games) {
-    tx.store.put(game);
-  }
+  for (const game of games) await tx.store.put(game);
   await tx.done;
 };
 
-export const getAllGames = async () => {
+export const saveGamesAndLeague = async (
+  games: GameRecord[],
+  league: LeagueState,
+) => {
   const db = await getDb();
-  return db.getAll('games');
-};
-
-export const getGamesByWeek = async (week: number) => {
-  const db = await getDb();
-  return db.getAllFromIndex('games', 'weekPlayed', week);
-};
-
-export const getGameById = async (gameId: number) => {
-  const db = await getDb();
-  return db.get('games', gameId);
-};
-
-export const saveDrives = async (drives: DriveRecord[]) => {
-  if (!drives.length) return;
-  const db = await getDb();
-  const tx = db.transaction('drives', 'readwrite');
-  for (const drive of drives) {
-    tx.store.put(drive);
-  }
+  const tx = db.transaction(['games', 'league'], 'readwrite');
+  for (const game of games) await tx.objectStore('games').put(game);
+  await tx.objectStore('league').put({ key: 'current', value: league });
   await tx.done;
 };
 
-export const savePlays = async (plays: PlayRecord[]) => {
-  if (!plays.length) return;
+export const getAllGames = async () => (await getDb()).getAll('games');
+export const getGamesByYear = async (year: number) =>
+  (await getDb()).getAllFromIndex('games', 'year', year);
+export const getGamesByTeam = async (teamId: number) => {
   const db = await getDb();
-  const tx = db.transaction('plays', 'readwrite');
-  for (const play of plays) {
-    tx.store.put(play);
-  }
+  const [asTeamA, asTeamB] = await Promise.all([
+    db.getAllFromIndex('games', 'teamAId', teamId),
+    db.getAllFromIndex('games', 'teamBId', teamId),
+  ]);
+  return [...asTeamA, ...asTeamB].sort((left, right) => left.id - right.id);
+};
+export const getGamesByWeek = async (week: number) =>
+  (await getDb()).getAllFromIndex('games', 'weekPlayed', week);
+export const getGameById = async (gameId: number) =>
+  (await getDb()).get('games', gameId);
+
+export const saveGameDetails = async (details: GameDetailRecord[]) => {
+  if (!details.length) return;
+  const db = await getDb();
+  const tx = db.transaction('gameDetails', 'readwrite');
+  for (const detail of details) await tx.store.put(detail);
   await tx.done;
 };
 
-export const saveGameLogs = async (logs: GameLogRecord[]) => {
-  if (!logs.length) return;
+export const commitSimulationBatch = async ({
+  league,
+  games,
+  details,
+}: {
+  league: LeagueState;
+  games: GameRecord[];
+  details: GameDetailRecord[];
+}) => {
   const db = await getDb();
-  const tx = db.transaction('gameLogs', 'readwrite');
-  for (const log of logs) {
-    tx.store.put(log);
+  const tx = db.transaction(['league', 'games', 'gameDetails'], 'readwrite');
+  try {
+    const gameStore = tx.objectStore('games');
+    const detailStore = tx.objectStore('gameDetails');
+    for (const game of games) await gameStore.put(game);
+    for (const detail of details) await detailStore.put(detail);
+    await tx.objectStore('league').put({ key: 'current', value: league });
+    await tx.done;
+  } catch (error) {
+    try {
+      tx.abort();
+    } catch {
+      // A failed request may already have aborted the transaction.
+    }
+    try {
+      await tx.done;
+    } catch {
+      // Expected after abort.
+    }
+    throw error;
   }
-  await tx.done;
+};
+export const getGameDetail = async (gameId: number) =>
+  (await getDb()).get('gameDetails', gameId);
+export const getGameDetailsByYear = async (year: number) =>
+  (await getDb()).getAllFromIndex('gameDetails', 'year', year);
+export const getAllGameDetails = async () => (await getDb()).getAll('gameDetails');
+export const getAllPlays = async (): Promise<PlayRecord[]> =>
+  (await getAllGameDetails()).flatMap(detail => flattenGameDetail(detail).plays);
+export const getDrivesByGame = async (gameId: number): Promise<DriveRecord[]> => {
+  const detail = await getGameDetail(gameId);
+  return detail ? flattenGameDetail(detail).drives : [];
+};
+export const getPlaysByGame = async (gameId: number): Promise<PlayRecord[]> => {
+  const detail = await getGameDetail(gameId);
+  return detail ? flattenGameDetail(detail).plays : [];
 };
 
 export const savePlayers = async (players: PlayerRecord[]) => {
   if (!players.length) return;
   const db = await getDb();
   const tx = db.transaction('players', 'readwrite');
-  for (const player of players) {
-    tx.store.put(player);
-  }
+  for (const player of players) await tx.store.put(player);
   await tx.done;
 };
+export const getPlayersByTeam = async (teamId: number) =>
+  (await getDb()).getAllFromIndex('players', 'teamId', teamId);
+export const getAllPlayers = async () => (await getDb()).getAll('players');
 
-export const getPlayersByTeam = async (teamId: number) => {
-  const db = await getDb();
-  return db.getAllFromIndex('players', 'teamId', teamId);
-};
+export const getPlayerSeasons = async (playerId: number) =>
+  (await getDb()).getAllFromIndex('playerSeasons', 'playerId', playerId);
+export const getPlayerSeasonsByYear = async (year: number) =>
+  (await getDb()).getAllFromIndex('playerSeasons', 'year', year);
+export const getAllPlayerSeasons = async () => (await getDb()).getAll('playerSeasons');
+export const getHistoricalPlayer = async (playerId: number) =>
+  (await getDb()).get('historicalPlayers', playerId);
+export const getAllHistoricalPlayers = async () =>
+  (await getDb()).getAll('historicalPlayers');
 
-export const getAllPlayers = async () => {
-  const db = await getDb();
-  return db.getAll('players');
-};
+// Read-only flat projections keep simulation/stat presentation code simple.
+export const getAllGameLogs = async (): Promise<GameLogRecord[]> =>
+  (await getAllGameDetails()).flatMap(detail =>
+    detail.playerStats.map(log => ({ ...log, gameId: detail.gameId })),
+  );
+export const getGameLogsByYear = async (year: number): Promise<GameLogRecord[]> =>
+  (await getGameDetailsByYear(year)).flatMap(detail =>
+    detail.playerStats.map(log => ({ ...log, gameId: detail.gameId })),
+  );
 
-export const getAllPlays = async () => {
-  const db = await getDb();
-  return db.getAll('plays');
-};
-
-export const getAllGameLogs = async () => {
-  const db = await getDb();
-  return db.getAll('gameLogs');
-};
-
-export const getDrivesByGame = async (gameId: number) => {
-  const db = await getDb();
-  return db.getAllFromIndex('drives', 'gameId', gameId);
-};
-
-export const getPlaysByGame = async (gameId: number) => {
-  const db = await getDb();
-  return db.getAllFromIndex('plays', 'gameId', gameId);
-};
+export type PlayerIdentity = PlayerRecord | HistoricalPlayerRecord;
+export type PersistedPlayerSeason = PlayerSeasonStats;

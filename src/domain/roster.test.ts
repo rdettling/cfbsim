@@ -6,12 +6,6 @@ import {
 } from './roster';
 
 describe('player progression projection', () => {
-  it('returns null for inactive players', () => {
-    const player = buildTestPlayer({ active: false });
-
-    expect(projectPlayerProgression(player)).toBeNull();
-  });
-
   it('projects active seniors as departing', () => {
     const player = buildTestPlayer({ year: 'sr' });
 
@@ -67,7 +61,6 @@ describe('player progression projection', () => {
       }),
       buildTestPlayer({
         id: 5,
-        active: false,
         starter: true,
       }),
     ];
@@ -85,12 +78,8 @@ describe('player progression projection', () => {
     });
     expect(players[1]).toMatchObject({ year: 'jr', rating: 82 });
     expect(players[2]).toMatchObject({ year: 'sr', rating: 88 });
-    expect(players[3]).toMatchObject({
-      active: false,
-      starter: false,
-    });
-    expect(players[4]).toMatchObject({
-      active: false,
+    expect(players.some(player => player.id === 4)).toBe(false);
+    expect(players.find(player => player.id === 5)).toMatchObject({
       starter: true,
     });
   });

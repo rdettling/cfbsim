@@ -32,9 +32,10 @@ const resetDatabase = async () => {
     'recruiting',
     'players',
     'games',
-    'drives',
-    'plays',
-    'gameLogs',
+    'gameDetails',
+    'playerSeasons',
+  'historicalPlayers',
+  'playerOrigins',
   ] as const;
   const tx = db.transaction([...stores], 'readwrite');
   await Promise.all(stores.map(store => tx.objectStore(store).clear()));
@@ -96,9 +97,6 @@ const seedRosterCuts = async () => {
     teams: [user, other],
     idCounters: {
       game: 2,
-      drive: 2,
-      play: 2,
-      gameLog: 2,
       player: 500,
     },
   });
@@ -144,7 +142,10 @@ const seedRosterCuts = async () => {
       },
     ],
   });
-  const tx = db.transaction(['league', 'recruiting', 'players'], 'readwrite');
+  const tx = db.transaction(
+    ['league', 'recruiting', 'players', 'playerOrigins'],
+    'readwrite',
+  );
   await tx.objectStore('league').put({ key: 'current', value: league });
   await tx.objectStore('recruiting').put({
     key: 'current',
@@ -152,6 +153,13 @@ const seedRosterCuts = async () => {
   });
   for (const player of players) {
     await tx.objectStore('players').put(player);
+    await tx.objectStore('playerOrigins').put({
+      playerId: player.id,
+      kind: 'initial_roster',
+      acquisitionYear: league.info.startYear,
+      originalTeamId: player.teamId,
+      classAtStart: player.year,
+    });
   }
   await tx.done;
   return { league, players, recruiting };
@@ -172,9 +180,10 @@ const snapshot = async () => {
     recruiting: await db.get('recruiting', 'current'),
     players: await db.getAll('players'),
     games: await db.getAll('games'),
-    drives: await db.getAll('drives'),
-    plays: await db.getAll('plays'),
-    logs: await db.getAll('gameLogs'),
+    drives: await db.getAll('gameDetails'),
+    plays: await db.getAll('playerSeasons'),
+    logs: await db.getAll('historicalPlayers'),
+    origins: await db.getAll('playerOrigins'),
   };
 };
 
@@ -192,9 +201,6 @@ describe('persistent roster finalization', () => {
       teams,
       idCounters: {
         game: 2,
-        drive: 2,
-        play: 2,
-        gameLog: 2,
         player: 500,
       },
     });
@@ -223,10 +229,12 @@ describe('persistent roster finalization', () => {
     const persisted = await db.getAll('players');
     teams.forEach(team => {
       expect(
-        persisted.filter(player => player.active && player.teamId === team.id),
+        persisted.filter(player => player.teamId === team.id),
       ).toHaveLength(FINAL_ROSTER_SIZE);
     });
     expect(persisted.filter(player => player.year === 'fr')).toHaveLength(8);
+    const origins = await db.getAll('playerOrigins');
+    expect(origins.filter(origin => origin.kind === 'walk_on')).toHaveLength(8);
     expect((await loadRecruitingState())?.version).toBe(9);
 
     const after = await snapshot();
@@ -283,7 +291,8 @@ describe('persistent roster finalization', () => {
     const db = await getDb();
     const players = await db.getAll('players');
 
-    expect(players.find(player => player.id === 100)?.active).toBe(false);
+    expect(players.some(player => player.id === 100)).toBe(false);
+    expect(await db.get('playerOrigins', 100)).toBeUndefined();
   });
 
   it('preserves user selections and fills only the remaining cuts', async () => {
@@ -308,7 +317,7 @@ describe('persistent roster finalization', () => {
     expect(await loadRecruitingState()).toBeNull();
     for (const team of league.teams) {
       const active = players.filter(
-        player => player.active && player.teamId === team.id,
+        player => player.teamId === team.id,
       );
       expect(active).toHaveLength(FINAL_ROSTER_SIZE);
       for (const position of POSITION_ORDER) {
@@ -319,9 +328,9 @@ describe('persistent roster finalization', () => {
         ).toHaveLength(ROSTER[position].starters);
       }
     }
-    expect(players.find(player => player.id === 100)?.active).toBe(false);
-    expect(players.find(player => player.id === 101)?.active).toBe(false);
-    expect(players.find(player => player.id === 301)?.active).toBe(true);
+    expect(players.some(player => player.id === 100)).toBe(false);
+    expect(players.some(player => player.id === 101)).toBe(false);
+    expect(players.some(player => player.id === 301)).toBe(true);
   });
 
   it('allows only one concurrent finalizer and applies outcomes once', async () => {

@@ -11,6 +11,7 @@ import { OddsSnapshot } from './game-preview/OddsSnapshot';
 import { RecentFormPanel } from './game-preview/RecentFormPanel';
 import { TeamStatComparison } from './game-preview/TeamStatComparison';
 import { TopStartersPanel } from './game-preview/TopStartersPanel';
+import { DynastyContextPanel } from './game-preview/DynastyContextPanel';
 
 type GamePreviewPageProps = {
   data: GamePageData;
@@ -67,6 +68,11 @@ const GamePreviewPage = ({ data }: GamePreviewPageProps) => {
           }}
         >
           <Grid container spacing={1.5}>
+            {data.dynastyContext && (
+              <Grid size={{ xs: 12 }}>
+                <DynastyContextPanel context={data.dynastyContext} />
+              </Grid>
+            )}
             <Grid size={{ xs: 12, md: 8 }}>
               <TeamStatComparison
                 awayTeam={away}

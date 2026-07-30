@@ -27,6 +27,7 @@ describe('committed freshman conversion', () => {
       prospects,
       existingPlayers,
       nextPlayerId: 5,
+      acquisitionYear: 2026,
     });
 
     expect(result.players.map(player => [player.id, player.teamId])).toEqual([
@@ -37,9 +38,28 @@ describe('committed freshman conversion', () => {
       year: 'fr',
       rating: 70,
       starter: false,
-      active: true,
     });
     expect(result.nextPlayerId).toBe(13);
+    expect(result.origins).toEqual([
+      expect.objectContaining({
+        playerId: 11,
+        kind: 'recruit',
+        acquisitionYear: 2026,
+        originalTeamId: 2,
+        nationalRank: 1,
+        positionRank: 1,
+        commitmentRound: 'signing_day',
+      }),
+      expect.objectContaining({
+        playerId: 12,
+        kind: 'recruit',
+        acquisitionYear: 2026,
+        originalTeamId: 1,
+        nationalRank: 2,
+        positionRank: 2,
+        commitmentRound: 3,
+      }),
+    ]);
     expect({ prospects, existingPlayers }).toEqual(before);
   });
 });

@@ -42,7 +42,7 @@ export const loadRosterProgression = async () => {
   }
 
   const teamPlayers = players.filter(
-    player => player.active && player.teamId === team.id,
+    player => player.teamId === team.id,
   );
   const returning: ReturningPlayerPreview[] = [];
   const departing: DepartingPlayerPreview[] = [];
