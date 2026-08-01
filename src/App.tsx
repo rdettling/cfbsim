@@ -5,6 +5,7 @@ import FullPageLoading from './components/layout/FullPageLoading';
 import { ROUTES } from './constants/routes';
 
 const Home = lazy(() => import('./pages/Home'));
+const NewLeague = lazy(() => import('./pages/NewLeague'));
 const NonCon = lazy(() => import('./pages/Noncon'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const TeamSchedule = lazy(() => import('./pages/TeamSchedule'));
@@ -34,6 +35,7 @@ const App = () => {
         <Suspense fallback={<FullPageLoading message="Loading page…" />}>
           <Routes>
             <Route path={ROUTES.HOME} element={<Home />} />
+            <Route path={ROUTES.NEW_LEAGUE} element={<NewLeague />} />
             <Route path={ROUTES.NONCON} element={<NonCon />} />
             <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
             <Route path={ROUTES.TEAM_SCHEDULE} element={<TeamSchedule />} />

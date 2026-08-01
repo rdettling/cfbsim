@@ -8,7 +8,7 @@ import type {
 } from '../../../../types/league';
 import { buildTestLeague, buildTestPlayer } from '../../../../test/fixtures';
 import { initializeSeason } from '../../season';
-import { loadHomeData } from '../season';
+import { loadHomeData, loadNewLeagueData } from '../season';
 import { loadPlayer } from '../team/loadPlayer';
 import { loadDashboard } from './loadDashboard';
 import { loadNonCon } from './loadNonCon';
@@ -317,11 +317,49 @@ afterEach(() => {
 });
 
 describe('loadHomeData', () => {
+  it('loads an empty home without requesting starting-season data', async () => {
+    await expect(loadHomeData()).resolves.toEqual({
+      info: null,
+      program: null,
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('loads the current save without requesting starting-season data', async () => {
+    const db = await getDb();
+    const league = buildTestLeague('season');
+    await db.put('league', { key: 'current', value: league });
+
+    const team = league.teams.find(candidate => candidate.name === league.info.team);
+    expect(team).toBeDefined();
+    await expect(loadHomeData()).resolves.toEqual({
+      info: league.info,
+      program: {
+        name: team?.name,
+        record: team?.record,
+        ranking: team?.ranking,
+        conference: team?.confName ?? team?.conference,
+        rating: team?.rating,
+        colorPrimary: team?.colorPrimary,
+      },
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadNewLeagueData', () => {
+  it('defaults to the first supported season', async () => {
+    const data = await loadNewLeagueData();
+
+    expect(data.selectedYear).toBe('2025');
+    expect(data.preview?.playoff.teams).toBe(12);
+  });
+
   it('preserves supported-year order and returns lean sorted preview records', async () => {
-    const data = await loadHomeData('2024');
+    const data = await loadNewLeagueData('2024');
 
     expect(data.years).toEqual(['2025', '2024']);
-    expect(data.selected_year).toBe('2024');
+    expect(data.selectedYear).toBe('2024');
     expect(data.preview).toMatchObject({
       conferences: [
         { name: 'Test Conference', fullName: 'Test Conference' },
@@ -339,7 +377,7 @@ describe('loadHomeData', () => {
   });
 
   it('rejects a year outside the bundled index', async () => {
-    await expect(loadHomeData('1999')).rejects.toThrow(
+    await expect(loadNewLeagueData('1999')).rejects.toThrow(
       'The 1999 season is not supported.',
     );
   });
@@ -350,7 +388,7 @@ describe('loadHomeData', () => {
       Independent: {},
     });
 
-    await expect(loadHomeData('2024')).rejects.toThrow(
+    await expect(loadNewLeagueData('2024')).rejects.toThrow(
       'Year 2024: year data has invalid fields',
     );
   });

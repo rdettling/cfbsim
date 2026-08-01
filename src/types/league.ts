@@ -13,11 +13,29 @@ import type {
   PendingRivalry,
 } from './domain';
 
-export interface LaunchProps {
+export interface HomeProgramSummary {
+  name: string;
+  record: string;
+  ranking: number;
+  conference: string;
+  rating: number;
+  colorPrimary: string;
+}
+
+export type HomeData =
+  | {
+      info: null;
+      program: null;
+    }
+  | {
+      info: Info;
+      program: HomeProgramSummary;
+    };
+
+export interface NewLeagueData {
   years: string[];
-  info: Info | null;
   preview: PreviewData | null;
-  selected_year: string | null;
+  selectedYear: string | null;
 }
 
 export interface StartNewLeagueInput {

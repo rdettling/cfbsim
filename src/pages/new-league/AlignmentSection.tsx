@@ -1,53 +1,64 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Chip, FormControl, FormControlLabel, FormLabel, InputLabel, MenuItem, Paper, Radio, RadioGroup, Select, Stack, Switch, TextField, Typography } from '@mui/material';
-import UndoIcon from '@mui/icons-material/Undo';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Radio,
+  RadioGroup,
+  Select,
+  Stack,
+  Switch,
+  TextField,
+  Typography,
+} from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import { TeamLogo } from '../../../components/team/TeamLogo';
-import type { CustomConferencePlan, PreviewData, RivalryPlanWarning } from '../../../types/domain';
-import type { NewLeagueAlignmentMode } from '../newLeagueDraft';
-import { StepActions } from './StepActions';
+import UndoIcon from '@mui/icons-material/Undo';
+import { TeamLogo } from '../../components/team/TeamLogo';
+import type {
+  CustomConferencePlan,
+  PreviewData,
+} from '../../types/domain';
+import type { AlignmentMode } from './types';
 
-type AlignmentMode = NewLeagueAlignmentMode;
 const conferenceName = (value: string | null) => value ?? 'Independent';
 
-export const ConferenceStep = ({
+export const AlignmentSection = ({
   preview,
   mode,
   plan,
   issues,
-  warnings,
   resolvedGames,
   advanced,
   canUndo,
+  selectedTeam,
+  disabled,
   onModeChange,
   onPlanChange,
   onUndo,
   onReset,
   onAdvancedChange,
-  onBack,
-  onContinue,
-  canContinue,
-  validating,
-  selectedTeam,
 }: {
   preview: PreviewData;
   mode: AlignmentMode;
   plan: CustomConferencePlan;
   issues: string[];
-  warnings: RivalryPlanWarning[];
   resolvedGames: Record<string, number>;
   advanced: boolean;
   canUndo: boolean;
+  selectedTeam: string | null;
+  disabled: boolean;
   onModeChange: (mode: AlignmentMode) => void;
   onPlanChange: (plan: CustomConferencePlan) => void;
   onUndo: () => void;
   onReset: () => void;
   onAdvancedChange: (value: boolean) => void;
-  onBack: () => void;
-  onContinue: () => void;
-  canContinue: boolean;
-  validating: boolean;
-  selectedTeam: string | null;
 }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('ALL');
@@ -61,26 +72,30 @@ export const ConferenceStep = ({
     );
   });
   const memberCount = (name: string) =>
-    Object.values(plan.assignments).filter(value => conferenceName(value) === name).length;
+    Object.values(plan.assignments).filter(
+      value => conferenceName(value) === name,
+    ).length;
 
   return (
     <Box>
-      <Typography variant="h4">Conference structure</Typography>
-      <FormControl sx={{ mt: 1.5 }}>
+      <Typography id="new-league-alignment-heading" component="h2" variant="h4" tabIndex={-1} sx={{ outline: 'none' }}>
+        Conference alignment
+      </Typography>
+      <FormControl sx={{ mt: 1 }}>
         <FormLabel>Alignment</FormLabel>
         <RadioGroup
           row
           value={mode}
           onChange={event => onModeChange(event.target.value as AlignmentMode)}
         >
-          <FormControlLabel value="historical" control={<Radio />} label="Era-accurate" />
-          <FormControlLabel value="custom" control={<Radio />} label="Custom" />
+          <FormControlLabel value="historical" control={<Radio />} label="Era-accurate" disabled={disabled} />
+          <FormControlLabel value="custom" control={<Radio />} label="Custom" disabled={disabled} />
         </RadioGroup>
       </FormControl>
       {mode === 'historical' ? (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          The save will use the conference membership from this starting season.
-        </Alert>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+          Uses conference membership and scheduling defaults from the starting season.
+        </Typography>
       ) : (
         <>
           <Stack
@@ -92,14 +107,16 @@ export const ConferenceStep = ({
               size="small"
               label="Search teams"
               value={search}
+              disabled={disabled}
               onChange={event => setSearch(event.target.value)}
               sx={{ flex: 1 }}
             />
-            <FormControl size="small" sx={{ minWidth: 200 }}>
+            <FormControl size="small" sx={{ minWidth: 190 }}>
               <InputLabel id="alignment-filter-label">Current group</InputLabel>
               <Select
                 labelId="alignment-filter-label"
                 value={filter}
+                disabled={disabled}
                 label="Current group"
                 onChange={event => setFilter(event.target.value)}
               >
@@ -113,15 +130,13 @@ export const ConferenceStep = ({
               </Select>
             </FormControl>
             <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end' }}>
-              <Button startIcon={<UndoIcon />} disabled={!canUndo} onClick={onUndo}>Undo</Button>
-              <Button startIcon={<RestartAltIcon />} onClick={onReset}>Reset</Button>
+              <Button startIcon={<UndoIcon />} disabled={disabled || !canUndo} onClick={onUndo}>
+                Undo
+              </Button>
+              <Button startIcon={<RestartAltIcon />} disabled={disabled} onClick={onReset}>Reset</Button>
             </Stack>
           </Stack>
-          <Stack
-            direction="row"
-            useFlexGap
-            sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}
-          >
+          <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1.25 }}>
             {preview.conferences.map(conference => (
               <Chip
                 key={conference.name}
@@ -131,7 +146,7 @@ export const ConferenceStep = ({
             ))}
             <Chip label={`Independent: ${memberCount('Independent')}`} />
           </Stack>
-          <Box sx={{ maxHeight: 360, overflowY: 'auto', mt: 1.5 }}>
+          <Box sx={{ maxHeight: { xs: 300, md: 340 }, overflowY: 'auto', mt: 1.25, pr: 0.5 }}>
             <Stack spacing={0.75}>
               {filteredTeams.map(team => {
                 const assignment = plan.assignments[team.name] ?? null;
@@ -159,15 +174,13 @@ export const ConferenceStep = ({
                         {conferenceName(assignment)}
                       </Typography>
                     </Box>
-                    <FormControl
-                      size="small"
-                      sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' } }}
-                    >
+                    <FormControl size="small" sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' } }}>
                       <InputLabel id={`move-${team.name}`}>Move to</InputLabel>
                       <Select
                         labelId={`move-${team.name}`}
                         value={assignment ?? 'Independent'}
                         label="Move to"
+                        disabled={disabled}
                         onChange={event => {
                           const value = event.target.value;
                           onPlanChange({
@@ -193,10 +206,11 @@ export const ConferenceStep = ({
             </Stack>
           </Box>
           <FormControlLabel
-            sx={{ mt: 1.5 }}
+            sx={{ mt: 1 }}
             control={
               <Switch
                 checked={advanced}
+                disabled={disabled}
                 onChange={event => onAdvancedChange(event.target.checked)}
               />
             }
@@ -206,7 +220,7 @@ export const ConferenceStep = ({
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
                 gap: 1,
                 mt: 1,
               }}
@@ -223,23 +237,19 @@ export const ConferenceStep = ({
                       <Select
                         size="small"
                         value={setting.mode}
-                        disabled={count === 0}
-                        onChange={event => {
-                          const mode = event.target.value;
-                          onPlanChange({
-                            ...plan,
-                            conferenceGames: {
-                              ...plan.conferenceGames,
-                              [conference.name]:
-                                mode === 'automatic'
-                                  ? { mode: 'automatic' }
-                                  : {
-                                      mode: 'manual',
-                                      target: resolvedGames[conference.name] ?? conference.games,
-                                    },
-                            },
-                          });
-                        }}
+                        disabled={disabled || count === 0}
+                        onChange={event => onPlanChange({
+                          ...plan,
+                          conferenceGames: {
+                            ...plan.conferenceGames,
+                            [conference.name]: event.target.value === 'automatic'
+                              ? { mode: 'automatic' }
+                              : {
+                                  mode: 'manual',
+                                  target: resolvedGames[conference.name] ?? conference.games,
+                                },
+                          },
+                        })}
                       >
                         <MenuItem value="automatic">Automatic</MenuItem>
                         <MenuItem value="manual">Manual</MenuItem>
@@ -248,6 +258,7 @@ export const ConferenceStep = ({
                         <Select
                           size="small"
                           value={setting.target}
+                          disabled={disabled}
                           onChange={event => onPlanChange({
                             ...plan,
                             conferenceGames: {
@@ -272,34 +283,21 @@ export const ConferenceStep = ({
               })}
             </Box>
           )}
-          {issues.length > 0 && (
-            <Alert severity="error" sx={{ mt: 1.5 }}>
-              {issues.map(message => <Typography key={message} variant="body2">{message}</Typography>)}
-            </Alert>
-          )}
-          {warnings.length > 0 && (
-            <Alert severity="warning" sx={{ mt: 1.5 }}>
-              {warnings.map(warning => (
-                <Typography key={`${warning.teamA}-${warning.teamB}`} variant="body2">
-                  {warning.message}
-                </Typography>
-              ))}
-            </Alert>
-          )}
         </>
       )}
-      <StepActions
-        back={onBack}
-        next={onContinue}
-        nextLabel={
-          validating
-            ? 'Checking schedule…'
-            : warnings.length
-              ? 'Continue with warnings'
-              : 'Continue'
-        }
-        disabled={!canContinue || validating}
-      />
+      {issues.length > 0 && (
+        <Alert
+          id="new-league-alignment-errors"
+          severity="error"
+          sx={{ mt: 1.5 }}
+          aria-live="assertive"
+          tabIndex={-1}
+        >
+          {issues.map(message => (
+            <Typography key={message} variant="body2">{message}</Typography>
+          ))}
+        </Alert>
+      )}
     </Box>
   );
 };

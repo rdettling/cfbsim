@@ -1,6 +1,7 @@
 import {
   NewLeagueConfigurationError,
-  type LaunchProps,
+  type HomeData,
+  type NewLeagueData,
 } from '../../../types/league';
 import {
   getYearsIndex,
@@ -20,7 +21,31 @@ export {
   removePreseasonGame,
 } from './season/removePreseasonScheduleItem';
 
-export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
+export const loadHomeData = async (): Promise<HomeData> => {
+  const league = await loadLeagueOptional();
+  if (!league) return { info: null, program: null };
+
+  const team = league.teams.find(candidate => candidate.name === league.info.team);
+  if (!team) {
+    throw new Error(`The saved program ${league.info.team} is unavailable.`);
+  }
+
+  return {
+    info: league.info,
+    program: {
+      name: team.name,
+      record: team.record,
+      ranking: team.ranking,
+      conference: team.confName ?? team.conference,
+      rating: team.rating,
+      colorPrimary: team.colorPrimary,
+    },
+  };
+};
+
+export const loadNewLeagueData = async (
+  year?: string,
+): Promise<NewLeagueData> => {
   const yearsIndex = await getYearsIndex();
   const years = Array.isArray(yearsIndex.years)
     ? yearsIndex.years.filter(
@@ -34,12 +59,10 @@ export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
     );
   }
   const preview = selectedYear ? await buildPreviewData(selectedYear) : null;
-  const league = await loadLeagueOptional();
 
   return {
-    info: league?.info ?? null,
     years,
     preview,
-    selected_year: selectedYear,
+    selectedYear,
   };
 };

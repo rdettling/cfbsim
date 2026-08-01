@@ -1,42 +1,51 @@
-import { Alert, Box, FormControl, FormControlLabel, InputLabel, MenuItem, Select, Switch, Typography } from '@mui/material';
-import type { PlayoffTeamCount, PreviewData } from '../../../types/domain';
-import { StepActions } from './StepActions';
+import {
+  Box,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Select,
+  Switch,
+  Typography,
+} from '@mui/material';
+import type { PlayoffTeamCount, PreviewData } from '../../types/domain';
 
-export const PostseasonStep = ({
+export const PostseasonSection = ({
   preview,
   teams,
   autobids,
   topSeeds,
   eligibleConferences,
+  disabled,
   onTeamsChange,
   onAutobidsChange,
   onTopSeedsChange,
-  onBack,
-  onContinue,
 }: {
   preview: PreviewData;
   teams: PlayoffTeamCount;
   autobids: number;
   topSeeds: boolean;
   eligibleConferences: number;
+  disabled: boolean;
   onTeamsChange: (value: PlayoffTeamCount) => void;
   onAutobidsChange: (value: number) => void;
   onTopSeedsChange: (value: boolean) => void;
-  onBack: () => void;
-  onContinue: () => void;
 }) => {
   const historicalWasClamped =
     teams === 12 && preview.playoff.conf_champ_autobids > eligibleConferences;
+
   return (
     <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-      <Typography variant="h4">Postseason format</Typography>
-      <Typography sx={{ color: 'text.secondary', mt: 0.75 }}>
+      <Typography id="new-league-postseason-heading" component="h2" variant="h4" tabIndex={-1} sx={{ outline: 'none' }}>
+        Postseason format
+      </Typography>
+      <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>
         Your alignment has {eligibleConferences} championship-eligible conferences.
       </Typography>
       {historicalWasClamped && (
-        <Alert severity="info" sx={{ mt: 2 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
           The historical automatic-bid default was reduced to match the available conferences.
-        </Alert>
+        </Typography>
       )}
       <FormControl fullWidth sx={{ mt: 2.5 }}>
         <InputLabel id="playoff-teams-label">Playoff teams</InputLabel>
@@ -44,6 +53,7 @@ export const PostseasonStep = ({
           labelId="playoff-teams-label"
           value={teams}
           label="Playoff teams"
+          disabled={disabled}
           onChange={event => onTeamsChange(Number(event.target.value) as PlayoffTeamCount)}
         >
           <MenuItem value={2}>2 Teams (BCS)</MenuItem>
@@ -59,6 +69,7 @@ export const PostseasonStep = ({
               labelId="autobids-label"
               value={autobids}
               label="Conference champion automatic bids"
+              disabled={disabled}
               onChange={event => onAutobidsChange(Number(event.target.value))}
             >
               {Array.from(
@@ -76,7 +87,7 @@ export const PostseasonStep = ({
             control={
               <Switch
                 checked={topSeeds}
-                disabled={eligibleConferences < 4}
+                disabled={disabled || eligibleConferences < 4}
                 onChange={event => {
                   onTopSeedsChange(event.target.checked);
                   if (event.target.checked && autobids < 4) onAutobidsChange(4);
@@ -87,7 +98,6 @@ export const PostseasonStep = ({
           />
         </>
       )}
-      <StepActions back={onBack} next={onContinue} />
     </Box>
   );
 };
