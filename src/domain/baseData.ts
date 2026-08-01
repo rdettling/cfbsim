@@ -47,6 +47,7 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
     conferences.push({
       name: confName,
       fullName: typedConferencesData[confName] ?? confName,
+      games: confData.games,
     });
   });
 

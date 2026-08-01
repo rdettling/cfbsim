@@ -21,6 +21,7 @@ export const loadWeekSchedule = async (week: number) => {
         homeTeamId: game.homeTeamId,
         awayTeamId: game.awayTeamId,
         neutralSite: game.neutralSite,
+        venue: game.venue,
         rankATOG: game.rankATOG,
         rankBTOG: game.rankBTOG,
         scoreA: game.scoreA ?? undefined,

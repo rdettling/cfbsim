@@ -46,17 +46,9 @@ import {
   updateRecruitingBoard as updateBoardState,
 } from '../recruiting/state';
 import { validateAllocations } from '../recruiting/validation';
+import { generateRandomSeed } from '../utils/randomSeed';
 
 const LEAGUE_KEY = 'current';
-
-const generateSeed = () => {
-  if (!globalThis.crypto) {
-    return Math.floor(Math.random() * 0x1_0000_0000);
-  }
-  const values = new Uint32Array(1);
-  globalThis.crypto.getRandomValues(values);
-  return values[0];
-};
 
 const loadLeagueFromRecord = (
   record: { value: unknown } | undefined,
@@ -195,7 +187,7 @@ const asPersistedState = (
 export const initializeRecruiting = async ({
   expectedStage,
   expectedYear,
-  seed = generateSeed(),
+  seed = generateRandomSeed(),
 }: InitializeRecruitingInput): Promise<RecruitingCommandCursor> => {
   const db = await getDb();
   const tx = db.transaction(

@@ -1,7 +1,12 @@
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Link, Paper, Stack, Typography } from '@mui/material';
 import { TeamLogo } from '../../components/team/TeamComponents';
-import { formatMatchup, resolveHomeAway, resolveTeamSide } from '../../domain/utils/gameDisplay';
+import {
+  formatMatchup,
+  formatNeutralSite,
+  resolveHomeAway,
+  resolveTeamSide,
+} from '../../domain/utils/gameDisplay';
 import type { WeekScheduleGameCardProps } from './types';
 
 type TeamRowProps = {
@@ -121,7 +126,8 @@ export const WeekScheduleGameCard = ({ game, onTeamClick }: WeekScheduleGameCard
                   color: 'text.secondary',
                 }}
               >
-                Neutral site
+                {formatNeutralSite(game.venue, 'Neutral site')}
+                {game.venue ? ' · Neutral site' : ''}
               </Typography>
             )}
           </Box>

@@ -56,6 +56,11 @@ export const resolveTeamSide = (game: GameSideFields, teamId: number) => {
 export const formatMatchup = (homeName: string, awayName: string, neutral: boolean) =>
   neutral ? `${awayName} vs ${homeName}` : `${awayName} at ${homeName}`;
 
+export const formatNeutralSite = (
+  venue: string | null,
+  fallback = 'Neutral Site',
+) => venue ?? fallback;
+
 export const formatOpponentPrefix = (location?: ScheduleGame['location']) => {
   if (location === 'Away') return '@';
   if (location === 'Neutral') return 'vs (N)';

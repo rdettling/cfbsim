@@ -26,6 +26,7 @@ const game = (
   homeTeamId: 1,
   awayTeamId: 2,
   neutralSite: false,
+  venue: null,
   winnerId,
   baseLabel: 'Test State vs Other State',
   name: null,
@@ -74,7 +75,16 @@ describe('dynasty memory projections', () => {
       memory,
       games,
       teams,
-      rivalries: { rivalries: [['Test State', 'Other State', 12, 'Test Trophy']] },
+      rivalries: {
+        rivalries: [{
+          teamA: 'Test State',
+          teamB: 'Other State',
+          week: 12,
+          name: 'Test Trophy',
+          neutralSite: false,
+          venue: null,
+        }],
+      },
     }).map(entry => entry.id)).toEqual([3, 1, 2]);
   });
 

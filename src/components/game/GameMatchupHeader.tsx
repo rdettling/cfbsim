@@ -1,12 +1,14 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
 import type { Team } from '../../types/domain';
 import { TeamLink, TeamLogo } from '../team/TeamComponents';
+import { formatNeutralSite } from '../../domain/utils/gameDisplay';
 
 type MatchupGame = {
   label: string;
   weekPlayed: number;
   year: number;
   headline?: string | null;
+  venue: string | null;
 };
 
 type MatchupTeam = {
@@ -138,7 +140,7 @@ export default function GameMatchupHeader(props: GameMatchupHeaderProps) {
   const { game, away, home, neutral, mode, onTeamClick } = props;
   const isResult = mode === 'result';
   const venue = neutral
-    ? 'Neutral Site'
+    ? formatNeutralSite(game.venue)
     : `${home.team.stadium} • ${home.team.city}, ${home.team.state}`;
   const resultStatus = isResult
     ? props.overtime > 1

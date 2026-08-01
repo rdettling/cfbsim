@@ -1,4 +1,3 @@
-import type { FullGame } from '../../types/scheduleTypes';
 import type { LeagueState } from '../../types/league';
 import type { SimGame, StartersCache } from '../../types/sim';
 import type {
@@ -11,7 +10,6 @@ import type {
 } from '../../types/db';
 import type { GameData, Drive } from '../../types/game';
 import type { Team } from '../../types/domain';
-import { buildFullScheduleFromExisting } from '../scheduleBuilder';
 import {
   loadLeague,
   requireCurrentRoster,
@@ -22,11 +20,9 @@ import {
   getGamesByWeek,
   getAllGames,
   getGameDetail,
-  clearCurrentGameDetails,
   commitSimulationBatch,
 } from '../../db/simRepo';
-import { buildOddsFields, loadOddsContext } from '../odds';
-import { buildBaseLabel } from '../utils/gameLabels';
+import { loadOddsContext } from '../odds';
 import { buildWatchability } from './games';
 import {
   simGame,
@@ -37,56 +33,11 @@ import {
   buildStartersCache,
   loadPlayersMap,
   hydrateGame,
-  SECONDS_PER_QUARTER,
 } from './engine';
 import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
 import { handleSpecialWeeks } from './postseason';
 import { buildGameDetail, flattenGameDetail } from '../league/gameDetails';
-
-export const initializeSimData = async (league: LeagueState, fullGames: FullGame[]) => {
-  const counters = league.idCounters;
-  await requireCurrentRoster(league);
-  await clearCurrentGameDetails(league.info.currentYear);
-  const oddsContext = await loadOddsContext();
-
-  const gameRecords: GameRecord[] = [];
-  fullGames.forEach(game => {
-    const homeTeam = game.homeTeam;
-    const awayTeam = game.awayTeam;
-    const oddsFields = buildOddsFields(game.teamA, game.teamB, homeTeam ?? null, false, oddsContext);
-    const record: GameRecord = {
-      id: counters.game,
-      teamAId: game.teamA.id,
-      teamBId: game.teamB.id,
-      homeTeamId: homeTeam?.id ?? null,
-      awayTeamId: awayTeam?.id ?? null,
-      neutralSite: false,
-      winnerId: null,
-      baseLabel: buildBaseLabel(game.teamA, game.teamB, game.name),
-      name: game.name ?? null,
-      ...oddsFields,
-      weekPlayed: game.weekPlayed,
-      year: league.info.currentYear,
-      rankATOG: game.teamA.ranking,
-      rankBTOG: game.teamB.ranking,
-      resultA: null,
-      resultB: null,
-      overtime: 0,
-      quarter: 1,
-      clockSecondsLeft: SECONDS_PER_QUARTER,
-      scoreA: null,
-      scoreB: null,
-      headline: null,
-      watchability: null,
-    };
-    record.watchability = buildWatchability(record, league.teams.length);
-    gameRecords.push(record);
-    counters.game += 1;
-  });
-
-  league.simInitialized = true;
-  await commitSimulationBatch({ league, games: gameRecords, details: [] });
-};
+import { initializeSeasonSchedule } from '../league/seasonInitialization';
 
 export const getGamesToLiveSim = async () => {
   const league = await loadLeague();
@@ -120,6 +71,7 @@ export const getGamesToLiveSim = async () => {
       homeTeamId: game.homeTeamId,
       awayTeamId: game.awayTeamId,
       neutralSite: game.neutralSite,
+      venue: game.venue,
       teamA: { name: teamA.name, ranking: game.rankATOG, record: teamA.record },
       teamB: { name: teamB.name, ranking: game.rankBTOG, record: teamB.record },
       label: game.baseLabel,
@@ -269,14 +221,10 @@ export const advanceWeeks = async (destWeek: number) => {
   if (!league) throw new Error('No league found. Start a new game.');
   await requireCurrentRoster(league);
   if (!league.scheduleBuilt || !league.simInitialized) {
-    const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
     const existingGames = (await getAllGames()).filter(
       game => game.year === league.info.currentYear
     );
-    const { newGames } = buildFullScheduleFromExisting(userTeam, league.teams, existingGames);
-    league.info.stage = 'season';
-    league.scheduleBuilt = true;
-    await initializeSimData(league, newGames);
+    await initializeSeasonSchedule(league, existingGames);
   }
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));

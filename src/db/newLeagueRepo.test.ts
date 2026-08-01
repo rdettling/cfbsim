@@ -13,6 +13,7 @@ const buildTestGame = (): GameRecord => ({
   homeTeamId: 1,
   awayTeamId: 2,
   neutralSite: false,
+  venue: null,
   winnerId: null,
   baseLabel: 'Test State vs Other State',
   name: null,

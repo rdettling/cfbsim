@@ -1,11 +1,12 @@
 import type { HistoryRow } from '../../types/baseData';
 import type { GameRecord } from '../../types/db';
-import type { Team } from '../../types/domain';
+import type { RivalryDefinition, Team } from '../../types/domain';
 import type {
   SeasonMemory,
   SeasonMemoryEvent,
   SeasonMemoryEventType,
 } from '../../types/memory';
+import { rivalryKey } from '../rivalryScheduling';
 
 export interface MemoryAccomplishment {
   type:
@@ -111,12 +112,10 @@ const eventPriority = (
 };
 
 const rivalryPairs = (
-  rivalries: { rivalries: [string, string, number | null, string | null, boolean?][] },
+  rivalries: { rivalries: RivalryDefinition[] },
 ) =>
   new Set(
-    rivalries.rivalries.map(([left, right]) =>
-      [left, right].sort((a, b) => a.localeCompare(b)).join('::'),
-    ),
+    rivalries.rivalries.map(({ teamA, teamB }) => rivalryKey(teamA, teamB)),
   );
 
 export const buildTeamAccomplishments = (
@@ -181,7 +180,7 @@ export const selectSignatureGames = ({
   memory: SeasonMemory;
   games: GameRecord[];
   teams: Team[];
-  rivalries: { rivalries: [string, string, number | null, string | null, boolean?][] };
+  rivalries: { rivalries: RivalryDefinition[] };
 }): SignatureGame[] => {
   const teamsById = new Map(teams.map(team => [team.id, team]));
   const team = teamsById.get(teamId);
@@ -230,18 +229,14 @@ export const selectSignatureGames = ({
         const leftRivalry = leftOpponent
           ? Number(
               pairs.has(
-                [team.name, leftOpponent.name]
-                  .sort((a, b) => a.localeCompare(b))
-                  .join('::'),
+                rivalryKey(team.name, leftOpponent.name),
               ),
             )
           : 0;
         const rightRivalry = rightOpponent
           ? Number(
               pairs.has(
-                [team.name, rightOpponent.name]
-                  .sort((a, b) => a.localeCompare(b))
-                  .join('::'),
+                rivalryKey(team.name, rightOpponent.name),
               ),
             )
           : 0;

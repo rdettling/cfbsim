@@ -1,4 +1,6 @@
 import { ROUTES } from '../../constants/routes';
+import { normalizeRivalriesData } from '../rivalryData';
+import type { TeamsData } from '../../types/baseData';
 import { getDb } from '../../db/db';
 import {
   assertCurrentLeagueState,
@@ -37,7 +39,6 @@ import { POSITION_ORDER, ROSTER } from '../rosterConfig';
 import { generateWalkOns } from '../walkOns';
 import {
   prepareSeasonReset,
-  type RivalriesData,
 } from './seasonReset';
 
 const LEAGUE_KEY = 'current';
@@ -349,19 +350,21 @@ export const finalizeRoster = async (
       recruitingRecord,
       players,
       rivalriesRecord,
+      teamsRecord,
       oddsRecord,
     ] = await Promise.all([
       tx.objectStore('league').get(LEAGUE_KEY),
       tx.objectStore('recruiting').get(RECRUITING_KEY),
       tx.objectStore('players').getAll(),
       tx.objectStore('baseData').get('rivalries'),
+      tx.objectStore('baseData').get('teams'),
       tx.objectStore('baseData').get('betting_odds'),
     ]);
     const league = requireLeague(leagueRecord);
     const state = requireRecruiting(recruitingRecord);
     assertGuard(league, state, guard);
     assertCurrentRosterState(league, players);
-    if (!rivalriesRecord || !oddsRecord) {
+    if (!rivalriesRecord || !teamsRecord || !oddsRecord) {
       throw new Error(
         'Season reset data is unavailable. Start a new league to rebuild the base-data cache.',
       );
@@ -421,7 +424,10 @@ export const finalizeRoster = async (
       random.fork('team-ratings'),
     );
     const reset = await prepareSeasonReset(league, {
-      rivalries: rivalriesRecord.value as RivalriesData,
+      rivalries: normalizeRivalriesData(
+        rivalriesRecord.value,
+        new Set(Object.keys((teamsRecord.value as TeamsData).teams)),
+      ),
       odds: buildOddsContext(oddsRecord.value),
       random: random.fork('season-reset'),
     });

@@ -38,6 +38,7 @@ export interface GameData {
   homeTeamId?: number | null;
   awayTeamId?: number | null;
   neutralSite: boolean;
+  venue: string | null;
   teamA: {
     id: number;
     name: string;

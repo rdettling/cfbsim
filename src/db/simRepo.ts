@@ -38,6 +38,17 @@ export const saveGamesAndLeague = async (
   await tx.done;
 };
 
+export const deleteGameAndSaveLeague = async (
+  gameId: number,
+  league: LeagueState,
+) => {
+  const db = await getDb();
+  const tx = db.transaction(['games', 'league'], 'readwrite');
+  await tx.objectStore('games').delete(gameId);
+  await tx.objectStore('league').put({ key: 'current', value: league });
+  await tx.done;
+};
+
 export const getAllGames = async () => (await getDb()).getAll('games');
 export const getGamesByYear = async (year: number) =>
   (await getDb()).getAllFromIndex('games', 'year', year);

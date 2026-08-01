@@ -1,11 +1,7 @@
 import type { LeagueState } from '../../types/league';
-import type { ScheduleGame, Team } from '../../types/domain';
+import type { RivalryConstraint, Team } from '../../types/domain';
 import type { GameRecord } from '../../types/db';
-import {
-  buildSchedule,
-  applyRivalriesToSchedule,
-  applyRivalriesDataToSchedule,
-} from '../scheduleBuilder';
+import { buildUserScheduleFromGames } from '../schedule/projection';
 import { buildBaseLabel } from '../utils/gameLabels';
 import {
   buildOddsFields,
@@ -15,16 +11,13 @@ import {
 import { buildWatchability } from '../sim/games';
 import { getRivalriesData } from '../../db/baseData';
 import type { RandomSource } from '../recruiting/random';
-
-export interface RivalriesData {
-  rivalries: [
-    string,
-    string,
-    number | null,
-    string | null,
-    boolean?,
-  ][];
-}
+import {
+  initializeRivalryHostSeeds,
+  resolveRivalries,
+  resolveRivalrySite,
+  type RivalriesData,
+} from '../rivalryScheduling';
+export type { RivalriesData } from '../rivalryScheduling';
 
 export interface SeasonResetData {
   rivalries: RivalriesData;
@@ -42,6 +35,7 @@ export const createNonConGameRecord = async (
     neutralSite?: boolean;
     homeTeam?: Team | null;
     awayTeam?: Team | null;
+    venue?: string | null;
     odds?: OddsContext;
   },
 ): Promise<GameRecord> => {
@@ -63,6 +57,7 @@ export const createNonConGameRecord = async (
     homeTeamId: homeTeam?.id ?? null,
     awayTeamId: awayTeam?.id ?? null,
     neutralSite,
+    venue: options?.venue ?? null,
     winnerId: null,
     baseLabel: buildBaseLabel(teamA, teamB, name ?? null),
     name: name ?? null,
@@ -89,18 +84,41 @@ export const initializeNonConScheduling = async (
   league: LeagueState,
   data?: SeasonResetData,
 ) => {
-  const schedule = buildSchedule();
   const userTeam = league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
-  league.pending_rivalries = data
-    ? applyRivalriesDataToSchedule(
-        schedule,
-        userTeam,
-        league.teams,
-        data.rivalries,
-      )
-    : await applyRivalriesToSchedule(schedule, userTeam, league.teams);
-  const gamesToSave = await buildRivalryGameRecords(league, data);
-  return { schedule, gamesToSave };
+  const rivalries = data?.rivalries ?? await getRivalriesData();
+  initializeRivalryHostSeeds(
+    league,
+    rivalries,
+    data?.random ? () => data.random!.next() : Math.random,
+  );
+  const rivalryResolution = resolveRivalries({
+    teams: league.teams,
+    rivalries,
+    existingGames: [],
+    year: league.info.currentYear,
+  });
+  league.pending_rivalries = rivalryResolution.accepted
+    .filter(rivalry =>
+      rivalry.week === null &&
+      (rivalry.teamA === userTeam.name || rivalry.teamB === userTeam.name),
+    )
+    .map((rivalry, index) => ({
+      id: index + 1,
+      teamA: rivalry.teamA,
+      teamB: rivalry.teamB,
+      name: rivalry.name,
+      homeTeam: null,
+      awayTeam: null,
+      neutralSite: rivalry.neutralSite,
+      venue: rivalry.venue,
+    }));
+  const gamesToSave = await buildRivalryGameRecords(
+    league,
+    rivalryResolution.accepted,
+    data,
+  );
+  const schedule = buildUserScheduleFromGames(userTeam, league.teams, gamesToSave);
+  return { schedule, gamesToSave, rivalryResolution };
 };
 
 export const prepareSeasonReset = async (
@@ -128,50 +146,31 @@ export const prepareSeasonReset = async (
 
   league.scheduleBuilt = false;
   league.simInitialized = false;
+  league.declinedRivalries = [];
   return initializeNonConScheduling(league, data);
 };
 
 export const buildRivalryGameRecords = async (
   league: LeagueState,
+  accepted: RivalryConstraint[],
   data?: SeasonResetData,
 ): Promise<GameRecord[]> => {
-  const rivalries = data?.rivalries ?? await getRivalriesData();
   const teamByName = new Map(league.teams.map(team => [team.name, team]));
-  const seen = new Set<string>();
   const games: GameRecord[] = [];
-  const yearsSinceStart = Math.max(
-    0,
-    league.info.currentYear - league.info.startYear,
-  );
 
-  for (const [teamAName, teamBName, week, name, neutralSite = false] of rivalries.rivalries) {
+  for (const {
+    teamA: teamAName,
+    teamB: teamBName,
+    week,
+    name,
+    neutralSite,
+    venue,
+  } of accepted) {
     if (!week) continue;
     const teamA = teamByName.get(teamAName);
     const teamB = teamByName.get(teamBName);
     if (!teamA || !teamB) continue;
-
-    const key = [teamA.id, teamB.id].sort((a, b) => a - b).join('-') + `-${week}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const rivalryKey = [teamAName, teamBName].sort((a, b) => a.localeCompare(b)).join('::');
-    const shouldAlternate = !neutralSite;
-    if (shouldAlternate && !league.rivalryHostSeeds[rivalryKey]) {
-      const draw = data?.random?.fork(`rivalry-host:${rivalryKey}`).next()
-        ?? Math.random();
-      league.rivalryHostSeeds[rivalryKey] = draw < 0.5 ? teamAName : teamBName;
-    }
-    const seedHomeName = league.rivalryHostSeeds[rivalryKey] ?? teamAName;
-    const flipped = yearsSinceStart % 2 === 1;
-    const homeName = flipped
-      ? (seedHomeName === teamAName ? teamBName : teamAName)
-      : seedHomeName;
-    const homeTeam = shouldAlternate
-      ? (teamByName.get(homeName) ?? teamA)
-      : null;
-    const awayTeam = shouldAlternate
-      ? (homeName === teamAName ? teamB : teamA)
-      : null;
+    const site = resolveRivalrySite(league, teamA, teamB, neutralSite, venue);
 
     if (teamA.conference !== 'Independent' && teamA.conference === teamB.conference) {
       teamA.confGames += 1;
@@ -187,7 +186,7 @@ export const buildRivalryGameRecords = async (
       teamB,
       week,
       name ?? null,
-      { neutralSite, homeTeam, awayTeam, odds: data?.odds },
+      { ...site, odds: data?.odds },
     );
     games.push(record);
   }

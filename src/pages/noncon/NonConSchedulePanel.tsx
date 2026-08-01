@@ -1,4 +1,5 @@
-import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { Box, Button, Chip, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
 import type { NonConScheduleGame, TeamSelectionHandler } from './types';
 
@@ -7,6 +8,8 @@ type NonConSchedulePanelProps = {
   remainingManualGames: number;
   onSchedule: (week: number) => void;
   onTeamClick: TeamSelectionHandler;
+  onRemoveGame: (gameId: string) => void;
+  removalBusy: boolean;
 };
 
 const ScheduleRow = ({
@@ -14,11 +17,15 @@ const ScheduleRow = ({
   canSchedule,
   onSchedule,
   onTeamClick,
+  onRemoveGame,
+  removing,
 }: {
   game: NonConScheduleGame;
   canSchedule: boolean;
   onSchedule: (week: number) => void;
   onTeamClick: TeamSelectionHandler;
+  onRemoveGame: (gameId: string) => void;
+  removing: boolean;
 }) => (
   <Box
     component="article"
@@ -87,7 +94,12 @@ const ScheduleRow = ({
             </Box>
           </Stack>
           {game.location && (
-            <Chip label={game.location} size="small" variant="outlined" sx={{ mt: 0.75 }} />
+            <Chip
+              label={game.venue ? `${game.venue} · ${game.location}` : game.location}
+              size="small"
+              variant="outlined"
+              sx={{ mt: 0.75 }}
+            />
           )}
         </>
       ) : (
@@ -109,7 +121,21 @@ const ScheduleRow = ({
 
     <Box sx={{ gridColumn: { xs: '2', sm: 'auto' }, justifySelf: { xs: 'start', sm: 'end' } }}>
       {game.opponent ? (
-        <Chip label="Scheduled" size="small" variant="outlined" />
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+          <Chip label="Scheduled" size="small" variant="outlined" />
+          <Tooltip title={`Remove ${game.opponent.name}`}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={removing}
+                aria-label={`Remove ${game.opponent.name} from Week ${game.weekPlayed}`}
+                onClick={() => onRemoveGame(game.id)}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
       ) : canSchedule ? (
         <Button variant="contained" size="small" onClick={() => onSchedule(game.weekPlayed)}>
           Schedule Game
@@ -126,6 +152,8 @@ export const NonConSchedulePanel = ({
   remainingManualGames,
   onSchedule,
   onTeamClick,
+  onRemoveGame,
+  removalBusy,
 }: NonConSchedulePanelProps) => (
   <Paper
     component="section"
@@ -149,7 +177,7 @@ export const NonConSchedulePanel = ({
           color: 'text.secondary',
         }}
       >
-        Fixed rivalry games and your open scheduling opportunities
+        Scheduled games and your open scheduling opportunities
       </Typography>
     </Box>
 
@@ -176,6 +204,8 @@ export const NonConSchedulePanel = ({
             canSchedule={!game.opponent && remainingManualGames > 0}
             onSchedule={onSchedule}
             onTeamClick={onTeamClick}
+            onRemoveGame={onRemoveGame}
+            removing={removalBusy}
           />
         ))
       )}

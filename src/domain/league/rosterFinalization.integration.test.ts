@@ -79,6 +79,7 @@ const seedBaseData = async () => {
       },
     },
     { key: 'rivalries', value: { rivalries: [] } },
+    { key: 'teams', value: { teams: {} } },
     { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
   ];
   const tx = db.transaction('baseData', 'readwrite');

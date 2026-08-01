@@ -23,7 +23,11 @@ const hasExactKeys = (value: Record<string, unknown>, keys: readonly string[]) =
 };
 
 const isEvent = (value: unknown): value is SeasonMemoryEvent => {
-  if (!isRecord(value) || !SEASON_MEMORY_EVENT_TYPES.includes(value.type as never)) {
+  if (
+    !isRecord(value) ||
+    typeof value.type !== 'string' ||
+    !SEASON_MEMORY_EVENT_TYPES.some(type => type === value.type)
+  ) {
     return false;
   }
   if (!Number.isInteger(value.gameId)) return false;

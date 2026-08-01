@@ -8,6 +8,9 @@ import type {
   ScheduleGame,
   PlayoffTeamCount,
   NextSeasonConfiguration,
+  NewLeagueConferenceSetup,
+  RivalryPlanWarning,
+  PendingRivalry,
 } from './domain';
 
 export interface LaunchProps {
@@ -20,6 +23,7 @@ export interface LaunchProps {
 export interface StartNewLeagueInput {
   teamName: string;
   year: string;
+  conferenceSetup: NewLeagueConferenceSetup;
   playoff: {
     teams: PlayoffTeamCount;
     autobids?: number;
@@ -31,14 +35,8 @@ export interface NonConData {
   info: Info;
   team: Team;
   schedule: ScheduleGame[];
-  pending_rivalries: Array<{
-    id: number;
-    teamA: string;
-    teamB: string;
-    name: string | null;
-    homeTeam: string | null;
-    awayTeam: string | null;
-  }>;
+  pending_rivalries: PendingRivalry[];
+  rivalryWarnings: RivalryPlanWarning[];
   conferences: Conference[];
 }
 
@@ -61,7 +59,8 @@ export interface LeagueState {
   info: Info;
   teams: Team[];
   conferences: Conference[];
-  pending_rivalries: NonConData['pending_rivalries'];
+  pending_rivalries: PendingRivalry[];
+  declinedRivalries: string[];
   rivalryHostSeeds: Record<string, string>;
   scheduleBuilt: boolean;
   simInitialized: boolean;

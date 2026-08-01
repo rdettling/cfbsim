@@ -1,76 +1,33 @@
-import type { ScheduleGame, Team } from '../types/domain';
-import type { FullGame } from '../types/scheduleTypes';
-import type { NonConData } from '../types/league';
-import { getRivalriesData } from '../db/baseData';
-import type { GameRecord } from '../types/db';
+import type { ScheduleGame, Team } from '../../types/domain';
+import type { FullGame } from '../../types/scheduleTypes';
+import type { GameRecord } from '../../types/db';
+import { buildSchedule, buildUserScheduleFromGames } from './projection';
 
 const REGULAR_SEASON_WEEKS = 14;
 const REGULAR_SEASON_GAMES = 12;
-const randomTieBreak = () => Math.random() - 0.5;
+export const VALIDATION_SCHEDULE_SEED = 0x51ced5ed;
 
-export const buildSchedule = (weeks = REGULAR_SEASON_WEEKS): ScheduleGame[] =>
-  Array.from({ length: weeks }, (_, index) => ({
-    weekPlayed: index + 1,
-    opponent: null,
-    result: '',
-    score: '',
-    spread: '',
-    moneyline: '',
-    id: '',
-  }));
+export interface SchedulePlannerOptions {
+  year: number;
+  seed: number;
+  requireComplete: boolean;
+  requiredGames?: FullGame[];
+}
 
-export const buildUserScheduleFromGames = (
-  userTeam: Team,
-  teams: Team[],
-  games: GameRecord[],
-  weeks = REGULAR_SEASON_WEEKS
-): ScheduleGame[] => {
-  const schedule = buildSchedule(weeks);
-  const teamsById = new Map(teams.map(team => [team.id, team]));
+export class SchedulePlanningError extends Error {}
+export class ScheduleValidationError extends Error {}
 
-  games.forEach(game => {
-    if (!game.weekPlayed || game.weekPlayed < 1 || game.weekPlayed > weeks) return;
-    if (game.teamAId !== userTeam.id && game.teamBId !== userTeam.id) return;
+export const isScheduleFailure = (error: unknown) =>
+  error instanceof SchedulePlanningError ||
+  error instanceof ScheduleValidationError;
 
-    const slot = schedule[game.weekPlayed - 1];
-    if (!slot) return;
-
-    const opponentId = game.teamAId === userTeam.id ? game.teamBId : game.teamAId;
-    const opponent = teamsById.get(opponentId);
-    if (!opponent) return;
-
-    const isTeamA = game.teamAId === userTeam.id;
-    const scoreA = game.scoreA ?? 0;
-    const scoreB = game.scoreB ?? 0;
-    if (game.winnerId) {
-      const userScore = isTeamA ? scoreA : scoreB;
-      const oppScore = isTeamA ? scoreB : scoreA;
-      slot.score = `${userScore}-${oppScore}`;
-      slot.result = game.winnerId === userTeam.id ? 'W' : 'L';
-    }
-    slot.spread = isTeamA ? game.spreadA : game.spreadB;
-    slot.moneyline = isTeamA ? game.moneylineA : game.moneylineB;
-
-    slot.opponent = {
-      name: opponent.name,
-      rating: opponent.rating,
-      ranking: opponent.ranking,
-      record: opponent.record,
-    };
-
-    const label = game.name ?? game.baseLabel ?? buildLabel(userTeam, opponent);
-    slot.label = label;
-    slot.location = game.neutralSite
-      ? 'Neutral'
-      : game.homeTeamId === userTeam.id
-        ? 'Home'
-        : game.awayTeamId === userTeam.id
-          ? 'Away'
-          : undefined;
-    slot.id = `${game.id}`;
+export const stableNumber = (...values: number[]) => {
+  let hash = 2166136261;
+  values.forEach(value => {
+    hash ^= value;
+    hash = Math.imul(hash, 16777619);
   });
-
-  return schedule;
+  return hash >>> 0;
 };
 
 const scheduleKey = (teamAId: number, teamBId: number, weekPlayed: number) => {
@@ -90,94 +47,70 @@ export const buildFixedGamesFromRecords = (
       weekPlayed: game.weekPlayed,
       homeTeam: game.homeTeamId ? teamsById.get(game.homeTeamId)! : null,
       awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
+      venue: game.venue,
       name: game.name ?? null,
     }));
 
 export const buildFullScheduleFromExisting = (
   userTeam: Team,
   teams: Team[],
-  existingGames: GameRecord[]
+  existingGames: GameRecord[],
+  options: SchedulePlannerOptions,
 ) => {
   const teamsById = new Map(teams.map(team => [team.id, team]));
   const schedule = buildUserScheduleFromGames(userTeam, teams, existingGames);
   const fixedGames = buildFixedGamesFromRecords(existingGames, teamsById);
-  const fullGames = fillUserSchedule(schedule, userTeam, teams, fixedGames);
-  const fixedKeys = new Set(fixedGames.map(game => scheduleKey(game.teamA.id, game.teamB.id, game.weekPlayed)));
+  const persistedFixedGames = [...fixedGames];
+  const existingOpponents = new Set(
+    fixedGames.map(game => scheduleKey(game.teamA.id, game.teamB.id, 0)),
+  );
+  fixedGames.push(
+    ...(options.requiredGames ?? []).filter(
+      game => !existingOpponents.has(scheduleKey(game.teamA.id, game.teamB.id, 0)),
+    ),
+  );
+  let fullGames: FullGame[];
+  try {
+    fullGames = fillUserSchedule(
+      schedule,
+      userTeam,
+      teams,
+      fixedGames,
+      options,
+    );
+  } catch (error) {
+    if (
+      !(error instanceof SchedulePlanningError) ||
+      options.seed === VALIDATION_SCHEDULE_SEED
+    ) {
+      throw error;
+    }
+    fullGames = fillUserSchedule(
+      schedule,
+      userTeam,
+      teams,
+      fixedGames,
+      { ...options, seed: VALIDATION_SCHEDULE_SEED },
+    );
+  }
+  const fixedKeys = new Set(
+    persistedFixedGames.map(game =>
+      scheduleKey(game.teamA.id, game.teamB.id, game.weekPlayed),
+    ),
+  );
   const newGames = fullGames.filter(
     game => !fixedKeys.has(scheduleKey(game.teamA.id, game.teamB.id, game.weekPlayed))
   );
   return { schedule, fixedGames, fullGames, newGames };
 };
 
-export const applyRivalriesToSchedule = async (
-  schedule: ScheduleGame[],
-  userTeam: Team,
-  teams: Team[]
-): Promise<NonConData['pending_rivalries']> => {
-  const rivalries = await getRivalriesData();
-  return applyRivalriesDataToSchedule(schedule, userTeam, teams, rivalries);
-};
-
-export const applyRivalriesDataToSchedule = (
-  schedule: ScheduleGame[],
-  userTeam: Team,
-  teams: Team[],
-  rivalries: {
-    rivalries: [
-      string,
-      string,
-      number | null,
-      string | null,
-      boolean?,
-    ][];
-  },
-): NonConData['pending_rivalries'] => {
-  let pendingId = 1;
-  const pending: NonConData['pending_rivalries'] = [];
-
-  const teamByName = new Map(teams.map(team => [team.name, team]));
-
-  rivalries.rivalries.forEach(([teamA, teamB, week, name, neutralSite = false]) => {
-    if (teamA !== userTeam.name && teamB !== userTeam.name) return;
-    const opponentName = teamA === userTeam.name ? teamB : teamA;
-    const opponent = teamByName.get(opponentName);
-    if (!opponent) return;
-
-    if (week) {
-      const slot = schedule[week - 1];
-      if (!slot.opponent) {
-        slot.opponent = {
-          name: opponent.name,
-          rating: opponent.rating,
-          ranking: opponent.ranking,
-          record: opponent.record,
-        };
-        slot.label = name ?? 'Rivalry';
-        slot.id = `${userTeam.name}-vs-${opponent.name}-week-${week}`;
-        if (neutralSite) slot.location = 'Neutral';
-      }
-      return;
-    }
-
-    pending.push({
-      id: pendingId,
-      teamA,
-      teamB,
-      name: name ?? null,
-      homeTeam: null,
-      awayTeam: null,
-    });
-    pendingId += 1;
-  });
-
-  return pending;
-};
-
 const chooseHomeAway = (
   team: Team,
   opponent: Team,
   homeCounts: Map<number, number>,
-  awayCounts: Map<number, number>
+  awayCounts: Map<number, number>,
+  year: number,
+  seed: number,
 ) => {
   const targetHome = Math.floor(REGULAR_SEASON_GAMES / 2);
   const teamHome = homeCounts.get(team.id) ?? 0;
@@ -190,7 +123,7 @@ const chooseHomeAway = (
   if (opponentNeedsHome && !teamNeedsHome) return { homeTeam: opponent, awayTeam: team };
 
   if (teamHome === opponentHome) {
-    return Math.random() < 0.5
+    return stableNumber(team.id, opponent.id, year, seed) % 2 === 0
       ? { homeTeam: team, awayTeam: opponent }
       : { homeTeam: opponent, awayTeam: team };
   }
@@ -200,7 +133,7 @@ const chooseHomeAway = (
     : { homeTeam: opponent, awayTeam: team };
 };
 
-const isConferenceGame = (team: Team, opponent: Team) =>
+export const isConferenceGame = (team: Team, opponent: Team) =>
   team.conference === opponent.conference && team.conference !== 'Independent';
 
 const scheduleGame = (
@@ -208,8 +141,8 @@ const scheduleGame = (
   team: Team,
   opponent: Team,
   weekPlayed: number,
-  homeTeam: Team,
-  awayTeam: Team,
+  homeTeam: Team | null,
+  awayTeam: Team | null,
   name?: string | null
 ) => {
   games.push({
@@ -218,6 +151,7 @@ const scheduleGame = (
     weekPlayed,
     homeTeam,
     awayTeam,
+    venue: null,
     name: name ?? null,
   });
 
@@ -244,7 +178,7 @@ function buildLabel(userTeam: Team, opponent: Team) {
   return opponent.conference ? `NC (${opponent.conference})` : 'NC (Ind)';
 }
 
-const resetTeamScheduleCounts = (teams: Team[]) => {
+export const resetTeamScheduleCounts = (teams: Team[]) => {
   teams.forEach(team => {
     team.confGames = 0;
     team.nonConfGames = 0;
@@ -255,8 +189,12 @@ export const fillUserSchedule = (
   schedule: ScheduleGame[],
   userTeam: Team,
   teams: Team[],
-  fixedGames: FullGame[] = []
+  fixedGames: FullGame[],
+  options: SchedulePlannerOptions,
+  opponentAttempt = 0,
 ): FullGame[] => {
+  const { year, seed, requireComplete } = options;
+  const initialSchedule = structuredClone(schedule);
   resetTeamScheduleCounts(teams);
   const teamByName = new Map(teams.map(team => [team.name, team]));
   const scheduledOpponents = new Map<number, Set<number>>(
@@ -272,8 +210,8 @@ export const fillUserSchedule = (
       game.teamA,
       game.teamB,
       game.weekPlayed,
-      game.homeTeam ?? game.teamA,
-      game.awayTeam ?? game.teamB,
+      game.homeTeam,
+      game.awayTeam,
       game.name ?? null
     );
     scheduledOpponents.get(game.teamA.id)?.add(game.teamB.id);
@@ -298,7 +236,14 @@ export const fillUserSchedule = (
       homeTeam = opponent;
       awayTeam = userTeam;
     } else if (!slot.location) {
-      const pick = chooseHomeAway(userTeam, opponent, homeCounts, awayCounts);
+      const pick = chooseHomeAway(
+        userTeam,
+        opponent,
+        homeCounts,
+        awayCounts,
+        year,
+        seed,
+      );
       homeTeam = pick.homeTeam;
       awayTeam = pick.awayTeam;
       slot.location = homeTeam.id === userTeam.id ? 'Home' : 'Away';
@@ -325,6 +270,27 @@ export const fillUserSchedule = (
 
   conferences.forEach(confName => {
     const confTeamsBase = teams.filter(team => team.conference === confName);
+    const target = confTeamsBase.reduce(
+      (maximum, team) => Math.max(maximum, team.confLimit),
+      0,
+    );
+    confTeamsBase.forEach(team => {
+      team.confLimit = target;
+      team.nonConfLimit = REGULAR_SEASON_GAMES - target;
+    });
+    if ((confTeamsBase.length * target) % 2 === 1) {
+      const rotation = confTeamsBase
+        .slice()
+        .sort((left, right) =>
+          stableNumber(left.id, year, opponentAttempt) -
+          stableNumber(right.id, year, opponentAttempt),
+        )
+        .find(team => team.confGames <= target - 1);
+      if (rotation) {
+        rotation.confLimit = target - 1;
+        rotation.nonConfLimit = REGULAR_SEASON_GAMES - rotation.confLimit;
+      }
+    }
     let confTeamsList = confTeamsBase.slice();
 
     const getPotential = (team: Team) =>
@@ -350,17 +316,25 @@ export const fillUserSchedule = (
         (a, b) =>
           a.buffer - b.buffer ||
           a.team.confGames - b.team.confGames ||
-          randomTieBreak()
+          stableNumber(a.team.id, year, seed, opponentAttempt) -
+          stableNumber(b.team.id, year, seed, opponentAttempt)
       );
       const { team, potential } = stats[0];
       confTeamsList = confTeamsList.filter(entry => entry.id !== team.id);
 
+      const potentialBuffers = new Map(
+        potential.map(opponent => {
+          const opponentPotential = getPotential(opponent);
+          return [opponent.id, getBuffer(opponent, opponentPotential)];
+        }),
+      );
       const sortedPotential = potential.slice().sort((a, b) => {
-        const aPotential = getPotential(a);
-        const bPotential = getPotential(b);
-        const aBuffer = getBuffer(a, aPotential);
-        const bBuffer = getBuffer(b, bPotential);
-        return aBuffer - bBuffer || a.confGames - b.confGames || randomTieBreak();
+        const aBuffer = potentialBuffers.get(a.id) ?? 0;
+        const bBuffer = potentialBuffers.get(b.id) ?? 0;
+        return aBuffer - bBuffer ||
+          a.confGames - b.confGames ||
+          stableNumber(a.id, team.id, year, seed, opponentAttempt) -
+          stableNumber(b.id, team.id, year, seed, opponentAttempt);
       });
 
       while (team.confGames < team.confLimit) {
@@ -374,7 +348,9 @@ export const fillUserSchedule = (
           team,
           opponent,
           homeCounts,
-          awayCounts
+          awayCounts,
+          year,
+          seed,
         );
         scheduleGame(games, team, opponent, 0, homeTeam, awayTeam, null);
         scheduledOpponents.get(team.id)?.add(opponent.id);
@@ -411,17 +387,25 @@ export const fillUserSchedule = (
       (a, b) =>
         a.buffer - b.buffer ||
         a.team.nonConfGames - b.team.nonConfGames ||
-        randomTieBreak()
+        stableNumber(a.team.id, year, seed, 1, opponentAttempt) -
+        stableNumber(b.team.id, year, seed, 1, opponentAttempt)
     );
     const { team, potential } = stats[0];
     teamsList = teamsList.filter(entry => entry.id !== team.id);
 
+    const potentialBuffers = new Map(
+      potential.map(opponent => {
+        const opponentPotential = getNonConfPotential(opponent);
+        return [opponent.id, getNonConfBuffer(opponent, opponentPotential)];
+      }),
+    );
     const sortedPotential = potential.slice().sort((a, b) => {
-      const aPotential = getNonConfPotential(a);
-      const bPotential = getNonConfPotential(b);
-      const aBuffer = getNonConfBuffer(a, aPotential);
-      const bBuffer = getNonConfBuffer(b, bPotential);
-      return aBuffer - bBuffer || a.nonConfGames - b.nonConfGames || randomTieBreak();
+      const aBuffer = potentialBuffers.get(a.id) ?? 0;
+      const bBuffer = potentialBuffers.get(b.id) ?? 0;
+      return aBuffer - bBuffer ||
+        a.nonConfGames - b.nonConfGames ||
+        stableNumber(a.id, team.id, year, seed, 1, opponentAttempt) -
+        stableNumber(b.id, team.id, year, seed, 1, opponentAttempt);
     });
 
     while (team.nonConfGames < team.nonConfLimit) {
@@ -435,13 +419,36 @@ export const fillUserSchedule = (
         team,
         opponent,
         homeCounts,
-        awayCounts
+        awayCounts,
+        year,
+        seed,
       );
       scheduleGame(games, team, opponent, 0, homeTeam, awayTeam, null);
       scheduledOpponents.get(team.id)?.add(opponent.id);
       scheduledOpponents.get(opponent.id)?.add(team.id);
       homeCounts.set(homeTeam.id, (homeCounts.get(homeTeam.id) ?? 0) + 1);
       awayCounts.set(awayTeam.id, (awayCounts.get(awayTeam.id) ?? 0) + 1);
+    }
+  }
+
+  const incompleteTeam = teams.find(
+    team => team.confGames + team.nonConfGames !== REGULAR_SEASON_GAMES,
+  );
+  if (incompleteTeam) {
+    if (opponentAttempt < 49) {
+      return fillUserSchedule(
+        initialSchedule,
+        userTeam,
+        teams,
+        fixedGames,
+        options,
+        opponentAttempt + 1,
+      );
+    }
+    if (requireComplete) {
+      throw new SchedulePlanningError(
+        `${incompleteTeam.name} cannot be assigned ${REGULAR_SEASON_GAMES} distinct opponents.`,
+      );
     }
   }
 
@@ -510,49 +517,63 @@ export const fillUserSchedule = (
 
     let failed = false;
     while (remainingGames.length) {
-      const options = remainingGames.map(game => {
+      let choice:
+        | {
+            game: FullGame;
+            available: Set<number>;
+            key: number[];
+            index: number;
+          }
+        | undefined;
+
+      remainingGames.forEach((game, index) => {
         const available = availableWeeksByGame.get(game) ?? new Set<number>();
         const isNonConf = !isConferenceGame(game.teamA, game.teamB);
         const nonConfPriority = isNonConf ? 0 : 1;
-        return {
+        const option = {
           game,
           available,
-          key: [available.size, nonConfPriority, Math.random()],
+          key: [
+            available.size,
+            nonConfPriority,
+            stableNumber(game.teamA.id, game.teamB.id, year, seed, attempt),
+          ],
+          index,
         };
-      });
 
-      options.sort((a, b) => {
-        for (let i = 0; i < a.key.length; i += 1) {
-          if (a.key[i] !== b.key[i]) {
-            return a.key[i] - b.key[i];
+        if (!choice) {
+          choice = option;
+          return;
+        }
+        for (let keyIndex = 0; keyIndex < option.key.length; keyIndex += 1) {
+          if (option.key[keyIndex] !== choice.key[keyIndex]) {
+            if (option.key[keyIndex] < choice.key[keyIndex]) {
+              choice = option;
+            }
+            return;
           }
         }
-        return 0;
       });
 
-      const choice = options[0];
+      if (!choice) {
+        failed = true;
+        break;
+      }
       const isConference = isConferenceGame(choice.game.teamA, choice.game.teamB);
       const availableWeeks = Array.from(choice.available);
-      const fallbackToOverlaps = availableWeeks.length === 0;
-      const candidateWeeks = fallbackToOverlaps ? weeks : availableWeeks;
+      const candidateWeeks = availableWeeks;
       if (!candidateWeeks.length) {
         failed = true;
         break;
       }
       const week = pickWeekByLoad(candidateWeeks, isConference, weekLoad);
-      if (fallbackToOverlaps) {
-        console.warn(
-          `[schedule] forcing overlap for game ${choice.game.teamA.id} vs ${choice.game.teamB.id}; no conflict-free week available`
-        );
-      }
 
       choice.game.weekPlayed = week;
       teamWeeks.get(choice.game.teamA.id)?.add(week);
       teamWeeks.get(choice.game.teamB.id)?.add(week);
       weekLoad.set(week, (weekLoad.get(week) ?? 0) + 1);
 
-      const index = remainingGames.indexOf(choice.game);
-      if (index >= 0) remainingGames.splice(index, 1);
+      remainingGames.splice(choice.index, 1);
       remainingSet.delete(choice.game);
 
       gamesByTeam.get(choice.game.teamA.id)?.forEach(related => {
@@ -574,7 +595,9 @@ export const fillUserSchedule = (
   }
 
   if (!assigned) {
-    console.warn('Unable to assign weeks without conflicts after retries.');
+    throw new SchedulePlanningError(
+      'Unable to assign every game to a conflict-free week.',
+    );
   }
 
   const existingLabelsByWeek = new Map<number, string | undefined>();
@@ -616,62 +639,34 @@ export const fillUserSchedule = (
   return games;
 };
 
-export const listAvailableTeams = (
-  schedule: ScheduleGame[],
-  userTeam: Team,
-  teams: Team[],
-  week: number,
-  existingGames: GameRecord[] = []
-): string[] => {
-  const weekIndex = week - 1;
-  const weekSlot = schedule[weekIndex];
-  if (!weekSlot || weekSlot.opponent) return [];
-
-  const scheduledTeams = new Set<string>();
-  schedule.forEach(slot => {
-    if (slot.opponent) scheduledTeams.add(slot.opponent.name);
+export const assertCompleteSchedule = (teams: Team[], games: FullGame[]) => {
+  const gamesByTeam = new Map<number, FullGame[]>(
+    teams.map(team => [team.id, []]),
+  );
+  games.forEach(game => {
+    gamesByTeam.get(game.teamA.id)?.push(game);
+    gamesByTeam.get(game.teamB.id)?.push(game);
   });
-  const teamIdsWithGame = new Set<number>();
-  existingGames.forEach(game => {
-    if (game.weekPlayed !== week) return;
-    teamIdsWithGame.add(game.teamAId);
-    teamIdsWithGame.add(game.teamBId);
-  });
-
-  return teams
-    .filter(team => team.name !== userTeam.name)
-    .filter(team => team.nonConfGames < team.nonConfLimit)
-    .filter(team => !scheduledTeams.has(team.name))
-    .filter(team => !teamIdsWithGame.has(team.id))
-    .filter(team => team.conference !== userTeam.conference)
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(team => team.name);
-};
-
-export const scheduleNonConGame = (
-  schedule: ScheduleGame[],
-  userTeam: Team,
-  opponent: Team,
-  week: number
-) => {
-  const weekIndex = week - 1;
-  const slot = schedule[weekIndex];
-  if (!slot || slot.opponent) return;
-
-  slot.opponent = {
-    name: opponent.name,
-    rating: opponent.rating,
-    ranking: opponent.ranking,
-    record: opponent.record,
-  };
-  slot.label = userTeam.conference === opponent.conference
-    ? `C (${userTeam.conference})`
-    : opponent.conference
-      ? `NC (${opponent.conference})`
-      : 'NC (Ind)';
-  slot.location = 'Home';
-  slot.id = `${userTeam.name}-vs-${opponent.name}-week-${week}`;
-
-  userTeam.nonConfGames += 1;
-  opponent.nonConfGames += 1;
+  for (const team of teams) {
+    const teamGames = gamesByTeam.get(team.id) ?? [];
+    if (teamGames.length !== REGULAR_SEASON_GAMES) {
+      throw new ScheduleValidationError(
+        `${team.name} can only be assigned ${teamGames.length} of ${REGULAR_SEASON_GAMES} games with this alignment.`,
+      );
+    }
+    const opponents = new Set(
+      teamGames.map(game => game.teamA.id === team.id ? game.teamB.id : game.teamA.id),
+    );
+    if (opponents.size !== teamGames.length) {
+      throw new ScheduleValidationError(
+        `${team.name} has a duplicate opponent in the proposed schedule.`,
+      );
+    }
+    const weeks = new Set(teamGames.map(game => game.weekPlayed));
+    if (weeks.size !== teamGames.length) {
+      throw new ScheduleValidationError(
+        `${team.name} would play more than once in the same week.`,
+      );
+    }
+  }
 };

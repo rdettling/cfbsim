@@ -12,8 +12,22 @@ import { loadHomeData } from '../season';
 import { loadPlayer } from '../team';
 import { loadDashboard } from './loadDashboard';
 import { loadNonCon } from './loadNonCon';
+import { listAvailableTeams } from './listAvailableTeams';
 import { loadTeamSchedule } from './loadTeamSchedule';
+import { loadWeekSchedule } from './loadWeekSchedule';
+import { loadGame } from './loadGame';
 import { startNewLeague } from './startNewLeague';
+import { scheduleNonConGame } from './scheduleNonConGame';
+import {
+  dismissPendingRivalry,
+  removePreseasonGame,
+} from './removePreseasonScheduleItem';
+import { validateNewLeagueConferencePlan } from '../../../conferencePlan';
+import { generateRandomSeed } from '../../../utils/randomSeed';
+
+vi.mock('../../../utils/randomSeed', () => ({
+  generateRandomSeed: vi.fn(),
+}));
 
 const yearData = (teams: 2 | 4 | 12 = 12) => ({
   playoff: {
@@ -123,6 +137,7 @@ const buildOldGame = (): GameRecord => ({
   homeTeamId: 1,
   awayTeamId: 2,
   neutralSite: false,
+  venue: null,
   winnerId: 1,
   baseLabel: 'Old game',
   name: null,
@@ -210,6 +225,7 @@ const buildInput = (
 ): StartNewLeagueInput => ({
   teamName: 'Test State',
   year: '2025',
+  conferenceSetup: { mode: 'historical' },
   playoff: {
     teams,
     autobids: teams === 12 ? 5 : undefined,
@@ -217,8 +233,65 @@ const buildInput = (
   },
 });
 
+const configureRivalryLeague = () => {
+  const east = Object.fromEntries(
+    Array.from({ length: 13 }, (_, index) => [`East ${index + 1}`, 4]),
+  );
+  const west = Object.fromEntries(
+    Array.from({ length: 13 }, (_, index) => [`West ${index + 1}`, 4]),
+  );
+  const names = [...Object.keys(east), ...Object.keys(west)];
+  responses.set('/data/years/2025.json', {
+    ...yearData(),
+    conferences: {
+      East: { games: 10, teams: east },
+      West: { games: 10, teams: west },
+    },
+  });
+  responses.set('/data/teams.json', {
+    teams: Object.fromEntries(names.map((name, index) => [
+      name,
+      {
+        mascot: `Mascot ${index + 1}`,
+        abbreviation: `T${index + 1}`,
+        ceiling: 7,
+        floor: 1,
+        colorPrimary: '#123456',
+        colorSecondary: '#ffffff',
+        city: 'Test City',
+        state: 'TS',
+        stadium: 'Test Stadium',
+      },
+    ])),
+  });
+  responses.set('/data/conferences.json', { East: 'East', West: 'West' });
+  responses.set('/data/rivalries.json', {
+    rivalries: [
+      {
+        teams: ['East 1', 'West 1'],
+        week: 7,
+        name: 'Primary Trophy',
+        site: { type: 'neutral', venue: 'Test Bowl' },
+      },
+      { teams: ['East 1', 'West 2'], week: 7, name: 'Rescue Trophy' },
+    ],
+  });
+};
+
+const rivalryInput = (): StartNewLeagueInput => ({
+  teamName: 'East 1',
+  year: '2025',
+  conferenceSetup: { mode: 'historical' },
+  playoff: {
+    teams: 12,
+    autobids: 2,
+    conferenceChampionsReceiveTopSeeds: false,
+  },
+});
+
 beforeEach(async () => {
   responses = baseResponses();
+  vi.mocked(generateRandomSeed).mockReset().mockReturnValue(12345);
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request) => {
@@ -281,6 +354,19 @@ describe('loadHomeData', () => {
 });
 
 describe('startNewLeague', () => {
+  it('requests a fresh schedule seed for each season initialization', async () => {
+    vi.mocked(generateRandomSeed)
+      .mockReturnValueOnce(101)
+      .mockReturnValueOnce(202);
+
+    await startNewLeague(buildInput());
+    await initializeSeason(2025);
+    await startNewLeague(buildInput());
+    await initializeSeason(2025);
+
+    expect(generateRandomSeed).toHaveBeenCalledTimes(2);
+  });
+
   it('rejects malformed creation data through the shared year validator', async () => {
     responses.set('/data/years/2025.json', {
       ...yearData(),
@@ -294,7 +380,7 @@ describe('startNewLeague', () => {
 
   it('keeps season loaders read-only and initializes the season by command', async () => {
     await startNewLeague(buildInput());
-    expect(fetch).toHaveBeenCalledWith('/data/history.json');
+    expect(fetch).not.toHaveBeenCalledWith('/data/history.json');
     expect(
       vi.mocked(fetch).mock.calls.some(([input]) =>
         String(input).includes('/season-results/'),
@@ -317,6 +403,427 @@ describe('startNewLeague', () => {
       scheduleBuilt: true,
       simInitialized: true,
     });
+  });
+
+  it('creates a custom alignment, preserves it, and builds complete schedules', async () => {
+    const customTeams = Object.fromEntries(
+      Array.from({ length: 13 }, (_, index) => [`Team ${index + 1}`, 4]),
+    );
+    responses.set('/data/years/2025.json', {
+      ...yearData(),
+      conferences: {
+        'Test Conference': {
+          games: 12,
+          teams: customTeams,
+        },
+      },
+    });
+    responses.set('/data/teams.json', {
+      teams: Object.fromEntries(
+        Object.keys(customTeams).map((name, index) => [
+          name,
+          {
+            mascot: `Mascot ${index + 1}`,
+            abbreviation: `T${index + 1}`,
+            ceiling: 7,
+            floor: 1,
+            colorPrimary: '#123456',
+            colorSecondary: '#ffffff',
+            city: 'Test City',
+            state: 'TS',
+            stadium: 'Test Stadium',
+          },
+        ]),
+      ),
+    });
+
+    const conferencePlan = {
+      assignments: Object.fromEntries(
+        Object.keys(customTeams).map(name => [name, 'Test Conference']),
+      ),
+      conferenceGames: {
+        'Test Conference': { mode: 'automatic' as const },
+      },
+    };
+    await expect(
+      validateNewLeagueConferencePlan('2025', conferencePlan),
+    ).resolves.toEqual({ issues: [], warnings: [] });
+
+    await startNewLeague({
+      teamName: 'Team 1',
+      year: '2025',
+      conferenceSetup: {
+        mode: 'custom',
+        plan: conferencePlan,
+      },
+      playoff: {
+        teams: 12,
+        autobids: 1,
+        conferenceChampionsReceiveTopSeeds: false,
+      },
+    });
+
+    const db = await getDb();
+    const created = (await db.get('league', 'current'))?.value as LeagueState;
+    expect(created.settings.conferencePolicy).toBe('current');
+    expect(created.conferences).toHaveLength(1);
+    await initializeSeason(2025);
+    const games = await db.getAllFromIndex('games', 'year', 2025);
+    const counts = new Map<number, number>();
+    games.forEach(game => {
+      counts.set(game.teamAId, (counts.get(game.teamAId) ?? 0) + 1);
+      counts.set(game.teamBId, (counts.get(game.teamBId) ?? 0) + 1);
+    });
+    expect([...counts.values()]).toEqual(Array(13).fill(12));
+  });
+
+  it('locks an accepted fixed rivalry and allows manual rescue of an omitted one', async () => {
+    configureRivalryLeague();
+
+    const conferencePlan = {
+      assignments: Object.fromEntries([
+        ...Array.from({ length: 13 }, (_, index) => [`East ${index + 1}`, 'East']),
+        ...Array.from({ length: 13 }, (_, index) => [`West ${index + 1}`, 'West']),
+      ]),
+      conferenceGames: {
+        East: { mode: 'automatic' as const },
+        West: { mode: 'automatic' as const },
+      },
+    };
+    await expect(
+      validateNewLeagueConferencePlan('2025', conferencePlan),
+    ).resolves.toMatchObject({
+      issues: [],
+      warnings: [{ teamA: 'East 1', teamB: 'West 2' }],
+    });
+
+    const created = await startNewLeague(rivalryInput());
+    expect(created.schedule[6]).toMatchObject({
+      opponent: { name: 'West 1' },
+      label: 'Primary Trophy',
+      location: 'Neutral',
+      venue: 'Test Bowl',
+    });
+    expect(created.rivalryWarnings).toMatchObject([
+      { teamA: 'East 1', teamB: 'West 2', name: 'Rescue Trophy' },
+    ]);
+
+    const db = await getDb();
+    const initialGames = await db.getAllFromIndex('games', 'year', 2025);
+    expect(initialGames).toHaveLength(1);
+    expect(initialGames[0]).toMatchObject({
+      neutralSite: true,
+      homeTeamId: null,
+      awayTeamId: null,
+      venue: 'Test Bowl',
+    });
+    expect((await loadTeamSchedule('East 1', 2025)).schedule[6]).toMatchObject({
+      location: 'Neutral',
+      venue: 'Test Bowl',
+    });
+    expect((await loadWeekSchedule(7)).games[0]).toMatchObject({
+      neutralSite: true,
+      venue: 'Test Bowl',
+    });
+    expect((await loadGame(initialGames[0].id)).game).toMatchObject({
+      neutralSite: true,
+      venue: 'Test Bowl',
+    });
+    await expect(scheduleNonConGame('West 2', 7)).rejects.toThrow(
+      'Week 7 already has a scheduled game.',
+    );
+    expect(await db.getAllFromIndex('games', 'year', 2025)).toHaveLength(1);
+
+    await scheduleNonConGame('West 2', 8);
+    const games = await db.getAllFromIndex('games', 'year', 2025);
+    expect(games).toHaveLength(2);
+    expect(games.find(game => game.teamBId !== games[0].teamBId)).toMatchObject({
+      weekPlayed: 8,
+      name: 'Rescue Trophy',
+    });
+    expect((await loadNonCon()).rivalryWarnings).toEqual([]);
+  });
+
+  it('rejects an infeasible manual game without changing persisted state', async () => {
+    configureRivalryLeague();
+    await startNewLeague(rivalryInput());
+    const db = await getDb();
+    const fixedGame = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    await db.put('games', {
+      ...fixedGame,
+      id: 999,
+      weekPlayed: 6,
+    });
+    const gamesBefore = await db.getAllFromIndex('games', 'year', 2025);
+    const leagueBefore = (await db.get('league', 'current'))?.value;
+
+    await expect(scheduleNonConGame('West 2', 8)).rejects.toThrow(
+      'would leave the remaining schedule impossible to complete',
+    );
+
+    expect(await db.getAllFromIndex('games', 'year', 2025)).toEqual(gamesBefore);
+    expect((await db.get('league', 'current'))?.value).toEqual(leagueBefore);
+  });
+
+  it('rejects stale manual selections without changing persisted state', async () => {
+    configureRivalryLeague();
+    await startNewLeague(rivalryInput());
+    const db = await getDb();
+    const expectUnchangedRejection = async (
+      opponent: string,
+      week: number,
+      message: string,
+    ) => {
+      const gamesBefore = await db.getAllFromIndex('games', 'year', 2025);
+      const leagueBefore = (await db.get('league', 'current'))?.value;
+      await expect(scheduleNonConGame(opponent, week)).rejects.toThrow(message);
+      expect(await db.getAllFromIndex('games', 'year', 2025)).toEqual(
+        gamesBefore,
+      );
+      expect((await db.get('league', 'current'))?.value).toEqual(leagueBefore);
+    };
+
+    await expectUnchangedRejection(
+      'Unknown State',
+      8,
+      'Unknown State is not available for scheduling.',
+    );
+    await expectUnchangedRejection(
+      'West 2',
+      15,
+      'Week 15 is not available for preseason scheduling.',
+    );
+    await expectUnchangedRejection(
+      'West 2',
+      7,
+      'Week 7 already has a scheduled game.',
+    );
+    await expectUnchangedRejection(
+      'West 1',
+      8,
+      'West 1 is already on the schedule.',
+    );
+    await expectUnchangedRejection(
+      'East 2',
+      8,
+      'East 2 is not an eligible non-conference opponent.',
+    );
+
+    const fixedGame = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    const league = (await db.get('league', 'current'))?.value as LeagueState;
+    const east2 = league.teams.find(team => team.name === 'East 2')!;
+    const west2 = league.teams.find(team => team.name === 'West 2')!;
+    await db.put('games', {
+      ...fixedGame,
+      id: 999,
+      teamAId: east2.id,
+      teamBId: west2.id,
+      homeTeamId: east2.id,
+      awayTeamId: west2.id,
+      weekPlayed: 8,
+    });
+    await expectUnchangedRejection(
+      'West 2',
+      8,
+      'West 2 already has a game in Week 8.',
+    );
+    await db.delete('games', 999);
+
+    west2.nonConfGames = west2.nonConfLimit;
+    await db.put('league', { key: 'current', value: league });
+    await expectUnchangedRejection(
+      'West 2',
+      8,
+      'West 2 has no non-conference scheduling capacity remaining.',
+    );
+
+    west2.nonConfGames = 0;
+    const userTeam = league.teams.find(team => team.name === 'East 1')!;
+    userTeam.nonConfGames = userTeam.nonConfLimit;
+    await db.put('league', { key: 'current', value: league });
+    await expectUnchangedRejection(
+      'West 2',
+      8,
+      'No non-conference scheduling capacity remains.',
+    );
+  });
+
+  it('keeps other seasons out of preseason loader projections', async () => {
+    configureRivalryLeague();
+    const created = await startNewLeague(rivalryInput());
+    expect(created).toEqual(await loadNonCon());
+
+    const db = await getDb();
+    const fixedGame = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    const league = (await db.get('league', 'current'))?.value as LeagueState;
+    const west2 = league.teams.find(team => team.name === 'West 2')!;
+    await db.put('games', {
+      ...fixedGame,
+      id: 999,
+      teamBId: west2.id,
+      awayTeamId: west2.id,
+      weekPlayed: 8,
+      year: 2024,
+    });
+    league.info.currentWeek = 8;
+    await db.put('league', { key: 'current', value: league });
+
+    expect((await loadNonCon()).schedule[7].opponent).toBeNull();
+    expect(await listAvailableTeams(8)).toContain('West 2');
+    expect((await loadDashboard()).curr_game?.opponent).toBeNull();
+  });
+
+  it('removes fixed and pending rivalries for the current season', async () => {
+    configureRivalryLeague();
+    responses.set('/data/rivalries.json', {
+      rivalries: [
+        {
+          teams: ['East 1', 'West 1'],
+          week: 7,
+          name: 'Primary Trophy',
+          site: { type: 'neutral', venue: 'Test Bowl' },
+        },
+        { teams: ['East 1', 'West 2'], name: 'Flexible Trophy' },
+      ],
+    });
+
+    const created = await startNewLeague(rivalryInput());
+    expect(created.pending_rivalries).toMatchObject([
+      { teamA: 'East 1', teamB: 'West 2', name: 'Flexible Trophy' },
+    ]);
+    const db = await getDb();
+    const fixedGame = (await db.getAllFromIndex('games', 'year', 2025))[0];
+
+    await dismissPendingRivalry('East 1', 'West 2');
+    await removePreseasonGame(fixedGame.id);
+
+    const preseason = await loadNonCon();
+    expect(preseason.schedule[6].opponent).toBeNull();
+    expect(preseason.pending_rivalries).toEqual([]);
+    expect(await db.getAllFromIndex('games', 'year', 2025)).toEqual([]);
+    const league = (await db.get('league', 'current'))?.value as LeagueState;
+    expect(league.declinedRivalries).toEqual([
+      'East 1::West 2',
+      'East 1::West 1',
+    ]);
+    expect(league.teams.find(team => team.name === 'East 1')?.nonConfGames).toBe(0);
+    expect(league.teams.find(team => team.name === 'West 1')?.nonConfGames).toBe(0);
+
+    await initializeSeason(2025);
+    expect((await db.get('league', 'current'))?.value).toMatchObject({
+      info: { stage: 'season' },
+      declinedRivalries: ['East 1::West 2', 'East 1::West 1'],
+    });
+  });
+
+  it('removes manual games and restores rivalry behavior when rescheduled', async () => {
+    configureRivalryLeague();
+    responses.set('/data/rivalries.json', {
+      rivalries: [{
+        teams: ['East 1', 'West 1'],
+        name: 'Flexible Trophy',
+        site: { type: 'neutral', venue: 'Test Bowl' },
+      }],
+    });
+    await startNewLeague(rivalryInput());
+    const db = await getDb();
+
+    await scheduleNonConGame('West 1', 3);
+    let game = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    expect(game).toMatchObject({
+      weekPlayed: 3,
+      name: 'Flexible Trophy',
+      neutralSite: true,
+      venue: 'Test Bowl',
+    });
+    await removePreseasonGame(game.id);
+    expect((await db.get('league', 'current'))?.value).toMatchObject({
+      declinedRivalries: ['East 1::West 1'],
+    });
+
+    const returned = await scheduleNonConGame('West 1', 4);
+    game = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    expect(game).toMatchObject({
+      weekPlayed: 4,
+      name: 'Flexible Trophy',
+      neutralSite: true,
+      venue: 'Test Bowl',
+    });
+    expect(returned.schedule[3]).toMatchObject({
+      id: `${game.id}`,
+      opponent: { name: 'West 1' },
+      label: 'Flexible Trophy',
+      location: 'Neutral',
+      venue: 'Test Bowl',
+    });
+    expect(returned).toEqual(await loadNonCon());
+    expect((await db.get('league', 'current'))?.value).toMatchObject({
+      declinedRivalries: [],
+    });
+
+    await removePreseasonGame(game.id);
+    responses.set('/data/rivalries.json', { rivalries: [] });
+    await scheduleNonConGame('West 2', 5);
+    game = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    await removePreseasonGame(game.id);
+    expect((await db.get('league', 'current'))?.value).toMatchObject({
+      declinedRivalries: ['East 1::West 1'],
+    });
+  });
+
+  it('rejects schedule removals outside an editable preseason', async () => {
+    configureRivalryLeague();
+    await startNewLeague(rivalryInput());
+    const db = await getDb();
+    const game = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    const league = (await db.get('league', 'current'))?.value as LeagueState;
+
+    await expect(removePreseasonGame(999_999)).rejects.toThrow(
+      'The scheduled game is not available for removal.',
+    );
+    await db.put('games', { ...game, year: 2024 });
+    await expect(removePreseasonGame(game.id)).rejects.toThrow(
+      'The scheduled game is not available for removal.',
+    );
+    await db.put('games', game);
+    const east2 = league.teams.find(team => team.name === 'East 2')!;
+    const west2 = league.teams.find(team => team.name === 'West 2')!;
+    const unrelated = {
+      ...game,
+      id: 999,
+      teamAId: east2.id,
+      teamBId: west2.id,
+      homeTeamId: east2.id,
+      awayTeamId: west2.id,
+    };
+    await db.put('games', unrelated);
+    await expect(removePreseasonGame(unrelated.id)).rejects.toThrow(
+      'The scheduled game is not available for removal.',
+    );
+    await expect(
+      dismissPendingRivalry('East 1', 'West 9'),
+    ).rejects.toThrow('The pending rivalry is not available for removal.');
+
+    league.info.stage = 'season';
+    league.scheduleBuilt = true;
+    await db.put('league', { key: 'current', value: league });
+
+    const gamesBefore = await db.getAllFromIndex('games', 'year', 2025);
+    const leagueBefore = (await db.get('league', 'current'))?.value;
+    await expect(scheduleNonConGame('West 2', 8)).rejects.toThrow(
+      'Preseason scheduling is no longer editable.',
+    );
+    expect(await db.getAllFromIndex('games', 'year', 2025)).toEqual(
+      gamesBefore,
+    );
+    expect((await db.get('league', 'current'))?.value).toEqual(leagueBefore);
+    await expect(removePreseasonGame(game.id)).rejects.toThrow(
+      'Preseason scheduling is no longer editable.',
+    );
+    await expect(
+      dismissPendingRivalry('East 1', 'West 1'),
+    ).rejects.toThrow('Preseason scheduling is no longer editable.');
+    expect(await db.get('games', game.id)).toEqual(game);
   });
 
   it.each([

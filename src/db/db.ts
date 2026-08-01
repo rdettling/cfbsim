@@ -12,7 +12,7 @@ import type { RecruitingState } from '../types/recruiting';
 import type { SeasonMemory } from '../types/memory';
 
 export const DB_NAME = 'cfbsim';
-export const DB_VERSION = 6;
+export const DB_VERSION = 8;
 
 export interface Frontend2DB extends DBSchema {
   baseData: {

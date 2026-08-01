@@ -15,6 +15,10 @@ export { startNewLeague } from './season/startNewLeague';
 export { loadNonCon } from './season/loadNonCon';
 export { listAvailableTeams } from './season/listAvailableTeams';
 export { scheduleNonConGame } from './season/scheduleNonConGame';
+export {
+  dismissPendingRivalry,
+  removePreseasonGame,
+} from './season/removePreseasonScheduleItem';
 
 export const loadHomeData = async (year?: string): Promise<LaunchProps> => {
   const yearsIndex = await getYearsIndex();

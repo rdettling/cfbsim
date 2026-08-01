@@ -1,3 +1,4 @@
+import { Alert, Snackbar } from '@mui/material';
 import { useCallback, useRef, useState } from 'react';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
@@ -6,6 +7,8 @@ import { useDomainData } from '../domain/hooks';
 import {
   listAvailableTeams,
   loadNonCon,
+  dismissPendingRivalry,
+  removePreseasonGame,
   scheduleNonConGame,
 } from '../domain/league';
 import type { NonConPageData } from '../types/pages';
@@ -27,6 +30,8 @@ export const NonCon = () => {
   const [opponentsError, setOpponentsError] = useState<string | null>(null);
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [removingItemKey, setRemovingItemKey] = useState<string | null>(null);
+  const [removalError, setRemovalError] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
 
@@ -35,9 +40,10 @@ export const NonCon = () => {
     [],
   );
 
-  const { data, loading, error, refetch } = useDomainData<NonConPageData>({
-    fetcher: fetchData,
-  });
+  const { data, loading, error, refresh, replaceData } =
+    useDomainData<NonConPageData>({
+      fetcher: fetchData,
+    });
 
   const closeScheduleDialog = () => {
     if (scheduleSaving) return;
@@ -84,8 +90,8 @@ export const NonCon = () => {
     setScheduleSaving(true);
     setScheduleError(null);
     try {
-      await scheduleNonConGame(selectedOpponent, selectedWeek);
-      await refetch();
+      const nextData = await scheduleNonConGame(selectedOpponent, selectedWeek);
+      replaceData(nextData);
       setScheduleDialogOpen(false);
       setSelectedWeek(null);
       setAvailableTeams([]);
@@ -100,6 +106,39 @@ export const NonCon = () => {
   const handleTeamClick = (teamName: string) => {
     setSelectedTeam(teamName);
     setTeamDialogOpen(true);
+  };
+
+  const removeScheduledGame = async (gameId: string) => {
+    if (removingItemKey) return;
+    const numericId = Number(gameId);
+    const itemKey = `game:${gameId}`;
+    setRemovingItemKey(itemKey);
+    setRemovalError(null);
+    try {
+      await removePreseasonGame(numericId);
+      await refresh();
+    } catch {
+      setRemovalError('The scheduled game could not be removed. Try again.');
+    } finally {
+      setRemovingItemKey(null);
+    }
+  };
+
+  const removePendingRivalry = async (
+    rivalry: NonConPageData['pending_rivalries'][number],
+  ) => {
+    if (removingItemKey) return;
+    const itemKey = `rivalry:${rivalry.id}`;
+    setRemovingItemKey(itemKey);
+    setRemovalError(null);
+    try {
+      await dismissPendingRivalry(rivalry.teamA, rivalry.teamB);
+      await refresh();
+    } catch {
+      setRemovalError('The pending rivalry could not be removed. Try again.');
+    } finally {
+      setRemovingItemKey(null);
+    }
   };
 
   return (
@@ -134,6 +173,9 @@ export const NonCon = () => {
               onSectionChange={setActiveSection}
               onSchedule={openScheduleDialog}
               onTeamClick={handleTeamClick}
+              onRemoveGame={removeScheduledGame}
+              onRemoveRivalry={removePendingRivalry}
+              removingItemKey={removingItemKey}
             />
           )}
 
@@ -155,8 +197,25 @@ export const NonCon = () => {
             open={teamDialogOpen}
             onClose={() => setTeamDialogOpen(false)}
           />
+          <Snackbar
+            open={Boolean(removalError)}
+            autoHideDuration={8000}
+            onClose={() => setRemovalError(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <Alert
+              severity="error"
+              variant="filled"
+              onClose={() => setRemovalError(null)}
+              role="status"
+            >
+              {removalError}
+            </Alert>
+          </Snackbar>
         </>
       )}
     </PageLayout>
   );
 };
+
+export default NonCon;

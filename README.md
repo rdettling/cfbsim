@@ -11,6 +11,8 @@ All docs are under [`docs/`](docs/README.md).
 Use Node 24 LTS, as recorded in `.nvmrc` and `package.json`.
 
 ```bash
+nvm install
+nvm use
 npm ci
 npm run dev
 ```

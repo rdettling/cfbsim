@@ -134,6 +134,10 @@ export function assertCurrentLeagueState(
     Array.isArray(value.conferences) &&
     value.conferences.every(isCurrentConferenceMetadata) &&
     Array.isArray(value.pending_rivalries) &&
+    Array.isArray(value.declinedRivalries) &&
+    value.declinedRivalries.every(
+      key => typeof key === 'string' && key.length > 0,
+    ) &&
     isRecord(value.rivalryHostSeeds) &&
     Object.values(value.rivalryHostSeeds).every(
       seed => typeof seed === 'string',

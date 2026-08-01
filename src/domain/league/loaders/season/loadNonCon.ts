@@ -1,7 +1,14 @@
 import type { NonConData } from '../../../../types/league';
 import { loadLeagueOrThrow } from '../../leagueStore';
-import { getUserSchedule } from './shared';
 import { buildLeagueNavigationEnvelope } from '../navigationEnvelope';
+import { getRivalriesData } from '../../../../db/baseData';
+import { buildUserScheduleFromGames } from '../../../schedule/projection';
+import { getCurrentYearGames, getUserTeam } from './shared';
+import {
+  resolveRivalries,
+  withoutDeclinedRivalries,
+} from '../../../rivalryScheduling';
+import { buildNonConData } from './nonConData';
 
 export const loadNonCon = async (): Promise<NonConData> => {
   const league = await loadLeagueOrThrow();
@@ -12,13 +19,24 @@ export const loadNonCon = async (): Promise<NonConData> => {
       ...envelope,
       schedule: [],
       pending_rivalries: [],
+      rivalryWarnings: [],
     };
   }
 
-  const schedule = await getUserSchedule(league, undefined, league.info.currentYear);
-  return {
-    ...envelope,
-    schedule,
-    pending_rivalries: league.pending_rivalries,
-  };
+  const games = await getCurrentYearGames(league);
+  const schedule = buildUserScheduleFromGames(
+    getUserTeam(league),
+    league.teams,
+    games,
+  );
+  const rivalryResolution = resolveRivalries({
+    teams: league.teams,
+    rivalries: withoutDeclinedRivalries(
+      await getRivalriesData(),
+      league.declinedRivalries,
+    ),
+    existingGames: games,
+    year: league.info.currentYear,
+  });
+  return buildNonConData(league, schedule, rivalryResolution);
 };

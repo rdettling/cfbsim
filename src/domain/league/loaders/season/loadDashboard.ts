@@ -1,8 +1,8 @@
 import type { Conference, Info, ScheduleGame, Team } from '../../../../types/domain';
+import { buildUserScheduleFromGames } from '../../../schedule/projection';
 import { loadLeagueOrThrow } from '../../leagueStore';
 import {
   getCurrentYearGames,
-  getUserSchedule,
   getUserTeam,
 } from './shared';
 
@@ -34,13 +34,18 @@ export const loadDashboard = async (): Promise<DashboardPageResult> => {
 
   const top10 = [...league.teams].sort((a, b) => a.ranking - b.ranking).slice(0, 10);
 
-  const schedule = await getUserSchedule(league, league.info.lastWeek || 14, league.info.currentYear);
+  const games = await getCurrentYearGames(league);
+  const schedule = buildUserScheduleFromGames(
+    userTeam,
+    league.teams,
+    games,
+    league.info.lastWeek || 14,
+  );
   const currentWeekIndex = Math.max(league.info.currentWeek - 1, 0);
   const prevGame = currentWeekIndex > 0 ? schedule[currentWeekIndex - 1] : null;
   const currGame = schedule[currentWeekIndex] ?? null;
 
   const lastWeek = Math.max(league.info.currentWeek - 1, 1);
-  const games = await getCurrentYearGames(league);
   const top_games = games
     .filter(
       game =>

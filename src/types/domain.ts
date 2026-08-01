@@ -88,6 +88,7 @@ export interface ScheduleGame {
   moneyline: string;
   id: string;
   location?: 'Home' | 'Away' | 'Neutral';
+  venue: string | null;
 }
 
 export type ConferenceStructurePolicy = 'historical' | 'current';
@@ -142,6 +143,7 @@ export interface PreviewData {
   conferences: Array<{
     name: string;
     fullName: string;
+    games: number;
   }>;
   teams: Array<{
     name: string;
@@ -156,4 +158,84 @@ export interface PreviewData {
     conf_champ_autobids: number;
     conf_champ_top_4: boolean;
   };
+}
+
+export type ConferenceGameSetting =
+  | { mode: 'automatic' }
+  | { mode: 'manual'; target: number };
+
+export interface CustomConferencePlan {
+  assignments: Record<string, string | null>;
+  conferenceGames: Record<string, ConferenceGameSetting>;
+}
+
+export type NewLeagueConferenceSetup =
+  | { mode: 'historical' }
+  | { mode: 'custom'; plan: CustomConferencePlan };
+
+export interface ConferencePlanIssue {
+  code:
+    | 'missing_team'
+    | 'unknown_team'
+    | 'unknown_conference'
+    | 'missing_game_setting'
+    | 'unknown_game_setting'
+    | 'singleton_conference'
+    | 'invalid_game_target'
+    | 'impossible_schedule';
+  message: string;
+  conferenceName?: string;
+  teamName?: string;
+}
+
+export interface RivalryPlanWarning {
+  code: 'omitted_rivalry';
+  teamA: string;
+  teamB: string;
+  name: string | null;
+  message: string;
+}
+
+export interface RivalryDefinition {
+  teamA: string;
+  teamB: string;
+  week: number | null;
+  name: string | null;
+  neutralSite: boolean;
+  venue: string | null;
+}
+
+export interface RivalryConstraint extends RivalryDefinition {
+  key: string;
+  teamAId: number;
+  teamBId: number;
+}
+
+export interface RivalryResolution {
+  accepted: RivalryConstraint[];
+  omitted: RivalryPlanWarning[];
+  feasible: boolean;
+}
+
+export interface PendingRivalry {
+  id: number;
+  teamA: string;
+  teamB: string;
+  name: string | null;
+  homeTeam: string | null;
+  awayTeam: string | null;
+  neutralSite: boolean;
+  venue: string | null;
+}
+
+export interface ConferencePlanValidationResult {
+  issues: ConferencePlanIssue[];
+  warnings: RivalryPlanWarning[];
+}
+
+export interface ResolvedConferenceAlignment {
+  assignments: Record<string, string | null>;
+  conferenceGames: Record<string, number>;
+  activeConferences: string[];
+  issues: ConferencePlanIssue[];
 }

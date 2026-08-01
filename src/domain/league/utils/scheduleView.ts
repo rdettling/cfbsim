@@ -41,5 +41,6 @@ export const buildScheduleGameForTeam = (
     moneyline: isTeamA ? game.moneylineA : game.moneylineB,
     id: `${game.id}`,
     location,
+    venue: game.venue,
   } as const;
 };

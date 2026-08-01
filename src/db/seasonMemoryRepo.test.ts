@@ -21,6 +21,7 @@ const game: GameRecord = {
   homeTeamId: null,
   awayTeamId: null,
   neutralSite: true,
+  venue: null,
   winnerId: 1,
   baseLabel: 'National Championship',
   name: 'National Championship',

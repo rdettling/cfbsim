@@ -8,6 +8,7 @@ export interface SimGame {
   homeTeam: Team | null;
   awayTeam: Team | null;
   neutralSite: boolean;
+  venue: string | null;
   winner: Team | null;
   baseLabel: string;
   name: string | null;

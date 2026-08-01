@@ -1,7 +1,8 @@
-import { Alert, Box, CircularProgress, Container } from '@mui/material';
+import { Alert, Container } from '@mui/material';
 import type { ContainerProps } from '@mui/material';
 import type { ReactNode } from 'react';
 import AppShell from './AppShell';
+import FullPageLoading from './FullPageLoading';
 import type {
   AppNavigationData,
   StageAdvanceAction,
@@ -31,18 +32,7 @@ export const PageLayout = ({
   children,
 }: PageLayoutProps) => {
   if (loading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-        }}
-      >
-        <CircularProgress size={60} />
-      </Box>
-    );
+    return <FullPageLoading />;
   }
 
   if (error) {

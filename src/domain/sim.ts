@@ -1,5 +1,4 @@
 export {
-  initializeSimData,
   getGamesToLiveSim,
   prepareInteractiveLiveGame,
   finalizeGameSimulation,

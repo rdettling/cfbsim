@@ -3,6 +3,7 @@ import { access, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { validateYearData } from '../src/domain/yearDataValidation';
+import { normalizeRivalriesData } from '../src/domain/rivalryData';
 import type {
   ConferencesData,
   HistoryData,
@@ -482,6 +483,16 @@ export const checkData = async (dataRoot = DATA_ROOT): Promise<string[]> => {
     );
   } catch (error) {
     errors.push(readJsonError('prestige_config.json', error));
+  }
+  try {
+    const rawRivalries = await readJson<unknown>(join(dataRoot, 'rivalries.json'));
+    if (!teamsData) {
+      errors.push('rivalries.json: team metadata is unavailable for validation.');
+    } else {
+      normalizeRivalriesData(rawRivalries, new Set(Object.keys(teamsData.teams)));
+    }
+  } catch (error) {
+    errors.push(readJsonError('rivalries.json', error));
   }
 
   const referencedTeams = new Set<string>();

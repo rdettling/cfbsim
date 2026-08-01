@@ -277,6 +277,11 @@ const GameSelectionModal = ({ open, onClose, onGameSelect }: GameSelectionModalP
                             {game.label}
                           </Typography>
                         )}
+                        {game.venue && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            {game.venue}
+                          </Typography>
+                        )}
                       </Stack>
                     </Stack>
                   </ListItemButton>

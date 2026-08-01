@@ -50,6 +50,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
         spread: '',
         moneyline: '',
         id: '',
+        venue: null,
       };
     }
 
@@ -82,6 +83,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
         moneyline: isTeamA ? game.moneylineA : game.moneylineB,
         id: `${game.id}`,
         location,
+        venue: game.venue,
         label: game.name ?? game.baseLabel ?? '',
       };
     }
@@ -95,6 +97,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
       moneyline: isTeamA ? game.moneylineA : game.moneylineB,
       id: `${game.id}`,
       location,
+      venue: game.venue,
       label: game.name ?? game.baseLabel ?? '',
     };
   });

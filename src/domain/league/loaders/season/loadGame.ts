@@ -48,6 +48,7 @@ export const loadGame = async (gameId: number) => {
     homeTeamId: record.homeTeamId,
     awayTeamId: record.awayTeamId,
     neutralSite: record.neutralSite,
+    venue: record.venue,
     rankATOG: record.rankATOG,
     rankBTOG: record.rankBTOG,
     spreadA: record.spreadA,
@@ -82,9 +83,9 @@ export const loadGame = async (gameId: number) => {
     ]);
     const opponent = record.teamAId === userTeam.id ? teamB : teamA;
     const rivalry = rivalries.rivalries.find(
-      ([left, right]) =>
-        (left === userTeam.name && right === opponent.name) ||
-        (right === userTeam.name && left === opponent.name),
+      ({ teamA, teamB }) =>
+        (teamA === userTeam.name && teamB === opponent.name) ||
+        (teamB === userTeam.name && teamA === opponent.name),
     );
     dynastyContext = buildDynastySeriesContext({
       userTeamId: userTeam.id,
@@ -93,7 +94,7 @@ export const loadGame = async (gameId: number) => {
       games: allGames.filter(game => game.year >= league.info.startYear),
       memories,
       teams: league.teams,
-      rivalryName: rivalry?.[3] ?? null,
+      rivalryName: rivalry?.name ?? null,
     });
   }
   const pregameGames = allGames.filter(

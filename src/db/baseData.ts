@@ -6,8 +6,10 @@ import type {
   TeamsData,
   YearData,
 } from '../types/baseData';
+import type { RivalryDefinition } from '../types/domain';
+import { normalizeRivalriesData } from '../domain/rivalryData';
 
-export const STATIC_DATA_VERSION = 3;
+export const STATIC_DATA_VERSION = 5;
 const STATIC_DATA_VERSION_KEY = 'static_data_version';
 const MUTABLE_BASE_DATA_KEYS = new Set(['history']);
 
@@ -49,11 +51,13 @@ export const setHistoryData = async (value: HistoryData) => {
 };
 export const getPrestigeConfig = () =>
   getBaseData<Record<string, number>>('prestige_config', '/data/prestige_config.json');
-export const getRivalriesData = () =>
-  getBaseData<{ rivalries: [string, string, number | null, string | null, boolean?][] }>(
-    'rivalries',
-    '/data/rivalries.json'
-  );
+export const getRivalriesData = async (): Promise<{ rivalries: RivalryDefinition[] }> => {
+  const [value, teams] = await Promise.all([
+    getBaseData<unknown>('rivalries', '/data/rivalries.json'),
+    getTeamsData(),
+  ]);
+  return normalizeRivalriesData(value, new Set(Object.keys(teams.teams)));
+};
 export const getHeadlinesData = () =>
   getBaseData<Record<string, string[]>>('headlines', '/data/headlines.json');
 export const getNamesData = () =>

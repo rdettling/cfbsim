@@ -72,6 +72,7 @@ export const buildTestLeague = (
       },
     ],
     pending_rivalries: [],
+    declinedRivalries: [],
     rivalryHostSeeds: {},
     scheduleBuilt: true,
     simInitialized: true,

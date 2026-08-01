@@ -6,5 +6,15 @@ export interface FullGame {
   weekPlayed: number;
   homeTeam: Team | null;
   awayTeam: Team | null;
+  venue: string | null;
   name?: string | null;
+}
+
+export interface ScheduleConstraint {
+  teamAId: number;
+  teamBId: number;
+  weekPlayed: number;
+  homeTeamId: number | null;
+  awayTeamId: number | null;
+  name: string | null;
 }

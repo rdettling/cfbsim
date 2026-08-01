@@ -71,7 +71,10 @@ export const ScheduleOpponent = ({ game, onClick }: ScheduleOpponentProps) => {
 export const ScheduleSiteBadge = ({ game }: GameDetailProps) => {
   if (!game.location) return null;
 
-  return <Chip label={game.location} size="small" variant="outlined" />;
+  const label = game.venue
+    ? `${game.venue} · ${game.location}`
+    : game.location;
+  return <Chip label={label} size="small" variant="outlined" />;
 };
 
 export const ScheduleGameLabel = ({ game }: GameDetailProps) => {

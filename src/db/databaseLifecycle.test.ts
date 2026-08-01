@@ -74,6 +74,18 @@ describe('database startup lifecycle', () => {
     expect(await (await getDb()).get('baseData', 'marker')).toBeUndefined();
   });
 
+  it('requires the current seasonal rivalry opt-out state', async () => {
+    const db = await getDb();
+    const malformed = buildTestLeague('season');
+    delete (malformed as Partial<LeagueState>).declinedRivalries;
+    await db.put('league', { key: 'current', value: malformed });
+    await db.put('players', buildTestPlayer());
+
+    await initializeDatabase();
+
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
   it('deletes the database when the current roster is malformed', async () => {
     const db = await getDb();
     await db.put('league', {

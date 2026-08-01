@@ -176,13 +176,13 @@ describe('loadRecruiting', () => {
       code: 'STATE_MISSING',
     });
 
-    const malformed = buildRecruitingState({
-      status: 'active',
-    }) as unknown as Record<string, unknown>;
-    malformed.legacy = true;
+    const malformed = Object.assign(
+      buildRecruitingState({ status: 'active' }),
+      { legacy: true },
+    );
     await db.put('recruiting', {
       key: 'current',
-      value: malformed as never,
+      value: malformed,
     });
     await expect(loadRecruiting()).rejects.toMatchObject({
       code: 'INVALID_RECRUITING_STATE',

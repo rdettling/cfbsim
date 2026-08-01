@@ -5,6 +5,7 @@ export interface GameRecord {
   homeTeamId: number | null;
   awayTeamId: number | null;
   neutralSite: boolean;
+  venue: string | null;
   winnerId: number | null;
   baseLabel: string;
   name: string | null;

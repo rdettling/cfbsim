@@ -190,6 +190,7 @@ const createGameRecord = (
     homeTeamId: homeTeam?.id ?? null,
     awayTeamId: awayTeam?.id ?? null,
     neutralSite,
+    venue: null,
     winnerId: null,
     baseLabel: buildBaseLabel(teamA, teamB, name),
     name,

@@ -29,7 +29,7 @@
             }
         },
         "SEC": {
-            "games": 8,
+            "games": 9,
             "teams": {
                 "Georgia": 7,
                 "Ole Miss": 6,
@@ -71,7 +71,7 @@
             }
         },
         "ACC": {
-            "games": 8,
+            "games": 9,
             "teams": {
                 "Miami": 5,
                 "Virginia": 3,

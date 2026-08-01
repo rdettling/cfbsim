@@ -108,6 +108,7 @@ const seedProgression = async () => {
     },
     { key: 'states', value: { TS: 1, OS: 1 } },
     { key: 'rivalries', value: { rivalries: [] } },
+    { key: 'teams', value: { teams: {} } },
     { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
   ];
   const tx = db.transaction(

@@ -1,6 +1,5 @@
 import {
   clearBaseDataCache,
-  getHistoryData,
   getYearData,
   getYearsIndex,
 } from '../../../../db/baseData';
@@ -20,6 +19,19 @@ import { prepareInitialRosters } from '../../../roster';
 import { buildInitialRosterOrigins } from '../../../playerOrigins';
 import { getLastWeekByPlayoffTeams } from '../../postseason';
 import { initializeNonConScheduling } from '../../seasonReset';
+import {
+  applyResolvedConferenceAlignment,
+  resolveConferencePlan,
+} from '../../../conferencePlan';
+import {
+  assertCompleteSchedule,
+  buildFullScheduleFromExisting,
+  VALIDATION_SCHEDULE_SEED,
+} from '../../../schedule/planner';
+import {
+  buildAcceptedRivalryGames,
+} from '../../../rivalryScheduling';
+import { buildNonConData } from './nonConData';
 
 const isPlayoffTeamCount = (value: number): value is PlayoffTeamCount =>
   value === 2 || value === 4 || value === 12;
@@ -30,6 +42,14 @@ const validateBasicInput = (input: StartNewLeagueInput) => {
   }
   if (!input.teamName.trim()) {
     throw new NewLeagueConfigurationError('Choose a team.');
+  }
+  if (
+    input.conferenceSetup.mode !== 'historical' &&
+    input.conferenceSetup.mode !== 'custom'
+  ) {
+    throw new NewLeagueConfigurationError(
+      'Choose era-accurate or custom conference alignment.',
+    );
   }
   if (!isPlayoffTeamCount(input.playoff.teams)) {
     throw new NewLeagueConfigurationError(
@@ -55,9 +75,19 @@ export const startNewLeague = async (
   const [yearData, teamsAndConferences] = await Promise.all([
     getYearData(year),
     buildTeamsAndConferences(year),
-    getHistoryData(),
   ]);
   const { teams, conferences } = teamsAndConferences;
+  if (input.conferenceSetup.mode === 'custom') {
+    const resolved = resolveConferencePlan(
+      teams,
+      conferences,
+      input.conferenceSetup.plan,
+    );
+    if (resolved.issues.length) {
+      throw new NewLeagueConfigurationError(resolved.issues[0].message);
+    }
+    applyResolvedConferenceAlignment(teams, conferences, resolved);
+  }
   const userTeam = teams.find(team => team.name === input.teamName);
   if (!userTeam) {
     throw new NewLeagueConfigurationError(
@@ -96,6 +126,28 @@ export const startNewLeague = async (
         'Top-four conference champion seeding requires at least four automatic bids.',
       );
     }
+    const eligibleConferences = conferences.filter(
+      conference =>
+        conference.confName !== 'Independent' &&
+        conference.teams.length >= 2,
+    ).length;
+    if (
+      input.conferenceSetup.mode === 'custom' &&
+      resolvedPlayoffAutobids > eligibleConferences
+    ) {
+      throw new NewLeagueConfigurationError(
+        `Automatic bids cannot exceed the ${eligibleConferences} eligible conferences.`,
+      );
+    }
+    if (
+      input.conferenceSetup.mode === 'custom' &&
+      resolvedPlayoffTop4 &&
+      eligibleConferences < 4
+    ) {
+      throw new NewLeagueConfigurationError(
+        'Top-four conference champion seeding requires at least four eligible conferences.',
+      );
+    }
   }
 
   const normalizedPlayoffAutobids =
@@ -118,11 +170,14 @@ export const startNewLeague = async (
     teams,
     conferences,
     pending_rivalries: [],
+    declinedRivalries: [],
     rivalryHostSeeds: {},
     scheduleBuilt: false,
     simInitialized: false,
     settings: {
       ...DEFAULT_NEXT_SEASON_CONFIGURATION,
+      conferencePolicy:
+        input.conferenceSetup.mode === 'custom' ? 'current' : 'historical',
       playoffTeams: resolvedPlayoffTeams,
       playoffAutobids: normalizedPlayoffAutobids ?? 0,
       conferenceChampionsReceiveTopSeeds: normalizedPlayoffTop4,
@@ -137,7 +192,38 @@ export const startNewLeague = async (
   const players = await prepareInitialRosters(league);
   const playerOrigins = buildInitialRosterOrigins(players, startYear);
 
-  const { schedule, gamesToSave } = await initializeNonConScheduling(league);
+  const { schedule, gamesToSave, rivalryResolution } =
+    await initializeNonConScheduling(league);
+  if (input.conferenceSetup.mode === 'custom') {
+    const validationTeams = structuredClone(league.teams);
+    const validationUserTeam = validationTeams.find(team => team.name === userTeam.name);
+    if (!validationUserTeam) {
+      throw new NewLeagueConfigurationError('The selected program is unavailable.');
+    }
+    try {
+      const { fullGames } = buildFullScheduleFromExisting(
+        validationUserTeam,
+        validationTeams,
+        gamesToSave,
+        {
+          year: startYear,
+          seed: VALIDATION_SCHEDULE_SEED,
+          requireComplete: true,
+          requiredGames: buildAcceptedRivalryGames(
+            rivalryResolution,
+            validationTeams,
+          ),
+        },
+      );
+      assertCompleteSchedule(validationTeams, fullGames);
+    } catch (error) {
+      throw new NewLeagueConfigurationError(
+        error instanceof Error
+          ? error.message
+          : 'The custom alignment cannot produce a complete schedule.',
+      );
+    }
+  }
   await commitNewLeague({
     league,
     players,
@@ -145,11 +231,5 @@ export const startNewLeague = async (
     playerOrigins,
   });
 
-  return {
-    info: league.info,
-    team: userTeam,
-    schedule,
-    pending_rivalries: league.pending_rivalries,
-    conferences: league.conferences,
-  };
+  return buildNonConData(league, schedule, rivalryResolution);
 };

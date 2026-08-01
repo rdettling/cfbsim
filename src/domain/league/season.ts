@@ -1,11 +1,7 @@
 import { ROUTES } from '../../constants/routes';
-import { buildFullScheduleFromExisting } from '../scheduleBuilder';
-import { initializeSimData } from '../sim';
 import { loadLeagueOrThrow } from './leagueStore';
-import {
-  getCurrentYearGames,
-  getUserTeam,
-} from './loaders/season/shared';
+import { getCurrentYearGames } from './loaders/season/shared';
+import { initializeSeasonSchedule } from './seasonInitialization';
 
 export const initializeSeason = async (expectedYear: number) => {
   const league = await loadLeagueOrThrow();
@@ -21,16 +17,8 @@ export const initializeSeason = async (expectedYear: number) => {
     throw new Error('The preseason already contains initialized season data.');
   }
 
-  const userTeam = getUserTeam(league);
   const existingGames = await getCurrentYearGames(league);
-  const { newGames } = buildFullScheduleFromExisting(
-    userTeam,
-    league.teams,
-    existingGames,
-  );
-  league.info.stage = 'season';
-  league.scheduleBuilt = true;
-  await initializeSimData(league, newGames);
+  await initializeSeasonSchedule(league, existingGames);
 
   return {
     stage: league.info.stage,

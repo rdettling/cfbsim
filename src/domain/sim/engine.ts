@@ -1148,6 +1148,7 @@ export const buildGameData = (game: GameRecord, teamsById: Map<number, Team>): G
     homeTeamId: game.homeTeamId,
     awayTeamId: game.awayTeamId,
     neutralSite: game.neutralSite,
+    venue: game.venue,
     teamA: {
       id: teamA.id,
       name: teamA.name,
@@ -1176,6 +1177,7 @@ export const hydrateGame = (game: GameRecord, teamsById: Map<number, Team>): Sim
   homeTeam: game.homeTeamId ? teamsById.get(game.homeTeamId)! : null,
   awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
   neutralSite: game.neutralSite,
+  venue: game.venue,
   winner: game.winnerId ? teamsById.get(game.winnerId)! : null,
   baseLabel: game.baseLabel,
   name: game.name,

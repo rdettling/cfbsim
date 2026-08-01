@@ -14,6 +14,7 @@ const game = (
   homeTeamId: null,
   awayTeamId: null,
   neutralSite: true,
+  venue: null,
   winnerId,
   baseLabel: name,
   name,

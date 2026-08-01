@@ -5,6 +5,7 @@ import { NonConSchedulePanel } from './NonConSchedulePanel';
 import { PendingRivalriesPanel } from './PendingRivalriesPanel';
 import type {
   NonConSection,
+  PendingRivalry,
   TeamSelectionHandler,
 } from './types';
 
@@ -14,6 +15,9 @@ type NonConWorkspaceProps = {
   onSectionChange: (section: NonConSection) => void;
   onSchedule: (week: number) => void;
   onTeamClick: TeamSelectionHandler;
+  onRemoveGame: (gameId: string) => void;
+  onRemoveRivalry: (rivalry: PendingRivalry) => void;
+  removingItemKey: string | null;
 };
 export const NonConWorkspace = ({
   data,
@@ -21,6 +25,9 @@ export const NonConWorkspace = ({
   onSectionChange,
   onSchedule,
   onTeamClick,
+  onRemoveGame,
+  onRemoveRivalry,
+  removingItemKey,
 }: NonConWorkspaceProps) => {
   const scheduledWeeks = data.schedule.filter(
     (game) => game.opponent !== null
@@ -36,12 +43,17 @@ export const NonConWorkspace = ({
       remainingManualGames={remainingManualGames}
       onSchedule={onSchedule}
       onTeamClick={onTeamClick}
+      onRemoveGame={onRemoveGame}
+      removalBusy={removingItemKey !== null}
     />
   );
   const rivalriesPanel = (
     <PendingRivalriesPanel
       rivalries={data.pending_rivalries}
+      warnings={data.rivalryWarnings}
       onTeamClick={onTeamClick}
+      onRemove={onRemoveRivalry}
+      removalBusy={removingItemKey !== null}
     />
   );
 

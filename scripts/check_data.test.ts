@@ -87,6 +87,7 @@ const createFixture = async () => {
       6: 0,
       7: 0,
     }),
+    writeJson(join(dataRoot, 'rivalries.json'), { rivalries: [] }),
     writeFile(
       join(fixtureRoot, 'public', 'logos', 'teams', 'Alpha.png'),
       '',

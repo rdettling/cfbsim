@@ -117,6 +117,7 @@ const seedFullCycle = async () => {
     },
     { key: 'states', value: { TS: 1 } },
     { key: 'rivalries', value: { rivalries: [] } },
+    { key: 'teams', value: { teams: {} } },
     { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
   ];
 
