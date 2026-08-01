@@ -10,6 +10,7 @@ import {
   type SeasonAwardWinner,
   type SeasonMemory,
   type SeasonMemoryEvent,
+  type SeasonTeamSnapshot,
 } from '../types/memory';
 import type { LeagueState } from '../types/league';
 import { getDb } from './db';
@@ -56,16 +57,35 @@ const isAward = (value: unknown): value is SeasonAwardWinner =>
   Number.isInteger(value.playerId) &&
   Number.isInteger(value.teamId);
 
+const isTeamSnapshot = (value: unknown): value is SeasonTeamSnapshot =>
+  isRecord(value) &&
+  hasExactKeys(value, ['teamId', 'rating', 'prestige', 'ranking', 'record']) &&
+  Number.isInteger(value.teamId) &&
+  Number.isInteger(value.rating) &&
+  typeof value.prestige === 'number' &&
+  Number.isInteger(value.prestige) &&
+  value.prestige >= 0 &&
+  value.prestige <= 7 &&
+  typeof value.ranking === 'number' &&
+  Number.isInteger(value.ranking) &&
+  value.ranking > 0 &&
+  typeof value.record === 'string' &&
+  value.record.trim().length > 0;
+
 export function assertCurrentSeasonMemory(
   value: unknown,
 ): asserts value is SeasonMemory {
   const valid =
     isRecord(value) &&
-    hasExactKeys(value, ['year', 'playoffTeams', 'events', 'awards']) &&
+    hasExactKeys(value, ['year', 'playoffTeams', 'teamSnapshots', 'events', 'awards']) &&
     Number.isInteger(value.year) &&
     (value.playoffTeams === 2 ||
       value.playoffTeams === 4 ||
       value.playoffTeams === 12) &&
+    Array.isArray(value.teamSnapshots) &&
+    value.teamSnapshots.every(isTeamSnapshot) &&
+    new Set(value.teamSnapshots.map(snapshot => snapshot.teamId)).size ===
+      value.teamSnapshots.length &&
     Array.isArray(value.events) &&
     value.events.every(isEvent) &&
     new Set(value.events.map(event => event.gameId)).size === value.events.length &&
@@ -103,6 +123,18 @@ export const assertSeasonMemoryReferences = (
       throw new SeasonMemoryDataIntegrityError();
     }
     years.add(memory.year);
+    const snapshotTeamIds = new Set(memory.teamSnapshots.map(snapshot => snapshot.teamId));
+    const participantTeamIds = new Set(
+      games
+        .filter(game => game.year === memory.year)
+        .flatMap(game => [game.teamAId, game.teamBId]),
+    );
+    if (
+      memory.teamSnapshots.some(snapshot => !teamIds.has(snapshot.teamId)) ||
+      [...participantTeamIds].some(teamId => !snapshotTeamIds.has(teamId))
+    ) {
+      throw new SeasonMemoryDataIntegrityError();
+    }
     for (const event of memory.events) {
       const game = gameById.get(event.gameId);
       if (!game || game.year !== memory.year || game.winnerId === null) {

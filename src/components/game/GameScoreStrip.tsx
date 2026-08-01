@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
 import type { SimMatchup } from '../../types/components';
-import { TeamLogo } from '../team/TeamComponents';
+import { TeamLogo } from '../team/TeamLogo';
 
 type GameScoreStripProps = {
   matchup: SimMatchup;

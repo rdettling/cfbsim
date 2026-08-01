@@ -1,5 +1,5 @@
 import { Paper, Stack, Typography } from '@mui/material';
-import { TeamLink } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
 import type { PlayerPageData } from '../../types/pages';
 import type { RecruitPlayerOrigin } from '../../types/db';
 

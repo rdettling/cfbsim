@@ -12,7 +12,8 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import type { RatingsStatsPageData } from '../../types/pages';
 import type { StarRating } from '../../types/stats';
 

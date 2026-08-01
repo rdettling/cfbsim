@@ -3,8 +3,8 @@ import {
   ScheduleGameAction,
   ScheduleGameLabel,
   ScheduleOpponent,
-  ScheduleSiteBadge,
 } from './ScheduleGameDetails';
+import { getScheduleVenueLabel } from './scheduleVenue';
 import type { ScheduleViewProps } from './types';
 
 export const MobileScheduleList = ({ games, seasonYear, onOpponentClick }: ScheduleViewProps) => (
@@ -40,17 +40,7 @@ export const MobileScheduleList = ({ games, seasonYear, onOpponentClick }: Sched
           >
             Week {game.weekPlayed}
           </Typography>
-          <Stack
-            direction="row"
-            spacing={0.75}
-            sx={{
-              alignItems: 'center',
-              minWidth: 0,
-            }}
-          >
-            {game.opponent && <ScheduleSiteBadge game={game} />}
-            {game.label && <ScheduleGameLabel game={game} />}
-          </Stack>
+          {game.label && <ScheduleGameLabel game={game} />}
         </Stack>
 
         {game.opponent ? (
@@ -67,20 +57,41 @@ export const MobileScheduleList = ({ games, seasonYear, onOpponentClick }: Sched
                 mt: 1.25,
               }}
             >
-              <Box>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    display: 'block',
-                  }}
-                >
-                  Spread
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {game.spread || '—'}
-                </Typography>
-              </Box>
+              <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                <Box sx={{ maxWidth: 130 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary', display: 'block' }}
+                  >
+                    Venue
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {getScheduleVenueLabel(game)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary', display: 'block' }}
+                  >
+                    Spread
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {game.spread || '—'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary', display: 'block' }}
+                  >
+                    Moneyline
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {game.moneyline || '—'}
+                  </Typography>
+                </Box>
+              </Stack>
               <ScheduleGameAction game={game} />
             </Stack>
           </>

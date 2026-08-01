@@ -16,7 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadIndividualStats } from '../domain/league';
 import type { IndividualStatsPageData } from '../types/pages';

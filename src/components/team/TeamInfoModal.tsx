@@ -13,72 +13,24 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  Link as MuiLink,
   Stack,
   Typography,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { getTeamInfo } from '../../domain/league';
+import { getTeamInfo } from '../../domain/league/loaders/team/getTeamInfo';
 import type { Team } from '../../types/domain';
-import type {
-  LogoProps,
-  TeamInfoModalProps,
-  TeamLinkProps,
-  LogoWithTypeProps,
-} from '../../types/components';
+import { TeamLogo } from './TeamLogo';
 
-const getBasePath = () => {
-  const base = import.meta.env.BASE_URL ?? '/';
-  return base.endsWith('/') ? base.slice(0, -1) : base;
+type TeamInfoModalProps = {
+  teamName: string;
+  open: boolean;
+  onClose: () => void;
 };
-
-const Logo = ({ type, name, size = 30 }: LogoWithTypeProps) => {
-  const [hasError, setHasError] = useState(false);
-  const logoPath = `${getBasePath()}/logos/${type}/${name}.png`;
-
-  return (
-    <Box
-      component="img"
-      src={logoPath}
-      onError={() => {
-        console.error(`Failed to load ${type} logo for ${name} from ${logoPath}`);
-        setHasError(true);
-      }}
-      sx={{
-        width: 'auto',
-        height: size,
-        maxWidth: size * 2,
-        border: hasError ? '1px dashed' : 'none',
-        borderColor: hasError ? 'error.main' : 'transparent',
-      }}
-      alt={`${name} logo`}
-    />
-  );
-};
-
-export const TeamLogo = (props: LogoProps) => <Logo type="teams" {...props} />;
-export const ConfLogo = (props: LogoProps) => <Logo type="conferences" {...props} />;
-
-export const TeamLink = ({ name, onTeamClick }: TeamLinkProps) => (
-  <MuiLink
-    component="button"
-    type="button"
-    onClick={() => onTeamClick(name)}
-    sx={{ cursor: 'pointer', textAlign: 'left' }}
-  >
-    {name}
-  </MuiLink>
-);
 
 const StatItem = ({ label, value }: { label: string; value: string | number }) => (
   <Box>
-    <Typography
-      variant="body2"
-      sx={{
-        color: 'text.secondary',
-      }}
-    >
+    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
       {label}
     </Typography>
     <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -100,7 +52,7 @@ export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) =
     setError(null);
     setLoading(true);
     getTeamInfo(teamName)
-      .then((team) => {
+      .then(team => {
         if (!active) return;
         if (team) setTeamInfo(team);
         else setError('Team information is unavailable.');
@@ -144,24 +96,13 @@ export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) =
     >
       <DialogTitle sx={{ pr: 6 }}>
         {teamInfo ? (
-          <Stack
-            direction="row"
-            spacing={1.5}
-            sx={{
-              alignItems: 'center',
-            }}
-          >
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
             <TeamLogo name={teamInfo.name} size={52} />
             <Box sx={{ minWidth: 0 }}>
               <Typography id="team-info-dialog-title" component="span" variant="h5">
                 {teamInfo.name} {teamInfo.mascot}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {teamInfo.confName ?? teamInfo.conference}
               </Typography>
             </Box>
@@ -184,50 +125,38 @@ export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) =
       </DialogTitle>
       <DialogContent dividers>
         {loading ? (
-          <Stack
-            spacing={1.5}
-            sx={{
-              alignItems: 'center',
-              py: 4,
-            }}
-          >
+          <Stack spacing={1.5} sx={{ alignItems: 'center', py: 4 }}>
             <CircularProgress size={32} />
-            <Typography
-              sx={{
-                color: 'text.secondary',
-              }}
-            >
+            <Typography sx={{ color: 'text.secondary' }}>
               Loading team information…
             </Typography>
           </Stack>
         ) : error ? (
           <Alert severity="error">{error}</Alert>
         ) : teamInfo ? (
-          <>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 2,
-              }}
-            >
-              <StatItem label="Rating" value={teamInfo.rating} />
-              <StatItem label="Prestige" value={`${teamInfo.prestige}/7`} />
-              <StatItem
-                label="Overall Record"
-                value={`${teamInfo.totalWins}-${teamInfo.totalLosses}`}
-              />
-              <StatItem
-                label="Conference Record"
-                value={`${teamInfo.confWins}-${teamInfo.confLosses}`}
-              />
-            </Box>
-          </>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: 2,
+            }}
+          >
+            <StatItem label="Rating" value={teamInfo.rating} />
+            <StatItem label="Prestige" value={`${teamInfo.prestige}/7`} />
+            <StatItem
+              label="Overall Record"
+              value={`${teamInfo.totalWins}-${teamInfo.totalLosses}`}
+            />
+            <StatItem
+              label="Conference Record"
+              value={`${teamInfo.confWins}-${teamInfo.confLosses}`}
+            />
+          </Box>
         ) : null}
       </DialogContent>
       {teamInfo && (
         <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}>
-          {actions.map((action) => (
+          {actions.map(action => (
             <Button
               key={action.label}
               component={RouterLink}

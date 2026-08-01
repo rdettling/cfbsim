@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Chip, Collapse, IconButton, Link, Paper, Stack, Typography } from '@mui/material';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import type { PlayerGameLog, PlayerStatCategory } from '../../types/player';
 import { formatPlayerStat, getGameColumns, getPrimaryGameColumns } from './config';
 

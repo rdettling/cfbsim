@@ -13,7 +13,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import { DataTable } from '../../components/ui/DataTable';
 import type { RecruitingPlayerResult, RecruitingTeamResult } from '../../types/recruiting';
 

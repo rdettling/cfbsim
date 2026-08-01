@@ -9,7 +9,7 @@ import type {
 import { buildTestLeague, buildTestPlayer } from '../../../../test/fixtures';
 import { initializeSeason } from '../../season';
 import { loadHomeData } from '../season';
-import { loadPlayer } from '../team';
+import { loadPlayer } from '../team/loadPlayer';
 import { loadDashboard } from './loadDashboard';
 import { loadNonCon } from './loadNonCon';
 import { listAvailableTeams } from './listAvailableTeams';
@@ -215,6 +215,9 @@ const seedExistingLeague = async () => {
   await db.put('seasonMemories', {
     year: 2025,
     playoffTeams: 12,
+    teamSnapshots: [
+      { teamId: 1, rating: 77, prestige: 3, ranking: 1, record: '1-0 (0-0)' },
+    ],
     events: [],
     awards: [],
   });

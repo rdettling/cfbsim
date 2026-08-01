@@ -1,5 +1,5 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material';
-import { TeamLogo } from '../../../components/team/TeamComponents';
+import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { PreviewData } from '../../../types/domain';
 import { StepActions } from './StepActions';
 

@@ -15,7 +15,7 @@ import {
 import HomeIcon from '@mui/icons-material/Home';
 import { useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TeamLogo } from '../team/TeamComponents';
+import { TeamLogo } from '../team/TeamLogo';
 import SeasonBanner from './SeasonBanner';
 import NonSeasonBanner from './NonSeasonBanner';
 import {

@@ -4,8 +4,8 @@ import {
   ScheduleGameAction,
   ScheduleGameLabel,
   ScheduleOpponent,
-  ScheduleSiteBadge,
 } from './ScheduleGameDetails';
+import { getScheduleVenueLabel } from './scheduleVenue';
 import type { ScheduleViewProps } from './types';
 
 export const DesktopScheduleTable = ({ games, seasonYear, onOpponentClick }: ScheduleViewProps) => (
@@ -14,7 +14,10 @@ export const DesktopScheduleTable = ({ games, seasonYear, onOpponentClick }: Sch
       <TableRow sx={{ bgcolor: 'background.default' }}>
         <TableCell sx={{ width: 72 }}>Week</TableCell>
         <TableCell>Opponent</TableCell>
-        <TableCell sx={{ width: 110 }}>Site</TableCell>
+        <TableCell sx={{ width: 220, whiteSpace: 'nowrap' }}>Venue</TableCell>
+        <TableCell align="center" sx={{ width: 110 }}>
+          Moneyline
+        </TableCell>
         <TableCell align="center" sx={{ width: 100 }}>
           Spread
         </TableCell>
@@ -37,8 +40,13 @@ export const DesktopScheduleTable = ({ games, seasonYear, onOpponentClick }: Sch
               <TableCell>
                 <ScheduleOpponent game={game} onClick={onOpponentClick} />
               </TableCell>
-              <TableCell>
-                <ScheduleSiteBadge game={game} />
+              <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                <Typography variant="body2">
+                  {getScheduleVenueLabel(game)}
+                </Typography>
+              </TableCell>
+              <TableCell align="center">
+                <Typography variant="body2">{game.moneyline || '—'}</Typography>
               </TableCell>
               <TableCell align="center">
                 <Typography variant="body2">{game.spread || '—'}</Typography>
@@ -51,7 +59,7 @@ export const DesktopScheduleTable = ({ games, seasonYear, onOpponentClick }: Sch
               </TableCell>
             </>
           ) : (
-            <TableCell colSpan={5}>
+            <TableCell colSpan={6}>
               <Typography
                 sx={{
                   color: 'text.secondary',

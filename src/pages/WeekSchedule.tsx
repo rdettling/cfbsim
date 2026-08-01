@@ -4,7 +4,7 @@ import { Box, Grid, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/m
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { PageLayout } from '../components/layout/PageLayout';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadWeekSchedule } from '../domain/league';
 import type { WeekSchedulePageData } from '../types/pages';

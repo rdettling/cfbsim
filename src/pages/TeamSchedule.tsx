@@ -1,18 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Box,
   FormControl,
   InputLabel,
   MenuItem,
   Paper,
   Select,
-  Stack,
   Typography,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import TeamHeader from '../components/team/TeamHeader';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamHeader } from '../components/team/TeamHeader';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamSchedule } from '../domain/league';
 import type { TeamSchedulePageData } from '../types/pages';
@@ -72,49 +70,32 @@ const TeamSchedule = () => {
     >
       {data && seasonYear && (
         <>
-          <TeamHeader team={data.team} teams={data.teams} onTeamChange={handleTeamChange} />
-
-          <Stack
-            component="header"
-            direction="row"
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 1.5,
-            }}
-          >
-            <Box>
-              <Typography component="h2" variant="h5" sx={{ fontWeight: 600 }}>
-                Schedule
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                {seasonYear} season
-              </Typography>
-            </Box>
-            {data.years.length > 0 && (
-              <FormControl size="small" sx={{ minWidth: 112 }}>
-                <InputLabel id="schedule-year-label">Year</InputLabel>
-                <Select
-                  labelId="schedule-year-label"
-                  value={seasonYear}
-                  label="Year"
-                  onChange={(event) => handleYearChange(Number(event.target.value))}
-                >
-                  {data.years.map((yearOption: number) => (
-                    <MenuItem key={yearOption} value={yearOption}>
-                      {yearOption}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
-          </Stack>
+          <TeamHeader
+            team={data.team}
+            title="Schedule"
+            subtitle={`${seasonYear} season`}
+            metrics={data.selectedTeamMetrics}
+            teamSelector={{ teams: data.teams, onChange: handleTeamChange }}
+            controls={
+              data.years.length > 0 ? (
+                <FormControl size="small" sx={{ minWidth: 112 }}>
+                  <InputLabel id="schedule-year-label">Year</InputLabel>
+                  <Select
+                    labelId="schedule-year-label"
+                    value={seasonYear}
+                    label="Year"
+                    onChange={(event) => handleYearChange(Number(event.target.value))}
+                  >
+                    {data.years.map((yearOption: number) => (
+                      <MenuItem key={yearOption} value={yearOption}>
+                        {yearOption}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : undefined
+            }
+          />
 
           {data.schedule.length > 0 ? (
             <>

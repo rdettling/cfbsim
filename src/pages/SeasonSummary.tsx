@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadSeasonSummary } from '../domain/league';
 import type { SeasonSummaryPageData } from '../types/pages';

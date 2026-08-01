@@ -1,6 +1,7 @@
 import StarIcon from '@mui/icons-material/Star';
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import type { PlayerPageData } from '../../types/pages';
 
 type PlayerProfileProps = {

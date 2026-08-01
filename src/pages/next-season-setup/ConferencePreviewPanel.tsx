@@ -1,6 +1,6 @@
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
 import type { ConferenceChange, ConferenceStructurePolicy } from '../../types/domain';
-import { TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLogo } from '../../components/team/TeamLogo';
 
 interface ConferencePreviewPanelProps {
   changes: ConferenceChange[];

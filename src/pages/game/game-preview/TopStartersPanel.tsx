@@ -1,6 +1,6 @@
 import { Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { TeamLogo } from '../../../components/team/TeamComponents';
+import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { Team } from '../../../types/domain';
 import type { GamePageData } from '../../../types/pages';
 

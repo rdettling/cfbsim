@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadAwards } from '../domain/league';
 import type { AwardsPageData } from '../types/pages';

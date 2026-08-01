@@ -1,6 +1,6 @@
 import { Link as RouterLink } from 'react-router-dom';
 import { Button, Chip, Link, Stack, Typography } from '@mui/material';
-import { TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import type { TeamScheduleGame } from './types';
 
 type GameDetailProps = {
@@ -66,15 +66,6 @@ export const ScheduleOpponent = ({ game, onClick }: ScheduleOpponentProps) => {
       </Stack>
     </Stack>
   );
-};
-
-export const ScheduleSiteBadge = ({ game }: GameDetailProps) => {
-  if (!game.location) return null;
-
-  const label = game.venue
-    ? `${game.venue} · ${game.location}`
-    : game.location;
-  return <Chip label={label} size="small" variant="outlined" />;
 };
 
 export const ScheduleGameLabel = ({ game }: GameDetailProps) => {

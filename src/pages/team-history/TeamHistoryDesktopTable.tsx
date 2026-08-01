@@ -12,8 +12,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { ConfLogo } from '../../components/team/TeamComponents';
+import { ConferenceLogo } from '../../components/team/TeamLogo';
 import { DataTable } from '../../components/ui/DataTable';
+import { getHistoryEraLabel } from './historyEra';
 import { rankLabel, type TeamHistoryViewProps } from './types';
 
 export const TeamHistoryDesktopTable = ({ years, teamName, startYear }: TeamHistoryViewProps) => (
@@ -38,111 +39,107 @@ export const TeamHistoryDesktopTable = ({ years, teamName, startYear }: TeamHist
     </TableHead>
     <TableBody>
       {years.map((year, index) => {
-        const previous = years[index - 1];
-        const showDynastyLabel = year.year >= startYear && index === 0;
-        const showHistoricalLabel =
-          year.year < startYear && (!previous || previous.year >= startYear);
+        const eraLabel = getHistoryEraLabel(
+          year.year,
+          years[index - 1]?.year,
+          startYear,
+        );
         return (
-        <Fragment key={year.year}>
-          {(showDynastyLabel || showHistoricalLabel) && (
-            <TableRow>
-              <TableCell colSpan={8} sx={{ bgcolor: 'background.default', py: 1 }}>
-                <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-                  {showDynastyLabel
-                    ? 'Dynasty Era'
-                    : 'Historical Archive — season results only'}
-                </Typography>
+          <Fragment key={year.year}>
+            {eraLabel && (
+              <TableRow>
+                <TableCell colSpan={8} sx={{ bgcolor: 'background.default', py: 1 }}>
+                  <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+                    {eraLabel}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+            <TableRow hover>
+              <TableCell>
+                {year.has_games ? (
+                  <Link
+                    component={RouterLink}
+                    to={`/${teamName}/schedule/${year.year}`}
+                    underline="hover"
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {year.year}
+                  </Link>
+                ) : (
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {year.year}
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
+                <Chip label={`Tier ${year.prestige}`} size="small" variant="outlined" />
+              </TableCell>
+              <TableCell align="right">{year.rating ?? '—'}</TableCell>
+              <TableCell>
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                  {year.conference !== 'Independent' && (
+                    <ConferenceLogo name={year.conference} size={24} />
+                  )}
+                  <Typography variant="body2">{year.conference}</Typography>
+                </Stack>
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600 }}>
+                {year.wins}-{year.losses}
+              </TableCell>
+              <TableCell align="center">
+                {year.isChampion ? (
+                  <Chip
+                    icon={<EmojiEventsIcon />}
+                    label="Champion"
+                    size="small"
+                    color="warning"
+                    variant="outlined"
+                  />
+                ) : (
+                  <Box
+                    component="span"
+                    sx={{ color: year.rank > 0 ? 'text.primary' : 'text.secondary' }}
+                  >
+                    {rankLabel(year.rank)}
+                  </Box>
+                )}
+              </TableCell>
+              <TableCell>
+                <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+                  {year.accomplishments.length
+                    ? year.accomplishments.map(accomplishment => (
+                        <Chip
+                          key={`${accomplishment.type}-${accomplishment.label}`}
+                          label={accomplishment.label}
+                          size="small"
+                          variant="outlined"
+                        />
+                      ))
+                    : '—'}
+                </Stack>
+              </TableCell>
+              <TableCell>
+                <Stack spacing={0.25}>
+                  {year.signatureGames.length
+                    ? year.signatureGames.map(game => (
+                        <Link
+                          key={game.id}
+                          component={RouterLink}
+                          to={`/game/${game.id}`}
+                          variant="body2"
+                          underline="hover"
+                        >
+                          {game.label}
+                        </Link>
+                      ))
+                    : '—'}
+                </Stack>
               </TableCell>
             </TableRow>
-          )}
-        <TableRow hover>
-          <TableCell>
-            {year.has_games ? (
-              <Link
-                component={RouterLink}
-                to={`/${teamName}/schedule/${year.year}`}
-                underline="hover"
-                sx={{ fontWeight: 600 }}
-              >
-                {year.year}
-              </Link>
-            ) : (
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {year.year}
-              </Typography>
-            )}
-          </TableCell>
-          <TableCell>
-            <Chip label={`Tier ${year.prestige}`} size="small" variant="outlined" />
-          </TableCell>
-          <TableCell align="right">{year.rating ?? '—'}</TableCell>
-          <TableCell>
-            <Stack
-              direction="row"
-              spacing={0.75}
-              sx={{
-                alignItems: 'center',
-              }}
-            >
-              {year.conference !== 'Independent' && <ConfLogo name={year.conference} size={24} />}
-              <Typography variant="body2">{year.conference}</Typography>
-            </Stack>
-          </TableCell>
-          <TableCell align="center" sx={{ fontWeight: 600 }}>
-            {year.wins}-{year.losses}
-          </TableCell>
-          <TableCell align="center">
-            {year.isChampion ? (
-              <Chip
-                icon={<EmojiEventsIcon />}
-                label="Champion"
-                size="small"
-                color="warning"
-                variant="outlined"
-              />
-            ) : (
-              <Box
-                component="span"
-                sx={{ color: year.rank > 0 ? 'text.primary' : 'text.secondary' }}
-              >
-                {rankLabel(year.rank)}
-              </Box>
-            )}
-          </TableCell>
-          <TableCell>
-            <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-              {year.accomplishments.length
-                ? year.accomplishments.map(accomplishment => (
-                    <Chip
-                      key={`${accomplishment.type}-${accomplishment.label}`}
-                      label={accomplishment.label}
-                      size="small"
-                      variant="outlined"
-                    />
-                  ))
-                : '—'}
-            </Stack>
-          </TableCell>
-          <TableCell>
-            <Stack spacing={0.25}>
-              {year.signatureGames.length
-                ? year.signatureGames.map(game => (
-                    <Link
-                      key={game.id}
-                      component={RouterLink}
-                      to={`/game/${game.id}`}
-                      variant="body2"
-                      underline="hover"
-                    >
-                      {game.label}
-                    </Link>
-                  ))
-                : '—'}
-            </Stack>
-          </TableCell>
-        </TableRow>
-        </Fragment>
-      )})}
+          </Fragment>
+        );
+      })}
     </TableBody>
   </DataTable>
 );

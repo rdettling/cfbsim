@@ -1,6 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
-import { TeamLink } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
 import type { PendingRivalry, TeamSelectionHandler } from './types';
 import type { RivalryPlanWarning } from '../../types/domain';
 

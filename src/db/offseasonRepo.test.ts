@@ -157,6 +157,9 @@ describe('commitOffseasonTransition', () => {
     const memory = {
       year: 2025,
       playoffTeams: 12 as const,
+      teamSnapshots: [
+        { teamId: 1, rating: 80, prestige: 4, ranking: 1, record: '12-0 (8-0)' },
+      ],
       events: [{ type: 'playoff_semifinal' as const, gameId: 3 }],
       awards: [],
     };

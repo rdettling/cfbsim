@@ -20,7 +20,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { getGamesToLiveSim } from '../../domain/sim';
 import { resolveHomeAway } from '../../domain/utils/gameDisplay';
-import { TeamLogo } from '../team/TeamComponents';
+import { TeamLogo } from '../team/TeamLogo';
 
 type GameSelectionData = Awaited<ReturnType<typeof getGamesToLiveSim>>;
 type GameSelectionRecord = GameSelectionData['games'][number];

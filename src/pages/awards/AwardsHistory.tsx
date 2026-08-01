@@ -1,5 +1,5 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
-import { TeamLink } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
 import type { AwardsPageData } from '../../types/pages';
 
 export const AwardsHistory = ({

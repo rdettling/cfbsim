@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Box,
   FormControl,
   InputLabel,
   MenuItem,
   Paper,
   Select,
-  Stack,
   Typography,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import TeamHeader from '../components/team/TeamHeader';
+import { TeamHeader } from '../components/team/TeamHeader';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamRoster } from '../domain/league';
 import type { TeamRosterPageData } from '../types/pages';
@@ -73,49 +71,31 @@ const Roster = () => {
         <>
           <TeamHeader
             team={data.team}
-            teams={data.teams}
-            onTeamChange={(name) => navigate(`/${name}/roster`)}
-          />
-          <Stack
-            component="header"
-            direction="row"
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 1.5,
+            title="Roster"
+            subtitle={`${data.roster.length} players`}
+            teamSelector={{
+              teams: data.teams,
+              onChange: (name) => navigate(`/${name}/roster`),
             }}
-          >
-            <Box>
-              <Typography component="h2" variant="h5">
-                Roster
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                {data.roster.length} players
-              </Typography>
-            </Box>
-            <FormControl size="small" sx={{ minWidth: { xs: 150, sm: 190 } }}>
-              <InputLabel id="roster-position-label">Position</InputLabel>
-              <Select
-                labelId="roster-position-label"
-                value={positionFilter}
-                label="Position"
-                onChange={(event) => setPositionFilter(event.target.value)}
-              >
-                <MenuItem value="">All Positions</MenuItem>
-                {data.positions.map((position) => (
-                  <MenuItem key={position} value={position}>
-                    {position.toUpperCase()}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
+            controls={
+              <FormControl size="small" sx={{ minWidth: { sm: 190 } }}>
+                <InputLabel id="roster-position-label">Position</InputLabel>
+                <Select
+                  labelId="roster-position-label"
+                  value={positionFilter}
+                  label="Position"
+                  onChange={(event) => setPositionFilter(event.target.value)}
+                >
+                  <MenuItem value="">All Positions</MenuItem>
+                  {data.positions.map((position) => (
+                    <MenuItem key={position} value={position}>
+                      {position.toUpperCase()}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            }
+          />
 
           {groups.length > 0 ? (
             <>

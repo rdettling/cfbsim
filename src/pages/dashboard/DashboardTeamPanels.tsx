@@ -1,6 +1,7 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import { DashboardPanel } from './DashboardPanel';
 import type { DashboardTeam, DashboardTeamClickHandler } from './types';
 

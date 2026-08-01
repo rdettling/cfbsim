@@ -1,6 +1,7 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
 import type { Team } from '../../types/domain';
-import { TeamLink, TeamLogo } from '../team/TeamComponents';
+import { TeamLink } from '../team/TeamLink';
+import { TeamLogo } from '../team/TeamLogo';
 import { formatNeutralSite } from '../../domain/utils/gameDisplay';
 
 type MatchupGame = {

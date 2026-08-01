@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Box, Tab, Tabs } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadPlayoff } from '../domain/league';
 import type { PlayoffPageData } from '../types/pages';

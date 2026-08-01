@@ -12,7 +12,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import type { RecruitingTeamResult } from '../../types/recruiting';
 
 interface RecruitingTeamRankingsProps {

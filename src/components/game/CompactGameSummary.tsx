@@ -2,7 +2,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Link, Stack, Typography } from '@mui/material';
 import { formatOpponentPrefix } from '../../domain/utils/gameDisplay';
 import type { ScheduleGame } from '../../types/domain';
-import { TeamLogo } from '../team/TeamComponents';
+import { TeamLogo } from '../team/TeamLogo';
 
 type CompactGameSummaryProps = {
   game: ScheduleGame | null;

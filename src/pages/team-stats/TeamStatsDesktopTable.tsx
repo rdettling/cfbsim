@@ -9,7 +9,8 @@ import {
   TableSortLabel,
   Typography,
 } from '@mui/material';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import { DataTable } from '../../components/ui/DataTable';
 import {
   formatTeamStat,

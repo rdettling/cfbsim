@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Paper, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
 import DriveSummary from '../../components/game/DriveSummary';
 import GameMatchupHeader from '../../components/game/GameMatchupHeader';
-import { TeamInfoModal } from '../../components/team/TeamComponents';
+import { TeamInfoModal } from '../../components/team/TeamInfoModal';
 import {
   resolveHomeAway,
   resolveTeamSide,

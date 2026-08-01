@@ -1,6 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Chip, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import type { NonConScheduleGame, TeamSelectionHandler } from './types';
 
 type NonConSchedulePanelProps = {

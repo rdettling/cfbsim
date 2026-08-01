@@ -2,7 +2,7 @@ import { Alert, Snackbar } from '@mui/material';
 import { useCallback, useRef, useState } from 'react';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import {
   listAvailableTeams,

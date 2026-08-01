@@ -1,6 +1,27 @@
 import { getAllGames } from '../../../../db/simRepo';
+import { getSeasonMemory } from '../../../../db/seasonMemoryRepo';
+import { SeasonMemoryDataIntegrityError } from '../../../../types/memory';
 import { loadLeagueOrThrow } from '../../leagueStore';
 import { getUserTeam } from './shared';
+
+const formatSelectedYearRecord = (
+  games: Awaited<ReturnType<typeof getAllGames>>,
+  teamId: number,
+) => {
+  let wins = 0;
+  let losses = 0;
+
+  for (const game of games) {
+    if (game.winnerId === null) continue;
+    if (game.winnerId === teamId) {
+      wins += 1;
+    } else {
+      losses += 1;
+    }
+  }
+
+  return `${wins}-${losses}`;
+};
 
 export const loadTeamSchedule = async (teamName?: string, yearParam?: number) => {
   const league = await loadLeagueOrThrow();
@@ -20,6 +41,24 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
     ? requestedYear
     : (availableYears[0] ?? league.info.currentYear);
   const selectedYearGames = teamGames.filter(game => game.year === selectedYear);
+  const selectedSeasonTeams = new Map(
+    (selectedYear === league.info.currentYear
+      ? league.teams.map(entry => ({
+          teamId: entry.id,
+          rating: entry.rating,
+          prestige: entry.prestige,
+          ranking: entry.ranking,
+          record: entry.record,
+        }))
+      : (await getSeasonMemory(selectedYear))?.teamSnapshots ?? []
+    ).map(snapshot => [snapshot.teamId, snapshot]),
+  );
+  const selectedTeamSnapshot = selectedSeasonTeams.get(team.id);
+  if (!selectedTeamSnapshot) {
+    throw new SeasonMemoryDataIntegrityError(
+      `Season ${selectedYear} is missing the team snapshot for ${team.name}.`,
+    );
+  }
   const gamesByWeek = new Map<number, (typeof teamGames)[number]>();
   selectedYearGames.forEach(game => {
     if (game.weekPlayed && game.weekPlayed > 0) {
@@ -31,11 +70,17 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
   const toOpponentSummary = (opponentId: number) => {
     const opponent = league.teams.find(entry => entry.id === opponentId);
     if (!opponent) return null;
+    const opponentSnapshot = selectedSeasonTeams.get(opponentId);
+    if (!opponentSnapshot) {
+      throw new SeasonMemoryDataIntegrityError(
+        `Season ${selectedYear} is missing the team snapshot for ${opponent.name}.`,
+      );
+    }
     return {
       name: opponent.name,
-      rating: opponent.rating,
-      ranking: opponent.ranking,
-      record: opponent.record,
+      rating: opponentSnapshot.rating,
+      ranking: opponentSnapshot.ranking,
+      record: opponentSnapshot.record,
     };
   };
   const schedule = Array.from({ length: totalWeeks }, (_, index) => {
@@ -110,5 +155,10 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
     conferences: league.conferences,
     years: availableYears,
     selected_year: selectedYear,
+    selectedTeamMetrics: {
+      record: formatSelectedYearRecord(selectedYearGames, team.id),
+      rating: selectedTeamSnapshot.rating,
+      prestige: selectedTeamSnapshot.prestige,
+    },
   };
 };

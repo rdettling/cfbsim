@@ -1,6 +1,6 @@
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Link, Paper, Stack, Typography } from '@mui/material';
-import { TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import {
   formatMatchup,
   formatNeutralSite,

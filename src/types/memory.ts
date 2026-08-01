@@ -38,9 +38,18 @@ export interface SeasonAwardWinner {
   teamId: number;
 }
 
+export interface SeasonTeamSnapshot {
+  teamId: number;
+  rating: number;
+  prestige: number;
+  ranking: number;
+  record: string;
+}
+
 export interface SeasonMemory {
   year: number;
   playoffTeams: PlayoffTeamCount;
+  teamSnapshots: SeasonTeamSnapshot[];
   events: SeasonMemoryEvent[];
   awards: SeasonAwardWinner[];
 }

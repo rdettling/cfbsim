@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Collapse, IconButton, Paper, Stack, Typography } from '@mui/material';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import { formatTeamStat, getTeamStatColumn, TEAM_STAT_COLUMNS, TEAM_STAT_GROUPS } from './config';
 import type { TeamStatsViewProps } from './types';
 

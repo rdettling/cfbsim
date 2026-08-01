@@ -30,6 +30,13 @@ vi.mock('./memory', () => ({
   buildSeasonMemory: vi.fn(league => ({
     year: league.info.currentYear,
     playoffTeams: league.settings.playoffTeams,
+    teamSnapshots: league.teams.map((team: LeagueState['teams'][number]) => ({
+      teamId: team.id,
+      rating: team.rating,
+      prestige: team.prestige,
+      ranking: team.ranking,
+      record: team.record,
+    })),
     events: [],
     awards: [],
   })),

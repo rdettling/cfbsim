@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { TeamLogo } from '../team/TeamComponents';
+import { TeamLogo } from '../team/TeamLogo';
 import type { DriveSummaryProps } from '../../types/components';
 import type { Drive } from '../../types/game';
 

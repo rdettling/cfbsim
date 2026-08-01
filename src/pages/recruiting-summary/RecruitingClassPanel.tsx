@@ -11,7 +11,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { ConfLogo, TeamLogo } from '../../components/team/TeamComponents';
+import { ConferenceLogo, TeamLogo } from '../../components/team/TeamLogo';
 import type { RecruitingTeamResult } from '../../types/recruiting';
 
 interface RecruitingClassPanelProps {
@@ -61,7 +61,7 @@ export const RecruitingClassPanel = ({
                 color: 'text.secondary',
               }}
             >
-              <ConfLogo name={team.conference} size={18} />
+              <ConferenceLogo name={team.conference} size={18} />
               <Typography variant="caption">
                 {team.conference} · Prestige {team.prestige}
               </Typography>

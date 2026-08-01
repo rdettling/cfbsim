@@ -1,6 +1,7 @@
 import { Box, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { CompactGameSummary } from '../../components/game/CompactGameSummary';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import { DataTable } from '../../components/ui/DataTable';
 import type { StandingsViewProps } from './types';
 

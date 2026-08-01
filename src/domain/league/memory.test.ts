@@ -98,6 +98,22 @@ describe('buildSeasonMemory', () => {
       { type: 'playoff_semifinal', gameId: 12 },
       { type: 'national_championship', gameId: 13 },
     ]);
+    expect(memory.teamSnapshots).toEqual([
+      {
+        teamId: 1,
+        rating: 80,
+        prestige: 4,
+        ranking: 1,
+        record: '12-0 (8-0)',
+      },
+      {
+        teamId: 2,
+        rating: 80,
+        prestige: 4,
+        ranking: 1,
+        record: '12-0 (8-0)',
+      },
+    ]);
     expect(memory.awards[0]).toMatchObject({
       categorySlug: 'heisman',
       playerId: 1,

@@ -2,7 +2,7 @@ import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { getStageDefinition, getStageRoute } from '../../constants/stages';
 import type { Info } from '../../types/domain';
-import { TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLogo } from '../../components/team/TeamLogo';
 
 type HomeLoadPanelProps = {
   info: Info | null;

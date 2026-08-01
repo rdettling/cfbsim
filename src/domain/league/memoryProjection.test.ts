@@ -53,6 +53,10 @@ const game = (
 const memory: SeasonMemory = {
   year: 2025,
   playoffTeams: 12,
+  teamSnapshots: [
+    { teamId: 1, rating: 80, prestige: 4, ranking: 1, record: '12-0 (8-0)' },
+    { teamId: 2, rating: 80, prestige: 4, ranking: 2, record: '11-1 (7-1)' },
+  ],
   events: [
     { type: 'conference_championship', gameId: 2, conferenceName: 'Test Conference' },
     { type: 'national_championship', gameId: 3 },

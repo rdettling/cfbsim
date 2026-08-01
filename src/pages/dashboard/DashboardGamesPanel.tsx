@@ -1,6 +1,7 @@
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { TeamLink, TeamLogo } from '../../components/team/TeamComponents';
+import { TeamLink } from '../../components/team/TeamLink';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import { formatOpponentPrefix } from '../../domain/utils/gameDisplay';
 import { DashboardPanel } from './DashboardPanel';
 import type { DashboardGame, DashboardTeamClickHandler } from './types';

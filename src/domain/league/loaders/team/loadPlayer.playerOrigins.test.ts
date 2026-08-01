@@ -1,10 +1,10 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { deleteCurrentDatabase, getDb } from '../../../db/db';
-import { PLAYER_SEASON_STAT_KEYS } from '../gameDetails';
-import { buildTestLeague, buildTestPlayer } from '../../../test/fixtures';
-import type { PlayerSeasonStats } from '../../../types/db';
-import { loadPlayer } from './team';
+import { deleteCurrentDatabase, getDb } from '../../../../db/db';
+import { buildTestLeague, buildTestPlayer } from '../../../../test/fixtures';
+import type { PlayerSeasonStats } from '../../../../types/db';
+import { PLAYER_SEASON_STAT_KEYS } from '../../gameDetails';
+import { loadPlayer } from './loadPlayer';
 
 describe('player origin loading', () => {
   beforeEach(async () => {

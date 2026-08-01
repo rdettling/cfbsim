@@ -7,7 +7,10 @@ import type { loadRecruiting } from '../domain/league/loaders/loadRecruiting';
 import type { loadRosterProgression } from '../domain/league/loaders/loadRosterProgression';
 import type { loadRankings } from '../domain/league/loaders';
 import type { loadRatingsStats, loadStandings, loadTeamStats, loadIndividualStats } from '../domain/league/loaders/stats';
-import type { loadTeamRoster, loadTeamHistory, loadPlayer, getTeamInfo } from '../domain/league/loaders/team';
+import type { getTeamInfo } from '../domain/league/loaders/team/getTeamInfo';
+import type { loadPlayer } from '../domain/league/loaders/team/loadPlayer';
+import type { loadTeamHistory } from '../domain/league/loaders/team/loadTeamHistory';
+import type { loadTeamRoster } from '../domain/league/loaders/team/loadTeamRoster';
 import type { loadPlayoff } from '../domain/league/loaders/playoff';
 
 export type HomePageData = Awaited<ReturnType<typeof loadHomeData>>;

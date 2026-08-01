@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, Grid } from '@mui/material';
 import GameMatchupHeader from '../../components/game/GameMatchupHeader';
-import { TeamInfoModal } from '../../components/team/TeamComponents';
+import { TeamInfoModal } from '../../components/team/TeamInfoModal';
 import {
   resolveHomeAway,
   resolveTeamSide,

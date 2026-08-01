@@ -1,5 +1,5 @@
 import { Box, Divider, LinearProgress, Paper, Stack, Typography } from '@mui/material';
-import { TeamLogo } from '../../../components/team/TeamComponents';
+import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { Team } from '../../../types/domain';
 
 type OddsSide = {

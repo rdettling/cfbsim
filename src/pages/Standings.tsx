@@ -11,7 +11,8 @@ import {
   Typography,
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import { ConfLogo, TeamInfoModal } from '../components/team/TeamComponents';
+import { ConferenceLogo } from '../components/team/TeamLogo';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadStandings } from '../domain/league';
 import type { StandingsPageData } from '../types/pages';
@@ -79,7 +80,7 @@ const Standings = () => {
                 alignItems: 'center',
               }}
             >
-              {!isIndependent && <ConfLogo name={data.conference} size={44} />}
+              {!isIndependent && <ConferenceLogo name={data.conference} size={44} />}
               <Box>
                 <Typography component="h1" variant="h4">
                   {isIndependent ? 'Independent Standings' : `${data.conference} Standings`}

@@ -1,25 +1,5 @@
 import type { Drive } from './game';
 
-export interface TeamLinkProps {
-  name: string;
-  onTeamClick: (name: string) => void;
-}
-
-export interface LogoProps {
-  name: string;
-  size?: number;
-}
-
-export type LogoKind = 'teams' | 'conferences';
-
-export type LogoWithTypeProps = LogoProps & { type: LogoKind };
-
-export interface TeamInfoModalProps {
-  teamName: string;
-  open: boolean;
-  onClose: () => void;
-}
-
 export interface LoadingDialogProps {
   open: boolean;
   message: string;

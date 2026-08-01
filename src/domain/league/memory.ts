@@ -113,6 +113,13 @@ export const buildSeasonMemory = (
   return {
     year,
     playoffTeams: league.settings.playoffTeams,
+    teamSnapshots: league.teams.map(team => ({
+      teamId: team.id,
+      rating: team.rating,
+      prestige: team.prestige,
+      ranking: team.ranking,
+      record: team.record,
+    })),
     events: collectPostseasonEvents(league, yearGames),
     awards,
   };

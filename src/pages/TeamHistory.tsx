@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import { Paper, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import TeamHeader from '../components/team/TeamHeader';
+import { TeamHeader } from '../components/team/TeamHeader';
 import { useDomainData } from '../domain/hooks';
 import { loadTeamHistory } from '../domain/league';
 import type { TeamHistoryPageData } from '../types/pages';
@@ -46,33 +46,13 @@ const TeamHistory = () => {
         <>
           <TeamHeader
             team={data.team}
-            teams={data.teams}
-            onTeamChange={(name) => navigate(`/${name}/history`)}
-          />
-          <Stack
-            component="header"
-            direction="row"
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 1.5,
+            title="History"
+            subtitle="Season-by-season program results"
+            teamSelector={{
+              teams: data.teams,
+              onChange: (name) => navigate(`/${name}/history`),
             }}
-          >
-            <Box>
-              <Typography component="h2" variant="h5">
-                History
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                Season-by-season program results
-              </Typography>
-            </Box>
-          </Stack>
+          />
           <DynastyOverview overview={data.dynastyOverview} />
           {data.years.length > 0 ? (
             <>

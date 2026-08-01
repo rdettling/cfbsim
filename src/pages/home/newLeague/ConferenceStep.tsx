@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Box, Button, Chip, FormControl, FormControlLabel, FormLabel, InputLabel, MenuItem, Paper, Radio, RadioGroup, Select, Stack, Switch, TextField, Typography } from '@mui/material';
 import UndoIcon from '@mui/icons-material/Undo';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import { TeamLogo } from '../../../components/team/TeamComponents';
+import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { CustomConferencePlan, PreviewData, RivalryPlanWarning } from '../../../types/domain';
 import type { NewLeagueAlignmentMode } from '../newLeagueDraft';
 import { StepActions } from './StepActions';

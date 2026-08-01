@@ -122,6 +122,9 @@ describe('game detail persistence projections', () => {
     const memory: SeasonMemory = {
       year: 2025,
       playoffTeams: 12,
+      teamSnapshots: [
+        { teamId: 1, rating: 80, prestige: 4, ranking: 1, record: '12-0 (8-0)' },
+      ],
       events: [
         { type: 'conference_championship', gameId: 2, conferenceName: 'Big' },
         { type: 'bowl', gameId: 3, bowlName: 'AI Bowl' },

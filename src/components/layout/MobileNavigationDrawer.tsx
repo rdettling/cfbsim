@@ -19,7 +19,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TeamLogo } from '../team/TeamComponents';
+import { TeamLogo } from '../team/TeamLogo';
 import {
   isGroupActive,
   isPathActive,

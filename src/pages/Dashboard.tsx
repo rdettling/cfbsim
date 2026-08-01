@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Box } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import { TeamInfoModal } from '../components/team/TeamComponents';
+import { TeamHeader } from '../components/team/TeamHeader';
+import { TeamInfoModal } from '../components/team/TeamInfoModal';
+import { getStageDefinition } from '../constants/stages';
 import { useDomainData } from '../domain/hooks';
 import { loadDashboard } from '../domain/league';
 import type { DashboardPageData } from '../types/pages';
 import { DashboardGamesPanel } from './dashboard/DashboardGamesPanel';
-import { DashboardHeader } from './dashboard/DashboardHeader';
 import { DashboardHeadlinesPanel } from './dashboard/DashboardHeadlinesPanel';
 import {
   DashboardRankingsPanel,
@@ -29,6 +30,12 @@ const Dashboard = () => {
   const conferenceName = data
     ? data.team.confName ?? data.team.conference
     : '';
+  const stage = data ? getStageDefinition(data.info.stage) : undefined;
+  const seasonContext = data
+    ? data.info.stage === 'season'
+      ? `${data.info.currentYear} season · Week ${data.info.currentWeek}`
+      : `${data.info.currentYear} season · ${stage?.label ?? data.info.stage}`
+    : '';
 
   return (
     <PageLayout
@@ -45,7 +52,11 @@ const Dashboard = () => {
     >
       {data && (
         <>
-          <DashboardHeader data={data} />
+          <TeamHeader
+            team={data.team}
+            title="Dashboard"
+            subtitle={seasonContext}
+          />
           <Box
             sx={{
               display: 'grid',

@@ -1,3 +1,4 @@
+import { useId, type ReactNode } from 'react';
 import {
   Box,
   Chip,
@@ -10,24 +11,41 @@ import {
   Typography,
 } from '@mui/material';
 import type { Team } from '../../types/domain';
-import { ConfLogo, TeamLogo } from './TeamComponents';
+import { ConferenceLogo, TeamLogo } from './TeamLogo';
 
 type TeamHeaderProps = {
   team: Team;
-  teams: string[];
-  onTeamChange: (name: string) => void;
+  title: string;
+  subtitle?: ReactNode;
+  metrics?: Pick<Team, 'record' | 'rating' | 'prestige'>;
+  teamSelector?: {
+    teams: string[];
+    onChange: (name: string) => void;
+  };
+  controls?: ReactNode;
 };
 
-const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
+export const TeamHeader = ({
+  team,
+  title,
+  subtitle,
+  metrics,
+  teamSelector,
+  controls,
+}: TeamHeaderProps) => {
+  const teamSelectLabelId = useId();
   const conferenceName = team.confName ?? team.conference;
-  const prestige = Math.min(Math.max(team.prestige, 0), 7);
+  const displayedMetrics = metrics ?? team;
+  const prestige = Math.min(Math.max(displayedMetrics.prestige, 0), 7);
+  const hasControls = Boolean(teamSelector || controls);
 
   return (
     <Paper
+      component="header"
       elevation={0}
       variant="outlined"
       sx={{
-        mb: 3,
+        mb: 1.5,
         px: { xs: 1.5, sm: 2 },
         py: 1.5,
         borderLeft: '3px solid',
@@ -35,10 +53,10 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
       }}
     >
       <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={{ xs: 1.5, md: 2 }}
+        direction={{ xs: 'column', lg: 'row' }}
+        spacing={{ xs: 1.5, lg: 2 }}
         sx={{
-          alignItems: { xs: 'stretch', md: 'center' },
+          alignItems: { xs: 'stretch', lg: 'center' },
         }}
       >
         <Stack
@@ -70,6 +88,29 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
               direction="row"
               spacing={0.75}
               sx={{
+                alignItems: 'baseline',
+                mt: 0.35,
+                flexWrap: 'wrap',
+                rowGap: 0.25,
+              }}
+            >
+              <Typography
+                component="h2"
+                variant="body1"
+                sx={{ fontWeight: 600, lineHeight: 1.35 }}
+              >
+                {title}
+              </Typography>
+              {subtitle && (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {subtitle}
+                </Typography>
+              )}
+            </Stack>
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{
                 alignItems: 'center',
                 mt: 0.75,
                 flexWrap: 'wrap',
@@ -84,10 +125,10 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
               >
                 Record{' '}
                 <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                  {team.record}
+                  {displayedMetrics.record}
                 </Box>
               </Typography>
-              <Chip label={`Rating ${team.rating}`} size="small" variant="outlined" />
+              <Chip label={`Rating ${displayedMetrics.rating}`} size="small" variant="outlined" />
               <Chip label={`Prestige ${prestige}/7`} size="small" variant="outlined" />
               {conferenceName && (
                 <Stack
@@ -98,7 +139,9 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
                     color: 'text.secondary',
                   }}
                 >
-                  {conferenceName !== 'Independent' && <ConfLogo name={conferenceName} size={22} />}
+                  {conferenceName !== 'Independent' && (
+                    <ConferenceLogo name={conferenceName} size={22} />
+                  )}
                   <Typography variant="body2">{conferenceName}</Typography>
                 </Stack>
               )}
@@ -106,24 +149,39 @@ const TeamHeader = ({ team, teams, onTeamChange }: TeamHeaderProps) => {
           </Box>
         </Stack>
 
-        <FormControl size="small" sx={{ width: { xs: '100%', md: 220 }, flexShrink: 0 }}>
-          <InputLabel id="team-header-select-label">Team</InputLabel>
-          <Select
-            labelId="team-header-select-label"
-            value={team.name}
-            onChange={(event) => onTeamChange(event.target.value as string)}
-            label="Team"
+        {hasControls && (
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'center' },
+              flexShrink: 0,
+              '& > *': {
+                width: { xs: '100%', sm: 'auto' },
+              },
+            }}
           >
-            {teams.map((name) => (
-              <MenuItem key={name} value={name}>
-                {name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            {teamSelector && (
+              <FormControl size="small" sx={{ minWidth: { sm: 220 } }}>
+                <InputLabel id={teamSelectLabelId}>Team</InputLabel>
+                <Select
+                  labelId={teamSelectLabelId}
+                  value={team.name}
+                  onChange={(event) => teamSelector.onChange(event.target.value as string)}
+                  label="Team"
+                >
+                  {teamSelector.teams.map((name) => (
+                    <MenuItem key={name} value={name}>
+                      {name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+            {controls}
+          </Stack>
+        )}
       </Stack>
     </Paper>
   );
 };
-
-export default TeamHeader;
