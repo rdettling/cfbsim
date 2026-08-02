@@ -183,6 +183,7 @@ export const startNewLeague = async (
       conferenceChampionsReceiveTopSeeds: normalizedPlayoffTop4,
     },
     playoff: { seeds: [] },
+    resumeSnapshot: null,
     idCounters: {
       game: 1,
       player: 1,

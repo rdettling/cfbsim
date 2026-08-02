@@ -73,7 +73,7 @@ const MobileNavigationDrawer = ({
   };
 
   const renderDirectItem = (item: NavigationItem) => {
-    const active = isPathActive(currentPath, item.path);
+    const active = isPathActive(currentPath, item);
     return (
       <ListItemButton
         key={item.path}
@@ -136,9 +136,9 @@ const MobileNavigationDrawer = ({
       </Stack>
       <Divider />
       <List component="nav" aria-label="Primary navigation" sx={{ py: 1 }}>
-        {model.leading.map(renderDirectItem)}
-
-        {model.groups.map((group) => {
+        {model.entries.map((entry) => {
+          if (entry.type === 'item') return renderDirectItem(entry);
+          const group = entry;
           const expanded = Boolean(expandedGroups[group.id]);
           const active = isGroupActive(currentPath, group);
           const groupItemsId = `mobile-${group.id}-items`;
@@ -156,7 +156,7 @@ const MobileNavigationDrawer = ({
               <Collapse id={groupItemsId} in={expanded} timeout="auto" unmountOnExit>
                 <List disablePadding>
                   {group.items.map((item) => {
-                    const itemActive = isPathActive(currentPath, item.path);
+                    const itemActive = isPathActive(currentPath, item);
                     return (
                       <ListItemButton
                         key={`${group.id}:${item.path}`}
@@ -175,7 +175,6 @@ const MobileNavigationDrawer = ({
           );
         })}
 
-        {model.trailing.map(renderDirectItem)}
       </List>
       <Divider />
       <List subheader={<ListSubheader component="div">Actions and utilities</ListSubheader>}>

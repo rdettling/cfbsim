@@ -15,4 +15,16 @@ describe('season reset rivalry choices', () => {
 
     expect(league.declinedRivalries).toEqual([]);
   });
+
+  it('clears the frozen resume snapshot for the next season', async () => {
+    const league = buildTestLeague('summary');
+    league.resumeSnapshot = { year: 2025 } as typeof league.resumeSnapshot;
+
+    await prepareSeasonReset(league, {
+      rivalries: { rivalries: [] },
+      odds: { oddsMap: {}, maxDiff: 100 },
+    });
+
+    expect(league.resumeSnapshot).toBeNull();
+  });
 });

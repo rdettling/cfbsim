@@ -4,16 +4,19 @@ import type {
   PlayoffMatchup,
   TwelveTeamPlayoffBracket,
 } from '../../domain/league/loaders/playoff';
-import type { PlayoffPageData } from '../../types/pages';
+import type {
+  BowlGamesPageData,
+  PlayoffPicturePageData,
+  ResumeComparisonPageData,
+} from '../../types/pages';
 
-export type PostseasonView = 'bracket' | 'committee' | 'bowls';
 export type PostseasonFormat = 2 | 4 | 12;
 
-export type PostseasonTeam = PlayoffPageData['playoff_teams'][number];
-export type BubbleTeam = PlayoffPageData['bubble_teams'][number];
-export type ConferenceChampion = PlayoffPageData['conference_champions'][number];
-export type ResumeTeam = PlayoffPageData['resume_teams'][number];
-export type BowlGame = PlayoffPageData['bowl_games'][number];
+export type PostseasonTeam = PlayoffPicturePageData['playoff_teams'][number];
+export type BubbleTeam = PlayoffPicturePageData['bubble_teams'][number];
+export type ConferenceChampion = PlayoffPicturePageData['conference_champions'][number];
+export type ResumeTeam = ResumeComparisonPageData['resume_teams'][number];
+export type BowlGame = BowlGamesPageData['bowl_games'][number];
 
 export type {
   FourTeamPlayoffBracket,

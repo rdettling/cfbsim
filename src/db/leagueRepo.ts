@@ -40,6 +40,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isFiniteNumber = (value: unknown) =>
   typeof value === 'number' && Number.isFinite(value);
 
+const hasExactKeys = (value: Record<string, unknown>, keys: readonly string[]) => {
+  const actual = Object.keys(value);
+  return actual.length === keys.length && actual.every(key => keys.includes(key));
+};
+
 const isCurrentSettings = (
   value: unknown,
 ): value is NextSeasonConfiguration => {
@@ -103,6 +108,74 @@ const isCurrentPlayoffState = (value: unknown) => {
   );
 };
 
+const isResumeResult = (value: unknown) =>
+  isRecord(value) &&
+  hasExactKeys(value, ['opponentId', 'opponent', 'opponentRanking']) &&
+  Number.isInteger(value.opponentId) &&
+  typeof value.opponent === 'string' &&
+  value.opponent.length > 0 &&
+  Number.isInteger(value.opponentRanking) &&
+  Number(value.opponentRanking) > 0;
+
+const RESUME_TEAM_KEYS = [
+  'teamId',
+  'name',
+  'ranking',
+  'conference',
+  'record',
+  'pollScore',
+  'sorRank',
+  'sosRank',
+  'top25Record',
+  'bestWin',
+  'worstLoss',
+  'seed',
+  'isAutobid',
+  'hasBye',
+  'isChampion',
+] as const;
+
+const isResumeTeam = (value: unknown) =>
+  isRecord(value) &&
+  hasExactKeys(value, RESUME_TEAM_KEYS) &&
+  Number.isInteger(value.teamId) &&
+  typeof value.name === 'string' &&
+  value.name.length > 0 &&
+  Number.isInteger(value.ranking) &&
+  Number(value.ranking) > 0 &&
+  typeof value.conference === 'string' &&
+  typeof value.record === 'string' &&
+  isFiniteNumber(value.pollScore) &&
+  Number.isInteger(value.sorRank) &&
+  Number(value.sorRank) > 0 &&
+  (value.sosRank === null || (Number.isInteger(value.sosRank) && Number(value.sosRank) > 0)) &&
+  typeof value.top25Record === 'string' &&
+  (value.bestWin === null || isResumeResult(value.bestWin)) &&
+  (value.worstLoss === null || isResumeResult(value.worstLoss)) &&
+  (value.seed === null || (Number.isInteger(value.seed) && Number(value.seed) > 0)) &&
+  typeof value.isAutobid === 'boolean' &&
+  typeof value.hasBye === 'boolean' &&
+  typeof value.isChampion === 'boolean';
+
+const isResumeSnapshot = (value: unknown) => {
+  if (!isRecord(value) || !hasExactKeys(value, ['year', 'frozenAfterWeek', 'playoff', 'teams'])) {
+    return false;
+  }
+  const playoff = value.playoff;
+  return (
+    Number.isInteger(value.year) &&
+    Number.isInteger(value.frozenAfterWeek) &&
+    isRecord(playoff) &&
+    hasExactKeys(playoff, ['teams', 'autobids', 'conferenceChampionsReceiveTopSeeds']) &&
+    (playoff.teams === 2 || playoff.teams === 4 || playoff.teams === 12) &&
+    Number.isInteger(playoff.autobids) &&
+    typeof playoff.conferenceChampionsReceiveTopSeeds === 'boolean' &&
+    Array.isArray(value.teams) &&
+    value.teams.length > 0 &&
+    value.teams.every(isResumeTeam)
+  );
+};
+
 export function assertCurrentLeagueState(
   value: unknown,
 ): asserts value is LeagueState {
@@ -146,6 +219,8 @@ export function assertCurrentLeagueState(
     typeof value.simInitialized === 'boolean' &&
     isCurrentSettings(value.settings) &&
     isCurrentPlayoffState(value.playoff) &&
+    Object.prototype.hasOwnProperty.call(value, 'resumeSnapshot') &&
+    (value.resumeSnapshot === null || isResumeSnapshot(value.resumeSnapshot)) &&
     validCounters;
   if (!valid) {
     throw new LeagueDataIntegrityError(

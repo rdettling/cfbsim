@@ -70,6 +70,18 @@ describe('current league persistence boundary', () => {
         ).seeds = 'invalid';
       },
     },
+    {
+      name: 'missing resume snapshot field',
+      mutate: (league: LeagueState) => {
+        delete (league as Partial<LeagueState>).resumeSnapshot;
+      },
+    },
+    {
+      name: 'malformed resume snapshot',
+      mutate: (league: LeagueState) => {
+        league.resumeSnapshot = {} as LeagueState['resumeSnapshot'];
+      },
+    },
   ])(
     'rejects $name without changing the stored record',
     async ({ mutate }) => {

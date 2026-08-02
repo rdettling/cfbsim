@@ -78,6 +78,7 @@ export const buildTestLeague = (
     simInitialized: true,
     settings: { ...DEFAULT_NEXT_SEASON_CONFIGURATION },
     playoff: { seeds: [] },
+    resumeSnapshot: null,
     idCounters: {
       game: 2,
       player: 2,

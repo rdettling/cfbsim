@@ -49,6 +49,7 @@ const buildPostseasonLeague = (playoffTeams: PlayoffTeamCount) => {
       conferenceChampionsReceiveTopSeeds: true,
     },
     playoff: { seeds: [] },
+    resumeSnapshot: null,
     idCounters: {
       game: 1,
       player: 1,
@@ -58,6 +59,33 @@ const buildPostseasonLeague = (playoffTeams: PlayoffTeamCount) => {
 
 describe('postseason bowl scheduling', () => {
   beforeEach(resetGames);
+
+  it.each([2, 4, 12] as const)(
+    'freezes the %i-team resume snapshot before later postseason mutations',
+    async playoffTeams => {
+      const league = buildPostseasonLeague(playoffTeams);
+
+      await handleSpecialWeeks(league, oddsContext);
+
+      expect(league.resumeSnapshot).not.toBeNull();
+      expect(league.resumeSnapshot).toMatchObject({
+        year: 2025,
+        frozenAfterWeek: CONFERENCE_CHAMPIONSHIP_WEEK,
+        playoff: { teams: playoffTeams },
+      });
+      expect(league.resumeSnapshot!.teams).toHaveLength(league.teams.length);
+      expect(league.resumeSnapshot!.teams.filter(team => team.seed)).toHaveLength(playoffTeams);
+      const frozen = structuredClone(league.resumeSnapshot);
+
+      league.teams[0].ranking = league.teams.length;
+      league.teams[0].poll_score = 0;
+      league.teams[0].totalLosses += 1;
+      league.info.currentWeek += 1;
+      await handleSpecialWeeks(league, oddsContext);
+
+      expect(league.resumeSnapshot).toEqual(frozen);
+    },
+  );
 
   it.each([
     { playoffTeams: 4 as const, championshipWeek: 17 },

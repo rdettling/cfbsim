@@ -11,11 +11,14 @@ import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
 import { buildWatchability } from './games';
 import {
+  getAllGames,
   getGameById,
   getGamesByWeek,
   saveGamesAndLeague,
 } from '../../db/simRepo';
 import { finalizePostseasonRankings } from './rankings';
+import { buildPlayoffSelection } from '../league/utils/playoffSelection';
+import { buildResumeComparisonSnapshot } from '../league/utils/resumeComparison';
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
   teamA.conference !== 'Independent' && teamA.conference === teamB.conference;
@@ -248,14 +251,10 @@ const getConferenceChampion = async (
   return sorted[0] ?? null;
 };
 
-const getPlayoffTeamOrder = async (
+const getPostseasonSelectionContext = async (
   league: LeagueState,
   teamsById: Map<number, Team>
 ) => {
-  const playoffAutobids = league.settings.playoffAutobids;
-  const playoffConfChampTop4 =
-    league.settings.conferenceChampionsReceiveTopSeeds;
-
   const conferenceNames = league.conferences
     .map(conf => conf.confName)
     .filter(confName => confName !== 'Independent');
@@ -267,35 +266,10 @@ const getPlayoffTeamOrder = async (
   }
 
   champions.sort((a, b) => a.ranking - b.ranking);
-
-  const autobids = champions.slice(0, playoffAutobids);
-  const autobidIds = new Set(autobids.map(team => team.id));
-  const wildCards = league.teams
-    .filter(team => !autobidIds.has(team.id))
-    .sort((a, b) => a.ranking - b.ranking);
-
-  const cutoff = 8 - (playoffAutobids - 4);
-  const nonPlayoffTeams = wildCards.slice(cutoff);
-  const wildCardPool = wildCards.slice(0, cutoff);
-
-  let byes: Team[] = [];
-  let remainingAutobids: Team[] = [];
-  let remainingWildCards: Team[] = [];
-
-  if (playoffConfChampTop4) {
-    byes = autobids.slice(0, 4);
-    remainingAutobids = autobids.slice(4);
-    remainingWildCards = wildCardPool.slice();
-  } else {
-    const allCandidates = [...autobids, ...wildCardPool].sort((a, b) => a.ranking - b.ranking);
-    byes = allCandidates.slice(0, 4);
-    const byeIds = new Set(byes.map(team => team.id));
-    remainingAutobids = autobids.filter(team => !byeIds.has(team.id));
-    remainingWildCards = wildCardPool.filter(team => !byeIds.has(team.id));
-  }
-
-  const seededRest = [...remainingWildCards, ...remainingAutobids].sort((a, b) => a.ranking - b.ranking);
-  return [...byes, ...seededRest, ...nonPlayoffTeams];
+  return {
+    champions,
+    selection: buildPlayoffSelection(league, champions),
+  };
 };
 
 const applyPlayoffCommitteeRankings = (orderedTeams: Team[]) => {
@@ -349,7 +323,8 @@ const setPlayoffR1 = async (
   }
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
-  const teams = await getPlayoffTeamOrder(league, teamsById);
+  const { selection } = await getPostseasonSelectionContext(league, teamsById);
+  const teams = selection.order;
   applyPlayoffCommitteeRankings(teams);
   const seeds = teams.slice(0, 12);
   if (seeds.length < 12) return;
@@ -556,6 +531,25 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
 
   const action = specialActions[playoffTeams]?.[league.info.currentWeek];
   if (action) {
+    if (league.info.currentWeek === ccWeek && league.resumeSnapshot === null) {
+      const games = await getAllGames();
+      const gamesById = new Map(games.map(game => [game.id, game]));
+      const championshipIds = league.conferences
+        .map(conference => conference.championship)
+        .filter((id): id is number => Boolean(id));
+      const championshipsComplete = championshipIds.every(id => gamesById.get(id)?.winnerId);
+      if (championshipsComplete) {
+        const teamsById = new Map(league.teams.map(team => [team.id, team]));
+        const { champions, selection } = await getPostseasonSelectionContext(league, teamsById);
+        league.resumeSnapshot = buildResumeComparisonSnapshot({
+          league,
+          games,
+          selection,
+          championIds: new Set(champions.map(team => team.id)),
+          oddsContext,
+        });
+      }
+    }
     await action(league, oddsContext);
     await ensureSummaryStage(league);
     return;

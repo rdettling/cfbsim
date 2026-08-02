@@ -9,6 +9,7 @@ export * from './loaders/team/loadTeamHistory';
 export * from './loaders/team/loadTeamRoster';
 export * from './loaders/team/playerStats';
 export * from './loaders/playoff';
+export * from './loaders/roadmap';
 export * from './stages';
 export * from './recruiting';
 export * from './rosterFinalization';

@@ -1,21 +1,18 @@
 import { useState } from 'react';
 import { Alert, Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadPlayoffBracket } from '../domain/league';
-import type { PlayoffBracketPageData } from '../types/pages';
-import { PostseasonBracketView } from './playoff/PostseasonBracketView';
+import { loadPlayoffPicture } from '../domain/league';
+import type { PlayoffPicturePageData } from '../types/pages';
+import { PostseasonPictureView } from './playoff/PostseasonPictureView';
 import { PostseasonHeader } from './playoff/PostseasonHeader';
-import type { PostseasonFormat } from './playoff/types';
 
-const Playoff = () => {
-  const navigate = useNavigate();
-  const [modalOpen, setModalOpen] = useState(false);
+const PlayoffPicture = () => {
   const [selectedTeam, setSelectedTeam] = useState('');
-  const { data, loading, error } = useDomainData<PlayoffBracketPageData>({
-    fetcher: loadPlayoffBracket,
+  const [modalOpen, setModalOpen] = useState(false);
+  const { data, loading, error } = useDomainData<PlayoffPicturePageData>({
+    fetcher: loadPlayoffPicture,
   });
 
   const handleTeamClick = (teamName: string) => {
@@ -40,7 +37,7 @@ const Playoff = () => {
         <>
           <Box sx={{ display: 'flex', flexDirection: 'column', flex: { lg: 1 }, minHeight: { lg: 0 } }}>
             <PostseasonHeader
-              title="Playoff Bracket"
+              title="Playoff Picture"
               year={data.info.currentYear}
               week={data.info.currentWeek}
               format={data.playoff.teams}
@@ -48,29 +45,28 @@ const Playoff = () => {
               conferenceChampByes={data.playoff.conf_champ_top_4}
               isProjection={data.is_projection}
             />
-            {data.is_projection && (
-              <Alert severity="info" sx={{ mb: 1.25, py: 0, flexShrink: 0 }}>
-                This bracket is based on current rankings. The final field is set after Week{' '}
-                {data.info.lastWeek - 1}.
-              </Alert>
-            )}
-            <PostseasonBracketView
-              bracket={data.bracket}
-              format={data.playoff.teams as PostseasonFormat}
-              hasTeams={data.playoff_teams.length > 0}
-              onGameClick={gameId => navigate(`/game/${gameId}`)}
+            <Alert
+              severity={data.is_projection ? 'info' : 'success'}
+              sx={{ mb: 1.25, py: 0.25, flexShrink: 0 }}
+            >
+              {data.is_projection
+                ? 'At-large spots follow the current poll ranking. The final field is set after conference championship games.'
+                : 'This is the saved postseason field selected after conference championship games.'}
+            </Alert>
+            <PostseasonPictureView
+              field={data.playoff_teams}
+              bubbleTeams={data.bubble_teams}
+              conferenceChampions={data.conference_champions}
+              format={data.playoff.teams}
+              isProjection={data.is_projection}
               onTeamClick={handleTeamClick}
             />
           </Box>
-          <TeamInfoModal
-            teamName={selectedTeam}
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-          />
+          <TeamInfoModal teamName={selectedTeam} open={modalOpen} onClose={() => setModalOpen(false)} />
         </>
       )}
     </PageLayout>
   );
 };
 
-export default Playoff;
+export default PlayoffPicture;

@@ -4,6 +4,10 @@ import type { LeagueState } from '../../../types/league';
 import { getAllGames, getGameById } from '../../../db/simRepo';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { REGULAR_SEASON_WEEKS } from '../postseason';
+import { loadOddsContext } from '../../odds';
+import { buildPlayoffSelection } from '../utils/playoffSelection';
+import { buildResumeComparisonTeams } from '../utils/resumeComparison';
+import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
 export type PlayoffTeamEntry = {
   name: string;
@@ -21,15 +25,25 @@ export type BubbleTeamEntry = {
   record: string;
 };
 
+export type ResumeResultEntry = {
+  opponent: string;
+  opponent_ranking: number;
+};
+
 export type ResumeTeamEntry = {
   name: string;
   ranking: number;
   conference: string;
   record: string;
-  rating: number;
-  ranked_wins: number;
-  losses: number;
+  poll_score: number;
   sor_rank: number;
+  sos_rank: number | null;
+  top_25_record: string;
+  best_win: ResumeResultEntry | null;
+  worst_loss: ResumeResultEntry | null;
+  seed: number | null;
+  is_autobid: boolean;
+  has_bye: boolean;
   is_champ: boolean;
 };
 
@@ -261,53 +275,6 @@ const getConferenceChampion = async (
   return sorted[0] ?? null;
 };
 
-const getPlayoffTeamOrder = async (league: LeagueState) => {
-  const playoffAutobids = league.settings.playoffAutobids;
-  const playoffConfChampTop4 =
-    league.settings.conferenceChampionsReceiveTopSeeds;
-
-  const conferenceNames = league.conferences
-    .map(conf => conf.confName)
-    .filter(confName => confName !== 'Independent');
-
-  const champions: Team[] = [];
-  for (const confName of conferenceNames) {
-    const champion = await getConferenceChampion(league, confName);
-    if (champion) champions.push(champion);
-  }
-
-  champions.sort((a, b) => a.ranking - b.ranking);
-
-  const autobids = champions.slice(0, playoffAutobids);
-  const autobidIds = new Set(autobids.map(team => team.id));
-  const wildCards = league.teams
-    .filter(team => !autobidIds.has(team.id))
-    .sort((a, b) => a.ranking - b.ranking);
-
-  const cutoff = 8 - (playoffAutobids - 4);
-  const nonPlayoffTeams = wildCards.slice(cutoff);
-  const wildCardPool = wildCards.slice(0, cutoff);
-
-  let byes: Team[] = [];
-  let remainingAutobids: Team[] = [];
-  let remainingWildCards: Team[] = [];
-
-  if (playoffConfChampTop4) {
-    byes = autobids.slice(0, 4);
-    remainingAutobids = autobids.slice(4);
-    remainingWildCards = wildCardPool.slice();
-  } else {
-    const allCandidates = [...autobids, ...wildCardPool].sort((a, b) => a.ranking - b.ranking);
-    byes = allCandidates.slice(0, 4);
-    const byeIds = new Set(byes.map(team => team.id));
-    remainingAutobids = autobids.filter(team => !byeIds.has(team.id));
-    remainingWildCards = wildCardPool.filter(team => !byeIds.has(team.id));
-  }
-
-  const seededRest = [...remainingWildCards, ...remainingAutobids].sort((a, b) => a.ranking - b.ranking);
-  return { order: [...byes, ...seededRest, ...nonPlayoffTeams], autobidIds };
-};
-
 const buildGameResult = (
   game: GameRecord | null,
   team1Name: string,
@@ -516,10 +483,16 @@ const buildBracket = async (
   };
 };
 
-export const loadPlayoff = async () => {
-  const league = await loadLeagueOrThrow();
+const loadPostseasonContext = async (loadedLeague?: LeagueState) => {
+  const league = loadedLeague ?? await loadLeagueOrThrow();
   const format = league.settings.playoffTeams;
-  const isProjection = league.info.currentWeek < REGULAR_SEASON_WEEKS;
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const persistedTeams = league.playoff.seeds
+    .map(id => teamsById.get(id))
+    .filter((team): team is Team => Boolean(team));
+  const hasPersistedField =
+    league.playoff.seeds.length === format && persistedTeams.length === format;
+  const isProjection = !hasPersistedField;
 
   const conferenceNames = league.conferences
     .map(conf => conf.confName)
@@ -531,24 +504,11 @@ export const loadPlayoff = async () => {
   }
   champions.sort((a, b) => a.ranking - b.ranking);
 
-  let playoffTeams: Team[] = [];
-  let autobidIds = new Set<number>();
+  const selection = buildPlayoffSelection(league, champions);
+  const projectedTeams = selection.order.slice(0, format);
+  const autobidIds = selection.autobidIds;
 
-  if (format === 2) {
-    playoffTeams = league.teams.slice().sort((a, b) => a.ranking - b.ranking).slice(0, 2);
-  } else if (format === 4) {
-    playoffTeams = league.teams.slice().sort((a, b) => a.ranking - b.ranking).slice(0, 4);
-  } else {
-    const ordered = await getPlayoffTeamOrder(league);
-    playoffTeams = ordered.order.slice(0, 12);
-    autobidIds = ordered.autobidIds;
-  }
-
-  const bubbleStart = format === 2 ? 2 : format === 4 ? 4 : 12;
-  const bubbleTeams = league.teams
-    .slice()
-    .sort((a, b) => a.ranking - b.ranking)
-    .slice(bubbleStart, bubbleStart + 5);
+  const playoffTeams = hasPersistedField ? persistedTeams : projectedTeams;
 
   const playoff_teams: PlayoffTeamEntry[] = playoffTeams.map((team, index) => ({
     name: team.name,
@@ -559,29 +519,135 @@ export const loadPlayoff = async () => {
     is_autobid: autobidIds.has(team.id),
   }));
 
-  const bubble_teams: BubbleTeamEntry[] = bubbleTeams.map(team => ({
+  return {
+    league,
+    format,
+    isProjection,
+    champions,
+    selection,
+    playoffTeams,
+    playoff_teams,
+    page: {
+      ...buildLeagueNavigationEnvelope(league),
+      playoff: {
+        teams: format,
+        autobids: league.settings.playoffAutobids,
+        conf_champ_top_4: league.settings.conferenceChampionsReceiveTopSeeds,
+      },
+      is_projection: isProjection,
+    },
+  };
+};
+
+export const loadPlayoffBracket = async () => {
+  const context = await loadPostseasonContext();
+  return {
+    ...context.page,
+    playoff_teams: context.playoff_teams,
+    bracket: await buildBracket(
+      context.league,
+      context.playoffTeams,
+      context.isProjection
+    ),
+  };
+};
+
+export const loadPlayoffPicture = async () => {
+  const context = await loadPostseasonContext();
+  const selectedIds = new Set(context.playoffTeams.map(team => team.id));
+  const bubble_teams: BubbleTeamEntry[] = context.league.teams
+    .slice()
+    .sort((a, b) => a.ranking - b.ranking)
+    .filter(team => !selectedIds.has(team.id))
+    .slice(0, 5)
+    .map(team => ({
+      name: team.name,
+      ranking: team.ranking,
+      conference: team.conference ?? 'Independent',
+      record: formatRecord(team),
+    }));
+  const conference_champions: ConferenceChampionEntry[] = context.champions.map(team => ({
     name: team.name,
     ranking: team.ranking,
     conference: team.conference ?? 'Independent',
     record: formatRecord(team),
+    seed: context.playoff_teams.find(entry => entry.name === team.name)?.seed ?? null,
   }));
 
-  const conference_champions: ConferenceChampionEntry[] = champions.map(team => ({
+  return {
+    ...context.page,
+    playoff_teams: context.playoff_teams,
+    bubble_teams,
+    conference_champions,
+  };
+};
+
+export const loadResumeComparison = async () => {
+  const league = await loadLeagueOrThrow();
+  const snapshot = league.resumeSnapshot;
+  const toEntry = (team: NonNullable<typeof snapshot>['teams'][number]): ResumeTeamEntry => ({
     name: team.name,
     ranking: team.ranking,
-    conference: team.conference ?? 'Independent',
-    record: formatRecord(team),
-    seed: playoff_teams.find(entry => entry.name === team.name)?.seed ?? null,
-  }));
+    conference: team.conference,
+    record: team.record,
+    poll_score: team.pollScore,
+    sor_rank: team.sorRank,
+    sos_rank: team.sosRank,
+    top_25_record: team.top25Record,
+    best_win: team.bestWin
+      ? { opponent: team.bestWin.opponent, opponent_ranking: team.bestWin.opponentRanking }
+      : null,
+    worst_loss: team.worstLoss
+      ? { opponent: team.worstLoss.opponent, opponent_ranking: team.worstLoss.opponentRanking }
+      : null,
+    seed: team.seed,
+    is_autobid: team.isAutobid,
+    has_bye: team.hasBye,
+    is_champ: team.isChampion,
+  });
 
-  const bracket = await buildBracket(league, playoffTeams, isProjection);
+  if (snapshot) {
+    return {
+      ...buildLeagueNavigationEnvelope(league),
+      playoff: {
+        teams: snapshot.playoff.teams,
+        autobids: snapshot.playoff.autobids,
+        conf_champ_top_4: snapshot.playoff.conferenceChampionsReceiveTopSeeds,
+      },
+      is_projection: false,
+      is_frozen: true,
+      frozen_after_week: snapshot.frozenAfterWeek,
+      resume_teams: snapshot.teams.map(toEntry),
+    };
+  }
 
-  const teamsById = new Map(league.teams.map(team => [team.id, team]));
-  const championIds = new Set(champions.map(team => team.id));
-  const championNames = new Set(champions.map(team => team.name));
+  const context = await loadPostseasonContext(league);
+  const allGames = await getAllGames();
+  const oddsContext = await loadOddsContext();
+  const resumeTeams = buildResumeComparisonTeams({
+    league,
+    games: allGames,
+    selection: context.selection,
+    championIds: new Set(context.champions.map(team => team.id)),
+    oddsContext,
+  });
+
+  return {
+    ...context.page,
+    is_frozen: false,
+    frozen_after_week: null,
+    resume_teams: resumeTeams.map(toEntry),
+  };
+};
+
+export const loadBowlGames = async () => {
+  const context = await loadPostseasonContext();
+  const teamsById = new Map(context.league.teams.map(team => [team.id, team]));
+  const championIds = new Set(context.champions.map(team => team.id));
+  const championNames = new Set(context.champions.map(team => team.name));
   const allGames = await getAllGames();
   const bowl_games: BowlGameEntry[] = allGames
-    .filter(game => game.year === league.info.currentYear)
+    .filter(game => game.year === context.league.info.currentYear)
     .filter(game => isBowlName(game.name))
     .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
     .map(game => {
@@ -614,15 +680,15 @@ export const loadPlayoff = async () => {
       };
     });
 
-  const hosts = getNy6PlayoffHosts(league.info.currentYear, format);
+  const hosts = getNy6PlayoffHosts(context.league.info.currentYear, context.format);
   const ny6Unavailable = new Set([...hosts.semis, ...hosts.quarters]);
   const ny6Available = NY6_BOWLS.filter(bowl => !ny6Unavailable.has(bowl));
-  const playoffTeamIds = new Set(playoffTeams.map(team => team.id));
+  const playoffTeamIds = new Set(context.playoffTeams.map(team => team.id));
   const projectedMatchups = buildBowlProjections(
-    league,
+    context.league,
     playoffTeamIds,
     ny6Available,
-    !isProjection
+    !context.isProjection
   );
   const bowl_projections: BowlGameEntry[] = projectedMatchups.map((matchup, index) => ({
     id: -1 - index,
@@ -645,67 +711,9 @@ export const loadPlayoff = async () => {
     is_projection: true,
   }));
 
-  const rankedWinsByTeam = new Map<number, number>();
-  allGames
-    .filter(game => game.year === league.info.currentYear)
-    .filter(game => game.winnerId)
-    .forEach(game => {
-      const winnerId = game.winnerId!;
-      const opponentId = game.teamAId === winnerId ? game.teamBId : game.teamAId;
-      const opponent = teamsById.get(opponentId);
-      if (!opponent) return;
-      if (opponent.ranking <= 25) {
-        rankedWinsByTeam.set(winnerId, (rankedWinsByTeam.get(winnerId) ?? 0) + 1);
-      }
-    });
-
-  const sorRankById = new Map<number, number>();
-  const sorSorted = league.teams
-    .slice()
-    .sort((a, b) => {
-      const aGames = Math.max(1, a.totalWins + a.totalLosses);
-      const bGames = Math.max(1, b.totalWins + b.totalLosses);
-      const aSor = a.strength_of_record / aGames;
-      const bSor = b.strength_of_record / bGames;
-      return bSor - aSor;
-    });
-  sorSorted.forEach((team, index) => {
-    sorRankById.set(team.id, index + 1);
-  });
-
-  const resume_teams: ResumeTeamEntry[] = league.teams
-    .slice()
-    .sort((a, b) => a.ranking - b.ranking)
-    .slice(0, 10)
-    .map(team => ({
-      name: team.name,
-      ranking: team.ranking,
-      conference: team.conference ?? 'Independent',
-      record: formatRecord(team),
-      rating: team.rating,
-      ranked_wins: rankedWinsByTeam.get(team.id) ?? 0,
-      losses: team.totalLosses,
-      sor_rank: sorRankById.get(team.id) ?? team.ranking,
-      is_champ: championNames.has(team.name),
-    }));
-
   return {
-    info: league.info,
-    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
-    conferences: league.conferences,
-    playoff: {
-      teams: format,
-      autobids: league.settings.playoffAutobids,
-      conf_champ_top_4:
-        league.settings.conferenceChampionsReceiveTopSeeds,
-    },
-    playoff_teams,
-    bubble_teams,
-    conference_champions,
-    bracket,
+    ...context.page,
     bowl_games: bowl_games.sort(sortBowls),
     bowl_projections: bowl_projections.sort(sortBowls),
-    resume_teams,
-    is_projection: isProjection,
   };
 };

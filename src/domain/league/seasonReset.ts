@@ -125,6 +125,7 @@ export const prepareSeasonReset = async (
   league: LeagueState,
   data?: SeasonResetData,
 ) => {
+  league.resumeSnapshot = null;
   league.teams.forEach(team => {
     team.nonConfGames = 0;
     team.confGames = 0;

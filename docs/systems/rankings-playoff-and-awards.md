@@ -32,7 +32,9 @@ as season weeks advance.
 - `ensureSummaryStage(...)` promotes stage to `summary` when natty winner exists and applies final postseason ranking normalization.
 
 3. **Playoff presentation path**
-- `loadPlayoff()` composes current bracket/projection state, conference champion context, bubble/resume views, and bowl projection/actual mapping.
+- Route-specific postseason loaders compose the bracket, playoff picture,
+  résumé comparison, and bowl projection/actual views from shared selection
+  context.
 
 4. **Awards generation path**
 - `loadAwards()` and `loadSeasonSummary()` collect played-game logs for current year.
@@ -100,7 +102,7 @@ flowchart TD
 - `src/domain/league/postseason.ts`
   - postseason week constants and `lastWeek` mapping by playoff size
 - `src/domain/league/loaders/playoff.ts`
-  - `loadPlayoff` view/projection composition
+  - route-specific bracket, picture, résumé, and bowl view composition
 - `src/domain/league/awards.ts`
   - `buildAwards`, stat cache construction, award calculators
 - `src/domain/league/loaders/offseason.ts`

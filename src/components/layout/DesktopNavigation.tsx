@@ -22,6 +22,7 @@ import {
   isGroupActive,
   isPathActive,
   type AppNavigationData,
+  type NavigationItem,
   type NavigationGroup,
   type NavigationModel,
   type StageAdvanceAction,
@@ -87,8 +88,8 @@ const DesktopNavigation = ({
     closeMenu(groupId);
   };
 
-  const renderDirectItem = (item: NavigationModel['leading'][number]) => {
-    const active = isPathActive(currentPath, item.path);
+  const renderDirectItem = (item: NavigationItem) => {
+    const active = isPathActive(currentPath, item);
     return (
       <Button
         key={item.path}
@@ -138,7 +139,7 @@ const DesktopNavigation = ({
           }}
         >
           {group.items.map((item) => {
-            const itemActive = isPathActive(currentPath, item.path);
+            const itemActive = isPathActive(currentPath, item);
             return (
               <MenuItem
                 key={`${group.id}:${item.path}`}
@@ -262,9 +263,9 @@ const DesktopNavigation = ({
         aria-label="Primary navigation"
         sx={{ minHeight: '44px !important', px: 3, gap: 0.25 }}
       >
-        {model.leading.map(renderDirectItem)}
-        {model.groups.map(renderGroup)}
-        {model.trailing.map(renderDirectItem)}
+        {model.entries.map(entry =>
+          entry.type === 'group' ? renderGroup(entry) : renderDirectItem(entry)
+        )}
       </Toolbar>
     </AppBar>
   );

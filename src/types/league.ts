@@ -73,6 +73,41 @@ export interface PlayoffState {
   natty?: number;
 }
 
+export interface ResumeSnapshotResult {
+  opponentId: number;
+  opponent: string;
+  opponentRanking: number;
+}
+
+export interface ResumeSnapshotTeam {
+  teamId: number;
+  name: string;
+  ranking: number;
+  conference: string;
+  record: string;
+  pollScore: number;
+  sorRank: number;
+  sosRank: number | null;
+  top25Record: string;
+  bestWin: ResumeSnapshotResult | null;
+  worstLoss: ResumeSnapshotResult | null;
+  seed: number | null;
+  isAutobid: boolean;
+  hasBye: boolean;
+  isChampion: boolean;
+}
+
+export interface ResumeComparisonSnapshot {
+  year: number;
+  frozenAfterWeek: number;
+  playoff: {
+    teams: PlayoffTeamCount;
+    autobids: number;
+    conferenceChampionsReceiveTopSeeds: boolean;
+  };
+  teams: ResumeSnapshotTeam[];
+}
+
 export interface LeagueState {
   info: Info;
   teams: Team[];
@@ -84,6 +119,7 @@ export interface LeagueState {
   simInitialized: boolean;
   settings: NextSeasonConfiguration;
   playoff: PlayoffState;
+  resumeSnapshot: ResumeComparisonSnapshot | null;
   idCounters: {
     game: number;
     player: number;
