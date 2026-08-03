@@ -18,11 +18,12 @@ const applyRealignment = (
   teamsData: TeamsData,
   conferencesData: ConferencesData
 ) => {
-  if (league.settings.conferencePolicy === 'current') return;
+  if (league.settings.conferencePolicy === 'current') return [];
 
   const teamsByName = new Map(league.teams.map(team => [team.name, team]));
   const conferencesByName = new Map(league.conferences.map(conf => [conf.confName, conf]));
   const assignedTeams = new Set<string>();
+  const addedTeams: Team[] = [];
 
   let nextTeamId = league.teams.reduce((max, team) => Math.max(max, team.id), 0) + 1;
   let nextConfId = league.conferences.reduce((max, conf) => Math.max(max, conf.id), 0) + 1;
@@ -86,6 +87,7 @@ const applyRealignment = (
 
     nextTeamId += 1;
     league.teams.push(team);
+    addedTeams.push(team);
     teamsByName.set(teamName, team);
     return team;
   };
@@ -165,6 +167,7 @@ const applyRealignment = (
   }
 
   league.conferences = conferences;
+  return addedTeams;
 };
 
 const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFormat: boolean) => {
@@ -215,8 +218,14 @@ export const applyRealignmentAndPlayoff = async (
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
 
-  applyRealignment(league, typedYearData, typedTeamsData, typedConferencesData);
+  const addedTeams = applyRealignment(
+    league,
+    typedYearData,
+    typedTeamsData,
+    typedConferencesData,
+  );
 
   const updateFormat = league.settings.postseasonPolicy === 'historical';
   refreshPlayoffFormat(league, typedYearData, updateFormat);
+  return addedTeams;
 };

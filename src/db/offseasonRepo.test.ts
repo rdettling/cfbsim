@@ -12,7 +12,7 @@ import { buildGameDetail, buildPlayerSeasons } from '../domain/league/gameDetail
 
 const resetDatabase = async () => {
   const db = await getDb();
-  const stores = ['baseData', 'league'] as const;
+  const stores = ['baseData', 'league', 'players', 'playerOrigins'] as const;
   const tx = db.transaction([...stores], 'readwrite');
   await Promise.all(stores.map(store => tx.objectStore(store).clear()));
   await tx.done;
@@ -115,6 +115,89 @@ describe('commitOffseasonTransition', () => {
     expect(
       (persisted?.value as LeagueState).settings.conferencePolicy,
     ).toBe('current');
+  });
+
+  it('atomically adds a program, its players, and their origins', async () => {
+    const source = buildTestLeague('realignment');
+    await seedLeague(source);
+    const db = await getDb();
+    await db.put('players', buildTestPlayer());
+
+    const destination = structuredClone(source);
+    const entryTeam = {
+      ...destination.teams[0],
+      id: 2,
+      name: 'Entry State',
+      abbreviation: 'ENT',
+      ranking: 2,
+    };
+    destination.teams.push(entryTeam);
+    destination.info.currentYear += 1;
+    destination.info.stage = 'progression';
+    destination.idCounters.player = 3;
+    const player = buildTestPlayer({ id: 2, teamId: 2, year: 'fr' });
+    const origin = {
+      playerId: 2,
+      kind: 'program_entry' as const,
+      acquisitionYear: destination.info.currentYear,
+      originalTeamId: 2,
+      classAtEntry: 'fr' as const,
+    };
+
+    await commitOffseasonTransition({
+      expectedStage: 'realignment',
+      expectedSettings: source.settings,
+      league: destination,
+      players: [player],
+      playerOrigins: [origin],
+    });
+
+    expect(await db.get('players', 2)).toEqual(player);
+    expect(await db.get('playerOrigins', 2)).toEqual(origin);
+    expect((await db.get('league', 'current'))?.value).toEqual(destination);
+  });
+
+  it('rolls back the realignment when an entry-origin insert conflicts', async () => {
+    const source = buildTestLeague('realignment');
+    await seedLeague(source);
+    const db = await getDb();
+    await db.put('players', buildTestPlayer());
+    await db.put('playerOrigins', {
+      playerId: 2,
+      kind: 'walk_on',
+      acquisitionYear: source.info.currentYear,
+      originalTeamId: 1,
+    });
+
+    const destination = structuredClone(source);
+    destination.teams.push({
+      ...destination.teams[0],
+      id: 2,
+      name: 'Entry State',
+      abbreviation: 'ENT',
+      ranking: 2,
+    });
+    destination.info.currentYear += 1;
+    destination.info.stage = 'progression';
+    const player = buildTestPlayer({ id: 2, teamId: 2 });
+
+    await expect(commitOffseasonTransition({
+      expectedStage: 'realignment',
+      expectedSettings: source.settings,
+      league: destination,
+      players: [player],
+      playerOrigins: [{
+        playerId: 2,
+        kind: 'program_entry',
+        acquisitionYear: destination.info.currentYear,
+        originalTeamId: 2,
+        classAtEntry: player.year,
+      }],
+    })).rejects.toBeDefined();
+
+    expect(await db.get('players', 2)).toBeUndefined();
+    expect((await db.get('league', 'current'))?.value).toEqual(source);
+    expect(await db.get('playerOrigins', 2)).toMatchObject({ kind: 'walk_on' });
   });
 
   it('atomically writes annual aggregates and prunes non-retained detail', async () => {

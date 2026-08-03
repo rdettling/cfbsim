@@ -33,6 +33,14 @@ creates those players, selects starters, and calculates team ratings before
 `startNewLeague()` commits the save. Loaders and simulation readers never
 create or repair rosters.
 
+When historical realignment introduces a program, that transition creates the
+same 80-player, four-class roster for the new team. Talent follows the normal
+prestige-aware bootstrap model, while existing team ratings and rankings stay
+unchanged. The league, entry players, and `program_entry` origins commit in one
+transaction, so a new team is never persisted without a roster. Entry seniors
+then depart during the normal progression step and recruiting supplies the
+incoming freshman class.
+
 ## Annual Supply
 
 Every recruiting year contains 3,372 prospects:
@@ -129,7 +137,8 @@ deletes recruiting state, and enters `preseason` atomically.
 ## Invariants
 
 - IndexedDB is authoritative; loaders are read-only.
-- Bootstrap and annual recruiting are separate creation paths.
+- Initial bootstrap, program entry, and annual recruiting are distinct creation
+  paths with shared roster rules.
 - Freshmen and walk-ons are created exactly once within guarded transactions.
 - Human and AI allocations resolve simultaneously under the same rules.
 - Prospect generation and tie resolution are deterministic from persisted

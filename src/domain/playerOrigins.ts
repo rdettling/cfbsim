@@ -67,3 +67,15 @@ export const buildInitialRosterOrigins = (
     originalTeamId: player.teamId,
     classAtStart: player.year,
   }));
+
+export const buildProgramEntryOrigins = (
+  players: PlayerRecord[],
+  acquisitionYear: number,
+): PlayerOrigin[] =>
+  players.map(player => ({
+    playerId: player.id,
+    kind: 'program_entry',
+    acquisitionYear,
+    originalTeamId: player.teamId,
+    classAtEntry: player.year,
+  }));

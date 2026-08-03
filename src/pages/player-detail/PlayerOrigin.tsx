@@ -64,6 +64,16 @@ export const PlayerOrigin = ({ origin, onTeamClick }: PlayerOriginProps) => (
           </Typography>
         </>
       )}
+      {origin.kind === 'program_entry' && (
+        <>
+          <Typography variant="subtitle1">Program entry roster</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {classLabels[origin.classAtEntry]} when{' '}
+            <TeamLink name={origin.originalTeam} onTeamClick={onTeamClick} /> joined
+            in {origin.acquisitionYear}
+          </Typography>
+        </>
+      )}
     </Stack>
   </Paper>
 );

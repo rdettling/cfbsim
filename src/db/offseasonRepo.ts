@@ -7,9 +7,13 @@ import {
 } from '../types/league';
 import type { NextSeasonConfiguration } from '../types/domain';
 import type { SeasonMemory } from '../types/memory';
-import type { PlayerSeasonStats } from '../types/db';
+import type { PlayerOrigin, PlayerRecord, PlayerSeasonStats } from '../types/db';
 import { getDb } from './db';
-import { assertCurrentLeagueState } from './leagueRepo';
+import {
+  assertCurrentLeagueState,
+  assertCurrentRosterState,
+} from './leagueRepo';
+import { isPlayerOrigin } from './playerOriginRepo';
 
 const LEAGUE_KEY = 'current';
 
@@ -26,7 +30,41 @@ export interface OffseasonTransitionCommit {
   memory?: SeasonMemory;
   playerSeasons?: PlayerSeasonStats[];
   retainedGameIds?: Set<number>;
+  players?: PlayerRecord[];
+  playerOrigins?: PlayerOrigin[];
 }
+
+const assertProgramEntryRecords = (
+  league: LeagueState,
+  players: PlayerRecord[],
+  origins: PlayerOrigin[],
+) => {
+  const playersById = new Map(players.map(player => [player.id, player]));
+  const originIds = new Set<number>();
+  const invalid =
+    players.length !== origins.length ||
+    playersById.size !== players.length ||
+    origins.some(origin => {
+      if (
+        !isPlayerOrigin(origin) ||
+        origin.kind !== 'program_entry' ||
+        originIds.has(origin.playerId)
+      ) {
+        return true;
+      }
+      originIds.add(origin.playerId);
+      const player = playersById.get(origin.playerId);
+      return (
+        !player ||
+        origin.acquisitionYear !== league.info.currentYear ||
+        origin.originalTeamId !== player.teamId ||
+        origin.classAtEntry !== player.year
+      );
+    });
+  if (invalid) {
+    throw new Error('Program-entry player origins do not match their players.');
+  }
+};
 
 export const commitOffseasonTransition = async ({
   expectedStage,
@@ -36,10 +74,23 @@ export const commitOffseasonTransition = async ({
   memory,
   playerSeasons,
   retainedGameIds,
+  players,
+  playerOrigins,
 }: OffseasonTransitionCommit) => {
+  if ((players === undefined) !== (playerOrigins === undefined)) {
+    throw new Error('Program-entry players and origins must be committed together.');
+  }
   const db = await getDb();
   const tx = db.transaction(
-    ['baseData', 'league', 'seasonMemories', 'playerSeasons', 'gameDetails'],
+    [
+      'baseData',
+      'league',
+      'seasonMemories',
+      'playerSeasons',
+      'gameDetails',
+      'players',
+      'playerOrigins',
+    ],
     'readwrite',
   );
 
@@ -60,9 +111,22 @@ export const commitOffseasonTransition = async ({
 
     if (
       expectedSettings &&
-      JSON.stringify(persistedLeague.settings) !== JSON.stringify(expectedSettings)
+      JSON.stringify(persistedLeague.settings) !==
+        JSON.stringify(expectedSettings)
     ) {
       throw new OffseasonConfigurationConflictError();
+    }
+
+    if (players && playerOrigins) {
+      assertProgramEntryRecords(league, players, playerOrigins);
+      const persistedPlayers = await tx.objectStore('players').getAll();
+      assertCurrentRosterState(persistedLeague, persistedPlayers);
+      assertCurrentRosterState(league, [...persistedPlayers, ...players]);
+
+      const playerStore = tx.objectStore('players');
+      for (const player of players) await playerStore.add(player);
+      const originStore = tx.objectStore('playerOrigins');
+      for (const origin of playerOrigins) await originStore.add(origin);
     }
 
     if (history) {

@@ -35,6 +35,21 @@ describe('player origin validation', () => {
       originalTeamId: 1,
       classAtStart: 'so',
     })).toBe(true);
+    expect(isPlayerOrigin({
+      playerId: 4,
+      kind: 'program_entry',
+      acquisitionYear: 2026,
+      originalTeamId: 1,
+      classAtEntry: 'jr',
+    })).toBe(true);
+    expect(isPlayerOrigin({
+      playerId: 4,
+      kind: 'program_entry',
+      acquisitionYear: 2026,
+      originalTeamId: 1,
+      classAtEntry: 'jr',
+      classAtStart: 'jr',
+    })).toBe(false);
     expect(isPlayerOrigin({ ...recruit, prospectId: 9 })).toBe(false);
     expect(isPlayerOrigin({ ...recruit, positionRank: 26 })).toBe(false);
     expect(isPlayerOrigin({ ...recruit, publicRatingMax: 101 })).toBe(false);

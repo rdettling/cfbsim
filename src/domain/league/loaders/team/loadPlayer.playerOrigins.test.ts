@@ -18,9 +18,11 @@ describe('player origin loading', () => {
     const walkOn = buildTestPlayer({ id: 1 });
     const initial = buildTestPlayer({ id: 2, year: 'so' });
     const historical = buildTestPlayer({ id: 3, year: 'sr' });
+    const programEntry = buildTestPlayer({ id: 4, year: 'jr' });
     await db.put('league', { key: 'current', value: league });
     await db.put('players', walkOn);
     await db.put('players', initial);
+    await db.put('players', programEntry);
     await db.put('historicalPlayers', {
       id: historical.id,
       first: historical.first,
@@ -67,6 +69,13 @@ describe('player origin loading', () => {
       publicRatingMin: 70,
       publicRatingMax: 74,
     });
+    await db.put('playerOrigins', {
+      playerId: programEntry.id,
+      kind: 'program_entry',
+      acquisitionYear: 2025,
+      originalTeamId: 1,
+      classAtEntry: 'so',
+    });
 
     await expect(loadPlayer('1')).resolves.toMatchObject({
       origin: { kind: 'walk_on', originalTeam: 'Test State' },
@@ -82,6 +91,14 @@ describe('player origin loading', () => {
       origin: {
         kind: 'recruit',
         nationalRank: 18,
+        originalTeam: 'Test State',
+      },
+    });
+    await expect(loadPlayer('4')).resolves.toMatchObject({
+      origin: {
+        kind: 'program_entry',
+        acquisitionYear: 2025,
+        classAtEntry: 'so',
         originalTeam: 'Test State',
       },
     });

@@ -5,7 +5,7 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 
 ## IndexedDB Schema
 
-`src/db/db.ts` defines the current database at version 6.
+`src/db/db.ts` defines the current database at version 8.
 
 | Store | Key | Value |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 | `gameDetails` | game ID | nested `GameDetailRecord` |
 | `playerSeasons` | `[year, playerId]` | `PlayerSeasonStats` |
 | `historicalPlayers` | player ID | immutable departed-player identity |
-| `playerOrigins` | player ID | immutable recruiting, walk-on, or initial-roster provenance |
+| `playerOrigins` | player ID | immutable recruiting, walk-on, initial-roster, or program-entry provenance |
 | `seasonMemories` | year | `SeasonMemory` |
 
 The IndexedDB version is a destructive schema epoch. Opening an older version
@@ -43,10 +43,11 @@ duplicating scores, identities, season totals, full player logs, or generated
 prose. Award display joins identity and `playerSeasons` at load time.
 
 Every current or historical player has exactly one `playerOrigins` record.
-Recruit origins retain durable public recruiting facts; walk-ons and initial
-roster members use explicit variants instead of inferred recruiting history.
-Origins are written atomically with player creation, survive when an identity
-is archived, and are deleted when an unused player is permanently discarded.
+Recruit origins retain durable public recruiting facts; walk-ons, initial
+roster members, and players created when a program enters the league use
+explicit variants instead of inferred recruiting history. Origins are written
+atomically with player creation, survive when an identity is archived, and are
+deleted when an unused player is permanently discarded.
 
 Increment `STATIC_DATA_VERSION` whenever a release changes a public data asset
 that existing installations may already have cached.
@@ -116,9 +117,10 @@ records delete the entire database and recreate an empty current schema.
 - Summary advancement atomically appends team history and the completed
   season's dynasty-memory and player-season records, prunes ordinary AI detail,
   and enters realignment.
-- Generic offseason transitions use `commitOffseasonTransition()` only for
-  `baseData` and `league`. Recruiting, roster, and simulation mutations belong
-  to their dedicated commands.
+- Summary advancement and historical realignment use
+  `commitOffseasonTransition()`. Realignment atomically inserts any new
+  programs, their complete entry rosters, their origins, and the updated league.
+  Recruiting and simulation mutations belong to their dedicated commands.
 - Recruiting commands declare their transaction stores locally and write the
   singleton through `recruitingRepo`.
 - Roster-finalization commands declare their stores locally, validate the

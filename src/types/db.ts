@@ -154,10 +154,16 @@ export interface InitialRosterPlayerOrigin extends PlayerOriginBase {
   classAtStart: PlayerRecord['year'];
 }
 
+export interface ProgramEntryPlayerOrigin extends PlayerOriginBase {
+  kind: 'program_entry';
+  classAtEntry: PlayerRecord['year'];
+}
+
 export type PlayerOrigin =
   | RecruitPlayerOrigin
   | WalkOnPlayerOrigin
-  | InitialRosterPlayerOrigin;
+  | InitialRosterPlayerOrigin
+  | ProgramEntryPlayerOrigin;
 
 export type GameDetailPlay = Omit<
   PlayRecord,

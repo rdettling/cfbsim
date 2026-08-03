@@ -64,6 +64,7 @@ vi.mock('./offseason', () => ({
   applyRealignmentAndPlayoff: vi.fn(async (league: LeagueState) => {
     league.info.currentYear += 1;
     league.playoff = { seeds: [] };
+    return [];
   }),
 }));
 

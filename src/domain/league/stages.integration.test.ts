@@ -80,6 +80,17 @@ const seedFullCycle = async () => {
             state: 'TS',
             stadium: 'Test Stadium',
           },
+          'Entry State': {
+            mascot: 'Entrants',
+            abbreviation: 'ENT',
+            ceiling: 6,
+            floor: 1,
+            colorPrimary: '#654321',
+            colorSecondary: '#ffffff',
+            city: 'Entry City',
+            state: 'TS',
+            stadium: 'Entry Stadium',
+          },
         },
       },
     },
@@ -96,7 +107,7 @@ const seedFullCycle = async () => {
         conferences: {
           'Test Conference': {
             games: 0,
-            teams: { 'Test State': 4 },
+            teams: { 'Test State': 4, 'Entry State': 3 },
           },
         },
         independents: {},
@@ -117,7 +128,6 @@ const seedFullCycle = async () => {
     },
     { key: 'states', value: { TS: 1 } },
     { key: 'rivalries', value: { rivalries: [] } },
-    { key: 'teams', value: { teams: {} } },
     { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
   ];
 
@@ -179,6 +189,20 @@ describe('offseason lifecycle integration', () => {
       currentYear: 2026,
     });
     expect(league.settings.playoffTeams).toBe(4);
+    expect(league.teams.map(team => team.name)).toContain('Entry State');
+    const entryTeam = league.teams.find(team => team.name === 'Entry State')!;
+    const entryPlayers = (await memoryDb.getAll('players')).filter(
+      player => player.teamId === entryTeam.id,
+    );
+    expect(entryPlayers).toHaveLength(FINAL_ROSTER_SIZE);
+    expect(new Set(entryPlayers.map(player => player.year))).toEqual(
+      new Set(['fr', 'so', 'jr', 'sr']),
+    );
+    expect(
+      (await memoryDb.getAll('playerOrigins')).filter(
+        origin => origin.kind === 'program_entry',
+      ),
+    ).toHaveLength(FINAL_ROSTER_SIZE);
     await expect(
       advanceOffseasonStage('realignment'),
     ).rejects.toMatchObject({
@@ -198,6 +222,11 @@ describe('offseason lifecycle integration', () => {
       year: 'sr',
       rating: 85,
     });
+    expect(
+      (await db.getAllFromIndex('players', 'teamId', entryTeam.id)).filter(
+        player => player.year !== 'fr',
+      ),
+    ).toHaveLength(60);
     await expect(
       advanceOffseasonStage('progression'),
     ).rejects.toMatchObject({
@@ -352,33 +381,41 @@ describe('offseason lifecycle integration', () => {
     const db = await getDb();
     const leagueRecord = await db.get('league', 'current');
     const progressionLeague = leagueRecord?.value as LeagueState;
-    progressionLeague.idCounters!.player = 100;
+    progressionLeague.idCounters!.player = 200;
     await db.put('league', {
       key: 'current',
       value: progressionLeague,
     });
-    await db.clear('players');
+    const existingPlayers = await db.getAll('players');
+    const playerIdsToReplace = existingPlayers
+      .filter(player => player.teamId === progressionLeague.teams[0].id)
+      .map(player => player.id);
+    const replacementTx = db.transaction('players', 'readwrite');
+    for (const playerId of playerIdsToReplace) {
+      await replacementTx.objectStore('players').delete(playerId);
+    }
+    await replacementTx.done;
     const previewPlayers = [
       buildTestPlayer({
-        id: 10,
+        id: 100,
         year: 'fr',
         rating: 70,
         rating_so: 74,
       }),
       buildTestPlayer({
-        id: 11,
+        id: 101,
         year: 'so',
         rating: 75,
         rating_jr: 81,
       }),
       buildTestPlayer({
-        id: 12,
+        id: 102,
         year: 'jr',
         rating: 80,
         rating_sr: 87,
       }),
       buildTestPlayer({
-        id: 13,
+        id: 103,
         year: 'sr',
         rating: 90,
         starter: true,
@@ -392,7 +429,7 @@ describe('offseason lifecycle integration', () => {
 
     const preview = await loadRosterProgression();
     expect(preview.returning).toHaveLength(3);
-    expect(preview.departing.map(player => player.id)).toEqual([13]);
+    expect(preview.departing.map(player => player.id)).toEqual([103]);
 
     await advanceOffseasonStage('progression');
     const persistedPlayers = await db.getAll('players');
@@ -404,7 +441,7 @@ describe('offseason lifecycle integration', () => {
         rating: projected.projectedRating,
       });
     });
-    expect(persistedPlayers.some(player => player.id === 13)).toBe(false);
+    expect(persistedPlayers.some(player => player.id === 103)).toBe(false);
 
     await expect(
       advanceOffseasonStage('progression'),

@@ -49,6 +49,12 @@ export const isPlayerOrigin = (value: unknown): value is PlayerOrigin => {
       ['fr', 'so', 'jr', 'sr'].includes(String(value.classAtStart))
     );
   }
+  if (value.kind === 'program_entry') {
+    return (
+      exact(value, [...BASE_KEYS, 'classAtEntry']) &&
+      ['fr', 'so', 'jr', 'sr'].includes(String(value.classAtEntry))
+    );
+  }
   return (
     value.kind === 'recruit' &&
     exact(value, RECRUIT_KEYS) &&

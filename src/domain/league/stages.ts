@@ -26,6 +26,8 @@ import {
   buildPlayerSeasons,
   selectRetainedGameIds,
 } from './gameDetails';
+import { prepareProgramEntryRosters } from '../rosterBootstrap';
+import { buildProgramEntryOrigins } from '../playerOrigins';
 
 export const isOffseasonAdvanceStage = (
   stage: LeagueState['info']['stage'],
@@ -118,12 +120,23 @@ export const advanceOffseasonStage = async (
         league.info.currentYear + 1,
         league.info.startYear,
       );
-      await applyRealignmentAndPlayoff(league, historicalData);
+      const addedTeams = await applyRealignmentAndPlayoff(
+        league,
+        historicalData,
+      );
+      const players = addedTeams.length
+        ? await prepareProgramEntryRosters(league, addedTeams)
+        : undefined;
+      const playerOrigins = players
+        ? buildProgramEntryOrigins(players, league.info.currentYear)
+        : undefined;
       league.info.stage = destination.id;
       await commitOffseasonTransition({
         expectedStage,
         expectedSettings,
         league,
+        players,
+        playerOrigins,
       });
       return {
         previousStage: expectedStage,

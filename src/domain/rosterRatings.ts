@@ -75,7 +75,7 @@ const calculateTeamRating = (
   };
 };
 
-export const recalculateTeamRatings = (
+export const recalculateTeamStrengths = (
   teams: Team[],
   players: PlayerRecord[],
   random: RandomSource,
@@ -89,6 +89,14 @@ export const recalculateTeamRatings = (
     team.defense = ratings.defense;
     team.rating = ratings.overall;
   });
+};
+
+export const recalculateTeamRatings = (
+  teams: Team[],
+  players: PlayerRecord[],
+  random: RandomSource,
+) => {
+  recalculateTeamStrengths(teams, players, random);
 
   [...teams]
     .sort((left, right) => right.rating - left.rating)

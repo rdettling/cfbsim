@@ -3,6 +3,7 @@ import { buildTestPlayer } from '../test/fixtures';
 import { buildRecruitingProspect } from '../test/recruitingFixtures';
 import {
   buildInitialRosterOrigins,
+  buildProgramEntryOrigins,
   buildPositionRanks,
   buildRecruitOrigin,
   buildWalkOnOrigins,
@@ -64,6 +65,13 @@ describe('player origin construction', () => {
       acquisitionYear: 2025,
       originalTeamId: 2,
       classAtStart: 'jr',
+    });
+    expect(buildProgramEntryOrigins([player], 2027)[0]).toEqual({
+      playerId: 102,
+      kind: 'program_entry',
+      acquisitionYear: 2027,
+      originalTeamId: 2,
+      classAtEntry: 'jr',
     });
   });
 });

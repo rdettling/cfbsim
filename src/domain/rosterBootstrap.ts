@@ -13,7 +13,11 @@ import {
   mathRandomSource,
   type RandomSource,
 } from './recruiting/random';
-import { recalculateTeamRatings, setStarters } from './rosterRatings';
+import {
+  recalculateTeamRatings,
+  recalculateTeamStrengths,
+  setStarters,
+} from './rosterRatings';
 
 const CLASS_YEARS = 4;
 
@@ -76,7 +80,8 @@ const buildTeamNeeds = (teams: Team[], players: PlayerRecord[]) => {
 
 const recruitClass = (
   league: LeagueState,
-  teams: Team[],
+  competitionTeams: Team[],
+  rosterTeams: Team[],
   players: PlayerRecord[],
   names: WeightedNameData,
   states: string[],
@@ -86,15 +91,15 @@ const recruitClass = (
   starCounts: RecruitStarCounts = RECRUIT_STAR_COUNTS,
 ) => {
   const assignments = assignBootstrapClass(
-    teams,
-    targets ?? buildTeamNeeds(teams, players),
+    competitionTeams,
+    targets ?? buildTeamNeeds(competitionTeams, players),
     names,
     states,
     stateWeights,
     random,
     starCounts,
   );
-  teams.forEach(team => {
+  rosterTeams.forEach(team => {
     assignments[team.id].forEach(candidate => {
       players.push({
         id: nextPlayerId(league),
@@ -148,13 +153,20 @@ export interface PrepareInitialRostersFromDataInput {
   starCounts?: RecruitStarCounts;
 }
 
-export const prepareInitialRostersFromData = ({
+export interface PrepareProgramEntryRostersFromDataInput
+  extends PrepareInitialRostersFromDataInput {
+  teams: Team[];
+}
+
+const prepareBootstrapRosters = ({
   league,
+  teams,
+  competitionTeams = teams,
   names,
   states,
   random,
-  starCounts = RECRUIT_STAR_COUNTS,
-}: PrepareInitialRostersFromDataInput) => {
+  starCounts,
+}: PrepareProgramEntryRostersFromDataInput & { competitionTeams?: Team[] }) => {
   const players: PlayerRecord[] = [];
   const stateNames = Object.keys(states);
   const availableStates = stateNames.length ? stateNames : ['Unknown'];
@@ -165,23 +177,83 @@ export const prepareInitialRostersFromData = ({
     if (cycle > 0) progressBootstrapClass(players);
     recruitClass(
       league,
-      league.teams,
+      competitionTeams,
+      teams,
       players,
       names,
       availableStates,
       stateWeights,
       random.fork(`class:${cycle}`),
-      buildClassTargets(league.teams, cycle),
+      buildClassTargets(competitionTeams, cycle),
       starCounts,
     );
   }
-  setStarters(league.teams, players);
+  setStarters(teams, players);
+  return players;
+};
+
+export const prepareInitialRostersFromData = ({
+  league,
+  names,
+  states,
+  random,
+  starCounts = RECRUIT_STAR_COUNTS,
+}: PrepareInitialRostersFromDataInput) => {
+  const players = prepareBootstrapRosters({
+    league,
+    teams: league.teams,
+    names,
+    states,
+    random,
+    starCounts,
+  });
   recalculateTeamRatings(
     league.teams,
     players,
     random.fork('team-ratings'),
   );
   return players;
+};
+
+export const prepareProgramEntryRostersFromData = ({
+  league,
+  teams,
+  names,
+  states,
+  random,
+  starCounts = RECRUIT_STAR_COUNTS,
+}: PrepareProgramEntryRostersFromDataInput) => {
+  const players = prepareBootstrapRosters({
+    league,
+    teams,
+    competitionTeams: league.teams,
+    names,
+    states,
+    random,
+    starCounts,
+  });
+  recalculateTeamStrengths(
+    teams,
+    players,
+    random.fork('team-ratings'),
+  );
+  return players;
+};
+
+export const prepareProgramEntryRosters = async (
+  league: LeagueState,
+  teams: Team[],
+) => {
+  const source = await loadSourceData();
+  return prepareProgramEntryRostersFromData({
+    league,
+    teams,
+    names: source.names,
+    states: Object.fromEntries(
+      source.states.map((state, index) => [state, source.weights[index]]),
+    ),
+    random: mathRandomSource(),
+  });
 };
 
 export const prepareInitialRosters = async (league: LeagueState) => {
