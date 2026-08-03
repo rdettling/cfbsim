@@ -1,117 +1,105 @@
 # Scheduling and Week Advancement
 
-## Scope
+## Purpose
 
-Explains how season schedules are assembled, how the simulator advances week-to-week, and how postseason games are injected into the calendar for 2/4/12-team formats.
+This document owns preseason schedule editing, regular-season schedule
+construction, weekly simulation ordering, and the handoff to postseason game
+creation. Postseason selection rules belong in
+[Rankings, Playoff, and Awards](rankings-playoff-and-awards.md).
 
-## System Model
+## Preseason Scheduling
 
-Scheduling is a layered process:
+New-league creation and annual reset enter `preseason` with the schedule and
+simulation flags unset. `initializeNonConScheduling()` resolves rivalry
+constraints, persists fixed-week rivalry games, and projects the user's open
+non-conference slots.
 
-1. **Preseason layer**: user-visible non-con slots plus rivalry seeding.
-2. **Season layer**: full game graph materialized as `GameRecord`s.
-3. **Progression layer**: week loop simulates unplayed games and mutates standings/rankings/headlines.
-4. **Postseason layer**: conference championships, playoff rounds, bowls, and natty added at specific weeks or as catch-up actions.
+The player may add or remove games only during `preseason` before the full
+schedule exists. Candidate selection rejects:
 
-Week advancement is not only “simulate games”; it is also an ordering pipeline that mutates several dependent views (records, rankings, future-game ranks, postseason schedule).
+- occupied or invalid weeks;
+- the user team itself or a duplicate opponent;
+- an opponent already playing that week;
+- same-conference opponents;
+- teams without remaining non-conference capacity;
+- choices that make the remaining league schedule infeasible.
 
-## Execution Flow
+Accepted rivalry matchups use their configured name, site, and host rotation.
+Other selected opponents are scheduled at the user's home field.
 
-1. **Schedule bootstrap / initialization**
-- `startNewLeague()` creates preseason state and calls `initializeNonConScheduling()`.
-- Non-con rivalry records are created through `buildRivalryGameRecords()` + `createNonConGameRecord()`.
-- First season load (`loadDashboard` or `advanceWeeks` when uninitialized) calls `buildFullScheduleFromExisting(...)` and `initializeSimData(...)`.
+## Season Initialization
 
-2. **Preseason non-con edits**
-- `scheduleNonConGame(...)` validates slot/opponent availability and writes a single `GameRecord` for the selected week.
-- `listAvailableTeams(...)` enforces non-con constraints and excludes teams already used in that week.
+The explicit **Start Season** action calls `initializeSeason()`. It validates
+the persisted `preseason` stage and year, then delegates to
+`initializeSeasonSchedule()`.
 
-3. **Week advancement loop (`advanceWeeks`)**
-- While `currentWeek < destWeek`:
-  - Load games for `currentWeek` and filter current-year records.
-  - Simulate unplayed games only.
-  - Build one nested detail record per completed game.
-  - Update team records (`updateTeamRecords`), headlines (`generateHeadlines`), and rankings (`updateRankings`).
-  - Rewrite current/future game rank snapshots (`rankATOG`, `rankBTOG`) for unplayed games.
-  - Atomically persist games, detail, rankings, and league state, then run
-    `handleSpecialWeeks(...)` for postseason scheduling.
-  - Increment `currentWeek`.
-- After loop, persist the final guarded league state.
+`buildFullScheduleFromExisting()` treats preseason games and accepted
+rivalries as fixed constraints, fills every team's 12-game schedule across 14
+regular-season weeks, and assigns home and away teams. Custom alignments must
+produce a complete schedule. The resulting `GameRecord`s, nested-detail reset,
+and league state commit together; the command sets `scheduleBuilt` and
+`simInitialized` and enters `season`.
 
-4. **Postseason scheduling hooks**
-- `handleSpecialWeeks(...)` selects action by `settings.playoffTeams` and the
-  current week:
-  - **2-team**: conference championships -> natty (+ bowls).
-  - **4-team**: conference championships -> semis (+ bowls) -> natty.
-  - **12-team**: conference championships -> round 1 (+ bowls) -> quarters -> semis -> natty.
-- Includes catch-up logic when winners are known but expected round creation week was skipped.
+Page loaders never initialize a season. `advanceWeeks()` retains a guarded
+initialization path for callers that reach it without initialized simulation
+data, but normal navigation uses the explicit command.
 
-```mermaid
-flowchart TD
-  A["League init: preseason + non-con/rivalry seeds"] --> B["Season bootstrap: buildFullScheduleFromExisting + initializeSimData"]
-  B --> C["advanceWeeks(destWeek)"]
-  C --> D["Load week games"]
-  D --> E["Simulate unplayed games"]
-  E --> F["Update records/headlines/rankings"]
-  F --> G["Refresh future-game rank snapshots"]
-  G --> H["handleSpecialWeeks() postseason hooks"]
-  H --> I["Increment week"]
-  I --> J{"Reached destWeek?"}
-  J -- no --> D
-  J -- yes --> K["Persist games + nested detail + league"]
-```
+## Week Advancement
 
-## Key Mechanics
+For each week before the requested destination, `advanceWeeks()`:
 
-- **Conflict handling in schedule builder**:
-  - Scheduler attempts conflict-free week assignment.
-  - If no conflict-free slot exists, overlap fallback is allowed with warning logs.
-- **Non-con safeguards**:
-  - Week slot must be open for user team.
-  - Opponent cannot already have a game that week.
-  - Opponent must satisfy non-con and conference constraints.
-- **Ordering effects (critical)**:
-  - Sim results mutate records first.
-  - Headlines are generated against updated outcomes.
-  - Rankings update after record changes.
-  - Future unplayed game rank snapshots are updated after rankings shift.
-  - Postseason hooks execute after these updates, not before.
-- **Year isolation**:
-  - Most loaders and progression filters operate on `game.year === currentYear` to avoid cross-year bleed.
+1. loads current-year games and simulates only unplayed games;
+2. creates one nested `GameDetailRecord` per completed game;
+3. updates team records and generates headlines;
+4. recalculates rankings;
+5. refreshes rank and watchability snapshots on future games;
+6. commits league, game, and detail records;
+7. invokes `handleSpecialWeeks()` to create eligible postseason games;
+8. increments the current week.
 
-## Invariants and Constraints
+The ordering matters: postseason selection sees the latest records and
+rankings, and future game cards display the latest ranking snapshots.
 
-- `scheduleBuilt` and `simInitialized` must both be true for steady-state week progression.
-- `GameRecord.id` uniqueness is enforced through league counters.
-- Postseason round creation is idempotent via “already created” guards on playoff IDs.
-- Non-game artifact resets (`clearNonGameArtifacts`) intentionally preserve `games` records.
+## Postseason Hooks
 
-## Failure/Edge Cases
+`handleSpecialWeeks()` uses the configured playoff size and postseason week
+constants to create conference championships, bowls, and subsequent rounds:
 
-- If schedule is missing at advance time, `advanceWeeks` self-heals by bootstrapping schedule/sim data.
-- Teams can appear in multiple weekly games under overlap fallback; progression continues with warning.
-- Postseason catch-up paths allow round generation when winner prerequisites are met late.
-- If natty winner is absent, summary stage transition is deferred even after postseason scheduling.
+- 2 teams: conference championships, bowls, national championship;
+- 4 teams: conference championships, semifinals, bowls, championship;
+- 12 teams: conference championships, first round, quarterfinals, semifinals,
+  bowls, championship.
 
-## What You Can Observe in the App
+Round creation is idempotent and requires the preceding winners. Catch-up
+checks create a missing eligible round when advancement has moved beyond its
+normal creation week.
 
-- “Advance” can simulate several weeks in one action and then instantly update rankings, standings, and schedules.
-- Playoff/bowl pages appear progressively as season reaches postseason thresholds.
-- Conference championship and playoff rounds can appear even after non-linear progression, due to catch-up scheduling logic.
+## Invariants
 
-## Source Map (file/function references)
+- Every regular-season team receives 12 games across 14 weeks.
+- Fixed preseason games and accepted rivalry constraints survive full schedule
+  construction.
+- A team cannot have duplicate opponents or two games in one week.
+- Current-year filters prevent games from another season entering progression.
+- Game IDs come from the league counter and remain unique.
+- Completed games are never simulated twice.
+- Postseason creators use persisted IDs to prevent duplicate rounds.
+- The season enters `summary` only after the national championship resolves.
 
-- `src/domain/scheduleBuilder.ts`
-  - `buildSchedule`, `buildFullScheduleFromExisting`, `applyRivalriesToSchedule`, `listAvailableTeams`, `scheduleNonConGame`
-- `src/domain/league/seasonReset.ts`
-  - `initializeNonConScheduling`, `buildRivalryGameRecords`, `createNonConGameRecord`, `prepareSeasonReset`
-- `src/domain/league/loaders/season/loadDashboard.ts`
-  - season bootstrap path
+## Source Map
+
+- `src/domain/league/loaders/season/preseasonScheduling.ts`
+- `src/domain/league/loaders/season/listAvailableTeams.ts`
 - `src/domain/league/loaders/season/scheduleNonConGame.ts`
-  - user non-con scheduling mutation
+- `src/domain/league/loaders/season/removePreseasonScheduleItem.ts`
+- `src/domain/league/seasonReset.ts`
+- `src/domain/league/season.ts`
+- `src/domain/league/seasonInitialization.ts`
+- `src/domain/schedule/preseasonCandidates.ts`
+- `src/domain/schedule/feasibility.ts`
+- `src/domain/schedule/planner.ts`
+- `src/domain/schedule/projection.ts`
+- `src/domain/rivalryScheduling.ts`
 - `src/domain/sim/orchestrator.ts`
-  - `initializeSimData`, `advanceWeeks`
 - `src/domain/sim/postseason.ts`
-  - `handleSpecialWeeks`, postseason round creators (`setConferenceChampionships`, `setPlayoffR1`, `setPlayoffQuarter`, `setPlayoffSemi`, `setNatty`, `setBowls`)
 - `src/domain/sim/rankings.ts`
-  - `updateTeamRecords`, `updateRankings`

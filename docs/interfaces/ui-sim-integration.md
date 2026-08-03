@@ -1,10 +1,10 @@
 # UI Sim Integration
 
-## Scope
+## Purpose
 
 Explains how the UI coordinates with simulation domain functions for live game selection, interactive stepping, finalization, and data refresh synchronization.
 
-## System Model
+## Ownership
 
 UI sim integration has three layers:
 
@@ -14,7 +14,7 @@ UI sim integration has three layers:
 
 This allows one game to run interactively while the broader league state remains consistent with the same persistence model used by batch simulation.
 
-## Execution Flow
+## Session Flow
 
 1. **Game selection**
 - `GameSelectionModal` calls `getGamesToLiveSim()`.
@@ -72,11 +72,11 @@ sequenceDiagram
     Engine-->>Hook: play + drive state + completion flags
   end
   Hook->>Domain: finalizeGameSimulation(...)
-  Domain->>DB: saveGames/saveDrives/savePlays/saveGameLogs/saveLeague
+  Domain->>DB: commitSimulationBatch(league + game + nested detail)
   Domain-->>Hook: finalized game + drive response
 ```
 
-## Key Mechanics
+## Session Rules
 
 - **Decision gating**:
   - User decision prompts only render when current offense is user team and decision mode is enabled.
@@ -90,14 +90,14 @@ sequenceDiagram
 - **Persistence timing**:
   - Interactive artifacts are buffered in refs during play and committed on game completion, not after every play.
 
-## Invariants and Constraints
+## Invariants
 
 - `gameId` must resolve to a persisted `GameRecord`.
 - Interactive context must keep offense/defense and possession fields synchronized with `SimGame` score/clock state.
 - Finalization must execute once per completed game session to avoid duplicate writes.
 - UI presentation depends on mapped play/drive records staying in deterministic order.
 
-## Failure/Edge Cases
+## Failure Handling
 
 - If preparation fails (missing game/league), session start aborts.
 - Completed games are returned in read-only replay mode without rerunning simulation.
@@ -106,15 +106,7 @@ sequenceDiagram
 - Finalization failures require application reload to reconcile the separate
   IndexedDB writes; normal successful and cancelled closes do not reload.
 
-## What You Can Observe in the App
-
-- User-team games can present decision prompts while non-user games can be fully auto-run.
-- Sim Play, Sim Drive, and Sim to End remain available in both cases.
-- Live game score/clock updates in real time and then becomes stable after finalization.
-- After closing a successfully persisted live sim, league pages refetch through
-  the shared refresh event.
-
-## Source Map (file/function references)
+## Source Map
 
 - `src/components/sim/GameSelectionModal.tsx`
   - live game discovery and selection UX

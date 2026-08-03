@@ -1,6 +1,6 @@
 # System Overview
 
-## Scope
+## Purpose
 
 The app is a client-side college football simulation. IndexedDB is the
 authoritative runtime state. React pages render projections returned by domain
@@ -44,10 +44,11 @@ repair or replace it.
 
 Application startup is the destructive recovery boundary. Before React
 renders, it validates the authoritative save. An integrity failure deletes the
-entire database and recreates the current empty schema. Opening an older
-IndexedDB version likewise discards all old stores instead of migrating them.
+entire database and recreates the current empty schema. A database-version
+change likewise recreates the current stores rather than migrating records
+between schema epochs.
 
-## Execution Flow
+## Request and Command Flow
 
 1. A page calls a loader.
 2. The loader reads a validated snapshot from IndexedDB.
@@ -100,8 +101,7 @@ league advancement.
 
 ## Invariants
 
-- The codebase supports one current architecture and persisted schema; obsolete
-  paths are removed rather than retained as compatibility layers.
+- Every read and write uses one current architecture and persisted schema.
 - Modules stay lean, explicit, directly imported, and easy for an LLM to
   navigate.
 - IndexedDB is the source of truth.

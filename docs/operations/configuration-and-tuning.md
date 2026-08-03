@@ -1,10 +1,10 @@
 # Configuration and Tuning
 
-## Scope
+## Purpose
 
 Explains the active configuration and tuning surfaces that shape simulation behavior, what each surface controls, and how to change them safely.
 
-## System Model
+## Configuration Surfaces
 
 Configuration exists at four levels:
 
@@ -17,7 +17,7 @@ Configuration exists at four levels:
 
 The tuning model is intentionally stochastic: many mechanisms rely on probabilistic sampling (`Math.random` and Gaussian draws), so changes should be validated statistically, not by single-run outcomes.
 
-## Execution Flow
+## Data Flow
 
 1. **Runtime tuning load path**
 - `src/domain/sim/config.ts` imports `tuning.json` as `SIM_TUNING`.
@@ -51,7 +51,7 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Annual supply is 32 five-stars, 340 four-stars, 2,800 three-stars, and
   200 two-stars.
 
-## Key Mechanics
+## Controls
 
 - **High-impact runtime controls (`tuning.json`)**:
   - `clock.*`: play durations, tempo multipliers, first-down/out-of-bounds stop windows.
@@ -85,7 +85,7 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
     Signing Day share and low-prestige elite share are informational rather
     than hard gates. Evaluation never rewrites constants automatically.
 
-## Invariants and Constraints
+## Invariants
 
 - `SIM_TUNING` must satisfy the `SimTuning` type contract.
 - Extreme tuning changes can destabilize downstream systems (rankings, postseason qualification realism) even when engine still runs.
@@ -103,23 +103,14 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Any script that rewrites tracked JSON should be treated as a model change requiring regression review.
 - Recruiting evaluation never writes IndexedDB, tracked JSON, or configuration.
 
-## Failure/Edge Cases
+## Risks
 
 - Over-aggressive clock or playcalling tuning can produce unrealistic possession counts or score distributions.
 - Outcome divisor miscalibration can collapse rating differentiation (too flat) or over-amplify favorites (too steep).
 - Postseason setting combinations outside supported assumptions may produce confusing bracket expectations.
 - Rewritten odds/history artifacts can drift from current sim behavior if not regenerated after major tuning shifts.
 
-## What You Can Observe in the App
-
-- Clock/tempo tuning changes alter game pace and number of drives.
-- Outcome tuning changes alter yardage distributions, scoring frequency, and upset rates.
-- Playoff setting changes alter season length, postseason rounds, and ranking freeze behavior.
-- Conference and postseason policies alter offseason structural evolution.
-- The Next Season Setup source badge identifies whether the upcoming year uses
-  exact bundled data or the closest historical fallback.
-
-## Safe vs Behavior-Shifting Changes
+## Change Risk
 
 | Change Type | Typical Risk | Recommended Handling |
 |---|---|---|
@@ -129,7 +120,7 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 | Playoff topology/automation default changes | High | Validate lifecycle + postseason scenarios for 2/4/12 |
 | Regenerating odds/history data assets | Medium-High | Verify generated files align with current tuned behavior |
 
-## Source Map (file/function references)
+## Source Map
 
 - Runtime tuning/config:
   - `src/domain/sim/tuning.json`

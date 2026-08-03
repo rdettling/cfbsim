@@ -1,5 +1,9 @@
 # Season State Machine
 
+This document owns the legal annual stage graph and the command responsible
+for each transition. System documents define the work performed inside those
+commands.
+
 ## Stage Graph
 
 `preseason → season → summary → realignment → progression → recruiting → recruiting_summary → roster_cuts → preseason`

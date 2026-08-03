@@ -1,10 +1,10 @@
 # Rankings, Playoff, and Awards
 
-## Scope
+## Purpose
 
 Explains how season outcomes are transformed into ranking movement, postseason structure, and award outcomes.
 
-## System Model
+## Ownership
 
 This subsystem has three linked layers:
 
@@ -16,7 +16,7 @@ The layers are connected by shared state (`teams`, `games`, `settings`,
 `playoff`, and per-game player statistics in `gameDetails`) and run repeatedly
 as season weeks advance.
 
-## Execution Flow
+## Execution
 
 1. **Record + ranking updates during progression**
 - `updateTeamRecords(...)` consumes simulated games, mutating team W/L splits and strength-of-record components.
@@ -54,7 +54,7 @@ flowchart TD
   J --> K["awards favorites/final"]
 ```
 
-## Key Mechanics
+## Selection and Scoring Rules
 
 - **Strength-of-record influence**:
   - Team strength signal tracks actual wins minus expected wins vs average team baseline.
@@ -69,14 +69,14 @@ flowchart TD
   - Player game logs are aggregated into stat caches (passing/rushing/receiving/defensive/kicking).
   - Award calculators blend production, role/position expectations, and team context.
 
-## Invariants and Constraints
+## Invariants
 
 - Ranking and record updates depend on completed game outcomes; unplayed games are excluded.
 - Postseason creation uses persistent playoff ID fields; bracket state is durable across reloads.
 - Awards only include logs from played games in current year scope.
 - Final postseason ranking pass ensures champion/runner-up placement before rank-based score normalization.
 
-## Failure/Edge Cases
+## Incomplete-State Handling
 
 - If conference championship game winner is unavailable, champion fallback uses conference standings order.
 - If postseason round prerequisites are incomplete, next round creation is deferred.
@@ -86,14 +86,7 @@ flowchart TD
   `SeasonMemory` before detailed game logs are cleared. Historical finalists
   and generated award prose are not retained.
 
-## What You Can Observe in the App
-
-- Rankings shift as a lagged blend of prior ranking and season signal, rather than resetting entirely week to week.
-- Playoff/bowl structures differ significantly between 2/4/12-team settings.
-- Conference champions and bracket seeds can diverge from pure AP rank order due to autobid/bye rules.
-- Awards become richer later in season as game-log volume grows.
-
-## Source Map (file/function references)
+## Source Map
 
 - `src/domain/sim/rankings.ts`
   - `updateTeamRecords`, `updateRankings`, `finalizePostseasonRankings`

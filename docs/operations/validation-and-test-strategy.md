@@ -1,11 +1,11 @@
 # Validation and Test Strategy
 
-## Scope
+## Purpose
 
 Defines a practical validation strategy for checking lifecycle correctness,
 simulation integrity, and interface consistency after application changes.
 
-## System Model
+## Validation Layers
 
 Validation is layered:
 
@@ -18,7 +18,7 @@ Validation is layered:
 
 Because the simulator is stochastic, validation uses scenario sets and aggregated expectations, not single deterministic scores.
 
-## Execution Flow
+## Workflow
 
 1. **Pre-checks**
 - Confirm the intended diff scope.
@@ -40,7 +40,7 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
   consistent. Background refresh must preserve shell feedback for stale or
   conflicting offseason actions.
 
-## Key Mechanics
+## Commands and Statistical Checks
 
 - **Available command checks**:
   - `npm test`
@@ -74,33 +74,23 @@ measured values, checksums, and runtime; the command never rewrites
 configuration or persistence. Larger samples are explicit offline analysis,
 not routine validation.
 
-The representative checksum records the current 80-player economy,
-active-pursuit strategy, recruit supply, public-rank talent model, and
-nonlinear elite-prestige
-hierarchy. Passing it establishes reproducibility; distribution diagnostics
-and a user season review establish product credibility. See
-[Recruiting Hierarchy](../design/recruiting-hierarchy.md) and
-[Roster and Recruit Supply](../design/roster-and-recruit-supply.md).
-The representative checksum is `8476564c`.
+The replay checksum establishes reproducibility for a given build;
+distribution diagnostics and a user season review establish product
+credibility. See the [Recruiting Model](../systems/recruiting-model.md) and
+[Roster and Recruiting Lifecycle](../systems/roster-and-recruiting.md).
 
-## Invariants and Constraints
+## Invariants
 
 - Validation should preserve year scoping (`currentYear`) and stage ordering invariants.
 - Scenario runs should avoid conflating doc edits with tuning/data rewrites unless explicitly intended.
 - Reproducibility is limited due to stochastic simulation; use sample sizes and repeated runs for confidence.
 
-## Failure/Edge Cases
+## Coverage Gaps
 
 - Passing `typecheck` does not guarantee behavioral integrity.
 - Single-run anomalies are possible; suspicious behavior requires repeated scenario replay.
 - Postseason catch-up logic can mask missed-week assumptions unless explicitly tested.
 - Live sim completion path must be validated separately from batch progression path.
-
-## What You Can Observe in the App
-
-- Correct lifecycle behavior appears as predictable stage progression and route availability changes.
-- Integrity issues often appear as missing playoff rounds, stale rankings, broken game pages, or inconsistent roster states after offseason.
-- Interface mismatches appear as pages loading but rendering incomplete/undefined slices.
 
 ## Scenario Matrix
 
@@ -127,7 +117,7 @@ The representative checksum is `8476564c`.
 | Offseason concurrency | duplicate/stale/configuration race | only one consistent command commits; failures leave all affected stores unchanged | Run atomic integration tests and exercise a two-tab stale action |
 | Offseason navigation | refresh, Back/Forward, direct stale lifecycle route | no lifecycle mutation; off-stage loaders return their gated projection | Reload each lifecycle page and compare IndexedDB snapshots |
 
-## Recommended Validation Sequence
+## Validation Sequence
 
 1. `npm test`
 2. `npm run typecheck`
@@ -157,7 +147,7 @@ internal scrolling; below `lg`, verify no unintended horizontal overflow.
 - Do not use forced audit fixes or version overrides
   to hide unsupported combinations.
 
-## Source Map (file/function references)
+## Source Map
 
 - Lifecycle and stage transitions:
   - `src/domain/league/stages.ts`

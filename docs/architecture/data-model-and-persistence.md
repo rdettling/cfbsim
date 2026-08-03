@@ -1,5 +1,8 @@
 # Data Model and Persistence
 
+This document owns the persisted schema, integrity boundary, record retention,
+and transaction ownership. IndexedDB is the runtime source of truth.
+
 ## IndexedDB Schema
 
 `src/db/db.ts` defines the current database at version 6.
