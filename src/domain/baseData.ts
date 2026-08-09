@@ -74,16 +74,11 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   };
 };
 
-export const buildTeamsAndConferences = async (year: string): Promise<{ teams: Team[]; conferences: Conference[] }> => {
-  const [yearData, teamsData, conferencesData] = await Promise.all([
-    getYearData(year),
-    getTeamsData(),
-    getConferencesData(),
-  ]);
-  const typedYearData: YearData = yearData;
-  const typedTeamsData = teamsData as TeamsData;
-  const typedConferencesData = conferencesData as ConferencesData;
-
+export const buildTeamsAndConferencesFromData = (
+  typedYearData: YearData,
+  typedTeamsData: TeamsData,
+  typedConferencesData: ConferencesData,
+): { teams: Team[]; conferences: Conference[] } => {
   const teams: Team[] = [];
   const conferences: Conference[] = [];
   let teamId = 1;
@@ -186,4 +181,19 @@ export const buildTeamsAndConferences = async (year: string): Promise<{ teams: T
     });
 
   return { teams, conferences };
+};
+
+export const buildTeamsAndConferences = async (
+  year: string,
+): Promise<{ teams: Team[]; conferences: Conference[] }> => {
+  const [yearData, teamsData, conferencesData] = await Promise.all([
+    getYearData(year),
+    getTeamsData(),
+    getConferencesData(),
+  ]);
+  return buildTeamsAndConferencesFromData(
+    yearData,
+    teamsData as TeamsData,
+    conferencesData as ConferencesData,
+  );
 };

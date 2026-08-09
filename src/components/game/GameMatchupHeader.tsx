@@ -3,12 +3,13 @@ import type { Team } from '../../types/domain';
 import { TeamLink } from '../team/TeamLink';
 import { TeamLogo } from '../team/TeamLogo';
 import { formatNeutralSite } from '../../domain/utils/gameDisplay';
+import type { GameNewsItem } from '../../types/news';
+import { storyKicker } from '../../domain/news/presentation';
 
 type MatchupGame = {
   label: string;
   weekPlayed: number;
   year: number;
-  headline?: string | null;
   venue: string | null;
 };
 
@@ -34,7 +35,7 @@ type ResultMatchupHeaderProps = MatchupHeaderBaseProps & {
   awayScore: number;
   homeScore: number;
   overtime: number;
-  headlineSubtitle?: string | null;
+  story?: GameNewsItem | null;
 };
 
 export type GameMatchupHeaderProps = PreviewMatchupHeaderProps | ResultMatchupHeaderProps;
@@ -215,12 +216,20 @@ export default function GameMatchupHeader(props: GameMatchupHeaderProps) {
           >
             Week {game.weekPlayed} · {game.year} · {venue}
           </Typography>
-          {isResult && game.headline && (
-            <Typography variant="body1" sx={{ mt: 0.35, fontStyle: 'italic', lineHeight: 1.2 }}>
-              {game.headline}
+          {isResult && props.story && (
+            <Typography
+              variant="overline"
+              sx={{ color: 'text.secondary', display: 'block', mt: 0.5, lineHeight: 1.2 }}
+            >
+              {storyKicker(props.story)}
             </Typography>
           )}
-          {isResult && props.headlineSubtitle && (
+          {isResult && props.story && (
+            <Typography variant="body1" sx={{ mt: 0.2, fontWeight: 700, lineHeight: 1.2 }}>
+              {props.story.headline}
+            </Typography>
+          )}
+          {isResult && props.story && (
             <Typography
               variant="body2"
               sx={{
@@ -229,7 +238,7 @@ export default function GameMatchupHeader(props: GameMatchupHeaderProps) {
                 lineHeight: 1.2,
               }}
             >
-              {props.headlineSubtitle}
+              {props.story.deck}
             </Typography>
           )}
         </Box>

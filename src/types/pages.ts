@@ -1,4 +1,4 @@
-import type { loadHomeData, loadNonCon, loadDashboard, loadTeamSchedule, loadWeekSchedule, loadGame, listAvailableTeams, startNewLeague } from '../domain/league/loaders/season';
+import type { loadHomeData, loadNonCon, loadDashboard, loadNews, loadTeamSchedule, loadWeekSchedule, loadGame, listAvailableTeams, startNewLeague } from '../domain/league/loaders/season';
 import type { loadAwards, loadSeasonSummary } from '../domain/league/loaders/offseason';
 import type { loadRosterCuts } from '../domain/league/loaders/loadRosterCuts';
 import type { loadRealignment } from '../domain/league/loaders/loadRealignment';
@@ -25,6 +25,7 @@ import type {
 export type HomePageData = Awaited<ReturnType<typeof loadHomeData>>;
 export type NonConPageData = Awaited<ReturnType<typeof loadNonCon>>;
 export type DashboardPageData = Awaited<ReturnType<typeof loadDashboard>>;
+export type NewsPageData = Awaited<ReturnType<typeof loadNews>>;
 export type TeamSchedulePageData = Awaited<ReturnType<typeof loadTeamSchedule>>;
 export type WeekSchedulePageData = Awaited<ReturnType<typeof loadWeekSchedule>>;
 export type GamePageData = Awaited<ReturnType<typeof loadGame>>;

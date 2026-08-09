@@ -73,10 +73,10 @@ const collectPostseasonEvents = (
   for (const game of games) {
     if (
       game.winnerId !== null &&
-      game.name?.endsWith('Bowl') &&
+      game.gameType === 'bowl' &&
       !seen.has(game.id)
     ) {
-      add({ type: 'bowl', gameId: game.id, bowlName: game.name });
+      add({ type: 'bowl', gameId: game.id, bowlName: game.name ?? 'Bowl' });
     }
   }
 

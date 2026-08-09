@@ -196,6 +196,8 @@ export function assertCurrentLeagueState(
   const valid =
     LEAGUE_STAGES.has(info.stage as LeagueStage) &&
     isFiniteNumber(info.currentWeek) &&
+    Number.isInteger(info.lastRankingsWeek) &&
+    Number(info.lastRankingsWeek) >= 0 &&
     isFiniteNumber(info.currentYear) &&
     isFiniteNumber(info.startYear) &&
     typeof info.team === 'string' &&

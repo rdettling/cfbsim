@@ -58,8 +58,6 @@ export const getRivalriesData = async (): Promise<{ rivalries: RivalryDefinition
   ]);
   return normalizeRivalriesData(value, new Set(Object.keys(teams.teams)));
 };
-export const getHeadlinesData = () =>
-  getBaseData<Record<string, string[]>>('headlines', '/data/headlines.json');
 export const getNamesData = () =>
   getBaseData<Record<string, { first: Array<{ name: string; weight: number }>; last: Array<{ name: string; weight: number }> }>>(
     'names',

@@ -106,9 +106,10 @@ const resetDatabase = async () => {
     'players',
     'games',
     'gameDetails',
+    'newsItems',
     'playerSeasons',
-  'historicalPlayers',
-  'playerOrigins',
+    'historicalPlayers',
+    'playerOrigins',
     'seasonMemories',
   ] as const;
   const tx = db.transaction([...stores], 'readwrite');
@@ -124,6 +125,7 @@ const snapshotSave = async () => {
     players: await db.getAll('players'),
     games: await db.getAll('games'),
     drives: await db.getAll('gameDetails'),
+    newsItems: await db.getAll('newsItems'),
     plays: await db.getAll('playerSeasons'),
     gameLogs: await db.getAll('historicalPlayers'),
     seasonMemories: await db.getAll('seasonMemories'),
@@ -156,7 +158,8 @@ const buildOldGame = (): GameRecord => ({
   overtime: 0,
   scoreA: 28,
   scoreB: 14,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: 80,
 });
 
@@ -510,6 +513,8 @@ describe('startNewLeague', () => {
     expect(created.conferences).toHaveLength(1);
     await initializeSeason(2025);
     const games = await db.getAllFromIndex('games', 'year', 2025);
+    expect((await db.getAllFromIndex('newsItems', 'year', 2025))
+      .filter(item => item.type === 'preview')).toHaveLength(3);
     const counts = new Map<number, number>();
     games.forEach(game => {
       counts.set(game.teamAId, (counts.get(game.teamAId) ?? 0) + 1);

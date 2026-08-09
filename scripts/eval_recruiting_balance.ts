@@ -13,7 +13,7 @@ import {
 import type { WeightedNameData } from '../src/types/recruiting';
 import { runRecruitingEvaluationSuite } from '../src/domain/recruiting/evaluation';
 import { RECRUIT_STAR_COUNTS } from '../src/domain/recruiting/config';
-import { createSeededRandom } from '../src/domain/recruiting/random';
+import { createSeededRandom } from '../src/domain/utils/random';
 import { prepareInitialRostersFromData } from '../src/domain/rosterBootstrap';
 
 const DEFAULT_SEED = 20260727;

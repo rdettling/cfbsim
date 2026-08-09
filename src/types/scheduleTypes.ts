@@ -8,6 +8,7 @@ export interface FullGame {
   awayTeam: Team | null;
   venue: string | null;
   name?: string | null;
+  rivalryKey: string | null;
 }
 
 export interface ScheduleConstraint {

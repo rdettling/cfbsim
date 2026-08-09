@@ -26,7 +26,7 @@ import {
   RosterFinalizationRuleError,
 } from '../../types/roster';
 import { buildOddsContext } from '../odds';
-import { createSeededRandom } from '../recruiting/random';
+import { createSeededRandom } from '../utils/random';
 import {
   applyRosterCutIds,
   assertFinalRosters,

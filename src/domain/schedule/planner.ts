@@ -49,6 +49,7 @@ export const buildFixedGamesFromRecords = (
       awayTeam: game.awayTeamId ? teamsById.get(game.awayTeamId)! : null,
       venue: game.venue,
       name: game.name ?? null,
+      rivalryKey: game.rivalryKey,
     }));
 
 export const buildFullScheduleFromExisting = (
@@ -143,7 +144,8 @@ const scheduleGame = (
   weekPlayed: number,
   homeTeam: Team | null,
   awayTeam: Team | null,
-  name?: string | null
+  name?: string | null,
+  rivalryKey: string | null = null,
 ) => {
   games.push({
     teamA: team,
@@ -153,6 +155,7 @@ const scheduleGame = (
     awayTeam,
     venue: null,
     name: name ?? null,
+    rivalryKey,
   });
 
   if (isConferenceGame(team, opponent)) {
@@ -212,7 +215,8 @@ export const fillUserSchedule = (
       game.weekPlayed,
       game.homeTeam,
       game.awayTeam,
-      game.name ?? null
+      game.name ?? null,
+      game.rivalryKey,
     );
     scheduledOpponents.get(game.teamA.id)?.add(game.teamB.id);
     scheduledOpponents.get(game.teamB.id)?.add(game.teamA.id);

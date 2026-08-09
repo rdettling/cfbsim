@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSeededRandom } from './random';
+import { createSeededRandom } from '../utils/random';
 
 describe('seeded recruiting randomness', () => {
   it('produces a stable sequence and stable keyed forks', () => {

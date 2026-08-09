@@ -5,7 +5,7 @@ import {
   generatePlayerRatings,
   generateProspectPool,
 } from './generation';
-import { createSeededRandom } from './random';
+import { createSeededRandom } from '../utils/random';
 import { FINAL_ROSTER_SIZE, POSITION_ORDER } from '../rosterConfig';
 
 const names = {

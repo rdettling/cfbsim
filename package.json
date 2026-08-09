@@ -18,6 +18,7 @@
     "tune:yards": "tsx scripts/tune_yards.ts",
     "eval:winrate": "tsx scripts/eval_winrate.ts",
     "eval:recruiting-balance": "tsx scripts/eval_recruiting_balance.ts",
+    "eval:news": "tsx scripts/eval_news.ts",
     "tune:winrate": "tsx scripts/tune_winrate.ts",
     "typecheck": "tsc --noEmit"
   },

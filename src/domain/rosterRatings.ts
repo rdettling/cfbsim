@@ -1,6 +1,6 @@
 import type { PlayerRecord } from '../types/db';
 import type { Team } from '../types/domain';
-import type { RandomSource } from './recruiting/random';
+import type { RandomSource } from './utils/random';
 import { ROSTER } from './rosterConfig';
 
 const OFFENSE_WEIGHT = 0.6;

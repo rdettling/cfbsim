@@ -156,6 +156,7 @@ export const startNewLeague = async (
 
   const info: Info = {
     currentWeek: 1,
+    lastRankingsWeek: 0,
     currentYear: startYear,
     startYear,
     stage: 'preseason',

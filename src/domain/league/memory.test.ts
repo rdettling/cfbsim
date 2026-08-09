@@ -7,6 +7,7 @@ const game = (
   id: number,
   name: string,
   winnerId = 1,
+  gameType: GameRecord['gameType'] = 'regular_season',
 ): GameRecord => ({
   id,
   teamAId: 1,
@@ -33,7 +34,8 @@ const game = (
   overtime: 0,
   scoreA: 31,
   scoreB: 24,
-  headline: null,
+  gameType,
+  rivalryKey: null,
   watchability: 80,
 });
 
@@ -83,10 +85,10 @@ describe('buildSeasonMemory', () => {
     const memory = buildSeasonMemory(
       league,
       [
-        game(10, 'Test Conference championship'),
-        game(11, 'Rose Bowl'),
-        game(12, 'Playoff semifinal'),
-        game(13, 'National Championship'),
+        game(10, 'Test Conference championship', 1, 'conference_championship'),
+        game(11, 'Rose Bowl', 1, 'bowl'),
+        game(12, 'Playoff semifinal', 1, 'playoff_semifinal'),
+        game(13, 'National Championship', 1, 'national_championship'),
       ],
       [buildTestPlayer()],
       [log],

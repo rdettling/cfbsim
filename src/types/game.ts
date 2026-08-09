@@ -32,9 +32,7 @@ export interface Drive {
 export interface GameData {
   id: number;
   base_label: string;
-  headline?: string | null;
-  headline_subtitle?: string | null;
-  headline_tags?: string[] | null;
+  story: import('./news').GameNewsItem | null;
   homeTeamId?: number | null;
   awayTeamId?: number | null;
   neutralSite: boolean;

@@ -33,6 +33,7 @@ const resetDatabase = async () => {
     'players',
     'games',
     'gameDetails',
+    'newsItems',
     'playerSeasons',
   'historicalPlayers',
   'playerOrigins',

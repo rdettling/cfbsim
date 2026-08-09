@@ -30,6 +30,7 @@ const stores = [
   'players',
   'games',
   'gameDetails',
+  'newsItems',
   'playerSeasons',
   'historicalPlayers',
   'playerOrigins',

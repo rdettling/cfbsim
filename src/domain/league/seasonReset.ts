@@ -10,7 +10,7 @@ import {
 } from '../odds';
 import { buildWatchability } from '../sim/games';
 import { getRivalriesData } from '../../db/baseData';
-import type { RandomSource } from '../recruiting/random';
+import type { RandomSource } from '../utils/random';
 import {
   initializeRivalryHostSeeds,
   resolveRivalries,
@@ -36,6 +36,7 @@ export const createNonConGameRecord = async (
     homeTeam?: Team | null;
     awayTeam?: Team | null;
     venue?: string | null;
+    rivalryKey?: string | null;
     odds?: OddsContext;
   },
 ): Promise<GameRecord> => {
@@ -61,6 +62,8 @@ export const createNonConGameRecord = async (
     winnerId: null,
     baseLabel: buildBaseLabel(teamA, teamB, name ?? null),
     name: name ?? null,
+    gameType: 'regular_season',
+    rivalryKey: options?.rivalryKey ?? null,
     ...oddsFields,
     weekPlayed,
     year: league.info.currentYear,
@@ -73,7 +76,6 @@ export const createNonConGameRecord = async (
     clockSecondsLeft: 900,
     scoreA: null,
     scoreB: null,
-    headline: null,
     watchability: null,
   };
   record.watchability = buildWatchability(record, league.teams.length);
@@ -126,6 +128,7 @@ export const prepareSeasonReset = async (
   data?: SeasonResetData,
 ) => {
   league.resumeSnapshot = null;
+  league.info.lastRankingsWeek = 0;
   league.teams.forEach(team => {
     team.nonConfGames = 0;
     team.confGames = 0;
@@ -166,6 +169,7 @@ export const buildRivalryGameRecords = async (
     name,
     neutralSite,
     venue,
+    key,
   } of accepted) {
     if (!week) continue;
     const teamA = teamByName.get(teamAName);
@@ -187,7 +191,7 @@ export const buildRivalryGameRecords = async (
       teamB,
       week,
       name ?? null,
-      { ...site, odds: data?.odds },
+      { ...site, odds: data?.odds, rivalryKey: key },
     );
     games.push(record);
   }

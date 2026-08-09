@@ -5,6 +5,6 @@ export type DashboardGame = NonNullable<
 >;
 
 export type DashboardTeam = DashboardPageData['confTeams'][number];
-export type DashboardHeadline = DashboardPageData['top_games'][number];
+export type DashboardStory = DashboardPageData['topStories'][number];
 
 export type DashboardTeamClickHandler = (name: string) => void;

@@ -45,7 +45,8 @@ const game = (
   overtime: 0,
   scoreA: winnerId === 1 ? 31 : 24,
   scoreB: winnerId === 2 ? 31 : 24,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: 75,
   ...options,
 });

@@ -51,6 +51,7 @@ describe('application navigation', () => {
       entry.type === 'item' ? entry.label : entry.desktopLabel
     )).toEqual([
       'Dashboard',
+      'News',
       'Team',
       'Schedule',
       'Standings',

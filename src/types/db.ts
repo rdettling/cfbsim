@@ -9,6 +9,8 @@ export interface GameRecord {
   winnerId: number | null;
   baseLabel: string;
   name: string | null;
+  gameType: import('./news').GameType;
+  rivalryKey: string | null;
   spreadA: string;
   spreadB: string;
   moneylineA: string;
@@ -26,10 +28,6 @@ export interface GameRecord {
   clockSecondsLeft?: number;
   scoreA: number | null;
   scoreB: number | null;
-  headline: string | null;
-  headline_subtitle?: string | null;
-  headline_tags?: string[] | null;
-  headline_tone?: string | null;
   watchability: number | null;
 }
 

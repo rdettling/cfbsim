@@ -43,6 +43,7 @@ const buildHistoricalLeague = (
   return buildTestLeague('realignment', {
     info: {
       currentWeek: 18,
+      lastRankingsWeek: 17,
       currentYear,
       startYear: 2024,
       stage: 'realignment',

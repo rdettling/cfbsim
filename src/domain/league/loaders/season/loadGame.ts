@@ -8,6 +8,7 @@ import {
   getGameById,
 } from '../../../../db/simRepo';
 import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
+import { getGameNews } from '../../../../db/newsRepo';
 import { getRivalriesData } from '../../../../db/baseData';
 import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { buildDriveResponse } from '../../../sim';
@@ -63,9 +64,7 @@ export const loadGame = async (gameId: number) => {
     resultA: record.resultA ?? '',
     resultB: record.resultB ?? '',
     overtime: record.overtime ?? 0,
-    headline: record.headline ?? null,
-    headline_subtitle: record.headline_subtitle ?? null,
-    headline_tags: record.headline_tags ?? null,
+    story: await getGameNews(record.id),
   };
 
   const [allGames, allPlays] = await Promise.all([

@@ -41,7 +41,7 @@ import {
 import { buildRecruitingContext } from './context';
 import { buildCommittedFreshmen } from './freshmen';
 import { generateProspectPool } from './generation';
-import { createSeededRandom } from './random';
+import { createSeededRandom } from '../utils/random';
 import { createTeamRecruitingStates } from './state';
 
 const round = (value: number, digits = 6) => {

@@ -63,6 +63,7 @@ const buildFullGame = (
       awayTeam: null,
       venue: rivalry.venue,
       name: rivalry.name,
+      rivalryKey: rivalry.key,
     };
   }
   const seedHome = league?.rivalryHostSeeds[rivalry.key] ?? rivalry.teamA;
@@ -80,6 +81,7 @@ const buildFullGame = (
     awayTeam: homeName === rivalry.teamA ? teamB : teamA,
     venue: null,
     name: rivalry.name,
+    rivalryKey: rivalry.key,
   };
 };
 
@@ -114,6 +116,7 @@ const canCompleteWith = (
     awayTeam: game.awayTeamId ? byId.get(game.awayTeamId)! : null,
     venue: null,
     name: game.name,
+    rivalryKey: null,
   }));
   fixed.push(...accepted.map(rivalry => buildFullGame(rivalry, byId)));
   try {

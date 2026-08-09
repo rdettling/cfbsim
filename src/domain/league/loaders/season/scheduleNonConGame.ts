@@ -137,7 +137,7 @@ export const scheduleNonConGame = async (
     opponent,
     week,
     gameName,
-    site,
+    { ...site, rivalryKey: selectedRivalryKey },
   );
   if (rivalry) {
     league.declinedRivalries = league.declinedRivalries.filter(

@@ -5,7 +5,8 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 
 ## IndexedDB Schema
 
-`src/db/db.ts` defines the current database at version 8.
+`src/db/db.ts` defines the current database at version 14. Version 14 is the
+intentional reset boundary for preseason news.
 
 | Store | Key | Value |
 | --- | --- | --- |
@@ -15,6 +16,7 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 | `players` | player ID | current-roster `PlayerRecord` |
 | `games` | game ID | `GameRecord` |
 | `gameDetails` | game ID | nested `GameDetailRecord` |
+| `newsItems` | deterministic news ID | durable `NewsItem` |
 | `playerSeasons` | `[year, playerId]` | `PlayerSeasonStats` |
 | `historicalPlayers` | player ID | immutable departed-player identity |
 | `playerOrigins` | player ID | immutable recruiting, walk-on, initial-roster, or program-entry provenance |
@@ -23,6 +25,18 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 The IndexedDB version is a destructive schema epoch. Opening an older version
 deletes every existing object store and recreates exactly the current schema.
 There are no migrations, compatibility paths, or record-level repairs.
+
+`newsItems` stores an explicit `GameNewsItem | RankingNewsItem |
+PreviewNewsItem` union. The
+`gameId` index is intentionally sparse for rankings releases; the `year` and
+`[year, week]` indexes serve both story types. Ranking IDs use
+`rankings:<year>:<week>`, allowing at most one poll or playoff-field release in
+a week.
+
+Season initialization atomically persists three Week 0 preview items with the
+completed schedule: the preseason poll, national outlook, and highest-rated
+opening-week matchup. Later seasons may ground the outlook in the prior
+season's persisted national-championship result.
 
 ## Static Data Cache
 
@@ -41,6 +55,12 @@ Completed simulated seasons also write one exact-schema `SeasonMemory`. It
 stores typed postseason game references and lean award-winner facts without
 duplicating scores, identities, season totals, full player logs, or generated
 prose. Award display joins identity and `playerSeasons` at load time.
+
+Every completed game atomically publishes one `game:<gameId>` news item with
+stable rendered copy, editorial classification, and newsworthiness. Game
+details may later be pruned, but published stories remain available in the
+dynasty news archive. Startup integrity requires exactly one story per
+completed game and none for unplayed games.
 
 Every current or historical player has exactly one `playerOrigins` record.
 Recruit origins retain durable public recruiting facts; walk-ons, initial
@@ -113,7 +133,7 @@ records delete the entire database and recreate an empty current schema.
 - `startNewLeague()` prepares a complete league, roster, and initial games,
   then `commitNewLeague()` replaces all authoritative save stores atomically.
 - Simulation commands atomically write compact games, nested game details,
-  rankings, league state, and postseason scheduling changes.
+  game news, rankings, league state, and postseason scheduling changes.
 - Summary advancement atomically appends team history and the completed
   season's dynasty-memory and player-season records, prunes ordinary AI detail,
   and enters realignment.

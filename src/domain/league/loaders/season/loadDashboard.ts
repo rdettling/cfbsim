@@ -5,13 +5,9 @@ import {
   getCurrentYearGames,
   getUserTeam,
 } from './shared';
-
-export interface DashboardHeadline {
-  id: number;
-  headline: string;
-  subtitle: string | null;
-  tags: string[];
-}
+import { getNewsByWeek } from '../../../../db/newsRepo';
+import { sortNewsItems } from '../../../news';
+import type { NewsItem } from '../../../../types/news';
 
 export interface DashboardPageResult {
   info: Info;
@@ -20,7 +16,7 @@ export interface DashboardPageResult {
   team: Team;
   confTeams: Team[];
   top_10: Team[];
-  top_games: DashboardHeadline[];
+  topStories: NewsItem[];
   conferences: Conference[];
 }
 
@@ -46,21 +42,12 @@ export const loadDashboard = async (): Promise<DashboardPageResult> => {
   const currGame = schedule[currentWeekIndex] ?? null;
 
   const lastWeek = Math.max(league.info.currentWeek - 1, 1);
-  const top_games = games
-    .filter(
-      game =>
-        game.weekPlayed === lastWeek &&
-        game.winnerId !== null &&
-        game.headline
-    )
-    .sort((a, b) => (b.watchability ?? 0) - (a.watchability ?? 0))
-    .slice(0, 5)
-    .map(game => ({
-      id: game.id,
-      headline: game.headline ?? '',
-      subtitle: game.headline_subtitle ?? null,
-      tags: game.headline_tags ?? [],
-    }));
+  const weekStories = await getNewsByWeek(league.info.currentYear, lastWeek);
+  const preseasonStories = league.info.currentWeek === 1
+    ? await getNewsByWeek(league.info.currentYear, 0)
+    : [];
+  const topStories = sortNewsItems([...weekStories, ...preseasonStories])
+    .slice(0, 5);
 
   return {
     info: league.info,
@@ -69,7 +56,7 @@ export const loadDashboard = async (): Promise<DashboardPageResult> => {
     team: userTeam,
     confTeams,
     top_10: top10,
-    top_games,
+    topStories,
     conferences: league.conferences,
   };
 };

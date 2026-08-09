@@ -47,6 +47,7 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
   - `npm run typecheck`
   - `npm run build`
   - `npm run eval:winrate`
+  - `npm run eval:news -- --seed <seed> --seeds <count> --seasons <count> --replay-seeds <count>`
   - `npm run eval:recruiting-balance -- --seed <seed> --seeds <count> --seasons <count> --replay-seeds <count>`
   - `npm run tune:yards` (calibration run; use carefully because it can rewrite tuning)
   - `npm run tune:winrate` (calibration run; rewrites tuning)
@@ -79,6 +80,39 @@ distribution diagnostics and a user season review establish product
 credibility. See the [Recruiting Model](../systems/recruiting-model.md) and
 [Roster and Recruiting Lifecycle](../systems/roster-and-recruiting.md).
 
+`eval:news` uses production schedule, roster, odds, ranking, game simulation,
+fact extraction, and story generation in memory. Its representative command is:
+
+```text
+npm run eval:news -- --seed 20260809 --seeds 3 --seasons 2 --replay-seeds 1
+```
+
+Incomplete traces, unsupported factual claims, incorrect upset identity,
+out-of-range ranking language, ineligible featured performances, unnamed bowl
+headlines, missing context coverage, or a replay checksum mismatch fail the
+command. Editorial-distribution findings are warnings and require review of
+the generated `review.md` and `stories.jsonl`. Standout primary angles above
+15% and featured-player decks above 25% are warning thresholds, not hard
+distribution targets.
+
+The audit also records every natural weekly ranking decision plus explicit
+threshold, precedence, non-publication, and 2-/4-/12-team playoff-field cases.
+Ranking traces are validated separately from game traces, and
+`gameContentChecksum` preserves the committed game-copy baseline while global
+checksums include published ranking items.
+
+Every simulated season also contributes its complete three-story preseason
+package. The preview audit independently verifies poll and outlook team order,
+the selected opening matchup, template IDs, deterministic generation, and the
+newsworthiness component breakdown. `previewItemChecksum` isolates persisted
+preview copy from trace-only audit changes.
+
+For behavior-preserving news refactors, compare publisher-specific content
+checksums before and after the change. The full and global item checksums may
+change when a previously unaudited publisher is added to the corpus; the game
+and preview content checksums, natural distributions, and warning-linked story
+IDs must remain stable once their coverage is established.
+
 ## Invariants
 
 - Validation should preserve year scoping (`currentYear`) and stage ordering invariants.
@@ -105,7 +139,7 @@ credibility. See the [Recruiting Model](../systems/recruiting-model.md) and
 | Postseason (4) | 4-team format run | semis then natty generated; summary after natty winner | Inspect Playoff + summary transition |
 | Postseason (12) | 12-team format run | R1 -> quarters -> semis -> natty sequence with catch-up if needed | Inspect Playoff rounds and week schedules |
 | Live sim | User-game interactive completion | final game and nested detail persisted; drive/play presentation visible; league context updated | Run GameSimModal to completion, then reopen game/schedule |
-| Batch vs live consistency | Same game state class | completed games have coherent score/winner/clock/headline fields in both modes | Compare completed game pages from both paths |
+| Batch vs live consistency | Same game state class | completed games have coherent score/winner/clock fields and one persisted news story in both modes | Compare completed game pages from both paths |
 | Roster progression | Offseason progression | seniors depart, younger classes advance, ratings shift | Inspect Roster Progression + roster page |
 | Recruiting/cuts | Recruiting then cuts | freshmen and required walk-ons added; protected user selections persist; every final roster reaches 80 | Inspect Recruiting Summary + Roster Cuts + roster |
 | Interactive recruiting | Add/remove board targets, submit manual points with assisted advancement, use Sim to End of Recruiting, reload between rounds, resolve Signing Day | manual points are preserved; AI fills legally; public standings match resolution; drafts never overwrite newer state; hidden prospect data is absent | Loader and lifecycle tests + Recruiting page |
@@ -123,12 +157,21 @@ credibility. See the [Recruiting Model](../systems/recruiting-model.md) and
 2. `npm run typecheck`
 3. `npm run build`
 4. `npm run eval:recruiting-balance`
-5. Run the 3×4 representative command for recruiting balance changes.
-6. New league -> preseason to season bootstrap validation.
-7. Run one complete seasonal cycle in 12-team mode.
-8. Repeat postseason-focused runs in 2-team and 4-team modes.
-9. Execute at least one full live-sim game and one batch-sim progression check.
-10. Run `npm run eval:winrate` for trend sanity on rating differential behavior.
+5. `npm run eval:news`
+6. Run the relevant representative evaluation command for recruiting or news changes.
+7. New league -> preseason to season bootstrap validation.
+8. Run one complete seasonal cycle in 12-team mode.
+9. Repeat postseason-focused runs in 2-team and 4-team modes.
+10. Execute at least one full live-sim game and one batch-sim progression check.
+11. Run `npm run eval:winrate` for trend sanity on rating differential behavior.
+
+For league-news copy changes, run the representative three-seed, two-season,
+one-replay `eval:news` corpus. Copy changes must preserve the appropriate
+editorial invariants. Scoring-only changes must preserve the news-content
+checksum `feffcb7c`, produce no structural violations, place ranked teams in
+85–92% of weekly top-five slots and 93–98% of weekly leads, and give every
+unranked-only lead at least 20 verified drama points. Every run must retain
+game-type, primary-angle, and syntax-family coverage.
 
 For an affected frontend route, also inspect approximately 1440×900, 1280×720,
 768×1024, and 390×844. At `lg`, verify document containment and intentional

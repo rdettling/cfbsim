@@ -46,6 +46,7 @@ export const buildNavigationModel = ({
 }: AppNavigationData): NavigationModel => ({
   entries: [
     { type: 'item', label: 'Dashboard', path: '/dashboard' },
+    { type: 'item', label: 'News', path: '/news', match: 'prefix' },
     {
       type: 'group',
       id: 'team',

@@ -12,6 +12,7 @@ export { loadGame } from './season/loadGame';
 export { loadTeamSchedule } from './season/loadTeamSchedule';
 export { loadWeekSchedule } from './season/loadWeekSchedule';
 export { loadDashboard } from './season/loadDashboard';
+export { loadNews } from './season/loadNews';
 export { startNewLeague } from './season/startNewLeague';
 export { loadNonCon } from './season/loadNonCon';
 export { listAvailableTeams } from './season/listAvailableTeams';

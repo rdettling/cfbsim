@@ -43,7 +43,8 @@ const game: GameRecord = {
   overtime: 0,
   scoreA: 31,
   scoreB: 24,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: 90,
 };
 

@@ -20,7 +20,9 @@ as season weeks advance.
 
 1. **Record + ranking updates during progression**
 - `updateTeamRecords(...)` consumes simulated games, mutating team W/L splits and strength-of-record components.
-- `updateRankings(...)` updates `poll_score` and rank order from inertia + normalized SOR model (with postseason freeze weeks by format).
+- `updateRankings(...)` updates `poll_score` and rank order from inertia + normalized SOR model (with postseason freeze weeks by format) and returns the completed mutation for editorial use.
+- Week completion is idempotent: `lastRankingsWeek` records only which week was processed, while each team's `last_rank` remains the sole prior-poll snapshot.
+- Weeks 1–14 publish a rankings story only for a new No. 1, at least two top-five entrants, or at least five combined Top 25 entries and exits.
 
 2. **Postseason scheduling and stage transition**
 - `handleSpecialWeeks(...)` dispatches postseason scheduling actions by configured playoff size:
@@ -29,6 +31,9 @@ as season weeks advance.
   - bowls
   - natty.
 - Round creators are guarded by existing IDs and winner prerequisites.
+- Final playoff selection publishes one `playoff_field` rankings item in the
+  same transaction as the selected seeds, league state, and first playoff
+  games for every supported field size.
 - `ensureSummaryStage(...)` promotes stage to `summary` when natty winner exists and applies final postseason ranking normalization.
 
 3. **Playoff presentation path**

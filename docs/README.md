@@ -65,6 +65,8 @@ git diff --check
   runtime tuning, league settings, recruiting controls, and generated data.
 - [Validation and Test Strategy](operations/validation-and-test-strategy.md)
   maps change types to automated checks and lifecycle scenarios.
+- [League News Editorial Style](operations/league-news-editorial-style.md)
+  defines reader-facing voice, evidence-bound language, and copy variety.
 
 ## Documentation Rules
 

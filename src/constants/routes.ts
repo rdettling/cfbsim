@@ -3,6 +3,7 @@ export const ROUTES = {
   NEW_LEAGUE: '/new',
   NONCON: '/noncon',
   DASHBOARD: '/dashboard',
+  NEWS: '/news',
   RANKINGS: '/rankings',
   TEAM_SCHEDULE: '/:teamName/schedule',
   TEAM_ROSTER: '/:teamName/roster',

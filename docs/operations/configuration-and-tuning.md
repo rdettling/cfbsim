@@ -51,6 +51,15 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Annual supply is 32 five-stars, 340 four-stars, 2,800 three-stars, and
   200 two-stars.
 
+5. **League-news editorial evaluation path**
+- `eval:news` runs seeded production schedules and game simulation entirely in
+  memory, then writes untracked JSON, JSONL, and Markdown audit artifacts.
+- Structural, factual, and replay failures fail the command. Copy repetition,
+  angle mix, ranking language, player-position balance, and feed concentration
+  remain warning-only diagnostics until an editorial baseline is approved.
+- Editorial traces expose verified facts and copy-selection decisions but are
+  never persisted in `newsItems` or returned by product loaders.
+
 ## Controls
 
 - **High-impact runtime controls (`tuning.json`)**:
@@ -140,8 +149,47 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - `src/domain/league/postseason.ts` (`getLastWeekByPlayoffTeams`)
   - `src/domain/league/offseason.ts` (policy-driven structural updates)
 - Scripts and commands:
-  - `package.json` scripts: `tune:yards`, `eval:winrate`, `tune:winrate`, `generate:odds`, `generate:history`, `check:data`, `typecheck`
-  - `scripts/tune_yards.ts`, `scripts/eval_winrate.ts`, `scripts/tune_winrate.ts`, `scripts/generate_betting_odds.ts`, `scripts/generate_history.ts`, `scripts/check_data.ts`
+  - `package.json` scripts: `tune:yards`, `eval:winrate`, `eval:news`, `tune:winrate`, `generate:odds`, `generate:history`, `check:data`, `typecheck`
+  - `scripts/tune_yards.ts`, `scripts/eval_winrate.ts`, `scripts/eval_news.ts`, `scripts/tune_winrate.ts`, `scripts/generate_betting_odds.ts`, `scripts/generate_history.ts`, `scripts/check_data.ts`
+
+## League News Editorial Evaluation
+
+Production news template version 3 treats only ranks 1–25 as reader-facing
+rankings. Its trace distinguishes major underdog wins from material poll
+upsets, requires an explicit exceptional-performance qualifier for featured
+players, and preserves named postseason identity ahead of supporting context.
+Version 3 also uses typed headline and deck syntax metadata, complementary deck
+selection, and contextual score placement. These are structural editorial
+invariants rather than tunable audit settings.
+
+Newsworthiness is the sum of three typed dimensions. Consequence contains the
+existing game-type bases. National relevance adds 12 points for a best
+participant rank of 1–5, 9 for 6–10, 6 for 11–15, and 3 for 16–25, plus 4 when
+both teams are ranked; rivalry and exceptional-player bonuses also live in this
+dimension. Drama contains the existing upset, overtime, late-finish, comeback,
+shutout, and decisive-margin bonuses. Rankings are frozen at game time.
+Program prestige and user-team identity are not scoring inputs.
+
+The default smoke run is one seed and one season. The representative audit is
+three seeds, two seasons per seed, and one replayed seed:
+
+```text
+npm run eval:news -- --seed 20260809 --seeds 3 --seasons 2 --replay-seeds 1
+```
+
+The command writes only `.artifacts/news-audit/summary.json`,
+`stories.jsonl`, and `review.md`. The directory is ignored by Git. It does not
+write IndexedDB, runtime configuration, static data, or story templates.
+
+`summary.json` reports a full corpus checksum, a `newsItemChecksum`, a
+`newsContentChecksum`, and an `editorialOutcomeChecksum`. The content checksum
+excludes only importance, allowing scoring work to prove that copy, angles,
+storylines, teams, and featured players did not drift. The committed version 3
+content baseline is `feffcb7c`; the current national-relevance editorial
+outcome baseline is `11d7183b`.
+
+Database version 14 is a deliberate destructive schema epoch for preseason
+news. Existing local leagues are reset rather than migrated or repaired.
 
 ## Historical Data Generation
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTestLeague, buildTestTeam } from '../test/fixtures';
-import { createSeededRandom } from './recruiting/random';
+import { createSeededRandom } from './utils/random';
 import {
   buildBootstrapClassTargets,
   prepareInitialRostersFromData,

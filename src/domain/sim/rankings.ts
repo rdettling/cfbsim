@@ -193,6 +193,14 @@ export const updateTeamRecords = (
   });
 };
 
+export interface RankingUpdate {
+  teamId: number;
+  previousRank: number;
+  currentRank: number;
+  record: string;
+  pollScore: number;
+}
+
 export const updateRankings = (
   info: Info,
   teams: Team[],
@@ -201,7 +209,7 @@ export const updateRankings = (
   const playoffTeams = settings.playoffTeams;
   const skipWeeks = getRankingFreezeWeeks(playoffTeams);
   if (skipWeeks.includes(info.currentWeek)) {
-    return;
+    return [];
   }
 
   const teamCount = teams.length;
@@ -232,6 +240,13 @@ export const updateRankings = (
   sorted.forEach((team, index) => {
     team.ranking = index + 1;
   });
+  return teams.map(team => ({
+    teamId: team.id,
+    previousRank: team.last_rank ?? team.ranking,
+    currentRank: team.ranking,
+    record: team.record,
+    pollScore: team.poll_score,
+  }));
 };
 
 export const finalizePostseasonRankings = (

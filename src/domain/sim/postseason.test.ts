@@ -33,6 +33,7 @@ const buildPostseasonLeague = (playoffTeams: PlayoffTeamCount) => {
   return buildTestLeague('season', {
     info: {
       currentWeek: CONFERENCE_CHAMPIONSHIP_WEEK,
+      lastRankingsWeek: CONFERENCE_CHAMPIONSHIP_WEEK - 1,
       currentYear: 2025,
       startYear: 2025,
       stage: 'season',
@@ -99,7 +100,7 @@ describe('postseason bowl scheduling', () => {
       await handleSpecialWeeks(league, oddsContext);
 
       const scheduledBowls = (await getAllGames()).filter(game =>
-        game.name?.includes('Bowl')
+        game.gameType === 'bowl'
       );
       expect(scheduledBowls.length).toBeGreaterThan(0);
       expect(new Set(scheduledBowls.map(game => game.weekPlayed))).toEqual(
@@ -111,13 +112,13 @@ describe('postseason bowl scheduling', () => {
 
       const gamesAfterChampionship = await getAllGames();
       expect(
-        gamesAfterChampionship.filter(game => game.name?.includes('Bowl'))
+        gamesAfterChampionship.filter(game => game.gameType === 'bowl')
       ).toHaveLength(scheduledBowls.length);
       expect(
         gamesAfterChampionship.filter(
           game =>
             game.weekPlayed === championshipWeek &&
-            game.name?.includes('Bowl')
+            game.gameType === 'bowl'
         )
       ).toHaveLength(0);
     }

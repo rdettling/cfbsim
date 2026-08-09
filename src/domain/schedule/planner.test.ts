@@ -88,7 +88,8 @@ const fixedGame = (
   overtime: 0,
   scoreA: null,
   scoreB: null,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: null,
   ...overrides,
 });

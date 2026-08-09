@@ -146,7 +146,8 @@ const buildGame = (teamA: Team, teamB: Team): SimGame => ({
   overtime: 0,
   scoreA: 0,
   scoreB: 0,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: 0,
 });
 

@@ -8,6 +8,7 @@ const Home = lazy(() => import('./pages/Home'));
 const NewLeague = lazy(() => import('./pages/NewLeague'));
 const NonCon = lazy(() => import('./pages/Noncon'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const News = lazy(() => import('./pages/News'));
 const TeamSchedule = lazy(() => import('./pages/TeamSchedule'));
 const RatingsStats = lazy(() => import('./pages/RatingsStats'));
 const Rankings = lazy(() => import('./pages/Rankings'));
@@ -43,6 +44,8 @@ const App = () => {
             <Route path={ROUTES.NEW_LEAGUE} element={<NewLeague />} />
             <Route path={ROUTES.NONCON} element={<NonCon />} />
             <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+            <Route path={ROUTES.NEWS} element={<News />} />
+            <Route path="/news/:year" element={<News />} />
             <Route path={ROUTES.TEAM_SCHEDULE} element={<TeamSchedule />} />
             <Route path="/:teamName/schedule/:year" element={<TeamSchedule />} />
             <Route path={ROUTES.TEAM_ROSTER} element={<Roster />} />

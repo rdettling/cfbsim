@@ -5,7 +5,7 @@ import {
   type RosterCutsPreview,
   RosterFinalizationRuleError,
 } from '../types/roster';
-import { createSeededRandom } from './recruiting/random';
+import { createSeededRandom } from './utils/random';
 import {
   FINAL_ROSTER_SIZE,
   MAX_ROSTER_SIZE,

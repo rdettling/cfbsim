@@ -13,6 +13,7 @@ import { assertSeasonMemoryReferences } from './seasonMemoryRepo';
 import { assertHistoricalIntegrity } from './historyRepo';
 import { selectRetainedGameIds } from '../domain/league/gameDetails';
 import { assertPlayerOriginIntegrity } from './playerOriginRepo';
+import { assertNewsIntegrity } from './newsIntegrity';
 
 const RECRUITING_STAGES = new Set<LeagueState['info']['stage']>([
   'recruiting',
@@ -29,6 +30,7 @@ const assertCurrentDatabase = async () => {
       'players',
       'games',
       'gameDetails',
+      'newsItems',
       'seasonMemories',
       'playerSeasons',
       'historicalPlayers',
@@ -42,6 +44,7 @@ const assertCurrentDatabase = async () => {
     players,
     games,
     details,
+    newsItems,
     memories,
     playerSeasons,
     historicalPlayers,
@@ -52,6 +55,7 @@ const assertCurrentDatabase = async () => {
     tx.objectStore('players').getAll(),
     tx.objectStore('games').getAll(),
     tx.objectStore('gameDetails').getAll(),
+    tx.objectStore('newsItems').getAll(),
     tx.objectStore('seasonMemories').getAll(),
     tx.objectStore('playerSeasons').getAll(),
     tx.objectStore('historicalPlayers').getAll(),
@@ -65,6 +69,7 @@ const assertCurrentDatabase = async () => {
       players.length > 0 ||
       games.length > 0 ||
       details.length > 0 ||
+      newsItems.length > 0 ||
       playerSeasons.length > 0 ||
       historicalPlayers.length > 0 ||
       playerOrigins.length > 0;
@@ -94,6 +99,12 @@ const assertCurrentDatabase = async () => {
     historicalPlayers,
     origins: playerOrigins,
   });
+  assertNewsIntegrity(
+    newsItems,
+    games,
+    new Set([...players, ...historicalPlayers].map(player => player.id)),
+    new Set(league.teams.map(team => team.id)),
+  );
   assertSeasonMemoryReferences(
     memories,
     league,

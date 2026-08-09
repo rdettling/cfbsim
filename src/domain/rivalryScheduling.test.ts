@@ -128,7 +128,8 @@ const game = (
   overtime: 0,
   scoreA: null,
   scoreB: null,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: null,
 });
 
@@ -428,6 +429,7 @@ describe('best-effort rivalry scheduling', () => {
     const baseLeague: Pick<LeagueState, 'info' | 'rivalryHostSeeds'> = {
       info: {
         currentWeek: 0,
+        lastRankingsWeek: 0,
         currentYear: 2026,
         startYear: 2026,
         stage: 'preseason',
@@ -466,15 +468,18 @@ describe('best-effort rivalry scheduling', () => {
       homeTeam: null,
       awayTeam: null,
       venue: 'Cotton Bowl',
+      rivalryKey: base.key,
     });
     expect(buildAcceptedRivalryGames({
-      accepted: [{ ...base, venue: null }],
+      accepted: [{ ...base, name: null, venue: null }],
       omitted: [],
       feasible: true,
     }, [teamA, teamB])[0]).toMatchObject({
       homeTeam: null,
       awayTeam: null,
       venue: null,
+      name: null,
+      rivalryKey: base.key,
     });
   });
 });

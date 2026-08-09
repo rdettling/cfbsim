@@ -12,7 +12,7 @@ import { assignBootstrapClass } from './rosterBootstrapPool';
 import {
   mathRandomSource,
   type RandomSource,
-} from './recruiting/random';
+} from './utils/random';
 import {
   recalculateTeamRatings,
   recalculateTeamStrengths,

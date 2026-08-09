@@ -37,14 +37,14 @@ updating winner/result metadata, and then persisting one nested
 
 4. **Batch integration path**
 - `advanceWeeks` executes `simGame` for all unplayed games in target weeks.
-- Batch path builds nested game detail, updates games, records, rankings, and
-  headlines, then commits the simulation batch explicitly.
+- Batch path builds nested game detail, updates games, records, and rankings,
+  derives a verified game story, then commits the simulation batch explicitly.
 
 5. **Interactive integration path**
 - `prepareInteractiveLiveGame` loads/hydrates the game and supporting caches.
 - `useGameSim` executes `startInteractiveDrive` + repeated `stepInteractiveDrive` calls (auto or user decision).
 - On completion, `finalizeGameSimulation` atomically writes the game, nested
-  detail, and league state, then returns the UI-ready response.
+  detail, persisted news story, and league state, then returns the UI-ready response.
 
 ```mermaid
 flowchart TD
@@ -105,6 +105,8 @@ flowchart TD
 - `GameRecord` and in-memory `SimGame` must remain consistent on score, winner, overtime, and clock metadata before persistence.
 - Interactive and batch paths share core simulation primitives (same drive/play logic), reducing mode-specific divergence.
 - `starters` cache is assumed available for text/player-log generation quality.
+- Published story copy is seeded by game ID and may only use facts extracted
+  from persisted game, drive, play, player-log, and dynasty context.
 
 ## Failure Handling
 

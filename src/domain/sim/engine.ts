@@ -3,7 +3,6 @@ import type { LeagueState } from '../../types/league';
 import type { SimGame, SimDrive, StartersCache } from '../../types/sim';
 import type { Drive, GameData } from '../../types/game';
 import type { GameRecord, DriveRecord, PlayRecord, GameLogRecord, PlayerRecord } from '../../types/db';
-import { getHeadlinesData } from '../../db/baseData';
 import { getPlayersByTeam } from '../../db/simRepo';
 import {
   SECONDS_PER_QUARTER,
@@ -880,199 +879,23 @@ export const createGameLogsFromPlays = (
   return logs;
 };
 
-type BestPerformance = { first: string; last: string; stat_value: number; stat_type: string };
-
-const getBestPerformance = (
-  logs: GameLogRecord[],
-  playersById: Map<number, PlayerRecord>,
-  winningTeamId: number
-): BestPerformance | null => {
-  let best: BestPerformance | null = null;
-  let bestScore = 0;
-
-  logs.forEach(log => {
-    const player = playersById.get(log.playerId);
-    if (!player || player.teamId !== winningTeamId) return;
-
-    if (player.pos === 'qb' && log.pass_attempts > 0) {
-      const score = log.pass_yards + log.pass_touchdowns * 50 - log.pass_interceptions * 25;
-      if (score > bestScore && log.pass_yards >= 200) {
-        bestScore = score;
-        best = { first: player.first, last: player.last, stat_value: log.pass_yards, stat_type: 'passing yards' };
-      }
-      if (log.pass_touchdowns >= 3) {
-        const tdScore = log.pass_touchdowns * 100;
-        if (tdScore > bestScore) {
-          bestScore = tdScore;
-          best = { first: player.first, last: player.last, stat_value: log.pass_touchdowns, stat_type: 'passing touchdowns' };
-        }
-      }
-    }
-
-    if (['rb', 'qb'].includes(player.pos) && log.rush_attempts > 0) {
-      const score = log.rush_yards + log.rush_touchdowns * 60;
-      if (score > bestScore && log.rush_yards >= 100) {
-        bestScore = score;
-        best = { first: player.first, last: player.last, stat_value: log.rush_yards, stat_type: 'rushing yards' };
-      }
-      if (log.rush_touchdowns >= 2) {
-        const tdScore = log.rush_touchdowns * 80;
-        if (tdScore > bestScore) {
-          bestScore = tdScore;
-          best = { first: player.first, last: player.last, stat_value: log.rush_touchdowns, stat_type: 'rushing touchdowns' };
-        }
-      }
-    }
-
-    if (['wr', 'te', 'rb'].includes(player.pos) && log.receiving_catches > 0) {
-      const score = log.receiving_yards + log.receiving_touchdowns * 60;
-      if (score > bestScore && log.receiving_yards >= 100) {
-        bestScore = score;
-        best = { first: player.first, last: player.last, stat_value: log.receiving_yards, stat_type: 'receiving yards' };
-      }
-      if (log.receiving_touchdowns >= 2) {
-        const tdScore = log.receiving_touchdowns * 80;
-        if (tdScore > bestScore) {
-          bestScore = tdScore;
-          best = { first: player.first, last: player.last, stat_value: log.receiving_touchdowns, stat_type: 'receiving touchdowns' };
-        }
-      }
-    }
+export const buildStartersCacheFromPlayers = (players: PlayerRecord[]): StartersCache => {
+  const byTeamPos = new Map<string, PlayerRecord[]>();
+  players.filter(player => player.starter).forEach(player => {
+    const key = `${player.teamId}:${player.pos}`;
+    const list = byTeamPos.get(key) ?? [];
+    list.push(player);
+    byTeamPos.set(key, list);
   });
-
-  return best;
-};
-
-export const generateHeadlines = async (
-  games: SimGame[],
-  gameLogsByGameId: Map<number, GameLogRecord[]>,
-  playersById: Map<number, PlayerRecord>
-) => {
-  const headlinesData = await getHeadlinesData();
-
-  games.forEach(game => {
-    const winner = game.winner?.id === game.teamA.id ? game.teamA : game.teamB;
-    const loser = winner.id === game.teamA.id ? game.teamB : game.teamA;
-    const winnerScore = winner.id === game.teamA.id ? game.scoreA : game.scoreB;
-    const loserScore = winner.id === game.teamA.id ? game.scoreB : game.scoreA;
-    const winProb = winner.id === game.teamA.id ? game.winProbA : game.winProbB;
-    const score = `${winnerScore}-${loserScore}`;
-    const margin = Math.abs(winnerScore - loserScore);
-
-    const winnerRank = winner.id === game.teamA.id ? game.rankATOG : game.rankBTOG;
-    const loserRank = loser.id === game.teamA.id ? game.rankATOG : game.rankBTOG;
-    const bothTop10 = winnerRank > 0 && winnerRank <= 10 && loserRank > 0 && loserRank <= 10;
-    const anyRanked = (winnerRank > 0 && winnerRank <= 25) || (loserRank > 0 && loserRank <= 25);
-    const isRivalry = (game.name ?? game.baseLabel).toLowerCase().includes('rivalry');
-    const isPostseason = /(playoff|championship|semifinal|quarterfinal|final)/i.test(
-      game.name ?? game.baseLabel
-    );
-    const isUpset =
-      winProb < 0.15 ||
-      (loserRank > 0 &&
-        (winnerRank === 0 || (winnerRank > 0 && winnerRank - loserRank >= 10)));
-    const isOvertime = game.overtime > 0;
-    const isBlowout = margin >= 21;
-    const isTight = margin <= 7;
-    const isDramatic = isOvertime || margin <= 3;
-
-    const tags: string[] = [];
-    if (isPostseason) tags.push('postseason');
-    if (isRivalry) tags.push('rivalry');
-    if (bothTop10) tags.push('top10');
-    if (anyRanked) tags.push('ranked');
-    if (isUpset) tags.push('upset');
-    if (isOvertime) tags.push('overtime');
-    if (isBlowout) tags.push('blowout');
-    if (isDramatic) {
-      tags.push('dramatic');
-    } else if (isTight) {
-      tags.push('tight');
-    } else if (!isBlowout) {
-      tags.push('solid');
-    }
-
-    const band = isBlowout ? 'blowout' : isDramatic ? 'dramatic' : isTight ? 'tight' : 'solid';
-    let headlineTemplate = '';
-    let tone = band;
-    const pickTemplate = (key: string, fallbackKey: string) => {
-      const list = (headlinesData as Record<string, string[]>)[key];
-      const fallback = (headlinesData as Record<string, string[]>)[fallbackKey] ?? [];
-      const pool = list?.length ? list : fallback;
-      if (!pool.length) return '';
-      return pool[Math.floor(Math.random() * pool.length)];
-    };
-
-    const contextKey = isOvertime
-      ? 'overtime'
-      : isPostseason
-        ? 'postseason'
-        : isRivalry
-          ? 'rivalry'
-          : bothTop10
-            ? 'top10'
-            : isUpset
-              ? 'upset'
-              : anyRanked
-                ? 'ranked'
-                : null;
-
-    const contextBandKey = contextKey ? `${contextKey}_${band}` : null;
-    const preferredKey = contextBandKey && (headlinesData as Record<string, string[]>)[contextBandKey]?.length
-      ? contextBandKey
-      : contextKey && (headlinesData as Record<string, string[]>)[contextKey]?.length
-        ? contextKey
-        : band;
-
-    tone = contextKey ?? band;
-    headlineTemplate = pickTemplate(preferredKey, band);
-    if (contextKey === 'upset') {
-      const spread = winner.id === game.teamA.id ? game.spreadB : game.spreadA;
-      headlineTemplate = headlineTemplate.replace('<spread>', spread);
-    }
-
-    const logs = gameLogsByGameId.get(game.id);
-    const performance: BestPerformance | null = logs ? getBestPerformance(logs, playersById, winner.id) : null;
-    let subtitle: string | null = null;
-    if (performance) {
-      subtitle = `${performance.first} ${performance.last}: ${performance.stat_value} ${performance.stat_type}`;
-    } else if (isUpset) {
-      const spread = winner.id === game.teamA.id ? game.spreadB : game.spreadA;
-      subtitle = `${winner.name} entered as ${spread} underdogs.`;
-    } else if (isOvertime) {
-      subtitle = game.overtime > 1 ? `Went to ${game.overtime} OT.` : 'Went to overtime.';
-    } else if (isBlowout) {
-      subtitle = `Won by ${margin}.`;
-    }
-
-    const winnerRankText = winnerRank > 0 ? `${winnerRank}` : 'NR';
-    const loserRankText = loserRank > 0 ? `${loserRank}` : 'NR';
-    const headline = headlineTemplate
-      .replace('<winner>', winner.name)
-      .replace('<loser>', loser.name)
-      .replace('<score>', score)
-      .replace('<mascot>', winner.mascot)
-      .replace('<winner_rank>', winnerRankText)
-      .replace('<loser_rank>', loserRankText);
-    game.headline = headline;
-    game.headline_subtitle = subtitle;
-    game.headline_tags = tags.length ? tags : undefined;
-    game.headline_tone = tone;
-  });
+  return { byTeamPos };
 };
 
 export const buildStartersCache = async (teams: Team[]) => {
-  const byTeamPos = new Map<string, PlayerRecord[]>();
+  const players: PlayerRecord[] = [];
   for (const team of teams) {
-    const players = await getPlayersByTeam(team.id);
-    players.filter(player => player.starter).forEach(player => {
-      const key = `${team.id}:${player.pos}`;
-      const list = byTeamPos.get(key) ?? [];
-      list.push(player);
-      byTeamPos.set(key, list);
-    });
+    players.push(...await getPlayersByTeam(team.id));
   }
-  return { byTeamPos };
+  return buildStartersCacheFromPlayers(players);
 };
 
 export const loadPlayersMap = async (teams: Team[]) => {
@@ -1136,15 +959,17 @@ export const buildDriveResponse = (
     });
 };
 
-export const buildGameData = (game: GameRecord, teamsById: Map<number, Team>): GameData => {
+export const buildGameData = (
+  game: GameRecord,
+  teamsById: Map<number, Team>,
+  story: import('../../types/news').GameNewsItem | null = null,
+): GameData => {
   const teamA = teamsById.get(game.teamAId)!;
   const teamB = teamsById.get(game.teamBId)!;
   return {
     id: game.id,
     base_label: game.baseLabel,
-    headline: game.headline,
-    headline_subtitle: game.headline_subtitle ?? null,
-    headline_tags: game.headline_tags ?? null,
+    story,
     homeTeamId: game.homeTeamId,
     awayTeamId: game.awayTeamId,
     neutralSite: game.neutralSite,
@@ -1181,6 +1006,8 @@ export const hydrateGame = (game: GameRecord, teamsById: Map<number, Team>): Sim
   winner: game.winnerId ? teamsById.get(game.winnerId)! : null,
   baseLabel: game.baseLabel,
   name: game.name,
+  gameType: game.gameType,
+  rivalryKey: game.rivalryKey,
   spreadA: game.spreadA,
   spreadB: game.spreadB,
   moneylineA: game.moneylineA,
@@ -1199,9 +1026,5 @@ export const hydrateGame = (game: GameRecord, teamsById: Map<number, Team>): Sim
   clockRunning: true,
   scoreA: game.scoreA ?? 0,
   scoreB: game.scoreB ?? 0,
-  headline: game.headline,
-  headline_subtitle: game.headline_subtitle ?? null,
-  headline_tags: game.headline_tags ?? null,
-  headline_tone: game.headline_tone ?? null,
   watchability: game.watchability,
 });

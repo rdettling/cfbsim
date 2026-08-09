@@ -24,6 +24,7 @@ export const commitNewLeague = async ({
       'recruiting',
       'games',
       'gameDetails',
+      'newsItems',
       'players',
       'seasonMemories',
       'playerSeasons',
@@ -37,6 +38,7 @@ export const commitNewLeague = async ({
     await Promise.all([
       tx.objectStore('games').clear(),
       tx.objectStore('gameDetails').clear(),
+      tx.objectStore('newsItems').clear(),
       tx.objectStore('players').clear(),
       tx.objectStore('recruiting').clear(),
       tx.objectStore('seasonMemories').clear(),

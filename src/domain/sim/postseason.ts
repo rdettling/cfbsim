@@ -19,6 +19,7 @@ import {
 import { finalizePostseasonRankings } from './rankings';
 import { buildPlayoffSelection } from '../league/utils/playoffSelection';
 import { buildResumeComparisonSnapshot } from '../league/utils/resumeComparison';
+import { generatePlayoffFieldNews } from '../news/rankings';
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
   teamA.conference !== 'Independent' && teamA.conference === teamB.conference;
@@ -151,7 +152,7 @@ const setBowls = async (
   const existing = (await getGamesByWeek(BOWL_WEEK)).filter(
     game => game.year === league.info.currentYear
   );
-  if (existing.some(game => game.name?.includes('Bowl'))) {
+  if (existing.some(game => game.gameType === 'bowl')) {
     return;
   }
 
@@ -166,6 +167,7 @@ const setBowls = async (
   const gamesToCreate = matchups.map(({ name, teamA, teamB }) =>
     createGameRecord(league, teamA, teamB, BOWL_WEEK, name, oddsContext, {
       neutralSite: true,
+      gameType: 'bowl',
     })
   );
 
@@ -179,7 +181,12 @@ const createGameRecord = (
   weekPlayed: number,
   name: string,
   oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
-  options?: { neutralSite?: boolean; homeTeam?: Team | null; awayTeam?: Team | null }
+  options: {
+    gameType: import('../../types/news').GameType;
+    neutralSite?: boolean;
+    homeTeam?: Team | null;
+    awayTeam?: Team | null;
+  },
 ) => {
   const neutralSite = options?.neutralSite ?? true;
   const homeTeam = neutralSite ? null : options?.homeTeam ?? teamA;
@@ -197,6 +204,8 @@ const createGameRecord = (
     winnerId: null,
     baseLabel: buildBaseLabel(teamA, teamB, name),
     name,
+    gameType: options.gameType,
+    rivalryKey: null,
     ...oddsFields,
     weekPlayed,
     year: league.info.currentYear,
@@ -209,7 +218,6 @@ const createGameRecord = (
     clockSecondsLeft: 900,
     scoreA: null,
     scoreB: null,
-    headline: null,
     watchability: null,
   };
   record.watchability = buildWatchability(record, league.teams.length);
@@ -302,15 +310,13 @@ const setConferenceChampionships = async (
       weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK,
       `${conference.confName} championship`,
       oddsContext,
-      { neutralSite: true }
+      { neutralSite: true, gameType: 'conference_championship' }
     );
     conference.championship = game.id;
     gamesToCreate.push(game);
   });
 
-  if (gamesToCreate.length) {
-    await saveGamesAndLeague(gamesToCreate, league);
-  }
+  if (gamesToCreate.length) await saveGamesAndLeague(gamesToCreate, league);
 };
 
 const setPlayoffR1 = async (
@@ -333,10 +339,10 @@ const setPlayoffR1 = async (
 
   const week = weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK + 1;
   const gamesToCreate = [
-    createGameRecord(league, seeds[7], seeds[8], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
-    createGameRecord(league, seeds[4], seeds[11], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
-    createGameRecord(league, seeds[6], seeds[9], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
-    createGameRecord(league, seeds[5], seeds[10], week, 'Playoff round 1', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[7], seeds[8], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
+    createGameRecord(league, seeds[4], seeds[11], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
+    createGameRecord(league, seeds[6], seeds[9], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
+    createGameRecord(league, seeds[5], seeds[10], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
   ];
 
   league.playoff.left_r1_1 = gamesToCreate[0].id;
@@ -344,7 +350,13 @@ const setPlayoffR1 = async (
   league.playoff.right_r1_1 = gamesToCreate[2].id;
   league.playoff.right_r1_2 = gamesToCreate[3].id;
 
-  await saveGamesAndLeague(gamesToCreate, league);
+  const fieldStory = generatePlayoffFieldNews({
+    year: league.info.currentYear,
+    week: CONFERENCE_CHAMPIONSHIP_WEEK,
+    selectedTeamIds: league.playoff.seeds,
+    teamsById,
+  }).item;
+  await saveGamesAndLeague(gamesToCreate, league, [fieldStory]);
 };
 
 const setPlayoffQuarter = async (
@@ -376,10 +388,10 @@ const setPlayoffQuarter = async (
 
   const week = weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK + 2;
   const gamesToCreate = [
-    createGameRecord(league, seeds[0], winners[0], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
-    createGameRecord(league, seeds[3], winners[1], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
-    createGameRecord(league, seeds[1], winners[2], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
-    createGameRecord(league, seeds[2], winners[3], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true }),
+    createGameRecord(league, seeds[0], winners[0], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true, gameType: 'playoff_quarterfinal' }),
+    createGameRecord(league, seeds[3], winners[1], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true, gameType: 'playoff_quarterfinal' }),
+    createGameRecord(league, seeds[1], winners[2], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true, gameType: 'playoff_quarterfinal' }),
+    createGameRecord(league, seeds[2], winners[3], week, 'Playoff quarterfinal', oddsContext, { neutralSite: true, gameType: 'playoff_quarterfinal' }),
   ];
 
   league.playoff.left_quarter_1 = gamesToCreate[0].id;
@@ -416,8 +428,8 @@ const setPlayoffSemi = async (
     league.playoff.seeds = seeds.map(team => team.id);
 
     gamesToCreate.push(
-      createGameRecord(league, seeds[0], seeds[3], week, 'Playoff semifinal', oddsContext, { neutralSite: true }),
-      createGameRecord(league, seeds[1], seeds[2], week, 'Playoff semifinal', oddsContext, { neutralSite: true })
+      createGameRecord(league, seeds[0], seeds[3], week, 'Playoff semifinal', oddsContext, { neutralSite: true, gameType: 'playoff_semifinal' }),
+      createGameRecord(league, seeds[1], seeds[2], week, 'Playoff semifinal', oddsContext, { neutralSite: true, gameType: 'playoff_semifinal' })
     );
   } else {
     const quarterIds = [
@@ -433,8 +445,8 @@ const setPlayoffSemi = async (
     if (winners.length < 4) return;
 
     gamesToCreate.push(
-      createGameRecord(league, winners[0], winners[1], week, 'Playoff semifinal', oddsContext, { neutralSite: true }),
-      createGameRecord(league, winners[2], winners[3], week, 'Playoff semifinal', oddsContext, { neutralSite: true })
+      createGameRecord(league, winners[0], winners[1], week, 'Playoff semifinal', oddsContext, { neutralSite: true, gameType: 'playoff_semifinal' }),
+      createGameRecord(league, winners[2], winners[3], week, 'Playoff semifinal', oddsContext, { neutralSite: true, gameType: 'playoff_semifinal' })
     );
   }
 
@@ -442,7 +454,17 @@ const setPlayoffSemi = async (
   league.playoff.right_semi = gamesToCreate[1]?.id;
 
   if (gamesToCreate.length) {
-    await saveGamesAndLeague(gamesToCreate, league);
+    if (playoffTeams === 4) {
+      const fieldStory = generatePlayoffFieldNews({
+        year: league.info.currentYear,
+        week: CONFERENCE_CHAMPIONSHIP_WEEK,
+        selectedTeamIds: league.playoff.seeds,
+        teamsById,
+      }).item;
+      await saveGamesAndLeague(gamesToCreate, league, [fieldStory]);
+    } else {
+      await saveGamesAndLeague(gamesToCreate, league);
+    }
   }
 };
 
@@ -482,9 +504,19 @@ const setNatty = async (
   }
 
   if (!teamA || !teamB) return;
-  const game = createGameRecord(league, teamA, teamB, week, 'National Championship', oddsContext, { neutralSite: true });
+  const game = createGameRecord(league, teamA, teamB, week, 'National Championship', oddsContext, { neutralSite: true, gameType: 'national_championship' });
   league.playoff.natty = game.id;
-  await saveGamesAndLeague([game], league);
+  if (playoffTeams === 2) {
+    const fieldStory = generatePlayoffFieldNews({
+      year: league.info.currentYear,
+      week: CONFERENCE_CHAMPIONSHIP_WEEK,
+      selectedTeamIds: league.playoff.seeds,
+      teamsById,
+    }).item;
+    await saveGamesAndLeague([game], league, [fieldStory]);
+  } else {
+    await saveGamesAndLeague([game], league);
+  }
 };
 
 const ensureSummaryStage = async (league: LeagueState) => {

@@ -15,8 +15,8 @@ import {
 } from './config';
 import { buildRecruitingContext } from './context';
 import { calculateTeamFit } from './fit';
-import type { RandomSource } from './random';
-import { createSeededRandom } from './random';
+import type { RandomSource } from '../utils/random';
+import { createSeededRandom } from '../utils/random';
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));

@@ -15,6 +15,10 @@ const deleteTestDatabase = (name: string) =>
   });
 
 describe('current database schema', () => {
+  it('uses the destructive preseason-news epoch', () => {
+    expect(DB_VERSION).toBe(14);
+  });
+
   it('creates every authoritative store in a fresh database', async () => {
     const name = `cfbsim-current-schema-${Date.now()}`;
     const db = await openDB<Frontend2DB>(name, DB_VERSION, {
@@ -28,6 +32,7 @@ describe('current database schema', () => {
       'games',
       'historicalPlayers',
       'league',
+      'newsItems',
       'playerOrigins',
       'playerSeasons',
       'players',
@@ -62,6 +67,7 @@ describe('current database schema', () => {
       'games',
       'historicalPlayers',
       'league',
+      'newsItems',
       'playerOrigins',
       'playerSeasons',
       'players',
@@ -75,6 +81,11 @@ describe('current database schema', () => {
       'weekPlayed',
       'winnerId',
       'year',
+    ]);
+    expect(Array.from(current.transaction('newsItems').store.indexNames)).toEqual([
+      'gameId',
+      'year',
+      'yearWeek',
     ]);
 
     current.close();

@@ -4,7 +4,7 @@ import type {
   AiRecruitingTeamSnapshot,
 } from '../../types/recruiting';
 import { AI_RECRUITING } from './config';
-import { createSeededRandom } from './random';
+import { createSeededRandom } from '../utils/random';
 import {
   calculateInterestGain,
   roundRecruitingValue,

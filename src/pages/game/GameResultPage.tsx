@@ -119,7 +119,7 @@ const GameResultPage = ({ data }: GameResultPageProps) => {
             awayScore={awaySide.score}
             homeScore={homeSide.score}
             overtime={game.overtime}
-            headlineSubtitle={game.headline_subtitle}
+            story={game.story}
             onTeamClick={handleTeamClick}
           />
         </Box>

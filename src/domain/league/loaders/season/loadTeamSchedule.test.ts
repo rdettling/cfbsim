@@ -36,7 +36,8 @@ const game = (overrides: Partial<GameRecord>): GameRecord => ({
   overtime: 0,
   scoreA: 28,
   scoreB: 14,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: 80,
   ...overrides,
 });

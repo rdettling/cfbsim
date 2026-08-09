@@ -63,6 +63,7 @@ export type OffseasonStage = Exclude<LeagueStage, 'preseason' | 'season'>;
 
 export interface Info {
   currentWeek: number;
+  lastRankingsWeek: number;
   currentYear: number;
   startYear: number;
   stage: LeagueStage;

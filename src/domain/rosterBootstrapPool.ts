@@ -8,7 +8,7 @@ import {
   generateName,
   generatePlayerRatings,
 } from './recruiting/generation';
-import type { RandomSource } from './recruiting/random';
+import type { RandomSource } from './utils/random';
 import { ROSTER } from './rosterConfig';
 
 interface BootstrapRecruit {

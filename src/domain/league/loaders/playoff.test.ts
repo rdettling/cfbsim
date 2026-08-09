@@ -63,7 +63,8 @@ const buildGame = (
   overtime: 0,
   scoreA: 24,
   scoreB: 17,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: null,
 });
 

@@ -6,7 +6,7 @@ import type {
 import { canAcceptCommitment } from './capacity';
 import { RECRUITING } from './config';
 import type { RecruitingContext } from './context';
-import { createSeededRandom } from './random';
+import { createSeededRandom } from '../utils/random';
 import { indexRecruitingState } from './validation';
 
 export type RecruitingResolutionPhase = 'round' | 'signing_day';

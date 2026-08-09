@@ -32,7 +32,8 @@ const buildTestGame = (): GameRecord => ({
   overtime: 0,
   scoreA: null,
   scoreB: null,
-  headline: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: 80,
 });
 
@@ -45,6 +46,7 @@ const resetDatabase = async () => {
     'players',
     'games',
     'gameDetails',
+    'newsItems',
     'playerSeasons',
     'historicalPlayers',
     'playerOrigins',
@@ -102,6 +104,7 @@ describe('commitNewLeague', () => {
     expect(await db.getAll('players')).toEqual([nextPlayer]);
     expect(await db.getAll('games')).toEqual([nextGame]);
     expect(await db.getAll('gameDetails')).toEqual([]);
+    expect(await db.getAll('newsItems')).toEqual([]);
     expect(await db.getAll('playerSeasons')).toEqual([]);
     expect(await db.getAll('historicalPlayers')).toEqual([]);
     expect(await db.getAll('playerOrigins')).toEqual([{

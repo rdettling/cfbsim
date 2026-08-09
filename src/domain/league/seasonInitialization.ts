@@ -18,6 +18,17 @@ import { SECONDS_PER_QUARTER } from '../sim/engine';
 import { buildWatchability } from '../sim/games';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { generateRandomSeed } from '../utils/randomSeed';
+import { getSeasonMemory } from '../../db/seasonMemoryRepo';
+import { getGameById } from '../../db/simRepo';
+import { generatePreseasonNews } from '../news/previews';
+
+const getDefendingChampionId = async (year: number) => {
+  const memory = await getSeasonMemory(year - 1);
+  const championship = memory?.events.find(event => event.type === 'national_championship');
+  if (!championship) return null;
+  const game = await getGameById(championship.gameId);
+  return game?.winnerId ?? null;
+};
 
 const initializeSimulation = async (
   league: LeagueState,
@@ -39,6 +50,8 @@ const initializeSimulation = async (
       winnerId: null,
       baseLabel: buildBaseLabel(game.teamA, game.teamB, game.name),
       name: game.name ?? null,
+      gameType: 'regular_season',
+      rivalryKey: game.rivalryKey,
       ...buildOddsFields(
         game.teamA,
         game.teamB,
@@ -57,15 +70,27 @@ const initializeSimulation = async (
       clockSecondsLeft: SECONDS_PER_QUARTER,
       scoreA: null,
       scoreB: null,
-      headline: null,
       watchability: null,
     };
     record.watchability = buildWatchability(record, league.teams.length);
     return record;
   });
 
+  const previews = gameRecords.length
+    ? generatePreseasonNews({
+        year: league.info.currentYear,
+        teams: league.teams,
+        games: gameRecords,
+        defendingChampionId: await getDefendingChampionId(league.info.currentYear),
+      }).map(generated => generated.item)
+    : [];
   league.simInitialized = true;
-  await commitSimulationBatch({ league, games: gameRecords, details: [] });
+  await commitSimulationBatch({
+    league,
+    games: gameRecords,
+    details: [],
+    newsItems: previews,
+  });
 };
 
 export const initializeSeasonSchedule = async (

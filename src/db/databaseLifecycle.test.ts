@@ -29,6 +29,7 @@ const currentSaveCounts = async () => {
     db.count('players'),
     db.count('games'),
     db.count('gameDetails'),
+    db.count('newsItems'),
     db.count('playerSeasons'),
     db.count('historicalPlayers'),
     db.count('playerOrigins'),
@@ -70,7 +71,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     expect(await (await getDb()).get('baseData', 'marker')).toBeUndefined();
   });
 
@@ -83,7 +84,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('deletes the database when the current roster is malformed', async () => {
@@ -96,7 +97,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('deletes the database when a player origin is missing or orphaned', async () => {
@@ -107,7 +108,7 @@ describe('database startup lifecycle', () => {
     await db.put('players', player);
 
     await initializeDatabase();
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     const current = await getDb();
     await current.put('playerOrigins', {
@@ -117,7 +118,7 @@ describe('database startup lifecycle', () => {
       originalTeamId: player.teamId,
     });
     await initializeDatabase();
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('deletes the database when recruiting state is malformed', async () => {
@@ -135,7 +136,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('deletes orphaned save records without a league', async () => {
@@ -144,7 +145,7 @@ describe('database startup lifecycle', () => {
 
     await initializeDatabase();
 
-    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it('recreates a malformed current-version store schema', async () => {
@@ -165,6 +166,7 @@ describe('database startup lifecycle', () => {
       'games',
       'historicalPlayers',
       'league',
+      'newsItems',
       'playerOrigins',
       'playerSeasons',
       'players',

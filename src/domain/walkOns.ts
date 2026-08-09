@@ -6,7 +6,7 @@ import {
   generateName,
   generatePlayerRatings,
 } from './recruiting/generation';
-import { createSeededRandom } from './recruiting/random';
+import { createSeededRandom } from './utils/random';
 import { buildWalkOnOrigins } from './playerOrigins';
 import {
   FINAL_ROSTER_SIZE,

@@ -124,10 +124,8 @@ const buildGame = (teamA: Team, teamB: Team): SimGame => ({
   clockRunning: true,
   scoreA: 0,
   scoreB: 0,
-  headline: null,
-  headline_subtitle: null,
-  headline_tags: null,
-  headline_tone: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
   watchability: null,
 });
 

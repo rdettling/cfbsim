@@ -8,7 +8,7 @@ import { useDomainData } from '../domain/hooks';
 import { loadDashboard } from '../domain/league';
 import type { DashboardPageData } from '../types/pages';
 import { DashboardGamesPanel } from './dashboard/DashboardGamesPanel';
-import { DashboardHeadlinesPanel } from './dashboard/DashboardHeadlinesPanel';
+import { DashboardNewsPanel } from './dashboard/DashboardNewsPanel';
 import {
   DashboardRankingsPanel,
   DashboardStandingsPanel,
@@ -89,7 +89,7 @@ const Dashboard = () => {
               teamColor={data.team.colorPrimary}
               onTeamClick={handleTeamClick}
             />
-            <DashboardHeadlinesPanel headlines={data.top_games} />
+            <DashboardNewsPanel stories={data.topStories} />
           </Box>
 
           <TeamInfoModal

@@ -1,5 +1,6 @@
 import type { Team } from './domain';
 import type { DriveRecord, PlayRecord, PlayerRecord } from './db';
+import type { GameType } from './news';
 
 export interface SimGame {
   id: number;
@@ -12,6 +13,8 @@ export interface SimGame {
   winner: Team | null;
   baseLabel: string;
   name: string | null;
+  gameType: GameType;
+  rivalryKey: string | null;
   spreadA: string;
   spreadB: string;
   moneylineA: string;
@@ -30,10 +33,6 @@ export interface SimGame {
   clockRunning: boolean;
   scoreA: number;
   scoreB: number;
-  headline: string | null;
-  headline_subtitle?: string | null;
-  headline_tags?: string[] | null;
-  headline_tone?: string | null;
   watchability: number | null;
 }
 

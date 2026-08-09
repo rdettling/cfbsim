@@ -12,7 +12,7 @@ loaders, while commands and stage orchestrators own writes.
 - `src/domain/league/loaders/`: read-only page projections.
 - `src/domain/league/`: league commands, lifecycle orchestration, and
   cross-store rules.
-- `src/domain/recruiting/`, `src/domain/sim/`, and other domain modules: pure or
+- `src/domain/recruiting/`, `src/domain/sim/`, `src/domain/news/`, and other domain modules: pure or
   narrowly scoped calculations.
 - `src/db/`: IndexedDB schema, repositories, and explicit transactions.
 - `src/types/`: persisted and public contracts.
@@ -29,6 +29,7 @@ The current database contains:
 - `players`: current rosters only.
 - `games`: compact permanent schedule and result facts.
 - `gameDetails`: nested drive, play, and player-game detail keyed by game.
+- `newsItems`: durable national news stories keyed by deterministic source ID.
 - `playerSeasons` and `historicalPlayers`: compact permanent player history.
 - `playerOrigins`: immutable dynasty-era acquisition provenance for every
   current or historical player.
@@ -79,6 +80,47 @@ league results, and reset artifacts persist.
 Offline recruiting balance evaluation reuses these pure domain operations in
 memory. Evaluation inputs, histories, projections, diagnostics, reports, and
 checksums are not application state and never enter IndexedDB.
+
+League-news generation returns a persisted story plus an ephemeral editorial
+trace containing verified facts, selected template and deck-rule IDs, and the
+newsworthiness breakdown. Runtime callers discard the trace after committing
+the story. The offline `eval:news` workflow consumes it while running seeded
+in-memory schedules; its corpus and reports never enter IndexedDB.
+
+Reader-facing news uses top-25 poll identity even though simulation rankings
+order the full league. Version 3 editorial traces keep raw and editorial ranks,
+explicit odds/ranking upset evidence, and the qualifying fact behind any
+featured player. They also record stable headline/deck template IDs, syntax
+families, emphasized facts, and score placement. Championship, playoff, and
+named bowl consequence remains the primary angle while compatible game context
+selects the copy variant.
+
+Newsworthiness uses a shared typed component registry with consequence,
+national-relevance, and drama dimensions. Pregame top-25 participation adds a
+graduated relevance bonus, while program prestige and the user-controlled team
+do not affect national ordering. Game results and material weekly poll changes
+share one explicit `NewsItem` union and feed. A separate rankings publisher
+also announces the final 2-, 4-, or 12-team playoff field without introducing
+a publisher registry or poll-history store. Season initialization also writes
+three factual Week 0 previews for the preseason poll, national outlook, and
+opening schedule spotlight. Database schema version 14
+intentionally resets older saves so persisted feeds never mix publisher epochs.
+
+News copy catalogs, generation, ordering, presentation metadata, and persisted
+integrity checks have separate focused owners. Every mixed-feed operation uses
+the explicit `NewsItem` discriminator; adding a future item type therefore
+creates compiler-visible branches instead of silently inheriting game behavior.
+Repository modules own reads and writes, while `newsIntegrity.ts` owns current-
+schema and cross-record validation.
+
+Editorial policy constants and qualifier IDs have one typed production owner.
+Templates declare supported game types and required verified facts directly;
+audit validation resolves those contracts by stable template ID instead of
+inferring requirements from naming conventions. Audit scenarios reuse the
+production identity derivation, while structural validation independently
+recomputes expected identity from raw values. The offline audit also validates
+each preseason package against its ranked teams, marquee opening game, template
+catalog, deterministic replay, and independently reconstructed score components.
 
 Home is the only normal no-save state: `loadLeagueOptional()` returns `null`
 when `league/current` does not exist. Required league contexts use

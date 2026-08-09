@@ -50,10 +50,10 @@ For each week before the requested destination, `advanceWeeks()`:
 
 1. loads current-year games and simulates only unplayed games;
 2. creates one nested `GameDetailRecord` per completed game;
-3. updates team records and generates headlines;
+3. updates team records and publishes fact-grounded game stories;
 4. recalculates rankings;
 5. refreshes rank and watchability snapshots on future games;
-6. commits league, game, and detail records;
+6. commits league, game, detail, and news records;
 7. invokes `handleSpecialWeeks()` to create eligible postseason games;
 8. increments the current week.
 

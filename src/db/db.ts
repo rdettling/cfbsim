@@ -10,9 +10,10 @@ import type {
 } from '../types/db';
 import type { RecruitingState } from '../types/recruiting';
 import type { SeasonMemory } from '../types/memory';
+import type { NewsItem } from '../types/news';
 
 export const DB_NAME = 'cfbsim';
-export const DB_VERSION = 8;
+export const DB_VERSION = 14;
 
 export interface Frontend2DB extends DBSchema {
   baseData: {
@@ -36,6 +37,15 @@ export interface Frontend2DB extends DBSchema {
       teamAId: number;
       teamBId: number;
       winnerId: number;
+    };
+  };
+  newsItems: {
+    key: string;
+    value: NewsItem;
+    indexes: {
+      year: number;
+      yearWeek: [number, number];
+      gameId: number;
     };
   };
   gameDetails: {
@@ -79,6 +89,7 @@ type CurrentStoreName =
   | 'league'
   | 'recruiting'
   | 'games'
+  | 'newsItems'
   | 'gameDetails'
   | 'players'
   | 'seasonMemories'
@@ -100,6 +111,11 @@ const createCurrentSchema = (db: IDBPDatabase<Frontend2DB>) => {
 
   const gameDetails = db.createObjectStore('gameDetails', { keyPath: 'gameId' });
   gameDetails.createIndex('year', 'year');
+
+  const newsItems = db.createObjectStore('newsItems', { keyPath: 'id' });
+  newsItems.createIndex('year', 'year');
+  newsItems.createIndex('yearWeek', ['year', 'week']);
+  newsItems.createIndex('gameId', 'gameId');
 
   const players = db.createObjectStore('players', { keyPath: 'id' });
   players.createIndex('teamId', 'teamId');

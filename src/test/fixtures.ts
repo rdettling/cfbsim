@@ -53,6 +53,7 @@ export const buildTestLeague = (
   return {
     info: {
       currentWeek: 18,
+      lastRankingsWeek: 17,
       currentYear: 2025,
       startYear: 2025,
       stage,

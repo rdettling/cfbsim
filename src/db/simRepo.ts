@@ -10,6 +10,7 @@ import type {
   PlayRecord,
 } from '../types/db';
 import type { LeagueState } from '../types/league';
+import type { NewsItem } from '../types/news';
 import { flattenGameDetail } from '../domain/league/gameDetails';
 
 export const clearCurrentGameDetails = async (year: number) => {
@@ -30,12 +31,20 @@ export const saveGames = async (games: GameRecord[]) => {
 export const saveGamesAndLeague = async (
   games: GameRecord[],
   league: LeagueState,
+  newsItems: NewsItem[] = [],
 ) => {
   const db = await getDb();
-  const tx = db.transaction(['games', 'league'], 'readwrite');
-  for (const game of games) await tx.objectStore('games').put(game);
-  await tx.objectStore('league').put({ key: 'current', value: league });
-  await tx.done;
+  const tx = db.transaction(['games', 'league', 'newsItems'], 'readwrite');
+  try {
+    for (const game of games) await tx.objectStore('games').put(game);
+    for (const item of newsItems) await tx.objectStore('newsItems').put(item);
+    await tx.objectStore('league').put({ key: 'current', value: league });
+    await tx.done;
+  } catch (error) {
+    try { tx.abort(); } catch { /* The failed request may already have aborted. */ }
+    try { await tx.done; } catch { /* Expected after abort. */ }
+    throw error;
+  }
 };
 
 export const deleteGameAndSaveLeague = async (
@@ -77,18 +86,22 @@ export const commitSimulationBatch = async ({
   league,
   games,
   details,
+  newsItems = [],
 }: {
   league: LeagueState;
   games: GameRecord[];
   details: GameDetailRecord[];
+  newsItems?: NewsItem[];
 }) => {
   const db = await getDb();
-  const tx = db.transaction(['league', 'games', 'gameDetails'], 'readwrite');
+  const tx = db.transaction(['league', 'games', 'gameDetails', 'newsItems'], 'readwrite');
   try {
     const gameStore = tx.objectStore('games');
     const detailStore = tx.objectStore('gameDetails');
     for (const game of games) await gameStore.put(game);
     for (const detail of details) await detailStore.put(detail);
+    const newsStore = tx.objectStore('newsItems');
+    for (const item of newsItems) await newsStore.put(item);
     await tx.objectStore('league').put({ key: 'current', value: league });
     await tx.done;
   } catch (error) {
