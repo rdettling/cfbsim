@@ -13,6 +13,7 @@ export interface DriveSummaryProps {
   variant?: 'modal' | 'page';
   includeCurrentDrive?: boolean;
   matchup?: SimMatchup;
+  embedded?: boolean;
 }
 
 export interface SimMatchup {

@@ -1,36 +1,38 @@
 import { useState } from 'react';
-import { Box, Paper, Tab, Tabs, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import DriveSummary from '../../components/game/DriveSummary';
 import GameMatchupHeader from '../../components/game/GameMatchupHeader';
 import { TeamInfoModal } from '../../components/team/TeamInfoModal';
-import {
-  resolveHomeAway,
-  resolveTeamSide,
-} from '../../domain/utils/gameDisplay';
+import { resolveHomeAway, resolveTeamSide } from '../../domain/utils/gameDisplay';
 import { buildSimMatchup } from '../../domain/utils/simMatchup';
 import type { GamePageData } from '../../types/pages';
 import { GamePlayerBoxScore } from './game-result/GamePlayerBoxScore';
+import { GameRecap } from './game-result/GameRecap';
 import { GameTeamComparison } from './game-result/GameTeamComparison';
+import { PreviousMatchupsPanel } from './game-shared/PreviousMatchupsPanel';
+import { GameContextPanel } from './game-shared/GameContextPanel';
+import { GamePanel, GameTabbedPanel, type GameTab } from './game-shared/GamePanel';
 
-type ResultTab = 'drives' | 'team-stats' | 'box-score';
+type ResultRailTab = 'recap' | 'team-stats' | 'box-score';
+type ResultMobileTab = ResultRailTab | 'drives';
 
 type GameResultPageProps = {
   data: GamePageData;
 };
 
-const RESULT_TABS: Array<{ value: ResultTab; label: string }> = [
-  { value: 'drives', label: 'Drives' },
-  { value: 'team-stats', label: 'Team Stats' },
-  { value: 'box-score', label: 'Box Score' },
-];
-
 const GameResultPage = ({ data }: GameResultPageProps) => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
-  const [activeTab, setActiveTab] = useState<ResultTab>('drives');
+  const { game, drives, resultSummary } = data;
+  const defaultTab: ResultRailTab = game.story
+    ? 'recap'
+    : resultSummary
+      ? 'team-stats'
+      : 'recap';
+  const [railTab, setRailTab] = useState<ResultRailTab>(defaultTab);
+  const [mobileTab, setMobileTab] = useState<ResultMobileTab>(defaultTab);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const { game, drives, resultSummary } = data;
   const { home, away, neutral } = resolveHomeAway(game);
   const awaySide = resolveTeamSide(game, away.id);
   const homeSide = resolveTeamSide(game, home.id);
@@ -38,7 +40,7 @@ const GameResultPage = ({ data }: GameResultPageProps) => {
     game,
     { scoreA: game.scoreA, scoreB: game.scoreB },
     false,
-    0
+    0,
   );
   const awaySummary = resultSummary
     ? away.id === game.teamA.id
@@ -61,23 +63,72 @@ const GameResultPage = ({ data }: GameResultPageProps) => {
       : resultSummary.boxScore.teamB
     : null;
 
+  const resultTabs: Array<GameTab<ResultRailTab>> = resultSummary
+    ? [
+        { value: 'recap', label: 'Recap' },
+        { value: 'team-stats', label: 'Team Stats' },
+        { value: 'box-score', label: 'Box Score' },
+      ]
+    : [{ value: 'recap', label: 'Recap' }];
+  const mobileTabs: Array<GameTab<ResultMobileTab>> = [
+    { value: 'recap', label: 'Recap' },
+    { value: 'drives', label: 'Drives' },
+    ...(resultSummary
+      ? [
+          { value: 'team-stats' as const, label: 'Team Stats' },
+          { value: 'box-score' as const, label: 'Box Score' },
+        ]
+      : []),
+  ];
+
   const handleTeamClick = (teamName: string) => {
     setSelectedTeam(teamName);
     setModalOpen(true);
   };
 
-  const renderPanel = (panel: ResultTab) => {
-    if (panel === 'drives') {
-      return (
-        <DriveSummary
-          drives={drives}
-          variant="page"
-          matchup={matchup}
-        />
+  const context = (
+    <GameContextPanel
+      awayTeam={away}
+      homeTeam={home}
+      awaySide={awaySide}
+      homeSide={homeSide}
+      dynastyContext={data.dynastyContext}
+      completed
+    />
+  );
+  const previousMatchups = (
+    <PreviousMatchupsPanel
+      teamA={game.teamA}
+      teamB={game.teamB}
+      awayTeamId={away.id}
+      matchups={data.previousMatchups}
+    />
+  );
+
+  const unavailableCopy = (
+    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+      Detailed game data is no longer available. The final score and dynasty memory are
+      preserved, but play-by-play and player logs are retained only for user-program games and
+      major postseason games.
+    </Typography>
+  );
+
+  const renderDrives = (embedded = false) => {
+    if (data.detailUnavailable) {
+      return embedded ? (
+        unavailableCopy
+      ) : (
+        <GamePanel title="Drive Summary" ariaLabel="Game detail unavailable">
+          {unavailableCopy}
+        </GamePanel>
       );
     }
+    return <DriveSummary drives={drives} variant="page" matchup={matchup} embedded={embedded} />;
+  };
 
-    if (panel === 'team-stats') {
+  const renderDetail = (tab: ResultRailTab) => {
+    if (tab === 'recap') return <GameRecap story={game.story} />;
+    if (tab === 'team-stats') {
       return (
         <GameTeamComparison
           awayTeam={away}
@@ -87,7 +138,6 @@ const GameResultPage = ({ data }: GameResultPageProps) => {
         />
       );
     }
-
     return (
       <GamePlayerBoxScore
         awayTeam={away}
@@ -107,82 +157,80 @@ const GameResultPage = ({ data }: GameResultPageProps) => {
           flex: { lg: 1 },
           minHeight: { lg: 0 },
           gap: 1.25,
+          overflow: { lg: 'hidden' },
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
           <GameMatchupHeader
             game={game}
-            home={{ team: home, rank: homeSide.rank }}
-            away={{ team: away, rank: awaySide.rank }}
+            away={{
+              team: away,
+              rank: awaySide.rank,
+              score: awaySide.score,
+              winner: game.winnerId === away.id,
+            }}
+            home={{
+              team: home,
+              rank: homeSide.rank,
+              score: homeSide.score,
+              winner: game.winnerId === home.id,
+            }}
             neutral={neutral}
             mode="result"
-            awayScore={awaySide.score}
-            homeScore={homeSide.score}
             overtime={game.overtime}
-            story={game.story}
             onTeamClick={handleTeamClick}
           />
         </Box>
 
-        {!resultSummary && drives.length === 0 ? (
-          <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6">Detailed game data is no longer available</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-              The final score and dynasty memory are preserved, but play-by-play and
-              player logs are retained for user-program games and major postseason games.
-            </Typography>
-          </Paper>
-        ) : isDesktop ? (
+        {isDesktop ? (
           <Box
             component="section"
             aria-label="Game result details"
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 3fr) minmax(0, 4fr)',
+              gridTemplateColumns:
+                'minmax(0, 1.2fr) minmax(320px, 0.95fr) minmax(300px, 0.85fr)',
               gap: 1.25,
               flex: 1,
               minHeight: 0,
+              overflow: 'hidden',
             }}
           >
-            {renderPanel('drives')}
-            {renderPanel('team-stats')}
-            {renderPanel('box-score')}
-          </Box>
-        ) : (
-          <Box component="section" aria-label="Game result details">
-            <Tabs
-              value={activeTab}
-              onChange={(_, value: ResultTab) => setActiveTab(value)}
-              variant="fullWidth"
-              selectionFollowsFocus
-              aria-label="Game result sections"
-              sx={{
-                minHeight: 42,
-                mb: 1,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              {RESULT_TABS.map((tab) => (
-                <Tab
-                  key={tab.value}
-                  id={`game-result-tab-${tab.value}`}
-                  aria-controls={`game-result-panel-${tab.value}`}
-                  value={tab.value}
-                  label={tab.label}
-                  sx={{ minHeight: 42 }}
-                />
-              ))}
-            </Tabs>
+            {renderDrives()}
+            <Box sx={{ minHeight: 0 }}>
+              <GameTabbedPanel
+                tabs={resultTabs}
+                value={railTab}
+                onChange={setRailTab}
+                ariaLabel="Game result sections"
+              >
+                {renderDetail(railTab)}
+              </GameTabbedPanel>
+            </Box>
             <Box
-              role="tabpanel"
-              id={`game-result-panel-${activeTab}`}
-              aria-labelledby={`game-result-tab-${activeTab}`}
-              sx={{ height: 'clamp(420px, 65vh, 640px)', minHeight: 0 }}
+              component="aside"
+              sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minHeight: 0 }}
             >
-              {renderPanel(activeTab)}
+              <Box sx={{ flexShrink: 0 }}>{context}</Box>
+              {data.previousMatchups.length > 0 && (
+                <Box sx={{ flex: 1, minHeight: 0 }}>{previousMatchups}</Box>
+              )}
             </Box>
           </Box>
+        ) : (
+          <>
+            {context}
+            {data.previousMatchups.length > 0 && previousMatchups}
+            <GameTabbedPanel
+              tabs={mobileTabs}
+              value={mobileTab}
+              onChange={setMobileTab}
+              ariaLabel="Game result sections"
+              scrollable={false}
+            >
+              {mobileTab === 'drives' ? renderDrives(true) : renderDetail(mobileTab)}
+            </GameTabbedPanel>
+          </>
         )}
       </Box>
 

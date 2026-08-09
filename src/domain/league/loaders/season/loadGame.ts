@@ -17,7 +17,7 @@ import {
   buildTeamStatsAndRanks,
   buildTopStartersForTeam,
 } from '../../utils/gamePreview';
-import { buildGameResultSummary } from '../../utils/gameResult';
+import { buildGameResultSummary, buildPreviousMatchups } from '../../utils/gameResult';
 import { getUserTeam } from './shared';
 import { buildDynastySeriesContext } from '../../memoryProjection';
 import { flattenGameDetail } from '../../gameDetails';
@@ -167,6 +167,7 @@ export const loadGame = async (gameId: number) => {
   const resultSummary = hasDetailedArtifacts
     ? buildGameResultSummary(game, gamePlays, gameLogs, resultPlayers, teamsById)
     : null;
+  const previousMatchups = buildPreviousMatchups(record, allGames);
 
   const drives = hasDetailedArtifacts
     ? buildDriveResponse(
@@ -184,6 +185,7 @@ export const loadGame = async (gameId: number) => {
     preview,
     resultSummary,
     drives,
+    previousMatchups,
     dynastyContext,
     detailUnavailable: record.winnerId !== null && !hasDetailedArtifacts,
   };

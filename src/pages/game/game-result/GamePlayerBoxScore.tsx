@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Divider, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Divider, Stack, Tab, Tabs, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { Team } from '../../../types/domain';
@@ -94,27 +94,12 @@ export const GamePlayerBoxScore = ({
   const selectedBoxScore = selectedTeam === 'away' ? awayBoxScore : homeBoxScore;
 
   return (
-    <Paper
-      component="section"
-      variant="outlined"
-      aria-label="Player box score"
-      sx={{
-        height: '100%',
-        minHeight: 0,
-        p: 1.5,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <Typography component="h2" variant="h6">
-        Box Score
-      </Typography>
+    <Box aria-label="Player box score">
       {!awayBoxScore || !homeBoxScore ? (
         <Typography
           variant="body2"
           sx={{
             color: 'text.secondary',
-            mt: 1,
           }}
         >
           Player statistics are unavailable for this game.
@@ -129,7 +114,6 @@ export const GamePlayerBoxScore = ({
             aria-label="Box score team"
             sx={{
               minHeight: 36,
-              mt: 1,
               p: 0.25,
               border: '1px solid',
               borderColor: 'divider',
@@ -177,7 +161,7 @@ export const GamePlayerBoxScore = ({
             />
           </Tabs>
 
-          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', mt: 0.75 }}>
+          <Box sx={{ mt: 0.75 }}>
             {SECTIONS.map((section, sectionIndex) => {
               const entries = selectedBoxScore?.[section.key] ?? [];
               return (
@@ -216,6 +200,6 @@ export const GamePlayerBoxScore = ({
           </Box>
         </>
       )}
-    </Paper>
+    </Box>
   );
 };

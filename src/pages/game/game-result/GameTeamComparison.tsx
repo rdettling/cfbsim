@@ -1,4 +1,4 @@
-import { Box, Divider, Paper, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack, Typography } from '@mui/material';
 import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { Team } from '../../../types/domain';
 import type { GamePageData } from '../../../types/pages';
@@ -92,27 +92,12 @@ export const GameTeamComparison = ({
   ];
 
   return (
-    <Paper
-      component="section"
-      variant="outlined"
-      aria-label="Team statistics comparison"
-      sx={{
-        height: '100%',
-        minHeight: 0,
-        p: 1.5,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <Typography component="h2" variant="h6">
-        Team Stats
-      </Typography>
+    <Box aria-label="Team statistics comparison">
       {!awaySummary || !homeSummary ? (
         <Typography
           variant="body2"
           sx={{
             color: 'text.secondary',
-            mt: 1,
           }}
         >
           Team statistics are unavailable for this game.
@@ -124,7 +109,6 @@ export const GameTeamComparison = ({
               display: 'grid',
               gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
               gap: 1,
-              mt: 1,
               pb: 0.75,
             }}
           >
@@ -158,7 +142,7 @@ export const GameTeamComparison = ({
           </Box>
           <Divider />
 
-          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <Box>
             {rows.map((row, index) => (
               <Box key={row.label}>
                 <Box
@@ -186,6 +170,6 @@ export const GameTeamComparison = ({
           </Box>
         </>
       )}
-    </Paper>
+    </Box>
   );
 };

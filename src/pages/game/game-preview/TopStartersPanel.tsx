@@ -1,4 +1,4 @@
-import { Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
+import { Box, Chip, Divider, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { Team } from '../../../types/domain';
@@ -13,84 +13,73 @@ type TopStartersPanelProps = {
   homeStarters: Starter[];
 };
 
-type TeamStartersProps = {
+type TeamHeaderProps = {
   team: Team;
-  starters: Starter[];
 };
 
-const TeamStarters = ({ team, starters }: TeamStartersProps) => (
-  <Box sx={{ minWidth: 0 }}>
-    <Stack
-      direction="row"
-      spacing={0.75}
+const TeamHeader = ({ team }: TeamHeaderProps) => (
+  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', minWidth: 0 }}>
+    <TeamLogo name={team.name} size={24} />
+    <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
+      {team.name}
+    </Typography>
+  </Stack>
+);
+
+type StarterCellProps = {
+  player: Starter | undefined;
+  showEmptyState: boolean;
+};
+
+const StarterCell = ({ player, showEmptyState }: StarterCellProps) => {
+  if (!player) {
+    if (showEmptyState) {
+      return (
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          No eligible starters are available.
+        </Typography>
+      );
+    }
+
+    return <Box aria-hidden="true" />;
+  }
+
+  return (
+    <Box
       sx={{
+        display: 'grid',
+        gridTemplateColumns: 'auto minmax(0, 1fr) auto',
         alignItems: 'center',
+        gap: 0.5,
+        minWidth: 0,
       }}
     >
-      <TeamLogo name={team.name} size={24} />
-      <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
-        {team.name}
-      </Typography>
-    </Stack>
-
-    {starters.length === 0 ? (
+      <Chip
+        label={player.pos}
+        size="small"
+        variant="outlined"
+        sx={{ height: 22, minWidth: 34, fontSize: '0.7rem', px: 0 }}
+      />
       <Typography
+        component={RouterLink}
+        to={`/players/${player.id}`}
         variant="body2"
+        noWrap
         sx={{
-          color: 'text.secondary',
-          mt: 1,
+          color: 'text.primary',
+          fontWeight: 600,
+          textDecoration: 'none',
+          '&:hover': { textDecoration: 'underline' },
         }}
       >
-        No eligible starters are available.
+        {player.first} {player.last}
       </Typography>
-    ) : (
-      <Stack divider={<Divider flexItem />} sx={{ mt: 0.75 }}>
-        {starters.map((player) => (
-          <Box
-            key={player.id}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: 'auto minmax(0, 1fr) auto',
-              alignItems: 'center',
-              gap: 0.75,
-              py: 0.6,
-            }}
-          >
-            <Chip
-              label={player.pos}
-              size="small"
-              variant="outlined"
-              sx={{ height: 22, minWidth: 38, fontSize: '0.7rem' }}
-            />
-            <Typography
-              component={RouterLink}
-              to={`/players/${player.id}`}
-              variant="body2"
-              noWrap
-              sx={{
-                color: 'text.primary',
-                fontWeight: 600,
-                textDecoration: 'none',
-                '&:hover': { textDecoration: 'underline' },
-              }}
-            >
-              {player.first} {player.last}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: 'text.secondary',
-                fontWeight: 600,
-              }}
-            >
-              {player.rating}
-            </Typography>
-          </Box>
-        ))}
-      </Stack>
-    )}
-  </Box>
-);
+      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+        {player.rating}
+      </Typography>
+    </Box>
+  );
+};
 
 export const TopStartersPanel = ({
   awayTeam,
@@ -98,22 +87,43 @@ export const TopStartersPanel = ({
   awayStarters,
   homeStarters,
 }: TopStartersPanelProps) => (
-  <Paper component="section" variant="outlined" sx={{ p: 1.5, height: '100%' }}>
-    <Typography component="h2" variant="h6">
-      Top Starters
-    </Typography>
+  <Box sx={{ minWidth: 0 }}>
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
-        gap: 1.5,
-        mt: 1,
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        columnGap: 1.5,
       }}
     >
-      <TeamStarters team={awayTeam} starters={awayStarters} />
-      <Box sx={{ borderLeft: { sm: '1px solid' }, borderColor: 'divider', pl: { sm: 1.5 } }}>
-        <TeamStarters team={homeTeam} starters={homeStarters} />
-      </Box>
+      <TeamHeader team={awayTeam} />
+      <TeamHeader team={homeTeam} />
     </Box>
-  </Paper>
+    <Stack divider={<Divider flexItem />} sx={{ mt: 0.75 }}>
+      {Array.from(
+        { length: Math.max(awayStarters.length, homeStarters.length, 1) },
+        (_, index) => (
+          <Box
+            key={index}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              alignItems: 'center',
+              columnGap: 1.5,
+              py: 0.6,
+              minWidth: 0,
+            }}
+          >
+            <StarterCell
+              player={awayStarters[index]}
+              showEmptyState={index === 0 && awayStarters.length === 0}
+            />
+            <StarterCell
+              player={homeStarters[index]}
+              showEmptyState={index === 0 && homeStarters.length === 0}
+            />
+          </Box>
+        ),
+      )}
+    </Stack>
+  </Box>
 );

@@ -1,7 +1,8 @@
-import { Box, Divider, Paper, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack, Typography } from '@mui/material';
 import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { Team } from '../../../types/domain';
 import type { GamePageData } from '../../../types/pages';
+import { GamePanel } from '../game-shared/GamePanel';
 
 type TeamPreview = GamePageData['preview']['teamA'];
 type MetricKey = keyof TeamPreview['stats'];
@@ -11,6 +12,7 @@ type TeamStatComparisonProps = {
   homeTeam: Team;
   awayPreview: TeamPreview;
   homePreview: TeamPreview;
+  embedded?: boolean;
 };
 
 const METRICS: Array<{ key: MetricKey; label: string }> = [
@@ -32,26 +34,29 @@ export const TeamStatComparison = ({
   homeTeam,
   awayPreview,
   homePreview,
+  embedded = false,
 }: TeamStatComparisonProps) => {
   const noPriorGames = awayPreview.gamesPlayed === 0 && homePreview.gamesPlayed === 0;
 
-  return (
-    <Paper component="section" variant="outlined" sx={{ p: 1.5, height: '100%' }}>
-      <Typography component="h2" variant="h6">
-        Team Stat Comparison
-      </Typography>
+  const content = (
+    <>
       {noPriorGames ? (
-        <Typography
-          variant="body2"
+        <Box
           sx={{
-            color: 'text.secondary',
-            mt: 1,
+            height: '100%',
+            minHeight: 140,
+            display: 'grid',
+            placeItems: 'center',
+            textAlign: 'center',
+            px: 2,
           }}
         >
-          No prior games are available. Team comparisons will appear after the season begins.
-        </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 420 }}>
+            No prior games are available. Team comparisons will appear after the season begins.
+          </Typography>
+        </Box>
       ) : (
-        <Stack spacing={0.5} sx={{ mt: 1 }}>
+        <Stack spacing={0.5}>
           <Box
             sx={{
               display: 'grid',
@@ -143,6 +148,14 @@ export const TeamStatComparison = ({
           ))}
         </Stack>
       )}
-    </Paper>
+    </>
+  );
+
+  if (embedded) return <Box>{content}</Box>;
+
+  return (
+    <GamePanel title="Team Stat Comparison" ariaLabel="Team statistics comparison" scrollable>
+      {content}
+    </GamePanel>
   );
 };

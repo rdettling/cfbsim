@@ -39,9 +39,9 @@ const GamePage = () => {
       desktopViewportConstrained={Boolean(data)}
     >
       {data && isComplete ? (
-        <GameResultPage data={data} />
+        <GameResultPage key={data.game.id} data={data} />
       ) : (
-        data && <GamePreviewPage data={data} />
+        data && <GamePreviewPage key={data.game.id} data={data} />
       )}
     </PageLayout>
   );

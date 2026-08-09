@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Collapse,
   Divider,
   IconButton,
+  Paper,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -25,6 +24,7 @@ const DriveSummary = ({
   variant = 'page',
   includeCurrentDrive = false,
   matchup,
+  embedded = false,
 }: DriveSummaryProps) => {
   const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
   const [driveFilter, setDriveFilter] = useState<'all' | 'scoring'>('all');
@@ -132,15 +132,20 @@ const DriveSummary = ({
   }, [visibleDrives]);
 
   const containerSx = {
-    height: '100%',
+    height: embedded ? 'auto' : '100%',
     display: 'flex',
     flexDirection: 'column',
     ...(variant === 'page' && { minHeight: 0 }),
+    ...(embedded && { bgcolor: 'transparent' }),
   } as const;
 
   return (
-    <Card variant={variant === 'page' ? 'outlined' : undefined} sx={containerSx}>
-      <CardContent
+    <Paper
+      variant={variant === 'page' && !embedded ? 'outlined' : undefined}
+      elevation={embedded ? 0 : undefined}
+      sx={containerSx}
+    >
+      <Box
         sx={
           variant === 'modal'
             ? { flex: 1, overflow: 'auto' }
@@ -149,7 +154,7 @@ const DriveSummary = ({
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: 0,
-                p: 1.5,
+                p: embedded ? 0 : 1.5,
                 '&:last-child': { pb: 1.5 },
               }
         }
@@ -159,17 +164,19 @@ const DriveSummary = ({
           spacing={1}
           sx={{
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: embedded ? 'flex-end' : 'space-between',
             mb: 1,
           }}
         >
-          <Typography
-            component={variant === 'page' ? 'h2' : 'div'}
-            variant={variant === 'page' ? 'h6' : 'h5'}
-            sx={{ fontWeight: variant === 'page' ? 600 : 800 }}
-          >
-            Drive Summary
-          </Typography>
+          {!embedded && (
+            <Typography
+              component={variant === 'page' ? 'h2' : 'div'}
+              variant={variant === 'page' ? 'h6' : 'h5'}
+              sx={{ fontWeight: variant === 'page' ? 600 : 800 }}
+            >
+              Drive Summary
+            </Typography>
+          )}
           <ToggleButtonGroup
             size="small"
             value={driveFilter}
@@ -189,7 +196,7 @@ const DriveSummary = ({
           sx={{
             flex: 1,
             minHeight: 0,
-            overflowY: 'auto',
+            overflowY: embedded ? 'visible' : 'auto',
             pr: 0.25,
             scrollbarWidth: 'thin',
             '&::-webkit-scrollbar': { width: 7 },
@@ -232,8 +239,14 @@ const DriveSummary = ({
                 : { awayScore: scoreA ?? 0, homeScore: scoreB ?? 0 };
 
               return (
-                <Card key={drive.driveNum} variant="outlined" sx={{ mb: 1.25 }}>
-                  <CardContent>
+                <Box
+                  key={drive.driveNum}
+                  sx={{
+                    py: 1.1,
+                    borderTop: idx === 0 ? 0 : '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
                     <Stack
                       direction="row"
                       spacing={1}
@@ -416,14 +429,13 @@ const DriveSummary = ({
                         </Stack>
                       </Collapse>
                     )}
-                  </CardContent>
-                </Card>
+                </Box>
               );
             })
           )}
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Paper>
   );
 };
 

@@ -1,5 +1,38 @@
 import type { Team } from '../../../types/domain';
-import type { GameLogRecord, PlayRecord, PlayerRecord } from '../../../types/db';
+import type { GameLogRecord, GameRecord, PlayRecord, PlayerRecord } from '../../../types/db';
+
+export const buildPreviousMatchups = (
+  targetGame: GameRecord,
+  games: GameRecord[],
+) => games
+  .filter(game => {
+    const sameTeams =
+      (game.teamAId === targetGame.teamAId && game.teamBId === targetGame.teamBId) ||
+      (game.teamAId === targetGame.teamBId && game.teamBId === targetGame.teamAId);
+    const beforeTarget =
+      game.year < targetGame.year ||
+      (game.year === targetGame.year &&
+        (game.weekPlayed < targetGame.weekPlayed ||
+          (game.weekPlayed === targetGame.weekPlayed && game.id < targetGame.id)));
+    return sameTeams && beforeTarget && game.winnerId !== null;
+  })
+  .sort((left, right) =>
+    right.year - left.year ||
+    right.weekPlayed - left.weekPlayed ||
+    right.id - left.id)
+  .slice(0, 5)
+  .map(game => {
+    const targetTeamAIsGameTeamA = game.teamAId === targetGame.teamAId;
+    return {
+      id: game.id,
+      year: game.year,
+      week: game.weekPlayed,
+      label: game.baseLabel,
+      teamAScore: targetTeamAIsGameTeamA ? game.scoreA ?? 0 : game.scoreB ?? 0,
+      teamBScore: targetTeamAIsGameTeamA ? game.scoreB ?? 0 : game.scoreA ?? 0,
+      winnerId: game.winnerId,
+    };
+  });
 
 type LeaderEntry = {
   playerId: number;

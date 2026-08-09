@@ -1,4 +1,4 @@
-import { Box, Divider, Paper, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { TeamLogo } from '../../../components/team/TeamLogo';
 import type { Team } from '../../../types/domain';
@@ -119,22 +119,9 @@ export const RecentFormPanel = ({
   awayGames,
   homeGames,
 }: RecentFormPanelProps) => (
-  <Paper component="section" variant="outlined" sx={{ p: 1.5, height: '100%' }}>
-    <Typography component="h2" variant="h6">
-      Recent Form
-    </Typography>
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
-        gap: 1.5,
-        mt: 1,
-      }}
-    >
-      <TeamRecentForm team={awayTeam} games={awayGames} />
-      <Box sx={{ borderLeft: { sm: '1px solid' }, borderColor: 'divider', pl: { sm: 1.5 } }}>
-        <TeamRecentForm team={homeTeam} games={homeGames} />
-      </Box>
-    </Box>
-  </Paper>
+  <Box>
+    <TeamRecentForm team={awayTeam} games={awayGames} />
+    <Divider sx={{ my: 1.25 }} />
+    <TeamRecentForm team={homeTeam} games={homeGames} />
+  </Box>
 );
