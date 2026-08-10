@@ -1,20 +1,22 @@
 import type {
   SortDirection,
-  TeamStatKey,
-  TeamStats,
+  TeamPlayerStatKey,
+  TeamPlayerStatValues,
 } from '../../types/stats';
+import type { TeamPlayerStatColumn } from './config';
 
-export type RankedTeamStats = {
-  teamName: string;
-  stats: TeamStats;
-  rank: number;
+export type TeamPlayerDisplayRow = {
+  id: number;
+  first: string;
+  last: string;
+  pos: string;
+  stats: TeamPlayerStatValues;
 };
 
-export type TeamStatsViewProps = {
-  rows: RankedTeamStats[];
-  averages: TeamStats;
-  sortKey: TeamStatKey;
+export type TeamPlayerStatsViewProps = {
+  rows: TeamPlayerDisplayRow[];
+  columns: TeamPlayerStatColumn[];
+  sortKey: TeamPlayerStatKey;
   sortDirection: SortDirection;
-  onSort: (key: TeamStatKey) => void;
-  onTeamClick: (teamName: string) => void;
+  onSort: (key: TeamPlayerStatKey) => void;
 };

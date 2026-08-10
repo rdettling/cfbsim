@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildTestLeague, buildTestPlayer } from '../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestPlayer,
+  buildTestSeasonTeamSnapshot,
+} from '../test/fixtures';
 import type { GameRecord } from '../types/db';
 import type { SeasonMemory } from '../types/memory';
 import {
@@ -11,7 +15,7 @@ const memory: SeasonMemory = {
   year: 2025,
   playoffTeams: 12,
   teamSnapshots: [
-    { teamId: 1, rating: 80, prestige: 4, ranking: 1, record: '12-0 (8-0)' },
+    buildTestSeasonTeamSnapshot(),
   ],
   events: [{ type: 'national_championship', gameId: 1 }],
   awards: [],
@@ -66,6 +70,17 @@ describe('season memory integrity', () => {
       ...memory,
       teamSnapshots: [{ ...memory.teamSnapshots[0], record: '   ' }],
     })).toThrow();
+    expect(() => assertCurrentSeasonMemory({
+      ...memory,
+      teamSnapshots: [{
+        ...memory.teamSnapshots[0],
+        offense: { ...memory.teamSnapshots[0].offense, points: 1.5 },
+      }],
+    })).toThrow();
+    expect(() => assertCurrentSeasonMemory({
+      ...memory,
+      teamSnapshots: [{ ...memory.teamSnapshots[0], conference: '' }],
+    })).toThrow();
   });
 
   it('rejects aliases and dangling game references', () => {
@@ -116,7 +131,12 @@ describe('season memory integrity', () => {
           ...memory,
           teamSnapshots: [
             ...memory.teamSnapshots,
-            { teamId: 2, rating: 79, prestige: 4, ranking: 2, record: '11-1 (7-1)' },
+            buildTestSeasonTeamSnapshot({
+              teamId: 2,
+              rating: 79,
+              ranking: 2,
+              record: '11-1 (7-1)',
+            }),
           ],
         }],
         league,

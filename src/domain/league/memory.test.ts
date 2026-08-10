@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { GameLogRecord, GameRecord } from '../../types/db';
-import { buildTestLeague, buildTestPlayer, buildTestTeam } from '../../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestPlayer,
+  buildTestSeasonTeamSnapshot,
+  buildTestTeam,
+  buildTestTeamAggregateTotals,
+} from '../../test/fixtures';
 import { buildSeasonMemory } from './memory';
 
 const game = (
@@ -92,6 +98,7 @@ describe('buildSeasonMemory', () => {
       ],
       [buildTestPlayer()],
       [log],
+      [],
     );
 
     expect(memory.events).toEqual([
@@ -101,20 +108,15 @@ describe('buildSeasonMemory', () => {
       { type: 'national_championship', gameId: 13 },
     ]);
     expect(memory.teamSnapshots).toEqual([
-      {
-        teamId: 1,
-        rating: 80,
-        prestige: 4,
-        ranking: 1,
-        record: '12-0 (8-0)',
-      },
-      {
+      buildTestSeasonTeamSnapshot({
+        offense: buildTestTeamAggregateTotals({ points: 124 }),
+        defense: buildTestTeamAggregateTotals({ points: 96 }),
+      }),
+      buildTestSeasonTeamSnapshot({
         teamId: 2,
-        rating: 80,
-        prestige: 4,
-        ranking: 1,
-        record: '12-0 (8-0)',
-      },
+        offense: buildTestTeamAggregateTotals({ points: 96 }),
+        defense: buildTestTeamAggregateTotals({ points: 124 }),
+      }),
     ]);
     expect(memory.awards[0]).toMatchObject({
       categorySlug: 'heisman',

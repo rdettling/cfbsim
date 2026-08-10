@@ -1,16 +1,28 @@
-import type { loadHomeData, loadNonCon, loadDashboard, loadNews, loadTeamSchedule, loadWeekSchedule, loadGame, listAvailableTeams, startNewLeague } from '../domain/league/loaders/season';
+import type { listAvailableTeams } from '../domain/league/loaders/season/listAvailableTeams';
+import type { loadDashboard } from '../domain/league/loaders/season/loadDashboard';
+import type { loadGame } from '../domain/league/loaders/season/loadGame';
+import type { loadHomeData } from '../domain/league/loaders/season/loadHomeData';
+import type { loadNews } from '../domain/league/loaders/season/loadNews';
+import type { loadNonCon } from '../domain/league/loaders/season/loadNonCon';
+import type { loadTeamSchedule } from '../domain/league/loaders/season/loadTeamSchedule';
+import type { loadWeekSchedule } from '../domain/league/loaders/season/loadWeekSchedule';
+import type { startNewLeague } from '../domain/league/loaders/season/startNewLeague';
 import type { loadAwards, loadSeasonSummary } from '../domain/league/loaders/offseason';
 import type { loadRosterCuts } from '../domain/league/loaders/loadRosterCuts';
 import type { loadRealignment } from '../domain/league/loaders/loadRealignment';
 import type { loadRecruitingSummary } from '../domain/league/loaders/loadRecruitingSummary';
 import type { loadRecruiting } from '../domain/league/loaders/loadRecruiting';
 import type { loadRosterProgression } from '../domain/league/loaders/loadRosterProgression';
-import type { loadRankings } from '../domain/league/loaders';
-import type { loadRatingsStats, loadStandings, loadTeamStats, loadIndividualStats } from '../domain/league/loaders/stats';
+import type { loadRankings } from '../domain/league/loaders/rankings';
+import type { loadRatingsStats } from '../domain/league/loaders/ratingsStats';
+import type { loadStandings } from '../domain/league/loaders/standings';
+import type { loadPlayerLeaders } from '../domain/league/loaders/stats/playerLeaders';
+import type { loadTeamRankings } from '../domain/league/loaders/stats/teamRankings';
 import type { getTeamInfo } from '../domain/league/loaders/team/getTeamInfo';
 import type { loadPlayer } from '../domain/league/loaders/team/loadPlayer';
 import type { loadTeamHistory } from '../domain/league/loaders/team/loadTeamHistory';
 import type { loadTeamRoster } from '../domain/league/loaders/team/loadTeamRoster';
+import type { loadTeamStats } from '../domain/league/loaders/team/loadTeamStats';
 import type {
   loadBowlGames,
   loadPlayoffBracket,
@@ -37,6 +49,7 @@ export type RecruitingSummaryPageData = Awaited<ReturnType<typeof loadRecruiting
 export type RecruitingPageData = Awaited<ReturnType<typeof loadRecruiting>>;
 export type RosterCutsPageData = Awaited<ReturnType<typeof loadRosterCuts>>;
 export type RatingsStatsPageData = Awaited<ReturnType<typeof loadRatingsStats>>;
+export type TeamRankingsPageData = Awaited<ReturnType<typeof loadTeamRankings>>;
 export type TeamStatsPageData = Awaited<ReturnType<typeof loadTeamStats>>;
 export type StandingsPageData = Awaited<ReturnType<typeof loadStandings>>;
 export type TeamRosterPageData = Awaited<ReturnType<typeof loadTeamRoster>>;
@@ -46,7 +59,7 @@ export type PlayerPageData = Awaited<ReturnType<typeof loadPlayer>>;
 export type TeamInfoData = Awaited<ReturnType<typeof getTeamInfo>>;
 export type AvailableTeamsData = Awaited<ReturnType<typeof listAvailableTeams>>;
 export type StartNewLeagueData = Awaited<ReturnType<typeof startNewLeague>>;
-export type IndividualStatsPageData = Awaited<ReturnType<typeof loadIndividualStats>>;
+export type PlayerLeadersPageData = Awaited<ReturnType<typeof loadPlayerLeaders>>;
 export type PlayoffBracketPageData = Awaited<ReturnType<typeof loadPlayoffBracket>>;
 export type PlayoffPicturePageData = Awaited<ReturnType<typeof loadPlayoffPicture>>;
 export type ResumeComparisonPageData = Awaited<ReturnType<typeof loadResumeComparison>>;

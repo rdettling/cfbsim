@@ -184,7 +184,6 @@ const summarizeLogs = (logs: GameLogRecord[]) => {
 };
 
 const buildStatCache = (
-  league: LeagueState,
   players: PlayerRecord[],
   logs: GameLogRecord[],
   teamsById: Map<number, Team>
@@ -494,7 +493,7 @@ export const buildAwards = (
     logsByPlayer.set(log.playerId, list);
   });
 
-  const statCache = buildStatCache(league, players, logs, teamsById);
+  const statCache = buildStatCache(players, logs, teamsById);
 
   const candidatesBySlug: Record<string, AwardCandidate[]> = {
     heisman: calcHeisman(league, players, statCache, teamsById),

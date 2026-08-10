@@ -6,9 +6,14 @@ import type {
   LeagueState,
   StartNewLeagueInput,
 } from '../../../../types/league';
-import { buildTestLeague, buildTestPlayer } from '../../../../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestPlayer,
+  buildTestSeasonTeamSnapshot,
+} from '../../../../test/fixtures';
 import { initializeSeason } from '../../season';
-import { loadHomeData, loadNewLeagueData } from '../season';
+import { loadHomeData } from './loadHomeData';
+import { loadNewLeagueData } from './loadNewLeagueData';
 import { loadPlayer } from '../team/loadPlayer';
 import { loadDashboard } from './loadDashboard';
 import { loadNonCon } from './loadNonCon';
@@ -184,6 +189,7 @@ const seedExistingLeague = async () => {
     position: 'qb',
     classYear: 'jr',
     rating: 80,
+    starter: true,
     games: 1,
     pass_yards: 0,
     pass_attempts: 0,
@@ -219,7 +225,11 @@ const seedExistingLeague = async () => {
     year: 2025,
     playoffTeams: 12,
     teamSnapshots: [
-      { teamId: 1, rating: 77, prestige: 3, ranking: 1, record: '1-0 (0-0)' },
+      buildTestSeasonTeamSnapshot({
+        rating: 77,
+        prestige: 3,
+        record: '1-0 (0-0)',
+      }),
     ],
     events: [],
     awards: [],

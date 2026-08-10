@@ -16,8 +16,8 @@ import {
   formatTeamStat,
   TEAM_STAT_COLUMNS,
   TEAM_STAT_GROUPS,
-} from './config';
-import type { TeamStatsViewProps } from './types';
+} from '../../components/stats/teamAggregateConfig';
+import type { TeamRankingsViewProps } from './types';
 
 const rankCellSx = {
   position: 'sticky',
@@ -37,14 +37,14 @@ const teamCellSx = {
   bgcolor: 'background.paper',
 };
 
-export const TeamStatsDesktopTable = ({
+export const TeamRankingsDesktopTable = ({
   rows,
   averages,
   sortKey,
   sortDirection,
   onSort,
   onTeamClick,
-}: TeamStatsViewProps) => (
+}: TeamRankingsViewProps) => (
   <DataTable ariaLabel="Team statistics" minWidth={1740}>
     <TableHead>
       <TableRow

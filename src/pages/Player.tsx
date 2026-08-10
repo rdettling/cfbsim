@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Box,
   FormControl,
   InputLabel,
   MenuItem,
@@ -15,7 +14,7 @@ import {
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadPlayer } from '../domain/league';
+import { loadPlayer } from '../domain/league/loaders/team/loadPlayer';
 import type { PlayerPageData } from '../types/pages';
 import { PlayerCareerDesktopTable } from './player-detail/PlayerCareerDesktopTable';
 import { PlayerCareerMobileList } from './player-detail/PlayerCareerMobileList';

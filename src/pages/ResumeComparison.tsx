@@ -3,7 +3,7 @@ import { Box, Button } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadResumeComparison } from '../domain/league';
+import { loadResumeComparison } from '../domain/league/loaders/playoff';
 import type { ResumeComparisonPageData } from '../types/pages';
 import { PostseasonHeader } from './playoff/PostseasonHeader';
 import { ResumeComparisonView } from './playoff/ResumeComparisonView';

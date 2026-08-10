@@ -37,11 +37,9 @@ import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
 import { handleSpecialWeeks } from './postseason';
 import { buildGameDetail, flattenGameDetail } from '../league/gameDetails';
 import { initializeSeasonSchedule } from '../league/seasonInitialization';
-import {
-  extractGameStoryFacts,
-  generateGameNews,
-  generateWeeklyRankingNews,
-} from '../news';
+import { extractGameStoryFacts } from '../news/facts';
+import { generateGameNews } from '../news/generate';
+import { generateWeeklyRankingNews } from '../news/rankings';
 
 const refreshFutureGameSnapshots = (
   games: GameRecord[],
@@ -216,7 +214,7 @@ export const finalizeGameSimulation = async (params: {
     preRecordB,
   } = params;
 
-  const logs = createGameLogsFromPlays(league, simGame, playRecords, starters);
+  const logs = createGameLogsFromPlays(simGame, playRecords, starters);
 
   updateTeamRecords([simGame], league.teams, await loadOddsContext(), league.info);
 
@@ -314,7 +312,7 @@ export const advanceWeeks = async (destWeek: number) => {
 
       const driveRecords = simDrives.map(drive => drive.record);
       const playRecords = simDrives.flatMap(drive => drive.plays);
-      const logs = createGameLogsFromPlays(league, simGameObj, playRecords, starters);
+      const logs = createGameLogsFromPlays(simGameObj, playRecords, starters);
 
       detailsToSave.push(
         buildGameDetail(

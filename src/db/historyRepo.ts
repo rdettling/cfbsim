@@ -45,6 +45,7 @@ const PLAYER_SEASON_KEYS = [
   'position',
   'classYear',
   'rating',
+  'starter',
   'games',
   ...PLAYER_SEASON_STAT_KEYS,
 ] as const;
@@ -57,6 +58,7 @@ export const isPlayerSeason = (value: unknown): value is PlayerSeasonStats =>
   typeof value.position === 'string' &&
   ['fr', 'so', 'jr', 'sr'].includes(String(value.classYear)) &&
   finite(value.rating) &&
+  typeof value.starter === 'boolean' &&
   Number.isInteger(value.games) &&
   Number(value.games) > 0 &&
   PLAYER_SEASON_STAT_KEYS.every(key => finite(value[key]));

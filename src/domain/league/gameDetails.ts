@@ -120,6 +120,7 @@ export const buildPlayerSeasons = (
           position: player.pos,
           classYear: player.year,
           rating: player.rating,
+          starter: player.starter,
           games: 0,
           ...Object.fromEntries(STAT_KEYS.map(key => [key, 0])),
         } as PlayerSeasonStats;

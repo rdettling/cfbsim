@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { LeagueStage } from '../../types/domain';
-import { buildTestLeague } from '../../test/fixtures';
+import { buildTestLeague, buildTestTeam } from '../../test/fixtures';
 import {
   buildNavigationModel,
+  getTeamContextName,
+  getUserTeamName,
   isGroupActive,
   isPathActive,
   type NavigationGroup,
@@ -64,8 +66,8 @@ describe('application navigation', () => {
       (entry): entry is NavigationGroup => entry.type === 'group'
     );
     expect(groups.find(group => group.id === 'stats')?.items.map(item => item.label)).toEqual([
-      'Team Stats',
-      'Player Stats',
+      'Team Rankings',
+      'Player Leaders',
       'Advanced Stats',
       'Ratings',
       'Awards',
@@ -113,5 +115,59 @@ describe('application navigation', () => {
     const schedule = teamGroup.items[0] as NavigationItem;
 
     expect(isPathActive(`${schedule.path}/2025`, schedule)).toBe(true);
+  });
+
+  it('places team statistics between roster and history', () => {
+    const league = buildTestLeague('season');
+    const navigation = buildNavigationModel({
+      team: league.teams[0],
+      currentStage: 'season',
+      info: league.info,
+      conferences: league.conferences,
+    });
+    const team = navigation.entries.find(
+      (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'team'
+    )!;
+
+    expect(team.items.map(item => [item.label, item.path])).toEqual([
+      ['Schedule', '/Test State/schedule'],
+      ['Roster', '/Test State/roster'],
+      ['Stats', '/Test State/stats'],
+      ['History', '/Test State/history'],
+    ]);
+    expect(isPathActive('/Test State/stats', team.items[2])).toBe(true);
+  });
+
+  it('keeps the viewed team across team pages and uses the user team elsewhere', () => {
+    const userTeam = buildTestTeam({ name: 'Alabama' });
+    const viewedTeam = buildTestTeam({ id: 2, name: 'Georgia' });
+    const league = buildTestLeague('season', {
+      info: { ...buildTestLeague('season').info, team: userTeam.name },
+      teams: [userTeam, viewedTeam],
+    });
+    const data = {
+      team: viewedTeam,
+      currentStage: league.info.stage,
+      info: league.info,
+      conferences: league.conferences,
+    };
+
+    const teamPageName = getTeamContextName(data, '/Georgia/stats');
+    const teamPageNavigation = buildNavigationModel(data, teamPageName);
+    const teamGroup = teamPageNavigation.entries.find(
+      (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'team',
+    )!;
+
+    expect(teamPageName).toBe('Georgia');
+    expect(getUserTeamName(data)).toBe('Alabama');
+    expect(teamGroup.items.map(item => item.path)).toEqual([
+      '/Georgia/schedule',
+      '/Georgia/roster',
+      '/Georgia/stats',
+      '/Georgia/history',
+    ]);
+    expect(getTeamContextName(data, '/Georgia/schedule/2025')).toBe('Georgia');
+    expect(getTeamContextName(data, '/rankings')).toBe('Alabama');
+    expect(getTeamContextName(data, '/players/10')).toBe('Alabama');
   });
 });

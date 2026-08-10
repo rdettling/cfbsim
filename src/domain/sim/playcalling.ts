@@ -1,4 +1,4 @@
-import type { ClockPlayContext, ClockState } from './clock';
+import type { ClockState } from './clock';
 import { SIM_TUNING } from './config';
 
 export const pointsNeeded = (lead: number, timeLeftSeconds: number) => {
@@ -22,7 +22,6 @@ export const pointsNeeded = (lead: number, timeLeftSeconds: number) => {
 export const choosePlayType = (
   down: number,
   yardsLeft: number,
-  tempo: ClockPlayContext['tempo'],
   lead: number,
   clock: ClockState
 ) => {

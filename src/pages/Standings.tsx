@@ -14,7 +14,7 @@ import { PageLayout } from '../components/layout/PageLayout';
 import { ConferenceLogo } from '../components/team/TeamLogo';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadStandings } from '../domain/league';
+import { loadStandings } from '../domain/league/loaders/standings';
 import type { StandingsPageData } from '../types/pages';
 import { StandingsDesktopTable } from './standings/StandingsDesktopTable';
 import { StandingsMobileList } from './standings/StandingsMobileList';

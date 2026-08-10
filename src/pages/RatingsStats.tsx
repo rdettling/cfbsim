@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadRatingsStats } from '../domain/league';
+import { loadRatingsStats } from '../domain/league/loaders/ratingsStats';
 import type { RatingsStatsPageData } from '../types/pages';
 import { RatingsStatsDesktop } from './ratings-stats/RatingsStatsDesktop';
 import { RatingsStatsMobile } from './ratings-stats/RatingsStatsMobile';

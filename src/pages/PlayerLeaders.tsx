@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import {
@@ -17,28 +18,36 @@ import {
 } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
+import { SeasonSelect } from '../components/stats/SeasonSelect';
 import { useDomainData } from '../domain/hooks';
-import { loadIndividualStats } from '../domain/league';
-import type { IndividualStatsPageData } from '../types/pages';
-import type { IndividualStatsCategory, SortDirection } from '../types/stats';
+import { loadPlayerLeaders } from '../domain/league/loaders/stats/playerLeaders';
+import type { PlayerLeadersPageData } from '../types/pages';
+import type {
+  PlayerLeaderboardCategory,
+  PlayerLeaderboardStatKey,
+  SortDirection,
+} from '../types/stats';
 import {
   CATEGORY_LABELS,
-  DEFAULT_INDIVIDUAL_SORT,
-  INDIVIDUAL_COLUMNS,
-} from './individual-stats/config';
-import { IndividualStatsDesktopTable } from './individual-stats/IndividualStatsDesktopTable';
-import { IndividualStatsMobileList } from './individual-stats/IndividualStatsMobileList';
+  DEFAULT_PLAYER_LEADER_SORT,
+  PLAYER_LEADER_COLUMNS,
+} from './player-leaders/config';
+import { PlayerLeadersDesktopTable } from './player-leaders/PlayerLeadersDesktopTable';
+import { PlayerLeadersMobileList } from './player-leaders/PlayerLeadersMobileList';
 
-const IndividualStats = () => {
-  const [category, setCategory] = useState<IndividualStatsCategory>('passing');
-  const [sortKey, setSortKey] = useState(DEFAULT_INDIVIDUAL_SORT.passing);
+const PlayerLeaders = () => {
+  const { year } = useParams();
+  const navigate = useNavigate();
+  const [category, setCategory] = useState<PlayerLeaderboardCategory>('passing');
+  const [sortKey, setSortKey] = useState(DEFAULT_PLAYER_LEADER_SORT.passing);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const { data, loading, error } = useDomainData<IndividualStatsPageData>({
-    fetcher: loadIndividualStats,
+  const { data, loading, error } = useDomainData<PlayerLeadersPageData>({
+    fetcher: () => loadPlayerLeaders(year ? Number(year) : undefined),
+    deps: [year],
   });
-  const columns = INDIVIDUAL_COLUMNS[category];
+  const columns = PLAYER_LEADER_COLUMNS[category];
 
   const rows = useMemo(() => {
     if (!data) return [];
@@ -50,22 +59,25 @@ const IndividualStats = () => {
         pos: player.pos,
         team: player.team,
         gamesPlayed: player.gamesPlayed,
-        stats: Object.fromEntries(Object.entries(player.stats)) as Record<string, number>,
+        stats: player.stats,
       }))
       .sort((a, b) => {
         const difference = (a.stats[sortKey] ?? 0) - (b.stats[sortKey] ?? 0);
-        return sortDirection === 'asc' ? difference : -difference;
+        if (difference !== 0) {
+          return sortDirection === 'asc' ? difference : -difference;
+        }
+        return `${a.last},${a.first}`.localeCompare(`${b.last},${b.first}`);
       })
       .map((player, index) => ({ ...player, rank: index + 1 }));
   }, [category, data, sortDirection, sortKey]);
 
-  const handleCategoryChange = (nextCategory: IndividualStatsCategory) => {
+  const handleCategoryChange = (nextCategory: PlayerLeaderboardCategory) => {
     setCategory(nextCategory);
-    setSortKey(DEFAULT_INDIVIDUAL_SORT[nextCategory]);
+    setSortKey(DEFAULT_PLAYER_LEADER_SORT[nextCategory]);
     setSortDirection('desc');
   };
 
-  const handleSort = (key: string) => {
+  const handleSort = (key: PlayerLeaderboardStatKey) => {
     if (key === sortKey) {
       setSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'));
     } else {
@@ -110,7 +122,7 @@ const IndividualStats = () => {
           >
             <Box>
               <Typography component="h1" variant="h4">
-                Individual Statistics
+                Player Leaders
               </Typography>
               <Typography
                 variant="body2"
@@ -118,13 +130,27 @@ const IndividualStats = () => {
                   color: 'text.secondary',
                 }}
               >
-                {data.info.currentYear} season · Week {data.info.currentWeek}
+                {data.selectedYear === data.info.currentYear
+                  ? `${data.selectedYear} season · Week ${data.info.currentWeek}`
+                  : `${data.selectedYear} season · Final`}
               </Typography>
             </Box>
-            <FormControl size="small" sx={{ display: { xs: 'flex', md: 'none' }, minWidth: 220 }}>
-              <InputLabel id="individual-stat-sort-label">Rank by</InputLabel>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <SeasonSelect
+                years={data.years}
+                selectedYear={data.selectedYear}
+                onChange={selectedYear =>
+                  navigate(
+                    selectedYear === data.info.currentYear
+                      ? '/stats/players'
+                      : `/stats/players/${selectedYear}`,
+                  )
+                }
+              />
+              <FormControl size="small" sx={{ display: { xs: 'flex', md: 'none' }, minWidth: 220 }}>
+              <InputLabel id="player-leader-sort-label">Rank by</InputLabel>
               <Select
-                labelId="individual-stat-sort-label"
+                labelId="player-leader-sort-label"
                 value={sortKey}
                 label="Rank by"
                 onChange={(event) => handleSort(event.target.value)}
@@ -135,7 +161,8 @@ const IndividualStats = () => {
                   </MenuItem>
                 ))}
               </Select>
-            </FormControl>
+              </FormControl>
+            </Stack>
           </Stack>
 
           <Stack
@@ -149,13 +176,13 @@ const IndividualStats = () => {
           >
             <Tabs
               value={category}
-              onChange={(_, value: IndividualStatsCategory) => handleCategoryChange(value)}
-              aria-label="Individual statistics category"
+              onChange={(_, value: PlayerLeaderboardCategory) => handleCategoryChange(value)}
+              aria-label="Player leader category"
               variant="scrollable"
               scrollButtons={false}
               sx={{ minHeight: 40, flex: 1 }}
             >
-              {(Object.keys(CATEGORY_LABELS) as IndividualStatsCategory[]).map((key) => (
+              {(Object.keys(CATEGORY_LABELS) as PlayerLeaderboardCategory[]).map((key) => (
                 <Tab key={key} value={key} label={CATEGORY_LABELS[key]} sx={{ minHeight: 40 }} />
               ))}
             </Tabs>
@@ -172,7 +199,7 @@ const IndividualStats = () => {
 
           {rows.length > 0 ? (
             <>
-              <IndividualStatsDesktopTable
+              <PlayerLeadersDesktopTable
                 rows={rows}
                 columns={columns}
                 sortKey={sortKey}
@@ -180,7 +207,7 @@ const IndividualStats = () => {
                 onSort={handleSort}
                 onTeamClick={handleTeamClick}
               />
-              <IndividualStatsMobileList
+              <PlayerLeadersMobileList
                 rows={rows}
                 columns={columns}
                 sortKey={sortKey}
@@ -210,6 +237,11 @@ const IndividualStats = () => {
             teamName={selectedTeam}
             open={modalOpen}
             onClose={() => setModalOpen(false)}
+            statsYear={
+              data.selectedYear === data.info.currentYear
+                ? undefined
+                : data.selectedYear
+            }
           />
         </>
       )}
@@ -217,4 +249,4 @@ const IndividualStats = () => {
   );
 };
 
-export default IndividualStats;
+export default PlayerLeaders;

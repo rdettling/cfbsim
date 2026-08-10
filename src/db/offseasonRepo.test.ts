@@ -7,7 +7,11 @@ import {
   OffseasonStageMismatchError,
   type LeagueState,
 } from '../types/league';
-import { buildTestLeague, buildTestPlayer } from '../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestPlayer,
+  buildTestSeasonTeamSnapshot,
+} from '../test/fixtures';
 import { buildGameDetail, buildPlayerSeasons } from '../domain/league/gameDetails';
 
 const resetDatabase = async () => {
@@ -241,7 +245,7 @@ describe('commitOffseasonTransition', () => {
       year: 2025,
       playoffTeams: 12 as const,
       teamSnapshots: [
-        { teamId: 1, rating: 80, prestige: 4, ranking: 1, record: '12-0 (8-0)' },
+        buildTestSeasonTeamSnapshot(),
       ],
       events: [{ type: 'playoff_semifinal' as const, gameId: 3 }],
       awards: [],

@@ -1,7 +1,7 @@
 import { PageLayout } from '../components/layout/PageLayout';
 import RoadmapPageState from '../components/layout/RoadmapPageState';
 import { useDomainData } from '../domain/hooks';
-import { loadPostseasonProjections } from '../domain/league';
+import { loadPostseasonProjections } from '../domain/league/loaders/roadmap';
 import type { PostseasonProjectionsPageData } from '../types/pages';
 
 const PostseasonProjections = () => {

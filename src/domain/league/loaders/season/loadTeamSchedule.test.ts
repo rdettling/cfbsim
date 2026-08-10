@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSeasonMemory } from '../../../../db/seasonMemoryRepo';
 import { getAllGames } from '../../../../db/simRepo';
-import { buildTestLeague, buildTestTeam } from '../../../../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestSeasonTeamSnapshot,
+  buildTestTeam,
+} from '../../../../test/fixtures';
 import type { GameRecord } from '../../../../types/db';
 import { loadLeagueOrThrow } from '../../leagueStore';
 import { loadTeamSchedule } from './loadTeamSchedule';
@@ -95,20 +99,20 @@ describe('loadTeamSchedule', () => {
       year: 2025,
       playoffTeams: 12,
       teamSnapshots: [
-        {
+        buildTestSeasonTeamSnapshot({
           teamId: 1,
           rating: 77,
           prestige: 3,
           ranking: 8,
           record: '9-4 (6-2)',
-        },
-        {
+        }),
+        buildTestSeasonTeamSnapshot({
           teamId: 2,
           rating: 70,
           prestige: 2,
           ranking: 22,
           record: '7-5 (4-4)',
-        },
+        }),
       ],
       events: [],
       awards: [],
@@ -153,13 +157,13 @@ describe('loadTeamSchedule', () => {
     vi.mocked(getSeasonMemory).mockResolvedValue({
       year: 2025,
       playoffTeams: 12,
-      teamSnapshots: [{
+      teamSnapshots: [buildTestSeasonTeamSnapshot({
         teamId: 2,
         rating: 70,
         prestige: 2,
         ranking: 22,
         record: '7-5 (4-4)',
-      }],
+      })],
       events: [],
       awards: [],
     });
@@ -173,13 +177,13 @@ describe('loadTeamSchedule', () => {
     vi.mocked(getSeasonMemory).mockResolvedValue({
       year: 2025,
       playoffTeams: 12,
-      teamSnapshots: [{
+      teamSnapshots: [buildTestSeasonTeamSnapshot({
         teamId: 1,
         rating: 77,
         prestige: 3,
         ranking: 8,
         record: '9-4 (6-2)',
-      }],
+      })],
       events: [],
       awards: [],
     });

@@ -5,7 +5,7 @@ import { TeamHeader } from '../components/team/TeamHeader';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { getStageDefinition } from '../constants/stages';
 import { useDomainData } from '../domain/hooks';
-import { loadDashboard } from '../domain/league';
+import { loadDashboard } from '../domain/league/loaders/season/loadDashboard';
 import type { DashboardPageData } from '../types/pages';
 import { DashboardGamesPanel } from './dashboard/DashboardGamesPanel';
 import { DashboardNewsPanel } from './dashboard/DashboardNewsPanel';

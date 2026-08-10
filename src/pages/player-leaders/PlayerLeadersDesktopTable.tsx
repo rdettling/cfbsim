@@ -12,8 +12,8 @@ import {
 import { TeamLink } from '../../components/team/TeamLink';
 import { TeamLogo } from '../../components/team/TeamLogo';
 import { DataTable } from '../../components/ui/DataTable';
-import { formatIndividualStat } from './config';
-import type { IndividualStatsViewProps } from './types';
+import { formatPlayerLeaderboardStat } from './config';
+import type { PlayerLeadersViewProps } from './types';
 
 const rankCellSx = {
   position: 'sticky',
@@ -40,15 +40,15 @@ const teamCellSx = {
   bgcolor: 'background.paper',
 };
 
-export const IndividualStatsDesktopTable = ({
+export const PlayerLeadersDesktopTable = ({
   rows,
   columns,
   sortKey,
   sortDirection,
   onSort,
   onTeamClick,
-}: IndividualStatsViewProps) => (
-  <DataTable ariaLabel="Individual statistics" minWidth={1120}>
+}: PlayerLeadersViewProps) => (
+  <DataTable ariaLabel="Player leaders" minWidth={1120}>
     <TableHead>
       <TableRow sx={{ bgcolor: 'background.default' }}>
         <TableCell align="center" sx={{ ...rankCellSx, zIndex: 4, bgcolor: 'background.default' }}>Rank</TableCell>
@@ -99,7 +99,7 @@ export const IndividualStatsDesktopTable = ({
               align="right"
               sx={sortKey === column.key ? { fontWeight: 600, bgcolor: 'action.hover' } : undefined}
             >
-              {formatIndividualStat(row.stats[column.key] ?? 0, column)}
+              {formatPlayerLeaderboardStat(row.stats[column.key] ?? 0, column)}
             </TableCell>
           ))}
         </TableRow>

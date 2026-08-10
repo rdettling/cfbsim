@@ -7,6 +7,7 @@ export const ROUTES = {
   RANKINGS: '/rankings',
   TEAM_SCHEDULE: '/:teamName/schedule',
   TEAM_ROSTER: '/:teamName/roster',
+  TEAM_STATS: '/:teamName/stats/:year?',
   TEAM_HISTORY: '/:teamName/history',
   PLAYOFF: '/playoff',
   PLAYOFF_PICTURE: '/playoff/picture',
@@ -17,9 +18,9 @@ export const ROUTES = {
   PLAYER: '/players/:playerId',
   WEEK_SCHEDULE: '/schedule/:week',
   GAME: '/game/:id',
-  TEAM_STATS: '/stats/team',
+  TEAM_RANKINGS: '/stats/teams/:year?',
   ADVANCED_STATS: '/stats/advanced',
-  INDIVIDUAL_STATS: '/stats/individual',
+  PLAYER_LEADERS: '/stats/players/:year?',
   RATINGS_STATS: '/stats/ratings',
   SEASON_SUMMARY: '/summary',
   ROSTER_PROGRESSION: '/roster_progression',
@@ -29,3 +30,6 @@ export const ROUTES = {
   REALIGNMENT: '/realignment',
   AWARDS: '/awards',
 } as const;
+
+export const getTeamStatsPath = (teamName: string, year?: number) =>
+  `/${teamName}/stats${year === undefined ? '' : `/${year}`}`;

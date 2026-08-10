@@ -4,7 +4,7 @@ import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadSeasonSummary } from '../domain/league';
+import { loadSeasonSummary } from '../domain/league/loaders/offseason';
 import type { SeasonSummaryPageData } from '../types/pages';
 import { SeasonAwardsPanel } from './season-summary/SeasonAwardsPanel';
 import { SeasonOverview } from './season-summary/SeasonOverview';

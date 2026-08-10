@@ -1,5 +1,5 @@
 import { getNewsByYear } from '../../../../db/newsRepo';
-import { sortNewsItems } from '../../../news';
+import { sortNewsItems } from '../../../news/ordering';
 import { loadLeagueOrThrow } from '../../leagueStore';
 import { getUserTeam } from './shared';
 

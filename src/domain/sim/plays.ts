@@ -49,7 +49,6 @@ export const chooseReceiver = (candidates: PlayerRecord[], ratingExponent = 4) =
 export const formatPlayText = (
   play: PlayRecord,
   offense: Team,
-  defense: Team,
   starters: StartersCache
 ) => {
   const rb = starters.byTeamPos.get(`${offense.id}:rb`) ?? [];

@@ -1,7 +1,7 @@
 import { PageLayout } from '../components/layout/PageLayout';
 import RoadmapPageState from '../components/layout/RoadmapPageState';
 import { useDomainData } from '../domain/hooks';
-import { loadAdvancedStats } from '../domain/league';
+import { loadAdvancedStats } from '../domain/league/loaders/roadmap';
 import type { AdvancedStatsPageData } from '../types/pages';
 
 const AdvancedStats = () => {

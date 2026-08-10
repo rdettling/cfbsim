@@ -4,13 +4,13 @@ import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
+import { listAvailableTeams } from '../domain/league/loaders/season/listAvailableTeams';
+import { loadNonCon } from '../domain/league/loaders/season/loadNonCon';
 import {
-  listAvailableTeams,
-  loadNonCon,
   dismissPendingRivalry,
   removePreseasonGame,
-  scheduleNonConGame,
-} from '../domain/league';
+} from '../domain/league/loaders/season/removePreseasonScheduleItem';
+import { scheduleNonConGame } from '../domain/league/loaders/season/scheduleNonConGame';
 import type { NonConPageData } from '../types/pages';
 import { NonConWorkspace } from './noncon/NonConWorkspace';
 import { ScheduleOpponentDialog } from './noncon/ScheduleOpponentDialog';

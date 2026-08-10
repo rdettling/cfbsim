@@ -11,16 +11,19 @@ import {
 } from '../../constants/stages';
 import {
   advanceOffseasonStage,
-  initializeSeason,
   isOffseasonAdvanceStage,
+} from '../../domain/league/stages';
+import { initializeSeason } from '../../domain/league/season';
+import {
   OffseasonConfigurationConflictError,
   OffseasonStageMismatchError,
-} from '../../domain/league';
+} from '../../types/league';
 import DesktopNavigation from './DesktopNavigation';
 import MobileNavigation from './MobileNavigation';
 import {
   buildNavigationModel,
-  getNavigationTeamName,
+  getTeamContextName,
+  getUserTeamName,
   normalizePath,
   type AppNavigationData,
   type StageAdvanceAction,
@@ -48,11 +51,12 @@ const AppNavigation = ({
   const [advanceError, setAdvanceError] = useState<string | null>(null);
   const stageAdvanceLock = useRef(false);
 
+  const userTeamName = getUserTeamName(data);
+  const teamContextName = getTeamContextName(data, location.pathname);
   const model = useMemo(
-    () => buildNavigationModel(data),
-    [data.team, data.info.lastWeek, data.info.team, data.conferences],
+    () => buildNavigationModel(data, teamContextName),
+    [data.team, data.info.lastWeek, data.info.team, data.conferences, teamContextName],
   );
-  const navigationTeamName = getNavigationTeamName(data);
   const currentPath = normalizePath(location.pathname);
   const currentStageInfo = getStageDefinition(data.currentStage);
   const nextStageInfo = getNextStageDefinition(data.currentStage);
@@ -140,7 +144,7 @@ const AppNavigation = ({
       >
         <DesktopNavigation
           data={data}
-          teamName={navigationTeamName}
+          teamName={userTeamName}
           model={model}
           currentPath={currentPath}
           currentStageInfo={currentStageInfo}
@@ -159,7 +163,7 @@ const AppNavigation = ({
         />
         <MobileNavigation
           data={data}
-          teamName={navigationTeamName}
+          teamName={userTeamName}
           model={model}
           currentPath={currentPath}
           currentStageInfo={currentStageInfo}

@@ -381,7 +381,6 @@ export const buildDynastySeriesContext = ({
   }
   const lastMemory = memories.find(memory => memory.year === last.year);
   const lastEvent = eventForGame(lastMemory, last.id);
-  const opponent = teamsById.get(opponentTeamId)?.name ?? 'this opponent';
   let callback: string;
   if (lastEvent && PLAYOFF_TYPES.has(lastEvent.type)) {
     callback = `Postseason rematch of the ${last.year} meeting.`;

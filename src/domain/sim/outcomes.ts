@@ -34,7 +34,6 @@ const executionFactor = (offense: Team, defense: Team, game?: SimGame) => {
 };
 
 const passYards = (offense: Team, defense: Team, game?: SimGame) => {
-  const { offenseRating, defenseRating } = adjustedRatings(offense, defense, game);
   const meanYardage = SIM_TUNING.outcomes.pass.baseMean;
   const rawYardage = gaussian(meanYardage, SIM_TUNING.outcomes.pass.stdDev);
   if (rawYardage < 0) return Math.round(rawYardage);

@@ -3,7 +3,7 @@ import { Alert, Box } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadPlayoffPicture } from '../domain/league';
+import { loadPlayoffPicture } from '../domain/league/loaders/playoff';
 import type { PlayoffPicturePageData } from '../types/pages';
 import { PostseasonPictureView } from './playoff/PostseasonPictureView';
 import { PostseasonHeader } from './playoff/PostseasonHeader';

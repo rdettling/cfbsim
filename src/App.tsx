@@ -19,8 +19,9 @@ const TeamHistory = lazy(() => import('./pages/TeamHistory'));
 const Awards = lazy(() => import('./pages/Awards'));
 const SeasonSummary = lazy(() => import('./pages/SeasonSummary'));
 const GamePage = lazy(() => import('./pages/game/GamePage'));
+const TeamRankings = lazy(() => import('./pages/TeamRankings'));
+const PlayerLeaders = lazy(() => import('./pages/PlayerLeaders'));
 const TeamStats = lazy(() => import('./pages/TeamStats'));
-const IndividualStats = lazy(() => import('./pages/IndividualStats'));
 const Player = lazy(() => import('./pages/Player'));
 const Realignment = lazy(() => import('./pages/Realignment'));
 const RosterProgression = lazy(() => import('./pages/RosterProgression'));
@@ -49,6 +50,7 @@ const App = () => {
             <Route path={ROUTES.TEAM_SCHEDULE} element={<TeamSchedule />} />
             <Route path="/:teamName/schedule/:year" element={<TeamSchedule />} />
             <Route path={ROUTES.TEAM_ROSTER} element={<Roster />} />
+            <Route path={ROUTES.TEAM_STATS} element={<TeamStats />} />
             <Route path={ROUTES.TEAM_HISTORY} element={<TeamHistory />} />
             <Route path={ROUTES.RATINGS_STATS} element={<RatingsStats />} />
             <Route path={ROUTES.RANKINGS} element={<Rankings />} />
@@ -74,11 +76,11 @@ const App = () => {
             <Route path={ROUTES.BOWL_GAMES} element={<BowlGames />} />
             <Route path={ROUTES.GAME} element={<GamePage />} />
             <Route path={ROUTES.PLAYER} element={<Player />} />
-            <Route path={ROUTES.TEAM_STATS} element={<TeamStats />} />
+            <Route path={ROUTES.TEAM_RANKINGS} element={<TeamRankings />} />
             <Route path={ROUTES.ADVANCED_STATS} element={<AdvancedStats />} />
             <Route
-              path={ROUTES.INDIVIDUAL_STATS}
-              element={<IndividualStats />}
+              path={ROUTES.PLAYER_LEADERS}
+              element={<PlayerLeaders />}
             />
           </Routes>
         </Suspense>

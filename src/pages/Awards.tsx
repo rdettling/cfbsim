@@ -3,7 +3,7 @@ import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadAwards } from '../domain/league';
+import { loadAwards } from '../domain/league/loaders/offseason';
 import type { AwardsPageData } from '../types/pages';
 import { AwardDetail } from './awards/AwardDetail';
 import { AwardsCategoryNavigation } from './awards/AwardsCategoryNavigation';

@@ -1,4 +1,3 @@
-import type { LeagueState } from '../../types/league';
 import type { PlayoffTeamCount } from '../../types/domain';
 
 export const REGULAR_SEASON_WEEKS = 14;

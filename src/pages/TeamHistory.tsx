@@ -4,7 +4,7 @@ import { Paper, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamHeader } from '../components/team/TeamHeader';
 import { useDomainData } from '../domain/hooks';
-import { loadTeamHistory } from '../domain/league';
+import { loadTeamHistory } from '../domain/league/loaders/team/loadTeamHistory';
 import type { TeamHistoryPageData } from '../types/pages';
 import { TeamHistoryDesktopTable } from './team-history/TeamHistoryDesktopTable';
 import { TeamHistoryMobileList } from './team-history/TeamHistoryMobileList';

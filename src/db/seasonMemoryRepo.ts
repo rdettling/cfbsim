@@ -57,10 +57,46 @@ const isAward = (value: unknown): value is SeasonAwardWinner =>
   Number.isInteger(value.playerId) &&
   Number.isInteger(value.teamId);
 
+const TEAM_TOTAL_KEYS = [
+  'games',
+  'points',
+  'pass_completions',
+  'pass_attempts',
+  'pass_yards',
+  'pass_touchdowns',
+  'rush_attempts',
+  'rush_yards',
+  'rush_touchdowns',
+  'plays',
+  'first_downs_pass',
+  'first_downs_rush',
+  'fumbles',
+  'interceptions',
+] as const;
+
+const isTeamTotals = (value: unknown) =>
+  isRecord(value) &&
+  hasExactKeys(value, TEAM_TOTAL_KEYS) &&
+  TEAM_TOTAL_KEYS.every(key => Number.isInteger(value[key])) &&
+  TEAM_TOTAL_KEYS.every(key =>
+    key === 'pass_yards' || key === 'rush_yards' || Number(value[key]) >= 0,
+  );
+
 const isTeamSnapshot = (value: unknown): value is SeasonTeamSnapshot =>
   isRecord(value) &&
-  hasExactKeys(value, ['teamId', 'rating', 'prestige', 'ranking', 'record']) &&
+  hasExactKeys(value, [
+    'teamId',
+    'conference',
+    'rating',
+    'prestige',
+    'ranking',
+    'record',
+    'offense',
+    'defense',
+  ]) &&
   Number.isInteger(value.teamId) &&
+  typeof value.conference === 'string' &&
+  value.conference.trim().length > 0 &&
   Number.isInteger(value.rating) &&
   typeof value.prestige === 'number' &&
   Number.isInteger(value.prestige) &&
@@ -70,7 +106,9 @@ const isTeamSnapshot = (value: unknown): value is SeasonTeamSnapshot =>
   Number.isInteger(value.ranking) &&
   value.ranking > 0 &&
   typeof value.record === 'string' &&
-  value.record.trim().length > 0;
+  value.record.trim().length > 0 &&
+  isTeamTotals(value.offense) &&
+  isTeamTotals(value.defense);
 
 export function assertCurrentSeasonMemory(
   value: unknown,

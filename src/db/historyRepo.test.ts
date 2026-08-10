@@ -58,6 +58,7 @@ describe('historical data integrity', () => {
     ).toBe(true);
     expect(isGameDetail({ ...detail, legacyPlays: [] })).toBe(false);
     expect(isPlayerSeason({ ...season, completionPercentage: 0 })).toBe(false);
+    expect(isPlayerSeason({ ...season, starter: undefined })).toBe(false);
   });
 
   it('rejects duplicate identities and dangling references', () => {

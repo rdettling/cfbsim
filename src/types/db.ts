@@ -115,6 +115,7 @@ export type PlayerSeasonStats = Omit<GameLogRecord, 'gameId'> & {
   position: string;
   classYear: PlayerRecord['year'];
   rating: number;
+  starter: boolean;
   games: number;
 };
 

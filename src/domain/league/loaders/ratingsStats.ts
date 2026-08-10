@@ -1,35 +1,12 @@
-import { getAllGames } from '../../../db/simRepo';
 import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
-import { loadLeagueOrThrow } from '../leagueStore';
-import type { Team } from '../../../types/domain';
 import type {
   RatingsStatsPageResult,
   StarRating,
   StarRatingRecord,
 } from '../../../types/stats';
-import { buildScheduleGameForTeam } from '../utils/scheduleView';
-export { loadTeamStats } from './stats/teamStats';
-export { loadIndividualStats } from './stats/individualStats';
-
-const sortStandings = (teams: Team[]) => {
-  return teams.slice().sort((a, b) => {
-    const aConfGames = a.confWins + a.confLosses;
-    const bConfGames = b.confWins + b.confLosses;
-    const aConfPct = aConfGames ? a.confWins / aConfGames : 0;
-    const bConfPct = bConfGames ? b.confWins / bConfGames : 0;
-    if (bConfPct !== aConfPct) return bConfPct - aConfPct;
-    if (b.confWins !== a.confWins) return b.confWins - a.confWins;
-    if (a.confLosses !== b.confLosses) return a.confLosses - b.confLosses;
-    if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
-    if (a.totalLosses !== b.totalLosses) return a.totalLosses - b.totalLosses;
-    return a.ranking - b.ranking;
-  });
-};
 
 export const loadRatingsStats = async (): Promise<RatingsStatsPageResult> => {
-  const { league, players: persistedPlayers } =
-    await loadLeaguePlayersSnapshot();
-  const players = persistedPlayers;
+  const { league, players } = await loadLeaguePlayersSnapshot();
   const teams = league.teams;
 
   const totalCounts: StarRatingRecord = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -137,59 +114,5 @@ export const loadRatingsStats = async (): Promise<RatingsStatsPageResult> => {
     prestige_stars_table,
     conferences: league.conferences,
     teams: league.teams.slice().sort((a, b) => b.rating - a.rating),
-  };
-};
-
-export const loadStandings = async (conferenceName: string) => {
-  const league = await loadLeagueOrThrow();
-
-  const normalized = conferenceName.toLowerCase();
-  const isIndependent = normalized === 'independent';
-  const conference = isIndependent
-    ? null
-    : league.conferences.find(conf => conf.confName.toLowerCase() === normalized) ?? null;
-
-  const teams = isIndependent
-    ? league.teams.filter(team => team.conference === 'Independent')
-    : league.teams.filter(team => team.conference === conference?.confName);
-
-  const games = (await getAllGames()).filter(game => game.year === league.info.currentYear);
-  const teamsById = new Map(league.teams.map(team => [team.id, team]));
-
-  const rankedTeams = sortStandings(teams).map(team => {
-    const lastWeek = league.info.currentWeek - 1;
-    const currentWeek = league.info.currentWeek;
-    const lastGameRecord = games.find(
-      game =>
-        game.weekPlayed === lastWeek &&
-        (game.teamAId === team.id || game.teamBId === team.id)
-    );
-    const nextGameRecord = games.find(
-      game =>
-        game.weekPlayed === currentWeek &&
-        (game.teamAId === team.id || game.teamBId === team.id)
-    );
-
-    const last_game =
-      lastGameRecord && lastGameRecord.winnerId
-        ? buildScheduleGameForTeam(team, lastGameRecord, teamsById)
-        : null;
-    const next_game = nextGameRecord
-      ? buildScheduleGameForTeam(team, nextGameRecord, teamsById)
-      : null;
-
-    return {
-      ...team,
-      last_game,
-      next_game,
-    };
-  });
-
-  return {
-    info: league.info,
-    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
-    conference: conference?.confName ?? 'Independent',
-    teams: rankedTeams,
-    conferences: league.conferences,
   };
 };

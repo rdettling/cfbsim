@@ -10,7 +10,6 @@ import {
   assertCurrentRosterState,
 } from '../../db/leagueRepo';
 import { ROUTES } from '../../constants/routes';
-import type { PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
 import {
   RecruitingConflictError,

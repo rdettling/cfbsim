@@ -1,4 +1,3 @@
-import type { Team } from '../../../types/domain';
 import { getAllGames } from '../../../db/simRepo';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';

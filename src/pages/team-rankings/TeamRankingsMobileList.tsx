@@ -3,15 +3,20 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Collapse, IconButton, Paper, Stack, Typography } from '@mui/material';
 import { TeamLink } from '../../components/team/TeamLink';
 import { TeamLogo } from '../../components/team/TeamLogo';
-import { formatTeamStat, getTeamStatColumn, TEAM_STAT_COLUMNS, TEAM_STAT_GROUPS } from './config';
-import type { TeamStatsViewProps } from './types';
+import {
+  formatTeamStat,
+  getTeamStatColumn,
+  TEAM_STAT_COLUMNS,
+  TEAM_STAT_GROUPS,
+} from '../../components/stats/teamAggregateConfig';
+import type { TeamRankingsViewProps } from './types';
 
-export const TeamStatsMobileList = ({
+export const TeamRankingsMobileList = ({
   rows,
   averages,
   sortKey,
   onTeamClick,
-}: TeamStatsViewProps) => {
+}: TeamRankingsViewProps) => {
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const selectedColumn = getTeamStatColumn(sortKey);
 

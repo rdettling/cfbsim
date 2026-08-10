@@ -60,13 +60,6 @@ const story = (overrides: Partial<GameNewsItem> = {}): GameNewsItem => ({
   ...overrides,
 });
 
-const detail: GameDetailRecord = {
-  gameId: 4,
-  year: 2025,
-  drives: [],
-  playerStats: [],
-};
-
 const rankingStory = (): RankingNewsItem => ({
   id: 'rankings:2025:3',
   type: 'rankings',

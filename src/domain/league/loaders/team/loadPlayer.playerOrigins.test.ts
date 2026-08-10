@@ -42,6 +42,7 @@ describe('player origin loading', () => {
       position: historical.pos,
       classYear: 'sr',
       rating: historical.rating,
+      starter: true,
       games: 1,
     });
     await db.put('playerOrigins', {

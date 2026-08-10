@@ -11,7 +11,7 @@ import {
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamHeader } from '../components/team/TeamHeader';
 import { useDomainData } from '../domain/hooks';
-import { loadTeamRoster } from '../domain/league';
+import { loadTeamRoster } from '../domain/league/loaders/team/loadTeamRoster';
 import type { TeamRosterPageData } from '../types/pages';
 import { RosterDesktopTable } from './roster/RosterDesktopTable';
 import { RosterMobileList } from './roster/RosterMobileList';

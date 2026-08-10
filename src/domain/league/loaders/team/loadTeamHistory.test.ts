@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getHistoryData, getRivalriesData } from '../../../../db/baseData';
 import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
-import { getAllGameLogs, getGamesByTeam } from '../../../../db/simRepo';
-import { buildTestLeague } from '../../../../test/fixtures';
+import { getAllGameLogs, getAllPlays, getGamesByTeam } from '../../../../db/simRepo';
+import {
+  buildTestLeague,
+  buildTestSeasonTeamSnapshot,
+} from '../../../../test/fixtures';
 import { SeasonMemoryDataIntegrityError } from '../../../../types/memory';
 import { loadTeamHistory } from './loadTeamHistory';
 
@@ -40,7 +43,12 @@ describe('loadTeamHistory', () => {
       year: 2025,
       playoffTeams: 12,
       teamSnapshots: [
-        { teamId: 1, rating: 77, prestige: 3, ranking: 8, record: '9-4 (6-2)' },
+        buildTestSeasonTeamSnapshot({
+          rating: 77,
+          prestige: 3,
+          ranking: 8,
+          record: '9-4 (6-2)',
+        }),
       ],
       events: [],
       awards: [],
@@ -48,6 +56,7 @@ describe('loadTeamHistory', () => {
     vi.mocked(getRivalriesData).mockResolvedValue({ rivalries: [] });
     vi.mocked(getGamesByTeam).mockResolvedValue([]);
     vi.mocked(getAllGameLogs).mockResolvedValue([]);
+    vi.mocked(getAllPlays).mockResolvedValue([]);
   });
 
   it('uses snapshots for dynasty metrics and archives for pre-dynasty prestige', async () => {

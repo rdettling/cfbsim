@@ -36,14 +36,24 @@ export interface NavigationModel {
 
 export type StageInfo = StageDefinition;
 
-export const getNavigationTeamName = ({ team, info }: AppNavigationData) =>
+const isTeamContextPath = (pathname: string) =>
+  /^\/[^/]+\/(schedule|roster|stats|history)(?:\/|$)/i.test(
+    normalizePath(pathname),
+  );
+
+export const getUserTeamName = ({ team, info }: AppNavigationData) =>
   info.team || team.name;
+
+export const getTeamContextName = (
+  { team, info }: AppNavigationData,
+  pathname = '',
+) => isTeamContextPath(pathname) ? team.name : info.team || team.name;
 
 export const buildNavigationModel = ({
   team,
   info,
   conferences,
-}: AppNavigationData): NavigationModel => ({
+}: AppNavigationData, navigationTeamName = info.team || team.name): NavigationModel => ({
   entries: [
     { type: 'item', label: 'Dashboard', path: '/dashboard' },
     { type: 'item', label: 'News', path: '/news', match: 'prefix' },
@@ -53,9 +63,10 @@ export const buildNavigationModel = ({
       desktopLabel: 'Team',
       mobileLabel: 'Team',
       items: [
-        { type: 'item', label: 'Schedule', path: `/${info.team || team.name}/schedule`, match: 'prefix' },
-        { type: 'item', label: 'Roster', path: `/${info.team || team.name}/roster` },
-        { type: 'item', label: 'History', path: `/${info.team || team.name}/history` },
+        { type: 'item', label: 'Schedule', path: `/${navigationTeamName}/schedule`, match: 'prefix' },
+        { type: 'item', label: 'Roster', path: `/${navigationTeamName}/roster` },
+        { type: 'item', label: 'Stats', path: `/${navigationTeamName}/stats` },
+        { type: 'item', label: 'History', path: `/${navigationTeamName}/history` },
       ],
     },
     {
@@ -92,8 +103,8 @@ export const buildNavigationModel = ({
       desktopLabel: 'Stats',
       mobileLabel: 'Stats',
       items: [
-        { type: 'item', label: 'Team Stats', path: '/stats/team' },
-        { type: 'item', label: 'Player Stats', path: '/stats/individual' },
+        { type: 'item', label: 'Team Rankings', path: '/stats/teams' },
+        { type: 'item', label: 'Player Leaders', path: '/stats/players' },
         { type: 'item', label: 'Advanced Stats', path: '/stats/advanced' },
         { type: 'item', label: 'Ratings', path: '/stats/ratings' },
         { type: 'item', label: 'Awards', path: '/awards' },

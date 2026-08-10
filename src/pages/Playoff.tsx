@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadPlayoffBracket } from '../domain/league';
+import { loadPlayoffBracket } from '../domain/league/loaders/playoff';
 import type { PlayoffBracketPageData } from '../types/pages';
 import { PostseasonBracketView } from './playoff/PostseasonBracketView';
 import { PostseasonHeader } from './playoff/PostseasonHeader';

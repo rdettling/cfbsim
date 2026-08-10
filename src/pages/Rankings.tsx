@@ -3,7 +3,7 @@ import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadRankings } from '../domain/league';
+import { loadRankings } from '../domain/league/loaders/rankings';
 import type { RankingsPageData } from '../types/pages';
 import { RankingsDesktopTable } from './rankings/RankingsDesktopTable';
 import { RankingsMobileList } from './rankings/RankingsMobileList';

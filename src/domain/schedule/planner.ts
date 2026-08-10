@@ -1,7 +1,7 @@
 import type { ScheduleGame, Team } from '../../types/domain';
 import type { FullGame } from '../../types/scheduleTypes';
 import type { GameRecord } from '../../types/db';
-import { buildSchedule, buildUserScheduleFromGames } from './projection';
+import { buildUserScheduleFromGames } from './projection';
 
 const REGULAR_SEASON_WEEKS = 14;
 const REGULAR_SEASON_GAMES = 12;
@@ -109,7 +109,6 @@ const chooseHomeAway = (
   team: Team,
   opponent: Team,
   homeCounts: Map<number, number>,
-  awayCounts: Map<number, number>,
   year: number,
   seed: number,
 ) => {
@@ -204,7 +203,6 @@ export const fillUserSchedule = (
     teams.map(team => [team.id, new Set<number>()])
   );
   const homeCounts = new Map<number, number>(teams.map(team => [team.id, 0]));
-  const awayCounts = new Map<number, number>(teams.map(team => [team.id, 0]));
   const games: FullGame[] = [];
 
   fixedGames.forEach(game => {
@@ -222,9 +220,6 @@ export const fillUserSchedule = (
     scheduledOpponents.get(game.teamB.id)?.add(game.teamA.id);
     if (game.homeTeam) {
       homeCounts.set(game.homeTeam.id, (homeCounts.get(game.homeTeam.id) ?? 0) + 1);
-    }
-    if (game.awayTeam) {
-      awayCounts.set(game.awayTeam.id, (awayCounts.get(game.awayTeam.id) ?? 0) + 1);
     }
   });
 
@@ -244,7 +239,6 @@ export const fillUserSchedule = (
         userTeam,
         opponent,
         homeCounts,
-        awayCounts,
         year,
         seed,
       );
@@ -265,7 +259,6 @@ export const fillUserSchedule = (
     scheduledOpponents.get(userTeam.id)?.add(opponent.id);
     scheduledOpponents.get(opponent.id)?.add(userTeam.id);
     homeCounts.set(homeTeam.id, (homeCounts.get(homeTeam.id) ?? 0) + 1);
-    awayCounts.set(awayTeam.id, (awayCounts.get(awayTeam.id) ?? 0) + 1);
   });
 
   const conferences = Array.from(new Set(teams.map(team => team.conference))).filter(
@@ -352,7 +345,6 @@ export const fillUserSchedule = (
           team,
           opponent,
           homeCounts,
-          awayCounts,
           year,
           seed,
         );
@@ -360,7 +352,6 @@ export const fillUserSchedule = (
         scheduledOpponents.get(team.id)?.add(opponent.id);
         scheduledOpponents.get(opponent.id)?.add(team.id);
         homeCounts.set(homeTeam.id, (homeCounts.get(homeTeam.id) ?? 0) + 1);
-        awayCounts.set(awayTeam.id, (awayCounts.get(awayTeam.id) ?? 0) + 1);
       }
     }
   });
@@ -423,7 +414,6 @@ export const fillUserSchedule = (
         team,
         opponent,
         homeCounts,
-        awayCounts,
         year,
         seed,
       );
@@ -431,7 +421,6 @@ export const fillUserSchedule = (
       scheduledOpponents.get(team.id)?.add(opponent.id);
       scheduledOpponents.get(opponent.id)?.add(team.id);
       homeCounts.set(homeTeam.id, (homeCounts.get(homeTeam.id) ?? 0) + 1);
-      awayCounts.set(awayTeam.id, (awayCounts.get(awayTeam.id) ?? 0) + 1);
     }
   }
 

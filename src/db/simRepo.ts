@@ -149,6 +149,8 @@ export const getPlayerSeasons = async (playerId: number) =>
   (await getDb()).getAllFromIndex('playerSeasons', 'playerId', playerId);
 export const getPlayerSeasonsByYear = async (year: number) =>
   (await getDb()).getAllFromIndex('playerSeasons', 'year', year);
+export const getPlayerSeasonsByYearTeam = async (year: number, teamId: number) =>
+  (await getDb()).getAllFromIndex('playerSeasons', 'yearTeamId', [year, teamId]);
 export const getAllPlayerSeasons = async () => (await getDb()).getAll('playerSeasons');
 export const getHistoricalPlayer = async (playerId: number) =>
   (await getDb()).get('historicalPlayers', playerId);

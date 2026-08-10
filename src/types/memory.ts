@@ -1,4 +1,5 @@
 import type { PlayoffTeamCount } from './domain';
+import type { TeamAggregateTotals } from './stats';
 
 export const SEASON_MEMORY_EVENT_TYPES = [
   'conference_championship',
@@ -40,10 +41,13 @@ export interface SeasonAwardWinner {
 
 export interface SeasonTeamSnapshot {
   teamId: number;
+  conference: string;
   rating: number;
   prestige: number;
   ranking: number;
   record: string;
+  offense: TeamAggregateTotals;
+  defense: TeamAggregateTotals;
 }
 
 export interface SeasonMemory {

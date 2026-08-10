@@ -24,6 +24,7 @@ import { loadLeaguePlayersSnapshot } from '../../db/leagueRepo';
 import { buildSeasonMemory } from './memory';
 import {
   buildPlayerSeasons,
+  flattenGameDetail,
   selectRetainedGameIds,
 } from './gameDetails';
 import { prepareProgramEntryRosters } from '../rosterBootstrap';
@@ -78,13 +79,13 @@ export const advanceOffseasonStage = async (
         throw new Error(`Completed game ${missingDetail.id} has no detail record.`);
       }
       history = updateHistoryForSeason(league, historyData);
+      const flattenedDetails = details.map(flattenGameDetail);
       const memory = buildSeasonMemory(
         snapshot.league,
         games,
         snapshot.players,
-        details.flatMap(detail =>
-          detail.playerStats.map(log => ({ ...log, gameId: detail.gameId })),
-        ),
+        flattenedDetails.flatMap(detail => detail.logs),
+        flattenedDetails.flatMap(detail => detail.plays),
       );
       const playerSeasons = buildPlayerSeasons(
         league.info.currentYear,

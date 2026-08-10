@@ -3,6 +3,7 @@ import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
 import {
   getAllGameLogs,
+  getAllPlays,
   getGamesByTeam,
   getGamesByYear,
 } from '../../../../db/simRepo';
@@ -28,6 +29,7 @@ export const loadTeamHistory = async (teamName?: string) => {
     persistedMemories,
     rivalries,
     gameLogs,
+    plays,
   ] = await Promise.all([
     getHistoryData(),
     getGamesByTeam(team.id),
@@ -37,12 +39,13 @@ export const loadTeamHistory = async (teamName?: string) => {
     getAllSeasonMemories(),
     getRivalriesData(),
     getAllGameLogs(),
+    getAllPlays(),
   ]);
   const allGames = Array.from(
     new Map([...teamGames, ...currentYearGames].map(game => [game.id, game])).values(),
   );
   const currentMemory = league.info.stage === 'summary'
-    ? buildSeasonMemory(league, allGames, players, gameLogs)
+    ? buildSeasonMemory(league, allGames, players, gameLogs, plays)
     : null;
   const memories = currentMemory
     ? [

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTestPlayer } from '../../test/fixtures';
+import { buildTestPlayer, buildTestSeasonTeamSnapshot } from '../../test/fixtures';
 import type { DriveRecord, GameLogRecord, PlayRecord } from '../../types/db';
 import type { SeasonMemory } from '../../types/memory';
 import {
@@ -110,6 +110,7 @@ describe('game detail persistence projections', () => {
       year: 2025,
       playerId: 1,
       teamId: 1,
+      starter: true,
       games: 2,
     });
     PLAYER_SEASON_STAT_KEYS.forEach(key => {
@@ -123,7 +124,7 @@ describe('game detail persistence projections', () => {
       year: 2025,
       playoffTeams: 12,
       teamSnapshots: [
-        { teamId: 1, rating: 80, prestige: 4, ranking: 1, record: '12-0 (8-0)' },
+        buildTestSeasonTeamSnapshot(),
       ],
       events: [
         { type: 'conference_championship', gameId: 2, conferenceName: 'Big' },

@@ -1,73 +1,116 @@
 import type {
-  SortDirection,
-  TeamStatKey,
-  TeamStats,
-  TeamStatsMode,
+  TeamPlayerStatKey,
+  TeamPlayerStatsCategory,
+  TeamPlayerStatValues,
 } from '../../types/stats';
 
-export type TeamStatGroup =
-  | 'General'
-  | 'Passing'
-  | 'Rushing'
-  | 'Total Offense'
-  | 'First Downs'
-  | 'Turnovers';
+type TeamPlayerCompositeColumnKey = 'field_goals' | 'extra_points';
 
-export type TeamStatColumn = {
-  key: TeamStatKey;
+export type TeamPlayerStatColumn = {
+  key: TeamPlayerStatKey | TeamPlayerCompositeColumnKey;
+  sortKey: TeamPlayerStatKey;
   label: string;
   mobileLabel: string;
-  group: TeamStatGroup;
-  width: number;
+  format?: 'integer' | 'decimal' | 'percent' | 'field-goals' | 'extra-points';
 };
 
-export const TEAM_STAT_COLUMNS: TeamStatColumn[] = [
-  { key: 'games', label: 'G', mobileLabel: 'Games', group: 'General', width: 64 },
-  { key: 'ppg', label: 'PPG', mobileLabel: 'Points / game', group: 'General', width: 72 },
-  { key: 'pass_cpg', label: 'CMP', mobileLabel: 'Completions / game', group: 'Passing', width: 72 },
-  { key: 'pass_apg', label: 'ATT', mobileLabel: 'Attempts / game', group: 'Passing', width: 72 },
-  { key: 'comp_percent', label: 'PCT', mobileLabel: 'Completion %', group: 'Passing', width: 72 },
-  { key: 'pass_ypg', label: 'YDS', mobileLabel: 'Passing yards / game', group: 'Passing', width: 76 },
-  { key: 'pass_tdpg', label: 'TD', mobileLabel: 'Passing TD / game', group: 'Passing', width: 68 },
-  { key: 'rush_apg', label: 'ATT', mobileLabel: 'Attempts / game', group: 'Rushing', width: 72 },
-  { key: 'rush_ypg', label: 'YDS', mobileLabel: 'Rushing yards / game', group: 'Rushing', width: 76 },
-  { key: 'rush_ypc', label: 'AVG', mobileLabel: 'Yards / carry', group: 'Rushing', width: 72 },
-  { key: 'rush_tdpg', label: 'TD', mobileLabel: 'Rushing TD / game', group: 'Rushing', width: 68 },
-  { key: 'playspg', label: 'Plays', mobileLabel: 'Plays / game', group: 'Total Offense', width: 76 },
-  { key: 'yardspg', label: 'YDS', mobileLabel: 'Yards / game', group: 'Total Offense', width: 76 },
-  { key: 'ypp', label: 'AVG', mobileLabel: 'Yards / play', group: 'Total Offense', width: 72 },
-  { key: 'first_downs_pass', label: 'Pass', mobileLabel: 'Passing first downs', group: 'First Downs', width: 72 },
-  { key: 'first_downs_rush', label: 'Rush', mobileLabel: 'Rushing first downs', group: 'First Downs', width: 72 },
-  { key: 'first_downs_total', label: 'Total', mobileLabel: 'Total first downs', group: 'First Downs', width: 72 },
-  { key: 'fumbles', label: 'FUM', mobileLabel: 'Fumbles', group: 'Turnovers', width: 72 },
-  { key: 'interceptions', label: 'INT', mobileLabel: 'Interceptions', group: 'Turnovers', width: 72 },
-  { key: 'turnovers', label: 'TO', mobileLabel: 'Total turnovers', group: 'Turnovers', width: 72 },
-];
+const column = (
+  key: TeamPlayerStatKey,
+  label: string,
+  mobileLabel: string,
+  format: TeamPlayerStatColumn['format'] = 'integer',
+): TeamPlayerStatColumn => ({ key, sortKey: key, label, mobileLabel, format });
 
-export const TEAM_STAT_GROUPS: TeamStatGroup[] = [
-  'General',
-  'Passing',
-  'Rushing',
-  'Total Offense',
-  'First Downs',
-  'Turnovers',
-];
+const compositeColumn = (
+  key: TeamPlayerCompositeColumnKey,
+  sortKey: TeamPlayerStatKey,
+  label: string,
+  mobileLabel: string,
+  format: 'field-goals' | 'extra-points',
+): TeamPlayerStatColumn => ({ key, sortKey, label, mobileLabel, format });
 
-export const getTeamStatColumn = (key: TeamStatKey) =>
-  TEAM_STAT_COLUMNS.find(column => column.key === key) ?? TEAM_STAT_COLUMNS[1];
+const passing = [
+  column('cmp', 'CMP', 'Completions'),
+  column('att', 'ATT', 'Attempts'),
+  column('pct', 'PCT', 'Completion %', 'percent'),
+  column('yards', 'YDS', 'Passing yards'),
+  column('td', 'TD', 'Touchdowns'),
+  column('int', 'INT', 'Interceptions'),
+  column('passer_rating', 'RTG', 'Passer rating', 'decimal'),
+  column('adjusted_pass_yards_per_attempt', 'AY/A', 'Adjusted yards / attempt', 'decimal'),
+  column('yards_per_game', 'Y/G', 'Yards / game', 'decimal'),
+] satisfies TeamPlayerStatColumn[];
 
-export const getDefaultDirection = (
-  key: TeamStatKey,
-  mode: TeamStatsMode
-): SortDirection => {
-  if (mode === 'defense') {
-    return ['fumbles', 'interceptions', 'turnovers'].includes(key) ? 'desc' : 'asc';
+const rushing = [
+  column('att', 'ATT', 'Attempts'),
+  column('yards', 'YDS', 'Rushing yards'),
+  column('yards_per_rush', 'AVG', 'Yards / carry', 'decimal'),
+  column('td', 'TD', 'Touchdowns'),
+  column('fumbles', 'FUM', 'Fumbles'),
+  column('yards_per_game', 'Y/G', 'Yards / game', 'decimal'),
+] satisfies TeamPlayerStatColumn[];
+
+const receiving = [
+  column('rec', 'REC', 'Receptions'),
+  column('yards', 'YDS', 'Receiving yards'),
+  column('yards_per_rec', 'AVG', 'Yards / reception', 'decimal'),
+  column('td', 'TD', 'Touchdowns'),
+  column('yards_per_game', 'Y/G', 'Yards / game', 'decimal'),
+] satisfies TeamPlayerStatColumn[];
+
+const defense = [
+  column('tackles', 'TKL', 'Tackles'),
+  column('sacks', 'SACK', 'Sacks'),
+  column('interceptions', 'INT', 'Interceptions'),
+  column('fumbles_forced', 'FF', 'Fumbles forced'),
+  column('fumbles_recovered', 'FR', 'Fumbles recovered'),
+] satisfies TeamPlayerStatColumn[];
+
+const kicking = [
+  compositeColumn('field_goals', 'field_goals_made', 'FG', 'Field goals', 'field-goals'),
+  column('field_goal_percent', 'FG%', 'Field goal %', 'percent'),
+  compositeColumn('extra_points', 'extra_points_made', 'XP', 'Extra points', 'extra-points'),
+  column('extra_point_percent', 'XP%', 'Extra point %', 'percent'),
+  column('points', 'PTS', 'Points'),
+] satisfies TeamPlayerStatColumn[];
+
+export const TEAM_PLAYER_COLUMNS: Record<TeamPlayerStatsCategory, TeamPlayerStatColumn[]> = {
+  passing,
+  rushing,
+  receiving,
+  defense,
+  kicking,
+};
+
+export const TEAM_PLAYER_CATEGORY_LABELS: Record<TeamPlayerStatsCategory, string> = {
+  passing: 'Passing',
+  rushing: 'Rushing',
+  receiving: 'Receiving',
+  defense: 'Defense',
+  kicking: 'Kicking',
+};
+
+export const DEFAULT_TEAM_PLAYER_SORT: Record<TeamPlayerStatsCategory, TeamPlayerStatKey> = {
+  passing: 'yards',
+  rushing: 'yards',
+  receiving: 'yards',
+  defense: 'tackles',
+  kicking: 'points',
+};
+
+export const formatTeamPlayerStat = (
+  stats: TeamPlayerStatValues,
+  column: TeamPlayerStatColumn,
+) => {
+  const key = column.key;
+  if (key === 'field_goals') {
+    return `${stats.field_goals_made ?? 0}/${stats.field_goals_attempted ?? 0}`;
   }
-  return ['fumbles', 'interceptions', 'turnovers'].includes(key) ? 'asc' : 'desc';
-};
-
-export const formatTeamStat = (stats: TeamStats, key: TeamStatKey) => {
-  const value = stats[key];
-  if (key === 'comp_percent') return `${value.toFixed(1)}%`;
-  return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(1);
+  if (key === 'extra_points') {
+    return `${stats.extra_points_made ?? 0}/${stats.extra_points_attempted ?? 0}`;
+  }
+  const value = stats[key] ?? 0;
+  if (column.format === 'percent') return `${value.toFixed(1)}%`;
+  if (column.format === 'decimal') return value.toFixed(1);
+  return value.toLocaleString();
 };

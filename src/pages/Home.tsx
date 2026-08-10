@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Box, Button, Container, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import { loadHomeData } from '../domain/league';
+import { loadHomeData } from '../domain/league/loaders/season/loadHomeData';
 import type { HomeData } from '../types/league';
 import { HomeContent } from './home/HomeContent';
 

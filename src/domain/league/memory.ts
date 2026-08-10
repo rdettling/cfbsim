@@ -1,10 +1,16 @@
-import type { GameLogRecord, GameRecord, PlayerRecord } from '../../types/db';
+import type {
+  GameLogRecord,
+  GameRecord,
+  PlayerRecord,
+  PlayRecord,
+} from '../../types/db';
 import type { LeagueState } from '../../types/league';
 import type {
   SeasonMemory,
   SeasonMemoryEvent,
 } from '../../types/memory';
 import { buildAwards } from './awards';
+import { buildTeamAggregateTotalTables } from './utils/stats/teamAggregates';
 
 const collectPostseasonEvents = (
   league: LeagueState,
@@ -88,6 +94,7 @@ export const buildSeasonMemory = (
   games: GameRecord[],
   players: PlayerRecord[],
   logs: GameLogRecord[],
+  plays: PlayRecord[],
 ): SeasonMemory => {
   const year = league.info.currentYear;
   const yearGames = games.filter(
@@ -97,6 +104,12 @@ export const buildSeasonMemory = (
   const yearLogs = logs.filter(log => yearGameIds.has(log.gameId));
   const teamsByName = new Map(league.teams.map(team => [team.name, team]));
   const { final } = buildAwards(league, players, yearLogs);
+  const totals = buildTeamAggregateTotalTables(
+    league.teams,
+    yearGames,
+    plays,
+    year,
+  );
   const awards = final.flatMap(entry => {
     const winner = entry.first_place;
     if (!winner) return [];
@@ -115,10 +128,13 @@ export const buildSeasonMemory = (
     playoffTeams: league.settings.playoffTeams,
     teamSnapshots: league.teams.map(team => ({
       teamId: team.id,
+      conference: team.confName ?? team.conference,
       rating: team.rating,
       prestige: team.prestige,
       ranking: team.ranking,
       record: team.record,
+      offense: totals.offense[team.name],
+      defense: totals.defense[team.name],
     })),
     events: collectPostseasonEvents(league, yearGames),
     awards,

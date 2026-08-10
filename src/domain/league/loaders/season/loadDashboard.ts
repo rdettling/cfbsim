@@ -6,7 +6,7 @@ import {
   getUserTeam,
 } from './shared';
 import { getNewsByWeek } from '../../../../db/newsRepo';
-import { sortNewsItems } from '../../../news';
+import { sortNewsItems } from '../../../news/ordering';
 import type { NewsItem } from '../../../../types/news';
 
 export interface DashboardPageResult {

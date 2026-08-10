@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useDomainData } from '../../domain/hooks';
-import { loadGame } from '../../domain/league';
+import { loadGame } from '../../domain/league/loaders/season/loadGame';
 import GamePreviewPage from './GamePreviewPage';
 import GameResultPage from './GameResultPage';
 import { PageLayout } from '../../components/layout/PageLayout';

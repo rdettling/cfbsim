@@ -65,7 +65,6 @@ export const simDrive = (
   driveNum: number
 ): SimDrive => {
   const {
-    league,
     game,
     starters,
     offense,
@@ -167,7 +166,7 @@ export const simDrive = (
           clock.quarter = clockResult.clock.quarter;
           clock.secondsLeft = clockResult.clock.secondsLeft;
           clock.clockRunning = clockResult.clock.clockRunning;
-          formatPlayText(play, offense, defense, starters);
+          formatPlayText(play, offense, starters);
           plays.push(play);
           return {
             record: drive,
@@ -199,7 +198,7 @@ export const simDrive = (
           clock.quarter = clockResult.clock.quarter;
           clock.secondsLeft = clockResult.clock.secondsLeft;
           clock.clockRunning = clockResult.clock.clockRunning;
-          formatPlayText(play, offense, defense, starters);
+          formatPlayText(play, offense, starters);
           plays.push(play);
           return {
             record: drive,
@@ -209,7 +208,7 @@ export const simDrive = (
         }
       }
 
-      const playType = choosePlayType(down, yardsLeft, tempo, lead, clock);
+      const playType = choosePlayType(down, yardsLeft, lead, clock);
       const result = playType === 'run'
         ? simRun(fieldPosition, offense, defense, game)
         : simPass(fieldPosition, offense, defense, game);
@@ -244,7 +243,7 @@ export const simDrive = (
       clock.secondsLeft = clockResult.clock.secondsLeft;
       clock.clockRunning = clockResult.clock.clockRunning;
 
-      formatPlayText(play, offense, defense, starters);
+      formatPlayText(play, offense, starters);
       plays.push(play);
 
       if (result.outcome === 'touchdown') {
@@ -297,7 +296,7 @@ export const startInteractiveDrive = (
   fieldPosition: number,
   driveNum: number
 ) => {
-  const { league, game, offense, defense, lead, clockEnabled } = context;
+  const { game, offense, defense, lead, clockEnabled } = context;
   const needed = clockEnabled
     ? pointsNeeded(
       lead,
@@ -345,7 +344,7 @@ export const stepInteractiveDrive = (
   decision: 'run' | 'pass' | 'punt' | 'field_goal' | 'auto',
   clockEnabledOverride?: boolean
 ) => {
-  const { league, game, starters, offense, defense, lead, clockEnabled } = context;
+  const { game, starters, offense, defense, lead, clockEnabled } = context;
   const applyClockEnabled = clockEnabledOverride ?? clockEnabled;
   const clockState = { quarter: game.quarter, secondsLeft: game.clockSecondsLeft, clockRunning: game.clockRunning };
   const tempo = getTempo(lead, clockState);
@@ -379,9 +378,9 @@ export const stepInteractiveDrive = (
     if (down === 4) {
       const auto = decideFourthDown(fieldPosition, yardsLeft, state.drive.points_needed);
       if (auto === 'punt' || auto === 'field_goal') return auto;
-      return choosePlayType(down, yardsLeft, tempo, lead, clockState);
+      return choosePlayType(down, yardsLeft, lead, clockState);
     }
-    return choosePlayType(down, yardsLeft, tempo, lead, clockState);
+    return choosePlayType(down, yardsLeft, lead, clockState);
   };
 
   const pickDecision = decision === 'auto' ? resolveAutoDecision() : decision;
@@ -419,7 +418,7 @@ export const stepInteractiveDrive = (
       game.quarter = clockResult.clock.quarter;
       game.clockSecondsLeft = clockResult.clock.secondsLeft;
       game.clockRunning = clockResult.clock.clockRunning;
-      formatPlayText(play, offense, defense, starters);
+      formatPlayText(play, offense, starters);
       if (state.drive.result === 'made field goal') {
         game.scoreA = state.drive.scoreAAfter;
         game.scoreB = state.drive.scoreBAfter;
@@ -460,7 +459,7 @@ export const stepInteractiveDrive = (
     game.quarter = clockResult.clock.quarter;
     game.clockSecondsLeft = clockResult.clock.secondsLeft;
     game.clockRunning = clockResult.clock.clockRunning;
-    formatPlayText(play, offense, defense, starters);
+    formatPlayText(play, offense, starters);
     return {
       state,
       play,
@@ -509,7 +508,7 @@ export const stepInteractiveDrive = (
   game.clockSecondsLeft = clockResult.clock.secondsLeft;
   game.clockRunning = clockResult.clock.clockRunning;
 
-  formatPlayText(play, offense, defense, starters);
+  formatPlayText(play, offense, starters);
 
   if (result.outcome === 'touchdown') {
     state.drive.result = 'touchdown';
@@ -728,7 +727,6 @@ export const finalizeGameResult = (game: SimGame) => {
 };
 
 export const createGameLogsFromPlays = (
-  league: LeagueState,
   game: SimGame,
   plays: PlayRecord[],
   starters: StartersCache

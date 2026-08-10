@@ -1,5 +1,7 @@
-import type { PlayerRecord } from '../types/db';
+import type { PlayerRecord, PlayerSeasonStats } from '../types/db';
 import type { LeagueStage, Team } from '../types/domain';
+import type { SeasonTeamSnapshot } from '../types/memory';
+import type { TeamAggregateTotals } from '../types/stats';
 import {
   DEFAULT_NEXT_SEASON_CONFIGURATION,
   type LeagueState,
@@ -105,5 +107,74 @@ export const buildTestPlayer = (
   stars: 3,
   development_trait: 3,
   starter: true,
+  ...overrides,
+});
+
+export const buildTestTeamAggregateTotals = (
+  overrides: Partial<TeamAggregateTotals> = {},
+): TeamAggregateTotals => ({
+  games: 12,
+  points: 0,
+  pass_completions: 0,
+  pass_attempts: 0,
+  pass_yards: 0,
+  pass_touchdowns: 0,
+  rush_attempts: 0,
+  rush_yards: 0,
+  rush_touchdowns: 0,
+  plays: 0,
+  first_downs_pass: 0,
+  first_downs_rush: 0,
+  fumbles: 0,
+  interceptions: 0,
+  ...overrides,
+});
+
+export const buildTestSeasonTeamSnapshot = (
+  overrides: Partial<SeasonTeamSnapshot> = {},
+): SeasonTeamSnapshot => ({
+  teamId: 1,
+  conference: 'Test Conference',
+  rating: 80,
+  prestige: 4,
+  ranking: 1,
+  record: '12-0 (8-0)',
+  offense: buildTestTeamAggregateTotals(),
+  defense: buildTestTeamAggregateTotals(),
+  ...overrides,
+});
+
+export const buildTestPlayerSeason = (
+  overrides: Partial<PlayerSeasonStats> = {},
+): PlayerSeasonStats => ({
+  year: 2024,
+  playerId: 1,
+  teamId: 1,
+  position: 'qb',
+  classYear: 'sr',
+  rating: 80,
+  starter: true,
+  games: 12,
+  pass_yards: 0,
+  pass_attempts: 0,
+  pass_completions: 0,
+  pass_touchdowns: 0,
+  pass_interceptions: 0,
+  rush_yards: 0,
+  rush_attempts: 0,
+  rush_touchdowns: 0,
+  receiving_yards: 0,
+  receiving_catches: 0,
+  receiving_touchdowns: 0,
+  fumbles: 0,
+  tackles: 0,
+  sacks: 0,
+  interceptions: 0,
+  fumbles_forced: 0,
+  fumbles_recovered: 0,
+  field_goals_made: 0,
+  field_goals_attempted: 0,
+  extra_points_made: 0,
+  extra_points_attempted: 0,
   ...overrides,
 });

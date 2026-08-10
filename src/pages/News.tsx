@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { NewsStoryCard } from '../components/news/NewsStoryCard';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useDomainData } from '../domain/hooks';
-import { loadNews } from '../domain/league';
+import { loadNews } from '../domain/league/loaders/season/loadNews';
 import type { NewsPageData } from '../types/pages';
 
 const News = () => {

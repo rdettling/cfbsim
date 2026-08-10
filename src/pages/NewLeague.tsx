@@ -24,7 +24,9 @@ import {
   resolvePreviewConferencePlan,
   validateNewLeagueConferencePlan,
 } from '../domain/conferencePlan';
-import { loadHomeData, loadNewLeagueData, startNewLeague } from '../domain/league';
+import { loadHomeData } from '../domain/league/loaders/season/loadHomeData';
+import { loadNewLeagueData } from '../domain/league/loaders/season/loadNewLeagueData';
+import { startNewLeague } from '../domain/league/loaders/season/startNewLeague';
 import type {
   CustomConferencePlan,
   Info,

@@ -13,7 +13,7 @@ import type { SeasonMemory } from '../types/memory';
 import type { NewsItem } from '../types/news';
 
 export const DB_NAME = 'cfbsim';
-export const DB_VERSION = 14;
+export const DB_VERSION = 15;
 
 export interface Frontend2DB extends DBSchema {
   baseData: {

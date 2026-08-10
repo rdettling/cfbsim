@@ -9,6 +9,7 @@ import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import {
   getAllGames,
   getAllGameLogs,
+  getAllPlays,
   getAllHistoricalPlayers,
   getAllPlayerSeasons,
   getGameById,
@@ -97,6 +98,7 @@ export const loadSeasonSummary = async () => {
     prestigeConfig,
     priorMemories,
     rivalries,
+    plays,
   ] = await Promise.all([
     getAllGameLogs(),
     getAllGames(),
@@ -105,6 +107,7 @@ export const loadSeasonSummary = async () => {
     getPrestigeConfig(),
     getAllSeasonMemories(),
     getRivalriesData(),
+    getAllPlays(),
   ]);
 
   const playedGameIds = new Set(
@@ -112,7 +115,7 @@ export const loadSeasonSummary = async () => {
   );
   const yearLogs = gameLogs.filter(log => playedGameIds.has(log.gameId));
   const { final } = buildAwards(league, players, yearLogs);
-  const memory = buildSeasonMemory(league, games, players, yearLogs);
+  const memory = buildSeasonMemory(league, games, players, yearLogs, plays);
 
   let champion: Team | null = null;
   if (league.playoff.natty) {

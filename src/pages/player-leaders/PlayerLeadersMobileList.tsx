@@ -4,15 +4,15 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Collapse, IconButton, Link, Paper, Stack, Typography } from '@mui/material';
 import { TeamLink } from '../../components/team/TeamLink';
 import { TeamLogo } from '../../components/team/TeamLogo';
-import { formatIndividualStat } from './config';
-import type { IndividualStatsViewProps } from './types';
+import { formatPlayerLeaderboardStat } from './config';
+import type { PlayerLeadersViewProps } from './types';
 
-export const IndividualStatsMobileList = ({
+export const PlayerLeadersMobileList = ({
   rows,
   columns,
   sortKey,
   onTeamClick,
-}: IndividualStatsViewProps) => {
+}: PlayerLeadersViewProps) => {
   const [expandedPlayer, setExpandedPlayer] = useState<number | null>(null);
   const selectedColumn = columns.find((column) => column.key === sortKey) ?? columns[0];
 
@@ -20,7 +20,7 @@ export const IndividualStatsMobileList = ({
     <Paper
       component="section"
       variant="outlined"
-      aria-label="Individual statistics"
+      aria-label="Player leaders"
       sx={{ display: { xs: 'block', md: 'none' }, overflow: 'hidden' }}
     >
       {rows.map((row, index) => {
@@ -84,7 +84,7 @@ export const IndividualStatsMobileList = ({
                   {selectedColumn.label}
                 </Typography>
                 <Typography sx={{ fontWeight: 700 }}>
-                  {formatIndividualStat(row.stats[sortKey] ?? 0, selectedColumn)}
+                  {formatPlayerLeaderboardStat(row.stats[sortKey] ?? 0, selectedColumn)}
                 </Typography>
               </Box>
               <IconButton
@@ -136,7 +136,7 @@ export const IndividualStatsMobileList = ({
                       {column.mobileLabel}
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatIndividualStat(row.stats[column.key] ?? 0, column)}
+                      {formatPlayerLeaderboardStat(row.stats[column.key] ?? 0, column)}
                     </Typography>
                   </Box>
                 ))}

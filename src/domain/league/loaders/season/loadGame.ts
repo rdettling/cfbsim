@@ -1,5 +1,4 @@
 import {
-  getAllGameLogs,
   getAllGames,
   getAllPlays,
   getAllHistoricalPlayers,

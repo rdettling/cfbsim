@@ -2,6 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HistoryIcon from '@mui/icons-material/History';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import {
   Alert,
   Box,
@@ -19,6 +20,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { getTeamInfo } from '../../domain/league/loaders/team/getTeamInfo';
+import { getTeamStatsPath } from '../../constants/routes';
 import type { Team } from '../../types/domain';
 import { TeamLogo } from './TeamLogo';
 
@@ -26,6 +28,7 @@ type TeamInfoModalProps = {
   teamName: string;
   open: boolean;
   onClose: () => void;
+  statsYear?: number;
 };
 
 const StatItem = ({ label, value }: { label: string; value: string | number }) => (
@@ -39,7 +42,12 @@ const StatItem = ({ label, value }: { label: string; value: string | number }) =
   </Box>
 );
 
-export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) => {
+export const TeamInfoModal = ({
+  teamName,
+  open,
+  onClose,
+  statsYear,
+}: TeamInfoModalProps) => {
   const [teamInfo, setTeamInfo] = useState<Team | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +81,11 @@ export const TeamInfoModal = ({ teamName, open, onClose }: TeamInfoModalProps) =
     ? [
         { label: 'Schedule', to: `/${teamInfo.name}/schedule`, icon: <EventNoteIcon /> },
         { label: 'Roster', to: `/${teamInfo.name}/roster`, icon: <GroupsIcon /> },
+        {
+          label: 'Stats',
+          to: getTeamStatsPath(teamInfo.name, statsYear),
+          icon: <QueryStatsIcon />,
+        },
         { label: 'History', to: `/${teamInfo.name}/history`, icon: <HistoryIcon /> },
       ]
     : [];

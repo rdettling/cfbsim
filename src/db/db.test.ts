@@ -15,8 +15,8 @@ const deleteTestDatabase = (name: string) =>
   });
 
 describe('current database schema', () => {
-  it('uses the destructive preseason-news epoch', () => {
-    expect(DB_VERSION).toBe(14);
+  it('uses the destructive historical-statistics epoch', () => {
+    expect(DB_VERSION).toBe(15);
   });
 
   it('creates every authoritative store in a fresh database', async () => {

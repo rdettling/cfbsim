@@ -2,7 +2,24 @@ import type { Conference, Info, Team } from './domain';
 
 export type SortDirection = 'asc' | 'desc';
 
-export interface TeamStats {
+export interface TeamAggregateTotals {
+  games: number;
+  points: number;
+  pass_completions: number;
+  pass_attempts: number;
+  pass_yards: number;
+  pass_touchdowns: number;
+  rush_attempts: number;
+  rush_yards: number;
+  rush_touchdowns: number;
+  plays: number;
+  first_downs_pass: number;
+  first_downs_rush: number;
+  fumbles: number;
+  interceptions: number;
+}
+
+export interface TeamAggregateStats {
   games: number;
   ppg: number;
   pass_cpg: number;
@@ -25,17 +42,19 @@ export interface TeamStats {
   turnovers: number;
 }
 
-export type TeamStatKey = keyof TeamStats;
-export type TeamStatsMode = 'offense' | 'defense';
+export type TeamAggregateStatKey = keyof TeamAggregateStats;
+export type TeamAggregateMode = 'offense' | 'defense';
 
-export interface TeamStatsPageResult {
+export interface TeamRankingsPageResult {
   info: Info;
-  offense: Record<string, TeamStats>;
-  defense: Record<string, TeamStats>;
-  offense_averages: TeamStats;
-  defense_averages: TeamStats;
+  offense: Record<string, TeamAggregateStats>;
+  defense: Record<string, TeamAggregateStats>;
+  offense_averages: TeamAggregateStats;
+  defense_averages: TeamAggregateStats;
   team: Team;
   conferences: Conference[];
+  years: number[];
+  selectedYear: number;
 }
 
 export interface PassingStats {
@@ -67,14 +86,16 @@ export interface ReceivingStats {
   yards_per_game: number;
 }
 
-export type IndividualStatsCategory = 'passing' | 'rushing' | 'receiving';
-export type IndividualCategoryStats = {
-  passing: PassingStats;
-  rushing: RushingStats;
-  receiving: ReceivingStats;
-};
+export type PlayerLeaderboardCategory = 'passing' | 'rushing' | 'receiving';
+export type PlayerLeaderboardStatKey =
+  | keyof PassingStats
+  | keyof RushingStats
+  | keyof ReceivingStats;
+export type PlayerLeaderboardStatValues = Partial<
+  Record<PlayerLeaderboardStatKey, number>
+>;
 
-export interface IndividualPlayerData<TStats> {
+export interface PlayerLeaderboardEntry<TStats> {
   id: number;
   first: string;
   last: string;
@@ -84,14 +105,77 @@ export interface IndividualPlayerData<TStats> {
   stats: TStats;
 }
 
-export interface IndividualStatsPageResult {
+export interface PlayerLeadersPageResult {
   info: Info;
   team: Team;
   conferences: Conference[];
+  years: number[];
+  selectedYear: number;
   stats: {
-    passing: Record<string, IndividualPlayerData<PassingStats>>;
-    rushing: Record<string, IndividualPlayerData<RushingStats>>;
-    receiving: Record<string, IndividualPlayerData<ReceivingStats>>;
+    passing: Record<string, PlayerLeaderboardEntry<PassingStats>>;
+    rushing: Record<string, PlayerLeaderboardEntry<RushingStats>>;
+    receiving: Record<string, PlayerLeaderboardEntry<ReceivingStats>>;
+  };
+}
+
+export interface DefenseStats {
+  tackles: number;
+  sacks: number;
+  interceptions: number;
+  fumbles_forced: number;
+  fumbles_recovered: number;
+}
+
+export interface KickingStats {
+  field_goals_made: number;
+  field_goals_attempted: number;
+  field_goal_percent: number;
+  extra_points_made: number;
+  extra_points_attempted: number;
+  extra_point_percent: number;
+  points: number;
+}
+
+export type TeamPlayerStatsCategory =
+  | 'passing'
+  | 'rushing'
+  | 'receiving'
+  | 'defense'
+  | 'kicking';
+
+export type TeamPlayerStatKey =
+  | PlayerLeaderboardStatKey
+  | keyof DefenseStats
+  | keyof KickingStats;
+export type TeamPlayerStatValues = Partial<Record<TeamPlayerStatKey, number>>;
+
+export interface TeamPlayerStatsEntry<TStats> {
+  id: number;
+  first: string;
+  last: string;
+  pos: string;
+  stats: TStats;
+}
+
+export interface RankedTeamAggregateStats {
+  values: TeamAggregateStats;
+  ranks: Record<TeamAggregateStatKey, number>;
+}
+
+export interface TeamStatsPageResult {
+  info: Info;
+  team: Team;
+  teams: string[];
+  conferences: Conference[];
+  years: number[];
+  selectedYear: number;
+  teamStats: Record<TeamAggregateMode, RankedTeamAggregateStats>;
+  playerStats: {
+    passing: Array<TeamPlayerStatsEntry<PassingStats>>;
+    rushing: Array<TeamPlayerStatsEntry<RushingStats>>;
+    receiving: Array<TeamPlayerStatsEntry<ReceivingStats>>;
+    defense: Array<TeamPlayerStatsEntry<DefenseStats>>;
+    kicking: Array<TeamPlayerStatsEntry<KickingStats>>;
   };
 }
 

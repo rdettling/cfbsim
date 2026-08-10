@@ -12,7 +12,7 @@ import { PageLayout } from '../components/layout/PageLayout';
 import { TeamHeader } from '../components/team/TeamHeader';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadTeamSchedule } from '../domain/league';
+import { loadTeamSchedule } from '../domain/league/loaders/season/loadTeamSchedule';
 import type { TeamSchedulePageData } from '../types/pages';
 import { DesktopScheduleTable } from './team-schedule/DesktopScheduleTable';
 import { MobileScheduleList } from './team-schedule/MobileScheduleList';

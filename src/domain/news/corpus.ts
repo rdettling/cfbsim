@@ -246,7 +246,7 @@ const completeGame = ({
   const drives = simGame(league, simulated, starters);
   const driveRecords = drives.map(drive => drive.record);
   const plays = drives.flatMap(drive => drive.plays);
-  const logs = createGameLogsFromPlays(league, simulated, plays, starters);
+  const logs = createGameLogsFromPlays(simulated, plays, starters);
   record.scoreA = simulated.scoreA;
   record.scoreB = simulated.scoreB;
   record.winnerId = simulated.winner!.id;
