@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { GameRecord, PlayRecord } from '../../../../types/db';
 import {
+  buildTestPlayCall,
+  buildTestPlayParticipants,
+  buildTestPlayTiming,
   buildTestSeasonTeamSnapshot,
   buildTestTeam,
 } from '../../../../test/fixtures';
@@ -61,6 +64,9 @@ const play = (overrides: Partial<PlayRecord> = {}): PlayRecord => ({
   header: '',
   scoreA: 0,
   scoreB: 0,
+  call: buildTestPlayCall({ offense: 'intermediate_pass' }),
+  participants: buildTestPlayParticipants({ passerId: 1, targetId: 2, tacklerId: 3 }),
+  timing: buildTestPlayTiming(),
   ...overrides,
 });
 
@@ -132,6 +138,21 @@ describe('team aggregate statistics', () => {
       [
         play({ result: 'touchdown', yardsGained: 20 }),
         play({ id: 2, playType: 'run', result: 'run', yardsGained: 5 }),
+        play({
+          id: 3,
+          startingFP: 97,
+          yardsLeft: 3,
+          playType: 'pass',
+          result: 'made two point pass',
+          yardsGained: 3,
+          call: {
+            kind: 'try',
+            attempt: 'two_point',
+            offense: 'quick_pass',
+            defense: 'base',
+          },
+          timing: { kind: 'try', context: 'regulation', quarter: 1, secondsLeft: 400 },
+        }),
       ],
     );
 

@@ -42,11 +42,18 @@ export const choosePlayType = (
 };
 
 export const decideFourthDown = (fieldPosition: number, yardsLeft: number, needed: number) => {
+  const tuning = SIM_TUNING.playcalling.fourthDown;
   let decision = 'punt';
-  if (fieldPosition <= 40) decision = 'punt';
-  else if (fieldPosition <= 50) decision = yardsLeft === 1 ? 'go' : 'punt';
-  else if (fieldPosition <= 62) decision = yardsLeft <= 2 ? 'go' : 'punt';
-  else decision = yardsLeft <= 3 ? 'go' : 'field_goal';
+  if (fieldPosition <= tuning.puntTerritoryMaxFieldPosition) decision = 'punt';
+  else if (fieldPosition <= tuning.midfieldMaxFieldPosition) {
+    decision = yardsLeft <= tuning.midfieldGoMaxYards ? 'go' : 'punt';
+  } else if (fieldPosition < tuning.fieldGoalRangeStartFieldPosition) {
+    decision = yardsLeft <= tuning.opponentTerritoryGoMaxYards ? 'go' : 'punt';
+  } else {
+    decision = yardsLeft <= tuning.fieldGoalTerritoryGoMaxYards
+      ? 'go'
+      : 'field_goal';
+  }
 
   if (needed > 0) {
     if (decision === 'punt') decision = 'go';

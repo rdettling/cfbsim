@@ -32,13 +32,19 @@ This allows one game to run interactively while the broader league state remains
 - Session state moves through `preparing`, `ready`, `advancing`, `finalizing`,
   and terminal `complete` or `error` phases.
 - Progresses through `stepInteractiveDrive` either by:
-  - user decisions (`handleDecision`), or
+  - user-selected typed offensive, defensive, special-teams, or try instructions, or
   - auto stepping (`simulateAutoPlays`, `simulateAutoDrive`, `simulateToEnd`).
-- Each step maps `PlayRecord` into UI play objects and updates drive cards.
+- Each step submits one exact call/tempo/timeout instruction and maps the
+  resulting `PlayRecord`, including its exact call and participant role IDs,
+  into UI play objects and drive cards. Rendered labels, text, timeout events,
+  and final box scores consume the same artifact.
 
 4. **Drive transitions and overtime management**
+- A touchdown updates the score strip by six, enters a try prompt in the same
+  drive, and updates the strip again after a successful conversion.
 - `finalizeDrive` records completed drive artifacts and computes next possession.
-- Handles halftime possession flip and overtime possession alternation.
+- Handles halftime possession flip, first/second-overtime full possessions,
+  and third-and-later paired two-point rounds.
 - Continues `advanceToNextDrive` until game completion.
 
 5. **Final commit**
@@ -79,7 +85,24 @@ sequenceDiagram
 ## Session Rules
 
 - **Decision gating**:
-  - User decision prompts only render when current offense is user team and decision mode is enabled.
+  - Offensive prompts render when the user team has possession. Defensive
+    prompts render before every opponent scrimmage snap without revealing the
+    opponent concept; fourth-down punts and field goals skip the prompt.
+  - Run concepts (Inside, Outside, Option) and pass concepts (Quick,
+    Intermediate, Deep, Screen, Play Action) are one-tap grouped actions;
+    Punt and Field Goal appear only on fourth down.
+  - Defensive actions are Base, Loaded Box, Coverage, and Pressure. The full
+    matchup is revealed in drive history after resolution.
+  - After a user-team touchdown, Kick and the existing run/pass concept groups
+    select the try. Kick is hidden when two points are mandatory. When the CPU
+    chooses two points against the user, the user receives a blind defensive
+    intent prompt; CPU extra points need no prompt.
+  - Offensive tempo is Auto, Normal, Hurry, or Chew and persists for the current
+    possession. A side-aware timeout toggle arms one conditional post-play use
+    and clears after the next snap whether or not it is charged.
+  - Spike and Kneel appear only in their valid late-half contexts. A deterministic
+    CPU spike or kneel suppresses the blind defensive-intent prompt while leaving
+    the user's timeout control available.
 - **Serialized advancement**:
   - Play, drive, and game advancement share one guarded action boundary so
     overlapping clicks cannot mutate the same session.
@@ -87,6 +110,10 @@ sequenceDiagram
   - Interactive mode uses same underlying engine logic and artifacts as batch mode, reducing divergence.
 - **Derived UI state**:
   - Hook computes `displayPlay`, `displayDrive`, possession side, field position, quarter/clock, and overtime indicators from interactive state.
+  - The score strip derives remaining timeouts from runtime state. Drive history
+    reads regulation labels, overtime periods, durations, tempo, charged-timeout
+    separators, clock-event separators, conversion results, and exact overtime
+    periods directly from persisted artifacts.
 - **Persistence timing**:
   - Interactive artifacts are buffered in refs during play and committed on game completion, not after every play.
 
@@ -96,6 +123,9 @@ sequenceDiagram
 - Interactive context must keep offense/defense and possession fields synchronized with `SimGame` score/clock state.
 - Finalization must execute once per completed game session to avoid duplicate writes.
 - UI presentation depends on mapped play/drive records staying in deterministic order.
+- UI play projections must preserve the persisted call, participant, and timing
+  objects exactly; the UI does not reselect concepts or intent, infer player identities,
+  or infer overtime from a regulation timestamp.
 
 ## Failure Handling
 
@@ -114,8 +144,10 @@ sequenceDiagram
   - session orchestration (`start`, stepping methods, finalize path)
 - `src/domain/sim/orchestrator.ts`
   - `getGamesToLiveSim`, `prepareInteractiveLiveGame`, `finalizeGameSimulation`
+- `src/domain/sim/drive.ts`
+  - `startInteractiveDrive`, `stepInteractiveDrive`
 - `src/domain/sim/engine.ts`
-  - `startInteractiveDrive`, `stepInteractiveDrive`, `buildGameData`, `finalizeGameResult`
+  - `buildGameData`, `finalizeGameResult`
 - `src/domain/sim/interactive.ts`
   - `buildSimContext`
 - `src/domain/sim/ui.ts`

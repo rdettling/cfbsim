@@ -28,11 +28,13 @@ import {
   simGame,
   buildDriveResponse,
   buildGameData,
-  createGameLogsFromPlays,
-  buildStartersCache,
-  loadPlayersMap,
   hydrateGame,
 } from './engine';
+import {
+  buildStartersCache,
+  createGameLogsFromPlays,
+  loadPlayersMap,
+} from './statistics';
 import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
 import { handleSpecialWeeks } from './postseason';
 import { buildGameDetail, flattenGameDetail } from '../league/gameDetails';

@@ -35,7 +35,8 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Postseason week topology (`lastWeek`) is derived from playoff team count.
 
 3. **Calibration script path**
-- Tune/eval scripts run offline via npm scripts and can rewrite `tuning.json`.
+- Tune/eval scripts run offline via npm scripts. The simulation tuner applies
+  candidates only inside its process and never rewrites `tuning.json`.
 - Generation scripts create data assets (odds/history) used by app runtime.
 
 4. **Recruiting evaluation path**
@@ -63,9 +64,21 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 ## Controls
 
 - **High-impact runtime controls (`tuning.json`)**:
-  - `clock.*`: play durations, tempo multipliers, first-down/out-of-bounds stop windows.
-  - `playcalling.*`: pass/run probability adjustments by situation.
-  - `outcomes.*`: completion/sack/interception/fumble baselines, yardage scaling, field-goal probabilities.
+  - `conversions.*`: the calibrated fixed 95.5% extra-point probability and the
+    automatic late-game two-point decision window/margins. Two-point football
+    outcomes continue to use the existing rating/concept/intent model.
+  - `defense.*`: automatic intent mixtures, situational multipliers, and the
+    explicit defensive-intent/offensive-concept matchup matrix.
+  - `concepts.*`: automatic mixtures, situational multipliers, and per-concept
+    rate/yardage profiles.
+  - `clock.*`: live-ball/runoff ranges, tempo multipliers, out-of-bounds rates,
+    first-down/out-of-bounds stop windows, and automatic timeout/spike/kneel
+    thresholds.
+  - `playcalling.*`: pass/run probability adjustments by situation and the
+    fixed field-position/distance thresholds for automatic fourth downs.
+  - `outcomes.*`: completion/sack/interception/fumble baselines, yardage
+    scaling, the positive-gain-only third-down and red-zone controls, and the
+    fixed field-goal curve/accuracy multiplier.
   - `kickoffs.*`: touchback vs return behavior and starting field position distribution.
 - **League topology controls (`NextSeasonConfiguration`)**:
   - `playoffTeams` determines postseason structure and `lastWeek`.
@@ -76,9 +89,30 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - `postseasonPolicy` chooses the historical format or a supported custom
     format.
 - **Scripted calibration controls**:
-  - `tune:yards` iteratively adjusts yard-distribution-related tuning fields.
-  - `eval:winrate` measures win-rate and margin behavior under rating differentials.
-  - `tune:winrate` adjusts differential scaling terms for target win-rate curve.
+  - `eval:sim` is the authoritative read-only simulation audit. It verifies a
+    seeded replay checksum, state invariants, rating-difference win rates, and
+    aggregate game-balance, offensive-concept, defensive-matchup, causal-clock,
+    clock-management, conversion, and overtime-scoring gates without rewriting
+    tuning or persisted data. Modern-FBS production and score-distribution
+    gaps from the frozen 2023–25 benchmark remain visible diagnostics rather
+    than hard failures.
+  - `generate:sim-benchmark` is the only benchmark refresh path. It writes the
+    compact tracked aggregate when run normally; `--check` compares the
+    committed snapshot to current NCAA sources without writing.
+  - `tune:sim` runs deterministic full-game coordinate searches from causal and
+    drive-consistency seeds over 13 approved play-share, execution, yardage,
+    third-down, red-zone, and field-goal-accuracy controls. It prints the baseline,
+    candidate, exact parameter changes, and remaining gaps but never writes
+    tracked state.
+  - `eval:sim-stability` regenerates that candidate in memory, measures
+    committed and candidate tuning over five disjoint held-out rating blocks,
+    and produces a common-seed ±5% sensitivity matrix for all 13 controls and
+    22 production metrics. It is a long-running offline diagnostic and does
+    not change the current acceptance contract.
+  - Benchmark schema 3 defines 22 production comparisons, including combined
+    third- and fourth-down attempt volume. The adopted modern-FBS baseline is
+    intentionally close rather than overfit; the accepted runtime checksum is
+    `66ccddc7`.
 - **Recruiting controls**:
   - Locked rules include six rounds, the 25-player board, prestige budget
     table, meaningful-pursuit minimum, rating-range width, four-player
@@ -133,8 +167,10 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 
 - Runtime tuning/config:
   - `src/domain/sim/tuning.json`
-  - `src/domain/sim/config.ts` (`SIM_TUNING`, `applySimTuning`)
+  - `src/domain/sim/config.ts` (`SIM_TUNING`, `withSimTuning`)
   - `src/domain/sim/clock.ts`, `playcalling.ts`, `outcomes.ts`, `kickoffs.ts`
+  - `src/domain/sim/calibrationMetrics.ts`, `evaluationAudit.ts`, and
+    `stabilityStatistics.ts` (shared diagnostic calculations and gates)
 - Recruiting tuning/evaluation:
   - `src/domain/recruiting/config.ts`
   - `src/domain/recruiting/classScoring.ts`
@@ -149,8 +185,16 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - `src/domain/league/postseason.ts` (`getLastWeekByPlayoffTeams`)
   - `src/domain/league/offseason.ts` (policy-driven structural updates)
 - Scripts and commands:
-  - `package.json` scripts: `tune:yards`, `eval:winrate`, `eval:news`, `tune:winrate`, `generate:odds`, `generate:history`, `check:data`, `typecheck`
-  - `scripts/tune_yards.ts`, `scripts/eval_winrate.ts`, `scripts/eval_news.ts`, `scripts/tune_winrate.ts`, `scripts/generate_betting_odds.ts`, `scripts/generate_history.ts`, `scripts/check_data.ts`
+  - `package.json` scripts: `eval:sim`, `eval:sim-stability`, `tune:sim`,
+    `generate:sim-benchmark`, `eval:news`,
+    `generate:odds`, `generate:history`, `check:data`, `typecheck`
+  - `scripts/eval_sim.ts`, `scripts/eval_sim_stability.ts`, `scripts/tune_sim.ts`,
+    `scripts/generate_sim_benchmark.ts`,
+    `scripts/eval_news.ts`, `scripts/generate_betting_odds.ts`,
+    `scripts/generate_history.ts`, `scripts/check_data.ts`
+
+See [Simulation Calibration](../systems/simulation-calibration.md) for the
+source methodology, metric denominators, targets, and diagnostic tolerances.
 
 ## League News Editorial Evaluation
 
@@ -185,11 +229,13 @@ write IndexedDB, runtime configuration, static data, or story templates.
 `newsContentChecksum`, and an `editorialOutcomeChecksum`. The content checksum
 excludes only importance, allowing scoring work to prove that copy, angles,
 storylines, teams, and featured players did not drift. The committed version 3
-content baseline is `feffcb7c`; the current national-relevance editorial
-outcome baseline is `11d7183b`.
+content baseline is `b2218e6b`; the accepted representative audit has zero
+structural or factual violations.
 
-Database version 14 is a deliberate destructive schema epoch for preseason
-news. Existing local leagues are reset rather than migrated or repaired.
+Database version 21 is the current destructive schema epoch for exact calls,
+participants, timing, clock management, tries, and the current NCAA overtime
+scoring structure. Overtime timeout allowances are not modeled.
+Older saves are reset rather than migrated or repaired.
 
 ## Historical Data Generation
 

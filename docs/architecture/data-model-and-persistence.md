@@ -5,8 +5,9 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 
 ## IndexedDB Schema
 
-`src/db/db.ts` defines the current database at version 14. Version 14 is the
-intentional reset boundary for preseason news.
+`src/db/db.ts` defines the current database at version 21. It is the single
+current destructive schema epoch for exact calls, participants, timing, clock
+management, and touchdown tries.
 
 | Store | Key | Value |
 | --- | --- | --- |
@@ -61,6 +62,42 @@ stable rendered copy, editorial classification, and newsworthiness. Game
 details may later be pruned, but published stories remain available in the
 dynasty news archive. Startup integrity requires exactly one story per
 completed game and none for unplayed games.
+
+Every persisted game-detail play contains one exact `PlayParticipants` object.
+Its nullable role IDs distinguish non-applicable roles from required linked
+starters. Historical integrity joins those IDs to the matching current player
+or annual player identity and rejects dangling, wrong-team, or ineligible-role
+references; there is no anonymous-play fallback.
+
+Every play also contains one exact `PlayCall`: a scrimmage matchup containing
+the offensive concept and defensive intent, a punt/field-goal special-teams
+call, a contextual spike/kneel clock-management call, an extra-point try, or a
+two-point concept/intent matchup. Historical integrity
+rejects missing or extra fields, unknown concepts or intents, calls that
+disagree with the coarse play type, clock management in overtime, defensive
+intent on special teams, and special-teams calls outside fourth down.
+`yardsLeft` always records the pre-snap distance; post-play distance remains
+transient drive state.
+
+Every play contains one exact `PlayTiming` union. Regulation timing stores
+start/end clock snapshots, elapsed game-clock seconds, out-of-bounds status,
+tempo, an optional charged-timeout side, and an optional two-minute or
+period-boundary event. Overtime timing stores only the explicit untimed
+overtime period. Untimed try timing stores either the regulation dead-ball
+quarter/time or the explicit overtime period. Historical validation rejects
+the removed flat timing fields,
+malformed regulation/overtime combinations, more than three timeouts per team
+per half, timeouts after natural stops, and incoherent spike/kneel artifacts.
+Runtime timeout counts are not duplicated in game detail; historical use and
+remaining counts are reconstructed from play timing.
+
+A touchdown play and its try are separate persisted plays in one drive.
+Historical integrity requires an immediate final try unless the terminal score
+legally makes it unnecessary, rejects extra points in the second and later
+overtimes, and requires third-and-later overtime drives to contain exactly one
+two-point attempt. Extra points credit existing kicker fields; two-point
+participants remain visible but are excluded from ordinary player and team
+statistics.
 
 Every current or historical player has exactly one `playerOrigins` record.
 Recruit origins retain durable public recruiting facts; walk-ons, initial
@@ -132,8 +169,10 @@ records delete the entire database and recreate an empty current schema.
 
 - `startNewLeague()` prepares a complete league, roster, and initial games,
   then `commitNewLeague()` replaces all authoritative save stores atomically.
-- Simulation commands atomically write compact games, nested game details,
-  game news, rankings, league state, and postseason scheduling changes.
+- Each completed-game simulation batch atomically writes its compact games,
+  nested details, game/ranking news, and league state. Postseason scheduling
+  runs afterward through its own explicit game-and-league transactions; live
+  finalization therefore keeps the session open until all phases finish.
 - Summary advancement atomically appends team history and the completed
   season's dynasty-memory and player-season records, prunes ordinary AI detail,
   and enters realignment.

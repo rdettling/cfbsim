@@ -1,4 +1,10 @@
-import type { PlayerRecord, PlayerSeasonStats } from '../types/db';
+import type {
+  PlayCall,
+  PlayParticipants,
+  PlayTiming,
+  PlayerRecord,
+  PlayerSeasonStats,
+} from '../types/db';
 import type { LeagueStage, Team } from '../types/domain';
 import type { SeasonTeamSnapshot } from '../types/memory';
 import type { TeamAggregateTotals } from '../types/stats';
@@ -107,6 +113,45 @@ export const buildTestPlayer = (
   stars: 3,
   development_trait: 3,
   starter: true,
+  ...overrides,
+});
+
+export const buildTestPlayParticipants = (
+  overrides: Partial<PlayParticipants> = {},
+): PlayParticipants => ({
+  passerId: null,
+  rusherId: null,
+  targetId: null,
+  tacklerId: null,
+  sackerId: null,
+  interceptorId: null,
+  forcedFumbleById: null,
+  fumbleRecoveryById: null,
+  kickerId: null,
+  punterId: null,
+  ...overrides,
+});
+
+export const buildTestPlayCall = (
+  overrides: Partial<Extract<PlayCall, { kind: 'scrimmage' }>> = {},
+): PlayCall => ({
+  kind: 'scrimmage',
+  offense: 'inside_run',
+  defense: 'base',
+  ...overrides,
+});
+
+export const buildTestPlayTiming = (
+  overrides: Partial<Extract<PlayTiming, { kind: 'regulation' }>> = {},
+): PlayTiming => ({
+  kind: 'regulation',
+  start: { quarter: 1, secondsLeft: 900, running: false },
+  end: { quarter: 1, secondsLeft: 895, running: true },
+  elapsedSeconds: 5,
+  outOfBounds: false,
+  tempo: 'normal',
+  eventAfter: null,
+  chargedTimeoutAfter: null,
   ...overrides,
 });
 

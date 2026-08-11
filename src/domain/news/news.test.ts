@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildTestPlayer, buildTestTeam } from '../../test/fixtures';
+import {
+  buildTestPlayCall,
+  buildTestPlayer,
+  buildTestPlayParticipants,
+  buildTestPlayTiming,
+  buildTestTeam,
+} from '../../test/fixtures';
 import type { GameDetailRecord, GameRecord } from '../../types/db';
 import { extractGameStoryFacts, type FeaturedPerformance } from './facts';
 import {
@@ -107,9 +113,20 @@ const scoringDrive = ({
     header: '1st & 10',
     scoreA: scoreA - (offenseId === 1 ? 7 : 0),
     scoreB: scoreB - (offenseId === 2 ? 7 : 0),
-    quarter,
-    clockSecondsLeft: secondsLeft + 5,
-    playSeconds: 5,
+    call: buildTestPlayCall(),
+    timing: buildTestPlayTiming({
+      start: {
+        quarter: quarter as 1 | 2 | 3 | 4,
+        secondsLeft: secondsLeft + 5,
+        running: true,
+      },
+      end: {
+        quarter: quarter as 1 | 2 | 3 | 4,
+        secondsLeft,
+        running: false,
+      },
+    }),
+    participants: buildTestPlayParticipants({ rusherId: 7 }),
   }],
 });
 

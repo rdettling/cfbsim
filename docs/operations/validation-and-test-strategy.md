@@ -16,7 +16,8 @@ Validation is layered:
 5. **Interface checks**: exact on-stage and off-stage loader contracts still
    match UI expectations.
 
-Because the simulator is stochastic, validation uses scenario sets and aggregated expectations, not single deterministic scores.
+Because the simulator is stochastic, validation uses seeded scenario sets and
+aggregate expectations rather than treating one game as evidence.
 
 ## Workflow
 
@@ -46,11 +47,12 @@ Because the simulator is stochastic, validation uses scenario sets and aggregate
   - `npm test`
   - `npm run typecheck`
   - `npm run build`
-  - `npm run eval:winrate`
+  - `npm run eval:sim`
+  - `npm run eval:sim-stability`
+  - `npm run tune:sim`
+  - `npm run generate:sim-benchmark -- --check`
   - `npm run eval:news -- --seed <seed> --seeds <count> --seasons <count> --replay-seeds <count>`
   - `npm run eval:recruiting-balance -- --seed <seed> --seeds <count> --seasons <count> --replay-seeds <count>`
-  - `npm run tune:yards` (calibration run; use carefully because it can rewrite tuning)
-  - `npm run tune:winrate` (calibration run; rewrites tuning)
 - **Manual scenario checks are required** where automated integration tests are absent.
 - **Statistical checks** should compare trend/direction and distribution ranges, not exact single-run values.
 
@@ -117,7 +119,8 @@ IDs must remain stable once their coverage is established.
 
 - Validation should preserve year scoping (`currentYear`) and stage ordering invariants.
 - Scenario runs should avoid conflating doc edits with tuning/data rewrites unless explicitly intended.
-- Reproducibility is limited due to stochastic simulation; use sample sizes and repeated runs for confidence.
+- Seeded replay must be exact; statistical credibility still requires multiple
+  seeds and adequate sample sizes.
 
 ## Coverage Gaps
 
@@ -163,15 +166,30 @@ IDs must remain stable once their coverage is established.
 8. Run one complete seasonal cycle in 12-team mode.
 9. Repeat postseason-focused runs in 2-team and 4-team modes.
 10. Execute at least one full live-sim game and one batch-sim progression check.
-11. Run `npm run eval:winrate` for trend sanity on rating differential behavior.
+11. Run `npm run eval:sim` for exact replay, game-state invariants, relationship
+    gates, rating preservation, and diagnostics for the 22 frozen production
+    metrics. Production, score, and margin comparisons do not fail the command.
+    The accepted replay checksum is `66ccddc7`.
+12. Run `npm run generate:sim-benchmark -- --check` when benchmark generation,
+    calibration metrics, or source documentation changes. Routine tests remain
+    offline; this explicit check is the networked source-verification step.
+13. Run `npm run tune:sim` when changing approved controls. It searches 13
+    bounded parameters over three deterministic equal-team seeds, prints only
+    an in-memory candidate, and restores runtime tuning.
+14. Run `npm run eval:sim-stability` before a future global retune. Its five
+    held-out blocks and common-seed sensitivity matrix are long-running offline
+    diagnostics. Production/rating findings do not fail the command, while
+    malformed data, invariants, nondeterminism, seed overlap, and tuning leaks
+    do.
 
 For league-news copy changes, run the representative three-seed, two-season,
 one-replay `eval:news` corpus. Copy changes must preserve the appropriate
-editorial invariants. Scoring-only changes must preserve the news-content
-checksum `feffcb7c`, produce no structural violations, place ranked teams in
-85–92% of weekly top-five slots and 93–98% of weekly leads, and give every
-unranked-only lead at least 20 verified drama points. Every run must retain
-game-type, primary-angle, and syntax-family coverage.
+editorial invariants. The accepted news-content checksum is `b2218e6b`. Future
+scoring changes must produce no structural violations. Ranked-team placement
+in weekly top-five slots and leads, and the drama score of unranked-only leads,
+remain warning-level editorial distributions that require review rather than
+hard acceptance gates. Every run must retain game-type, primary-angle, and
+syntax-family coverage.
 
 For an affected frontend route, also inspect approximately 1440×900, 1280×720,
 768×1024, and 390×844. At `lg`, verify document containment and intentional
@@ -216,5 +234,5 @@ internal scrolling; below `lg`, verify no unintended horizontal overflow.
   - `src/components/layout/SeasonBanner.tsx`
 - Commands/scripts:
   - `package.json`
-  - `scripts/eval_winrate.ts`, `scripts/eval_recruiting_balance.ts`,
-    `scripts/tune_yards.ts`, `scripts/tune_winrate.ts`
+  - `scripts/eval_sim.ts`, `scripts/generate_sim_benchmark.ts`,
+    `scripts/eval_recruiting_balance.ts`

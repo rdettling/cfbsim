@@ -63,7 +63,9 @@ const toLeaderEntry = (
 const isLeaderEntry = (entry: LeaderEntry | null): entry is LeaderEntry => entry !== null;
 
 const buildTeamStats = (teamId: number, points: number, plays: PlayRecord[]) => {
-  const teamPlays = plays.filter(play => play.offenseId === teamId);
+  const teamPlays = plays.filter(
+    play => play.offenseId === teamId && play.call.kind !== 'try',
+  );
   const passPlays = teamPlays.filter(play => play.playType === 'pass');
   const runPlays = teamPlays.filter(play => play.playType === 'run');
   const passYards = passPlays.reduce((sum, play) => sum + play.yardsGained, 0);
@@ -80,7 +82,9 @@ const buildTeamStats = (teamId: number, points: number, plays: PlayRecord[]) => 
   const passAttempts = passPlays.length;
   const runAttempts = runPlays.length;
   const timeOfPossessionSeconds = teamPlays.reduce(
-    (sum, play) => sum + (typeof play.playSeconds === 'number' ? Math.max(play.playSeconds, 0) : 0),
+    (sum, play) => sum + (
+      play.timing.kind === 'regulation' ? Math.max(play.timing.elapsedSeconds, 0) : 0
+    ),
     0
   );
 

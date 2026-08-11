@@ -103,8 +103,11 @@ share one explicit `NewsItem` union and feed. A separate rankings publisher
 also announces the final 2-, 4-, or 12-team playoff field without introducing
 a publisher registry or poll-history store. Season initialization also writes
 three factual Week 0 previews for the preseason poll, national outlook, and
-opening schedule spotlight. Database schema version 14
-intentionally resets older saves so persisted feeds never mix publisher epochs.
+opening schedule spotlight. Database schema version 21 is the single current
+schema epoch and stores exact offensive/defensive/clock-management/try calls,
+participant roles, and regulation/overtime/try timing on every simulated play.
+It implements the current NCAA overtime scoring sequence but does not model
+overtime timeout allowances.
 
 News copy catalogs, generation, ordering, presentation metadata, and persisted
 integrity checks have separate focused owners. Every mixed-feed operation uses

@@ -68,3 +68,13 @@ export const createSeededRandom = (seed: number): RandomSource => {
 
 export const mathRandomSource = (): RandomSource =>
   createSource(Math.random, () => mathRandomSource());
+
+export const withSeededMathRandom = <T>(random: RandomSource, run: () => T): T => {
+  const original = Math.random;
+  Math.random = () => random.next();
+  try {
+    return run();
+  } finally {
+    Math.random = original;
+  }
+};

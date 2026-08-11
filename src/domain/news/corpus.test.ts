@@ -8,10 +8,9 @@ import { evaluateNewsAudit } from './audit';
 import { storyTemplateSupportsEntry } from './auditValidation';
 import {
   generateNewsAuditCorpus,
-  withSeededMathRandom,
   type NewsAuditCorpusData,
 } from './corpus';
-import { createSeededRandom } from '../utils/random';
+import { createSeededRandom, withSeededMathRandom } from '../utils/random';
 import { deriveEditorialIdentity } from './policy';
 import { STORY_TEMPLATES_BY_ID } from './templates';
 

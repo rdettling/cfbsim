@@ -14,6 +14,7 @@ import {
 } from './newsworthiness';
 import { evaluateRankingNewsAudit, type RankingNewsAuditMetrics } from './rankingAudit';
 import { evaluatePreviewNewsAudit, type PreviewNewsAuditMetrics } from './previewAudit';
+import { checksumValues } from '../utils/checksum';
 
 export type NewsAuditSource = 'simulation' | 'scenario';
 
@@ -281,19 +282,6 @@ const notice = (code: string, message: string, storyIds: string[] = []): NewsAud
   storyIds: [...storyIds].sort(),
 });
 
-export const checksumValues = (values: unknown[]) => {
-  let hash = 2166136261;
-  const text = values
-    .map(value => JSON.stringify(value))
-    .sort()
-    .join('\n');
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-};
-
 export const evaluateNewsAudit = (
   entries: NewsAuditEntry[],
   configuration: NewsAuditSummary['configuration'],
@@ -464,10 +452,10 @@ export const evaluateNewsAudit = (
   );
 
   const violations = buildNewsAuditViolations(entries);
-  if (committedRepresentative && newsContentChecksum !== 'feffcb7c') {
+  if (committedRepresentative && newsContentChecksum !== 'b2218e6b') {
     violations.push(notice(
       'news_content_drift',
-      `Scoring changed news content checksum ${newsContentChecksum}; expected feffcb7c.`,
+      `Simulation changed news content checksum ${newsContentChecksum}; expected b2218e6b.`,
     ));
   }
   const warnings: NewsAuditNotice[] = [];

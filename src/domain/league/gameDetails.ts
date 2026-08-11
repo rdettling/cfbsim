@@ -39,9 +39,6 @@ export const buildGameDetail = (
             ...play
           }) => ({
             ...play,
-            quarter: play.quarter ?? 1,
-            clockSecondsLeft: play.clockSecondsLeft ?? 0,
-            playSeconds: play.playSeconds ?? 0,
           })),
       })),
     playerStats: logs.map(({ gameId: _logGameId, ...log }) => log),

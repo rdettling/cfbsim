@@ -45,6 +45,97 @@ export interface DriveRecord {
   scoreBAfter: number;
 }
 
+export interface PlayParticipants {
+  passerId: number | null;
+  rusherId: number | null;
+  targetId: number | null;
+  tacklerId: number | null;
+  sackerId: number | null;
+  interceptorId: number | null;
+  forcedFumbleById: number | null;
+  fumbleRecoveryById: number | null;
+  kickerId: number | null;
+  punterId: number | null;
+}
+
+export type OffensiveConcept =
+  | 'inside_run'
+  | 'outside_run'
+  | 'option'
+  | 'quick_pass'
+  | 'intermediate_pass'
+  | 'deep_pass'
+  | 'screen'
+  | 'play_action';
+
+export type DefensiveIntent =
+  | 'base'
+  | 'loaded_box'
+  | 'coverage'
+  | 'pressure';
+
+export type ClockTempo = 'normal' | 'hurry_up' | 'chew_clock';
+
+export type ClockManagementAction = 'spike' | 'kneel';
+
+export type PlayCall =
+  | {
+      kind: 'scrimmage';
+      offense: OffensiveConcept;
+      defense: DefensiveIntent;
+    }
+  | { kind: 'clock_management'; action: ClockManagementAction }
+  | { kind: 'special_teams'; concept: 'punt' | 'field_goal' }
+  | { kind: 'try'; attempt: 'extra_point' }
+  | {
+      kind: 'try';
+      attempt: 'two_point';
+      offense: OffensiveConcept;
+      defense: DefensiveIntent;
+    };
+
+export type ClockQuarter = 1 | 2 | 3 | 4;
+
+export interface ClockSnapshot {
+  quarter: ClockQuarter;
+  secondsLeft: number;
+  running: boolean;
+}
+
+export type RegulationClockEvent =
+  | 'two_minute_timeout'
+  | 'end_of_quarter'
+  | 'halftime'
+  | 'end_of_regulation';
+
+export type PlayTiming =
+  | {
+      kind: 'regulation';
+      start: ClockSnapshot;
+      end: ClockSnapshot;
+      elapsedSeconds: number;
+      outOfBounds: boolean;
+      tempo: ClockTempo;
+      eventAfter: RegulationClockEvent | null;
+      chargedTimeoutAfter: 'offense' | 'defense' | null;
+    }
+  | {
+      kind: 'overtime';
+      period: number;
+      outOfBounds: boolean;
+    }
+  | {
+      kind: 'try';
+      context: 'regulation';
+      quarter: ClockQuarter;
+      secondsLeft: number;
+    }
+  | {
+      kind: 'try';
+      context: 'overtime';
+      period: number;
+    };
+
 export interface PlayRecord {
   id: number;
   gameId: number;
@@ -61,9 +152,9 @@ export interface PlayRecord {
   header: string;
   scoreA: number;
   scoreB: number;
-  quarter?: number;
-  clockSecondsLeft?: number;
-  playSeconds?: number;
+  call: PlayCall;
+  participants: PlayParticipants;
+  timing: PlayTiming;
 }
 
 export interface GameLogRecord {
@@ -167,11 +258,7 @@ export type PlayerOrigin =
 export type GameDetailPlay = Omit<
   PlayRecord,
   'id' | 'gameId' | 'driveId' | 'offenseId' | 'defenseId'
-> & {
-  quarter: number;
-  clockSecondsLeft: number;
-  playSeconds: number;
-};
+>;
 
 export type GameDetailDrive = Omit<DriveRecord, 'id' | 'gameId'> & {
   plays: GameDetailPlay[];

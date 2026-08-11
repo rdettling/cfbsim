@@ -55,6 +55,7 @@ export const accumulateTeamAggregateTotals = (
   });
 
   plays.forEach(play => {
+    if (play.call.kind === 'try') return;
     if (play.playType === 'pass') {
       playCount += 1;
       passYards += play.yardsGained;

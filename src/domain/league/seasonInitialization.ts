@@ -14,7 +14,7 @@ import {
   withoutDeclinedRivalries,
 } from '../rivalryScheduling';
 import { buildFullScheduleFromExisting } from '../schedule/planner';
-import { SECONDS_PER_QUARTER } from '../sim/engine';
+import { SECONDS_PER_QUARTER } from '../sim/clock';
 import { buildWatchability } from '../sim/games';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { generateRandomSeed } from '../utils/randomSeed';

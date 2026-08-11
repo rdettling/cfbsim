@@ -2,7 +2,7 @@ import type { LeagueState } from '../../types/league';
 import type { SimGame, StartersCache } from '../../types/sim';
 import type { PlayerRecord } from '../../types/db';
 import type { Team } from '../../types/domain';
-import type { SimContext } from './engine';
+import type { SimContext } from './drive';
 
 export type InteractiveContextBase = {
   league: LeagueState;
@@ -11,6 +11,7 @@ export type InteractiveContextBase = {
   playersById: Map<number, PlayerRecord>;
   currentOffense: Team | null;
   currentDefense: Team | null;
+  otPossession: number;
 };
 
 export const buildSimContext = (
@@ -30,5 +31,6 @@ export const buildSimContext = (
     defense: context.currentDefense,
     lead,
     clockEnabled,
+    overtimePossession: clockEnabled ? null : context.otPossession as 0 | 1,
   };
 };

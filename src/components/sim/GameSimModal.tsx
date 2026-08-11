@@ -95,6 +95,8 @@ const GameSimModal = ({ open, gameId, onClose }: GameSimModalProps) => {
           clockSecondsLeft: state.clockSecondsLeft,
           inOvertime: state.inOvertime,
           overtimeCount: state.overtimeCount,
+          timeoutsRemainingA: state.timeoutsRemainingA,
+          timeoutsRemainingB: state.timeoutsRemainingB,
         },
       )
     : null;
@@ -355,9 +357,17 @@ const GameSimModal = ({ open, gameId, onClose }: GameSimModalProps) => {
               <Box sx={{ flexShrink: 0 }}>
                 <GameControls
                   phase={state.phase}
-                  decisionPrompt={state.isUserOffenseNow ? state.decisionPrompt : null}
+                  decisionPrompt={state.decisionPrompt}
                   onAdvance={(scope) => void actions.advance(scope)}
                   onDecision={(decision) => void actions.advance('play', decision)}
+                  managementSide={state.userSide}
+                  selectedTempo={state.selectedTempo}
+                  timeoutAfterPlay={state.timeoutAfterPlay}
+                  canUseTimeout={state.canUseTimeout}
+                  canShowSpike={state.canShowSpike}
+                  canShowKneel={state.canShowKneel}
+                  onTempoChange={actions.setTempo}
+                  onTimeoutChange={actions.setTimeoutAfterPlay}
                 />
               </Box>
             </>

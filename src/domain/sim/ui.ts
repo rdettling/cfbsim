@@ -15,9 +15,9 @@ export const mapPlayRecord = (play: PlayRecord): Play => ({
   result: play.result,
   scoreA: play.scoreA,
   scoreB: play.scoreB,
-  quarter: play.quarter,
-  clockSecondsLeft: play.clockSecondsLeft,
-  playSeconds: play.playSeconds,
+  call: play.call,
+  participants: play.participants,
+  timing: play.timing,
 });
 
 export const buildDriveUi = (
@@ -45,11 +45,4 @@ export const buildNextHeader = (fieldPosition: number, down: number, yardsLeft: 
   const yardLine = fieldPosition <= 50 ? fieldPosition : 100 - fieldPosition;
   const downSuffix = down === 1 ? 'st' : down === 2 ? 'nd' : down === 3 ? 'rd' : 'th';
   return `${down}${downSuffix} & ${yardsLeft} at ${location} ${yardLine}`;
-};
-
-export const resolveDecision = (decision: string) => {
-  if (decision === 'field_goal') return 'field_goal';
-  if (decision === 'punt') return 'punt';
-  if (decision === 'pass') return 'pass';
-  return 'run';
 };

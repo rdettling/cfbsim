@@ -26,11 +26,15 @@ const TeamIdentity = ({
   name,
   record,
   possession,
+  timeoutsRemaining,
+  showTimeouts,
   align,
 }: {
   name: string;
   record: string;
   possession: boolean;
+  timeoutsRemaining: number;
+  showTimeouts: boolean;
   align: 'left' | 'right';
 }) => (
   <Stack
@@ -73,6 +77,11 @@ const TeamIdentity = ({
       >
         {record}
       </Typography>
+      {showTimeouts && (
+        <Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: 1 }}>
+          TO {Array.from({ length: 3 }, (_, index) => index < timeoutsRemaining ? '●' : '○').join('')}
+        </Typography>
+      )}
     </Box>
   </Stack>
 );
@@ -108,6 +117,8 @@ const GameScoreStrip = ({ matchup, isPlaybackComplete }: GameScoreStripProps) =>
         name={matchup.awayTeam.name}
         record={matchup.awayTeam.record}
         possession={!isPlaybackComplete && matchup.isAwayOnOffense}
+        timeoutsRemaining={matchup.awayTimeoutsRemaining}
+        showTimeouts={!isPlaybackComplete && !matchup.inOvertime}
         align="left"
       />
       <Box sx={{ textAlign: 'center', minWidth: { xs: 76, sm: 112 } }}>
@@ -135,6 +146,8 @@ const GameScoreStrip = ({ matchup, isPlaybackComplete }: GameScoreStripProps) =>
         name={matchup.homeTeam.name}
         record={matchup.homeTeam.record}
         possession={!isPlaybackComplete && !matchup.isAwayOnOffense}
+        timeoutsRemaining={matchup.homeTimeoutsRemaining}
+        showTimeouts={!isPlaybackComplete && !matchup.inOvertime}
         align="right"
       />
     </Box>

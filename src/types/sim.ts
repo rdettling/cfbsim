@@ -1,5 +1,13 @@
 import type { Team } from './domain';
-import type { DriveRecord, PlayRecord, PlayerRecord } from './db';
+import type {
+  ClockManagementAction,
+  ClockTempo,
+  DefensiveIntent,
+  DriveRecord,
+  OffensiveConcept,
+  PlayRecord,
+  PlayerRecord,
+} from './db';
 import type { GameType } from './news';
 
 export interface SimGame {
@@ -31,6 +39,8 @@ export interface SimGame {
   quarter: number;
   clockSecondsLeft: number;
   clockRunning: boolean;
+  timeoutsRemainingA: number;
+  timeoutsRemainingB: number;
   scoreA: number;
   scoreB: number;
   watchability: number | null;
@@ -44,12 +54,36 @@ export interface SimDrive {
 
 export interface StartersCache {
   byTeamPos: Map<string, PlayerRecord[]>;
+  byId: Map<number, PlayerRecord>;
 }
 
-export type InteractivePlayChoice = 'run' | 'pass' | 'punt' | 'field_goal' | 'auto';
+export type InteractivePlayInstruction =
+  | { kind: 'offense'; concept: OffensiveConcept }
+  | { kind: 'defense'; intent: DefensiveIntent }
+  | { kind: 'clock_management'; action: ClockManagementAction }
+  | { kind: 'special_teams'; concept: 'punt' | 'field_goal' }
+  | { kind: 'try'; attempt: 'extra_point' }
+  | { kind: 'try_offense'; concept: OffensiveConcept }
+  | { kind: 'try_defense'; intent: DefensiveIntent };
+
+export type InteractivePlayChoice = InteractivePlayInstruction | 'auto';
+
+export type TimeoutInstruction = 'auto' | 'use' | 'hold';
+
+export interface InteractiveStepInstruction {
+  call: InteractivePlayChoice;
+  tempo: ClockTempo | 'auto';
+  timeoutAfter: {
+    offense: TimeoutInstruction;
+    defense: TimeoutInstruction;
+  };
+}
 
 export interface InteractiveDriveState {
   drive: DriveRecord;
+  phase: 'scrimmage' | 'try';
+  tryOrigin: 'touchdown' | 'overtime_shootout' | null;
+  tryTiming: Extract<import('./db').PlayTiming, { kind: 'try' }> | null;
   fieldPosition: number;
   down: number;
   yardsLeft: number;

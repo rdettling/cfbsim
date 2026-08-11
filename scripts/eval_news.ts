@@ -4,10 +4,10 @@ import { pathToFileURL } from 'node:url';
 import type { ConferencesData, TeamsData, YearData } from '../src/types/baseData';
 import type { WeightedNameData } from '../src/types/recruiting';
 import {
-  checksumValues,
   evaluateNewsAudit,
   type NewsAuditNotice,
 } from '../src/domain/news/audit';
+import { checksumValues } from '../src/domain/utils/checksum';
 import {
   evaluateRankingNewsAudit,
   evaluateMixedNewsFrontPages,

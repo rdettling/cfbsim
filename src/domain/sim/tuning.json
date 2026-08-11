@@ -1,32 +1,232 @@
 {
+  "conversions": {
+    "extraPointMakeProbability": 0.955,
+    "automaticTwoPoint": {
+      "lateRegulationSeconds": 300,
+      "postTouchdownMargins": [-10, -8, -5, -2, 1]
+    }
+  },
+  "defense": {
+    "automatic": {
+      "base": {
+        "base": 0.4,
+        "loaded_box": 0.2,
+        "coverage": 0.25,
+        "pressure": 0.15
+      },
+      "adjustments": {
+        "shortYardage": { "base": 1, "loaded_box": 1.8, "coverage": 0.65, "pressure": 1.15 },
+        "longYardage": { "base": 0.9, "loaded_box": 0.55, "coverage": 1.55, "pressure": 1.3 },
+        "redZone": { "base": 1, "loaded_box": 1.3, "coverage": 1.2, "pressure": 0.85 },
+        "protectingLead": { "base": 0.85, "loaded_box": 0.55, "coverage": 1.7, "pressure": 0.9 },
+        "trailingLate": { "base": 0.9, "loaded_box": 1.2, "coverage": 0.75, "pressure": 1.35 }
+      }
+    },
+    "matchups": {
+      "base": {
+        "inside_run": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 },
+        "outside_run": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 },
+        "option": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 },
+        "quick_pass": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 },
+        "intermediate_pass": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 },
+        "deep_pass": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 },
+        "screen": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 },
+        "play_action": { "meanMultiplier": 1, "stdDevMultiplier": 1, "positiveMultiplier": 1, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1 }
+      },
+      "loaded_box": {
+        "inside_run": { "meanMultiplier": 0.72, "stdDevMultiplier": 0.8, "positiveMultiplier": 0.65, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1.15 },
+        "outside_run": { "meanMultiplier": 0.92, "stdDevMultiplier": 1.08, "positiveMultiplier": 0.95, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1.1 },
+        "option": { "meanMultiplier": 0.9, "stdDevMultiplier": 1.08, "positiveMultiplier": 0.95, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1.2 },
+        "quick_pass": { "meanMultiplier": 1.04, "stdDevMultiplier": 1.02, "positiveMultiplier": 1.03, "completionMultiplier": 1.03, "sackMultiplier": 0.95, "interceptionMultiplier": 0.9, "fumbleMultiplier": 1 },
+        "intermediate_pass": { "meanMultiplier": 1.06, "stdDevMultiplier": 1.04, "positiveMultiplier": 1.06, "completionMultiplier": 1.04, "sackMultiplier": 0.95, "interceptionMultiplier": 0.9, "fumbleMultiplier": 1 },
+        "deep_pass": { "meanMultiplier": 1.1, "stdDevMultiplier": 1.08, "positiveMultiplier": 1.12, "completionMultiplier": 1.06, "sackMultiplier": 0.9, "interceptionMultiplier": 0.85, "fumbleMultiplier": 1 },
+        "screen": { "meanMultiplier": 1.05, "stdDevMultiplier": 1.05, "positiveMultiplier": 1.08, "completionMultiplier": 1.04, "sackMultiplier": 0.9, "interceptionMultiplier": 0.9, "fumbleMultiplier": 1 },
+        "play_action": { "meanMultiplier": 1.12, "stdDevMultiplier": 1.08, "positiveMultiplier": 1.15, "completionMultiplier": 1.08, "sackMultiplier": 0.88, "interceptionMultiplier": 0.82, "fumbleMultiplier": 1 }
+      },
+      "coverage": {
+        "inside_run": { "meanMultiplier": 1.12, "stdDevMultiplier": 1.03, "positiveMultiplier": 1.08, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 0.9 },
+        "outside_run": { "meanMultiplier": 1.08, "stdDevMultiplier": 1.04, "positiveMultiplier": 1.08, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 0.9 },
+        "option": { "meanMultiplier": 1.08, "stdDevMultiplier": 1.06, "positiveMultiplier": 1.08, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 0.9 },
+        "quick_pass": { "meanMultiplier": 0.96, "stdDevMultiplier": 0.98, "positiveMultiplier": 0.96, "completionMultiplier": 0.98, "sackMultiplier": 0.95, "interceptionMultiplier": 1.1, "fumbleMultiplier": 1 },
+        "intermediate_pass": { "meanMultiplier": 0.92, "stdDevMultiplier": 0.96, "positiveMultiplier": 0.92, "completionMultiplier": 0.94, "sackMultiplier": 0.95, "interceptionMultiplier": 1.15, "fumbleMultiplier": 1 },
+        "deep_pass": { "meanMultiplier": 0.86, "stdDevMultiplier": 0.94, "positiveMultiplier": 0.86, "completionMultiplier": 0.9, "sackMultiplier": 0.95, "interceptionMultiplier": 1.2, "fumbleMultiplier": 1 },
+        "screen": { "meanMultiplier": 1.08, "stdDevMultiplier": 1.08, "positiveMultiplier": 1.1, "completionMultiplier": 1.03, "sackMultiplier": 0.9, "interceptionMultiplier": 0.95, "fumbleMultiplier": 1 },
+        "play_action": { "meanMultiplier": 0.9, "stdDevMultiplier": 0.95, "positiveMultiplier": 0.9, "completionMultiplier": 0.93, "sackMultiplier": 0.95, "interceptionMultiplier": 1.18, "fumbleMultiplier": 1 }
+      },
+      "pressure": {
+        "inside_run": { "meanMultiplier": 0.98, "stdDevMultiplier": 1.18, "positiveMultiplier": 1.12, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1.12 },
+        "outside_run": { "meanMultiplier": 0.98, "stdDevMultiplier": 1.2, "positiveMultiplier": 1.14, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1.15 },
+        "option": { "meanMultiplier": 0.96, "stdDevMultiplier": 1.22, "positiveMultiplier": 1.16, "completionMultiplier": 1, "sackMultiplier": 1, "interceptionMultiplier": 1, "fumbleMultiplier": 1.3 },
+        "quick_pass": { "meanMultiplier": 1.05, "stdDevMultiplier": 1.08, "positiveMultiplier": 1.08, "completionMultiplier": 0.96, "sackMultiplier": 1.15, "interceptionMultiplier": 1.08, "fumbleMultiplier": 1 },
+        "intermediate_pass": { "meanMultiplier": 1.1, "stdDevMultiplier": 1.12, "positiveMultiplier": 1.14, "completionMultiplier": 0.93, "sackMultiplier": 1.35, "interceptionMultiplier": 1.15, "fumbleMultiplier": 1 },
+        "deep_pass": { "meanMultiplier": 1.15, "stdDevMultiplier": 1.15, "positiveMultiplier": 1.18, "completionMultiplier": 0.9, "sackMultiplier": 1.5, "interceptionMultiplier": 1.2, "fumbleMultiplier": 1 },
+        "screen": { "meanMultiplier": 1.12, "stdDevMultiplier": 1.2, "positiveMultiplier": 1.18, "completionMultiplier": 1.02, "sackMultiplier": 0.85, "interceptionMultiplier": 0.95, "fumbleMultiplier": 1 },
+        "play_action": { "meanMultiplier": 1.14, "stdDevMultiplier": 1.14, "positiveMultiplier": 1.18, "completionMultiplier": 0.9, "sackMultiplier": 1.55, "interceptionMultiplier": 1.15, "fumbleMultiplier": 1 }
+      }
+    }
+  },
+  "concepts": {
+    "automatic": {
+      "run": {
+        "inside_run": 0.5,
+        "outside_run": 0.35,
+        "option": 0.15
+      },
+      "pass": {
+        "quick_pass": 0.25,
+        "intermediate_pass": 0.3,
+        "deep_pass": 0.15,
+        "screen": 0.15,
+        "play_action": 0.15
+      },
+      "adjustments": {
+        "shortYardage": {
+          "inside_run": 1.8,
+          "outside_run": 0.65,
+          "option": 1.4,
+          "quick_pass": 1.4,
+          "intermediate_pass": 0.9,
+          "deep_pass": 0.45,
+          "screen": 1,
+          "play_action": 1.3
+        },
+        "longYardage": {
+          "inside_run": 0.75,
+          "outside_run": 1.25,
+          "option": 1.15,
+          "quick_pass": 1,
+          "intermediate_pass": 1.25,
+          "deep_pass": 1.25,
+          "screen": 1.2,
+          "play_action": 0.7
+        },
+        "redZone": {
+          "quick_pass": 1.2,
+          "intermediate_pass": 1.15,
+          "deep_pass": 0.55,
+          "screen": 0.8,
+          "play_action": 1.25
+        },
+        "lateTrailing": {
+          "quick_pass": 1.3,
+          "intermediate_pass": 1.2,
+          "deep_pass": 1.25,
+          "screen": 0.75,
+          "play_action": 0.65
+        },
+        "lateLeading": {
+          "inside_run": 1.25,
+          "outside_run": 1,
+          "option": 0.8
+        }
+      }
+    },
+    "run": {
+      "inside_run": {
+        "meanMultiplier": 1.05,
+        "stdDevMultiplier": 0.78,
+        "positiveMultiplier": 0.7,
+        "fumbleMultiplier": 0.8
+      },
+      "outside_run": {
+        "meanMultiplier": 0.84,
+        "stdDevMultiplier": 1.15,
+        "positiveMultiplier": 1.25,
+        "fumbleMultiplier": 1
+      },
+      "option": {
+        "meanMultiplier": 0.92,
+        "stdDevMultiplier": 1.08,
+        "positiveMultiplier": 1.1,
+        "fumbleMultiplier": 1.4
+      }
+    },
+    "pass": {
+      "quick_pass": {
+        "meanMultiplier": 0.58,
+        "stdDevMultiplier": 0.72,
+        "positiveMultiplier": 0.45,
+        "completionMultiplier": 1.14,
+        "sackMultiplier": 0.55,
+        "interceptionMultiplier": 0.65
+      },
+      "intermediate_pass": {
+        "meanMultiplier": 1,
+        "stdDevMultiplier": 1,
+        "positiveMultiplier": 1,
+        "completionMultiplier": 1,
+        "sackMultiplier": 1,
+        "interceptionMultiplier": 1
+      },
+      "deep_pass": {
+        "meanMultiplier": 1.7,
+        "stdDevMultiplier": 1.25,
+        "positiveMultiplier": 1.2,
+        "completionMultiplier": 0.7,
+        "sackMultiplier": 1.4,
+        "interceptionMultiplier": 1.45
+      },
+      "screen": {
+        "meanMultiplier": 0.52,
+        "stdDevMultiplier": 1.2,
+        "positiveMultiplier": 1.3,
+        "completionMultiplier": 1.1,
+        "sackMultiplier": 0.45,
+        "interceptionMultiplier": 0.45
+      },
+      "play_action": {
+        "meanMultiplier": 1.23,
+        "stdDevMultiplier": 1.1,
+        "positiveMultiplier": 1.08,
+        "completionMultiplier": 0.96,
+        "sackMultiplier": 1.25,
+        "interceptionMultiplier": 0.85
+      }
+    }
+  },
   "clock": {
     "tempoMultipliers": {
-      "fast": 0.7,
-      "chew": 1.2,
-      "normal": 1
+      "normal": 1,
+      "hurry_up": 0.7,
+      "chew_clock": 1.2
     },
-    "playSeconds": {
-      "run": {
-        "min": 30,
-        "max": 40
-      },
-      "passComplete": {
-        "min": 20,
-        "max": 30
-      },
-      "passIncomplete": {
-        "min": 5,
-        "max": 10
+    "liveBallSeconds": {
+      "scrimmage": {
+        "min": 4,
+        "max": 8
       },
       "specialTeams": {
         "min": 10,
         "max": 20
       }
     },
+    "runoffSeconds": {
+      "runOrSack": {
+        "min": 28,
+        "max": 38
+      },
+      "completedPass": {
+        "min": 18,
+        "max": 28
+      }
+    },
+    "outOfBoundsRates": {
+      "run": 0.08,
+      "pass": 0.2
+    },
     "firstDownStopSeconds": 120,
     "outOfBoundsStop": {
       "firstHalfSeconds": 120,
       "secondHalfSeconds": 300
+    },
+    "management": {
+      "minimumSpikeSeconds": 3,
+      "spikeWindowSeconds": 30,
+      "spikeLiveBallSeconds": { "min": 1, "max": 2 },
+      "kneelLiveBallSeconds": { "min": 1, "max": 2 },
+      "kneelBudgetSeconds": 40,
+      "trailingOffenseTimeoutSeconds": 85,
+      "trailingDefenseFirstHalfSeconds": 55
     }
   },
   "kickoffs": {
@@ -36,44 +236,63 @@
     "returnMax": 35
   },
   "playcalling": {
-    "passWeightBase": 0.5,
+    "passWeightBase": 0.4734526815382582,
     "passWeightThirdAndLong": 0.25,
     "passWeightShortYards": -0.2,
     "passWeightLateTrailing": 0.15,
     "passWeightLateLeading": -0.15,
     "passWeightMin": 0.15,
-    "passWeightMax": 0.85
+    "passWeightMax": 0.85,
+    "fourthDown": {
+      "puntTerritoryMaxFieldPosition": 40,
+      "midfieldMaxFieldPosition": 50,
+      "fieldGoalRangeStartFieldPosition": 63,
+      "midfieldGoMaxYards": 2,
+      "opponentTerritoryGoMaxYards": 3,
+      "fieldGoalTerritoryGoMaxYards": 4
+    }
   },
   "outcomes": {
     "passPositivePower": 3.2,
     "runPositivePower": 4.2,
-    "baseCompPercent": 0.62,
-    "baseSackRate": 0.05,
-    "baseIntRate": 0.03,
-    "baseFumbleRate": 0.02,
+    "baseCompPercent": 0.6250795138400037,
+    "baseSackRate": 0.07157443123381925,
+    "baseIntRate": 0.0747175291627576,
+    "baseFumbleRate": 0.016594110115236878,
     "executionDiffDivisor": 180,
     "yardsDiffDivisor": 172.8,
+    "redZone": {
+      "runPositiveYardsMultiplier": 0.9218752467950635,
+      "passPositiveYardsMultiplier": 0.8086624971886522
+    },
+    "drive": {
+      "thirdDownPositiveYardsMultiplier": 1.050859941885666
+    },
     "pass": {
-      "baseMean": 6.29457260039563,
+      "baseMean": 10,
       "stdDev": 5.226340735191511,
-      "positiveMultiplier": 0.003260878038087979
+      "positiveMultiplier": 0.0009782634114263937
     },
     "run": {
-      "baseMean": 4.074422731653613,
+      "baseMean": 4.62415681627947,
       "stdDev": 3.994593054512268,
-      "positiveMultiplier": 0.00028222561057716645
+      "positiveMultiplier": 0.00017780213466361488
     },
     "sack": {
       "baseMean": -6,
       "stdDev": 2
     },
     "fieldGoal": {
-      "goodFrom": 37,
-      "maxRange": 57,
-      "baseProb": 0.9,
-      "slope": 0.05,
-      "longProb": 0.55,
-      "longSlope": 0.03
+      "shortMaxDistance": 30,
+      "shortProbability": 0.97,
+      "mediumDistance": 40,
+      "mediumProbability": 0.88,
+      "longDistance": 50,
+      "longProbability": 0.7,
+      "extremeDistance": 60,
+      "extremeProbability": 0.4,
+      "minimumProbability": 0.05,
+      "accuracyMultiplier": 0.9157980655167792
     }
   }
 }

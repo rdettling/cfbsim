@@ -1,3 +1,5 @@
+import type { PlayCall, PlayParticipants, PlayTiming } from './db';
+
 export interface Play {
   id: number;
   driveId?: number;
@@ -11,9 +13,9 @@ export interface Play {
   result: string;
   scoreA: number;
   scoreB: number;
-  quarter?: number;
-  clockSecondsLeft?: number;
-  playSeconds?: number;
+  call: PlayCall;
+  participants: PlayParticipants;
+  timing: PlayTiming;
 }
 
 export interface Drive {

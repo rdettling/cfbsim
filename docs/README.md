@@ -38,6 +38,12 @@ git diff --check
 
 - [Simulation Engine](systems/simulation-engine.md) owns drive, play, clock,
   outcome, and game-finalization mechanics.
+- [Simulation Engine Assessment](systems/simulation-engine-assessment.md)
+  records the current depth, accepted diagnostic baseline, known limitations,
+  and maintenance direction.
+- [Simulation Calibration](systems/simulation-calibration.md) defines the
+  frozen modern-FBS benchmark, comparable metric denominators, and diagnostic
+  tolerance contract.
 - [Scheduling and Week Advancement](systems/scheduling-and-week-advancement.md)
   owns preseason scheduling, the weekly simulation pipeline, and postseason
   game creation.

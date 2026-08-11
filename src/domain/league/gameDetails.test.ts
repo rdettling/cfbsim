@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildTestPlayer, buildTestSeasonTeamSnapshot } from '../../test/fixtures';
+import {
+  buildTestPlayCall,
+  buildTestPlayer,
+  buildTestPlayParticipants,
+  buildTestPlayTiming,
+  buildTestSeasonTeamSnapshot,
+} from '../../test/fixtures';
 import type { DriveRecord, GameLogRecord, PlayRecord } from '../../types/db';
 import type { SeasonMemory } from '../../types/memory';
 import {
@@ -67,6 +73,9 @@ describe('game detail persistence projections', () => {
       header: '1st & 10',
       scoreA: 7,
       scoreB: 0,
+      call: buildTestPlayCall(),
+      participants: buildTestPlayParticipants({ rusherId: 1 }),
+      timing: buildTestPlayTiming(),
     };
     const detail = buildGameDetail(10, 2025, [drive], [play], [log(1, 1)]);
 
@@ -76,13 +85,19 @@ describe('game detail persistence projections', () => {
     expect(detail.drives[0].plays[0]).not.toHaveProperty('gameId');
     expect(detail.drives[0].plays[0]).not.toHaveProperty('driveId');
     expect(detail.drives[0].plays[0]).toMatchObject({
-      quarter: 1,
-      clockSecondsLeft: 0,
-      playSeconds: 0,
+      timing: buildTestPlayTiming(),
+      call: buildTestPlayCall(),
+      participants: buildTestPlayParticipants({ rusherId: 1 }),
     });
     expect(flattenGameDetail(detail)).toMatchObject({
       drives: [{ gameId: 10, offenseId: 1, defenseId: 2 }],
-      plays: [{ gameId: 10, offenseId: 1, defenseId: 2 }],
+      plays: [{
+        gameId: 10,
+        offenseId: 1,
+        defenseId: 2,
+        call: buildTestPlayCall(),
+        participants: buildTestPlayParticipants({ rusherId: 1 }),
+      }],
       logs: [{ gameId: 10, playerId: 1 }],
     });
   });

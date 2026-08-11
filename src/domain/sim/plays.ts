@@ -1,12 +1,31 @@
 import type { Team } from '../../types/domain';
-import type { PlayRecord, PlayerRecord } from '../../types/db';
+import type { PlayParticipants, PlayRecord } from '../../types/db';
 import type { StartersCache } from '../../types/sim';
+import { CONCEPT_LABELS } from './concepts';
+
+const PASS_PHRASES = {
+  quick_pass: { indefinite: 'a quick pass', possessive: 'quick pass' },
+  intermediate_pass: {
+    indefinite: 'an intermediate pass',
+    possessive: 'intermediate pass',
+  },
+  deep_pass: { indefinite: 'a deep pass', possessive: 'deep pass' },
+  screen: { indefinite: 'a screen pass', possessive: 'screen pass' },
+  play_action: {
+    indefinite: 'a play-action pass',
+    possessive: 'play-action pass',
+  },
+} as const;
 
 export const startingYardsLeft = (fieldPosition: number) => (
   fieldPosition >= 90 ? 100 - fieldPosition : 10
 );
 
 export const setPlayHeader = (play: PlayRecord, offense: Team, defense: Team) => {
+  if (play.call.kind === 'try') {
+    play.header = play.call.attempt === 'extra_point' ? 'Extra Point' : 'Two-Point Try';
+    return;
+  }
   let location = '';
   if (play.startingFP < 50) {
     location = `${offense.abbreviation} ${play.startingFP}`;
@@ -25,88 +44,144 @@ export const setPlayHeader = (play: PlayRecord, offense: Team, defense: Team) =>
   }
 };
 
-export const weightedChoice = <T,>(items: Array<{ item: T; weight: number }>) => {
-  const total = items.reduce((sum, entry) => sum + entry.weight, 0);
-  if (total <= 0) return items[Math.floor(Math.random() * items.length)]?.item ?? null;
-  let threshold = Math.random() * total;
-  for (const entry of items) {
-    threshold -= entry.weight;
-    if (threshold <= 0) return entry.item;
-  }
-  return items[items.length - 1]?.item ?? null;
-};
-
-export const chooseReceiver = (candidates: PlayerRecord[], ratingExponent = 4) => {
-  if (!candidates.length) return null;
-  const posBias: Record<string, number> = { wr: 1.4, te: 1.0, rb: 0.6 };
-  const weighted = candidates.map(candidate => ({
-    item: candidate,
-    weight: (candidate.rating ** ratingExponent) * (posBias[candidate.pos.toLowerCase()] ?? 1),
-  }));
-  return weightedChoice(weighted);
+const participantName = (
+  play: PlayRecord,
+  starters: StartersCache,
+  role: keyof PlayParticipants,
+) => {
+  const playerId = play.participants[role];
+  if (playerId === null) throw new Error(`Play ${play.id} is missing ${role}.`);
+  const player = starters.byId.get(playerId);
+  if (!player) throw new Error(`Play ${play.id} references missing starter ${playerId}.`);
+  return `${player.first} ${player.last}`;
 };
 
 export const formatPlayText = (
   play: PlayRecord,
-  offense: Team,
   starters: StartersCache
 ) => {
-  const rb = starters.byTeamPos.get(`${offense.id}:rb`) ?? [];
-  const qb = starters.byTeamPos.get(`${offense.id}:qb`) ?? [];
-  const wr = starters.byTeamPos.get(`${offense.id}:wr`) ?? [];
-  const te = starters.byTeamPos.get(`${offense.id}:te`) ?? [];
-  const k = starters.byTeamPos.get(`${offense.id}:k`) ?? [];
-  const p = starters.byTeamPos.get(`${offense.id}:p`) ?? [];
-
-  if (play.playType === 'run') {
-    const runner = rb[Math.floor(Math.random() * rb.length)];
-    if (!runner) {
-      play.text = 'Run play';
+  if (play.call.kind === 'try') {
+    if (play.call.attempt === 'extra_point') {
+      const kicker = participantName(play, starters, 'kickerId');
+      play.text = play.result === 'made extra point'
+        ? `${kicker}'s extra point is good`
+        : `${kicker}'s extra point is no good`;
       return;
     }
-    if (play.result === 'fumble') {
-      play.text = `${runner.first} ${runner.last} fumbled`;
-    } else if (play.result === 'touchdown') {
-      play.text = `${runner.first} ${runner.last} ran ${play.yardsGained} yards for a touchdown`;
+    const concept = play.call.offense;
+    if (play.playType === 'run') {
+      const runner = participantName(play, starters, 'rusherId');
+      const runPhrase = concept === 'option'
+        ? 'kept the option'
+        : concept === 'outside_run'
+          ? 'ran outside'
+          : 'ran inside';
+      if (play.result === 'made two point run') {
+        play.text = `${runner} ${runPhrase} for a successful two-point conversion`;
+      } else if (play.result === 'failed two point fumble') {
+        const forcer = participantName(play, starters, 'forcedFumbleById');
+        const recovery = participantName(play, starters, 'fumbleRecoveryById');
+        play.text = forcer === recovery
+          ? `${runner} fumbled on the two-point try; ${forcer} forced and recovered it`
+          : `${runner} fumbled on the two-point try; ${forcer} forced it and ${recovery} recovered`;
+      } else {
+        const tackler = participantName(play, starters, 'tacklerId');
+        play.text = `${runner} ${runPhrase} but was stopped by ${tackler} on the two-point try`;
+      }
+      return;
+    }
+    const passer = participantName(play, starters, 'passerId');
+    const phrase = PASS_PHRASES[concept as keyof typeof PASS_PHRASES];
+    if (play.result === 'failed two point sack') {
+      const sacker = participantName(play, starters, 'sackerId');
+      play.text = `${passer} was sacked by ${sacker} on the two-point try`;
+    } else if (play.result === 'failed two point interception') {
+      const target = participantName(play, starters, 'targetId');
+      const interceptor = participantName(play, starters, 'interceptorId');
+      play.text = `${passer}'s two-point pass intended for ${target} was intercepted by ${interceptor}`;
+    } else if (play.result === 'failed two point incomplete') {
+      const target = participantName(play, starters, 'targetId');
+      play.text = `${passer}'s two-point pass intended for ${target} was incomplete`;
+    } else if (play.result === 'made two point pass') {
+      const target = participantName(play, starters, 'targetId');
+      play.text = `${passer} completed ${phrase.indefinite} to ${target} for a successful two-point conversion`;
     } else {
-      play.text = `${runner.first} ${runner.last} ran for ${play.yardsGained} yards`;
+      const target = participantName(play, starters, 'targetId');
+      const tackler = participantName(play, starters, 'tacklerId');
+      play.text = `${passer} completed ${phrase.indefinite} to ${target}, but ${tackler} stopped the two-point try`;
+    }
+    return;
+  }
+  if (play.call.kind === 'clock_management') {
+    if (play.call.action === 'spike') {
+      const passer = participantName(play, starters, 'passerId');
+      play.text = `${passer} spiked the ball to stop the clock`;
+    } else {
+      const rusher = participantName(play, starters, 'rusherId');
+      play.text = `${rusher} took a knee for a loss of ${Math.abs(play.yardsGained)} yard`;
+    }
+  } else if (play.playType === 'run') {
+    const runner = participantName(play, starters, 'rusherId');
+    if (play.call.kind !== 'scrimmage') throw new Error(`Play ${play.id} has no run concept.`);
+    const runPhrase = play.call.offense === 'option'
+      ? 'kept the option'
+      : play.call.offense === 'outside_run'
+        ? 'ran outside'
+        : 'ran inside';
+    if (play.result === 'fumble') {
+      const forcer = participantName(play, starters, 'forcedFumbleById');
+      const recovery = participantName(play, starters, 'fumbleRecoveryById');
+      play.text = forcer === recovery
+        ? `${runner} ${runPhrase} and fumbled; ${forcer} forced and recovered the fumble`
+        : `${runner} ${runPhrase} and fumbled; ${forcer} forced it and ${recovery} recovered`;
+    } else if (play.result === 'touchdown') {
+      play.text = `${runner} ${runPhrase} for ${play.yardsGained} yards and a touchdown`;
+    } else {
+      const tackler = participantName(play, starters, 'tacklerId');
+      play.text = play.timing.kind !== 'try' && play.timing.outOfBounds
+        ? `${runner} ${runPhrase} for ${play.yardsGained} yards and was forced out of bounds by ${tackler}`
+        : `${runner} ${runPhrase} for ${play.yardsGained} yards, tackled by ${tackler}`;
     }
   } else if (play.playType === 'pass') {
-    const qbStarter = qb[0];
-    if (!qbStarter) {
-      play.text = 'Pass play';
-      return;
-    }
+    const passer = participantName(play, starters, 'passerId');
+    if (play.call.kind !== 'scrimmage') throw new Error(`Play ${play.id} has no pass concept.`);
+    const phrase = play.call.offense in PASS_PHRASES
+      ? PASS_PHRASES[play.call.offense as keyof typeof PASS_PHRASES]
+      : {
+          indefinite: CONCEPT_LABELS[play.call.offense].toLowerCase(),
+          possessive: CONCEPT_LABELS[play.call.offense].toLowerCase(),
+        };
     if (play.result === 'sack') {
-      play.text = `${qbStarter.first} ${qbStarter.last} was sacked for a loss of ${Math.abs(play.yardsGained)} yards`;
+      const sacker = participantName(play, starters, 'sackerId');
+      play.text = `${passer} was sacked by ${sacker} while attempting ${phrase.indefinite} for a loss of ${Math.abs(play.yardsGained)} yards`;
     } else if (play.result === 'interception') {
-      play.text = `${qbStarter.first} ${qbStarter.last}'s pass was intercepted`;
+      const target = participantName(play, starters, 'targetId');
+      const interceptor = participantName(play, starters, 'interceptorId');
+      play.text = `${passer}'s ${phrase.possessive} intended for ${target} was intercepted by ${interceptor}`;
     } else if (play.result === 'incomplete pass') {
-      play.text = `${qbStarter.first} ${qbStarter.last}'s pass was incomplete`;
+      const target = participantName(play, starters, 'targetId');
+      play.text = `${passer}'s ${phrase.possessive} intended for ${target} was incomplete`;
     } else {
-      const receiver = chooseReceiver([...wr, ...te, ...rb]);
-      if (!receiver) {
-        play.text = `${qbStarter.first} ${qbStarter.last} completed a pass for ${play.yardsGained} yards`;
-      } else if (play.result === 'touchdown') {
-        play.text = `${qbStarter.first} ${qbStarter.last} pass complete to ${receiver.first} ${receiver.last} for ${play.yardsGained} yards for a touchdown`;
+      const target = participantName(play, starters, 'targetId');
+      if (play.result === 'touchdown') {
+        play.text = `${passer} completed ${phrase.indefinite} to ${target} for ${play.yardsGained} yards and a touchdown`;
       } else {
-        play.text = `${qbStarter.first} ${qbStarter.last} pass complete to ${receiver.first} ${receiver.last} for ${play.yardsGained} yards`;
+        const tackler = participantName(play, starters, 'tacklerId');
+        play.text = play.timing.kind !== 'try' && play.timing.outOfBounds
+          ? `${passer} completed ${phrase.indefinite} to ${target} for ${play.yardsGained} yards; ${tackler} forced ${target} out of bounds`
+          : `${passer} completed ${phrase.indefinite} to ${target} for ${play.yardsGained} yards, tackled by ${tackler}`;
       }
     }
   } else if (play.playType === 'field goal') {
-    const kicker = k[0];
+    const kicker = participantName(play, starters, 'kickerId');
     const distance = 100 - play.startingFP + 17;
-    if (!kicker) {
-      play.text = `Field goal attempt from ${distance} yards`;
-      return;
-    }
     if (play.result === 'made field goal') {
-      play.text = `${kicker.first} ${kicker.last}'s ${distance} yard field goal is good`;
+      play.text = `${kicker}'s ${distance} yard field goal is good`;
     } else {
-      play.text = `${kicker.first} ${kicker.last}'s ${distance} yard field goal is no good`;
+      play.text = `${kicker}'s ${distance} yard field goal is no good`;
     }
   } else if (play.playType === 'punt') {
-    const punter = p[0];
-    play.text = punter ? `${punter.first} ${punter.last} punted` : 'Punt';
+    const punter = participantName(play, starters, 'punterId');
+    play.text = `${punter} punted`;
   }
 };

@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 3,
+  "seasons": [
+    2023,
+    2024,
+    2025
+  ],
+  "sources": {
+    "teamStatistics": "https://www.ncaa.com/stats/football/fbs/{season}/team/{statistic}",
+    "individualFieldGoals": "https://www.ncaa.com/stats/football/fbs/{season}/individual/18",
+    "scoreboard": "https://www.ncaa.com/scoreboard/football/fbs/{season}"
+  },
+  "sampleCounts": {
+    "teamGames": 5083,
+    "fbsVsFbsGames": 2329,
+    "qualifiedKickerRows": 429,
+    "qualifiedFieldGoalsMade": 5745,
+    "qualifiedFieldGoalsAttempted": 7483,
+    "qualifiedFieldGoalCoverage": 0.948,
+    "bySeason": {
+      "2023": {
+        "teams": 130,
+        "teamGames": 1664,
+        "fbsVsFbsGames": 758,
+        "qualifiedKickerRows": 143,
+        "qualifiedFieldGoalsMade": 1891,
+        "qualifiedFieldGoalsAttempted": 2497,
+        "qualifiedFieldGoalMakeRate": 0.7573,
+        "qualifiedFieldGoalCoverage": 0.9712,
+        "thirdDownAttemptsPerGame": 27.002,
+        "fourthDownAttemptsPerGame": 3.752
+      },
+      "2024": {
+        "teams": 133,
+        "teamGames": 1705,
+        "fbsVsFbsGames": 787,
+        "qualifiedKickerRows": 141,
+        "qualifiedFieldGoalsMade": 1857,
+        "qualifiedFieldGoalsAttempted": 2415,
+        "qualifiedFieldGoalMakeRate": 0.7689,
+        "qualifiedFieldGoalCoverage": 0.9121,
+        "thirdDownAttemptsPerGame": 26.861,
+        "fourthDownAttemptsPerGame": 3.79
+      },
+      "2025": {
+        "teams": 134,
+        "teamGames": 1714,
+        "fbsVsFbsGames": 784,
+        "qualifiedKickerRows": 145,
+        "qualifiedFieldGoalsMade": 1997,
+        "qualifiedFieldGoalsAttempted": 2571,
+        "qualifiedFieldGoalMakeRate": 0.7767,
+        "qualifiedFieldGoalCoverage": 0.9615,
+        "thirdDownAttemptsPerGame": 27.05,
+        "fourthDownAttemptsPerGame": 4.07
+      }
+    }
+  },
+  "sourceChecksum": "01fba155",
+  "targets": {
+    "production": {
+      "scrimmagePlaysPerGame": {
+        "value": 133.697,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "offensiveYardsPerGame": {
+        "value": 771.197,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "yardsPerPlay": {
+        "value": 5.768,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "touchdownsPerGame": {
+        "value": 6.557,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "puntsPerGame": {
+        "value": 8.179,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.1
+        }
+      },
+      "madeFieldGoalsPerGame": {
+        "value": 2.384,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.1
+        }
+      },
+      "fieldGoalMakeRate": {
+        "value": 0.7677,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "turnoversPerGame": {
+        "value": 2.685,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.1
+        }
+      },
+      "fumblesLostPerGame": {
+        "value": 1.08,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.1
+        }
+      },
+      "passPlayShare": {
+        "value": 0.49,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.02
+        }
+      },
+      "completionRate": {
+        "value": 0.6175,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.02
+        }
+      },
+      "sackRate": {
+        "value": 0.0614,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.01
+        }
+      },
+      "interceptionRate": {
+        "value": 0.0261,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.005
+        }
+      },
+      "rushingYardsPerAttempt": {
+        "value": 4.393,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "passingYardsPerAttempt": {
+        "value": 7.383,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "passingYardsPerCompletion": {
+        "value": 11.957,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "thirdDownAttemptsPerGame": {
+        "value": 26.971,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "thirdDownConversionRate": {
+        "value": 0.4004,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.02
+        }
+      },
+      "fourthDownAttemptsPerGame": {
+        "value": 3.872,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.1
+        }
+      },
+      "fourthDownConversionRate": {
+        "value": 0.5339,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "redZoneScoringRate": {
+        "value": 0.8401,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "redZoneTouchdownRate": {
+        "value": 0.6185,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      }
+    },
+    "scoreDistribution": {
+      "combinedPointsMean": {
+        "value": 53.126,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "combinedPointsStandardDeviation": {
+        "value": 16.74,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "combinedPointsP10": {
+        "value": 33,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "combinedPointsP25": {
+        "value": 41,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "combinedPointsP50": {
+        "value": 52,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "combinedPointsP75": {
+        "value": 64,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "combinedPointsP90": {
+        "value": 75,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "combinedPointsP95": {
+        "value": 83,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "marginMean": {
+        "value": 16.304,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "marginStandardDeviation": {
+        "value": 12.802,
+        "tolerance": {
+          "kind": "relative",
+          "value": 0.05
+        }
+      },
+      "marginP25": {
+        "value": 6,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "marginP50": {
+        "value": 14,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "marginP75": {
+        "value": 24,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "marginP90": {
+        "value": 34,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "marginP95": {
+        "value": 41,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 4
+        }
+      },
+      "marginAtMostThreeShare": {
+        "value": 0.1657,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "marginAtMostEightShare": {
+        "value": 0.374,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "marginAtLeastTwentyShare": {
+        "value": 0.3499,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "marginAtLeastThirtyShare": {
+        "value": 0.1563,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "shutoutShare": {
+        "value": 0.0296,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "combinedAtLeastSeventyShare": {
+        "value": 0.1614,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      },
+      "combinedAtMostThirtyShare": {
+        "value": 0.0807,
+        "tolerance": {
+          "kind": "absolute",
+          "value": 0.03
+        }
+      }
+    }
+  }
+}

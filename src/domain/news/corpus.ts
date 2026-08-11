@@ -18,15 +18,21 @@ import {
 } from '../rivalryScheduling';
 import { buildFullScheduleFromExisting } from '../schedule/planner';
 import {
-  buildStartersCacheFromPlayers,
-  createGameLogsFromPlays,
   hydrateGame,
   simGame,
 } from '../sim/engine';
+import {
+  buildStartersCacheFromPlayers,
+  createGameLogsFromPlays,
+} from '../sim/statistics';
 import { buildWatchability } from '../sim/games';
 import { updateRankings, updateTeamRecords } from '../sim/rankings';
 import { buildBaseLabel } from '../utils/gameLabels';
-import { createSeededRandom, type RandomSource } from '../utils/random';
+import {
+  createSeededRandom,
+  withSeededMathRandom,
+  type RandomSource,
+} from '../utils/random';
 import { extractGameStoryFacts } from './facts';
 import { generateGameNews } from './generate';
 import type { NewsAuditEntry } from './audit';
@@ -484,16 +490,6 @@ const buildPostseason = (
   });
   entries.push(...play([title]));
   return entries;
-};
-
-export const withSeededMathRandom = <T>(random: RandomSource, run: () => T): T => {
-  const original = Math.random;
-  Math.random = () => random.next();
-  try {
-    return run();
-  } finally {
-    Math.random = original;
-  }
 };
 
 export const generateNewsAuditCorpus = (

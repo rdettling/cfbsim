@@ -15,6 +15,37 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TeamLogo } from '../team/TeamLogo';
 import type { DriveSummaryProps } from '../../types/components';
 import type { Drive } from '../../types/game';
+import type { PlayTiming, RegulationClockEvent } from '../../types/db';
+import { CONCEPT_LABELS } from '../../domain/sim/concepts';
+import { DEFENSIVE_INTENT_LABELS } from '../../domain/sim/defensiveIntents';
+import {
+  CLOCK_MANAGEMENT_LABELS,
+  CLOCK_TEMPO_LABELS,
+} from '../../domain/sim/clockManagement';
+
+export const CLOCK_EVENT_LABELS: Record<RegulationClockEvent, string> = {
+  two_minute_timeout: 'Two-Minute Timeout',
+  end_of_quarter: 'End of Quarter',
+  halftime: 'Halftime',
+  end_of_regulation: 'End of Regulation',
+};
+
+const formatClock = (secondsLeft: number) => {
+  const clamped = Math.max(0, secondsLeft);
+  const mins = Math.floor(clamped / 60);
+  const secs = clamped % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+export const formatPlayTiming = (timing: PlayTiming) => {
+  if (timing.kind === 'overtime') return `OT ${timing.period}`;
+  if (timing.kind === 'try') {
+    return timing.context === 'overtime'
+      ? `OT ${timing.period}`
+      : `Q${timing.quarter} ${formatClock(timing.secondsLeft)}`;
+  }
+  return `Q${timing.start.quarter} ${formatClock(timing.start.secondsLeft)}`;
+};
 
 const DriveSummary = ({
   drives,
@@ -29,42 +60,10 @@ const DriveSummary = ({
   const [expandedDrives, setExpandedDrives] = useState<Set<number>>(new Set());
   const [driveFilter, setDriveFilter] = useState<'all' | 'scoring'>('all');
 
-  const formatClock = (secondsLeft?: number) => {
-    if (typeof secondsLeft !== 'number') return '';
-    const clamped = Math.max(0, secondsLeft);
-    const mins = Math.floor(clamped / 60);
-    const secs = clamped % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatPlayTime = (quarter?: number, clockSecondsLeft?: number) => {
-    if (typeof quarter !== 'number') return '';
-    const clock = formatClock(clockSecondsLeft);
-    return clock ? `Q${quarter} ${clock}` : `Q${quarter}`;
-  };
-
-  const overtimeByDriveNum = useMemo(() => {
-    const mapping = new Map<number, number>();
-    let overtimeDriveCount = 0;
-    drives.forEach((drive) => {
-      const firstPlay = drive.plays?.[0];
-      if (firstPlay?.quarter === 4 && firstPlay.clockSecondsLeft === 0) {
-        const overtimeNumber = Math.floor(overtimeDriveCount / 2) + 1;
-        mapping.set(drive.driveNum, overtimeNumber);
-        overtimeDriveCount += 1;
-      }
-    });
-    return mapping;
-  }, [drives]);
-
   const getDriveStartTime = (drive: Drive) => {
     const firstPlay = drive.plays?.[0];
     if (!firstPlay) return '';
-    const overtimeNumber = overtimeByDriveNum.get(drive.driveNum);
-    if (overtimeNumber) {
-      return `OT ${overtimeNumber}`;
-    }
-    return formatPlayTime(firstPlay.quarter, firstPlay.clockSecondsLeft);
+    return formatPlayTiming(firstPlay.timing);
   };
 
   const formatDuration = (seconds: number) => {
@@ -75,14 +74,13 @@ const DriveSummary = ({
   };
 
   const getDriveDurationLabel = (drive: Drive) => {
-    const hasTimingData = drive.plays.some((play) => typeof play.playSeconds === 'number');
-    if (!hasTimingData) return '';
     const totalSeconds = drive.plays.reduce(
-      (sum, play) =>
-        sum + (typeof play.playSeconds === 'number' ? Math.max(play.playSeconds, 0) : 0),
+      (sum, play) => sum + (
+        play.timing.kind === 'regulation' ? Math.max(play.timing.elapsedSeconds, 0) : 0
+      ),
       0,
     );
-    return formatDuration(totalSeconds);
+    return totalSeconds > 0 ? formatDuration(totalSeconds) : '';
   };
 
   const toggleDriveExpansion = (driveNum: number) => {
@@ -117,6 +115,24 @@ const DriveSummary = ({
       driveFilter === 'scoring' ? displayDrives.filter((drive) => drive.points > 0) : displayDrives,
     [displayDrives, driveFilter],
   );
+  const chargedTimeoutLabels = useMemo(() => {
+    const used = new Map<string, number>();
+    const labels = new Map<number, string>();
+    [...drives]
+      .sort((left, right) => left.driveNum - right.driveNum)
+      .forEach(drive => drive.plays.forEach(play => {
+        if (play.timing.kind !== 'regulation' || !play.timing.chargedTimeoutAfter) return;
+        const team = play.timing.chargedTimeoutAfter === 'offense'
+          ? drive.offense
+          : drive.defense;
+        const half = play.timing.start.quarter <= 2 ? 1 : 2;
+        const key = `${half}:${team}`;
+        const nextUsed = (used.get(key) ?? 0) + 1;
+        used.set(key, nextUsed);
+        labels.set(play.id, `${team} Timeout · ${Math.max(0, 3 - nextUsed)} remaining`);
+      }));
+    return labels;
+  }, [drives]);
 
   useEffect(() => {
     const visibleDriveNums = new Set(visibleDrives.map((drive) => drive.driveNum));
@@ -385,7 +401,7 @@ const DriveSummary = ({
                                     fontWeight: 700,
                                   }}
                                 >
-                                  {formatPlayTime(play.quarter, play.clockSecondsLeft)}
+                                  {formatPlayTiming(play.timing)}
                                 </Typography>
                               </Stack>
                               <Typography variant="body1" sx={{ mt: 0.2, fontWeight: 500 }}>
@@ -404,23 +420,84 @@ const DriveSummary = ({
                                     color: 'text.secondary',
                                   }}
                                 >
-                                  {play.playType.charAt(0).toUpperCase() + play.playType.slice(1)}
+                                  {(() => {
+                                    const callLabel = play.call.kind === 'scrimmage'
+                                      ? `${CONCEPT_LABELS[play.call.offense]} · ${DEFENSIVE_INTENT_LABELS[play.call.defense]}`
+                                      : play.call.kind === 'clock_management'
+                                        ? CLOCK_MANAGEMENT_LABELS[play.call.action]
+                                        : play.call.kind === 'try'
+                                          ? play.call.attempt === 'extra_point'
+                                            ? 'Extra Point'
+                                            : `Two-Point Try · ${CONCEPT_LABELS[play.call.offense]} · ${DEFENSIVE_INTENT_LABELS[play.call.defense]}`
+                                          : play.call.concept === 'field_goal'
+                                            ? 'Field Goal'
+                                            : 'Punt';
+                                    const tempoLabel = play.timing.kind === 'regulation'
+                                      && play.timing.tempo !== 'normal'
+                                      ? ` · ${CLOCK_TEMPO_LABELS[play.timing.tempo]}`
+                                      : '';
+                                    return `${callLabel}${tempoLabel}`;
+                                  })()}
                                 </Typography>
+                                {play.call.kind !== 'try' && (
+                                  <Typography
+                                    variant="caption"
+                                    color={
+                                      play.yardsGained > 0
+                                        ? 'success.main'
+                                        : play.yardsGained < 0
+                                          ? 'error.main'
+                                          : 'text.secondary'
+                                    }
+                                    sx={{ fontWeight: 700 }}
+                                  >
+                                    {play.yardsGained > 0 ? '+' : ''}
+                                    {play.yardsGained} yards
+                                  </Typography>
+                                )}
+                              </Stack>
+                              {play.timing.kind === 'regulation' && play.timing.eventAfter && (
                                 <Typography
                                   variant="caption"
-                                  color={
-                                    play.yardsGained > 0
-                                      ? 'success.main'
-                                      : play.yardsGained < 0
-                                        ? 'error.main'
-                                        : 'text.secondary'
-                                  }
-                                  sx={{ fontWeight: 700 }}
+                                  sx={{
+                                    display: 'block',
+                                    mt: 0.65,
+                                    py: 0.35,
+                                    borderTop: '1px solid',
+                                    borderBottom: '1px solid',
+                                    borderColor: 'divider',
+                                    color: 'text.secondary',
+                                    fontWeight: 800,
+                                    textAlign: 'center',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: 0.5,
+                                  }}
                                 >
-                                  {play.yardsGained > 0 ? '+' : ''}
-                                  {play.yardsGained} yards
+                                  {CLOCK_EVENT_LABELS[play.timing.eventAfter]}
                                 </Typography>
-                              </Stack>
+                              )}
+                              {play.timing.kind === 'regulation'
+                                && play.timing.chargedTimeoutAfter
+                                && (
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      display: 'block',
+                                      mt: 0.65,
+                                      py: 0.35,
+                                      borderTop: '1px solid',
+                                      borderBottom: '1px solid',
+                                      borderColor: 'divider',
+                                      color: 'text.secondary',
+                                      fontWeight: 800,
+                                      textAlign: 'center',
+                                      textTransform: 'uppercase',
+                                      letterSpacing: 0.5,
+                                    }}
+                                  >
+                                    {chargedTimeoutLabels.get(play.id)}
+                                  </Typography>
+                                )}
                               {playIdx !== (drive.plays?.length || 0) - 1 && (
                                 <Divider sx={{ mt: 0.75 }} />
                               )}

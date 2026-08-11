@@ -177,11 +177,16 @@ const buildScoringEvents = (
         driveNum: drive.driveNum,
         teamId,
         points: Math.max(pointsA, pointsB),
-        quarter: lastPlay?.quarter ?? 1,
-        secondsLeft: Math.max(
-          0,
-          (lastPlay?.clockSecondsLeft ?? 0) - (lastPlay?.playSeconds ?? 0),
-        ),
+        quarter: lastPlay?.timing.kind === 'regulation'
+          ? lastPlay.timing.end.quarter
+          : lastPlay?.timing.kind === 'try' && lastPlay.timing.context === 'regulation'
+            ? lastPlay.timing.quarter
+            : 4,
+        secondsLeft: lastPlay?.timing.kind === 'regulation'
+          ? lastPlay.timing.end.secondsLeft
+          : lastPlay?.timing.kind === 'try' && lastPlay.timing.context === 'regulation'
+            ? lastPlay.timing.secondsLeft
+            : 0,
         scoreA,
         scoreB,
         leadTaking,

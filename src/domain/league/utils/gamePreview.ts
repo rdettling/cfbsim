@@ -60,6 +60,7 @@ export const buildTeamStatsAndRanks = (
   });
 
   pregamePlays.forEach(play => {
+    if (play.call.kind === 'try') return;
     const teamStats = rawStats.get(play.offenseId);
     if (!teamStats) return;
 

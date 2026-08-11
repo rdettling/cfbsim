@@ -13,13 +13,14 @@
     "start": "sirv dist --single --host 0.0.0.0",
     "preview": "vite preview",
     "generate:history": "tsx scripts/generate_history.ts",
+    "generate:sim-benchmark": "tsx scripts/generate_sim_benchmark.ts",
     "check:data": "tsx scripts/check_data.ts",
     "generate:odds": "tsx scripts/generate_betting_odds.ts",
-    "tune:yards": "tsx scripts/tune_yards.ts",
-    "eval:winrate": "tsx scripts/eval_winrate.ts",
+    "eval:sim": "tsx scripts/eval_sim.ts",
+    "eval:sim-stability": "tsx scripts/eval_sim_stability.ts",
+    "tune:sim": "tsx scripts/tune_sim.ts",
     "eval:recruiting-balance": "tsx scripts/eval_recruiting_balance.ts",
     "eval:news": "tsx scripts/eval_news.ts",
-    "tune:winrate": "tsx scripts/tune_winrate.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

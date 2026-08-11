@@ -42,4 +42,6 @@ export interface SimMatchup {
   clockSecondsLeft: number;
   inOvertime: boolean;
   overtimeCount: number;
+  awayTimeoutsRemaining: number;
+  homeTimeoutsRemaining: number;
 }
