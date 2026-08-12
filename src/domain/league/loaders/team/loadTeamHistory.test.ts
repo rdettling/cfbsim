@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getHistoryData, getRivalriesData } from '../../../../db/baseData';
+import {
+  getHistoricalGamesIndex,
+  getHistoryData,
+  getRivalriesData,
+} from '../../../../db/baseData';
 import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
 import { getAllGameLogs, getAllPlays, getGamesByTeam } from '../../../../db/simRepo';
@@ -54,6 +58,11 @@ describe('loadTeamHistory', () => {
       awards: [],
     }]);
     vi.mocked(getRivalriesData).mockResolvedValue({ rivalries: [] });
+    vi.mocked(getHistoricalGamesIndex).mockResolvedValue({
+      generated_at: '2026-01-01T00:00:00.000Z',
+      source: 'CollegeFootballData.com',
+      years: [2024],
+    });
     vi.mocked(getGamesByTeam).mockResolvedValue([]);
     vi.mocked(getAllGameLogs).mockResolvedValue([]);
     vi.mocked(getAllPlays).mockResolvedValue([]);
@@ -62,8 +71,46 @@ describe('loadTeamHistory', () => {
   it('uses snapshots for dynasty metrics and archives for pre-dynasty prestige', async () => {
     await expect(loadTeamHistory('Test State')).resolves.toMatchObject({
       years: [
-        { year: 2025, rating: 77, prestige: 3, era: 'dynasty' },
-        { year: 2024, rating: null, prestige: 2, era: 'historical' },
+        {
+          year: 2025,
+          rating: 77,
+          prestige: 3,
+          era: 'dynasty',
+          hasSchedule: false,
+        },
+        {
+          year: 2024,
+          rating: null,
+          prestige: 2,
+          era: 'historical',
+          hasSchedule: true,
+        },
+      ],
+    });
+  });
+
+  it('only enables indexed seasons before the dynasty start year', async () => {
+    vi.mocked(loadLeaguePlayersSnapshot).mockResolvedValue({
+      league: buildTestLeague('season', {
+        info: {
+          ...buildTestLeague('season').info,
+          currentYear: 2026,
+          startYear: 2026,
+        },
+      }),
+      players: [],
+    });
+    vi.mocked(getAllSeasonMemories).mockResolvedValue([]);
+    vi.mocked(getHistoricalGamesIndex).mockResolvedValue({
+      generated_at: '2026-01-01T00:00:00.000Z',
+      source: 'CollegeFootballData.com',
+      years: [2025],
+    });
+
+    await expect(loadTeamHistory('Test State')).resolves.toMatchObject({
+      years: [
+        { year: 2025, era: 'historical', hasSchedule: true },
+        { year: 2024, era: 'historical', hasSchedule: false },
       ],
     });
   });

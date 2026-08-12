@@ -17,7 +17,11 @@ type TeamHeaderProps = {
   team: Team;
   title: string;
   subtitle?: ReactNode;
-  metrics?: Pick<Team, 'record' | 'rating' | 'prestige'>;
+  metrics?: Pick<Team, 'record' | 'prestige'> & {
+    rating: number | null;
+    ranking?: number;
+    conference?: string;
+  };
   teamSelector?: {
     teams: string[];
     onChange: (name: string) => void;
@@ -34,8 +38,9 @@ export const TeamHeader = ({
   controls,
 }: TeamHeaderProps) => {
   const teamSelectLabelId = useId();
-  const conferenceName = team.confName ?? team.conference;
+  const conferenceName = metrics?.conference ?? team.confName ?? team.conference;
   const displayedMetrics = metrics ?? team;
+  const ranking = metrics?.ranking ?? team.ranking;
   const prestige = Math.min(Math.max(displayedMetrics.prestige, 0), 7);
   const hasControls = Boolean(teamSelector || controls);
 
@@ -81,7 +86,7 @@ export const TeamHeader = ({
                 lineHeight: 1.15,
               }}
             >
-              {team.ranking > 0 && `#${team.ranking} `}
+              {ranking > 0 && `#${ranking} `}
               {team.name} {team.mascot}
             </Typography>
             <Stack
@@ -128,7 +133,13 @@ export const TeamHeader = ({
                   {displayedMetrics.record}
                 </Box>
               </Typography>
-              <Chip label={`Rating ${displayedMetrics.rating}`} size="small" variant="outlined" />
+              {displayedMetrics.rating !== null && (
+                <Chip
+                  label={`Rating ${displayedMetrics.rating}`}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
               <Chip label={`Prestige ${prestige}/7`} size="small" variant="outlined" />
               {conferenceName && (
                 <Stack

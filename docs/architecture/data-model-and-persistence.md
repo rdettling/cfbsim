@@ -46,6 +46,13 @@ cache epoch and is independent of the IndexedDB schema version. Application
 startup removes cached public assets when that value changes, so a data release
 does not require deleting a valid save.
 
+Historical games are immutable, exact-schema CollegeFootballData.com
+projections stored as an index plus one file per available season under
+`historical-games/`. The index and seasons are validated before being cached
+independently under `historical-games:index` and `historical-games:<year>`.
+They remain separate from simulated `GameRecord`s because they have no
+simulation detail or clickable game identity.
+
 The `history` entry is excluded because it becomes mutable save state after a
 season completes. Starting a new league intentionally clears all base data,
 including history, before loading and caching a fresh `history.json`

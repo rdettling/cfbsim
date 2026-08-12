@@ -55,4 +55,49 @@ export interface HistoryData {
   teams: Record<string, HistoryRow[]>;
 }
 
+export type HistoricalGameSeasonType = 'regular' | 'postseason';
+
+export interface HistoricalGame {
+  sourceId: number;
+  year: number;
+  weekPlayed: number;
+  seasonType: HistoricalGameSeasonType;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  homeRank: number;
+  awayRank: number;
+  neutralSite: boolean;
+  venue: string | null;
+  name: string | null;
+  label: string;
+}
+
+export interface HistoricalGamesIndex {
+  generated_at: string;
+  source: 'CollegeFootballData.com';
+  years: number[];
+}
+
+export interface HistoricalGamesSeason {
+  year: number;
+  games: HistoricalGame[];
+}
+
+export interface HistoricalTeamGame {
+  sourceId: number;
+  year: number;
+  weekPlayed: number;
+  opponent: string;
+  teamScore: number;
+  opponentScore: number;
+  label: string;
+}
+
+export interface HistoricalGamesForTeam {
+  team: string;
+  games: HistoricalTeamGame[];
+}
+
 export type PrestigeConfig = Record<string, number>;

@@ -1,4 +1,8 @@
-import { getHistoryData, getRivalriesData } from '../../../../db/baseData';
+import {
+  getHistoricalGamesIndex,
+  getHistoryData,
+  getRivalriesData,
+} from '../../../../db/baseData';
 import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
 import {
@@ -30,6 +34,7 @@ export const loadTeamHistory = async (teamName?: string) => {
     rivalries,
     gameLogs,
     plays,
+    historicalGamesIndex,
   ] = await Promise.all([
     getHistoryData(),
     getGamesByTeam(team.id),
@@ -40,6 +45,7 @@ export const loadTeamHistory = async (teamName?: string) => {
     getRivalriesData(),
     getAllGameLogs(),
     getAllPlays(),
+    getHistoricalGamesIndex(),
   ]);
   const allGames = Array.from(
     new Map([...teamGames, ...currentYearGames].map(game => [game.id, game])).values(),
@@ -93,8 +99,11 @@ export const loadTeamHistory = async (teamName?: string) => {
         wins: entry[3],
         losses: entry[4],
         rank: entry[2],
-        has_games: yearGames.some(game =>
-          game.teamAId === team.id || game.teamBId === team.id),
+        hasSchedule: era === 'historical'
+          ? historicalGamesIndex.years.includes(entry[0])
+          : yearGames.some(game =>
+              game.teamAId === team.id || game.teamBId === team.id
+            ),
         era,
         isChampion: accomplishments.some(
           accomplishment => accomplishment.type === 'national_champion',
@@ -138,7 +147,7 @@ export const loadTeamHistory = async (teamName?: string) => {
       wins: team.totalWins,
       losses: team.totalLosses,
       rank: team.ranking ?? 0,
-      has_games: team.totalWins + team.totalLosses > 0,
+      hasSchedule: team.totalWins + team.totalLosses > 0,
       era: 'dynasty',
       isChampion: accomplishments.some(
         accomplishment => accomplishment.type === 'national_champion',

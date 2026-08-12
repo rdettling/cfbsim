@@ -60,10 +60,76 @@ describe('buildPreviousMatchups', () => {
     const unrelated = game({ id: 90, teamBId: 3, year: 2027 });
     const incomplete = game({ id: 91, year: 2027, winnerId: null });
 
-    const result = buildPreviousMatchups(target, [...meetings, unrelated, incomplete, target]);
+    const result = buildPreviousMatchups({
+      targetGame: target,
+      simulatedGames: [...meetings, unrelated, incomplete, target],
+      historicalGames: [],
+      dynastyStartYear: 2021,
+      teamBName: 'Beta',
+    });
 
-    expect(result).toHaveLength(5);
-    expect(result.map(entry => entry.year)).toEqual([2026, 2025, 2024, 2023, 2022]);
-    expect(result[0]).toMatchObject({ teamAScore: 15, teamBScore: 25, winnerId: 2 });
+    expect(result.rows).toHaveLength(5);
+    expect(result.rows.map(entry => entry.year)).toEqual([2026, 2025, 2024, 2023, 2022]);
+    expect(result.rows[0]).toMatchObject({
+      teamAScore: 15,
+      teamBScore: 25,
+      winnerSide: 'teamB',
+      gameId: 6,
+      source: 'simulated',
+    });
+    expect(result.series).toEqual({ teamAWins: 3, teamBWins: 3, ties: 0 });
+  });
+
+  it('merges pre-dynasty history and keeps the latest five meetings', () => {
+    const target = game({ id: 100, year: 2027, winnerId: null });
+    const result = buildPreviousMatchups({
+      targetGame: target,
+      simulatedGames: [game({ id: 50, year: 2026 })],
+      historicalGames: Array.from({ length: 6 }, (_, index) => ({
+        sourceId: 1000 + index,
+        year: 2025 - index,
+        weekPlayed: 10,
+        opponent: 'Beta',
+        teamScore: 30 - index,
+        opponentScore: 20,
+        label: 'Historical Matchup',
+      })),
+      dynastyStartYear: 2026,
+      teamBName: 'Beta',
+    });
+
+    expect(result.rows.map(entry => entry.year)).toEqual([2026, 2025, 2024, 2023, 2022]);
+    expect(result.rows[1]).toMatchObject({
+      rowKey: 'historical:1000',
+      source: 'historical',
+      gameId: null,
+      winnerSide: 'teamA',
+    });
+    expect(result.series).toEqual({ teamAWins: 7, teamBWins: 0, ties: 0 });
+  });
+
+  it('excludes static dynasty overlap and other opponents', () => {
+    const target = game({ id: 100, year: 2027, winnerId: null });
+    const historicalGames = [
+      { sourceId: 1, year: 2025, opponent: 'Beta', label: 'Included' },
+      { sourceId: 2, year: 2026, opponent: 'Beta', label: 'Dynasty overlap' },
+      { sourceId: 3, year: 2024, opponent: 'Gamma', label: 'Other opponent' },
+    ].map(entry => ({
+      weekPlayed: 1,
+      teamScore: 24,
+      opponentScore: 17,
+      ...entry,
+    }));
+    const result = buildPreviousMatchups({
+      targetGame: target,
+      simulatedGames: [],
+      historicalGames,
+      dynastyStartYear: 2026,
+      teamBName: 'Beta',
+    });
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].rowKey).toBe('historical:1');
+    expect(result.series).toEqual({ teamAWins: 1, teamBWins: 0, ties: 0 });
   });
 });

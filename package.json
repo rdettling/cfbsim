@@ -13,6 +13,8 @@
     "start": "sirv dist --single --host 0.0.0.0",
     "preview": "vite preview",
     "generate:history": "tsx scripts/generate_history.ts",
+    "fetch:game-history": "node --env-file-if-exists=.env --import tsx scripts/fetch_game_history.ts",
+    "generate:game-history": "node --import tsx scripts/generate_game_history.ts",
     "generate:sim-benchmark": "tsx scripts/generate_sim_benchmark.ts",
     "check:data": "tsx scripts/check_data.ts",
     "generate:odds": "tsx scripts/generate_betting_odds.ts",

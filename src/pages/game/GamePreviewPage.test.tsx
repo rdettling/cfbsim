@@ -68,16 +68,20 @@ describe('GamePreviewPage', () => {
       preview: { teamA: emptyPreview, teamB: emptyPreview },
       resultSummary: null,
       drives: [],
-      previousMatchups: [{
-        id: 44,
-        year: 2025,
-        week: 8,
-        label: 'Rivalry Game',
-        teamAScore: 27,
-        teamBScore: 24,
-        winnerId: teamA.id,
-      }],
-      dynastyContext: null,
+      previousMatchups: {
+        rows: [{
+          rowKey: 'simulated:44',
+          source: 'simulated',
+          gameId: 44,
+          year: 2025,
+          week: 8,
+          label: 'Rivalry Game',
+          teamAScore: 27,
+          teamBScore: 24,
+          winnerSide: 'teamA',
+        }],
+        series: { teamAWins: 1, teamBWins: 0, ties: 0 },
+      },
       detailUnavailable: false,
     } as GamePageData;
 
@@ -88,6 +92,7 @@ describe('GamePreviewPage', () => {
     );
 
     expect(markup).toContain('Previous Matchups');
+    expect(markup).toContain('Series · Away State 1–0');
     expect(markup).toContain('href="/game/44"');
     expect(markup).toContain('Matchup');
     expect(markup).toContain('Top Starters');

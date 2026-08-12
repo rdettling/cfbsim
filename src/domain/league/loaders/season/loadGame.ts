@@ -6,9 +6,11 @@ import {
   getGameDetail,
   getGameById,
 } from '../../../../db/simRepo';
-import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
 import { getGameNews } from '../../../../db/newsRepo';
-import { getRivalriesData } from '../../../../db/baseData';
+import {
+  getHistoricalGamesForTeam,
+  getHistoricalGamesIndex,
+} from '../../../../db/baseData';
 import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { buildDriveResponse } from '../../../sim';
 import {
@@ -18,7 +20,6 @@ import {
 } from '../../utils/gamePreview';
 import { buildGameResultSummary, buildPreviousMatchups } from '../../utils/gameResult';
 import { getUserTeam } from './shared';
-import { buildDynastySeriesContext } from '../../memoryProjection';
 import { flattenGameDetail } from '../../gameDetails';
 
 export const loadGame = async (gameId: number) => {
@@ -66,35 +67,17 @@ export const loadGame = async (gameId: number) => {
     story: await getGameNews(record.id),
   };
 
-  const [allGames, allPlays] = await Promise.all([
+  const [allGames, allPlays, historicalIndex] = await Promise.all([
     getAllGames(),
     getAllPlays(),
+    getHistoricalGamesIndex(),
   ]);
+  const historicalTeamGames = historicalIndex.years.some(
+    year => year < league.info.startYear && year < record.year,
+  )
+    ? (await getHistoricalGamesForTeam(teamA.name)).games
+    : [];
   const userTeam = getUserTeam(league);
-  const involvesUser =
-    record.teamAId === userTeam.id || record.teamBId === userTeam.id;
-  let dynastyContext = null;
-  if (involvesUser) {
-    const [memories, rivalries] = await Promise.all([
-      getAllSeasonMemories(),
-      getRivalriesData(),
-    ]);
-    const opponent = record.teamAId === userTeam.id ? teamB : teamA;
-    const rivalry = rivalries.rivalries.find(
-      ({ teamA, teamB }) =>
-        (teamA === userTeam.name && teamB === opponent.name) ||
-        (teamB === userTeam.name && teamA === opponent.name),
-    );
-    dynastyContext = buildDynastySeriesContext({
-      userTeamId: userTeam.id,
-      opponentTeamId: opponent.id,
-      targetGame: record,
-      games: allGames.filter(game => game.year >= league.info.startYear),
-      memories,
-      teams: league.teams,
-      rivalryName: rivalry?.name ?? null,
-    });
-  }
   const pregameGames = allGames.filter(
     game =>
       game.year === record.year &&
@@ -166,7 +149,13 @@ export const loadGame = async (gameId: number) => {
   const resultSummary = hasDetailedArtifacts
     ? buildGameResultSummary(game, gamePlays, gameLogs, resultPlayers, teamsById)
     : null;
-  const previousMatchups = buildPreviousMatchups(record, allGames);
+  const previousMatchups = buildPreviousMatchups({
+    targetGame: record,
+    simulatedGames: allGames,
+    historicalGames: historicalTeamGames,
+    dynastyStartYear: league.info.startYear,
+    teamBName: teamB.name,
+  });
 
   const drives = hasDetailedArtifacts
     ? buildDriveResponse(
@@ -185,7 +174,6 @@ export const loadGame = async (gameId: number) => {
     resultSummary,
     drives,
     previousMatchups,
-    dynastyContext,
     detailUnavailable: record.winnerId !== null && !hasDetailedArtifacts,
   };
 };

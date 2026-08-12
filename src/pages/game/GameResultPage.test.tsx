@@ -68,8 +68,10 @@ describe('GameResultPage', () => {
       preview: { teamA: emptyPreview, teamB: emptyPreview },
       resultSummary: null,
       drives: [],
-      previousMatchups: [],
-      dynastyContext: null,
+      previousMatchups: {
+        rows: [],
+        series: { teamAWins: 0, teamBWins: 0, ties: 0 },
+      },
       detailUnavailable: true,
     } as GamePageData;
 

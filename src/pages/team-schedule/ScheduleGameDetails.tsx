@@ -12,20 +12,14 @@ type ScheduleOpponentProps = GameDetailProps & {
 };
 
 export const ScheduleOpponent = ({ game, onClick }: ScheduleOpponentProps) => {
-  if (!game.opponent) {
-    return (
-      <Typography
-        sx={{
-          color: 'text.secondary',
-        }}
-      >
-        Bye week
-      </Typography>
-    );
-  }
-
   const { opponent } = game;
   const ranked = opponent.ranking > 0 && opponent.ranking <= 25;
+  const opponentName = (
+    <>
+      {ranked && `#${opponent.ranking} `}
+      {opponent.name}
+    </>
+  );
 
   return (
     <Stack
@@ -36,33 +30,37 @@ export const ScheduleOpponent = ({ game, onClick }: ScheduleOpponentProps) => {
         minWidth: 0,
       }}
     >
-      <TeamLogo name={opponent.name} size={32} />
+      {opponent.canOpen && <TeamLogo name={opponent.name} size={32} />}
       <Stack spacing={0.125} sx={{ minWidth: 0 }}>
-        <Link
-          component="button"
-          type="button"
-          onClick={() => onClick(opponent.name)}
-          aria-label={`View ${opponent.name} team information`}
-          sx={{
-            alignSelf: 'flex-start',
-            cursor: 'pointer',
-            fontWeight: ranked ? 600 : 500,
-            lineHeight: 1.3,
-            textAlign: 'left',
-            textDecoration: 'none',
-          }}
-        >
-          {ranked && `#${opponent.ranking} `}
-          {opponent.name}
-        </Link>
-        <Typography
-          variant="caption"
-          sx={{
-            color: 'text.secondary',
-          }}
-        >
-          Rating {opponent.rating} · {opponent.record}
-        </Typography>
+        {opponent.canOpen ? (
+          <Link
+            component="button"
+            type="button"
+            onClick={() => onClick(opponent.name)}
+            aria-label={`View ${opponent.name} team information`}
+            sx={{
+              alignSelf: 'flex-start',
+              cursor: 'pointer',
+              fontWeight: ranked ? 600 : 500,
+              lineHeight: 1.3,
+              textAlign: 'left',
+              textDecoration: 'none',
+            }}
+          >
+            {opponentName}
+          </Link>
+        ) : (
+          <Typography sx={{ fontWeight: ranked ? 600 : 500, lineHeight: 1.3 }}>
+            {opponentName}
+          </Typography>
+        )}
+        {(opponent.rating !== null || opponent.record !== null) && (
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {opponent.rating !== null && `Rating ${opponent.rating}`}
+            {opponent.rating !== null && opponent.record !== null && ' · '}
+            {opponent.record}
+          </Typography>
+        )}
       </Stack>
     </Stack>
   );
@@ -99,15 +97,26 @@ export const ScheduleGameLabel = ({ game }: GameDetailProps) => {
 };
 
 export const ScheduleGameAction = ({ game }: GameDetailProps) => {
-  if (!game.id) return null;
-
-  const isComplete = Boolean(game.result);
+  const isComplete = game.result !== null;
   const resultLabel = game.score ? `${game.result} ${game.score}` : game.result;
+
+  if (!game.gameId) {
+    if (!isComplete) return null;
+    return (
+      <Chip
+        label={resultLabel}
+        color={game.result === 'W' ? 'success' : 'error'}
+        size="small"
+        variant="outlined"
+        aria-label={`Game result: ${resultLabel}`}
+      />
+    );
+  }
 
   return (
     <Button
       component={RouterLink}
-      to={`/game/${game.id}`}
+      to={`/game/${game.gameId}`}
       variant={isComplete ? 'outlined' : 'contained'}
       color={game.result === 'W' ? 'success' : game.result === 'L' ? 'error' : 'primary'}
       size="small"

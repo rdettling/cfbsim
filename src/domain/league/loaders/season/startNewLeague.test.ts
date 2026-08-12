@@ -55,6 +55,14 @@ const baseResponses = () =>
     ['/data/years/2025.json', yearData(12)],
     ['/data/years/2024.json', yearData(4)],
     [
+      '/data/historical-games/index.json',
+      {
+        generated_at: '2026-01-01T00:00:00.000Z',
+        source: 'CollegeFootballData.com',
+        years: [],
+      },
+    ],
+    [
       '/data/history.json',
       {
         generated_at: '2026-01-01T00:00:00.000Z',

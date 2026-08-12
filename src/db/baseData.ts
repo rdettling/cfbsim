@@ -2,14 +2,24 @@ import { getDb } from './db';
 import { validateYearData } from '../domain/yearDataValidation';
 import type {
   ConferencesData,
+  HistoricalGamesForTeam,
+  HistoricalGamesIndex,
+  HistoricalGamesSeason,
   HistoryData,
   TeamsData,
   YearData,
 } from '../types/baseData';
 import type { RivalryDefinition } from '../types/domain';
 import { normalizeRivalriesData } from '../domain/rivalryData';
+import {
+  FIRST_GAME_HISTORY_YEAR,
+  getHistoricalTeamGamesFileName,
+  validateHistoricalGamesIndex,
+  validateHistoricalGamesSeason,
+  validateHistoricalGamesForTeam,
+} from '../domain/historicalGames';
 
-export const STATIC_DATA_VERSION = 5;
+export const STATIC_DATA_VERSION = 7;
 const STATIC_DATA_VERSION_KEY = 'static_data_version';
 const MUTABLE_BASE_DATA_KEYS = new Set(['history']);
 
@@ -44,6 +54,60 @@ export const getYearData = async (year: string): Promise<YearData> =>
   );
 export const getHistoryData = () =>
   getBaseData<HistoryData>('history', '/data/history.json');
+
+const getValidatedHistoricalData = async <T,>(
+  key: string,
+  url: string,
+  validate: (value: unknown) => T,
+) => {
+  const db = await getDb();
+  const cached = await db.get('baseData', key);
+  if (cached) return validate(cached.value);
+
+  const value = validate(await fetchJson<unknown>(url));
+  await db.put('baseData', { key, value });
+  return value;
+};
+
+export const getHistoricalGamesIndex = (): Promise<HistoricalGamesIndex> =>
+  getValidatedHistoricalData(
+    'historical-games:index',
+    '/data/historical-games/index.json',
+    validateHistoricalGamesIndex,
+  );
+
+export const getHistoricalGamesSeason = async (
+  year: number,
+): Promise<HistoricalGamesSeason> => {
+  if (!Number.isInteger(year) || year < FIRST_GAME_HISTORY_YEAR) {
+    throw new Error(`Historical game season ${year} is invalid.`);
+  }
+  const index = await getHistoricalGamesIndex();
+  if (!index.years.includes(year)) {
+    throw new Error(`Historical game season ${year} is not available.`);
+  }
+  return getValidatedHistoricalData(
+    `historical-games:${year}`,
+    `/data/historical-games/${year}.json`,
+    value => validateHistoricalGamesSeason(value, year),
+  );
+};
+
+export const getHistoricalGamesForTeam = async (
+  teamName: string,
+): Promise<HistoricalGamesForTeam> => {
+  const fileName = getHistoricalTeamGamesFileName(teamName);
+  const index = await getHistoricalGamesIndex();
+  return getValidatedHistoricalData(
+    `historical-games:team:${teamName}`,
+    `/data/historical-games/by-team/${encodeURIComponent(fileName)}`,
+    value => validateHistoricalGamesForTeam(
+      value,
+      teamName,
+      new Set(index.years),
+    ),
+  );
+};
 export const setHistoryData = async (value: HistoryData) => {
   const db = await getDb();
   await db.put('baseData', { key: 'history', value });

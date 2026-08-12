@@ -1,7 +1,5 @@
-import { Box, Divider, LinearProgress, Link, Paper, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, LinearProgress, Paper, Stack, Typography } from '@mui/material';
 import type { Team } from '../../../types/domain';
-import type { GamePageData } from '../../../types/pages';
 
 type OddsSide = {
   spread: string;
@@ -14,7 +12,6 @@ type GameContextPanelProps = {
   homeTeam: Team;
   awaySide: OddsSide;
   homeSide: OddsSide;
-  dynastyContext: GamePageData['dynastyContext'];
   completed: boolean;
 };
 
@@ -25,7 +22,6 @@ export const GameContextPanel = ({
   homeTeam,
   awaySide,
   homeSide,
-  dynastyContext,
   completed,
 }: GameContextPanelProps) => {
   const hasProbabilities =
@@ -94,45 +90,6 @@ export const GameContextPanel = ({
         </Box>
       )}
 
-      {dynastyContext && (
-        <>
-          <Divider sx={{ my: 1 }} />
-          <Stack
-            direction={{ xs: 'column', sm: 'row', lg: 'column' }}
-            spacing={0.5}
-            sx={{ justifyContent: 'space-between' }}
-          >
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="overline" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>
-                Dynasty context
-              </Typography>
-              <Typography variant="body2" sx={{ lineHeight: 1.3 }}>
-                {dynastyContext.callback}
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline', flexShrink: 0 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                Series {dynastyContext.wins}-{dynastyContext.losses}
-              </Typography>
-              {dynastyContext.streak && (
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {dynastyContext.streak}
-                </Typography>
-              )}
-              {dynastyContext.lastMeeting && (
-                <Link
-                  component={RouterLink}
-                  to={`/game/${dynastyContext.lastMeeting.id}`}
-                  variant="caption"
-                  underline="hover"
-                >
-                  Last meeting
-                </Link>
-              )}
-            </Stack>
-          </Stack>
-        </>
-      )}
     </Paper>
   );
 };

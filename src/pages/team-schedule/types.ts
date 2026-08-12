@@ -1,9 +1,12 @@
-import type { TeamSchedulePageData } from '../../types/pages';
+import type {
+  TeamScheduleGameRow,
+  TeamScheduleRow,
+} from '../../types/scheduleTypes';
 
-export type TeamScheduleGame = TeamSchedulePageData['schedule'][number];
+export type TeamScheduleGame = TeamScheduleGameRow;
 
 export type ScheduleViewProps = {
-  games: TeamScheduleGame[];
+  games: TeamScheduleRow[];
   seasonYear: number;
   onOpponentClick: (teamName: string) => void;
 };

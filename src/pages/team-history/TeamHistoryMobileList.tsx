@@ -39,7 +39,7 @@ export const TeamHistoryMobileList = ({ years, teamName, startYear }: TeamHistor
               direction="row"
               sx={{ alignItems: 'center', justifyContent: 'space-between' }}
             >
-              {year.has_games ? (
+              {year.hasSchedule ? (
                 <Link
                   component={RouterLink}
                   to={`/${teamName}/schedule/${year.year}`}

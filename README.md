@@ -64,3 +64,6 @@ dynasty replaces the existing save.
 
 For implementation and system details, see the
 [technical documentation](docs/README.md).
+
+Historical game results are sourced from
+[CollegeFootballData.com](https://collegefootballdata.com/).

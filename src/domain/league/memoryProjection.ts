@@ -39,14 +39,6 @@ export interface DynastyOverview {
   awardWinners: number;
 }
 
-export interface DynastySeriesContext {
-  wins: number;
-  losses: number;
-  streak: string | null;
-  lastMeeting: SignatureGame | null;
-  callback: string;
-}
-
 const PLAYOFF_TYPES = new Set<SeasonMemoryEventType>([
   'playoff_first_round',
   'playoff_quarterfinal',
@@ -316,80 +308,6 @@ export const buildDynastyOverview = ({
       0,
     ),
   };
-};
-
-export const buildDynastySeriesContext = ({
-  userTeamId,
-  opponentTeamId,
-  targetGame,
-  games,
-  memories,
-  teams,
-  rivalryName,
-}: {
-  userTeamId: number;
-  opponentTeamId: number;
-  targetGame: GameRecord;
-  games: GameRecord[];
-  memories: SeasonMemory[];
-  teams: Team[];
-  rivalryName: string | null;
-}): DynastySeriesContext => {
-  const teamsById = new Map(teams.map(team => [team.id, team]));
-  const prior = games
-    .filter(
-      game =>
-        game.winnerId !== null &&
-        ((game.teamAId === userTeamId && game.teamBId === opponentTeamId) ||
-          (game.teamAId === opponentTeamId && game.teamBId === userTeamId)) &&
-        (game.year < targetGame.year ||
-          (game.year === targetGame.year &&
-            (game.weekPlayed < targetGame.weekPlayed ||
-              (game.weekPlayed === targetGame.weekPlayed &&
-                game.id < targetGame.id)))),
-    )
-    .sort(
-      (left, right) =>
-        left.year - right.year ||
-        left.weekPlayed - right.weekPlayed ||
-        left.id - right.id,
-    );
-  const wins = prior.filter(game => game.winnerId === userTeamId).length;
-  const losses = prior.length - wins;
-  let streak: string | null = null;
-  if (prior.length) {
-    const latestWinner = prior[prior.length - 1].winnerId;
-    let length = 0;
-    for (let index = prior.length - 1; index >= 0; index -= 1) {
-      if (prior[index].winnerId !== latestWinner) break;
-      length += 1;
-    }
-    streak = `${teamsById.get(latestWinner!)?.name ?? 'Unknown'} ${length}`;
-  }
-  const last = prior[prior.length - 1];
-  const lastMeeting = last
-    ? toSignatureGame(last, userTeamId, teamsById)
-    : null;
-  if (!last) {
-    return {
-      wins,
-      losses,
-      streak,
-      lastMeeting,
-      callback: 'First meeting of the dynasty era.',
-    };
-  }
-  const lastMemory = memories.find(memory => memory.year === last.year);
-  const lastEvent = eventForGame(lastMemory, last.id);
-  let callback: string;
-  if (lastEvent && PLAYOFF_TYPES.has(lastEvent.type)) {
-    callback = `Postseason rematch of the ${last.year} meeting.`;
-  } else if (rivalryName) {
-    callback = `${rivalryName}: ${streak ?? 'series even'} in the current streak.`;
-  } else {
-    callback = `Last meeting: ${lastMeeting!.label} in ${last.year}.`;
-  }
-  return { wins, losses, streak, lastMeeting, callback };
 };
 
 export const buildSeasonMilestones = ({

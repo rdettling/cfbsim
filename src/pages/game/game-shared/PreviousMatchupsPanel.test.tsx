@@ -14,24 +14,60 @@ describe('PreviousMatchupsPanel', () => {
           teamA={teamA}
           teamB={teamB}
           awayTeamId={teamB.id}
+          series={{ teamAWins: 3, teamBWins: 2, ties: 0 }}
           matchups={[{
-            id: 44,
+            rowKey: 'simulated:44',
+            source: 'simulated',
+            gameId: 44,
             year: 2025,
             week: 8,
             label: 'Rivalry Game',
             teamAScore: 27,
             teamBScore: 24,
-            winnerId: teamA.id,
+            winnerSide: 'teamA',
           }]}
         />
       </MemoryRouter>,
     );
 
     expect(markup).toContain('Previous Matchups');
+    expect(markup).toContain('Series · Alpha 3–2');
     expect(markup).toContain('2025 · Week 8');
-    expect(markup).toContain('BET');
-    expect(markup).toContain('ALP');
+    expect(markup).toContain('src="/logos/teams/Beta.png"');
+    expect(markup).toContain('src="/logos/teams/Alpha.png"');
+    expect(markup).toContain('Beta');
+    expect(markup).toContain('Alpha');
     expect(markup).toContain('href="/game/44"');
+  });
+
+  it('shows historical meetings without linking to a game page', () => {
+    const teamA = buildTestTeam({ id: 1, name: 'Alpha', abbreviation: 'ALP' });
+    const teamB = buildTestTeam({ id: 2, name: 'Beta', abbreviation: 'BET' });
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <PreviousMatchupsPanel
+          teamA={teamA}
+          teamB={teamB}
+          awayTeamId={teamB.id}
+          series={{ teamAWins: 0, teamBWins: 1, ties: 0 }}
+          matchups={[{
+            rowKey: 'historical:100',
+            source: 'historical',
+            gameId: null,
+            year: 2024,
+            week: 3,
+            label: 'Historical Matchup',
+            teamAScore: 21,
+            teamBScore: 24,
+            winnerSide: 'teamB',
+          }]}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain('2024 · Week 3');
+    expect(markup).toContain('Historical Matchup');
+    expect(markup).not.toContain('href="/game/');
   });
 
   it('renders nothing when the teams have no prior meetings', () => {
@@ -43,6 +79,7 @@ describe('PreviousMatchupsPanel', () => {
           teamA={teamA}
           teamB={teamB}
           awayTeamId={teamA.id}
+          series={{ teamAWins: 0, teamBWins: 0, ties: 0 }}
           matchups={[]}
         />
       </MemoryRouter>,

@@ -1,6 +1,7 @@
-import type { TeamScheduleGame } from './types';
-
-type ScheduleVenue = Pick<TeamScheduleGame, 'location' | 'venue'>;
+type ScheduleVenue = {
+  location?: 'Home' | 'Away' | 'Neutral';
+  venue: string | null;
+};
 
 export const getScheduleVenueLabel = ({
   location,

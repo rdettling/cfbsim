@@ -4,8 +4,16 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { validateYearData } from '../src/domain/yearDataValidation';
 import { normalizeRivalriesData } from '../src/domain/rivalryData';
+import {
+  buildHistoricalGamesByTeam,
+  getHistoricalTeamGamesFileName,
+  validateHistoricalGamesForTeam,
+  validateHistoricalGamesIndex,
+  validateHistoricalGamesSeason,
+} from '../src/domain/historicalGames';
 import type {
   ConferencesData,
+  HistoricalGamesSeason,
   HistoryData,
   SeasonResultsData,
   TeamsData,
@@ -382,6 +390,7 @@ export const checkData = async (dataRoot = DATA_ROOT): Promise<string[]> => {
   const errors: string[] = [];
   const yearsDirectory = join(dataRoot, 'years');
   const resultsDirectory = join(dataRoot, 'season-results');
+  const historicalGamesDirectory = join(dataRoot, 'historical-games');
 
   let index: { years: string[] } = { years: [] };
   try {
@@ -497,6 +506,7 @@ export const checkData = async (dataRoot = DATA_ROOT): Promise<string[]> => {
 
   const referencedTeams = new Set<string>();
   const referencedConferences = new Set<string>();
+  const activeTeamsByYear = new Map<number, Set<string>>();
   for (const year of index.years) {
     let yearData: YearData | null = null;
     try {
@@ -517,6 +527,7 @@ export const checkData = async (dataRoot = DATA_ROOT): Promise<string[]> => {
       errors,
     );
     const assignments = getAssignments(yearData);
+    activeTeamsByYear.set(Number(year), new Set(assignments.keys()));
     for (const teamName of assignments.keys()) referencedTeams.add(teamName);
     for (const conferenceName of Object.keys(yearData.conferences)) {
       referencedConferences.add(conferenceName);
@@ -579,6 +590,134 @@ export const checkData = async (dataRoot = DATA_ROOT): Promise<string[]> => {
     }
   } catch (error) {
     errors.push(readJsonError('history.json', error));
+  }
+
+  try {
+    const historicalIndex = validateHistoricalGamesIndex(
+      await readJson<unknown>(join(historicalGamesDirectory, 'index.json')),
+    );
+    let seasonFiles: number[] = [];
+    try {
+      seasonFiles = (await readdir(historicalGamesDirectory))
+        .filter(name => /^\d{4}\.json$/.test(name))
+        .map(name => Number(name.slice(0, 4)))
+        .sort((left, right) => left - right);
+    } catch (error) {
+      errors.push(readJsonError('historical-games directory', error));
+    }
+    const missingFiles = historicalIndex.years.filter(
+      year => !seasonFiles.includes(year),
+    );
+    const orphanFiles = seasonFiles.filter(
+      year => !historicalIndex.years.includes(year),
+    );
+    if (missingFiles.length || orphanFiles.length) {
+      errors.push(
+        `historical-games files: missing [${missingFiles.join(', ')}]; ` +
+        `unexpected [${orphanFiles.join(', ')}].`,
+      );
+    }
+    const incompleteYears = historicalIndex.years.filter(
+      year => !resultFiles.includes(String(year)),
+    );
+    if (incompleteYears.length) {
+      errors.push(
+        `historical-games/index.json: unavailable completed seasons ` +
+        `[${incompleteYears.join(', ')}].`,
+      );
+    }
+    const supportedTeams = teamsData
+      ? new Set(Object.keys(teamsData.teams))
+      : null;
+    const historicalSeasons: HistoricalGamesSeason[] = [];
+    for (const year of historicalIndex.years) {
+      if (!seasonFiles.includes(year)) continue;
+      try {
+        const season = validateHistoricalGamesSeason(
+          await readJson<unknown>(
+            join(historicalGamesDirectory, `${year}.json`),
+          ),
+          year,
+        );
+        historicalSeasons.push(season);
+        if (!supportedTeams) continue;
+        for (const game of season.games) {
+          if (
+            !supportedTeams.has(game.homeTeam) &&
+            !supportedTeams.has(game.awayTeam)
+          ) {
+            errors.push(
+              `historical-games/${year}.json: game ${game.sourceId} ` +
+              'does not involve a supported program.',
+            );
+          }
+        }
+        const participants = new Set(
+          season.games.flatMap(game => [game.homeTeam, game.awayTeam]),
+        );
+        const missingTeams = [...(activeTeamsByYear.get(year) ?? [])]
+          .filter(teamName => !participants.has(teamName))
+          .sort((left, right) => left.localeCompare(right));
+        if (missingTeams.length) {
+          errors.push(
+            `historical-games/${year}.json: active programs without games ` +
+            `[${missingTeams.join(', ')}].`,
+          );
+        }
+      } catch (error) {
+        errors.push(readJsonError(`historical-games/${year}.json`, error));
+      }
+    }
+
+    if (supportedTeams) {
+      const byTeamDirectory = join(historicalGamesDirectory, 'by-team');
+      let teamFiles: string[] = [];
+      try {
+        teamFiles = (await readdir(byTeamDirectory))
+          .sort((left, right) => left.localeCompare(right));
+      } catch (error) {
+        errors.push(readJsonError('historical-games/by-team directory', error));
+      }
+      const expectedLookups = buildHistoricalGamesByTeam(
+        historicalSeasons,
+        supportedTeams,
+      );
+      const expectedFiles = expectedLookups.map(entry =>
+        getHistoricalTeamGamesFileName(entry.team)
+      );
+      const missingTeamFiles = expectedFiles.filter(name => !teamFiles.includes(name));
+      const orphanTeamFiles = teamFiles.filter(name => !expectedFiles.includes(name));
+      if (missingTeamFiles.length || orphanTeamFiles.length) {
+        errors.push(
+          `historical-games/by-team files: missing ` +
+          `[${missingTeamFiles.join(', ')}]; unexpected ` +
+          `[${orphanTeamFiles.join(', ')}].`,
+        );
+      }
+      const availableYears = new Set(historicalIndex.years);
+      if (historicalSeasons.length === historicalIndex.years.length) {
+        for (const expected of expectedLookups) {
+          const fileName = getHistoricalTeamGamesFileName(expected.team);
+          if (!teamFiles.includes(fileName)) continue;
+          try {
+            const actual = validateHistoricalGamesForTeam(
+              await readJson<unknown>(join(byTeamDirectory, fileName)),
+              expected.team,
+              availableYears,
+            );
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+              errors.push(
+                `historical-games/by-team/${fileName}: generated content is stale.`,
+              );
+            }
+          } catch (error) {
+            errors.push(readJsonError(`historical-games/by-team/${fileName}`, error));
+          }
+        }
+      }
+    }
+  } catch (error) {
+    errors.push(readJsonError('historical-games/index.json', error));
   }
 
   return errors;

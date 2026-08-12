@@ -3,7 +3,6 @@ import type { GameRecord } from '../../types/db';
 import type { SeasonMemory } from '../../types/memory';
 import { buildTestSeasonTeamSnapshot, buildTestTeam } from '../../test/fixtures';
 import {
-  buildDynastySeriesContext,
   buildSeasonMilestones,
   buildTeamAccomplishments,
   selectSignatureGames,
@@ -91,30 +90,6 @@ describe('dynasty memory projections', () => {
         }],
       },
     }).map(entry => entry.id)).toEqual([3, 1, 2]);
-  });
-
-  it('prioritizes postseason rematches and computes the current streak', () => {
-    const prior = game(3, 2025, 2);
-    const target = game(4, 2026, null as unknown as number, {
-      winnerId: null,
-      scoreA: null,
-      scoreB: null,
-    });
-    const context = buildDynastySeriesContext({
-      userTeamId: 1,
-      opponentTeamId: 2,
-      targetGame: target,
-      games: [prior, target],
-      memories: [memory],
-      teams,
-      rivalryName: 'Test Trophy',
-    });
-    expect(context).toMatchObject({
-      wins: 0,
-      losses: 1,
-      streak: 'Other State 1',
-      callback: 'Postseason rematch of the 2025 meeting.',
-    });
   });
 
   it('limits legacy milestones and recognizes new dynasty bests', () => {

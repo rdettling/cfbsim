@@ -1,11 +1,23 @@
 import type { Team } from '../../../types/domain';
 import type { GameLogRecord, GameRecord, PlayRecord, PlayerRecord } from '../../../types/db';
+import type { HistoricalTeamGame } from '../../../types/baseData';
+import type { PreviousMatchup, PreviousMatchups } from '../../../types/game';
 
-export const buildPreviousMatchups = (
-  targetGame: GameRecord,
-  games: GameRecord[],
-) => games
-  .filter(game => {
+export const buildPreviousMatchups = ({
+  targetGame,
+  simulatedGames,
+  historicalGames,
+  dynastyStartYear,
+  teamBName,
+}: {
+  targetGame: GameRecord;
+  simulatedGames: GameRecord[];
+  historicalGames: HistoricalTeamGame[];
+  dynastyStartYear: number;
+  teamBName: string;
+}): PreviousMatchups => {
+  const simulated = simulatedGames
+    .filter(game => {
     const sameTeams =
       (game.teamAId === targetGame.teamAId && game.teamBId === targetGame.teamBId) ||
       (game.teamAId === targetGame.teamBId && game.teamBId === targetGame.teamAId);
@@ -16,23 +28,70 @@ export const buildPreviousMatchups = (
           (game.weekPlayed === targetGame.weekPlayed && game.id < targetGame.id)));
     return sameTeams && beforeTarget && game.winnerId !== null;
   })
-  .sort((left, right) =>
-    right.year - left.year ||
-    right.weekPlayed - left.weekPlayed ||
-    right.id - left.id)
-  .slice(0, 5)
   .map(game => {
     const targetTeamAIsGameTeamA = game.teamAId === targetGame.teamAId;
     return {
-      id: game.id,
+      rowKey: `simulated:${game.id}`,
+      source: 'simulated' as const,
+      gameId: game.id,
       year: game.year,
       week: game.weekPlayed,
       label: game.baseLabel,
       teamAScore: targetTeamAIsGameTeamA ? game.scoreA ?? 0 : game.scoreB ?? 0,
       teamBScore: targetTeamAIsGameTeamA ? game.scoreB ?? 0 : game.scoreA ?? 0,
-      winnerId: game.winnerId,
+      winnerSide: game.winnerId === targetGame.teamAId
+        ? 'teamA' as const
+        : game.winnerId === targetGame.teamBId
+          ? 'teamB' as const
+          : null,
+      orderId: game.id,
     };
   });
+
+  const historical = historicalGames
+    .filter(game =>
+      game.opponent === teamBName &&
+      game.year < dynastyStartYear &&
+      game.year < targetGame.year
+    )
+    .map(game => ({
+      rowKey: `historical:${game.sourceId}`,
+      source: 'historical' as const,
+      gameId: null,
+      year: game.year,
+      week: game.weekPlayed,
+      label: game.label,
+      teamAScore: game.teamScore,
+      teamBScore: game.opponentScore,
+      winnerSide: game.teamScore > game.opponentScore
+        ? 'teamA' as const
+        : game.opponentScore > game.teamScore
+          ? 'teamB' as const
+          : null,
+      orderId: game.sourceId,
+    }));
+
+  const meetings: Array<PreviousMatchup & { orderId: number }> = [...simulated, ...historical];
+  const series = meetings.reduce(
+    (record, meeting) => {
+      if (meeting.winnerSide === 'teamA') record.teamAWins += 1;
+      else if (meeting.winnerSide === 'teamB') record.teamBWins += 1;
+      else record.ties += 1;
+      return record;
+    },
+    { teamAWins: 0, teamBWins: 0, ties: 0 },
+  );
+  const rows = meetings
+    .sort((left, right) =>
+      right.year - left.year ||
+      right.week - left.week ||
+      right.orderId - left.orderId
+    )
+    .slice(0, 5)
+    .map(({ orderId: _orderId, ...matchup }) => matchup);
+
+  return { rows, series };
+};
 
 type LeaderEntry = {
   playerId: number;

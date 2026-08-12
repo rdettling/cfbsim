@@ -30,12 +30,12 @@ export const DesktopScheduleTable = ({ games, seasonYear, onOpponentClick }: Sch
     <TableBody>
       {games.map((game) => (
         <TableRow
-          key={game.weekPlayed}
+          key={game.rowKey}
           hover
-          sx={game.opponent ? undefined : { bgcolor: 'action.hover' }}
+          sx={game.kind === 'game' ? undefined : { bgcolor: 'action.hover' }}
         >
           <TableCell sx={{ fontWeight: 600 }}>{game.weekPlayed}</TableCell>
-          {game.opponent ? (
+          {game.kind === 'game' ? (
             <>
               <TableCell>
                 <ScheduleOpponent game={game} onClick={onOpponentClick} />

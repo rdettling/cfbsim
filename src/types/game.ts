@@ -58,3 +58,24 @@ export interface GameData {
   scoreA: number;
   scoreB: number;
 }
+
+export interface PreviousMatchup {
+  rowKey: string;
+  source: 'simulated' | 'historical';
+  gameId: number | null;
+  year: number;
+  week: number;
+  label: string;
+  teamAScore: number;
+  teamBScore: number;
+  winnerSide: 'teamA' | 'teamB' | null;
+}
+
+export interface PreviousMatchups {
+  rows: PreviousMatchup[];
+  series: {
+    teamAWins: number;
+    teamBWins: number;
+    ties: number;
+  };
+}

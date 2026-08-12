@@ -57,7 +57,7 @@ export const TeamHistoryDesktopTable = ({ years, teamName, startYear }: TeamHist
             )}
             <TableRow hover>
               <TableCell>
-                {year.has_games ? (
+                {year.hasSchedule ? (
                   <Link
                     component={RouterLink}
                     to={`/${teamName}/schedule/${year.year}`}

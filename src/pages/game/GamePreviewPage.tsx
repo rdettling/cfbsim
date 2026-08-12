@@ -47,7 +47,6 @@ const GamePreviewPage = ({ data }: GamePreviewPageProps) => {
       homeTeam={home}
       awaySide={awaySide}
       homeSide={homeSide}
-      dynastyContext={data.dynastyContext}
       completed={false}
     />
   );
@@ -85,7 +84,8 @@ const GamePreviewPage = ({ data }: GamePreviewPageProps) => {
       teamA={game.teamA}
       teamB={game.teamB}
       awayTeamId={away.id}
-      matchups={data.previousMatchups}
+      matchups={data.previousMatchups.rows}
+      series={data.previousMatchups.series}
     />
   );
 
@@ -155,7 +155,7 @@ const GamePreviewPage = ({ data }: GamePreviewPageProps) => {
               sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minHeight: 0 }}
             >
               <Box sx={{ flexShrink: 0 }}>{context}</Box>
-              {data.previousMatchups.length > 0 && (
+              {data.previousMatchups.rows.length > 0 && (
                 <Box sx={{ flex: 1, minHeight: 0 }}>{previousMatchups}</Box>
               )}
             </Box>
@@ -163,7 +163,7 @@ const GamePreviewPage = ({ data }: GamePreviewPageProps) => {
         ) : (
           <>
             {context}
-            {data.previousMatchups.length > 0 && previousMatchups}
+            {data.previousMatchups.rows.length > 0 && previousMatchups}
             <GameTabbedPanel
               tabs={MOBILE_TABS}
               value={mobileTab}

@@ -1,5 +1,4 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { buildTestTeam } from '../../../test/fixtures';
 import { GameContextPanel } from './GameContextPanel';
@@ -14,50 +13,30 @@ const odds = {
 describe('GameContextPanel', () => {
   it('labels completed-game lines as pregame odds', () => {
     const markup = renderToStaticMarkup(
-      <MemoryRouter>
-        <GameContextPanel
-          awayTeam={awayTeam}
-          homeTeam={homeTeam}
-          {...odds}
-          dynastyContext={null}
-          completed
-        />
-      </MemoryRouter>,
+      <GameContextPanel
+        awayTeam={awayTeam}
+        homeTeam={homeTeam}
+        {...odds}
+        completed
+      />,
     );
 
     expect(markup).toContain('Pregame odds');
     expect(markup).not.toContain('Dynasty context');
   });
 
-  it('includes optional dynasty series context and the last-meeting link', () => {
+  it('shows matchup odds without a separate dynasty context section', () => {
     const markup = renderToStaticMarkup(
-      <MemoryRouter>
-        <GameContextPanel
-          awayTeam={awayTeam}
-          homeTeam={homeTeam}
-          {...odds}
-          completed={false}
-          dynastyContext={{
-            wins: 3,
-            losses: 2,
-            streak: 'Away State 2',
-            callback: 'The rivalry resumes.',
-            lastMeeting: {
-              id: 44,
-              year: 2025,
-              opponent: 'Home Tech',
-              result: 'W',
-              score: '27-24',
-              label: 'W 27-24 vs Home Tech',
-            },
-          }}
-        />
-      </MemoryRouter>,
+      <GameContextPanel
+        awayTeam={awayTeam}
+        homeTeam={homeTeam}
+        {...odds}
+        completed={false}
+      />,
     );
 
     expect(markup).toContain('Matchup odds');
-    expect(markup).toContain('Dynasty context');
-    expect(markup).toContain('Series 3-2');
-    expect(markup).toContain('href="/game/44"');
+    expect(markup).not.toContain('Dynasty context');
+    expect(markup).not.toContain('Last meeting');
   });
 });

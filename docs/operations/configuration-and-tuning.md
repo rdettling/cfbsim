@@ -245,10 +245,38 @@ directories. The latest indexed year may omit a season-results file while its
 season is still unplayed; generated history contains only completed seasons.
 Every older indexed year must have matching completed results.
 
-Use `npm run check:data` to validate the year index and schemas, metadata and
-logo coverage, starting prestige against team bounds and the configured tier
-distribution, season results, and the committed history asset without
-rewriting it. Year prestige distributions may vary by at most three percentage
+Game-history ingestion is an explicit two-stage offline pipeline. `npm run
+fetch:game-history` is the only networked stage and requires `CFBD_API_KEY` in
+the ignored root `.env` file. It saves the unmodified regular-season,
+postseason, and weekly rankings API responses plus a source manifest under the ignored
+`.artifacts/game-history/raw/` directory. Existing complete snapshots are
+resumable by default; pass `--refresh` to atomically replace all three files.
+
+`npm run generate:game-history` never accesses the network or API key. It reads
+only the raw manifest, normalizes provider aliases explicitly to `teams.json`,
+retains games involving a supported program (including lower-division
+opponents), removes unfinished games, and collapses duplicate provider results
+deterministically. It uses AP Top 25 snapshots for time-of-game ranks, maps
+postseason rounds to the app's week model, and builds labels from historical
+conference assignments with the same helper used by simulated games.
+Production generation writes a small index and one minified
+file per season under `public/data/historical-games/`. Pass `--year YYYY` to
+generate or replace one cleaned season while preserving the other indexed
+season files. With no year argument, generation requires and rebuilds every
+completed bundled season.
+
+```text
+npm run fetch:game-history -- --year 2025 --refresh
+npm run generate:game-history -- --year 2025
+```
+
+`npm run check:data` validates the year index and schemas, metadata and logo
+coverage, starting prestige against team bounds and the configured tier
+distribution, season results, and both committed history assets without
+rewriting them. The historical-game index is authoritative for currently
+available seasons; every listed season must be completed and have exactly one
+matching file, while completed seasons may remain absent during the backfill.
+Year prestige distributions may vary by at most three percentage
 points per tier from `prestige_config.json`, preserving curated historical
 snapshots while catching broad distribution drift. When public data assets
 change, also increment `STATIC_DATA_VERSION` in `src/db/baseData.ts` so

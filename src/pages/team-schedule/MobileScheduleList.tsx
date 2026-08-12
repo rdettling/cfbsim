@@ -16,10 +16,10 @@ export const MobileScheduleList = ({ games, seasonYear, onOpponentClick }: Sched
   >
     {games.map((game, index) => (
       <Box
-        key={game.weekPlayed}
+        key={game.rowKey}
         sx={{
           p: 1.5,
-          bgcolor: game.opponent ? 'background.paper' : 'action.hover',
+          bgcolor: game.kind === 'game' ? 'background.paper' : 'action.hover',
           borderBottom: index === games.length - 1 ? 0 : '1px solid',
           borderColor: 'divider',
         }}
@@ -40,10 +40,10 @@ export const MobileScheduleList = ({ games, seasonYear, onOpponentClick }: Sched
           >
             Week {game.weekPlayed}
           </Typography>
-          {game.label && <ScheduleGameLabel game={game} />}
+          {game.kind === 'game' && game.label && <ScheduleGameLabel game={game} />}
         </Stack>
 
-        {game.opponent ? (
+        {game.kind === 'game' ? (
           <>
             <Box sx={{ mt: 1 }}>
               <ScheduleOpponent game={game} onClick={onOpponentClick} />
