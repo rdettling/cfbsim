@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import rawRivalries from '../../public/data/rivalries.json';
 import rawTeams from '../../public/data/teams.json';
-import yearsIndex from '../../public/data/years/index.json';
-import year2020 from '../../public/data/years/2020.json';
+import yearsIndex from '../../public/data/seasons/index.json';
+import year2020 from '../../public/data/seasons/2020.json';
 import { normalizeRivalriesData } from './rivalryData';
 import type { LeagueState } from '../types/league';
 import type { RivalryDefinition, Team } from '../types/domain';
-import type { YearData } from '../types/baseData';
+import type { SeasonData } from '../types/baseData';
 import type { GameRecord } from '../types/db';
 import {
   buildAcceptedRivalryGames,
@@ -73,12 +73,12 @@ const buildTeams = (confLimit = 9) => [
   ),
 ];
 
-const yearModules = import.meta.glob('../../public/data/years/*.json', {
+const yearModules = import.meta.glob('../../public/data/seasons/*.json', {
   eager: true,
   import: 'default',
-}) as Record<string, YearData>;
+}) as Record<string, SeasonData>;
 
-const buildHistoricalTeams = (yearData: YearData) => {
+const buildHistoricalTeams = (yearData: SeasonData) => {
   let id = 1;
   const teams: Team[] = [];
   Object.entries(yearData.conferences).forEach(([conference, data]) => {
@@ -185,7 +185,7 @@ describe('best-effort rivalry scheduling', () => {
   });
 
   it('locks the current 2020 historical overflow omissions', () => {
-    const teams = buildHistoricalTeams(year2020 as YearData);
+    const teams = buildHistoricalTeams(year2020 as SeasonData);
     const rivalries = normalizeRivalriesData(
       rawRivalries,
       new Set(Object.keys(rawTeams.teams)),
@@ -233,7 +233,7 @@ describe('best-effort rivalry scheduling', () => {
       new Set(Object.keys(rawTeams.teams)),
     );
     for (const year of yearsIndex.years) {
-      const yearData = yearModules[`../../public/data/years/${year}.json`];
+      const yearData = yearModules[`../../public/data/seasons/${year}.json`];
       expect(yearData, year).toBeDefined();
       const teams = buildHistoricalTeams(yearData);
       const resolution = resolveRivalries({

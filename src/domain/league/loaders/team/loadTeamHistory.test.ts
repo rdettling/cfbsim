@@ -33,7 +33,6 @@ describe('loadTeamHistory', () => {
       players: [],
     });
     vi.mocked(getHistoryData).mockResolvedValue({
-      generated_at: '2026-01-01T00:00:00.000Z',
       years: [2024, 2025],
       conf_index: { 'Test Conference': 1 },
       teams: {
@@ -59,7 +58,6 @@ describe('loadTeamHistory', () => {
     }]);
     vi.mocked(getRivalriesData).mockResolvedValue({ rivalries: [] });
     vi.mocked(getHistoricalGamesIndex).mockResolvedValue({
-      generated_at: '2026-01-01T00:00:00.000Z',
       source: 'CollegeFootballData.com',
       years: [2024],
     });
@@ -102,7 +100,6 @@ describe('loadTeamHistory', () => {
     });
     vi.mocked(getAllSeasonMemories).mockResolvedValue([]);
     vi.mocked(getHistoricalGamesIndex).mockResolvedValue({
-      generated_at: '2026-01-01T00:00:00.000Z',
       source: 'CollegeFootballData.com',
       years: [2025],
     });

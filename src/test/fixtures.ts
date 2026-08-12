@@ -12,6 +12,13 @@ import {
   DEFAULT_NEXT_SEASON_CONFIGURATION,
   type LeagueState,
 } from '../types/league';
+import bettingOddsData from '../../public/data/betting_odds.json';
+import statesData from '../../public/data/states.json';
+import teamsData from '../../public/data/teams.json';
+
+export const TEST_BETTING_ODDS_DATA = bettingOddsData;
+export const TEST_STATES_DATA = statesData;
+export const TEST_TEAMS_DATA = teamsData;
 
 export const buildTestTeam = (overrides: Partial<Team> = {}): Team => ({
   id: 1,

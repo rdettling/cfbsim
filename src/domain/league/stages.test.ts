@@ -44,7 +44,6 @@ vi.mock('./memory', () => ({
 
 vi.mock('../../db/baseData', () => ({
   getHistoryData: vi.fn(async () => ({
-    generated_at: 'test',
     years: [2024],
     conf_index: { 'Test Conference': 1 },
     teams: {},

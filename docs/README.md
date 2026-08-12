@@ -19,6 +19,7 @@ Before committing a change, run the validation appropriate to its scope. The
 complete repository check is:
 
 ```bash
+npm run data:check
 npm test
 npm run typecheck
 npm run build

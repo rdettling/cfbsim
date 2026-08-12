@@ -47,6 +47,7 @@ aggregate expectations rather than treating one game as evidence.
   - `npm test`
   - `npm run typecheck`
   - `npm run build`
+  - `npm run data:check`
   - `npm run eval:sim`
   - `npm run eval:sim-stability`
   - `npm run tune:sim`

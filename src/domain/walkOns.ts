@@ -1,6 +1,6 @@
 import type { PlayerRecord } from '../types/db';
 import type { Team } from '../types/domain';
-import type { WeightedNameData } from '../types/recruiting';
+import type { NamesData } from '../types/baseData';
 import { RosterFinalizationRuleError } from '../types/roster';
 import {
   generateName,
@@ -18,14 +18,14 @@ import {
 export interface GenerateWalkOnsInput {
   teams: Team[];
   players: PlayerRecord[];
-  names: WeightedNameData;
+  names: NamesData;
   year: number;
   seed: number;
   nextPlayerId: number;
 }
 
-const assertWalkOnNames = (names: WeightedNameData) => {
-  for (const category of ['black', 'white']) {
+const assertWalkOnNames = (names: NamesData) => {
+  for (const category of ['black', 'white'] as const) {
     const source = names[category];
     const validEntries = (entries: typeof source.first | undefined) =>
       Array.isArray(entries) &&

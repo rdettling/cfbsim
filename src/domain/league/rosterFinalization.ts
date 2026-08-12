@@ -1,6 +1,5 @@
 import { ROUTES } from '../../constants/routes';
 import { normalizeRivalriesData } from '../rivalryData';
-import type { TeamsData } from '../../types/baseData';
 import { getDb } from '../../db/db';
 import {
   assertCurrentLeagueState,
@@ -16,8 +15,8 @@ import type { PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
 import type {
   RecruitingState,
-  WeightedNameData,
 } from '../../types/recruiting';
+import { validateNamesData, validateTeamsData } from '../baseDataValidation';
 import {
   type FinalizeRosterResult,
   type RosterFinalizationCommandGuard,
@@ -235,7 +234,7 @@ export const initializeRosterFinalization = async ({
     const generated = generateWalkOns({
       teams: league.teams,
       players,
-      names: namesRecord.value as WeightedNameData,
+      names: validateNamesData(namesRecord.value, 'cached names'),
       year: expectedYear,
       seed: state.seed,
       nextPlayerId: league.idCounters.player,
@@ -426,7 +425,7 @@ export const finalizeRoster = async (
     const reset = await prepareSeasonReset(league, {
       rivalries: normalizeRivalriesData(
         rivalriesRecord.value,
-        new Set(Object.keys((teamsRecord.value as TeamsData).teams)),
+        new Set(Object.keys(validateTeamsData(teamsRecord.value, 'cached teams').teams)),
       ),
       odds: buildOddsContext(oddsRecord.value),
       random: random.fork('season-reset'),

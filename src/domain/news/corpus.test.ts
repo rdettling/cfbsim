@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { ConferencesData, TeamsData, YearData } from '../../types/baseData';
-import type { WeightedNameData } from '../../types/recruiting';
+import type { ConferencesData, TeamsData, SeasonData } from '../../types/baseData';
+import type { NamesData } from '../../types/baseData';
 import { normalizeRivalriesData } from '../rivalryData';
 import { GAME_STORY_ANGLES, GAME_TYPES } from '../../types/news';
 import { evaluateNewsAudit } from './audit';
@@ -19,10 +19,10 @@ const readJson = <T>(path: string) =>
 
 const teamsData = readJson<TeamsData>('../../../public/data/teams.json');
 const data: NewsAuditCorpusData = {
-  yearData: readJson<YearData>('../../../public/data/years/2026.json'),
+  yearData: readJson<SeasonData>('../../../public/data/seasons/2026.json'),
   teamsData,
   conferencesData: readJson<ConferencesData>('../../../public/data/conferences.json'),
-  names: readJson<WeightedNameData>('../../../public/data/names.json'),
+  names: readJson<NamesData>('../../../public/data/names.json'),
   states: readJson<Record<string, number>>('../../../public/data/states.json'),
   rivalries: normalizeRivalriesData(
     readJson<unknown>('../../../public/data/rivalries.json'),

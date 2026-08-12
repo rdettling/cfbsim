@@ -3,7 +3,7 @@ import {
   getHistoricalGamesIndex,
   getHistoricalGamesSeason,
   getHistoryData,
-  getYearData,
+  getSeasonData,
 } from '../../../../db/baseData';
 import { getSeasonMemory } from '../../../../db/seasonMemoryRepo';
 import { getAllGames } from '../../../../db/simRepo';
@@ -131,12 +131,10 @@ describe('loadTeamSchedule', () => {
       }),
     ]);
     vi.mocked(getHistoricalGamesIndex).mockResolvedValue({
-      generated_at: '2026-01-01T00:00:00.000Z',
       source: 'CollegeFootballData.com',
       years: [2025],
     });
     vi.mocked(getHistoryData).mockResolvedValue({
-      generated_at: '2026-01-01T00:00:00.000Z',
       years: [2025],
       conf_index: { 'Test Conference': 1 },
       teams: { 'Test State': [[2025, 1, 8, 9, 4, 5]] },
@@ -145,10 +143,12 @@ describe('loadTeamSchedule', () => {
       year: 2025,
       games: [historicalGame()],
     });
-    vi.mocked(getYearData).mockResolvedValue({
+    vi.mocked(getSeasonData).mockResolvedValue({
+      year: 2025,
       playoff: { teams: 12, conf_champ_autobids: 5, conf_champ_top_4: false },
       conferences: {},
       independents: {},
+      results: null,
     });
     vi.mocked(getSeasonMemory).mockResolvedValue({
       year: 2025,
@@ -303,7 +303,7 @@ describe('loadTeamSchedule', () => {
       weekPlayed: 19,
     });
     expect(getSeasonMemory).not.toHaveBeenCalled();
-    expect(getYearData).toHaveBeenCalledWith('2025');
+    expect(getSeasonData).toHaveBeenCalledWith('2025');
   });
 
   it('does not expose history for a team without a history row', async () => {

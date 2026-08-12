@@ -10,7 +10,7 @@ import {
 import { resolveHistoricalData } from './historicalData';
 import { buildNextSeasonPreview } from './nextSeasonPreview';
 
-const validYearData = {
+const validSeasonData = {
   playoff: {
     teams: 12,
     conf_champ_autobids: 5,
@@ -23,6 +23,7 @@ const validYearData = {
     },
   },
   independents: {},
+  results: null,
 };
 
 const resetDatabase = async () => {
@@ -39,13 +40,13 @@ const seedHistoricalYears = async (years: number[]) => {
   const db = await getDb();
   const tx = db.transaction('baseData', 'readwrite');
   await tx.objectStore('baseData').put({
-    key: 'years:index',
-    value: { years: years.map(String) },
+    key: 'seasons:index',
+    value: { years: [...years].sort((left, right) => right - left).map(String) },
   });
   for (const year of years) {
     await tx.objectStore('baseData').put({
-      key: `years:${year}`,
-      value: validYearData,
+      key: `seasons:${year}`,
+      value: { ...validSeasonData, year },
     });
   }
   await tx.done;
@@ -137,11 +138,11 @@ describe('historical next-season resolution', () => {
 
     const db = await getDb();
     await db.put('baseData', {
-      key: 'years:index',
+      key: 'seasons:index',
       value: { years: ['2026'] },
     });
     await db.put('baseData', {
-      key: 'years:2026',
+      key: 'seasons:2026',
       value: { playoff: { teams: 6 }, conferences: {} },
     });
 

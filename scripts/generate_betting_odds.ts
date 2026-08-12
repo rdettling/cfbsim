@@ -1,15 +1,21 @@
 /// <reference types="node" />
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { simGame } from '../src/domain/sim/engine';
+import {
+  BETTING_ODDS_MAX_DIFF,
+  BETTING_ODDS_SEED,
+  BETTING_ODDS_SIMULATIONS,
+  validateBettingOddsData,
+} from '../src/domain/baseDataValidation';
+import { createSeededRandom, withSeededMathRandom } from '../src/domain/utils/random';
+import type { BettingOddsData } from '../src/types/baseData';
 import type { LeagueState } from '../src/types/league';
 import type { Team, Info } from '../src/types/domain';
 import type { StartersCache, SimGame } from '../src/types/sim';
 import type { PlayerRecord } from '../src/types/db';
 
-const MAX_DIFF = 100;
-const TEST_SIMULATIONS = 1000;
 const TAX_FACTOR = 0.05;
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -109,7 +115,10 @@ const createPlayer = (
 });
 
 const buildStarters = (team: Team, rating: number, baseId: number): StartersCache => {
-  const positions = ['qb', 'rb', 'wr', 'wr', 'te', 'k', 'p'];
+  const positions = [
+    'qb', 'rb', 'wr', 'wr', 'te', 'k', 'p',
+    'dl', 'dl', 'lb', 'lb', 'cb', 'cb', 's',
+  ];
   const players = positions.map((pos, index) => createPlayer(baseId + index, team.id, pos, rating));
   const byTeamPos = new Map<string, PlayerRecord[]>();
   positions.forEach((pos, index) => {
@@ -118,7 +127,7 @@ const buildStarters = (team: Team, rating: number, baseId: number): StartersCach
     current.push(players[index]);
     byTeamPos.set(key, current);
   });
-  return { byTeamPos };
+  return { byTeamPos, byId: new Map(players.map(player => [player.id, player])) };
 };
 
 const buildGame = (teamA: Team, teamB: Team): SimGame => ({
@@ -157,13 +166,14 @@ const runDiff = (diff: number) => {
   let winA = 0;
   let winB = 0;
 
-  for (let i = 0; i < TEST_SIMULATIONS; i += 1) {
+  for (let i = 0; i < BETTING_ODDS_SIMULATIONS; i += 1) {
     const teamA = createTeam(1, diff);
     const teamB = createTeam(2, 0);
     const league = createLeague([teamA, teamB]);
     const starters = buildStarters(teamA, diff, i * 1000);
     const startersB = buildStarters(teamB, 0, i * 1000 + 100);
     startersB.byTeamPos.forEach((players, key) => starters.byTeamPos.set(key, players));
+    startersB.byId.forEach((player, id) => starters.byId.set(id, player));
 
     const game = buildGame(teamA, teamB);
     simGame(league, game, starters);
@@ -174,10 +184,10 @@ const runDiff = (diff: number) => {
     if (game.winner?.id === teamB.id) winB += 1;
   }
 
-  const avgScoreA = Math.round((scoreA / TEST_SIMULATIONS) * 10) / 10;
-  const avgScoreB = Math.round((scoreB / TEST_SIMULATIONS) * 10) / 10;
-  const winProbA = Math.round((winA / TEST_SIMULATIONS) * 1000) / 1000;
-  const winProbB = Math.round((winB / TEST_SIMULATIONS) * 1000) / 1000;
+  const avgScoreA = Math.round((scoreA / BETTING_ODDS_SIMULATIONS) * 10) / 10;
+  const avgScoreB = Math.round((scoreB / BETTING_ODDS_SIMULATIONS) * 10) / 10;
+  const winProbA = Math.round((winA / BETTING_ODDS_SIMULATIONS) * 1000) / 1000;
+  const winProbB = Math.round((winB / BETTING_ODDS_SIMULATIONS) * 1000) / 1000;
 
   const spread = Math.round((avgScoreA - avgScoreB) * 2) / 2;
   const spreadA =
@@ -209,25 +219,40 @@ const runDiff = (diff: number) => {
   };
 };
 
-const main = async () => {
+let cachedBettingOdds: BettingOddsData | null = null;
+
+export const buildBettingOddsData = (): BettingOddsData => {
+  if (cachedBettingOdds) return cachedBettingOdds;
+  cachedBettingOdds = withSeededMathRandom(
+    createSeededRandom(BETTING_ODDS_SEED),
+    () => {
   const odds: Record<number, ReturnType<typeof runDiff>> = {};
-  for (let diff = 0; diff <= MAX_DIFF; diff += 1) {
+  for (let diff = 0; diff <= BETTING_ODDS_MAX_DIFF; diff += 1) {
     odds[diff] = runDiff(diff);
   }
 
-  const payload = {
-    generated_at: new Date().toISOString(),
-    test_simulations: TEST_SIMULATIONS,
-    max_diff: MAX_DIFF,
+      return validateBettingOddsData({
+    seed: BETTING_ODDS_SEED,
+    test_simulations: BETTING_ODDS_SIMULATIONS,
+    max_diff: BETTING_ODDS_MAX_DIFF,
     odds,
-  };
+      });
+    },
+  );
+  return cachedBettingOdds;
+};
+
+const main = async () => {
+  const payload = buildBettingOddsData();
 
   await mkdir(dirname(OUTPUT_PATH), { recursive: true });
-  await writeFile(OUTPUT_PATH, JSON.stringify(payload, null, 2));
+  await writeFile(OUTPUT_PATH, `${JSON.stringify(payload, null, 2)}\n`);
   console.log(`Wrote betting odds to ${OUTPUT_PATH}`);
 };
 
-main().catch(error => {
-  console.error(error);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  void main().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

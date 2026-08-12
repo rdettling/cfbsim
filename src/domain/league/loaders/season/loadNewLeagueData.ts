@@ -1,4 +1,4 @@
-import { getYearsIndex } from '../../../../db/baseData';
+import { getSeasonIndex } from '../../../../db/baseData';
 import { buildPreviewData } from '../../../baseData';
 import {
   NewLeagueConfigurationError,
@@ -6,7 +6,7 @@ import {
 } from '../../../../types/league';
 
 export const loadNewLeagueData = async (year?: string): Promise<NewLeagueData> => {
-  const yearsIndex = await getYearsIndex();
+  const yearsIndex = await getSeasonIndex();
   const years = Array.isArray(yearsIndex.years)
     ? yearsIndex.years.filter(
         candidate => typeof candidate === 'string' && candidate.length > 0,

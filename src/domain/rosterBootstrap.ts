@@ -2,7 +2,7 @@ import { getNamesData, getStatesData } from '../db/baseData';
 import type { PlayerRecord } from '../types/db';
 import type { Team } from '../types/domain';
 import type { LeagueState } from '../types/league';
-import type { WeightedNameData } from '../types/recruiting';
+import type { NamesData } from '../types/baseData';
 import {
   RECRUIT_STAR_COUNTS,
   type RecruitStarCounts,
@@ -83,7 +83,7 @@ const recruitClass = (
   competitionTeams: Team[],
   rosterTeams: Team[],
   players: PlayerRecord[],
-  names: WeightedNameData,
+  names: NamesData,
   states: string[],
   stateWeights: number[],
   random: RandomSource,
@@ -122,7 +122,7 @@ const recruitClass = (
 };
 
 const loadSourceData = async () => {
-  const names = (await getNamesData()) as WeightedNameData;
+  const names = await getNamesData();
   const stateData = await getStatesData();
   const states = Object.keys(stateData);
   if (!states.length) return { names, states: ['Unknown'], weights: [1] };
@@ -147,7 +147,7 @@ const progressBootstrapClass = (players: PlayerRecord[]) => {
 
 export interface PrepareInitialRostersFromDataInput {
   league: LeagueState;
-  names: WeightedNameData;
+  names: NamesData;
   states: Record<string, number>;
   random: RandomSource;
   starCounts?: RecruitStarCounts;

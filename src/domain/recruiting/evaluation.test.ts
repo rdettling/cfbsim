@@ -81,7 +81,6 @@ const players: PlayerRecord[] = teams.flatMap(team => {
   );
 });
 const history: HistoryData = {
-  generated_at: 'test',
   years: [2025],
   conf_index: { Test: 1 },
   teams: Object.fromEntries(

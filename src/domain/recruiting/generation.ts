@@ -3,8 +3,8 @@ import type { Team } from '../../types/domain';
 import type {
   RecruitingPreferenceWeights,
   RecruitingProspect,
-  WeightedNameData,
 } from '../../types/recruiting';
+import type { NamesData } from '../../types/baseData';
 import { ROSTER } from '../rosterConfig';
 import {
   POSITION_NAME_CATEGORY_BIAS,
@@ -57,7 +57,7 @@ export const generatePlayerRatings = (
 
 export const generateName = (
   position: string,
-  names: WeightedNameData,
+  names: NamesData,
   random: RandomSource,
 ) => {
   const category =
@@ -121,7 +121,7 @@ const generateRange = (rating: number, random: RandomSource) => {
 export interface GenerateProspectPoolInput {
   teams: Team[];
   returningPlayers: PlayerRecord[];
-  names: WeightedNameData;
+  names: NamesData;
   states: Record<string, number>;
   year: number;
   seed: number;

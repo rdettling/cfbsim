@@ -7,7 +7,6 @@ import type {
 } from '../types/baseData';
 import {
   buildHistoricalGamesByTeam,
-  canonicalHistoricalTeamName,
   getHistoricalTeamGamesFileName,
   HistoricalGamesValidationError,
   validateHistoricalGamesForTeam,
@@ -34,7 +33,6 @@ const game = (overrides: Partial<HistoricalGame> = {}): HistoricalGame => ({
 });
 
 const index = (): HistoricalGamesIndex => ({
-  generated_at: '2026-08-11T00:00:00.000Z',
   source: 'CollegeFootballData.com',
   years: [2000, 2025],
 });
@@ -45,14 +43,6 @@ const season = (): HistoricalGamesSeason => ({
 });
 
 describe('historical games data', () => {
-  it('normalizes provider names to the app program names', () => {
-    expect(canonicalHistoricalTeamName('TCU')).toBe('Texas Christian');
-    expect(canonicalHistoricalTeamName('SMU')).toBe('Southern Methodist');
-    expect(canonicalHistoricalTeamName('Lower Division State')).toBe(
-      'Lower Division State',
-    );
-  });
-
   it('accepts the exact current index and season shapes', () => {
     expect(validateHistoricalGamesIndex(index())).toEqual(index());
     expect(validateHistoricalGamesSeason(season(), 2000)).toEqual(season());
@@ -124,7 +114,7 @@ describe('historical games data', () => {
     })).toThrow('reverse chronological order');
     expect(() => validateHistoricalGamesForTeam({
       ...lookup,
-      generated_at: '2026-01-01T00:00:00.000Z',
+      generated_at: 'legacy',
     })).toThrow('current schema');
     expect(() => getHistoricalTeamGamesFileName('../Texas Christian'))
       .toThrow('invalid');

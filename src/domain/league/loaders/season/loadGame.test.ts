@@ -77,7 +77,6 @@ describe('loadGame historical matchups', () => {
     vi.mocked(getAllHistoricalPlayers).mockResolvedValue([]);
     vi.mocked(getAllPlayerSeasons).mockResolvedValue([]);
     vi.mocked(getHistoricalGamesIndex).mockResolvedValue({
-      generated_at: '2026-01-01T00:00:00.000Z',
       source: 'CollegeFootballData.com',
       years: [2025],
     });

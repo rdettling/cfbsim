@@ -4,16 +4,16 @@ import type {
   PreviewData,
   PlayoffTeamCount,
 } from '../types/domain';
-import type { YearData, TeamsData, ConferencesData } from '../types/baseData';
-import { getConferencesData, getTeamsData, getYearData } from '../db/baseData';
+import type { SeasonData, TeamsData, ConferencesData } from '../types/baseData';
+import { getConferencesData, getTeamsData, getSeasonData } from '../db/baseData';
 
 export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   const [yearData, teamsData, conferencesData] = await Promise.all([
-    getYearData(year),
+    getSeasonData(year),
     getTeamsData(),
     getConferencesData(),
   ]);
-  const typedYearData: YearData = yearData;
+  const typedYearData: SeasonData = yearData;
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
 
@@ -75,7 +75,7 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
 };
 
 export const buildTeamsAndConferencesFromData = (
-  typedYearData: YearData,
+  typedYearData: SeasonData,
   typedTeamsData: TeamsData,
   typedConferencesData: ConferencesData,
 ): { teams: Team[]; conferences: Conference[] } => {
@@ -187,7 +187,7 @@ export const buildTeamsAndConferences = async (
   year: string,
 ): Promise<{ teams: Team[]; conferences: Conference[] }> => {
   const [yearData, teamsData, conferencesData] = await Promise.all([
-    getYearData(year),
+    getSeasonData(year),
     getTeamsData(),
     getConferencesData(),
   ]);

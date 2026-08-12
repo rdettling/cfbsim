@@ -1,10 +1,10 @@
-import type { ConferencesData, TeamsData, YearData } from '../../types/baseData';
+import type { ConferencesData, TeamsData, SeasonData } from '../../types/baseData';
 import type { GameRecord, PlayerRecord } from '../../types/db';
 import type { Team } from '../../types/domain';
 import { DEFAULT_NEXT_SEASON_CONFIGURATION, type LeagueState } from '../../types/league';
 import type { GameType } from '../../types/news';
 import type { FullGame } from '../../types/scheduleTypes';
-import type { WeightedNameData } from '../../types/recruiting';
+import type { NamesData } from '../../types/baseData';
 import { buildTeamsAndConferencesFromData } from '../baseData';
 import { buildGameDetail } from '../league/gameDetails';
 import { REGULAR_SEASON_WEEKS } from '../league/postseason';
@@ -48,10 +48,10 @@ import {
 } from './previewAudit';
 
 export interface NewsAuditCorpusData {
-  yearData: YearData;
+  yearData: SeasonData;
   teamsData: TeamsData;
   conferencesData: ConferencesData;
-  names: WeightedNameData;
+  names: NamesData;
   states: Record<string, number>;
   rivalries: RivalriesData;
   bettingOdds: unknown;

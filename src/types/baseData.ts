@@ -1,4 +1,5 @@
-export interface YearData {
+export interface SeasonData {
+  year: number;
   playoff: {
     teams: number;
     conf_champ_autobids: number;
@@ -6,6 +7,18 @@ export interface YearData {
   };
   conferences: Record<string, { games: number; teams: Record<string, number> }>;
   independents: Record<string, number>;
+  results: Record<
+    string,
+    {
+      rank: number;
+      wins: number;
+      losses: number;
+    }
+  > | null;
+}
+
+export interface SeasonIndexData {
+  years: string[];
 }
 
 export interface TeamsData {
@@ -27,18 +40,6 @@ export interface TeamsData {
 
 export type ConferencesData = Record<string, string>;
 
-export interface SeasonResultsData {
-  year: number;
-  total_teams: number;
-  teams: Array<{
-    team: string;
-    conference: string;
-    rank: number;
-    wins: number;
-    losses: number;
-  }>;
-}
-
 export type HistoryRow = [
   year: number,
   conferenceId: number,
@@ -49,7 +50,6 @@ export type HistoryRow = [
 ];
 
 export interface HistoryData {
-  generated_at: string;
   years: number[];
   conf_index: Record<string, number>;
   teams: Record<string, HistoryRow[]>;
@@ -75,7 +75,6 @@ export interface HistoricalGame {
 }
 
 export interface HistoricalGamesIndex {
-  generated_at: string;
   source: 'CollegeFootballData.com';
   years: number[];
 }
@@ -101,3 +100,34 @@ export interface HistoricalGamesForTeam {
 }
 
 export type PrestigeConfig = Record<string, number>;
+
+export interface WeightedNameEntry {
+  name: string;
+  weight: number;
+}
+
+export type NamesData = Record<
+  'black' | 'white',
+  {
+    first: WeightedNameEntry[];
+    last: WeightedNameEntry[];
+  }
+>;
+
+export type StatesData = Record<string, number>;
+
+export interface BettingOddsEntry {
+  favSpread: string;
+  udSpread: string;
+  favWinProb: number;
+  udWinProb: number;
+  favMoneyline: string;
+  udMoneyline: string;
+}
+
+export interface BettingOddsData {
+  seed: number;
+  test_simulations: number;
+  max_diff: number;
+  odds: Record<string, BettingOddsEntry>;
+}

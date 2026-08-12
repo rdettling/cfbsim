@@ -6,12 +6,12 @@ import {
   getHistoricalGamesForTeam,
   getHistoricalGamesIndex,
   getHistoricalGamesSeason,
+  getTeamsData,
   initializeBaseDataCache,
 } from './baseData';
 import { deleteCurrentDatabase, getDb } from './db';
 
 const historicalIndex = {
-  generated_at: '2026-08-11T00:00:00.000Z',
   source: 'CollegeFootballData.com' as const,
   years: [2025],
 };
@@ -70,6 +70,10 @@ describe('base data cache lifecycle', () => {
       value: { years: ['2025'] },
     });
     await db.put('baseData', {
+      key: 'years:2025',
+      value: { playoff: {}, conferences: {}, independents: {} },
+    });
+    await db.put('baseData', {
       key: 'teams',
       value: { teams: {} },
     });
@@ -81,6 +85,7 @@ describe('base data cache lifecycle', () => {
     await initializeBaseDataCache();
 
     expect(await db.get('baseData', 'years:index')).toBeUndefined();
+    expect(await db.get('baseData', 'years:2025')).toBeUndefined();
     expect(await db.get('baseData', 'teams')).toBeUndefined();
     expect(await db.get('baseData', 'history')).toEqual({
       key: 'history',
@@ -99,14 +104,14 @@ describe('base data cache lifecycle', () => {
       value: STATIC_DATA_VERSION,
     });
     await db.put('baseData', {
-      key: 'years:index',
+      key: 'seasons:index',
       value: { years: ['2026', '2025'] },
     });
 
     await initializeBaseDataCache();
 
-    expect(await db.get('baseData', 'years:index')).toEqual({
-      key: 'years:index',
+    expect(await db.get('baseData', 'seasons:index')).toEqual({
+      key: 'seasons:index',
       value: { years: ['2026', '2025'] },
     });
   });
@@ -214,6 +219,18 @@ describe('base data cache lifecycle', () => {
     );
     expect(await db.get('baseData', 'historical-games:team:Alpha State'))
       .toBeUndefined();
+  });
+
+  it('rejects malformed fetched and cached catalog data', async () => {
+    const db = await getDb();
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      new Response(JSON.stringify({ teams: {} }), { status: 200 })));
+
+    await expect(getTeamsData()).rejects.toThrow('/data/teams.json: teams');
+    expect(await db.get('baseData', 'teams')).toBeUndefined();
+
+    await db.put('baseData', { key: 'teams', value: { teams: {} } });
+    await expect(getTeamsData()).rejects.toThrow('/data/teams.json: teams');
   });
 
   it('validates cached values and never caches an invalid response', async () => {

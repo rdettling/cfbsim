@@ -1,5 +1,5 @@
 import type { Team } from '../types/domain';
-import type { WeightedNameData } from '../types/recruiting';
+import type { NamesData } from '../types/baseData';
 import {
   RECRUIT_STAR_COUNTS,
   type RecruitStarCounts,
@@ -32,7 +32,7 @@ const RANDOMNESS = 20;
 const recruit = (
   pos: string,
   stars: number,
-  names: WeightedNameData,
+  names: NamesData,
   states: string[],
   stateWeights: number[],
   random: RandomSource,
@@ -58,7 +58,7 @@ const recruit = (
 };
 
 const generatePool = (
-  names: WeightedNameData,
+  names: NamesData,
   states: string[],
   stateWeights: number[],
   random: RandomSource,
@@ -154,7 +154,7 @@ const matchPosition = (
 export const assignBootstrapClass = (
   teams: Team[],
   needs: Record<number, Record<string, number>>,
-  names: WeightedNameData,
+  names: NamesData,
   states: string[],
   stateWeights: number[],
   random: RandomSource,

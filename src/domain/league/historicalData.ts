@@ -1,12 +1,12 @@
-import { getYearData, getYearsIndex } from '../../db/baseData';
-import type { YearData } from '../../types/baseData';
-import { YearDataValidationError } from '../yearDataValidation';
+import { getSeasonData, getSeasonIndex } from '../../db/baseData';
+import type { SeasonData } from '../../types/baseData';
+import { SeasonDataValidationError } from '../seasonDataValidation';
 import type { HistoricalDataResolution } from '../../types/domain';
 import { HistoricalDataError } from '../../types/league';
 
 export interface ResolvedHistoricalData {
   dataSource: HistoricalDataResolution;
-  yearData: YearData;
+  yearData: SeasonData;
 }
 
 const selectClosestYear = (
@@ -31,7 +31,7 @@ export const resolveHistoricalData = async (
 ): Promise<ResolvedHistoricalData> => {
   let index: { years: string[] };
   try {
-    index = await getYearsIndex();
+    index = await getSeasonIndex();
   } catch {
     throw new HistoricalDataError(
       targetYear,
@@ -57,11 +57,11 @@ export const resolveHistoricalData = async (
     ? targetYear
     : selectClosestYear(years, targetYear, startYear);
 
-  let yearData: YearData;
+  let yearData: SeasonData;
   try {
-    yearData = await getYearData(String(sourceYear));
+    yearData = await getSeasonData(String(sourceYear));
   } catch (error) {
-    if (error instanceof YearDataValidationError) {
+    if (error instanceof SeasonDataValidationError) {
       throw new HistoricalDataError(
         targetYear,
         `Historical data for ${sourceYear} is malformed.`,

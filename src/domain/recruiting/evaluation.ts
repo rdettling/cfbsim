@@ -1,7 +1,7 @@
 import type { HistoryData, PrestigeConfig, TeamsData } from '../../types/baseData';
 import type { PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
-import type { WeightedNameData } from '../../types/recruiting';
+import type { NamesData } from '../../types/baseData';
 import type {
   RecruitingBalanceMetric,
   RecruitingBalanceViolation,
@@ -365,7 +365,7 @@ const buildPrestigeSummaries = (
 interface EvaluateRunInput {
   league: LeagueState;
   players: PlayerRecord[];
-  names: WeightedNameData;
+  names: NamesData;
   states: Record<string, number>;
   history: HistoryData;
   teamsData: TeamsData;

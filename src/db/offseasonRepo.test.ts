@@ -63,7 +63,6 @@ describe('commitOffseasonTransition', () => {
     await seedLeague(sourceLeague);
     const db = await getDb();
     const originalHistory = {
-      generated_at: 'test',
       years: [2024],
       conf_index: { 'Test Conference': 1 },
       teams: {},

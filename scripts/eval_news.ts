@@ -1,8 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { ConferencesData, TeamsData, YearData } from '../src/types/baseData';
-import type { WeightedNameData } from '../src/types/recruiting';
+import type { ConferencesData, TeamsData, SeasonData } from '../src/types/baseData';
+import type { NamesData } from '../src/types/baseData';
 import {
   evaluateNewsAudit,
   type NewsAuditNotice,
@@ -36,10 +36,10 @@ const readJson = <T>(path: string) =>
 const loadCorpusData = (): NewsAuditCorpusData => {
   const teamsData = readJson<TeamsData>('../public/data/teams.json');
   return {
-    yearData: readJson<YearData>('../public/data/years/2026.json'),
+    yearData: readJson<SeasonData>('../public/data/seasons/2026.json'),
     teamsData,
     conferencesData: readJson<ConferencesData>('../public/data/conferences.json'),
-    names: readJson<WeightedNameData>('../public/data/names.json'),
+    names: readJson<NamesData>('../public/data/names.json'),
     states: readJson<Record<string, number>>('../public/data/states.json'),
     rivalries: normalizeRivalriesData(
       readJson<unknown>('../public/data/rivalries.json'),

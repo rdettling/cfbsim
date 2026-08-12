@@ -7,6 +7,7 @@ import {
   buildTestPlayer,
   buildTestTeam,
 } from '../../test/fixtures';
+import { TEST_BETTING_ODDS_DATA, TEST_TEAMS_DATA } from '../../test/fixtures';
 import { buildRecruitingState } from '../../test/recruitingFixtures';
 import type { PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
@@ -80,8 +81,8 @@ const seedBaseData = async () => {
       },
     },
     { key: 'rivalries', value: { rivalries: [] } },
-    { key: 'teams', value: { teams: {} } },
-    { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
+    { key: 'teams', value: TEST_TEAMS_DATA },
+    { key: 'betting_odds', value: TEST_BETTING_ODDS_DATA },
   ];
   const tx = db.transaction('baseData', 'readwrite');
   for (const record of records) {

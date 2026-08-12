@@ -22,8 +22,8 @@ import {
   type RecruitingRoundCommandResult,
   type RecruitingState,
   type UpdateRecruitingBoardInput,
-  type WeightedNameData,
 } from '../../types/recruiting';
+import { validateNamesData, validateStatesData } from '../baseDataValidation';
 import { applyProgression } from '../roster';
 import { buildRecruitingContext } from '../recruiting/context';
 import { applyAiRecruitingDecisions } from '../recruiting/aiRound';
@@ -234,8 +234,8 @@ export const initializeRecruiting = async ({
         'Recruiting source data is unavailable. Start a new league to rebuild the base-data cache.',
       );
     }
-    const names = namesRecord.value as WeightedNameData;
-    const states = statesRecord.value as Record<string, number>;
+    const names = validateNamesData(namesRecord.value, 'cached names');
+    const states = validateStatesData(statesRecord.value, 'cached states');
     const players = await tx.objectStore('players').getAll();
     assertCurrentRosterState(league, players);
     const departing = players.filter(player => player.year === 'sr');

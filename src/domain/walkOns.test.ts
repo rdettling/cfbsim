@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { WeightedNameData } from '../types/recruiting';
+import type { NamesData } from '../types/baseData';
 import { buildTestPlayer, buildTestTeam } from '../test/fixtures';
 import {
   FINAL_ROSTER_SIZE,
@@ -8,7 +8,7 @@ import {
 } from './rosterConfig';
 import { generateWalkOns } from './walkOns';
 
-const names: WeightedNameData = {
+const names: NamesData = {
   black: {
     first: [{ name: 'Pat', weight: 1 }],
     last: [{ name: 'Walkon', weight: 1 }],

@@ -15,6 +15,7 @@ import {
   FIRST_GAME_HISTORY_YEAR,
   GAME_HISTORY_SOURCE,
 } from '../src/domain/historicalGames';
+import { validateSeasonData } from '../src/domain/seasonDataValidation';
 import {
   emptyRawGameHistoryManifest,
   GAME_HISTORY_API_ENDPOINT,
@@ -22,18 +23,17 @@ import {
   type RawGameHistoryManifest,
   validateRawGameHistoryManifest,
 } from './game_history_pipeline';
+import { fetchCfbdArray } from './cfbd';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(SCRIPT_DIR, '..');
-const RESULTS_DIRECTORY = join(ROOT, 'public', 'data', 'season-results');
-const YEARS_INDEX_PATH = join(ROOT, 'public', 'data', 'years', 'index.json');
+const SEASONS_DIRECTORY = join(ROOT, 'public', 'data', 'seasons');
 export const RAW_GAME_HISTORY_DIRECTORY = join(
   ROOT,
   '.artifacts',
   'game-history',
   'raw',
 );
-const MAX_API_ATTEMPTS = 4;
 
 export type FetchGameHistoryOptions = {
   year: number | null;
@@ -88,19 +88,20 @@ export const parseFetchGameHistoryArgs = (
 };
 
 const getCompletedYears = async () => {
-  const index = await readJson<{ years: string[] }>(YEARS_INDEX_PATH);
-  const resultYears = new Set(
-    (await readdir(RESULTS_DIRECTORY))
-      .filter(name => /^\d{4}\.json$/.test(name))
-      .map(name => Number(name.slice(0, 4))),
-  );
-  return index.years
-    .map(Number)
-    .filter(year =>
-      Number.isInteger(year) &&
-      year >= FIRST_GAME_HISTORY_YEAR &&
-      resultYears.has(year),
-    )
+  const years = (await readdir(SEASONS_DIRECTORY))
+    .filter(name => /^\d{4}\.json$/.test(name))
+    .map(name => Number(name.slice(0, 4)));
+  const seasons = await Promise.all(years.map(async year =>
+    validateSeasonData(
+      await readJson<unknown>(join(SEASONS_DIRECTORY, `${year}.json`)),
+      `seasons/${year}.json`,
+      year,
+    ),
+  ));
+  return seasons
+    .filter(season =>
+      season.year >= FIRST_GAME_HISTORY_YEAR && season.results !== null)
+    .map(season => season.year)
     .sort((left, right) => left - right);
 };
 
@@ -145,54 +146,6 @@ const rawSnapshotExists = async (
   } catch {
     return false;
   }
-};
-
-const fetchRawResponse = async ({
-  apiKey,
-  year,
-  requestName,
-  url,
-  fetchImpl,
-  sleep,
-}: {
-  apiKey: string;
-  year: number;
-  requestName: string;
-  url: string;
-  fetchImpl: typeof fetch;
-  sleep: (milliseconds: number) => Promise<void>;
-}) => {
-  let response: Response | null = null;
-  for (let attempt = 1; attempt <= MAX_API_ATTEMPTS; attempt += 1) {
-    response = await fetchImpl(url, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (response.ok || response.status !== 429 || attempt === MAX_API_ATTEMPTS) {
-      break;
-    }
-    const retryAfter = Number(response.headers.get('retry-after'));
-    const delayMs = Number.isFinite(retryAfter)
-      ? Math.min(Math.max(retryAfter * 1_000, 1_000), 30_000)
-      : attempt * 2_000;
-    await sleep(delayMs);
-  }
-  if (!response?.ok) {
-    throw new Error(
-      `CFBD ${year} ${requestName} request failed with ${response?.status ?? 'no response'}.`,
-    );
-  }
-
-  const body = await response.text();
-  let value: unknown;
-  try {
-    value = JSON.parse(body);
-  } catch {
-    throw new Error(`CFBD ${year} ${requestName} response is not valid JSON.`);
-  }
-  if (!Array.isArray(value)) {
-    throw new Error(`CFBD ${year} ${requestName} response is not an array.`);
-  }
-  return { body, records: value.length };
 };
 
 const sortedManifest = (
@@ -246,7 +199,7 @@ export const fetchRawGameHistorySeason = async ({
   };
   const rankingsQuery = new URLSearchParams({ year: String(year) });
   const [regular, postseason, rankings] = await Promise.all([
-    fetchRawResponse({
+    fetchCfbdArray({
       apiKey,
       year,
       requestName: 'regular',
@@ -254,7 +207,7 @@ export const fetchRawGameHistorySeason = async ({
       fetchImpl,
       sleep,
     }),
-    fetchRawResponse({
+    fetchCfbdArray({
       apiKey,
       year,
       requestName: 'postseason',
@@ -262,7 +215,7 @@ export const fetchRawGameHistorySeason = async ({
       fetchImpl,
       sleep,
     }),
-    fetchRawResponse({
+    fetchCfbdArray({
       apiKey,
       year,
       requestName: 'rankings',
@@ -287,15 +240,15 @@ export const fetchRawGameHistorySeason = async ({
         fetched_at: now(),
         regular: {
           file: `${year}/regular.json`,
-          records: regular.records,
+          records: regular.value.length,
         },
         postseason: {
           file: `${year}/postseason.json`,
-          records: postseason.records,
+          records: postseason.value.length,
         },
         rankings: {
           file: `${year}/rankings.json`,
-          records: rankings.records,
+          records: rankings.value.length,
         },
       },
     },
@@ -333,9 +286,9 @@ export const fetchRawGameHistorySeason = async ({
   return {
     year,
     skipped: false,
-    regularRecords: regular.records,
-    postseasonRecords: postseason.records,
-    rankingsRecords: rankings.records,
+    regularRecords: regular.value.length,
+    postseasonRecords: postseason.value.length,
+    rankingsRecords: rankings.value.length,
   };
 };
 

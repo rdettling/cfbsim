@@ -10,6 +10,8 @@ import {
   buildTestLeague,
   buildTestPlayer,
   buildTestSeasonTeamSnapshot,
+  TEST_BETTING_ODDS_DATA,
+  TEST_STATES_DATA,
 } from '../../../../test/fixtures';
 import { initializeSeason } from '../../season';
 import { loadHomeData } from './loadHomeData';
@@ -34,7 +36,8 @@ vi.mock('../../../utils/randomSeed', () => ({
   generateRandomSeed: vi.fn(),
 }));
 
-const yearData = (teams: 2 | 4 | 12 = 12) => ({
+const yearData = (teams: 2 | 4 | 12 = 12, year = 2025) => ({
+  year,
   playoff: {
     teams,
     conf_champ_autobids: teams === 12 ? 5 : 0,
@@ -47,17 +50,17 @@ const yearData = (teams: 2 | 4 | 12 = 12) => ({
     },
   },
   independents: {},
+  results: null,
 });
 
 const baseResponses = () =>
   new Map<string, unknown>([
-    ['/data/years/index.json', { years: ['2025', '2024'] }],
-    ['/data/years/2025.json', yearData(12)],
-    ['/data/years/2024.json', yearData(4)],
+    ['/data/seasons/index.json', { years: ['2025', '2024'] }],
+    ['/data/seasons/2025.json', yearData(12)],
+    ['/data/seasons/2024.json', yearData(4, 2024)],
     [
       '/data/historical-games/index.json',
       {
-        generated_at: '2026-01-01T00:00:00.000Z',
         source: 'CollegeFootballData.com',
         years: [],
       },
@@ -65,7 +68,6 @@ const baseResponses = () =>
     [
       '/data/history.json',
       {
-        generated_at: '2026-01-01T00:00:00.000Z',
         years: [2025, 2024],
         conf_index: { 'Test Conference': 0 },
         teams: {},
@@ -103,9 +105,9 @@ const baseResponses = () =>
         },
       },
     ],
-    ['/data/states.json', { TS: 1 }],
+    ['/data/states.json', TEST_STATES_DATA],
     ['/data/rivalries.json', { rivalries: [] }],
-    ['/data/betting_odds.json', { odds: {} }],
+    ['/data/betting_odds.json', TEST_BETTING_ODDS_DATA],
   ]);
 
 let responses = baseResponses();
@@ -265,7 +267,7 @@ const configureRivalryLeague = () => {
     Array.from({ length: 13 }, (_, index) => [`West ${index + 1}`, 4]),
   );
   const names = [...Object.keys(east), ...Object.keys(west)];
-  responses.set('/data/years/2025.json', {
+  responses.set('/data/seasons/2025.json', {
     ...yearData(),
     conferences: {
       East: { games: 10, teams: east },
@@ -404,13 +406,13 @@ describe('loadNewLeagueData', () => {
   });
 
   it('rejects malformed preview data through the shared year validator', async () => {
-    responses.set('/data/years/2024.json', {
-      ...yearData(4),
+    responses.set('/data/seasons/2024.json', {
+      ...yearData(4, 2024),
       Independent: {},
     });
 
     await expect(loadNewLeagueData('2024')).rejects.toThrow(
-      'Year 2024: year data has invalid fields',
+      'Season 2024: season data has invalid fields',
     );
   });
 });
@@ -430,24 +432,19 @@ describe('startNewLeague', () => {
   });
 
   it('rejects malformed creation data through the shared year validator', async () => {
-    responses.set('/data/years/2025.json', {
+    responses.set('/data/seasons/2025.json', {
       ...yearData(),
       playoff: { teams: 6 },
     });
 
     await expect(startNewLeague(buildInput())).rejects.toThrow(
-      'Year 2025: playoff has invalid fields',
+      'Season 2025: playoff has invalid fields',
     );
   });
 
   it('keeps season loaders read-only and initializes the season by command', async () => {
     await startNewLeague(buildInput());
     expect(fetch).not.toHaveBeenCalledWith('/data/history.json');
-    expect(
-      vi.mocked(fetch).mock.calls.some(([input]) =>
-        String(input).includes('/season-results/'),
-      ),
-    ).toBe(false);
     const before = await snapshotSave();
 
     await loadDashboard();
@@ -471,7 +468,7 @@ describe('startNewLeague', () => {
     const customTeams = Object.fromEntries(
       Array.from({ length: 13 }, (_, index) => [`Team ${index + 1}`, 4]),
     );
-    responses.set('/data/years/2025.json', {
+    responses.set('/data/seasons/2025.json', {
       ...yearData(),
       conferences: {
         'Test Conference': {

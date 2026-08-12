@@ -5,7 +5,9 @@ import type { LeagueState } from '../../types/league';
 import {
   buildTestLeague,
   buildTestPlayer,
+  TEST_STATES_DATA,
 } from '../../test/fixtures';
+import { TEST_BETTING_ODDS_DATA } from '../../test/fixtures';
 import { advanceOffseasonStage } from './stages';
 import { updateNextSeasonConfiguration } from './nextSeasonConfiguration';
 import { loadRecruitingSummary } from './loaders/loadRecruitingSummary';
@@ -59,13 +61,15 @@ const seedFullCycle = async () => {
     {
       key: 'history',
       value: {
-        generated_at: 'test',
         years: [2024],
         conf_index: { 'Test Conference': 1 },
         teams: { 'Test State': [[2024, 1, 1, 12, 0, 4]] },
       },
     },
-    { key: 'prestige_config', value: { 7: 100 } },
+    {
+      key: 'prestige_config',
+      value: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 100 },
+    },
     {
       key: 'teams',
       value: {
@@ -96,10 +100,11 @@ const seedFullCycle = async () => {
       },
     },
     { key: 'conferences', value: { 'Test Conference': 'Test Conference' } },
-    { key: 'years:index', value: { years: ['2025', '2026'] } },
+    { key: 'seasons:index', value: { years: ['2026', '2025'] } },
     {
-      key: 'years:2026',
+      key: 'seasons:2026',
       value: {
+        year: 2026,
         playoff: {
           teams: 4,
           conf_champ_autobids: 0,
@@ -112,6 +117,7 @@ const seedFullCycle = async () => {
           },
         },
         independents: {},
+        results: null,
       },
     },
     {
@@ -127,9 +133,9 @@ const seedFullCycle = async () => {
         },
       },
     },
-    { key: 'states', value: { TS: 1 } },
+    { key: 'states', value: TEST_STATES_DATA },
     { key: 'rivalries', value: { rivalries: [] } },
-    { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
+    { key: 'betting_odds', value: TEST_BETTING_ODDS_DATA },
   ];
 
   for (const record of baseRecords) {

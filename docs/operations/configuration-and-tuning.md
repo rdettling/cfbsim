@@ -187,11 +187,11 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
 - Scripts and commands:
   - `package.json` scripts: `eval:sim`, `eval:sim-stability`, `tune:sim`,
     `generate:sim-benchmark`, `eval:news`,
-    `generate:odds`, `generate:history`, `check:data`, `typecheck`
+    `data:build`, `data:check`, `typecheck`
   - `scripts/eval_sim.ts`, `scripts/eval_sim_stability.ts`, `scripts/tune_sim.ts`,
     `scripts/generate_sim_benchmark.ts`,
-    `scripts/eval_news.ts`, `scripts/generate_betting_odds.ts`,
-    `scripts/generate_history.ts`, `scripts/check_data.ts`
+    `scripts/eval_news.ts`, `scripts/data_build.ts`,
+    `scripts/data_check.ts`
 
 See [Simulation Calibration](../systems/simulation-calibration.md) for the
 source methodology, metric denominators, targets, and diagnostic tolerances.
@@ -232,18 +232,88 @@ storylines, teams, and featured players did not drift. The committed version 3
 content baseline is `b2218e6b`; the accepted representative audit has zero
 structural or factual violations.
 
-Database version 21 is the current destructive schema epoch for exact calls,
-participants, timing, clock management, tries, and the current NCAA overtime
-scoring structure. Overtime timeout allowances are not modeled.
-Older saves are reset rather than migrated or repaired.
+Database version 22 is the current destructive schema epoch. Version 22
+removes generated timestamps from mutable history so static projections are
+byte-stable. Older saves are reset rather than migrated or repaired.
 
 ## Historical Data Generation
 
-`npm run generate:history` rebuilds `public/data/history.json` from the
-repository's `public/data/years/` and `public/data/season-results/`
-directories. The latest indexed year may omit a season-results file while its
-season is still unplayed; generated history contains only completed seasons.
-Every older indexed year must have matching completed results.
+`npm run fetch:season-results` generates the committed
+`results` field in `public/data/seasons/YYYY.json` directly from the
+CollegeFootballData API. It requires `CFBD_API_KEY` in the ignored root `.env`
+file and does not retain raw responses. The local season definition is the
+authoritative team and conference universe; provider teams outside it are
+ignored and provider names are normalized through the same alias table used by
+historical-game ingestion.
+
+For each season, the command uses the greatest-week postseason `AP Top 25`
+poll, CFBD SRS ratings, and total records. Exactly 25 AP teams are kept ahead
+of the remaining field. AP cutoff ties are resolved by power rating and then
+canonical team name; the remaining teams are ordered by power rating and name.
+The resulting ranks are unique ordinal positions from 1 through the full team
+count. The COVID-disrupted 2020 season uses CFBD SP+ for its entire field
+because CFBD SRS covers only 77 teams. Connecticut and Old Dominion receive
+explicit 0-0 records because they canceled their seasons and CFBD returns no
+record rows for them.
+
+```text
+npm run fetch:season-results -- --year 2025
+npm run fetch:season-results -- --year 2025 --refresh
+npm run fetch:season-results -- --year 2025 --check
+npm run fetch:season-results -- --all --refresh
+npm run fetch:season-results -- --all --check
+```
+
+A year without a mode populates a season whose `results` are null and refuses
+to overwrite completed results. `--refresh` replaces generated output
+atomically. `--check` fetches and compares deterministic output without
+writing. Full refreshes fetch and validate every completed season before
+replacing the complete `seasons/` directory, including scheduled seasons and
+the generated index, so failure cannot produce a partial backfill.
+
+### Add or Complete a Season
+
+To add a new starting season, create the newest
+`public/data/seasons/YYYY.json` with its complete topology, prestige values,
+and playoff configuration. Set `results` to `null`; only the newest season may
+be scheduled. Then rebuild and validate the runtime projections:
+
+```text
+npm run data:build
+npm run data:check
+```
+
+After the real season ends, populate its final rankings and records, rebuild
+the projections, and verify the result:
+
+```text
+npm run fetch:season-results -- --year YYYY
+npm run data:build
+npm run fetch:season-results -- --year YYYY --check
+npm run data:check
+```
+
+Detailed games are optional. Add them only when the app needs that season's
+schedule history:
+
+```text
+npm run fetch:game-history -- --year YYYY
+npm run transform:game-history -- --year YYYY
+npm run data:build
+npm run data:check
+```
+
+Before releasing any public-data change, increment `STATIC_DATA_VERSION` once
+in `src/db/baseData.ts`. This remains the explicit cache epoch; content-derived
+cache identity is intentionally deferred until it provides a concrete
+simplification.
+
+`npm run data:build` is the only derived-data build command. Without accessing
+the network or ignored raw snapshots, it validates canonical inputs and
+rebuilds the season index, history, seeded betting-odds table, historical-game
+index, and every historical by-team projection. Generated history contains
+only seasons with non-null results. Odds use seed `20260812`, 1,000 games for
+each rating difference from 0 through 100, and therefore 101,000 simulations.
 
 Game-history ingestion is an explicit two-stage offline pipeline. `npm run
 fetch:game-history` is the only networked stage and requires `CFBD_API_KEY` in
@@ -252,7 +322,7 @@ postseason, and weekly rankings API responses plus a source manifest under the i
 `.artifacts/game-history/raw/` directory. Existing complete snapshots are
 resumable by default; pass `--refresh` to atomically replace all three files.
 
-`npm run generate:game-history` never accesses the network or API key. It reads
+`npm run transform:game-history` never accesses the network or API key. It reads
 only the raw manifest, normalizes provider aliases explicitly to `teams.json`,
 retains games involving a supported program (including lower-division
 opponents), removes unfinished games, and collapses duplicate provider results
@@ -267,17 +337,20 @@ completed bundled season.
 
 ```text
 npm run fetch:game-history -- --year 2025 --refresh
-npm run generate:game-history -- --year 2025
+npm run transform:game-history -- --year 2025
 ```
 
-`npm run check:data` validates the year index and schemas, metadata and logo
-coverage, starting prestige against team bounds and the configured tier
-distribution, season results, and both committed history assets without
-rewriting them. The historical-game index is authoritative for currently
-available seasons; every listed season must be completed and have exactly one
-matching file, while completed seasons may remain absent during the backfill.
-Year prestige distributions may vary by at most three percentage
-points per tier from `prestige_config.json`, preserving curated historical
-snapshots while catching broad distribution drift. When public data assets
-change, also increment `STATIC_DATA_VERSION` in `src/db/baseData.ts` so
-existing installations discard stale cached copies.
+`npm run data:check` validates every committed file under `public/data/`,
+catalog and logo coverage, starting prestige bounds and distribution, and all
+cross-file references. It rebuilds every derived candidate in memory—including
+the complete odds table—and compares deterministic serialized bytes without
+writing. Historical season files are canonical transformed inputs; their index
+and by-team files are projections. Year prestige distributions may vary by at
+most three percentage points per tier.
+
+Canonical inputs are `teams.json`, `conferences.json`, `rivalries.json`,
+`names.json`, `states.json`, `prestige_config.json`, every season file, and
+each committed historical-game season file. The season index, history, betting
+odds, historical-game index, and by-team historical files are generated
+runtime assets and must not be edited manually. Raw CFBD game snapshots remain
+disposable under ignored `.artifacts/` storage.

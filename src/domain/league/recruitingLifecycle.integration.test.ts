@@ -7,6 +7,11 @@ import {
   buildTestPlayer,
   buildTestTeam,
 } from '../../test/fixtures';
+import {
+  TEST_BETTING_ODDS_DATA,
+  TEST_STATES_DATA,
+  TEST_TEAMS_DATA,
+} from '../../test/fixtures';
 import type { PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
 import { buildAiRecruitingSnapshot } from '../recruiting/aiSnapshot';
@@ -107,10 +112,10 @@ const seedProgression = async () => {
         },
       },
     },
-    { key: 'states', value: { TS: 1, OS: 1 } },
+    { key: 'states', value: TEST_STATES_DATA },
     { key: 'rivalries', value: { rivalries: [] } },
-    { key: 'teams', value: { teams: {} } },
-    { key: 'betting_odds', value: { odds: {}, max_diff: 100 } },
+    { key: 'teams', value: TEST_TEAMS_DATA },
+    { key: 'betting_odds', value: TEST_BETTING_ODDS_DATA },
   ];
   const tx = db.transaction(
     ['baseData', 'league', 'players', 'playerOrigins'],
@@ -296,7 +301,7 @@ describe('complete persisted recruiting lifecycle', () => {
     expect(await snapshot()).toEqual(beforeFailure);
     await db.put('baseData', {
       key: 'betting_odds',
-      value: { odds: {}, max_diff: 100 },
+      value: TEST_BETTING_ODDS_DATA,
     });
 
     await finalizeRoster(finalGuard);

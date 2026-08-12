@@ -326,11 +326,3 @@ export interface AiRecruitingCycleReport {
     oversignings: number;
   }>;
 }
-
-export type WeightedNameData = Record<
-  string,
-  {
-    first: Array<{ name: string; weight: number }>;
-    last: Array<{ name: string; weight: number }>;
-  }
->;

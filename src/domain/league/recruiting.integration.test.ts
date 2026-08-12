@@ -6,6 +6,7 @@ import {
   buildTestLeague,
   buildTestPlayer,
   buildTestTeam,
+  TEST_STATES_DATA,
 } from '../../test/fixtures';
 import {
   buildRecruitingProspect,
@@ -71,7 +72,7 @@ const seedProgression = async () => {
   });
   await tx.objectStore('baseData').put({
     key: 'states',
-    value: { TS: 1 },
+    value: TEST_STATES_DATA,
   });
   await tx.done;
 };

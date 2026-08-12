@@ -2,7 +2,7 @@ import {
   getHistoricalGamesIndex,
   getHistoricalGamesSeason,
   getHistoryData,
-  getYearData,
+  getSeasonData,
 } from '../../../../db/baseData';
 import { getAllGames } from '../../../../db/simRepo';
 import { getSeasonMemory } from '../../../../db/seasonMemoryRepo';
@@ -68,7 +68,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
     }
     const [season, yearData] = await Promise.all([
       getHistoricalGamesSeason(selectedYear),
-      getYearData(String(selectedYear)),
+      getSeasonData(String(selectedYear)),
     ]);
     const historicalGames = season.games
       .filter(game => game.homeTeam === team.name || game.awayTeam === team.name)

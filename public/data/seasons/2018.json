@@ -1,0 +1,844 @@
+{
+  "year": 2018,
+  "playoff": {
+    "teams": 4,
+    "conf_champ_top_4": false,
+    "conf_champ_autobids": 0
+  },
+  "conferences": {
+    "ACC": {
+      "games": 8,
+      "teams": {
+        "Clemson": 7,
+        "Syracuse": 4,
+        "Virginia": 3,
+        "NC State": 5,
+        "Miami": 5,
+        "Duke": 4,
+        "Pittsburgh": 5,
+        "Boston College": 4,
+        "Georgia Tech": 4,
+        "Wake Forest": 4,
+        "Virginia Tech": 5,
+        "Florida State": 5,
+        "North Carolina": 4,
+        "Louisville": 4
+      }
+    },
+    "SEC": {
+      "games": 8,
+      "teams": {
+        "Alabama": 7,
+        "LSU": 7,
+        "Georgia": 6,
+        "Florida": 6,
+        "Kentucky": 4,
+        "Texas A&M": 5,
+        "Mississippi State": 5,
+        "Missouri": 4,
+        "Auburn": 6,
+        "South Carolina": 4,
+        "Vanderbilt": 4,
+        "Ole Miss": 5,
+        "Tennessee": 4,
+        "Arkansas": 4
+      }
+    },
+    "Big Ten": {
+      "games": 9,
+      "teams": {
+        "Ohio State": 7,
+        "Michigan": 7,
+        "Penn State": 6,
+        "Northwestern": 5,
+        "Iowa": 6,
+        "Wisconsin": 6,
+        "Purdue": 3,
+        "Michigan State": 5,
+        "Minnesota": 5,
+        "Nebraska": 5,
+        "Maryland": 3,
+        "Indiana": 4,
+        "Illinois": 3,
+        "Rutgers": 2
+      }
+    },
+    "Big 12": {
+      "games": 9,
+      "teams": {
+        "Oklahoma": 7,
+        "Texas": 5,
+        "West Virginia": 6,
+        "Iowa State": 4,
+        "Oklahoma State": 6,
+        "Texas Tech": 4,
+        "Texas Christian": 5,
+        "Baylor": 4,
+        "Kansas State": 4,
+        "Kansas": 2
+      }
+    },
+    "Pac-12": {
+      "games": 8,
+      "teams": {
+        "Washington State": 5,
+        "Washington": 6,
+        "Utah": 6,
+        "Stanford": 6,
+        "Oregon": 5,
+        "Arizona State": 4,
+        "USC": 6,
+        "California": 4,
+        "Arizona": 3,
+        "Colorado": 3,
+        "UCLA": 4,
+        "Oregon State": 2
+      }
+    },
+    "American": {
+      "games": 8,
+      "teams": {
+        "Central Florida": 4,
+        "Cincinnati": 3,
+        "Memphis": 5,
+        "Temple": 4,
+        "Houston": 5,
+        "Tulane": 3,
+        "Southern Methodist": 3,
+        "South Florida": 4,
+        "Navy": 4,
+        "Tulsa": 3,
+        "East Carolina": 2,
+        "Connecticut": 1
+      }
+    },
+    "MWC": {
+      "games": 8,
+      "teams": {
+        "Fresno State": 3,
+        "Utah State": 3,
+        "Boise State": 5,
+        "Nevada": 2,
+        "Air Force": 3,
+        "San Diego State": 4,
+        "Wyoming": 3,
+        "Hawaii": 1,
+        "UNLV": 2,
+        "New Mexico": 2,
+        "Colorado State": 3,
+        "San Jose State": 1
+      }
+    },
+    "Sun Belt": {
+      "games": 8,
+      "teams": {
+        "Appalachian State": 4,
+        "Georgia Southern": 3,
+        "Troy": 4,
+        "Arkansas State": 3,
+        "Louisiana": 2,
+        "Louisiana Monroe": 1,
+        "Coastal Carolina": 1,
+        "South Alabama": 2,
+        "Georgia State": 1,
+        "Texas State": 2
+      }
+    },
+    "MAC": {
+      "games": 8,
+      "teams": {
+        "Ohio": 4,
+        "Buffalo": 2,
+        "Toledo": 4,
+        "Miami Ohio": 2,
+        "Eastern Michigan": 2,
+        "Northern Illinois": 3,
+        "Western Michigan": 3,
+        "Ball State": 1,
+        "Akron": 2,
+        "Kent State": 1,
+        "Bowling Green": 2,
+        "Central Michigan": 2
+      }
+    },
+    "CUSA": {
+      "games": 8,
+      "teams": {
+        "Alabama Birmingham": 3,
+        "Marshall": 3,
+        "Middle Tennessee State": 3,
+        "North Texas": 2,
+        "Florida International": 2,
+        "Florida Atlantic": 3,
+        "Southern Miss": 3,
+        "Louisiana Tech": 3,
+        "Charlotte": 1,
+        "Old Dominion": 2,
+        "Western Kentucky": 3,
+        "Texas San Antonio": 2,
+        "Rice": 1,
+        "Texas El Paso": 1
+      }
+    }
+  },
+  "independents": {
+    "Notre Dame": 6,
+    "Army": 4,
+    "BYU": 4,
+    "Liberty": 2,
+    "Massachusetts": 1,
+    "New Mexico State": 1
+  },
+  "results": {
+    "Clemson": {
+      "rank": 1,
+      "wins": 15,
+      "losses": 0
+    },
+    "Alabama": {
+      "rank": 2,
+      "wins": 14,
+      "losses": 1
+    },
+    "Ohio State": {
+      "rank": 3,
+      "wins": 13,
+      "losses": 1
+    },
+    "Oklahoma": {
+      "rank": 4,
+      "wins": 12,
+      "losses": 2
+    },
+    "Notre Dame": {
+      "rank": 5,
+      "wins": 12,
+      "losses": 1
+    },
+    "LSU": {
+      "rank": 6,
+      "wins": 10,
+      "losses": 3
+    },
+    "Georgia": {
+      "rank": 7,
+      "wins": 11,
+      "losses": 3
+    },
+    "Florida": {
+      "rank": 8,
+      "wins": 10,
+      "losses": 3
+    },
+    "Texas": {
+      "rank": 9,
+      "wins": 10,
+      "losses": 4
+    },
+    "Washington State": {
+      "rank": 10,
+      "wins": 11,
+      "losses": 2
+    },
+    "Central Florida": {
+      "rank": 11,
+      "wins": 12,
+      "losses": 1
+    },
+    "Kentucky": {
+      "rank": 12,
+      "wins": 10,
+      "losses": 3
+    },
+    "Washington": {
+      "rank": 13,
+      "wins": 10,
+      "losses": 4
+    },
+    "Michigan": {
+      "rank": 14,
+      "wins": 10,
+      "losses": 3
+    },
+    "Syracuse": {
+      "rank": 15,
+      "wins": 10,
+      "losses": 3
+    },
+    "Texas A&M": {
+      "rank": 16,
+      "wins": 9,
+      "losses": 4
+    },
+    "Penn State": {
+      "rank": 17,
+      "wins": 9,
+      "losses": 4
+    },
+    "Fresno State": {
+      "rank": 18,
+      "wins": 12,
+      "losses": 2
+    },
+    "Army": {
+      "rank": 19,
+      "wins": 11,
+      "losses": 2
+    },
+    "West Virginia": {
+      "rank": 20,
+      "wins": 8,
+      "losses": 4
+    },
+    "Northwestern": {
+      "rank": 21,
+      "wins": 9,
+      "losses": 5
+    },
+    "Utah State": {
+      "rank": 22,
+      "wins": 11,
+      "losses": 2
+    },
+    "Boise State": {
+      "rank": 23,
+      "wins": 10,
+      "losses": 3
+    },
+    "Cincinnati": {
+      "rank": 24,
+      "wins": 11,
+      "losses": 2
+    },
+    "Iowa": {
+      "rank": 25,
+      "wins": 9,
+      "losses": 4
+    },
+    "Mississippi State": {
+      "rank": 26,
+      "wins": 8,
+      "losses": 5
+    },
+    "Missouri": {
+      "rank": 27,
+      "wins": 8,
+      "losses": 5
+    },
+    "Auburn": {
+      "rank": 28,
+      "wins": 8,
+      "losses": 5
+    },
+    "Iowa State": {
+      "rank": 29,
+      "wins": 8,
+      "losses": 5
+    },
+    "Appalachian State": {
+      "rank": 30,
+      "wins": 11,
+      "losses": 2
+    },
+    "Utah": {
+      "rank": 31,
+      "wins": 9,
+      "losses": 5
+    },
+    "Vanderbilt": {
+      "rank": 32,
+      "wins": 6,
+      "losses": 7
+    },
+    "South Carolina": {
+      "rank": 33,
+      "wins": 7,
+      "losses": 6
+    },
+    "Oklahoma State": {
+      "rank": 34,
+      "wins": 7,
+      "losses": 6
+    },
+    "Wisconsin": {
+      "rank": 35,
+      "wins": 8,
+      "losses": 5
+    },
+    "Stanford": {
+      "rank": 36,
+      "wins": 9,
+      "losses": 4
+    },
+    "NC State": {
+      "rank": 37,
+      "wins": 9,
+      "losses": 4
+    },
+    "Virginia": {
+      "rank": 38,
+      "wins": 8,
+      "losses": 5
+    },
+    "Purdue": {
+      "rank": 39,
+      "wins": 6,
+      "losses": 7
+    },
+    "Ohio": {
+      "rank": 40,
+      "wins": 9,
+      "losses": 4
+    },
+    "Texas Tech": {
+      "rank": 41,
+      "wins": 5,
+      "losses": 7
+    },
+    "Miami": {
+      "rank": 42,
+      "wins": 7,
+      "losses": 6
+    },
+    "Duke": {
+      "rank": 43,
+      "wins": 8,
+      "losses": 5
+    },
+    "Michigan State": {
+      "rank": 44,
+      "wins": 7,
+      "losses": 6
+    },
+    "Pittsburgh": {
+      "rank": 45,
+      "wins": 7,
+      "losses": 7
+    },
+    "Minnesota": {
+      "rank": 46,
+      "wins": 7,
+      "losses": 6
+    },
+    "Boston College": {
+      "rank": 47,
+      "wins": 7,
+      "losses": 5
+    },
+    "Oregon": {
+      "rank": 48,
+      "wins": 9,
+      "losses": 4
+    },
+    "Arizona State": {
+      "rank": 49,
+      "wins": 7,
+      "losses": 6
+    },
+    "Texas Christian": {
+      "rank": 50,
+      "wins": 7,
+      "losses": 6
+    },
+    "Maryland": {
+      "rank": 51,
+      "wins": 5,
+      "losses": 7
+    },
+    "Kansas State": {
+      "rank": 52,
+      "wins": 5,
+      "losses": 7
+    },
+    "Temple": {
+      "rank": 53,
+      "wins": 8,
+      "losses": 5
+    },
+    "Ole Miss": {
+      "rank": 54,
+      "wins": 5,
+      "losses": 7
+    },
+    "Georgia Tech": {
+      "rank": 55,
+      "wins": 7,
+      "losses": 6
+    },
+    "BYU": {
+      "rank": 56,
+      "wins": 7,
+      "losses": 6
+    },
+    "Baylor": {
+      "rank": 57,
+      "wins": 7,
+      "losses": 6
+    },
+    "Nebraska": {
+      "rank": 58,
+      "wins": 4,
+      "losses": 8
+    },
+    "Indiana": {
+      "rank": 59,
+      "wins": 5,
+      "losses": 7
+    },
+    "USC": {
+      "rank": 60,
+      "wins": 5,
+      "losses": 7
+    },
+    "Memphis": {
+      "rank": 61,
+      "wins": 8,
+      "losses": 6
+    },
+    "Tennessee": {
+      "rank": 62,
+      "wins": 5,
+      "losses": 7
+    },
+    "Wake Forest": {
+      "rank": 63,
+      "wins": 7,
+      "losses": 6
+    },
+    "Alabama Birmingham": {
+      "rank": 64,
+      "wins": 11,
+      "losses": 3
+    },
+    "Buffalo": {
+      "rank": 65,
+      "wins": 10,
+      "losses": 4
+    },
+    "California": {
+      "rank": 66,
+      "wins": 7,
+      "losses": 6
+    },
+    "Georgia Southern": {
+      "rank": 67,
+      "wins": 10,
+      "losses": 3
+    },
+    "Middle Tennessee State": {
+      "rank": 68,
+      "wins": 8,
+      "losses": 6
+    },
+    "Houston": {
+      "rank": 69,
+      "wins": 8,
+      "losses": 5
+    },
+    "Kansas": {
+      "rank": 70,
+      "wins": 3,
+      "losses": 9
+    },
+    "Troy": {
+      "rank": 71,
+      "wins": 10,
+      "losses": 3
+    },
+    "Toledo": {
+      "rank": 72,
+      "wins": 7,
+      "losses": 6
+    },
+    "Marshall": {
+      "rank": 73,
+      "wins": 9,
+      "losses": 4
+    },
+    "Air Force": {
+      "rank": 74,
+      "wins": 5,
+      "losses": 7
+    },
+    "Miami Ohio": {
+      "rank": 75,
+      "wins": 6,
+      "losses": 6
+    },
+    "North Texas": {
+      "rank": 76,
+      "wins": 9,
+      "losses": 4
+    },
+    "Colorado": {
+      "rank": 77,
+      "wins": 5,
+      "losses": 7
+    },
+    "Wyoming": {
+      "rank": 78,
+      "wins": 6,
+      "losses": 6
+    },
+    "Virginia Tech": {
+      "rank": 79,
+      "wins": 6,
+      "losses": 7
+    },
+    "Arizona": {
+      "rank": 80,
+      "wins": 5,
+      "losses": 7
+    },
+    "Arkansas State": {
+      "rank": 81,
+      "wins": 8,
+      "losses": 5
+    },
+    "Florida State": {
+      "rank": 82,
+      "wins": 5,
+      "losses": 7
+    },
+    "Eastern Michigan": {
+      "rank": 83,
+      "wins": 7,
+      "losses": 6
+    },
+    "Florida International": {
+      "rank": 84,
+      "wins": 9,
+      "losses": 4
+    },
+    "Nevada": {
+      "rank": 85,
+      "wins": 8,
+      "losses": 5
+    },
+    "UCLA": {
+      "rank": 86,
+      "wins": 3,
+      "losses": 9
+    },
+    "Florida Atlantic": {
+      "rank": 87,
+      "wins": 5,
+      "losses": 7
+    },
+    "Northern Illinois": {
+      "rank": 88,
+      "wins": 8,
+      "losses": 6
+    },
+    "San Diego State": {
+      "rank": 89,
+      "wins": 7,
+      "losses": 6
+    },
+    "Tulane": {
+      "rank": 90,
+      "wins": 7,
+      "losses": 6
+    },
+    "North Carolina": {
+      "rank": 91,
+      "wins": 2,
+      "losses": 9
+    },
+    "Southern Miss": {
+      "rank": 92,
+      "wins": 6,
+      "losses": 5
+    },
+    "Arkansas": {
+      "rank": 93,
+      "wins": 2,
+      "losses": 10
+    },
+    "Louisiana": {
+      "rank": 94,
+      "wins": 7,
+      "losses": 7
+    },
+    "Louisiana Tech": {
+      "rank": 95,
+      "wins": 8,
+      "losses": 5
+    },
+    "Southern Methodist": {
+      "rank": 96,
+      "wins": 5,
+      "losses": 7
+    },
+    "Navy": {
+      "rank": 97,
+      "wins": 3,
+      "losses": 10
+    },
+    "Hawaii": {
+      "rank": 98,
+      "wins": 8,
+      "losses": 6
+    },
+    "Western Michigan": {
+      "rank": 99,
+      "wins": 7,
+      "losses": 6
+    },
+    "Liberty": {
+      "rank": 100,
+      "wins": 6,
+      "losses": 6
+    },
+    "Illinois": {
+      "rank": 101,
+      "wins": 4,
+      "losses": 8
+    },
+    "Louisiana Monroe": {
+      "rank": 102,
+      "wins": 6,
+      "losses": 6
+    },
+    "South Florida": {
+      "rank": 103,
+      "wins": 7,
+      "losses": 6
+    },
+    "Tulsa": {
+      "rank": 104,
+      "wins": 3,
+      "losses": 9
+    },
+    "Charlotte": {
+      "rank": 105,
+      "wins": 5,
+      "losses": 7
+    },
+    "Rutgers": {
+      "rank": 106,
+      "wins": 1,
+      "losses": 11
+    },
+    "San Jose State": {
+      "rank": 107,
+      "wins": 1,
+      "losses": 11
+    },
+    "Akron": {
+      "rank": 108,
+      "wins": 4,
+      "losses": 8
+    },
+    "UNLV": {
+      "rank": 109,
+      "wins": 4,
+      "losses": 8
+    },
+    "Colorado State": {
+      "rank": 110,
+      "wins": 3,
+      "losses": 9
+    },
+    "Western Kentucky": {
+      "rank": 111,
+      "wins": 3,
+      "losses": 9
+    },
+    "New Mexico": {
+      "rank": 112,
+      "wins": 3,
+      "losses": 9
+    },
+    "Louisville": {
+      "rank": 113,
+      "wins": 2,
+      "losses": 10
+    },
+    "East Carolina": {
+      "rank": 114,
+      "wins": 3,
+      "losses": 9
+    },
+    "Coastal Carolina": {
+      "rank": 115,
+      "wins": 5,
+      "losses": 7
+    },
+    "Oregon State": {
+      "rank": 116,
+      "wins": 2,
+      "losses": 10
+    },
+    "Ball State": {
+      "rank": 117,
+      "wins": 4,
+      "losses": 8
+    },
+    "Massachusetts": {
+      "rank": 118,
+      "wins": 4,
+      "losses": 8
+    },
+    "Old Dominion": {
+      "rank": 119,
+      "wins": 4,
+      "losses": 8
+    },
+    "Central Michigan": {
+      "rank": 120,
+      "wins": 1,
+      "losses": 11
+    },
+    "Kent State": {
+      "rank": 121,
+      "wins": 2,
+      "losses": 10
+    },
+    "Georgia State": {
+      "rank": 122,
+      "wins": 2,
+      "losses": 10
+    },
+    "Texas State": {
+      "rank": 123,
+      "wins": 3,
+      "losses": 9
+    },
+    "Bowling Green": {
+      "rank": 124,
+      "wins": 3,
+      "losses": 9
+    },
+    "New Mexico State": {
+      "rank": 125,
+      "wins": 3,
+      "losses": 9
+    },
+    "Texas San Antonio": {
+      "rank": 126,
+      "wins": 3,
+      "losses": 9
+    },
+    "South Alabama": {
+      "rank": 127,
+      "wins": 3,
+      "losses": 9
+    },
+    "Rice": {
+      "rank": 128,
+      "wins": 2,
+      "losses": 11
+    },
+    "Texas El Paso": {
+      "rank": 129,
+      "wins": 1,
+      "losses": 11
+    },
+    "Connecticut": {
+      "rank": 130,
+      "wins": 1,
+      "losses": 11
+    }
+  }
+}

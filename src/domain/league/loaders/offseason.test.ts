@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { getDb } from '../../../db/db';
 import type { LeagueStage } from '../../../types/domain';
 import type { LeagueState } from '../../../types/league';
-import { buildTestLeague, buildTestPlayer } from '../../../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestPlayer,
+  TEST_STATES_DATA,
+} from '../../../test/fixtures';
 import {
   buildRecruitingProspect,
   buildRecruitingState,
@@ -91,7 +95,6 @@ const seedScenario = async (stage: LeagueStage) => {
   await tx.objectStore('baseData').put({
     key: 'history',
     value: {
-      generated_at: 'test',
       years: [2024],
       conf_index: { 'Test Conference': 1 },
       teams: {},
@@ -103,7 +106,7 @@ const seedScenario = async (stage: LeagueStage) => {
   });
   await tx.objectStore('baseData').put({
     key: 'prestige_config',
-    value: { 4: 100 },
+    value: { 1: 0, 2: 0, 3: 0, 4: 100, 5: 0, 6: 0, 7: 0 },
   });
   await tx.objectStore('baseData').put({
     key: 'teams',
@@ -124,12 +127,13 @@ const seedScenario = async (stage: LeagueStage) => {
     },
   });
   await tx.objectStore('baseData').put({
-    key: 'years:index',
+    key: 'seasons:index',
     value: { years: ['2026'] },
   });
   await tx.objectStore('baseData').put({
-    key: 'years:2026',
+    key: 'seasons:2026',
     value: {
+      year: 2026,
       playoff: {
         teams: 12,
         conf_champ_autobids: 6,
@@ -142,6 +146,7 @@ const seedScenario = async (stage: LeagueStage) => {
         },
       },
       independents: {},
+      results: null,
     },
   });
   await tx.objectStore('baseData').put({
@@ -159,7 +164,7 @@ const seedScenario = async (stage: LeagueStage) => {
   });
   await tx.objectStore('baseData').put({
     key: 'states',
-    value: { TS: 1 },
+    value: TEST_STATES_DATA,
   });
   await tx.done;
 };
@@ -291,7 +296,7 @@ describe('offseason loaders', () => {
     await seedScenario('realignment');
     const db = await getDb();
     await db.put('baseData', {
-      key: 'years:2026',
+      key: 'seasons:2026',
       value: { playoff: { teams: 6 }, conferences: {} },
     });
 

@@ -9,7 +9,7 @@ import type {
 export const GAME_HISTORY_SOURCE = 'CollegeFootballData.com' as const;
 export const FIRST_GAME_HISTORY_YEAR = 2000;
 
-const INDEX_KEYS = ['generated_at', 'source', 'years'] as const;
+const INDEX_KEYS = ['source', 'years'] as const;
 const SEASON_KEYS = ['year', 'games'] as const;
 const GAME_KEYS = [
   'sourceId',
@@ -38,26 +38,6 @@ const TEAM_GAME_KEYS = [
   'label',
 ] as const;
 
-const TEAM_ALIASES: Readonly<Record<string, string>> = {
-  'App State': 'Appalachian State',
-  FIU: 'Florida International',
-  "Hawai'i": 'Hawaii',
-  SMU: 'Southern Methodist',
-  'Sam Houston': 'Sam Houston State',
-  TCU: 'Texas Christian',
-  UAB: 'Alabama Birmingham',
-  UCF: 'Central Florida',
-  UConn: 'Connecticut',
-  UMass: 'Massachusetts',
-  'UL Monroe': 'Louisiana Monroe',
-  UTEP: 'Texas El Paso',
-  UTSA: 'Texas San Antonio',
-  'Louisiana-Monroe': 'Louisiana Monroe',
-  'Middle Tennessee': 'Middle Tennessee State',
-  'Miami (OH)': 'Miami Ohio',
-  'San José State': 'San Jose State',
-};
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -75,9 +55,6 @@ export class HistoricalGamesValidationError extends Error {
     this.name = 'HistoricalGamesValidationError';
   }
 }
-
-export const canonicalHistoricalTeamName = (name: string) =>
-  TEAM_ALIASES[name] ?? name;
 
 const isHistoricalGame = (value: unknown): value is HistoricalGame =>
   isRecord(value) &&
@@ -197,8 +174,6 @@ export const validateHistoricalGamesIndex = (
   if (
     !isRecord(value) ||
     !hasExactKeys(value, INDEX_KEYS) ||
-    typeof value.generated_at !== 'string' ||
-    Number.isNaN(Date.parse(value.generated_at)) ||
     value.source !== GAME_HISTORY_SOURCE ||
     !hasValidIndexYears(value.years)
   ) {

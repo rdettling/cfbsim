@@ -4,7 +4,7 @@ import type {
   PlayoffTeamCount,
   Team,
 } from '../../types/domain';
-import type { YearData, TeamsData, ConferencesData } from '../../types/baseData';
+import type { SeasonData, TeamsData, ConferencesData } from '../../types/baseData';
 import { getTeamsData, getConferencesData } from '../../db/baseData';
 import { getLastWeekByPlayoffTeams } from './postseason';
 import {
@@ -14,7 +14,7 @@ import {
 
 const applyRealignment = (
   league: LeagueState,
-  yearData: YearData,
+  yearData: SeasonData,
   teamsData: TeamsData,
   conferencesData: ConferencesData
 ) => {
@@ -170,7 +170,7 @@ const applyRealignment = (
   return addedTeams;
 };
 
-const refreshPlayoffFormat = (league: LeagueState, yearData: YearData, updateFormat: boolean) => {
+const refreshPlayoffFormat = (league: LeagueState, yearData: SeasonData, updateFormat: boolean) => {
   if (updateFormat) {
     const playoffConfig = yearData.playoff;
     const historicalTeams = playoffConfig.teams;

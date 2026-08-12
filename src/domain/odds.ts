@@ -1,46 +1,20 @@
 import { getBettingOddsData } from '../db/baseData';
+import { validateBettingOddsData } from './baseDataValidation';
+import type { BettingOddsEntry } from '../types/baseData';
 import type { Team } from '../types/domain';
 
 export const HOME_FIELD_ADVANTAGE = 4;
 
 export type OddsContext = {
-  oddsMap: Record<
-    string,
-    {
-      favSpread: string;
-      udSpread: string;
-      favWinProb: number;
-      udWinProb: number;
-      favMoneyline: string;
-      udMoneyline: string;
-    }
-  >;
+  oddsMap: Record<string, BettingOddsEntry>;
   maxDiff: number;
 };
 
 export const buildOddsContext = (value: unknown): OddsContext => {
-  if (
-    typeof value !== 'object' ||
-    value === null ||
-    !('odds' in value) ||
-    typeof value.odds !== 'object' ||
-    value.odds === null
-  ) {
-    throw new Error('The saved betting-odds data is malformed.');
-  }
-  const source = value as {
-    odds: OddsContext['oddsMap'];
-    max_diff?: number;
-  };
-  if (
-    source.max_diff !== undefined &&
-    (!Number.isFinite(source.max_diff) || source.max_diff < 0)
-  ) {
-    throw new Error('The saved betting-odds maximum difference is malformed.');
-  }
+  const source = validateBettingOddsData(value, 'saved betting-odds data');
   return {
     oddsMap: source.odds,
-    maxDiff: source.max_diff ?? 100,
+    maxDiff: source.max_diff,
   };
 };
 

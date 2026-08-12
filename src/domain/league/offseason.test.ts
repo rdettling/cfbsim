@@ -2,16 +2,16 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import conferencesData from '../../../public/data/conferences.json';
 import teamsData from '../../../public/data/teams.json';
-import year2024 from '../../../public/data/years/2024.json';
-import year2025 from '../../../public/data/years/2025.json';
-import year2026 from '../../../public/data/years/2026.json';
+import year2024 from '../../../public/data/seasons/2024.json';
+import year2025 from '../../../public/data/seasons/2025.json';
+import year2026 from '../../../public/data/seasons/2026.json';
 import { deleteCurrentDatabase, getDb } from '../../db/db';
 import { buildTestLeague, buildTestTeam } from '../../test/fixtures';
-import type { YearData } from '../../types/baseData';
+import type { SeasonData } from '../../types/baseData';
 import type { LeagueState } from '../../types/league';
 import { applyRealignmentAndPlayoff } from './offseason';
 
-const teamEntries = (year: YearData) => [
+const teamEntries = (year: SeasonData) => [
   ...Object.entries(year.conferences).flatMap(([conference, data]) =>
     Object.entries(data.teams ?? {}).map(([name, prestige]) => ({
       name,
@@ -28,7 +28,7 @@ const teamEntries = (year: YearData) => [
 
 const buildHistoricalLeague = (
   currentYear: number,
-  year: YearData,
+  year: SeasonData,
 ): LeagueState => {
   const teams = teamEntries(year).map((entry, index) =>
     buildTestTeam({
@@ -91,7 +91,7 @@ describe('historical realignment', () => {
   }) => {
     const league = buildHistoricalLeague(
       currentYear,
-      current as unknown as YearData,
+      current as unknown as SeasonData,
     );
     const added = await applyRealignmentAndPlayoff(league, {
       dataSource: {
@@ -100,7 +100,7 @@ describe('historical realignment', () => {
         resolution: 'exact',
         atHistoricalFrontier: false,
       },
-      yearData: next as unknown as YearData,
+      yearData: next as unknown as SeasonData,
     });
 
     expect(added.map(team => team.name)).toEqual(expected);
@@ -111,7 +111,7 @@ describe('historical realignment', () => {
   });
 
   it('does not add programs when conference alignment is fixed', async () => {
-    const league = buildHistoricalLeague(2024, year2024 as unknown as YearData);
+    const league = buildHistoricalLeague(2024, year2024 as unknown as SeasonData);
     league.settings.conferencePolicy = 'current';
     const added = await applyRealignmentAndPlayoff(league, {
       dataSource: {
@@ -120,10 +120,10 @@ describe('historical realignment', () => {
         resolution: 'exact',
         atHistoricalFrontier: false,
       },
-      yearData: year2025 as unknown as YearData,
+      yearData: year2025 as unknown as SeasonData,
     });
 
     expect(added).toEqual([]);
-    expect(league.teams).toHaveLength(teamEntries(year2024 as unknown as YearData).length);
+    expect(league.teams).toHaveLength(teamEntries(year2024 as unknown as SeasonData).length);
   });
 });

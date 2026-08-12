@@ -41,10 +41,10 @@ season's persisted national-championship result.
 
 ## Static Data Cache
 
-Public JSON assets are cached in `baseData`. `STATIC_DATA_VERSION` is their
-cache epoch and is independent of the IndexedDB schema version. Application
-startup removes cached public assets when that value changes, so a data release
-does not require deleting a valid save.
+Public JSON assets are exact-schema validated before being returned from either
+the network or `baseData` cache. `STATIC_DATA_VERSION` is their cache epoch and
+is independent of the IndexedDB schema version. Application startup removes
+cached public assets when that value changes.
 
 Historical games are immutable, exact-schema CollegeFootballData.com
 projections stored as an index plus one file per available season under
@@ -114,12 +114,13 @@ atomically with player creation, survive when an identity is archived, and are
 deleted when an unused player is permanently discarded.
 
 Increment `STATIC_DATA_VERSION` whenever a release changes a public data asset
-that existing installations may already have cached.
+that existing installations may already have cached. Phase 2 uses version 10.
 
-Starting-year JSON is validated at the `getYearData()` boundary by the shared
-current-schema validator. Home preview, new-league creation, and historical
-realignment therefore use the same exact `YearData` contract. Offline tooling
-imports that validator directly through `npm run check:data`.
+Every public JSON asset is validated through shared current-schema contracts
+used by runtime loaders and `npm run data:check`. A non-null season `results`
+object marks a completed season; `null` marks the newest scheduled season.
+Generated history, indexes, odds, and historical by-team files omit timestamps
+and are deterministic byte-stable projections.
 
 Balance evaluation has no store. Its repeated-season state and reports remain
 in memory and are emitted to stdout only.

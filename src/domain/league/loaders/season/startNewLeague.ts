@@ -1,7 +1,7 @@
 import {
   clearBaseDataCache,
-  getYearData,
-  getYearsIndex,
+  getSeasonData,
+  getSeasonIndex,
 } from '../../../../db/baseData';
 import { commitNewLeague } from '../../../../db/newLeagueRepo';
 import type { Info, PlayoffTeamCount } from '../../../../types/domain';
@@ -64,7 +64,7 @@ export const startNewLeague = async (
   validateBasicInput(input);
   await clearBaseDataCache();
 
-  const yearsIndex = await getYearsIndex();
+  const yearsIndex = await getSeasonIndex();
   if (!yearsIndex.years.includes(input.year)) {
     throw new NewLeagueConfigurationError(
       `The ${input.year} season is not supported.`,
@@ -73,7 +73,7 @@ export const startNewLeague = async (
 
   const year = input.year;
   const [yearData, teamsAndConferences] = await Promise.all([
-    getYearData(year),
+    getSeasonData(year),
     buildTeamsAndConferences(year),
   ]);
   const { teams, conferences } = teamsAndConferences;

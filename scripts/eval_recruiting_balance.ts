@@ -3,14 +3,14 @@ import type {
   HistoryData,
   PrestigeConfig,
   TeamsData,
-  YearData,
+  SeasonData,
 } from '../src/types/baseData';
 import type { Conference, Team } from '../src/types/domain';
 import {
   DEFAULT_NEXT_SEASON_CONFIGURATION,
   type LeagueState,
 } from '../src/types/league';
-import type { WeightedNameData } from '../src/types/recruiting';
+import type { NamesData } from '../src/types/baseData';
 import { runRecruitingEvaluationSuite } from '../src/domain/recruiting/evaluation';
 import { RECRUIT_STAR_COUNTS } from '../src/domain/recruiting/config';
 import { createSeededRandom } from '../src/domain/utils/random';
@@ -104,7 +104,7 @@ const historyRanking = (
 };
 
 const buildLeague = (
-  yearData: YearData,
+  yearData: SeasonData,
   teamsData: TeamsData,
   history: HistoryData,
 ) => {
@@ -212,10 +212,10 @@ const buildLeague = (
 
 const options = parseArguments(process.argv.slice(2));
 const startedAt = performance.now();
-const names = readJson<WeightedNameData>('../public/data/names.json');
+const names = readJson<NamesData>('../public/data/names.json');
 const states = readJson<Record<string, number>>('../public/data/states.json');
 const teamsData = readJson<TeamsData>('../public/data/teams.json');
-const yearData = readJson<YearData>('../public/data/years/2025.json');
+const yearData = readJson<SeasonData>('../public/data/seasons/2025.json');
 const history = readJson<HistoryData>('../public/data/history.json');
 const prestigeConfig = readJson<PrestigeConfig>(
   '../public/data/prestige_config.json',
