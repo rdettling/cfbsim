@@ -5,7 +5,7 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 
 ## IndexedDB Schema
 
-`src/db/db.ts` defines the current database at version 21. It is the single
+`src/db/db.ts` defines the current database at version 22. It is the single
 current destructive schema epoch for exact calls, participants, timing, clock
 management, and touchdown tries.
 
@@ -44,20 +44,15 @@ season's persisted national-championship result.
 Public JSON assets are exact-schema validated before being returned from either
 the network or `baseData` cache. `STATIC_DATA_VERSION` is their cache epoch and
 is independent of the IndexedDB schema version. Application startup removes
-cached public assets when that value changes.
+cached public assets when that value changes, except for `history`, which
+becomes mutable save state after a season completes. Starting a new league
+clears all base data, including history, before loading a fresh historical
+baseline.
 
-Historical games are immutable, exact-schema CollegeFootballData.com
-projections stored as an index plus one file per available season under
-`historical-games/`. The index and seasons are validated before being cached
-independently under `historical-games:index` and `historical-games:<year>`.
-They remain separate from simulated `GameRecord`s because they have no
-simulation detail or clickable game identity.
-
-The `history` entry is excluded because it becomes mutable save state after a
-season completes. Starting a new league intentionally clears all base data,
-including history, before loading and caching a fresh `history.json`
-historical baseline. Runtime team history uses that single baseline; raw
-season-result files are build-time inputs only.
+Historical games remain separate from simulated `GameRecord`s because they
+have no simulation detail or clickable game identity. See [Static Data
+System](static-data.md) for public-data ownership, exact contracts, generated
+projections, ingestion, cache keys, and maintenance workflows.
 
 Completed simulated seasons also write one exact-schema `SeasonMemory`. It
 stores typed postseason game references and lean award-winner facts without
@@ -112,15 +107,6 @@ roster members, and players created when a program enters the league use
 explicit variants instead of inferred recruiting history. Origins are written
 atomically with player creation, survive when an identity is archived, and are
 deleted when an unused player is permanently discarded.
-
-Increment `STATIC_DATA_VERSION` whenever a release changes a public data asset
-that existing installations may already have cached. Phase 2 uses version 10.
-
-Every public JSON asset is validated through shared current-schema contracts
-used by runtime loaders and `npm run data:check`. A non-null season `results`
-object marks a completed season; `null` marks the newest scheduled season.
-Generated history, indexes, odds, and historical by-team files omit timestamps
-and are deterministic byte-stable projections.
 
 Balance evaluation has no store. Its repeated-season state and reports remain
 in memory and are emitted to stdout only.

@@ -3,7 +3,7 @@ import { openDB } from 'idb';
 import { describe, expect, it } from 'vitest';
 import {
   DB_VERSION,
-  type Frontend2DB,
+  type CfbSimDB,
   upgradeDatabase,
 } from './db';
 
@@ -21,7 +21,7 @@ describe('current database schema', () => {
 
   it('creates every authoritative store in a fresh database', async () => {
     const name = `cfbsim-current-schema-${Date.now()}`;
-    const db = await openDB<Frontend2DB>(name, DB_VERSION, {
+    const db = await openDB<CfbSimDB>(name, DB_VERSION, {
       upgrade: (database, oldVersion) =>
         upgradeDatabase(database, oldVersion),
     });
@@ -56,7 +56,7 @@ describe('current database schema', () => {
     await legacy.put('obsolete', { id: 1 });
     legacy.close();
 
-    const current = await openDB<Frontend2DB>(name, DB_VERSION, {
+    const current = await openDB<CfbSimDB>(name, DB_VERSION, {
       upgrade: (database, oldVersion) =>
         upgradeDatabase(database, oldVersion),
     });
@@ -94,14 +94,14 @@ describe('current database schema', () => {
 
   it('preserves data when reopening the current schema version', async () => {
     const name = `cfbsim-current-reopen-${Date.now()}`;
-    const first = await openDB<Frontend2DB>(name, DB_VERSION, {
+    const first = await openDB<CfbSimDB>(name, DB_VERSION, {
       upgrade: (database, oldVersion) =>
         upgradeDatabase(database, oldVersion),
     });
     await first.put('baseData', { key: 'marker', value: 'current' });
     first.close();
 
-    const reopened = await openDB<Frontend2DB>(name, DB_VERSION, {
+    const reopened = await openDB<CfbSimDB>(name, DB_VERSION, {
       upgrade: (database, oldVersion) =>
         upgradeDatabase(database, oldVersion),
     });

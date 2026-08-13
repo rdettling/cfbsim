@@ -254,14 +254,26 @@ describe('game history generation', () => {
       .toEqual([[16, 'regular'], [16, 'postseason']]);
   });
 
-  it('rejects a missing AP poll required by a retained game', () => {
-    expect(() => buildHistoricalGamesSeason({
+  it('uses the latest prior AP poll when the provider omits a game week', () => {
+    const result = buildHistoricalGamesSeason({
       rawGames: [rawGame({ week: 2 })],
       rawRankings: rawRankings(2000, [1]),
       year: 2000,
       supportedTeams: new Set(['Texas Christian', 'Southern Methodist']),
       yearData: yearData(),
-    })).toThrow('AP Top 25 2000 week 2 is required');
+    });
+
+    expect(result.games[0]).toMatchObject({ homeRank: 12, awayRank: 0 });
+  });
+
+  it('rejects a game before the first available AP poll', () => {
+    expect(() => buildHistoricalGamesSeason({
+      rawGames: [rawGame({ week: 1 })],
+      rawRankings: rawRankings(2000, [2]),
+      year: 2000,
+      supportedTeams: new Set(['Texas Christian', 'Southern Methodist']),
+      yearData: yearData(),
+    })).toThrow('AP Top 25 2000 week 1 has no current or prior snapshot');
   });
 
   it('builds deterministic single-season public output', async () => {

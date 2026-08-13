@@ -15,7 +15,7 @@ import type { NewsItem } from '../types/news';
 export const DB_NAME = 'cfbsim';
 export const DB_VERSION = 22;
 
-export interface Frontend2DB extends DBSchema {
+export interface CfbSimDB extends DBSchema {
   baseData: {
     key: string;
     value: { key: string; value: unknown };
@@ -82,7 +82,7 @@ export interface Frontend2DB extends DBSchema {
   };
 }
 
-let dbPromise: Promise<IDBPDatabase<Frontend2DB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<CfbSimDB>> | null = null;
 
 type CurrentStoreName =
   | 'baseData'
@@ -97,7 +97,7 @@ type CurrentStoreName =
   | 'historicalPlayers'
   | 'playerOrigins';
 
-const createCurrentSchema = (db: IDBPDatabase<Frontend2DB>) => {
+const createCurrentSchema = (db: IDBPDatabase<CfbSimDB>) => {
   db.createObjectStore('baseData', { keyPath: 'key' });
   db.createObjectStore('league', { keyPath: 'key' });
   db.createObjectStore('recruiting', { keyPath: 'key' });
@@ -136,7 +136,7 @@ const createCurrentSchema = (db: IDBPDatabase<Frontend2DB>) => {
 };
 
 export const upgradeDatabase = (
-  db: IDBPDatabase<Frontend2DB>,
+  db: IDBPDatabase<CfbSimDB>,
   oldVersion: number,
 ) => {
   if (oldVersion > 0) {
@@ -149,7 +149,7 @@ export const upgradeDatabase = (
 
 export const getDb = () => {
   if (!dbPromise) {
-    const opening = openDB<Frontend2DB>(DB_NAME, DB_VERSION, {
+    const opening = openDB<CfbSimDB>(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion) {
         upgradeDatabase(db, oldVersion);
       },

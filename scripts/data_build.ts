@@ -31,13 +31,17 @@ import type {
   HistoryData,
   SeasonIndexData,
 } from '../src/types/baseData';
-import { buildBettingOddsData } from './generate_betting_odds';
+import { buildBettingOddsData } from './build_betting_odds';
 import {
   buildHistoryData,
   buildSeasonIndexData,
+} from './build_history';
+import {
+  compactJson,
   DATA_ROOT,
+  prettyJson,
   readJson,
-} from './generate_history';
+} from './data_files';
 
 export type DataBuildOutputs = {
   seasonIndex: SeasonIndexData;
@@ -46,9 +50,6 @@ export type DataBuildOutputs = {
   historicalIndex: HistoricalGamesIndex;
   historicalByTeam: Map<string, HistoricalGamesForTeam>;
 };
-
-export const prettyJson = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
-export const compactJson = (value: unknown) => `${JSON.stringify(value)}\n`;
 
 const getHistoricalSeasons = async (dataRoot: string) => {
   const directory = join(dataRoot, 'historical-games');

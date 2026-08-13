@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
 import { validateBettingOddsData } from '../src/domain/baseDataValidation';
 import { buildHistoricalGameProjections } from './data_build';
-import { buildHistoryData, buildSeasonIndexData } from './generate_history';
+import { buildHistoryData, buildSeasonIndexData } from './build_history';
 import { checkData } from './data_check';
 
 let fixtureRoot: string | null = null;
@@ -441,5 +441,39 @@ describe('checkData', () => {
         expect.stringContaining('active programs without games [Beta]'),
       ]),
     );
+  });
+
+  it('does not require historical games for a program with a 0-0 record', async () => {
+    const dataRoot = await createFixture();
+    await writeJson(
+      join(dataRoot, 'seasons', '2025.json'),
+      seasonData(2025, {
+        Alpha: { rank: 1, wins: 10, losses: 2 },
+        Beta: { rank: 2, wins: 0, losses: 0 },
+      }),
+    );
+    await writeJson(join(dataRoot, 'historical-games', '2025.json'), {
+      year: 2025,
+      games: [{
+        sourceId: 1,
+        year: 2025,
+        weekPlayed: 1,
+        seasonType: 'regular',
+        homeTeam: 'Alpha',
+        awayTeam: 'Lower College',
+        homeScore: 24,
+        awayScore: 17,
+        homeRank: 0,
+        awayRank: 0,
+        neutralSite: false,
+        venue: null,
+        name: null,
+        label: 'Non-Conference: Test vs FCS',
+      }],
+    });
+
+    const errors = await checkFixture(dataRoot);
+    expect(errors.some(error => error.includes('active programs without games')))
+      .toBe(false);
   });
 });

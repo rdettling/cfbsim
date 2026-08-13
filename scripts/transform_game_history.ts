@@ -13,7 +13,6 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   FIRST_GAME_HISTORY_YEAR,
-  GAME_HISTORY_SOURCE,
   validateHistoricalGamesIndex,
   validateHistoricalGamesSeason,
 } from '../src/domain/historicalGames';
@@ -23,8 +22,6 @@ import { buildConferenceGameLabel } from '../src/domain/utils/gameLabels';
 import { validateSeasonData } from '../src/domain/seasonDataValidation';
 import type {
   HistoricalGame,
-  HistoricalGamesForTeam,
-  HistoricalGamesIndex,
   HistoricalGamesSeason,
   HistoricalGameSeasonType,
   TeamsData,
@@ -36,9 +33,8 @@ import {
 } from './game_history_pipeline';
 import {
   buildHistoricalGameProjectionData,
-  compactJson,
-  prettyJson,
 } from './data_build';
+import { compactJson, prettyJson } from './data_files';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(SCRIPT_DIR, '..');
@@ -207,6 +203,24 @@ type RankingSnapshots = {
   postseason: Map<number, number>;
 };
 
+const getRegularRankingSnapshot = (
+  rankings: RankingSnapshots,
+  year: number,
+  week: number,
+) => {
+  const exact = rankings.regular.get(week);
+  if (exact) return exact;
+  const priorWeek = [...rankings.regular.keys()]
+    .filter(candidate => candidate < week)
+    .sort((left, right) => right - left)[0];
+  if (priorWeek === undefined) {
+    throw new Error(
+      `AP Top 25 ${year} week ${week} has no current or prior snapshot.`,
+    );
+  }
+  return rankings.regular.get(priorWeek)!;
+};
+
 const buildRankingSnapshot = (
   ranks: unknown,
   year: number,
@@ -349,13 +363,12 @@ const toHistoricalGame = (
   const homeId = requireInteger(raw.homeId, 'homeId', sourceId);
   const awayId = requireInteger(raw.awayId, 'awayId', sourceId);
   const rankSnapshot = seasonType === 'regular'
-    ? rankings.regular.get(requireInteger(raw.week, 'week', sourceId))
+    ? getRegularRankingSnapshot(
+      rankings,
+      year,
+      requireInteger(raw.week, 'week', sourceId),
+    )
     : rankings.postseason;
-  if (!rankSnapshot) {
-    throw new Error(
-      `AP Top 25 ${year} week ${String(raw.week)} is required by game ${sourceId}.`,
-    );
-  }
   const name = getPlayoffField(raw.playoff, 'bowlName') ??
     getOptionalString(raw.notes);
   const venue = raw.venue === null

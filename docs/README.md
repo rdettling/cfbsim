@@ -32,6 +32,9 @@ git diff --check
   authoritative state, lifecycle flow, and application-wide invariants.
 - [Data Model and Persistence](architecture/data-model-and-persistence.md)
   defines IndexedDB records, validation boundaries, and write ownership.
+- [Static Data System](architecture/static-data.md) defines canonical and
+  generated assets, data contracts, ingestion, runtime caching, and season
+  maintenance workflows.
 - [Season State Machine](architecture/season-state-machine.md) defines every
   stage transition and the command that owns it.
 

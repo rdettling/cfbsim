@@ -185,6 +185,7 @@ const buildLeague = (
   const league: LeagueState = {
     info: {
       currentWeek: 1,
+      lastRankingsWeek: 0,
       currentYear: BASE_YEAR,
       startYear: BASE_YEAR,
       stage: 'preseason',
@@ -194,16 +195,15 @@ const buildLeague = (
     teams,
     conferences,
     pending_rivalries: [],
+    declinedRivalries: [],
     rivalryHostSeeds: {},
     scheduleBuilt: false,
     simInitialized: false,
     settings: { ...DEFAULT_NEXT_SEASON_CONFIGURATION },
     playoff: { seeds: [] },
+    resumeSnapshot: null,
     idCounters: {
       game: 1,
-      drive: 1,
-      play: 1,
-      gameLog: 1,
       player: 1,
     },
   };

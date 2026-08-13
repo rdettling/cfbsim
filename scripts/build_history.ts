@@ -1,19 +1,13 @@
 /// <reference types="node" />
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import { validateSeasonData } from '../src/domain/seasonDataValidation';
 import type {
   HistoryData,
   SeasonIndexData,
   SeasonData,
 } from '../src/types/baseData';
-
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-export const DATA_ROOT = join(SCRIPT_DIR, '..', 'public', 'data');
-
-export const readJson = async <T>(path: string): Promise<T> =>
-  JSON.parse(await readFile(path, 'utf-8')) as T;
+import { DATA_ROOT, readJson } from './data_files';
 
 const getPrestige = (teamName: string, yearData: SeasonData) => {
   for (const conference of Object.values(yearData.conferences)) {
@@ -97,26 +91,3 @@ export const buildHistoryData = async (
     teams: historyByTeam,
   };
 };
-
-const main = async () => {
-  const indexPath = join(DATA_ROOT, 'seasons', 'index.json');
-  const outputPath = join(DATA_ROOT, 'history.json');
-  const [index, payload] = await Promise.all([
-    buildSeasonIndexData(),
-    buildHistoryData(),
-  ]);
-  await mkdir(dirname(outputPath), { recursive: true });
-  await Promise.all([
-    writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`),
-    writeFile(outputPath, `${JSON.stringify(payload, null, 2)}\n`),
-  ]);
-  console.log(`Wrote season index to ${indexPath}`);
-  console.log(`Wrote history data to ${outputPath}`);
-};
-
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  main().catch(error => {
-    console.error(error);
-    process.exit(1);
-  });
-}

@@ -13,7 +13,6 @@ import {
   validateTeamsData,
 } from '../src/domain/baseDataValidation';
 import {
-  getHistoricalTeamGamesFileName,
   validateHistoricalGamesForTeam,
   validateHistoricalGamesIndex,
   validateHistoricalGamesSeason,
@@ -21,21 +20,26 @@ import {
 import { normalizeRivalriesData } from '../src/domain/rivalryData';
 import { validateSeasonData } from '../src/domain/seasonDataValidation';
 import type {
-  ConferencesData,
   PrestigeConfig,
   SeasonData,
   TeamsData,
 } from '../src/types/baseData';
 import {
   buildDataOutputs,
-  compactJson,
   type DataBuildOutputs,
-  prettyJson,
 } from './data_build';
-import { DATA_ROOT, readJson } from './generate_history';
+import {
+  compactJson,
+  DATA_ROOT,
+  prettyJson,
+  readJson,
+} from './data_files';
 
 const PRESTIGE_TIERS = [1, 2, 3, 4, 5, 6, 7] as const;
 const PRESTIGE_DISTRIBUTION_TOLERANCE = 3;
+const HISTORICAL_GAME_COVERAGE_EXCEPTIONS = new Map([
+  [2020, new Set(['New Mexico State'])],
+]);
 
 const describeError = (source: string, error: unknown) =>
   `${source}: ${error instanceof Error ? error.message : String(error)}`;
@@ -166,7 +170,7 @@ export const checkData = async (
   }
 
   const seasons: SeasonData[] = [];
-  const activeTeamsByYear = new Map<number, Set<string>>();
+  const teamsWithGamesByYear = new Map<number, Set<string>>();
   const referencedTeams = new Set<string>();
   const referencedConferences = new Set<string>();
   for (const year of seasonYears) {
@@ -178,7 +182,12 @@ export const checkData = async (
       );
       seasons.push(season);
       const assignments = assignmentsFor(season);
-      activeTeamsByYear.set(season.year, new Set(assignments.keys()));
+      teamsWithGamesByYear.set(
+        season.year,
+        new Set(Object.entries(season.results ?? {})
+          .filter(([, result]) => result.wins + result.losses > 0)
+          .map(([team]) => team)),
+      );
       assignments.forEach((_conference, team) => referencedTeams.add(team));
       Object.keys(season.conferences).forEach(conference =>
         referencedConferences.add(conference));
@@ -252,8 +261,10 @@ export const checkData = async (
         errors.push(`historical-games/${year}.json: season results are not complete.`);
       }
       const participants = new Set(season.games.flatMap(game => [game.homeTeam, game.awayTeam]));
-      const missingActiveTeams = [...(activeTeamsByYear.get(year) ?? [])]
-        .filter(team => !participants.has(team));
+      const coverageExceptions = HISTORICAL_GAME_COVERAGE_EXCEPTIONS.get(year);
+      const missingActiveTeams = [...(teamsWithGamesByYear.get(year) ?? [])]
+        .filter(team =>
+          !participants.has(team) && !coverageExceptions?.has(team));
       if (missingActiveTeams.length) {
         errors.push(
           `historical-games/${year}.json: active programs without games ` +

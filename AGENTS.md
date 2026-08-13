@@ -3,6 +3,7 @@
 This file is for Codex/agent context. For human‑readable docs, see:
 - `docs/README.md` for docs index
 - `docs/architecture/system-overview.md` for system overview
+- `docs/architecture/static-data.md` for static-data ownership and workflows
 - `docs/frontend/README.md` for frontend principles, patterns, and completion criteria
 
 ## Conventions
@@ -28,6 +29,14 @@ This file is for Codex/agent context. For human‑readable docs, see:
   dependencies over generalized frameworks or indirection
 - Only introduce backward compatibility when a current product requirement
   explicitly calls for it
+
+## Static Data
+
+- Edit canonical inputs only; never hand-edit generated projections
+- After canonical data changes, run `npm run data:build` and then
+  `npm run data:check`
+- Keep provider-specific CFBD normalization under `scripts/`; runtime code uses
+  canonical program and conference names only
 
 ## Gotchas
 

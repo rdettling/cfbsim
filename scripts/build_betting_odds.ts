@@ -1,7 +1,3 @@
-/// <reference types="node" />
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import { simGame } from '../src/domain/sim/engine';
 import {
   BETTING_ODDS_MAX_DIFF,
@@ -11,16 +7,15 @@ import {
 } from '../src/domain/baseDataValidation';
 import { createSeededRandom, withSeededMathRandom } from '../src/domain/utils/random';
 import type { BettingOddsData } from '../src/types/baseData';
-import type { LeagueState } from '../src/types/league';
+import {
+  DEFAULT_NEXT_SEASON_CONFIGURATION,
+  type LeagueState,
+} from '../src/types/league';
 import type { Team, Info } from '../src/types/domain';
 import type { StartersCache, SimGame } from '../src/types/sim';
 import type { PlayerRecord } from '../src/types/db';
 
 const TAX_FACTOR = 0.05;
-
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(SCRIPT_DIR, '..');
-const OUTPUT_PATH = join(ROOT, 'public', 'data', 'betting_odds.json');
 
 const createTeam = (id: number, rating: number): Team => ({
   id,
@@ -35,6 +30,9 @@ const createTeam = (id: number, rating: number): Team => ({
   ceiling: 99,
   floor: 1,
   mascot: 'Testers',
+  city: 'Test City',
+  state: 'Test State',
+  stadium: 'Test Stadium',
   ranking: 1,
   offense: rating,
   defense: rating,
@@ -60,6 +58,7 @@ const createTeam = (id: number, rating: number): Team => ({
 
 const createInfo = (): Info => ({
   currentWeek: 1,
+  lastRankingsWeek: 0,
   currentYear: 2024,
   startYear: 2024,
   stage: 'season',
@@ -72,21 +71,15 @@ const createLeague = (teams: Team[]): LeagueState => ({
   teams,
   conferences: [],
   pending_rivalries: [],
+  declinedRivalries: [],
+  rivalryHostSeeds: {},
   scheduleBuilt: true,
   simInitialized: true,
-  settings: {
-    playoff_teams: 12,
-    playoff_autobids: 5,
-    playoff_conf_champ_top_4: true,
-    auto_realignment: true,
-    auto_update_postseason_format: true,
-  },
+  settings: { ...DEFAULT_NEXT_SEASON_CONFIGURATION },
   playoff: { seeds: [] },
+  resumeSnapshot: null,
   idCounters: {
     game: 1,
-    drive: 1,
-    play: 1,
-    gameLog: 1,
     player: 1,
   },
 });
@@ -111,15 +104,19 @@ const createPlayer = (
   stars: 5,
   development_trait: 3,
   starter: true,
-  active: true,
 });
 
-const buildStarters = (team: Team, rating: number, baseId: number): StartersCache => {
+const buildStarters = (
+  team: Team,
+  rating: number,
+  baseId: number,
+): StartersCache => {
   const positions = [
     'qb', 'rb', 'wr', 'wr', 'te', 'k', 'p',
     'dl', 'dl', 'lb', 'lb', 'cb', 'cb', 's',
   ];
-  const players = positions.map((pos, index) => createPlayer(baseId + index, team.id, pos, rating));
+  const players = positions.map((pos, index) =>
+    createPlayer(baseId + index, team.id, pos, rating));
   const byTeamPos = new Map<string, PlayerRecord[]>();
   positions.forEach((pos, index) => {
     const key = `${team.id}:${pos}`;
@@ -137,6 +134,7 @@ const buildGame = (teamA: Team, teamB: Team): SimGame => ({
   homeTeam: null,
   awayTeam: null,
   neutralSite: true,
+  venue: null,
   winner: null,
   baseLabel: 'Test Game',
   name: 'Test Game',
@@ -153,6 +151,11 @@ const buildGame = (teamA: Team, teamB: Team): SimGame => ({
   resultA: null,
   resultB: null,
   overtime: 0,
+  quarter: 1,
+  clockSecondsLeft: 900,
+  clockRunning: false,
+  timeoutsRemainingA: 3,
+  timeoutsRemainingB: 3,
   scoreA: 0,
   scoreB: 0,
   gameType: 'regular_season',
@@ -191,9 +194,13 @@ const runDiff = (diff: number) => {
 
   const spread = Math.round((avgScoreA - avgScoreB) * 2) / 2;
   const spreadA =
-    spread > 0 ? `-${Math.abs(spread)}` : spread < 0 ? `+${Math.abs(spread)}` : 'Even';
+    spread > 0
+      ? `-${Math.abs(spread)}`
+      : spread < 0 ? `+${Math.abs(spread)}` : 'Even';
   const spreadB =
-    spread > 0 ? `+${Math.abs(spread)}` : spread < 0 ? `-${Math.abs(spread)}` : 'Even';
+    spread > 0
+      ? `+${Math.abs(spread)}`
+      : spread < 0 ? `-${Math.abs(spread)}` : 'Even';
 
   let impliedProbA = Math.round((winProbA + TAX_FACTOR / 2) * 100) / 100;
   let impliedProbB = Math.round((winProbB + TAX_FACTOR / 2) * 100) / 100;
@@ -226,33 +233,18 @@ export const buildBettingOddsData = (): BettingOddsData => {
   cachedBettingOdds = withSeededMathRandom(
     createSeededRandom(BETTING_ODDS_SEED),
     () => {
-  const odds: Record<number, ReturnType<typeof runDiff>> = {};
-  for (let diff = 0; diff <= BETTING_ODDS_MAX_DIFF; diff += 1) {
-    odds[diff] = runDiff(diff);
-  }
+      const odds: Record<number, ReturnType<typeof runDiff>> = {};
+      for (let diff = 0; diff <= BETTING_ODDS_MAX_DIFF; diff += 1) {
+        odds[diff] = runDiff(diff);
+      }
 
       return validateBettingOddsData({
-    seed: BETTING_ODDS_SEED,
-    test_simulations: BETTING_ODDS_SIMULATIONS,
-    max_diff: BETTING_ODDS_MAX_DIFF,
-    odds,
+        seed: BETTING_ODDS_SEED,
+        test_simulations: BETTING_ODDS_SIMULATIONS,
+        max_diff: BETTING_ODDS_MAX_DIFF,
+        odds,
       });
     },
   );
   return cachedBettingOdds;
 };
-
-const main = async () => {
-  const payload = buildBettingOddsData();
-
-  await mkdir(dirname(OUTPUT_PATH), { recursive: true });
-  await writeFile(OUTPUT_PATH, `${JSON.stringify(payload, null, 2)}\n`);
-  console.log(`Wrote betting odds to ${OUTPUT_PATH}`);
-};
-
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  void main().catch(error => {
-    console.error(error);
-    process.exitCode = 1;
-  });
-}

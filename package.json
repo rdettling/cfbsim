@@ -1,5 +1,5 @@
 {
-  "name": "frontend2",
+  "name": "cfbsim",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -23,7 +23,7 @@
     "tune:sim": "tsx scripts/tune_sim.ts",
     "eval:recruiting-balance": "tsx scripts/eval_recruiting_balance.ts",
     "eval:news": "tsx scripts/eval_news.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.scripts.json"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
