@@ -213,6 +213,7 @@ export const buildGameData = (
     teamA: {
       id: teamA.id,
       name: teamA.name,
+      ranking: game.rankATOG,
       record: teamA.record,
       colorPrimary: teamA.colorPrimary,
       colorSecondary: teamA.colorSecondary,
@@ -221,6 +222,7 @@ export const buildGameData = (
     teamB: {
       id: teamB.id,
       name: teamB.name,
+      ranking: game.rankBTOG,
       record: teamB.record,
       colorPrimary: teamB.colorPrimary,
       colorSecondary: teamB.colorSecondary,

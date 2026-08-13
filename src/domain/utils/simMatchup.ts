@@ -3,6 +3,7 @@ import { resolveHomeAway } from './gameDisplay';
 type SimTeam = {
   id: number;
   name: string;
+  ranking: number;
   record: string;
   mascot?: string;
   colorPrimary?: string;

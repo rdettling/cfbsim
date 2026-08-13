@@ -164,7 +164,7 @@ const DriveSummary = ({
       <Box
         sx={
           variant === 'modal'
-            ? { flex: 1, overflow: 'auto' }
+            ? { flex: 1, overflow: embedded ? 'visible' : 'auto' }
             : {
                 flex: 1,
                 display: 'flex',

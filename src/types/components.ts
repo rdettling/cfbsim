@@ -19,6 +19,7 @@ export interface DriveSummaryProps {
 export interface SimMatchup {
   homeTeam: {
     name: string;
+    ranking: number;
     record: string;
     mascot?: string;
     colorPrimary?: string;
@@ -26,6 +27,7 @@ export interface SimMatchup {
   };
   awayTeam: {
     name: string;
+    ranking: number;
     record: string;
     mascot?: string;
     colorPrimary?: string;

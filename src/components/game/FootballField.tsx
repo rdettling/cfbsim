@@ -13,9 +13,7 @@ type FootballFieldProps = {
   awayTeam: FieldTeam;
   neutralSite: boolean;
   isOffenseLeftToRight: boolean;
-  down: number;
   yardsToGo: number;
-  previousPlayYards?: number;
 };
 
 const END_ZONE_YARDS = 10;
@@ -25,13 +23,6 @@ const YARD_LINES = [10, 20, 30, 40, 50, 60, 70, 80, 90];
 const clampYard = (yard: number) => Math.max(0, Math.min(100, yard));
 const yardToPercent = (yard: number) =>
   ((END_ZONE_YARDS + clampYard(yard)) / TOTAL_FIELD_YARDS) * 100;
-
-const formatDown = (down: number) => {
-  if (down === 1) return '1st';
-  if (down === 2) return '2nd';
-  if (down === 3) return '3rd';
-  return '4th';
-};
 
 const FieldLine = ({
   left,
@@ -62,9 +53,7 @@ const FootballField = ({
   awayTeam,
   neutralSite,
   isOffenseLeftToRight,
-  down,
   yardsToGo,
-  previousPlayYards = 0,
 }: FootballFieldProps) => {
   const displayYardLine = isOffenseLeftToRight
     ? currentYardLine
@@ -75,11 +64,6 @@ const FootballField = ({
     : 100 - firstDownYardLine;
   const ballPosition = yardToPercent(displayYardLine);
   const firstDownPosition = yardToPercent(displayFirstDown);
-  const previousPosition = yardToPercent(
-    displayYardLine - previousPlayYards * (isOffenseLeftToRight ? 1 : -1)
-  );
-  const previousPlayLeft = Math.min(previousPosition, ballPosition);
-  const previousPlayWidth = Math.abs(previousPosition - ballPosition);
   const leftEndZoneTeam = neutralSite ? awayTeam : homeTeam;
   const rightEndZoneLabel = neutralSite
     ? homeTeam.name
@@ -88,7 +72,7 @@ const FootballField = ({
   return (
     <Box
       role="img"
-      aria-label={`${formatDown(down)} and ${yardsToGo} at yard line ${currentYardLine}`}
+      aria-label={`Football field showing the ball at yard line ${currentYardLine}`}
       sx={{
         position: 'relative',
         width: '100%',
@@ -219,63 +203,10 @@ const FootballField = ({
         />
       )}
 
-      {previousPlayYards !== 0 && (
-        <Box
-          sx={{
-            position: 'absolute',
-            left: `${previousPlayLeft}%`,
-            bottom: 12,
-            width: `${previousPlayWidth}%`,
-            minWidth: 2,
-            height: 18,
-            display: 'grid',
-            placeItems: 'center',
-            borderRadius: 1,
-            backgroundColor: previousPlayYards > 0 ? 'success.main' : 'error.main',
-            color: 'common.white',
-            zIndex: 3,
-          }}
-        >
-          {previousPlayWidth > 5 && (
-            <Typography component="span" sx={{ fontSize: '0.65rem', fontWeight: 700 }}>
-              {previousPlayYards > 0 ? '+' : ''}{previousPlayYards}
-            </Typography>
-          )}
-        </Box>
-      )}
-
       <FieldLine left={yardToPercent(0)} color="common.white" />
       <FieldLine left={yardToPercent(100)} color="common.white" />
       <FieldLine left={ballPosition} color="primary.light" width={3} />
       <FieldLine left={firstDownPosition} color="warning.main" width={3} />
-
-      <Box
-        sx={{
-          position: 'absolute',
-          left: `${ballPosition}%`,
-          top: 10,
-          transform: 'translateX(-50%)',
-          px: 0.75,
-          py: 0.25,
-          borderRadius: 1,
-          backgroundColor: 'background.paper',
-          color: 'text.primary',
-          border: '1px solid',
-          borderColor: 'divider',
-          zIndex: 6,
-        }}
-      >
-        <Typography
-          component="span"
-          sx={{
-            fontSize: { xs: '0.72rem', sm: '0.82rem' },
-            fontWeight: 700,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {formatDown(down)} &amp; {yardsToGo}
-        </Typography>
-      </Box>
 
       <Box
         component="img"

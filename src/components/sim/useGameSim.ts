@@ -12,29 +12,13 @@ import {
 } from '../../domain/sim/engine';
 import { SECONDS_PER_QUARTER } from '../../domain/sim/clock';
 import {
-  AUTO_STEP_INSTRUCTION,
-  canShowKneel,
-  canShowSpike,
-  chooseAutomaticClockAction,
-} from '../../domain/sim/clockManagement';
-import { decideFourthDown } from '../../domain/sim/playcalling';
-import {
   startInteractiveDrive,
   startOvertimeShootoutDrive,
   stepInteractiveDrive,
 } from '../../domain/sim/drive';
 import { kickoffStartFieldPosition } from '../../domain/sim/kickoffs';
-import {
-  TRY_FIELD_POSITION,
-  chooseAutomaticTryAttempt,
-  extraPointAllowed,
-} from '../../domain/sim/conversions';
-import { emptyPlayParticipants } from '../../domain/sim/participants';
-import {
-  buildDriveUi,
-  buildNextHeader,
-  mapPlayRecord,
-} from '../../domain/sim/ui';
+import { TRY_FIELD_POSITION } from '../../domain/sim/conversions';
+import { buildDriveUi, mapPlayRecord } from '../../domain/sim/ui';
 import type {
   ClockTempo,
   DriveRecord,
@@ -47,38 +31,21 @@ import type { Drive, GameData, Play } from '../../types/game';
 import type { LeagueState } from '../../types/league';
 import type {
   InteractiveDriveState,
-  InteractivePlayChoice,
-  InteractiveStepInstruction,
   SimGame,
   StartersCache,
 } from '../../types/sim';
-
-export type SimulationPhase =
-  | 'idle'
-  | 'preparing'
-  | 'ready'
-  | 'advancing'
-  | 'finalizing'
-  | 'complete'
-  | 'error';
-
-export type SimulationErrorKind = 'preparation' | 'simulation' | 'finalization';
-export type SimulationAdvanceScope = 'play' | 'drive' | 'game';
-export type SimulationDecision = InteractivePlayChoice;
-
-export type SimulationDecisionPrompt = {
-  side: 'offense' | 'defense';
-  type: 'scrimmage' | 'fourth_down' | 'try';
-  down: number;
-  yardsLeft: number;
-  fieldPosition: number;
-  allowExtraPoint?: boolean;
-};
-
-export type SimulationError = {
-  kind: SimulationErrorKind;
-  message: string;
-};
+import {
+  buildGameSimStepInstruction,
+  resolveGameSimDecisionPrompt,
+} from './gameSimDecision';
+import type {
+  SimulationAdvanceScope,
+  SimulationDecision,
+  SimulationDecisionPrompt,
+  SimulationError,
+  SimulationPhase,
+} from './gameSimTypes';
+import { buildGameSimViewModel } from './gameSimViewModel';
 
 type SimulationContext = {
   league: LeagueState;
@@ -169,90 +136,24 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
     updatePhase('idle');
   };
 
-  const buildDecisionPrompt = (
-    state: InteractiveDriveState,
-    side: SimulationDecisionPrompt['side'],
-  ): SimulationDecisionPrompt => ({
-    side,
-    type: side === 'offense' && state.down === 4 ? 'fourth_down' : 'scrimmage',
-    down: state.down,
-    yardsLeft: state.yardsLeft,
-    fieldPosition: state.fieldPosition,
-  });
-
   const updateDecisionPrompt = (driveState: InteractiveDriveState | null) => {
     const context = contextRef.current;
-    if (!context || !driveState || !context.userTeamId) {
+    if (!context) {
       setDecisionPrompt(null);
       return;
     }
-    if (driveState.phase === 'try' && driveState.tryOrigin) {
-      const automaticAttempt = context.currentOffense
-        ? chooseAutomaticTryAttempt({
-            game: context.simGame,
-            offense: context.currentOffense,
-            origin: driveState.tryOrigin,
-            overtimePossession: context.inOvertime
-              ? context.otPossession as 0 | 1
-              : null,
-          })
-        : 'extra_point';
-      if (context.currentOffense?.id === context.userTeamId) {
-        setDecisionPrompt({
-          ...buildDecisionPrompt(driveState, 'offense'),
-          type: 'try',
-          allowExtraPoint: extraPointAllowed(context.simGame, driveState.tryOrigin),
-        });
-      } else if (
-        context.currentDefense?.id === context.userTeamId
-        && automaticAttempt === 'two_point'
-      ) {
-        setDecisionPrompt({
-          ...buildDecisionPrompt(driveState, 'defense'),
-          type: 'try',
-          allowExtraPoint: false,
-        });
-      } else {
-        setDecisionPrompt(null);
-      }
-      return;
-    }
-    if (context.currentOffense?.id === context.userTeamId) {
-      setDecisionPrompt(buildDecisionPrompt(driveState, 'offense'));
-      return;
-    }
-    if (context.currentDefense?.id === context.userTeamId) {
-      if (!context.inOvertime) {
-        const simContext = buildSimContext(context, true);
-        if (simContext && chooseAutomaticClockAction({
-          game: context.simGame,
-          offense: simContext.offense,
-          defense: simContext.defense,
-          offenseLead: simContext.lead,
-          down: driveState.down,
-          clock: {
-            quarter: context.simGame.quarter,
-            secondsLeft: context.simGame.clockSecondsLeft,
-            clockRunning: context.simGame.clockRunning,
-          },
-        })) {
-          setDecisionPrompt(null);
-          return;
-        }
-      }
-      const fourthDownCall = driveState.down === 4
-        ? decideFourthDown(
-            driveState.fieldPosition,
-            driveState.yardsLeft,
-            driveState.drive.points_needed,
-          )
-        : 'go';
-      setDecisionPrompt(
-        fourthDownCall === 'go' ? buildDecisionPrompt(driveState, 'defense') : null,
-      );
-      return;
-    }
-    setDecisionPrompt(null);
+    setDecisionPrompt(resolveGameSimDecisionPrompt({
+      driveState,
+      userTeamId: context.userTeamId,
+      currentOffense: context.currentOffense,
+      currentDefense: context.currentDefense,
+      simGame: context.simGame,
+      inOvertime: context.inOvertime,
+      overtimePossession: context.otPossession,
+      simContext: driveState && !context.inOvertime
+        ? buildSimContext(context, true)
+        : null,
+    }));
   };
 
   const upsertDriveUi = (driveRecord: DriveRecord) => {
@@ -457,37 +358,6 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
     }
   };
 
-  const buildStepInstruction = (
-    call: SimulationDecision,
-    useArmedTimeout: boolean,
-  ): InteractiveStepInstruction => {
-    const context = contextRef.current;
-    if (!context || !context.currentOffense || !context.currentDefense) {
-      return { ...AUTO_STEP_INSTRUCTION, timeoutAfter: { ...AUTO_STEP_INSTRUCTION.timeoutAfter } };
-    }
-    if (context.currentDriveState?.phase === 'try') {
-      return {
-        call,
-        tempo: 'auto',
-        timeoutAfter: { offense: 'hold', defense: 'hold' },
-      };
-    }
-    const userOnOffense = context.currentOffense.id === context.userTeamId;
-    const userOnDefense = context.currentDefense.id === context.userTeamId;
-    return {
-      call,
-      tempo: userOnOffense ? selectedTempoRef.current : 'auto',
-      timeoutAfter: {
-        offense: userOnOffense
-          ? useArmedTimeout && timeoutAfterPlayRef.current ? 'use' : 'hold'
-          : 'auto',
-        defense: userOnDefense
-          ? useArmedTimeout && timeoutAfterPlayRef.current ? 'use' : 'hold'
-          : 'auto',
-      },
-    };
-  };
-
   const advanceOnePlay = async (decision: SimulationDecision) => {
     const context = contextRef.current;
     if (
@@ -504,7 +374,16 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
     const stepResult = stepInteractiveDrive(
       simContext,
       context.currentDriveState,
-      buildStepInstruction(decision, true),
+      buildGameSimStepInstruction({
+        call: decision,
+        drivePhase: context.currentDriveState.phase,
+        userTeamId: context.userTeamId,
+        offenseId: context.currentOffense.id,
+        defenseId: context.currentDefense.id,
+        selectedTempo: selectedTempoRef.current,
+        timeoutAfterPlay: timeoutAfterPlayRef.current,
+        useArmedTimeout: true,
+      }),
       !context.inOvertime
     );
     armTimeoutAfterPlay(false);
@@ -532,7 +411,16 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
       stepResult = stepInteractiveDrive(
         simContext,
         driveState,
-        buildStepInstruction('auto', step === 0),
+        buildGameSimStepInstruction({
+          call: 'auto',
+          drivePhase: driveState.phase,
+          userTeamId: context.userTeamId,
+          offenseId: context.currentOffense.id,
+          defenseId: context.currentDefense.id,
+          selectedTempo: selectedTempoRef.current,
+          timeoutAfterPlay: timeoutAfterPlayRef.current,
+          useArmedTimeout: step === 0,
+        }),
         !context.inOvertime
       );
       if (step === 0) armTimeoutAfterPlay(false);
@@ -681,124 +569,13 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
   };
 
   const context = contextRef.current;
-  const lastPlay = plays.length > 0 ? plays[plays.length - 1] : null;
-  const currentPlay = plays.length > 0 ? plays[currentPlayIndex] ?? null : null;
-  const previousPlay =
-    plays.length > 0 && currentPlayIndex > 0
-      ? plays[currentPlayIndex - 1]
-      : null;
-  const driveState = context?.currentDriveState ?? null;
-
-  const displayPlay: Play | null = driveState
-    ? {
-        id: currentPlay?.id ?? -1,
-        driveId: currentPlay?.driveId,
-        down: driveState.down,
-        yardsLeft: driveState.yardsLeft,
-        startingFP: driveState.fieldPosition,
-        playType: currentPlay?.playType ?? '',
-        yardsGained: currentPlay?.yardsGained ?? 0,
-        text: currentPlay?.text ?? '',
-        header: driveState.phase === 'try'
-          ? 'Try'
-          : buildNextHeader(
-              driveState.fieldPosition,
-              driveState.down,
-              driveState.yardsLeft
-            ),
-        result: currentPlay?.result ?? '',
-        scoreA: gameData?.scoreA ?? 0,
-        scoreB: gameData?.scoreB ?? 0,
-        call: currentPlay?.call ?? {
-          kind: 'scrimmage',
-          offense: 'inside_run',
-          defense: 'base',
-        },
-        participants: currentPlay?.participants ?? emptyPlayParticipants(),
-        timing: currentPlay?.timing ?? {
-          kind: context?.inOvertime ? 'overtime' : 'regulation',
-          ...(context?.inOvertime
-            ? {
-                period: Math.max(1, context.simGame.overtime),
-                outOfBounds: false,
-              }
-            : {
-                start: {
-                  quarter: (context?.simGame.quarter ?? 1) as 1 | 2 | 3 | 4,
-                  secondsLeft: context?.simGame.clockSecondsLeft ?? SECONDS_PER_QUARTER,
-                  running: context?.simGame.clockRunning ?? false,
-                },
-                end: {
-                  quarter: (context?.simGame.quarter ?? 1) as 1 | 2 | 3 | 4,
-                  secondsLeft: context?.simGame.clockSecondsLeft ?? SECONDS_PER_QUARTER,
-                  running: context?.simGame.clockRunning ?? false,
-                },
-                elapsedSeconds: 0,
-                outOfBounds: false,
-                tempo: 'normal',
-                eventAfter: null,
-                chargedTimeoutAfter: null,
-              }),
-        } as Play['timing'],
-      }
-    : currentPlay;
-
-  const displayDrive: Drive | null = driveState
-    ? {
-        driveNum: driveState.drive.driveNum,
-        offense: context?.currentOffense?.name ?? '',
-        defense: context?.currentDefense?.name ?? '',
-        startingFP: driveState.drive.startingFP,
-        result: driveState.drive.result,
-        points: driveState.drive.points,
-        scoreAAfter: driveState.drive.scoreAAfter,
-        scoreBAfter: driveState.drive.scoreBAfter,
-        plays: [],
-        yards: 0,
-      }
-    : null;
-
-  const isTeamAOnOffense = displayDrive
-    ? displayDrive.offense === gameData?.teamA.name
-    : context?.currentOffense?.id === gameData?.teamA.id;
-  const fieldPosition =
-    displayPlay?.startingFP
-    ?? driveState?.fieldPosition
-    ?? kickoffStartFieldPosition();
-  const previousPlayYards = coachingEnabled && driveState
-    ? (
-        lastPlay
-        && (!lastPlay.driveId || lastPlay.driveId === driveState.drive.id)
-          ? lastPlay.yardsGained || 0
-          : 0
-      )
-    : currentPlay && previousPlay
-      ? previousPlay.yardsGained
-      : 0;
-  const isBusy =
-    phase === 'preparing'
-    || phase === 'advancing'
-    || phase === 'finalizing';
-  const userSide: 'offense' | 'defense' | null = driveState?.phase === 'try'
-    ? null
-    : context?.userTeamId && context.currentOffense?.id === context.userTeamId
-      ? 'offense'
-      : context?.userTeamId && context.currentDefense?.id === context.userTeamId
-        ? 'defense'
-        : null;
-  const userTimeoutsRemaining = context?.userTeamId === context?.simGame.teamA.id
-    ? context?.simGame.timeoutsRemainingA ?? 0
-    : context?.userTeamId === context?.simGame.teamB.id
-      ? context?.simGame.timeoutsRemainingB ?? 0
-      : 0;
-  const offenseLead = context?.currentOffense?.id === context?.simGame.teamA.id
-    ? (context?.simGame.scoreA ?? 0) - (context?.simGame.scoreB ?? 0)
-    : (context?.simGame.scoreB ?? 0) - (context?.simGame.scoreA ?? 0);
-  const managementClock = {
-    quarter: context?.simGame.quarter ?? 1,
-    secondsLeft: context?.simGame.clockSecondsLeft ?? SECONDS_PER_QUARTER,
-    clockRunning: context?.simGame.clockRunning ?? false,
-  };
+  const viewModel = buildGameSimViewModel({
+    phase,
+    plays,
+    currentPlayIndex,
+    gameData,
+    context,
+  });
 
   return {
     state: {
@@ -810,38 +587,31 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
       currentPlayIndex,
       isGameComplete: phase === 'complete',
       isPlaybackComplete: phase === 'complete',
-      isBusy,
-      canClose: !isBusy,
+      isBusy: viewModel.isBusy,
+      canClose: !viewModel.isBusy,
       hasProgress: playRecordsRef.current.length > 0,
       coachingEnabled,
       decisionPrompt,
-      displayPlay,
-      displayDrive,
-      isTeamAOnOffense,
+      displayPlay: viewModel.displayPlay,
+      displayDrive: viewModel.displayDrive,
+      isTeamAOnOffense: viewModel.isTeamAOnOffense,
       openingIsTeamA: context?.openingIsTeamA ?? true,
-      fieldPosition,
-      previousPlayYards,
-      lastPlayText: lastPlay?.text ?? '',
-      quarter: context?.simGame.quarter ?? 1,
-      clockSecondsLeft: context?.simGame.clockSecondsLeft ?? SECONDS_PER_QUARTER,
-      inOvertime: context?.inOvertime ?? false,
-      overtimeCount: context?.simGame.overtime ?? 0,
-      clockRunning: managementClock.clockRunning,
-      timeoutsRemainingA: context?.simGame.timeoutsRemainingA ?? 3,
-      timeoutsRemainingB: context?.simGame.timeoutsRemainingB ?? 3,
-      userSide,
-      userTimeoutsRemaining,
+      fieldPosition: viewModel.fieldPosition,
+      lastPlayText: viewModel.lastPlayText,
+      quarter: viewModel.quarter,
+      clockSecondsLeft: viewModel.clockSecondsLeft,
+      inOvertime: viewModel.inOvertime,
+      overtimeCount: viewModel.overtimeCount,
+      clockRunning: viewModel.clockRunning,
+      timeoutsRemainingA: viewModel.timeoutsRemainingA,
+      timeoutsRemainingB: viewModel.timeoutsRemainingB,
+      userSide: viewModel.userSide,
+      userTimeoutsRemaining: viewModel.userTimeoutsRemaining,
       selectedTempo,
       timeoutAfterPlay,
-      canUseTimeout: Boolean(userSide) && !context?.inOvertime && userTimeoutsRemaining > 0,
-      canShowSpike: userSide === 'offense'
-        && !context?.inOvertime
-        && Boolean(driveState)
-        && canShowSpike(driveState?.down ?? 1, managementClock),
-      canShowKneel: userSide === 'offense'
-        && !context?.inOvertime
-        && Boolean(driveState)
-        && canShowKneel(offenseLead, managementClock),
+      canUseTimeout: viewModel.canUseTimeout,
+      canShowSpike: viewModel.canShowSpike,
+      canShowKneel: viewModel.canShowKneel,
     },
     actions: {
       start,

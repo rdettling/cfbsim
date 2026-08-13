@@ -42,6 +42,7 @@ export interface GameData {
   teamA: {
     id: number;
     name: string;
+    ranking: number;
     record: string;
     colorPrimary?: string;
     colorSecondary?: string;
@@ -50,6 +51,7 @@ export interface GameData {
   teamB: {
     id: number;
     name: string;
+    ranking: number;
     record: string;
     colorPrimary?: string;
     colorSecondary?: string;
