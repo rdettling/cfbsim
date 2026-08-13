@@ -106,13 +106,16 @@ export interface WeightedNameEntry {
   weight: number;
 }
 
-export type NamesData = Record<
-  'black' | 'white',
-  {
-    first: WeightedNameEntry[];
-    last: WeightedNameEntry[];
-  }
->;
+export interface NamesData {
+  profiles: Record<
+    string,
+    {
+      first: WeightedNameEntry[];
+      last: WeightedNameEntry[];
+    }
+  >;
+  positionWeights: Record<string, Record<string, number>>;
+}
 
 export type StatesData = Record<string, number>;
 

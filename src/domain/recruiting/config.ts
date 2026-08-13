@@ -49,17 +49,3 @@ export const STAR_RATING_TARGETS: Record<
   4: { freshman: 69, senior: 81, freshmanStdDev: 4.5 },
   5: { freshman: 81, senior: 92, freshmanStdDev: 4 },
 };
-
-export const POSITION_NAME_CATEGORY_BIAS: Record<string, number> = {
-  qb: 15,
-  rb: 70,
-  wr: 70,
-  te: 30,
-  ol: 20,
-  dl: 70,
-  lb: 50,
-  cb: 90,
-  s: 70,
-  k: 0,
-  p: 0,
-};

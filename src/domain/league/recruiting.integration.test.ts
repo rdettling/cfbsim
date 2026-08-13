@@ -6,6 +6,7 @@ import {
   buildTestLeague,
   buildTestPlayer,
   buildTestTeam,
+  TEST_NAMES_DATA,
   TEST_STATES_DATA,
 } from '../../test/fixtures';
 import {
@@ -59,16 +60,7 @@ const seedProgression = async () => {
   );
   await tx.objectStore('baseData').put({
     key: 'names',
-    value: {
-      black: {
-        first: [{ name: 'Pat', weight: 1 }],
-        last: [{ name: 'Player', weight: 1 }],
-      },
-      white: {
-        first: [{ name: 'Sam', weight: 1 }],
-        last: [{ name: 'Tester', weight: 1 }],
-      },
-    },
+    value: TEST_NAMES_DATA,
   });
   await tx.objectStore('baseData').put({
     key: 'states',

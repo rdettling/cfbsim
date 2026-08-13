@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { HistoryData, TeamsData } from '../../types/baseData';
 import type { PlayerRecord } from '../../types/db';
-import { buildTestLeague, buildTestTeam } from '../../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestNamesData,
+  buildTestTeam,
+} from '../../test/fixtures';
 import { POSITION_ORDER, ROSTER } from '../rosterConfig';
 import {
   buildClassScoreDistribution,
@@ -15,7 +19,7 @@ import {
 } from './evaluation';
 import type { RecruitingEvaluationAggregate } from '../../types/recruitingEvaluation';
 
-const names = {
+const names = buildTestNamesData({
   black: {
     first: [{ name: 'Alex', weight: 1 }],
     last: [{ name: 'Player', weight: 1 }],
@@ -24,7 +28,7 @@ const names = {
     first: [{ name: 'Sam', weight: 1 }],
     last: [{ name: 'Tester', weight: 1 }],
   },
-};
+});
 const teams = [
   buildTestTeam({
     id: 1,

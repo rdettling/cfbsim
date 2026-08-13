@@ -5,6 +5,7 @@ import type { LeagueState } from '../../types/league';
 import {
   buildTestLeague,
   buildTestPlayer,
+  TEST_NAMES_DATA,
   TEST_STATES_DATA,
 } from '../../test/fixtures';
 import { TEST_BETTING_ODDS_DATA } from '../../test/fixtures';
@@ -122,16 +123,7 @@ const seedFullCycle = async () => {
     },
     {
       key: 'names',
-      value: {
-        black: {
-          first: [{ name: 'Pat', weight: 1 }],
-          last: [{ name: 'Player', weight: 1 }],
-        },
-        white: {
-          first: [{ name: 'Sam', weight: 1 }],
-          last: [{ name: 'Tester', weight: 1 }],
-        },
-      },
+      value: TEST_NAMES_DATA,
     },
     { key: 'states', value: TEST_STATES_DATA },
     { key: 'rivalries', value: { rivalries: [] } },

@@ -7,7 +7,6 @@ import type {
 import type { NamesData } from '../../types/baseData';
 import { ROSTER } from '../rosterConfig';
 import {
-  POSITION_NAME_CATEGORY_BIAS,
   RECRUITING,
   RECRUIT_STAR_COUNTS,
   STAR_RATING_TARGETS,
@@ -60,26 +59,33 @@ export const generateName = (
   names: NamesData,
   random: RandomSource,
 ) => {
-  const category =
-    random.next() <= (POSITION_NAME_CATEGORY_BIAS[position] ?? 50) / 100
-      ? 'black'
-      : 'white';
-  const source = names[category];
+  const profile = random.weightedChoice(
+    Object.entries(names.positionWeights[position] ?? {}).map(
+      ([item, weight]) => ({ item, weight }),
+    ).filter(entry => entry.weight > 0),
+  );
+  if (!profile || !names.profiles[profile]) {
+    throw new Error(`No name profile is configured for position ${position}.`);
+  }
+  const source = names.profiles[profile];
+  const first = random.weightedChoice(
+    source.first.map(entry => ({
+      item: entry.name,
+      weight: entry.weight,
+    })),
+  );
+  const last = random.weightedChoice(
+    source.last.map(entry => ({
+      item: entry.name,
+      weight: entry.weight,
+    })),
+  );
+  if (!first || !last) {
+    throw new Error(`Name profile ${profile} has no usable names.`);
+  }
   return {
-    first:
-      random.weightedChoice(
-        (source?.first ?? []).map(entry => ({
-          item: entry.name,
-          weight: entry.weight,
-        })),
-      ) ?? 'Player',
-    last:
-      random.weightedChoice(
-        (source?.last ?? []).map(entry => ({
-          item: entry.name,
-          weight: entry.weight,
-        })),
-      ) ?? 'Unknown',
+    first,
+    last,
   };
 };
 

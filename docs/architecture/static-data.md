@@ -156,9 +156,36 @@ A team pair may occur only once, regardless of pair order.
 
 ### Names and states
 
-`names.json` has exactly `black` and `white` collections. Each contains
-nonempty `first` and `last` arrays of `{ "name": string, "weight": number }`.
-Names are nonempty and weights are positive finite numbers.
+`names.json` has exactly `profiles` and `positionWeights`. Every dynamically
+named profile contains nonempty `first` and `last` arrays of
+`{ "name": string, "weight": number }`; names are unique within each array
+case-insensitively, and weights are positive finite numbers. `positionWeights`
+contains every active roster position. Each position contains exactly the
+declared profile IDs with finite nonnegative weights totaling 100.
+
+The committed catalog uses the Social Security Administration's
+[national baby-name data](https://www.ssa.gov/oact/babynames/limits.html) and
+the US Census Bureau's 2020
+[name tables](https://www.census.gov/topics/population/genealogy/data/2020_names.html).
+The first-name catalog is the 1,000 most frequent male names summed across
+birth years 2000 through 2008. Census group shares then distribute each name's
+cohort birth count across the five profiles: `black`, `white`, `hispanic`,
+`asianPacific` (Asian, Native Hawaiian, and Pacific Islander), and `other`
+(American Indian, Alaska Native, and multiracial). All 1,000 names match the
+full Census first-name table, so the committed data uses no inferred fallback
+shares. Surnames remain the Census top 1,000 weighted within each profile.
+Profile membership is not exclusive: a name appears in multiple profiles with
+different frequency-derived weights.
+
+For first names, the raw profile weight is the cohort birth count multiplied by
+the name's Census group share. Surname weights use Census group counts
+directly. Each pool's raw values are square-root compressed to integer weights
+from 1 through 10. This preserves the popularity signal without letting a few
+very common names dominate generated rosters. Position profile percentages are
+deliberately small, maintainer-owned estimates rather than a claim about a
+player's identity; the generated profile is never persisted. Changing the
+source snapshot, cohort years, or weighting recipe requires regenerating the
+whole static file, validating it, and incrementing `STATIC_DATA_VERSION`.
 
 `states.json` contains exactly the 50 postal state codes plus `DC`. Every
 weight is finite and nonnegative, and their total must be positive. The values

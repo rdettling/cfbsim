@@ -11,6 +11,7 @@ import {
   buildTestPlayer,
   buildTestSeasonTeamSnapshot,
   TEST_BETTING_ODDS_DATA,
+  TEST_NAMES_DATA,
   TEST_STATES_DATA,
 } from '../../../../test/fixtures';
 import { initializeSeason } from '../../season';
@@ -94,16 +95,7 @@ const baseResponses = () =>
     ['/data/conferences.json', { 'Test Conference': 'Test Conference' }],
     [
       '/data/names.json',
-      {
-        black: {
-          first: [{ name: 'Pat', weight: 1 }],
-          last: [{ name: 'Player', weight: 1 }],
-        },
-        white: {
-          first: [{ name: 'Sam', weight: 1 }],
-          last: [{ name: 'Tester', weight: 1 }],
-        },
-      },
+      TEST_NAMES_DATA,
     ],
     ['/data/states.json', TEST_STATES_DATA],
     ['/data/rivalries.json', { rivalries: [] }],

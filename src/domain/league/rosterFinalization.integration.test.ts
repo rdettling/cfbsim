@@ -7,7 +7,11 @@ import {
   buildTestPlayer,
   buildTestTeam,
 } from '../../test/fixtures';
-import { TEST_BETTING_ODDS_DATA, TEST_TEAMS_DATA } from '../../test/fixtures';
+import {
+  TEST_BETTING_ODDS_DATA,
+  TEST_NAMES_DATA,
+  TEST_TEAMS_DATA,
+} from '../../test/fixtures';
 import { buildRecruitingState } from '../../test/recruitingFixtures';
 import type { PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
@@ -69,16 +73,7 @@ const seedBaseData = async () => {
   const records = [
     {
       key: 'names',
-      value: {
-        black: {
-          first: [{ name: 'Pat', weight: 1 }],
-          last: [{ name: 'Walkon', weight: 1 }],
-        },
-        white: {
-          first: [{ name: 'Sam', weight: 1 }],
-          last: [{ name: 'Tryout', weight: 1 }],
-        },
-      },
+      value: TEST_NAMES_DATA,
     },
     { key: 'rivalries', value: { rivalries: [] } },
     { key: 'teams', value: TEST_TEAMS_DATA },

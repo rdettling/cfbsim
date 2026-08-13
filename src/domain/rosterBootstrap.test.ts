@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildTestLeague, buildTestTeam } from '../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestNamesData,
+  buildTestTeam,
+} from '../test/fixtures';
 import { createSeededRandom } from './utils/random';
 import {
   buildBootstrapClassTargets,
@@ -12,7 +16,7 @@ import {
   ROSTER,
 } from './rosterConfig';
 
-const names = {
+const names = buildTestNamesData({
   black: {
     first: [{ name: 'Alex', weight: 1 }],
     last: [{ name: 'Player', weight: 1 }],
@@ -21,7 +25,7 @@ const names = {
     first: [{ name: 'Sam', weight: 1 }],
     last: [{ name: 'Tester', weight: 1 }],
   },
-};
+});
 
 const buildInput = () => {
   const team = buildTestTeam({ prestige: 7 });

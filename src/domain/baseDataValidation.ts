@@ -9,6 +9,7 @@ import type {
   StatesData,
   TeamsData,
 } from '../types/baseData';
+import { POSITION_ORDER } from './rosterConfig';
 
 export const BETTING_ODDS_SEED = 20260812;
 export const BETTING_ODDS_SIMULATIONS = 1000;
@@ -162,22 +163,74 @@ export const validateNamesData = (
   source = 'names.json',
 ): NamesData => {
   const data = assertRecord(value, source, 'data');
-  assertExactKeys(data, ['black', 'white'], source, 'data');
-  for (const category of ['black', 'white'] as const) {
-    const group = assertRecord(data[category], source, category);
-    assertExactKeys(group, ['first', 'last'], source, category);
+  assertExactKeys(data, ['profiles', 'positionWeights'], source, 'data');
+  const profiles = assertRecord(data.profiles, source, 'profiles');
+  const profileIds = Object.keys(profiles);
+  if (!profileIds.length || profileIds.some(profile => !profile.trim())) {
+    fail(source, 'profiles', 'must contain at least one nonempty profile ID.');
+  }
+  for (const profile of profileIds) {
+    const group = assertRecord(profiles[profile], source, `profiles.${profile}`);
+    assertExactKeys(group, ['first', 'last'], source, `profiles.${profile}`);
     for (const kind of ['first', 'last'] as const) {
       const entries = group[kind];
-      if (!Array.isArray(entries) || !entries.length) fail(source, `${category}.${kind}`, 'must be a nonempty array.');
+      const field = `profiles.${profile}.${kind}`;
+      if (!Array.isArray(entries) || !entries.length) {
+        fail(source, field, 'must be a nonempty array.');
+      }
       const nameEntries = entries as unknown[];
+      const seen = new Set<string>();
       for (let index = 0; index < nameEntries.length; index += 1) {
-        const entry = assertRecord(nameEntries[index], source, `${category}.${kind}[${index}]`);
-        assertExactKeys(entry, ['name', 'weight'], source, `${category}.${kind}[${index}]`);
-        assertNonemptyString(entry.name, source, `${category}.${kind}[${index}].name`);
+        const entryField = `${field}[${index}]`;
+        const entry = assertRecord(nameEntries[index], source, entryField);
+        assertExactKeys(entry, ['name', 'weight'], source, entryField);
+        assertNonemptyString(entry.name, source, `${entryField}.name`);
+        const normalizedName = (entry.name as string).toLowerCase();
+        if (seen.has(normalizedName)) {
+          fail(source, `${entryField}.name`, 'must not duplicate another name.');
+        }
+        seen.add(normalizedName);
         if (typeof entry.weight !== 'number' || !Number.isFinite(entry.weight) || entry.weight <= 0) {
-          fail(source, `${category}.${kind}[${index}].weight`, 'must be a positive finite number.');
+          fail(source, `${entryField}.weight`, 'must be a positive finite number.');
         }
       }
+    }
+  }
+  const positionWeights = assertRecord(
+    data.positionWeights,
+    source,
+    'positionWeights',
+  );
+  assertExactKeys(positionWeights, POSITION_ORDER, source, 'positionWeights');
+  for (const position of POSITION_ORDER) {
+    const weights = assertRecord(
+      positionWeights[position],
+      source,
+      `positionWeights.${position}`,
+    );
+    assertExactKeys(weights, profileIds, source, `positionWeights.${position}`);
+    let total = 0;
+    for (const profile of profileIds) {
+      const weight = weights[profile];
+      if (
+        typeof weight !== 'number' ||
+        !Number.isFinite(weight) ||
+        weight < 0
+      ) {
+        fail(
+          source,
+          `positionWeights.${position}.${profile}`,
+          'must be a finite nonnegative number.',
+        );
+      }
+      total += weight as number;
+    }
+    if (Math.abs(total - 100) > 1e-9) {
+      fail(
+        source,
+        `positionWeights.${position}`,
+        `must total 100; received ${total}.`,
+      );
     }
   }
   return data as unknown as NamesData;

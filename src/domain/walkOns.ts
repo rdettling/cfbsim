@@ -2,6 +2,7 @@ import type { PlayerRecord } from '../types/db';
 import type { Team } from '../types/domain';
 import type { NamesData } from '../types/baseData';
 import { RosterFinalizationRuleError } from '../types/roster';
+import { validateNamesData } from './baseDataValidation';
 import {
   generateName,
   generatePlayerRatings,
@@ -25,28 +26,15 @@ export interface GenerateWalkOnsInput {
 }
 
 const assertWalkOnNames = (names: NamesData) => {
-  for (const category of ['black', 'white'] as const) {
-    const source = names[category];
-    const validEntries = (entries: typeof source.first | undefined) =>
-      Array.isArray(entries) &&
-      entries.length > 0 &&
-      entries.every(
-        entry =>
-          typeof entry.name === 'string' &&
-          entry.name.length > 0 &&
-          Number.isFinite(entry.weight) &&
-          entry.weight > 0,
-      );
-    if (
-      !source ||
-      !validEntries(source.first) ||
-      !validEntries(source.last)
-    ) {
-      throw new RosterFinalizationRuleError(
-        'INVALID_WALK_ON_DATA',
-        `Walk-on name category ${category} is malformed.`,
-      );
-    }
+  try {
+    validateNamesData(names, 'walk-on names');
+  } catch (error) {
+    throw new RosterFinalizationRuleError(
+      'INVALID_WALK_ON_DATA',
+      `Walk-on name data is malformed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
   }
 };
 

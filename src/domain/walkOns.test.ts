@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { NamesData } from '../types/baseData';
-import { buildTestPlayer, buildTestTeam } from '../test/fixtures';
+import {
+  buildTestNamesData,
+  buildTestPlayer,
+  buildTestTeam,
+} from '../test/fixtures';
 import {
   FINAL_ROSTER_SIZE,
   POSITION_ORDER,
@@ -8,7 +11,7 @@ import {
 } from './rosterConfig';
 import { generateWalkOns } from './walkOns';
 
-const names: NamesData = {
+const names = buildTestNamesData({
   black: {
     first: [{ name: 'Pat', weight: 1 }],
     last: [{ name: 'Walkon', weight: 1 }],
@@ -17,7 +20,7 @@ const names: NamesData = {
     first: [{ name: 'Sam', weight: 1 }],
     last: [{ name: 'Tryout', weight: 1 }],
   },
-};
+});
 
 const buildRoster = (count: number) => {
   let id = 1;
@@ -131,13 +134,16 @@ describe('walk-on generation', () => {
         teams: [buildTestTeam()],
         players: buildRoster(60),
         names: {
-          black: { first: [], last: [] },
-          white: names.white,
+          ...names,
+          profiles: {
+            ...names.profiles,
+            black: { first: [], last: [] },
+          },
         },
         year: 2026,
         seed: 1,
         nextPlayerId: 100,
       }),
-    ).toThrow(/name category black/);
+    ).toThrow(/profiles\.black\.first/);
   });
 });

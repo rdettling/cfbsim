@@ -5,6 +5,7 @@ import type {
   PlayerRecord,
   PlayerSeasonStats,
 } from '../types/db';
+import type { NamesData } from '../types/baseData';
 import type { LeagueStage, Team } from '../types/domain';
 import type { SeasonTeamSnapshot } from '../types/memory';
 import type { TeamAggregateTotals } from '../types/stats';
@@ -19,6 +20,38 @@ import teamsData from '../../public/data/teams.json';
 export const TEST_BETTING_ODDS_DATA = bettingOddsData;
 export const TEST_STATES_DATA = statesData;
 export const TEST_TEAMS_DATA = teamsData;
+
+const TEST_POSITION_NAME_WEIGHTS: NamesData['positionWeights'] = {
+  qb: { black: 15, white: 85 },
+  rb: { black: 70, white: 30 },
+  wr: { black: 70, white: 30 },
+  te: { black: 30, white: 70 },
+  ol: { black: 20, white: 80 },
+  dl: { black: 70, white: 30 },
+  lb: { black: 50, white: 50 },
+  cb: { black: 90, white: 10 },
+  s: { black: 70, white: 30 },
+  k: { black: 0, white: 100 },
+  p: { black: 0, white: 100 },
+};
+
+export const buildTestNamesData = (
+  profiles: NamesData['profiles'] = {
+    black: {
+      first: [{ name: 'Pat', weight: 1 }],
+      last: [{ name: 'Player', weight: 1 }],
+    },
+    white: {
+      first: [{ name: 'Sam', weight: 1 }],
+      last: [{ name: 'Tester', weight: 1 }],
+    },
+  },
+): NamesData => ({
+  profiles,
+  positionWeights: structuredClone(TEST_POSITION_NAME_WEIGHTS),
+});
+
+export const TEST_NAMES_DATA = buildTestNamesData();
 
 export const buildTestTeam = (overrides: Partial<Team> = {}): Team => ({
   id: 1,

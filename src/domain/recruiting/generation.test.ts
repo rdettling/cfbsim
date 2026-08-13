@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { buildTestPlayer, buildTestTeam } from '../../test/fixtures';
+import {
+  buildTestNamesData,
+  buildTestPlayer,
+  buildTestTeam,
+} from '../../test/fixtures';
 import { RECRUIT_STAR_COUNTS, STAR_RATING_TARGETS } from './config';
 import {
+  generateName,
   generatePlayerRatings,
   generateProspectPool,
 } from './generation';
 import { createSeededRandom } from '../utils/random';
 import { FINAL_ROSTER_SIZE, POSITION_ORDER } from '../rosterConfig';
 
-const names = {
+const names = buildTestNamesData({
   black: {
     first: [{ name: 'Alex', weight: 1 }],
     last: [{ name: 'Black', weight: 1 }],
@@ -17,9 +22,33 @@ const names = {
     first: [{ name: 'Sam', weight: 1 }],
     last: [{ name: 'White', weight: 1 }],
   },
-};
+});
 
 describe('recruiting prospect generation', () => {
+  it('selects names from position-weighted profiles', () => {
+    const controlled = buildTestNamesData({
+      black: {
+        first: [{ name: 'BlackFirst', weight: 1 }],
+        last: [{ name: 'BlackLast', weight: 1 }],
+      },
+      white: {
+        first: [{ name: 'WhiteFirst', weight: 1 }],
+        last: [{ name: 'WhiteLast', weight: 1 }],
+      },
+    });
+    controlled.positionWeights.qb = { black: 100, white: 0 };
+    controlled.positionWeights.cb = { black: 0, white: 100 };
+
+    expect(generateName('qb', controlled, createSeededRandom(1))).toEqual({
+      first: 'BlackFirst',
+      last: 'BlackLast',
+    });
+    expect(generateName('cb', controlled, createSeededRandom(1))).toEqual({
+      first: 'WhiteFirst',
+      last: 'WhiteLast',
+    });
+  });
+
   it('is seeded, complete, publicly ranked, and internally valid', () => {
     const teams = [
       buildTestTeam({ id: 1, state: 'TS', prestige: 4, ranking: 1 }),
