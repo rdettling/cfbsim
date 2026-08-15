@@ -54,14 +54,14 @@ describe('GameSimCoachPanel', () => {
     expect(markup).not.toContain('Call the next play');
     expect(markup).not.toContain('Let the simulator handle the selected scope.');
     expect(markup).not.toContain('Punt');
-    expect(markup).not.toContain('Field Goal');
+    expect(markup).toContain('Field Goal');
   });
 
-  it('adds special-teams calls only on fourth down', () => {
+  it('adds punts on fourth down while retaining the field-goal call', () => {
     const markup = renderToStaticMarkup(
       <GameSimCoachPanel
         {...baseProps}
-        decisionPrompt={{ ...prompt, type: 'fourth_down', down: 4 }}
+        decisionPrompt={{ ...prompt, down: 4 }}
       />,
     );
 

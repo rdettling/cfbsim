@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Chip, Link, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { DataTable } from '../../components/ui/DataTable';
-import { PLAYER_YEAR_LABELS } from './config';
+import { PLAYER_YEAR_LABELS } from '../../constants/player';
 import type { RosterViewProps } from './types';
 
 export const RosterDesktopTable = ({ groups }: RosterViewProps) => (

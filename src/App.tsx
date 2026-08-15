@@ -48,7 +48,7 @@ const App = () => {
             <Route path={ROUTES.NONCON} element={<NonCon />} />
             <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
             <Route path={ROUTES.NEWS} element={<News />} />
-            <Route path="/news/:year" element={<News />} />
+            <Route path={ROUTES.NEWS_YEAR} element={<News />} />
             <Route path={ROUTES.LEAGUE_HISTORY} element={<LeagueHistory />} />
             <Route path={ROUTES.LEAGUE_HISTORY_YEAR} element={<LeagueHistory />} />
             <Route path={ROUTES.LEAGUE_RECORDS} element={<LeagueRecords />} />

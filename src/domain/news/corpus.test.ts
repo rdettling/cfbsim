@@ -9,6 +9,7 @@ import { storyTemplateSupportsEntry } from './auditValidation';
 import {
   generateNewsAuditCorpus,
   type NewsAuditCorpusData,
+  type SeasonSimulationSnapshot,
 } from './corpus';
 import { createSeededRandom, withSeededMathRandom } from '../utils/random';
 import { deriveEditorialIdentity } from './policy';
@@ -42,8 +43,27 @@ const configuration = {
 describe('news editorial audit corpus', () => {
   it('is reproducible, varies by seed, covers the system, and carries series context', () => {
     const originalRandom = Math.random;
-    const first = generateNewsAuditCorpus(data, configuration);
+    const completedSeasons: SeasonSimulationSnapshot[] = [];
+    const first = generateNewsAuditCorpus(data, configuration, {
+      onSeasonComplete: snapshot => completedSeasons.push(snapshot),
+    });
     expect(Math.random).toBe(originalRandom);
+    expect(completedSeasons).toHaveLength(configuration.seasons);
+    expect(new Set(completedSeasons.map(snapshot => snapshot.season)).size)
+      .toBe(configuration.seasons);
+    completedSeasons.forEach(snapshot => {
+      expect(snapshot.games.every(game => game.year === snapshot.league.info.currentYear)).toBe(true);
+      const gameIds = new Set(snapshot.games.map(game => game.id));
+      expect(snapshot.logs.length).toBeGreaterThan(0);
+      expect(snapshot.logs.every(log => gameIds.has(log.gameId))).toBe(true);
+      expect(Object.keys(snapshot.teamRankingsByWeek).map(Number).sort((a, b) => a - b))
+        .toEqual([3, 9, 12, 15]);
+      Object.values(snapshot.teamRankingsByWeek).forEach(rankings => {
+        expect(rankings).toHaveLength(snapshot.league.teams.length);
+        expect(new Set(rankings.map(team => team.teamId)).size).toBe(rankings.length);
+        expect(new Set(rankings.map(team => team.ranking)).size).toBe(rankings.length);
+      });
+    });
     const replay = generateNewsAuditCorpus(data, configuration);
     const different = generateNewsAuditCorpus(data, { ...configuration, seed: 20260810 });
     const firstSummary = evaluateNewsAudit(first, configuration);

@@ -22,7 +22,7 @@ import type {
   BowlGameEntry,
   PlayoffBracket,
   PlayoffMatchup,
-} from './playoff';
+} from '../../../types/postseason';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
 export interface LeagueHistoryTeam {

@@ -151,10 +151,8 @@ export const loadPlayer = async (playerId: string) => {
       ? buildAwards(
           league,
           players,
-          gameLogs.filter(log => {
-            const game = gamesById.get(log.gameId);
-            return game?.year === league.info.currentYear && game.winnerId !== null;
-          }),
+          games,
+          gameLogs,
         ).final
           .filter(entry => entry.placements[0]?.player?.id === player.id)
           .map(entry => ({ slug: entry.categorySlug, name: entry.categoryName }))

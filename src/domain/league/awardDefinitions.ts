@@ -8,6 +8,12 @@ export const AWARD_DEFINITIONS = [
     group: 'overall',
   },
   {
+    slug: 'maxwell',
+    name: 'Maxwell Award',
+    description: 'College football player of the year',
+    group: 'overall',
+  },
+  {
     slug: 'davey_obrien',
     name: "Davey O'Brien Award",
     description: 'Top quarterback',
@@ -26,9 +32,21 @@ export const AWARD_DEFINITIONS = [
     group: 'offense',
   },
   {
+    slug: 'mackey',
+    name: 'John Mackey Award',
+    description: 'Top tight end',
+    group: 'offense',
+  },
+  {
     slug: 'bednarik',
     name: 'Bednarik Award',
     description: 'Defensive player of the year',
+    group: 'defense',
+  },
+  {
+    slug: 'nagurski',
+    name: 'Bronko Nagurski Trophy',
+    description: 'Outstanding defensive player',
     group: 'defense',
   },
   {

@@ -42,8 +42,8 @@ as season weeks advance.
   context.
 
 4. **Awards generation path**
-- `loadAwards()` and `loadSeasonSummary()` collect played-game logs for the current year.
-- `buildAwards(...)` computes live and final placements from shared stat aggregates and award-specific scoring heuristics.
+- `loadAwards()` and `loadSeasonSummary()` provide current-year games and logs to `buildAwards(...)`.
+- `buildAwards(...)` owns the award window, eligibility, normalized scoring, and live/final placements.
 
 ```mermaid
 flowchart TD
@@ -71,14 +71,16 @@ flowchart TD
 - **Postseason idempotence**:
   - Round creators exit when round IDs already populated, preventing duplicate bracket creation.
 - **Awards from logs, not roster ratings alone**:
-  - Player game logs are aggregated into stat caches (passing/rushing/receiving/defensive/kicking).
-  - Award calculators blend production, role/position expectations, and team context.
+  - Regular-season and conference-championship logs are aggregated into candidate profiles; bowls and playoff rounds do not count.
+  - Award-specific production and efficiency components become tied-midrank percentiles on a shared `0–100` scale.
+  - A 20% player-rating prior after Game 1 decays to zero after Game 6. Team win percentage affects only 10% of the Heisman score.
+  - Logged opportunity thresholds determine eligibility, and the same player may win multiple awards.
 
 ## Invariants
 
 - Ranking and record updates depend on completed game outcomes; unplayed games are excluded.
 - Postseason creation uses persistent playoff ID fields; bracket state is durable across reloads.
-- Awards only include logs from played games in current year scope.
+- Awards only include completed regular-season and conference-championship games from the current year.
 - Final postseason ranking pass ensures champion/runner-up placement before rank-based score normalization.
 
 ## Incomplete-State Handling
@@ -99,8 +101,10 @@ flowchart TD
   - `handleSpecialWeeks`, postseason round and bowl creators
 - `src/domain/league/postseason.ts`
   - postseason week constants and `lastWeek` mapping by playoff size
-- `src/domain/league/loaders/playoff.ts`
+- `src/domain/league/loaders/postseason/`
   - route-specific bracket, picture, résumé, and bowl view composition
+- `src/domain/league/utils/bowlSelection.ts`
+  - authoritative bowl catalog, rotation, classification, and matchup policy
 - `src/domain/league/awards.ts`
   - `buildAwards`, stat cache construction, award calculators
 - `src/domain/league/awardDefinitions.ts`

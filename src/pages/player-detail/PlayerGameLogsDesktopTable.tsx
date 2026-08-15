@@ -30,7 +30,7 @@ export const PlayerGameLogsDesktopTable = ({
   const columns = getGameColumns(category);
 
   return (
-    <DataTable ariaLabel="Player game logs" minWidth={880 + columns.length * 30}>
+    <DataTable embedded ariaLabel="Player game logs" minWidth={880 + columns.length * 30}>
       <TableHead>
         <TableRow sx={{ bgcolor: 'background.default' }}>
           <TableCell sx={{ width: 72 }}>Week</TableCell>

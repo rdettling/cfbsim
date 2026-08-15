@@ -1,29 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
+import { Stack } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadPlayer } from '../domain/league/loaders/team/loadPlayer';
 import type { PlayerPageData } from '../types/pages';
-import { PlayerCareerDesktopTable } from './player-detail/PlayerCareerDesktopTable';
-import { PlayerCareerMobileList } from './player-detail/PlayerCareerMobileList';
-import { PlayerGameLogsDesktopTable } from './player-detail/PlayerGameLogsDesktopTable';
-import { PlayerGameLogsMobileList } from './player-detail/PlayerGameLogsMobileList';
-import { PlayerProfile } from './player-detail/PlayerProfile';
-import { PlayerOrigin } from './player-detail/PlayerOrigin';
-
-type PlayerTab = 'career' | 'logs';
+import { PlayerStatsWorkspace, type PlayerTab } from './player-detail/PlayerStatsWorkspace';
+import { PlayerSummary } from './player-detail/PlayerSummary';
 
 const Player = () => {
   const { playerId } = useParams();
@@ -57,11 +41,12 @@ const Player = () => {
           Boolean(entry.season),
         )
     : [];
+  const latestYear = years[0] ?? null;
   const gameLogs = data && selectedYear ? (data.game_logs[selectedYear] ?? []) : [];
 
   useEffect(() => {
-    setSelectedYear(years[0] ?? null);
-  }, [playerId, years[0]]);
+    setSelectedYear(latestYear);
+  }, [playerId, latestYear]);
 
   const handleTeamClick = (teamName: string) => {
     setSelectedTeam(teamName);
@@ -87,101 +72,34 @@ const Player = () => {
     >
       {data && (
         <>
-          <PlayerProfile
-            player={data.player}
-            awards={data.awards}
-            teamColor={data.team.colorPrimary}
-            onTeamClick={handleTeamClick}
-          />
-          <PlayerOrigin origin={data.origin} onTeamClick={handleTeamClick} />
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1}
+            spacing={1.25}
             sx={{
-              alignItems: { xs: 'stretch', sm: 'center' },
-              justifyContent: 'space-between',
-              mb: 1.25,
-              borderBottom: 1,
-              borderColor: 'divider',
+              height: { lg: '100%' },
+              minHeight: { lg: 0 },
+              overflow: { lg: 'hidden' },
             }}
           >
-            <Tabs
-              value={activeTab}
-              onChange={(_, value: PlayerTab) => setActiveTab(value)}
-              aria-label="Player statistics"
-              sx={{ minHeight: 40 }}
-            >
-              <Tab value="career" label="Career" sx={{ minHeight: 40 }} />
-              <Tab value="logs" label="Game Logs" sx={{ minHeight: 40 }} />
-            </Tabs>
-            {activeTab === 'logs' && years.length > 0 && (
-              <FormControl size="small" sx={{ minWidth: 116, mb: { xs: 1, sm: 0.75 } }}>
-                <InputLabel id="player-log-year-label">Year</InputLabel>
-                <Select
-                  labelId="player-log-year-label"
-                  value={selectedYear ?? ''}
-                  label="Year"
-                  onChange={(event) => setSelectedYear(Number(event.target.value))}
-                >
-                  {years.map((year) => (
-                    <MenuItem key={year} value={year}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
+            <PlayerSummary
+              player={data.player}
+              awards={data.awards}
+              origin={data.origin}
+              teamColor={data.team.colorPrimary}
+              onTeamClick={handleTeamClick}
+            />
+            <PlayerStatsWorkspace
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              years={years}
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
+              seasons={seasons}
+              gameLogs={gameLogs}
+              category={data.stat_category}
+              gameLogScope={data.gameLogScope}
+              onTeamClick={handleTeamClick}
+            />
           </Stack>
-
-          {activeTab === 'career' ? (
-            seasons.length > 0 ? (
-              <>
-                <PlayerCareerDesktopTable seasons={seasons} category={data.stat_category} />
-                <PlayerCareerMobileList seasons={seasons} category={data.stat_category} />
-              </>
-            ) : (
-              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="h6">No career statistics available</Typography>
-              </Paper>
-            )
-          ) : gameLogs.length > 0 ? (
-            <>
-              {data.gameLogScope === 'retained_postseason_only' && (
-                <Paper variant="outlined" sx={{ p: 1.25, mb: 1 }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Career totals are complete. Game-by-game history is limited to retained
-                    conference championship and playoff games.
-                  </Typography>
-                </Paper>
-              )}
-              <PlayerGameLogsDesktopTable
-                logs={gameLogs}
-                category={data.stat_category}
-                onTeamClick={handleTeamClick}
-              />
-              <PlayerGameLogsMobileList
-                logs={gameLogs}
-                category={data.stat_category}
-                onTeamClick={handleTeamClick}
-              />
-            </>
-          ) : (
-            <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6">No games played this season</Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                  mt: 0.5,
-                }}
-              >
-                {data.gameLogScope === 'retained_postseason_only'
-                  ? 'Career totals are complete; ordinary historical game detail is not retained.'
-                  : 'Game logs will appear after this player records statistics.'}
-              </Typography>
-            </Paper>
-          )}
-
           <TeamInfoModal
             teamName={selectedTeam}
             open={modalOpen}

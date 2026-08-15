@@ -4,6 +4,7 @@ export const ROUTES = {
   NONCON: '/noncon',
   DASHBOARD: '/dashboard',
   NEWS: '/news',
+  NEWS_YEAR: '/news/:year',
   LEAGUE_HISTORY: '/league/history',
   LEAGUE_HISTORY_YEAR: '/league/history/:year',
   LEAGUE_RECORDS: '/league/records',

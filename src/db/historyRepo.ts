@@ -185,7 +185,6 @@ const DETAIL_DRIVE_KEYS = [
   'startingFP',
   'result',
   'points',
-  'points_needed',
   'scoreAAfter',
   'scoreBAfter',
   'plays',
@@ -203,7 +202,7 @@ export const isGameDetail = (value: unknown): value is GameDetailRecord => {
   return value.drives.every(drive =>
     isRecord(drive) &&
     exact(drive, DETAIL_DRIVE_KEYS) &&
-    ['driveNum', 'offenseId', 'defenseId', 'startingFP', 'points', 'points_needed',
+    ['driveNum', 'offenseId', 'defenseId', 'startingFP', 'points',
       'scoreAAfter', 'scoreBAfter'].every(key => finite(drive[key])) &&
     typeof drive.result === 'string' &&
     Array.isArray(drive.plays) &&

@@ -13,7 +13,7 @@ const situation = (
   down: 1,
   yardsLeft: 5,
   fieldPosition: 25,
-  lead: 0,
+  offenseLead: 0,
   clock: { quarter: 1, secondsLeft: 900, clockRunning: true },
   ...overrides,
 });
@@ -42,13 +42,13 @@ describe('defensive intents', () => {
     expect(redZone.coverage).toBeGreaterThan(0.25);
 
     const protectingLead = defensiveIntentWeights(situation({
-      lead: -7,
+      offenseLead: -7,
       clock: { quarter: 4, secondsLeft: 180, clockRunning: true },
     }));
     expect(protectingLead.coverage).toBeGreaterThan(0.25);
 
     const trailing = defensiveIntentWeights(situation({
-      lead: 7,
+      offenseLead: 7,
       clock: { quarter: 4, secondsLeft: 180, clockRunning: true },
     }));
     expect(trailing.loaded_box).toBeGreaterThan(0.2);

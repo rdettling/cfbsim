@@ -9,4 +9,9 @@ describe('statistics routes', () => {
     expect(getTeamStatsPath('Georgia')).toBe('/Georgia/stats');
     expect(getTeamStatsPath('Georgia', 2024)).toBe('/Georgia/stats/2024');
   });
+
+  it('defines both current and historical league news routes', () => {
+    expect(ROUTES.NEWS).toBe('/news');
+    expect(ROUTES.NEWS_YEAR).toBe('/news/:year');
+  });
 });

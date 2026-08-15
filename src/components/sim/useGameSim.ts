@@ -150,9 +150,6 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
       simGame: context.simGame,
       inOvertime: context.inOvertime,
       overtimePossession: context.otPossession,
-      simContext: driveState && !context.inOvertime
-        ? buildSimContext(context, true)
-        : null,
     }));
   };
 
@@ -597,6 +594,7 @@ export const useGameSim = ({ gameId }: { gameId: number | null }) => {
       isTeamAOnOffense: viewModel.isTeamAOnOffense,
       openingIsTeamA: context?.openingIsTeamA ?? true,
       fieldPosition: viewModel.fieldPosition,
+      previousPlayYards: viewModel.previousPlayYards,
       lastPlayText: viewModel.lastPlayText,
       quarter: viewModel.quarter,
       clockSecondsLeft: viewModel.clockSecondsLeft,

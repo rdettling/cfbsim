@@ -17,8 +17,8 @@ resolver as automatic simulation.
 The runtime is organized around direct domain modules:
 
 - `engine.ts` owns game orchestration, hydration, and final results.
-- `drive.ts` owns drive initialization, the authoritative single-play
-  resolver, and the batch drive loop.
+- `drive.ts` owns drive initialization, single-play dispatch, and the batch
+  drive loop; focused regulation and try modules own resolution.
 - `outcomes.ts`, `concepts.ts`, and `defensiveIntents.ts` own team-level
   football outcomes and matchup shaping.
 - `clock.ts`, `clockManagement.ts`, and `conversions.ts` own causal regulation
@@ -37,7 +37,7 @@ The diagnostic layer is separate from gameplay:
 - `stabilityStatistics.ts` owns pure variance and sensitivity calculations;
   `stabilityAudit.ts` owns the expensive offline orchestration.
 
-IndexedDB schema 21 persists exact play calls, participants, timing, results,
+IndexedDB schema 24 persists exact play calls, participants, timing, results,
 and score progression. Batch and live simulation use the same resolver and
 enforce the same 200-play drive limit.
 
@@ -60,7 +60,7 @@ enforce the same 200-play drive limit.
 ## Current Calibration State
 
 The modern-FBS tuner candidate is now the accepted runtime baseline. The
-simulation checksum is `66ccddc7`; the representative news-content checksum is
+simulation checksum is `1b914e9a`; the representative news-content checksum is
 `b2218e6b`. `eval:sim` passes all replay, state, relationship, balance, and
 rating-authority gates.
 

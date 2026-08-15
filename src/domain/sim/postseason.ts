@@ -19,6 +19,8 @@ import {
 import { finalizePostseasonRankings } from './rankings';
 import { buildPlayoffSelection } from '../league/utils/playoffSelection';
 import { buildResumeComparisonSnapshot } from '../league/utils/resumeComparison';
+import { buildBowlMatchups } from '../league/utils/bowlSelection';
+import { sortStandingsTeams } from '../league/utils/standings';
 import { generatePlayoffFieldNews } from '../news/rankings';
 
 const isConferenceGame = (teamA: Team, teamB: Team) =>
@@ -34,116 +36,6 @@ const updateTeamGameCounts = (teamA: Team, teamB: Team) => {
   }
 };
 
-const NY6_BOWLS = [
-  'Rose Bowl',
-  'Sugar Bowl',
-  'Orange Bowl',
-  'Cotton Bowl',
-  'Fiesta Bowl',
-  'Peach Bowl',
-] as const;
-
-const AT_LARGE_BOWLS = [
-  'Alamo Bowl',
-  'Citrus Bowl',
-  'Holiday Bowl',
-  'Gator Bowl',
-  'Sun Bowl',
-  'Liberty Bowl',
-  'Las Vegas Bowl',
-  'Music City Bowl',
-  'Texas Bowl',
-  'Pinstripe Bowl',
-  'Camping World Bowl',
-  'Cheez-It Bowl',
-  'Outback Bowl',
-  "Duke's Mayo Bowl",
-  'ReliaQuest Bowl',
-] as const;
-
-const ROTATION_SEMIS: Array<[typeof NY6_BOWLS[number], typeof NY6_BOWLS[number]]> = [
-  ['Rose Bowl', 'Sugar Bowl'],
-  ['Orange Bowl', 'Cotton Bowl'],
-  ['Fiesta Bowl', 'Peach Bowl'],
-];
-
-const getNy6PlayoffHosts = (year: number, playoffTeams: number) => {
-  if (playoffTeams === 2) {
-    return { semis: [] as string[], quarters: [] as string[] };
-  }
-  const rotationIndex = Math.abs(year) % ROTATION_SEMIS.length;
-  const semis = ROTATION_SEMIS[rotationIndex].slice();
-  if (playoffTeams === 4) {
-    return { semis, quarters: [] as string[] };
-  }
-  const quarters = NY6_BOWLS.filter(bowl => !semis.includes(bowl));
-  return { semis, quarters };
-};
-
-const pickBestTeam = (
-  teams: Team[],
-  usedIds: Set<number>,
-  predicate: (team: Team) => boolean
-) => {
-  const team = teams.find(entry => !usedIds.has(entry.id) && predicate(entry));
-  if (!team) return null;
-  usedIds.add(team.id);
-  return team;
-};
-
-const buildBowlMatchups = (
-  league: LeagueState,
-  playoffTeamIds: Set<number>,
-  ny6Available: string[]
-) => {
-  const eligible = league.teams
-    .filter(team => !playoffTeamIds.has(team.id) && team.totalWins >= 6)
-    .slice()
-    .sort((a, b) => a.ranking - b.ranking);
-  const usedIds = new Set<number>();
-
-  const takeBest = () => pickBestTeam(eligible, usedIds, () => true);
-  const takeConf = (confName: string) =>
-    pickBestTeam(eligible, usedIds, team => team.conference === confName);
-
-  const matchups: Array<{ name: string; teamA: Team; teamB: Team }> = [];
-
-  if (ny6Available.includes('Rose Bowl')) {
-    const teamA = takeConf('Big Ten') ?? takeBest();
-    const teamB = takeConf('Pac-12') ?? takeBest();
-    if (teamA && teamB) matchups.push({ name: 'Rose Bowl', teamA, teamB });
-  }
-
-  if (ny6Available.includes('Sugar Bowl')) {
-    const teamA = takeConf('SEC') ?? takeBest();
-    const teamB = takeConf('Big 12') ?? takeBest();
-    if (teamA && teamB) matchups.push({ name: 'Sugar Bowl', teamA, teamB });
-  }
-
-  if (ny6Available.includes('Orange Bowl')) {
-    const teamA = takeConf('ACC') ?? takeBest();
-    const teamB = takeBest();
-    if (teamA && teamB) matchups.push({ name: 'Orange Bowl', teamA, teamB });
-  }
-
-  const atLargeNy6 = ['Cotton Bowl', 'Fiesta Bowl', 'Peach Bowl'];
-  atLargeNy6.forEach(bowl => {
-    if (!ny6Available.includes(bowl)) return;
-    const teamA = takeBest();
-    const teamB = takeBest();
-    if (teamA && teamB) matchups.push({ name: bowl, teamA, teamB });
-  });
-
-  for (const bowl of AT_LARGE_BOWLS) {
-    const teamA = takeBest();
-    const teamB = takeBest();
-    if (!teamA || !teamB) break;
-    matchups.push({ name: bowl, teamA, teamB });
-  }
-
-  return matchups;
-};
-
 const setBowls = async (
   league: LeagueState,
   oddsContext: Awaited<ReturnType<typeof loadOddsContext>>
@@ -157,11 +49,13 @@ const setBowls = async (
   }
 
   const playoffTeamIds = new Set<number>(league.playoff.seeds);
-  const hosts = getNy6PlayoffHosts(league.info.currentYear, playoffTeams);
-  const ny6Unavailable = new Set([...hosts.semis, ...hosts.quarters]);
-  const ny6Available = NY6_BOWLS.filter(bowl => !ny6Unavailable.has(bowl));
-
-  const matchups = buildBowlMatchups(league, playoffTeamIds, ny6Available);
+  const matchups = buildBowlMatchups({
+    teams: league.teams,
+    playoffTeamIds,
+    year: league.info.currentYear,
+    playoffTeams,
+    requireEligibility: true,
+  });
   if (!matchups.length) return;
 
   const gamesToCreate = matchups.map(({ name, teamA, teamB }) =>
@@ -225,20 +119,6 @@ const createGameRecord = (
   return record;
 };
 
-const sortConferenceTeams = (teams: Team[]) => {
-  return teams.slice().sort((a, b) => {
-    const aGames = a.confWins + a.confLosses;
-    const bGames = b.confWins + b.confLosses;
-    const aPct = aGames ? a.confWins / aGames : 0;
-    const bPct = bGames ? b.confWins / bGames : 0;
-    if (bPct !== aPct) return bPct - aPct;
-    if (b.confWins !== a.confWins) return b.confWins - a.confWins;
-    if (a.ranking !== b.ranking) return a.ranking - b.ranking;
-    if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
-    return a.totalLosses - b.totalLosses;
-  });
-};
-
 const getConferenceChampion = async (
   league: LeagueState,
   conferenceName: string,
@@ -255,7 +135,7 @@ const getConferenceChampion = async (
   }
 
   const conferenceTeams = league.teams.filter(team => team.conference === conferenceName);
-  const sorted = sortConferenceTeams(conferenceTeams);
+  const sorted = sortStandingsTeams(conferenceTeams);
   return sorted[0] ?? null;
 };
 
@@ -298,7 +178,7 @@ const setConferenceChampionships = async (
     if (conference.championship) return;
 
     const conferenceTeams = league.teams.filter(team => team.conference === conference.confName);
-    const sortedTeams = sortConferenceTeams(conferenceTeams);
+    const sortedTeams = sortStandingsTeams(conferenceTeams);
     const teamA = sortedTeams[0];
     const teamB = sortedTeams[1];
     if (!teamA || !teamB) return;

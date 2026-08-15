@@ -1,4 +1,5 @@
 import type { StageDefinition } from '../../constants/stages';
+import { ROUTES } from '../../constants/routes';
 import type { Conference, Info, LeagueStage, Team } from '../../types/domain';
 
 export interface AppNavigationData {
@@ -62,7 +63,7 @@ export const buildNavigationModel = ({
       desktopLabel: 'League',
       mobileLabel: 'League',
       items: [
-        { type: 'item', label: 'News', path: '/news', match: 'prefix' },
+        { type: 'item', label: 'News', path: ROUTES.NEWS, match: 'prefix' },
         { type: 'item', label: 'Awards', path: '/awards' },
         { type: 'item', label: 'History', path: '/league/history', match: 'prefix' },
         { type: 'item', label: 'Records', path: '/league/records' },

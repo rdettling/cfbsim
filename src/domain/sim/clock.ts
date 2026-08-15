@@ -6,17 +6,11 @@ import type {
   PlayTiming,
   RegulationClockEvent,
 } from '../../types/db';
-import type { SimGame } from '../../types/sim';
+import type { ClockState, SimGame } from '../../types/sim';
 import { createSeededRandom } from '../utils/random';
 import { SIM_TUNING } from './config';
 
 export const SECONDS_PER_QUARTER = 15 * 60;
-
-export type ClockState = {
-  quarter: number;
-  secondsLeft: number;
-  clockRunning: boolean;
-};
 
 export type ClockPlayContext = {
   playType: string;

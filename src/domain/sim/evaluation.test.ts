@@ -58,17 +58,15 @@ describe('simulation evaluation', () => {
   it('characterizes the accepted modern-FBS baseline', () => {
     const result = evaluateSimulation({ seed: 20260809, gamesPerDiff: 1000 });
 
-    expect(result.checksum).toBe('66ccddc7');
-    expect(SIM_EVALUATION_BASELINE_CHECKSUM).toBe('66ccddc7');
+    expect(result.checksum).toBe('1b914e9a');
+    expect(SIM_EVALUATION_BASELINE_CHECKSUM).toBe('1b914e9a');
     const productionGaps = result.calibrationGaps.filter(gap => gap.startsWith('production.'));
     expect(productionGaps).toEqual([
-      'production.fourthDownConversionRate:high',
-      'production.fumblesLostPerGame:high',
       'production.madeFieldGoalsPerGame:low',
       'production.passingYardsPerAttempt:low',
       'production.passingYardsPerCompletion:low',
       'production.redZoneTouchdownRate:high',
-      'production.turnoversPerGame:high',
+      'production.touchdownsPerGame:low',
     ]);
     expect(result.violations).toEqual([]);
     expect(result.calibration.benchmark.sourceChecksum).toBe('01fba155');

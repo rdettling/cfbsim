@@ -98,7 +98,7 @@ export const buildTestLeague = (
   overrides: Partial<LeagueState> = {},
 ): LeagueState => {
   const team = buildTestTeam();
-  return {
+  const league: LeagueState = {
     info: {
       currentWeek: 18,
       lastRankingsWeek: 17,
@@ -134,6 +134,40 @@ export const buildTestLeague = (
     },
     ...overrides,
   };
+  if (stage === 'summary' && overrides.resumeSnapshot === undefined) {
+    const ordered = [...league.teams].sort((left, right) =>
+      left.ranking - right.ranking || left.id - right.id);
+    const frozenRankById = new Map(ordered.map((candidate, index) =>
+      [candidate.id, index + 1]));
+    league.resumeSnapshot = {
+      year: league.info.currentYear,
+      frozenAfterWeek: 15,
+      playoff: {
+        teams: league.settings.playoffTeams,
+        autobids: league.settings.playoffAutobids,
+        conferenceChampionsReceiveTopSeeds:
+          league.settings.conferenceChampionsReceiveTopSeeds,
+      },
+      teams: league.teams.map(candidate => ({
+        teamId: candidate.id,
+        name: candidate.name,
+        ranking: frozenRankById.get(candidate.id)!,
+        conference: candidate.conference,
+        record: candidate.record,
+        pollScore: candidate.poll_score,
+        sorRank: frozenRankById.get(candidate.id)!,
+        sosRank: null,
+        top25Record: '0-0',
+        bestWin: null,
+        worstLoss: null,
+        seed: null,
+        isAutobid: false,
+        hasBye: false,
+        isChampion: false,
+      })),
+    };
+  }
+  return league;
 };
 
 export const buildTestPlayer = (

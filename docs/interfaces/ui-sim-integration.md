@@ -87,10 +87,12 @@ sequenceDiagram
 - **Decision gating**:
   - Offensive prompts render when the user team has possession. Defensive
     prompts render before every opponent scrimmage snap without revealing the
-    opponent concept; fourth-down punts and field goals skip the prompt.
+    opponent concept; automatic punts, field goals, spikes, and kneels skip the
+    prompt.
   - Run concepts (Inside, Outside, Option) and pass concepts (Quick,
     Intermediate, Deep, Screen, Play Action) are one-tap grouped actions;
-    Punt and Field Goal appear only on fourth down.
+    Field Goal appears on every regulation scrimmage down; Punt appears only on
+    fourth down.
   - Defensive actions are Base, Loaded Box, Coverage, and Pressure. The full
     matchup is revealed in drive history after resolution.
   - After a user-team touchdown, Kick and the existing run/pass concept groups
@@ -100,9 +102,10 @@ sequenceDiagram
   - Offensive tempo is Auto, Normal, Hurry, or Chew and persists for the current
     possession. A side-aware timeout toggle arms one conditional post-play use
     and clears after the next snap whether or not it is charged.
-  - Spike and Kneel appear only in their valid late-half contexts. A deterministic
-    CPU spike or kneel suppresses the blind defensive-intent prompt while leaving
-    the user's timeout control available.
+  - Spike and Kneel appear only in their valid late-half contexts. Any
+    deterministic CPU clock-management or special-teams action suppresses the
+    blind defensive-intent prompt while leaving the user's timeout control
+    available.
 - **Serialized advancement**:
   - Play, drive, and game advancement share one guarded action boundary so
     overlapping clicks cannot mutate the same session.

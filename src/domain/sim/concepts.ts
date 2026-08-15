@@ -1,5 +1,5 @@
 import type { OffensiveConcept, PlayCall } from '../../types/db';
-import type { ClockState } from './clock';
+import type { PlaySituation } from '../../types/sim';
 import { SIM_TUNING } from './config';
 import { isDefensiveIntent } from './defensiveIntents';
 import { isClockManagementAction } from './clockManagement';
@@ -77,7 +77,9 @@ export const validatePlayCall = (
 ) => {
   const errors: string[] = [];
   if (!isPlayCall(call)) return ['invalid play call'];
-  if (call.kind === 'special_teams' && down !== 4) errors.push('special teams before fourth down');
+  if (call.kind === 'special_teams' && call.concept === 'punt' && down !== 4) {
+    errors.push('punt before fourth down');
+  }
   if (call.kind === 'clock_management' && call.action === 'spike' && down > 3) {
     errors.push('spike on fourth down');
   }
@@ -85,14 +87,6 @@ export const validatePlayCall = (
     errors.push('call and play type disagree');
   }
   return errors;
-};
-
-export type ConceptSituation = {
-  down: number;
-  yardsLeft: number;
-  fieldPosition: number;
-  lead: number;
-  clock: ClockState;
 };
 
 const multiply = (
@@ -106,7 +100,7 @@ const multiply = (
 
 export const conceptWeights = (
   playType: 'run' | 'pass',
-  situation: ConceptSituation,
+  situation: PlaySituation,
 ): Record<string, number> => {
   const base = playType === 'run'
     ? SIM_TUNING.concepts.automatic.run
@@ -117,8 +111,8 @@ export const conceptWeights = (
   if (situation.yardsLeft >= 7) multiply(weights, adjustments.longYardage);
   if (situation.fieldPosition >= 80) multiply(weights, adjustments.redZone);
   const late = situation.clock.quarter === 4 && situation.clock.secondsLeft <= 300;
-  if (late && situation.lead < 0) multiply(weights, adjustments.lateTrailing);
-  if (late && situation.lead > 0) multiply(weights, adjustments.lateLeading);
+  if (late && situation.offenseLead < 0) multiply(weights, adjustments.lateTrailing);
+  if (late && situation.offenseLead > 0) multiply(weights, adjustments.lateLeading);
   return weights;
 };
 
@@ -136,7 +130,7 @@ const weightedConcept = (weights: Record<string, number>) => {
 
 export const chooseOffensiveCall = (
   playType: 'run' | 'pass',
-  situation: ConceptSituation,
+  situation: PlaySituation,
 ): OffensiveConcept => weightedConcept(conceptWeights(playType, situation));
 
 export const isRunConcept = (concept: OffensiveConcept): concept is RunConcept =>

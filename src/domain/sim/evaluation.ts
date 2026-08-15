@@ -40,7 +40,7 @@ import {
 
 const BASE_RATING = 75;
 export const SIM_EVALUATION_DIFFS = [0, 7, 14, 21] as const;
-export const SIM_EVALUATION_BASELINE_CHECKSUM = '66ccddc7';
+export const SIM_EVALUATION_BASELINE_CHECKSUM = '1b914e9a';
 
 const DRIVE_ENDING_CATEGORIES = [
   'touchdown',

@@ -59,7 +59,7 @@ export const runNewsAudit = (arguments_: string[]) => {
     seeds: options.seeds,
     seasons: options.seasons,
     startYear: START_YEAR,
-  }, rankingEntries, previewEntries);
+  }, { rankingEntries, previewEntries });
   const configuration = {
     seed: options.seed,
     seeds: options.seeds,

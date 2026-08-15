@@ -1,5 +1,5 @@
 import type { ConferencesData, TeamsData, SeasonData } from '../../types/baseData';
-import type { GameRecord, PlayerRecord } from '../../types/db';
+import type { GameLogRecord, GameRecord, PlayerRecord } from '../../types/db';
 import type { Team } from '../../types/domain';
 import { DEFAULT_NEXT_SEASON_CONFIGURATION, type LeagueState } from '../../types/league';
 import type { GameType } from '../../types/news';
@@ -64,6 +64,23 @@ export interface NewsAuditCorpusOptions {
   startYear: number;
 }
 
+export interface SeasonSimulationSnapshot {
+  rootSeed: number;
+  sample: number;
+  season: number;
+  league: LeagueState;
+  players: PlayerRecord[];
+  games: GameRecord[];
+  logs: GameLogRecord[];
+  teamRankingsByWeek: Record<number, Array<{ teamId: number; ranking: number }>>;
+}
+
+export interface NewsAuditCorpusSinks {
+  rankingEntries?: RankingNewsAuditEntry[];
+  previewEntries?: PreviewNewsAuditEntry[];
+  onSeasonComplete?: (snapshot: SeasonSimulationSnapshot) => void;
+}
+
 const BOWL_NAMES = [
   'Rose Bowl',
   'Sugar Bowl',
@@ -81,6 +98,8 @@ const BOWL_NAMES = [
   'Music City Bowl',
   'Texas Bowl',
 ] as const;
+
+const AWARD_RANKING_CHECKPOINTS = new Set([3, 9, 12, 15]);
 
 const buildLeague = (
   year: number,
@@ -230,6 +249,7 @@ const completeGame = ({
   starters,
   playersById,
   allGames,
+  allLogs,
   odds,
   rootSeed,
   sample,
@@ -240,6 +260,7 @@ const completeGame = ({
   starters: ReturnType<typeof buildStartersCacheFromPlayers>;
   playersById: Map<number, PlayerRecord>;
   allGames: GameRecord[];
+  allLogs: GameLogRecord[];
   odds: OddsContext;
   rootSeed: number;
   sample: number;
@@ -253,6 +274,7 @@ const completeGame = ({
   const driveRecords = drives.map(drive => drive.record);
   const plays = drives.flatMap(drive => drive.plays);
   const logs = createGameLogsFromPlays(simulated, plays, starters);
+  allLogs.push(...logs);
   record.scoreA = simulated.scoreA;
   record.scoreB = simulated.scoreB;
   record.winnerId = simulated.winner!.id;
@@ -495,9 +517,9 @@ const buildPostseason = (
 export const generateNewsAuditCorpus = (
   data: NewsAuditCorpusData,
   options: NewsAuditCorpusOptions,
-  rankingEntries?: RankingNewsAuditEntry[],
-  previewEntries?: PreviewNewsAuditEntry[],
+  sinks: NewsAuditCorpusSinks = {},
 ): NewsAuditEntry[] => {
+  const { rankingEntries, previewEntries, onSeasonComplete } = sinks;
   const entries: NewsAuditEntry[] = [];
   for (let sample = 0; sample < options.seeds; sample += 1) {
     const rootSeed = (options.seed + sample) >>> 0;
@@ -510,6 +532,16 @@ export const generateNewsAuditCorpus = (
     let defendingChampionId: number | null = null;
     withSeededMathRandom(random.fork('game-simulation'), () => {
       for (let season = 0; season < options.seasons; season += 1) {
+        const seasonGames: GameRecord[] = [];
+        const seasonLogs: GameLogRecord[] = [];
+        const teamRankingsByWeek: SeasonSimulationSnapshot['teamRankingsByWeek'] = {};
+        const captureTeamRankings = (week: number) => {
+          if (!AWARD_RANKING_CHECKPOINTS.has(week)) return;
+          teamRankingsByWeek[week] = league.teams.map(team => ({
+            teamId: team.id,
+            ranking: team.ranking,
+          }));
+        };
         league.info.currentYear = options.startYear + season;
         resetSeasonRecords(league.teams);
         const resolution = resolveRivalries({
@@ -531,6 +563,7 @@ export const generateNewsAuditCorpus = (
         );
         const regular = fullGames.map(game => recordFromFullGame(league, game, odds));
         allGames.push(...regular);
+        seasonGames.push(...regular);
         previewEntries?.push(buildPreviewNewsAuditEntry({
           auditId: `preview:${rootSeed}:${sample}:${league.info.currentYear}`,
           source: 'simulation',
@@ -549,32 +582,39 @@ export const generateNewsAuditCorpus = (
             starters,
             playersById,
             allGames,
+            allLogs: seasonLogs,
             odds,
             rootSeed,
             sample,
             season,
           }, rankingEntries));
+          captureTeamRankings(week);
         }
         league.info.currentWeek = 15;
         const championships = conferenceChampionships(league, odds);
         allGames.push(...championships);
+        seasonGames.push(...championships);
         entries.push(...playRound(league, championships, {
           starters,
           playersById,
           allGames,
+          allLogs: seasonLogs,
           odds,
           rootSeed,
           sample,
           season,
         }));
+        captureTeamRankings(15);
         const play = (records: GameRecord[]) => {
           if (!records.length) return [];
           league.info.currentWeek = records[0].weekPlayed;
           allGames.push(...records);
+          seasonGames.push(...records);
           return playRound(league, records, {
             starters,
             playersById,
             allGames,
+            allLogs: seasonLogs,
             odds,
             rootSeed,
             sample,
@@ -582,6 +622,16 @@ export const generateNewsAuditCorpus = (
           });
         };
         entries.push(...buildPostseason(league, odds, play));
+        onSeasonComplete?.({
+          rootSeed,
+          sample,
+          season,
+          league: structuredClone(league),
+          players,
+          games: seasonGames,
+          logs: seasonLogs,
+          teamRankingsByWeek,
+        });
         defendingChampionId = [...allGames].reverse().find(game =>
           game.year === league.info.currentYear &&
           game.gameType === 'national_championship')?.winnerId ?? null;

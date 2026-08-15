@@ -50,7 +50,10 @@ describe('player origin loading', () => {
       games: 1,
     });
     await db.put('seasonMemories', buildTestSeasonMemory({
-      awards: [{ categorySlug: 'heisman', playerId: historical.id, teamId: 1 }],
+      awards: [
+        { categorySlug: 'heisman', playerId: historical.id, teamId: 1 },
+        { categorySlug: 'maxwell', playerId: historical.id, teamId: 1 },
+      ],
     }));
     await db.put('playerOrigins', {
       playerId: walkOn.id,
@@ -101,7 +104,10 @@ describe('player origin loading', () => {
         nationalRank: 18,
         originalTeam: 'Test State',
       },
-      awards: [{ slug: 'heisman', name: 'Heisman Trophy' }],
+      awards: [
+        { slug: 'heisman', name: 'Heisman Trophy' },
+        { slug: 'maxwell', name: 'Maxwell Award' },
+      ],
     });
     await expect(loadPlayer('4')).resolves.toMatchObject({
       origin: {

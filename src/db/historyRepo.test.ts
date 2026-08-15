@@ -112,7 +112,6 @@ describe('historical data integrity', () => {
       startingFP: 25,
       result: 'punt',
       points: 0,
-      points_needed: 0,
       scoreAAfter: 0,
       scoreBAfter: 0,
     };
@@ -148,6 +147,13 @@ describe('historical data integrity', () => {
       details: [linkedDetail],
       gameIds: new Set([2]),
     })).not.toThrow();
+    expect(isGameDetail({
+      ...linkedDetail,
+      drives: linkedDetail.drives.map(value => ({
+        ...value,
+        points_needed: 0,
+      })),
+    })).toBe(false);
     expect(isGameDetail({
       ...linkedDetail,
       drives: linkedDetail.drives.map(value => ({
@@ -263,7 +269,6 @@ describe('historical data integrity', () => {
       startingFP: 25,
       result: 'kneel',
       points: 0,
-      points_needed: 0,
       scoreAAfter: 21,
       scoreBAfter: 17,
     };
@@ -316,7 +321,6 @@ describe('historical data integrity', () => {
       startingFP: 99,
       result: 'touchdown',
       points: 7,
-      points_needed: 0,
       scoreAAfter: 7,
       scoreBAfter: 0,
     };

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ROUTES } from '../../constants/routes';
 import type { LeagueStage } from '../../types/domain';
 import { buildTestLeague, buildTestTeam } from '../../test/fixtures';
 import {
@@ -105,11 +106,11 @@ describe('application navigation', () => {
     const history = leagueGroup.items[2];
     const records = leagueGroup.items[3];
 
-    expect(isPathActive('/news', news)).toBe(true);
-    expect(isPathActive('/news/2025', news)).toBe(true);
+    expect(isPathActive(ROUTES.NEWS, news)).toBe(true);
+    expect(isPathActive(`${ROUTES.NEWS}/2025`, news)).toBe(true);
     expect(isPathActive('/awards', news)).toBe(false);
     expect(isPathActive('/awards', awards)).toBe(true);
-    expect(isGroupActive('/news/2025', leagueGroup)).toBe(true);
+    expect(isGroupActive(`${ROUTES.NEWS}/2025`, leagueGroup)).toBe(true);
     expect(isGroupActive('/awards', leagueGroup)).toBe(true);
     expect(isGroupActive('/awards', statsGroup)).toBe(false);
     expect(isPathActive('/league/history', history)).toBe(true);

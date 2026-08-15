@@ -178,7 +178,7 @@ describe('simulation calibration stability audit', () => {
     const stable = summarizeRatingStability([ratingBlock(-0.005), ratingBlock(0.005)]);
     expect(stable.violations).toEqual([]);
     expect(stable.strictlyIncreasing).toBe(true);
-    expect(stable.byDifference['21'].winRate.mean).toBeCloseTo(0.883);
+    expect(stable.byDifference['21'].winRate.mean).toBeCloseTo(0.906);
 
     const malformed = ratingBlock();
     malformed.ratingResults[2].teamAWinRate = malformed.ratingResults[1].teamAWinRate;

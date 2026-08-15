@@ -3,7 +3,7 @@ import type {
   PlayoffBracket,
   PlayoffMatchup,
   TwelveTeamPlayoffBracket,
-} from '../../domain/league/loaders/playoff';
+} from '../../types/postseason';
 import type {
   BowlGamesPageData,
   PlayoffPicturePageData,

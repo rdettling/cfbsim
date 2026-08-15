@@ -26,11 +26,7 @@ export const loadAwards = async () => {
     getGameLogsByYear(league.info.currentYear),
     getGamesByYear(league.info.currentYear),
   ]);
-  const playedGameIds = new Set(
-    games.filter(game => game.winnerId !== null).map(game => game.id),
-  );
-  const yearLogs = gameLogs.filter(log => playedGameIds.has(log.gameId));
-  const calculated = buildAwards(league, players, yearLogs);
+  const calculated = buildAwards(league, players, games, gameLogs);
 
   return {
     ...envelope,

@@ -46,7 +46,6 @@ const driveState = (
     startingFP: 25,
     result: '',
     points: 0,
-    points_needed: 0,
     scoreAAfter: 21,
     scoreBAfter: 14,
   },
@@ -96,6 +95,21 @@ describe('game simulation view model', () => {
     expect(view.canUseTimeout).toBe(true);
     expect(view.canShowSpike).toBe(true);
     expect(view.canShowKneel).toBe(true);
+  });
+
+  it('reports the latest play yardage only while that drive remains active', () => {
+    const latestPlay = {
+      ...buildGameSimViewModel(input()).displayPlay!,
+      id: 99,
+      driveId: 7000,
+      yardsGained: 7,
+      text: 'Seven-yard run',
+    };
+
+    expect(buildGameSimViewModel(input({ plays: [latestPlay] })).previousPlayYards).toBe(7);
+    expect(buildGameSimViewModel(input({
+      plays: [{ ...latestPlay, driveId: 6999 }],
+    })).previousPlayYards).toBe(0);
   });
 
   it('derives defensive management without offensive clock actions', () => {

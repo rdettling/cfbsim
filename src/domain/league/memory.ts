@@ -11,17 +11,9 @@ import type {
 } from '../../types/memory';
 import { SeasonMemoryDataIntegrityError } from '../../types/memory';
 import { buildAwards } from './awards';
+import { isNy6Bowl } from './utils/bowlSelection';
 import { buildTeamAggregateTotalTables } from './utils/stats/teamAggregates';
 import { sortStandingsTeams } from './utils/standings';
-
-const NY6_BOWLS = new Set([
-  'rose bowl',
-  'sugar bowl',
-  'orange bowl',
-  'cotton bowl',
-  'fiesta bowl',
-  'peach bowl',
-]);
 
 const completedGame = (
   gamesById: Map<number, GameRecord>,
@@ -223,11 +215,9 @@ export const buildSeasonMemory = (
   const yearGames = games.filter(
     game => game.year === year && game.winnerId !== null,
   );
-  const yearGameIds = new Set(yearGames.map(game => game.id));
   const gamesById = new Map(yearGames.map(game => [game.id, game]));
-  const yearLogs = logs.filter(log => yearGameIds.has(log.gameId));
   const teamsByName = new Map(league.teams.map(team => [team.name, team]));
-  const { final } = buildAwards(league, players, yearLogs);
+  const { final } = buildAwards(league, players, games, logs);
   const totals = buildTeamAggregateTotalTables(
     league.teams,
     yearGames,
@@ -283,7 +273,7 @@ export const buildSeasonMemory = (
     .map(game => ({
       gameId: game.id,
       name: game.name ?? 'Bowl',
-      tier: NY6_BOWLS.has((game.name ?? '').toLowerCase())
+      tier: isNy6Bowl(game.name)
         ? 'ny6' as const
         : 'other' as const,
     }))

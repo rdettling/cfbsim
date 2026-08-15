@@ -154,7 +154,9 @@ const GameSimModal = ({ open, gameId, onClose }: GameSimModalProps) => {
       awayTeam={teams.away}
       neutralSite={teams.neutral}
       isOffenseLeftToRight={state.isTeamAOnOffense === state.openingIsTeamA}
+      down={state.displayPlay?.down ?? 1}
       yardsToGo={state.displayPlay?.yardsLeft ?? 10}
+      previousPlayYards={state.previousPlayYards}
     />
   ) : null;
 

@@ -1,15 +1,7 @@
 import type { DefensiveIntent, OffensiveConcept } from '../../types/db';
+import type { PlaySituation } from '../../types/sim';
 import { createSeededRandom } from '../utils/random';
-import type { ClockState } from './clock';
 import { SIM_TUNING } from './config';
-
-export type DefensiveSituation = {
-  down: number;
-  yardsLeft: number;
-  fieldPosition: number;
-  lead: number;
-  clock: ClockState;
-};
 
 export const DEFENSIVE_INTENTS = [
   'base',
@@ -39,7 +31,7 @@ const multiply = (
 };
 
 export const defensiveIntentWeights = (
-  situation: DefensiveSituation,
+  situation: PlaySituation,
 ): Record<DefensiveIntent, number> => {
   const weights = { ...SIM_TUNING.defense.automatic.base };
   const adjustments = SIM_TUNING.defense.automatic.adjustments;
@@ -47,14 +39,14 @@ export const defensiveIntentWeights = (
   if (situation.yardsLeft >= 7) multiply(weights, adjustments.longYardage);
   if (situation.fieldPosition >= 80) multiply(weights, adjustments.redZone);
   const late = situation.clock.quarter === 4 && situation.clock.secondsLeft <= 300;
-  if (late && situation.lead < 0) multiply(weights, adjustments.protectingLead);
-  if (late && situation.lead > 0) multiply(weights, adjustments.trailingLate);
+  if (late && situation.offenseLead < 0) multiply(weights, adjustments.protectingLead);
+  if (late && situation.offenseLead > 0) multiply(weights, adjustments.trailingLate);
   return weights;
 };
 
 export const chooseDefensiveIntent = (
   playId: number,
-  situation: DefensiveSituation,
+  situation: PlaySituation,
 ): DefensiveIntent => {
   const weights = defensiveIntentWeights(situation);
   const selected = createSeededRandom(playId).fork('defensive-intent').weightedChoice(

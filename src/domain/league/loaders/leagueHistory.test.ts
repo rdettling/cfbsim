@@ -155,7 +155,7 @@ describe('loadLeagueHistory', () => {
           }],
           bowls: [{ gameId: 3, name: 'Rose Bowl', tier: 'ny6' }],
         },
-        awards: [{ categorySlug: 'heisman', playerId: 1, teamId: 1 }],
+        awards: [{ categorySlug: 'nagurski', playerId: 1, teamId: 1 }],
       }),
     ]);
     vi.mocked(getGamesByYear).mockResolvedValue([
@@ -185,10 +185,10 @@ describe('loadLeagueHistory', () => {
       conferenceChampions: [{ team: { name: 'Test State' }, championshipGameId: 2 }],
       bowls: [{ id: 3, name: 'Rose Bowl', is_ny6: true, winner: 'Test State' }],
       awards: [{
-        categorySlug: 'heisman',
-        categoryName: 'Heisman Trophy',
-        categoryDescription: 'Most outstanding overall player',
-        group: 'overall',
+        categorySlug: 'nagurski',
+        categoryName: 'Bronko Nagurski Trophy',
+        categoryDescription: 'Outstanding defensive player',
+        group: 'defense',
         placements: [{
           key: 'first',
           player: {

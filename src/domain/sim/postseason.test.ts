@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { getDb } from '../../db/db';
 import { getAllGames } from '../../db/simRepo';
 import { BOWL_WEEK, CONFERENCE_CHAMPIONSHIP_WEEK } from '../league/postseason';
+import { buildBowlMatchups } from '../league/utils/bowlSelection';
 import { buildTestLeague, buildTestTeam } from '../../test/fixtures';
 import type { PlayoffTeamCount } from '../../types/domain';
 import { handleSpecialWeeks } from './postseason';
@@ -122,5 +123,38 @@ describe('postseason bowl scheduling', () => {
         )
       ).toHaveLength(0);
     }
+  );
+
+  it.each([2, 4, 12] as const)(
+    'schedules the shared bowl policy for the %i-team format',
+    async playoffTeams => {
+      const league = buildPostseasonLeague(playoffTeams);
+
+      await handleSpecialWeeks(league, oddsContext);
+
+      const expected = buildBowlMatchups({
+        teams: league.teams,
+        playoffTeamIds: new Set(league.playoff.seeds),
+        year: league.info.currentYear,
+        playoffTeams,
+        requireEligibility: true,
+      })
+        .map(matchup => ({
+          name: matchup.name,
+          teamAId: matchup.teamA.id,
+          teamBId: matchup.teamB.id,
+        }))
+        .sort((left, right) => left.name.localeCompare(right.name));
+      const scheduled = (await getAllGames())
+        .filter(game => game.gameType === 'bowl')
+        .map(game => ({
+          name: game.name,
+          teamAId: game.teamAId,
+          teamBId: game.teamBId,
+        }))
+        .sort((left, right) => (left.name ?? '').localeCompare(right.name ?? ''));
+
+      expect(scheduled).toEqual(expected);
+    },
   );
 });

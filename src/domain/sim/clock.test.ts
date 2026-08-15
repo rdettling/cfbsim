@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { ClockState } from '../../types/sim';
 import {
   resolveOvertimeTiming,
   resolveRegulationTiming,
   type ClockPlayContext,
-  type ClockState,
 } from './clock';
 
 const runContext = (

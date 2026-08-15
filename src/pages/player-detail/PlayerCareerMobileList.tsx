@@ -9,7 +9,10 @@ type PlayerCareerMobileListProps = {
   category: PlayerStatCategory;
 };
 
-export const PlayerCareerMobileList = ({ seasons, category }: PlayerCareerMobileListProps) => {
+export const PlayerCareerMobileList = ({
+  seasons,
+  category,
+}: PlayerCareerMobileListProps) => {
   const [expandedYear, setExpandedYear] = useState<number | null>(seasons[0]?.year ?? null);
   const columns = getCareerColumns(category);
 
@@ -18,7 +21,12 @@ export const PlayerCareerMobileList = ({ seasons, category }: PlayerCareerMobile
       component="section"
       variant="outlined"
       aria-label="Career statistics"
-      sx={{ display: { xs: 'block', md: 'none' }, overflow: 'hidden' }}
+      sx={{
+        display: { xs: 'block', md: 'none' },
+        overflow: 'hidden',
+        border: 0,
+        borderRadius: 0,
+      }}
     >
       {seasons.map(({ year, season }, index) => {
         const expanded = expandedYear === year;

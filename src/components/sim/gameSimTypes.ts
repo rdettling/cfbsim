@@ -20,11 +20,13 @@ export type GameSimSituation = {
   fieldPosition: number;
 };
 
-export type SimulationDecisionPrompt = GameSimSituation & {
+type SimulationDecisionPromptBase = GameSimSituation & {
   side: Exclude<GameSimUserSide, null>;
-  type: 'scrimmage' | 'fourth_down' | 'try';
-  allowExtraPoint?: boolean;
 };
+
+export type SimulationDecisionPrompt =
+  | SimulationDecisionPromptBase & { type: 'scrimmage' }
+  | SimulationDecisionPromptBase & { type: 'try'; allowExtraPoint: boolean };
 
 export type SimulationError = {
   kind: SimulationErrorKind;

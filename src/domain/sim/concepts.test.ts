@@ -12,7 +12,7 @@ const situation = (overrides: Partial<Parameters<typeof conceptWeights>[1]> = {}
   down: 1,
   yardsLeft: 10,
   fieldPosition: 25,
-  lead: 0,
+  offenseLead: 0,
   clock: { quarter: 1, secondsLeft: 900, clockRunning: true },
   ...overrides,
 });
@@ -47,7 +47,7 @@ describe('offensive concepts', () => {
     expect(redZone.play_action).toBeGreaterThan(0.15);
 
     const trailing = conceptWeights('pass', situation({
-      lead: -7,
+      offenseLead: -7,
       clock: { quarter: 4, secondsLeft: 180, clockRunning: true },
       yardsLeft: 5,
     }));
@@ -55,7 +55,7 @@ describe('offensive concepts', () => {
     expect(trailing.play_action).toBeLessThan(0.15);
 
     const leading = conceptWeights('run', situation({
-      lead: 7,
+      offenseLead: 7,
       clock: { quarter: 4, secondsLeft: 180, clockRunning: true },
       yardsLeft: 5,
     }));
@@ -125,7 +125,12 @@ describe('offensive concepts', () => {
       { kind: 'special_teams', concept: 'punt' },
       1,
       'punt',
-    )).toContain('special teams before fourth down');
+    )).toContain('punt before fourth down');
+    expect(validatePlayCall(
+      { kind: 'special_teams', concept: 'field_goal' },
+      1,
+      'field goal',
+    )).toEqual([]);
     expect(validatePlayCall(
       { kind: 'scrimmage', offense: 'deep_pass', defense: 'coverage' },
       2,

@@ -1,4 +1,5 @@
 import type { Team } from './domain';
+import type { LeagueState } from './league';
 import type {
   ClockManagementAction,
   ClockTempo,
@@ -46,6 +47,20 @@ export interface SimGame {
   watchability: number | null;
 }
 
+export type ClockState = {
+  quarter: number;
+  secondsLeft: number;
+  clockRunning: boolean;
+};
+
+export type PlaySituation = {
+  down: number;
+  yardsLeft: number;
+  fieldPosition: number;
+  offenseLead: number;
+  clock: ClockState;
+};
+
 export interface SimDrive {
   record: DriveRecord;
   plays: PlayRecord[];
@@ -56,6 +71,16 @@ export interface StartersCache {
   byTeamPos: Map<string, PlayerRecord[]>;
   byId: Map<number, PlayerRecord>;
 }
+
+export type SimContext = {
+  league: LeagueState;
+  game: SimGame;
+  starters: StartersCache;
+  offense: Team;
+  defense: Team;
+  clockEnabled: boolean;
+  overtimePossession: 0 | 1 | null;
+};
 
 export type InteractivePlayInstruction =
   | { kind: 'offense'; concept: OffensiveConcept }

@@ -26,12 +26,10 @@ import type { loadPlayer } from '../domain/league/loaders/team/loadPlayer';
 import type { loadTeamHistory } from '../domain/league/loaders/team/loadTeamHistory';
 import type { loadTeamRoster } from '../domain/league/loaders/team/loadTeamRoster';
 import type { loadTeamStats } from '../domain/league/loaders/team/loadTeamStats';
-import type {
-  loadBowlGames,
-  loadPlayoffBracket,
-  loadPlayoffPicture,
-  loadResumeComparison,
-} from '../domain/league/loaders/playoff';
+import type { loadBowlGames } from '../domain/league/loaders/postseason/loadBowlGames';
+import type { loadPlayoffBracket } from '../domain/league/loaders/postseason/loadPlayoffBracket';
+import type { loadPlayoffPicture } from '../domain/league/loaders/postseason/loadPlayoffPicture';
+import type { loadResumeComparison } from '../domain/league/loaders/postseason/loadResumeComparison';
 import type {
   loadAdvancedStats,
   loadPostseasonProjections,

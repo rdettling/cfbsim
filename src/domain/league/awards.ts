@@ -1,23 +1,17 @@
+import type { GameLogRecord, GameRecord, PlayerRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
-import type { PlayerRecord, GameLogRecord } from '../../types/db';
-import type { Team } from '../../types/domain';
-import type {
-  AwardDisplayPlacement,
-  AwardsResult,
-} from '../../types/awards';
-import type {
-  DefenseStats,
-  KickingStats,
-  PassingStats,
-  ReceivingStats,
-  RushingStats,
-} from '../../types/stats';
+import type { AwardDisplayPlacement, AwardsResult } from '../../types/awards';
+import type { DefenseStats, KickingStats, PassingStats, ReceivingStats, RushingStats } from '../../types/stats';
+import { AWARD_DEFINITIONS, type AwardSlug } from './awardDefinitions';
 import {
-  AWARD_DEFINITIONS,
-  type AwardSlug,
-} from './awardDefinitions';
-import { formatAwardStatLine } from './utils/awardStatLine';
+  AWARD_SCORING_CONFIG,
+  AWARD_SCORING_POLICY,
+  type AwardMetricKey,
+  type AwardScoringCohort,
+  type AwardScoringConfig,
+} from './awardScoringConfig';
 import { createAwardDisplayEntry } from './utils/awardDisplay';
+import { formatAwardStatLine } from './utils/awardStatLine';
 import {
   aggregatePlayerLogs,
   buildDefenseStats,
@@ -27,287 +21,472 @@ import {
   buildRushingStats,
 } from './utils/stats/playerAggregates';
 
-type AwardCandidate = {
+type CandidateProfile = {
   player: PlayerRecord;
+  games: number;
+  passing: PassingStats;
+  rushing: RushingStats;
+  receiving: ReceivingStats;
+  defensive: DefenseStats;
+  kicking: KickingStats;
+  statLine: string;
+  teamRank: number;
+  teamRankPercentile: number;
+};
+
+export interface AwardComponentDiagnostic {
+  key: AwardMetricKey;
+  value: number;
+  percentile: number;
+  weight: number;
+  contribution: number;
+}
+
+export interface AwardCandidateDiagnostic {
+  award: AwardSlug;
+  playerId: number;
+  teamId: number;
+  position: string;
+  cohort: AwardScoringCohort;
+  games: number;
+  components: AwardComponentDiagnostic[];
+  performanceScore: number;
+  preTeamRankCoreScore: number;
+  coreScore: number;
+  ratingPercentile: number;
+  ratingPriorShare: number;
+  teamRank: number;
+  teamRankPercentile: number;
+  teamRankShare: number;
+  finalScore: number;
+  primaryProduction: number;
+  primaryProductionPercentile: number;
+  heismanOffensiveImpact: number | null;
+  heismanOffensiveImpactPercentile: number | null;
+  heismanOffensiveImpactShare: number | null;
+  tiebreakers: { performanceScore: number; primaryProduction: number; playerId: number };
+}
+
+export interface AwardScoringSnapshot {
+  awards: AwardsResult;
+  candidates: Record<AwardSlug, AwardCandidateDiagnostic[]>;
+}
+
+type PerformanceCandidate = {
+  profile: CandidateProfile;
+  cohort: AwardScoringCohort;
+  components: AwardComponentDiagnostic[];
+  performanceScore: number;
+  primaryProduction: number;
+  coreScore?: number;
+};
+
+type ScoredCandidate = PerformanceCandidate & {
   score: number;
+  preTeamRankCoreScore: number;
+  resolvedCoreScore: number;
+  ratingPercentile: number;
+  ratingPriorShare: number;
+  teamRankShare: number;
+  primaryProductionPercentile: number;
 };
 
-type AwardStatCache = {
-  passing: Map<number, PassingStats>;
-  rushing: Map<number, RushingStats>;
-  receiving: Map<number, ReceivingStats>;
-  defensive: Map<number, DefenseStats>;
-  kicking: Map<number, KickingStats>;
-  statLines: Map<number, string>;
-};
+type Metric = { key: AwardMetricKey; value: (candidate: CandidateProfile) => number };
 
-const FINAL_WINNER_PRIORITY = [
-  'heisman',
-  'bednarik',
-  'davey_obrien',
-  'doak_walker',
-  'biletnikoff',
-  'ted_hendricks',
-  'butkus',
-  'thorpe',
-  'lou_groza',
-] as const satisfies readonly AwardSlug[];
+const AWARD_GAME_TYPES = new Set<GameRecord['gameType']>(AWARD_SCORING_POLICY.eligibleGameTypes);
+const rate = (total: number, opportunities: number) => opportunities > 0 ? total / opportunities : 0;
+const gamesRate = (total: number, candidate: CandidateProfile) => rate(total, candidate.games);
 
-const DEFENSIVE_POSITIONS = new Set(['dl', 'lb', 'cb', 's', 'de']);
-
-const buildStatCache = (
-  players: PlayerRecord[],
-  logs: GameLogRecord[],
-  teamsById: Map<number, Team>
-): AwardStatCache => {
-  const passing = new Map<number, PassingStats>();
-  const rushing = new Map<number, RushingStats>();
-  const receiving = new Map<number, ReceivingStats>();
-  const defensive = new Map<number, DefenseStats>();
-  const kicking = new Map<number, KickingStats>();
-  const statLines = new Map<number, string>();
-  const totalsByPlayer = aggregatePlayerLogs(logs);
-
-  players.forEach(player => {
-    const team = teamsById.get(player.teamId);
-    if (!team) return;
-    const totals = totalsByPlayer.get(player.id);
-    if (!totals) return;
-
-    const gamesPlayed = Math.max(1, team.gamesPlayed);
-    passing.set(player.id, buildPassingStats(totals, gamesPlayed));
-    rushing.set(player.id, buildRushingStats(totals, gamesPlayed));
-    receiving.set(player.id, buildReceivingStats(totals, gamesPlayed));
-    defensive.set(player.id, buildDefenseStats(totals));
-    kicking.set(player.id, buildKickingStats(totals));
-    statLines.set(player.id, formatAwardStatLine(totals));
+export const tiedMidrankPercentiles = <T>(candidates: T[], getValue: (candidate: T) => number) => {
+  const percentiles = new Map<T, number>();
+  if (candidates.length === 1) {
+    percentiles.set(candidates[0], 100);
+    return percentiles;
+  }
+  const orderedValues = candidates.map(getValue).sort((left, right) => left - right);
+  const ranksByValue = new Map<number, number>();
+  orderedValues.forEach(value => {
+    if (ranksByValue.has(value)) return;
+    const first = orderedValues.indexOf(value);
+    const last = orderedValues.lastIndexOf(value);
+    ranksByValue.set(value, ((first + last) / 2 / (candidates.length - 1)) * 100);
   });
-
-  return { passing, rushing, receiving, defensive, kicking, statLines };
+  candidates.forEach(candidate => percentiles.set(candidate, ranksByValue.get(getValue(candidate)) ?? 0));
+  return percentiles;
 };
 
-const calcHeisman = (
+const scorePerformance = (
+  candidates: CandidateProfile[],
+  cohort: AwardScoringCohort,
+  metrics: Metric[],
+  config: AwardScoringConfig,
+  primaryProduction: (candidate: CandidateProfile) => number,
+): PerformanceCandidate[] => {
+  const weightedMetrics = metrics.map(metric => ({
+    ...metric,
+    weight: config.metricWeights[cohort][metric.key] ?? 0,
+    percentiles: tiedMidrankPercentiles(candidates, metric.value),
+  }));
+  return candidates.map(profile => {
+    const components = weightedMetrics.map(metric => {
+      const value = metric.value(profile);
+      const percentile = metric.percentiles.get(profile) ?? 0;
+      return { key: metric.key, value, percentile, weight: metric.weight, contribution: percentile * metric.weight };
+    });
+    return {
+      profile,
+      cohort,
+      components,
+      performanceScore: components.reduce((sum, metric) => sum + metric.contribution, 0),
+      primaryProduction: primaryProduction(profile),
+    };
+  });
+};
+
+const ratingPriorShare = (games: number) =>
+  AWARD_SCORING_POLICY.ratingPriorByGames[Math.min(6, Math.max(0, games))] ?? 0;
+
+const finalizeScores = (
+  candidates: PerformanceCandidate[],
+  teamRankShare: number,
+): ScoredCandidate[] => {
+  const ratingPercentiles = tiedMidrankPercentiles(candidates, candidate => candidate.profile.player.rating);
+  const primaryPercentiles = tiedMidrankPercentiles(candidates, candidate => candidate.primaryProduction);
+  return candidates.map(candidate => {
+    const priorShare = ratingPriorShare(candidate.profile.games);
+    const preTeamRankCoreScore = candidate.coreScore ?? candidate.performanceScore;
+    const coreScore = preTeamRankCoreScore * (1 - teamRankShare)
+      + candidate.profile.teamRankPercentile * teamRankShare;
+    const ratingPercentile = ratingPercentiles.get(candidate) ?? 0;
+    return {
+      ...candidate,
+      preTeamRankCoreScore,
+      resolvedCoreScore: coreScore,
+      ratingPercentile,
+      ratingPriorShare: priorShare,
+      teamRankShare,
+      primaryProductionPercentile: primaryPercentiles.get(candidate) ?? 0,
+      score: Math.max(0, Math.min(100, coreScore * (1 - priorShare) + ratingPercentile * priorShare)),
+    };
+  }).sort((left, right) =>
+    right.score - left.score
+    || right.performanceScore - left.performanceScore
+    || right.primaryProduction - left.primaryProduction
+    || left.profile.player.id - right.profile.player.id,
+  );
+};
+
+const wilsonLowerBound = (made: number, attempted: number) => {
+  if (attempted <= 0) return 0;
+  const probability = made / attempted;
+  const zSquared = 1;
+  return (probability + zSquared / (2 * attempted)
+    - Math.sqrt((probability * (1 - probability) + zSquared / (4 * attempted)) / attempted))
+    / (1 + zSquared / attempted);
+};
+
+export const teamRankPercentile = (rank: number, teamCount: number) =>
+  teamCount <= 1 ? 100 : ((teamCount - rank) / (teamCount - 1)) * 100;
+
+const resolveAwardTeamRanks = (league: LeagueState) => {
+  const frozen = league.resumeSnapshot?.year === league.info.currentYear
+    && league.resumeSnapshot.frozenAfterWeek === 15
+    ? league.resumeSnapshot.teams.map(team => ({ id: team.teamId, ranking: team.ranking }))
+    : null;
+  if (league.info.stage === 'summary' && !frozen) {
+    throw new Error(`Final awards require post-conference-championship rankings for ${league.info.currentYear}.`);
+  }
+  const source = frozen ?? league.teams.map(team => ({ id: team.id, ranking: team.ranking }));
+  const teamIds = new Set(league.teams.map(team => team.id));
+  const ranks = new Set<number>();
+  const rankings = new Map<number, number>();
+  source.forEach(team => {
+    if (!teamIds.has(team.id) || rankings.has(team.id)
+      || !Number.isInteger(team.ranking) || team.ranking < 1
+      || team.ranking > league.teams.length || ranks.has(team.ranking)) {
+      throw new Error('Award team rankings must contain one unique national rank for every league team.');
+    }
+    rankings.set(team.id, team.ranking);
+    ranks.add(team.ranking);
+  });
+  if (rankings.size !== league.teams.length) {
+    throw new Error('Award team rankings must contain one unique national rank for every league team.');
+  }
+  return rankings;
+};
+
+const buildCandidateProfiles = (
   league: LeagueState,
   players: PlayerRecord[],
-  statCache: ReturnType<typeof buildStatCache>,
-  teamsById: Map<number, Team>
+  games: GameRecord[],
+  logs: GameLogRecord[],
 ) => {
-  const totalTeams = league.teams.length;
-  const candidates: AwardCandidate[] = [];
-
-  players.filter(player => player.starter).forEach(player => {
-    const team = teamsById.get(player.teamId);
-    if (!team) return;
-    let score = player.rating || 0;
-
-    const passStats = statCache.passing.get(player.id);
-    const rushStats = statCache.rushing.get(player.id);
-    const recvStats = statCache.receiving.get(player.id);
-
-    if (passStats) {
-      score += (passStats.passer_rating || 0) * 2;
-    }
-    if (rushStats) {
-      score += (rushStats.yards_per_game || 0) * 1.5;
-    }
-    if (recvStats) {
-      score += (recvStats.yards_per_game || 0) * 1.2;
-    }
-
-    if (team.ranking && team.ranking > 0) {
-      const rankBonus = Math.max(0, (totalTeams + 1 - team.ranking)) * 0.5;
-      score += rankBonus;
-    }
-
-    candidates.push({ player, score });
+  const teamRankings = resolveAwardTeamRanks(league);
+  const awardGames = games.filter(game => game.year === league.info.currentYear
+    && game.winnerId !== null && AWARD_GAME_TYPES.has(game.gameType));
+  const awardGameIds = new Set(awardGames.map(game => game.id));
+  const awardLogs = logs.filter(log => awardGameIds.has(log.gameId));
+  const totalsByPlayer = aggregatePlayerLogs(awardLogs);
+  const gameIdsByPlayer = new Map<number, Set<number>>();
+  awardLogs.forEach(log => {
+    const gameIds = gameIdsByPlayer.get(log.playerId) ?? new Set<number>();
+    gameIds.add(log.gameId);
+    gameIdsByPlayer.set(log.playerId, gameIds);
   });
-
-  return candidates.sort((a, b) => b.score - a.score).slice(0, 3);
+  const teamIds = new Set(league.teams.map(team => team.id));
+  return players.flatMap(player => {
+    if (!teamIds.has(player.teamId)) return [];
+    const totals = totalsByPlayer.get(player.id);
+    const gamesPlayed = gameIdsByPlayer.get(player.id)?.size ?? 0;
+    if (!totals || gamesPlayed === 0) return [];
+    const teamRank = teamRankings.get(player.teamId)!;
+    return [{
+      player,
+      games: gamesPlayed,
+      passing: buildPassingStats(totals, gamesPlayed),
+      rushing: buildRushingStats(totals, gamesPlayed),
+      receiving: buildReceivingStats(totals, gamesPlayed),
+      defensive: buildDefenseStats(totals),
+      kicking: buildKickingStats(totals),
+      statLine: formatAwardStatLine(totals),
+      teamRank,
+      teamRankPercentile: teamRankPercentile(teamRank, league.teams.length),
+    }];
+  });
 };
 
-const calcDaveyObrien = (
-  players: PlayerRecord[],
-  statCache: AwardStatCache,
-) => {
-  const candidates: AwardCandidate[] = [];
-  players.forEach(player => {
-    if (player.pos !== 'qb' || !player.starter) return;
-    const stats = statCache.passing.get(player.id);
-    if (!stats) return;
-    const score = (player.rating || 0) + (stats.passer_rating || 0) * 2.5;
-    candidates.push({ player, score });
-  });
-  return candidates.sort((a, b) => b.score - a.score).slice(0, 3);
+const defensiveEvents = (candidate: CandidateProfile) => candidate.defensive.tackles
+  + candidate.defensive.sacks + candidate.defensive.interceptions
+  + candidate.defensive.fumbles_forced + candidate.defensive.fumbles_recovered;
+
+const quarterbackMetrics: Metric[] = [
+  { key: 'totalOffenseYardsPerGame', value: candidate => gamesRate(candidate.passing.yards + candidate.rushing.yards, candidate) },
+  { key: 'totalTouchdownsPerGame', value: candidate => gamesRate(candidate.passing.td + candidate.rushing.td, candidate) },
+  { key: 'adjustedPassYardsPerAttempt', value: candidate => candidate.passing.adjusted_pass_yards_per_attempt },
+  { key: 'completionRate', value: candidate => candidate.passing.pct },
+  { key: 'inverseGiveawaysPerGame', value: candidate => -gamesRate(candidate.passing.int + candidate.rushing.fumbles, candidate) },
+];
+const runningBackMetrics: Metric[] = [
+  { key: 'scrimmageYardsPerGame', value: candidate => gamesRate(candidate.rushing.yards + candidate.receiving.yards, candidate) },
+  { key: 'rushingYardsPerGame', value: candidate => candidate.rushing.yards_per_game },
+  { key: 'yardsPerCarry', value: candidate => candidate.rushing.yards_per_rush },
+  { key: 'totalTouchdownsPerGame', value: candidate => gamesRate(candidate.rushing.td + candidate.receiving.td, candidate) },
+  { key: 'inverseFumblesPerTouch', value: candidate => -rate(candidate.rushing.fumbles, candidate.rushing.att + candidate.receiving.rec) },
+];
+const receiverMetrics: Metric[] = [
+  { key: 'receivingYardsPerGame', value: candidate => candidate.receiving.yards_per_game },
+  { key: 'receivingTouchdownsPerGame', value: candidate => gamesRate(candidate.receiving.td, candidate) },
+  { key: 'catchesPerGame', value: candidate => gamesRate(candidate.receiving.rec, candidate) },
+  { key: 'yardsPerCatch', value: candidate => candidate.receiving.yards_per_rec },
+];
+const defensiveLineMetrics: Metric[] = [
+  { key: 'sacksPerGame', value: candidate => gamesRate(candidate.defensive.sacks, candidate) },
+  { key: 'tacklesPerGame', value: candidate => gamesRate(candidate.defensive.tackles, candidate) },
+  { key: 'forcedFumblesPerGame', value: candidate => gamesRate(candidate.defensive.fumbles_forced, candidate) },
+  { key: 'recoveriesPerGame', value: candidate => gamesRate(candidate.defensive.fumbles_recovered, candidate) },
+];
+const linebackerMetrics: Metric[] = [
+  { key: 'tacklesPerGame', value: candidate => gamesRate(candidate.defensive.tackles, candidate) },
+  { key: 'sacksPerGame', value: candidate => gamesRate(candidate.defensive.sacks, candidate) },
+  { key: 'interceptionsPerGame', value: candidate => gamesRate(candidate.defensive.interceptions, candidate) },
+  { key: 'forcedFumblesPerGame', value: candidate => gamesRate(candidate.defensive.fumbles_forced, candidate) },
+  { key: 'recoveriesPerGame', value: candidate => gamesRate(candidate.defensive.fumbles_recovered, candidate) },
+];
+const defensiveBackMetrics: Metric[] = [
+  { key: 'interceptionsPerGame', value: candidate => gamesRate(candidate.defensive.interceptions, candidate) },
+  { key: 'tacklesPerGame', value: candidate => gamesRate(candidate.defensive.tackles, candidate) },
+  { key: 'forcedFumblesPerGame', value: candidate => gamesRate(candidate.defensive.fumbles_forced, candidate) },
+  { key: 'recoveriesPerGame', value: candidate => gamesRate(candidate.defensive.fumbles_recovered, candidate) },
+];
+const kickerMetrics: Metric[] = [
+  { key: 'fieldGoalsMadePerGame', value: candidate => gamesRate(candidate.kicking.field_goals_made, candidate) },
+  { key: 'fieldGoalAccuracy', value: candidate => wilsonLowerBound(candidate.kicking.field_goals_made, candidate.kicking.field_goals_attempted) },
+  { key: 'extraPointAccuracy', value: candidate => wilsonLowerBound(candidate.kicking.extra_points_made, candidate.kicking.extra_points_attempted) },
+];
+
+const offensiveValuePerGame = (candidate: CandidateProfile) => gamesRate(
+  candidate.passing.yards / 25 + candidate.passing.td * 4 - candidate.passing.int * 5
+  + (candidate.rushing.yards + candidate.receiving.yards) / 10
+  + (candidate.rushing.td + candidate.receiving.td) * 6 - candidate.rushing.fumbles * 4,
+  candidate,
+);
+const defensiveImpactPerGame = (candidate: CandidateProfile) => gamesRate(
+  candidate.defensive.tackles + candidate.defensive.sacks * 4
+  + candidate.defensive.interceptions * 4 + candidate.defensive.fumbles_forced * 2
+  + candidate.defensive.fumbles_recovered * 2,
+  candidate,
+);
+const nagurskiImpactPerGame = (candidate: CandidateProfile) => gamesRate(
+  candidate.defensive.tackles * 0.05 + candidate.defensive.sacks
+  + candidate.defensive.interceptions * 12 + candidate.defensive.fumbles_forced * 8
+  + candidate.defensive.fumbles_recovered * 6,
+  candidate,
+);
+
+const buildCandidatePools = (profiles: CandidateProfile[], config: AwardScoringConfig) => {
+  const quarterbacks = scorePerformance(
+    profiles.filter(candidate => candidate.player.pos === 'qb'
+      && gamesRate(candidate.passing.att, candidate) >= config.eligibility.quarterbackPassAttemptsPerGame),
+    'quarterback', quarterbackMetrics, config,
+    candidate => gamesRate(candidate.passing.yards + candidate.rushing.yards, candidate),
+  );
+  const runningBacks = scorePerformance(
+    profiles.filter(candidate => candidate.player.pos === 'rb'
+      && gamesRate(candidate.rushing.att + candidate.receiving.rec, candidate) >= config.eligibility.runningBackTouchesPerGame),
+    'runningBack', runningBackMetrics, config,
+    candidate => gamesRate(candidate.rushing.yards + candidate.receiving.yards, candidate),
+  );
+  const scoreReceivers = (positions: Set<string>) => scorePerformance(
+    profiles.filter(candidate => positions.has(candidate.player.pos)
+      && gamesRate(candidate.receiving.rec, candidate) >= config.eligibility.receiverCatchesPerGame),
+    'receiver', receiverMetrics, config, candidate => candidate.receiving.yards_per_game,
+  );
+  const scoreDefenders = (
+    positions: Set<string>, cohort: AwardScoringCohort, metrics: Metric[],
+    primary: (candidate: CandidateProfile) => number,
+  ) => scorePerformance(
+    profiles.filter(candidate => positions.has(candidate.player.pos)
+      && gamesRate(defensiveEvents(candidate), candidate) >= config.eligibility.defenderEventsPerGame),
+    cohort, metrics, config, primary,
+  );
+  const heismanReceivers = scoreReceivers(new Set(['wr', 'te']));
+  const wideReceivers = scoreReceivers(new Set(['wr']));
+  const tightEnds = scoreReceivers(new Set(['te']));
+  const defensiveLine = scoreDefenders(new Set(['dl']), 'defensiveLine', defensiveLineMetrics, candidate => gamesRate(candidate.defensive.sacks, candidate));
+  const linebackers = scoreDefenders(new Set(['lb']), 'linebacker', linebackerMetrics, candidate => gamesRate(candidate.defensive.tackles, candidate));
+  const defensiveBacks = scoreDefenders(new Set(['cb', 's']), 'defensiveBack', defensiveBackMetrics, candidate => gamesRate(candidate.defensive.interceptions, candidate));
+  const kickers = scorePerformance(
+    profiles.filter(candidate => candidate.player.pos === 'k'
+      && candidate.kicking.field_goals_attempted >= Math.ceil(candidate.games * config.eligibility.kickerFieldGoalAttemptsPerGame)),
+    'kicker', kickerMetrics, config, candidate => gamesRate(candidate.kicking.field_goals_made, candidate),
+  );
+  const offensiveCandidates = [...quarterbacks, ...runningBacks, ...heismanReceivers].map(
+    candidate => ({
+      ...candidate,
+      primaryProduction: offensiveValuePerGame(candidate.profile),
+    }),
+  );
+  const offensiveImpactPercentiles = tiedMidrankPercentiles(
+    offensiveCandidates,
+    candidate => candidate.primaryProduction,
+  );
+  const heismanImpactShare = config.heismanOffensiveImpactShare;
+  const heisman = offensiveCandidates.map(candidate => ({
+    ...candidate,
+    coreScore: candidate.performanceScore * (1 - heismanImpactShare)
+      + (offensiveImpactPercentiles.get(candidate) ?? 0) * heismanImpactShare,
+  }));
+  const bednarik = [...defensiveLine, ...linebackers, ...defensiveBacks].map(candidate => ({
+    ...candidate,
+    primaryProduction: defensiveImpactPerGame(candidate.profile),
+  }));
+  const nagurskiCandidates = bednarik.map(candidate => ({
+    ...candidate,
+    primaryProduction: nagurskiImpactPerGame(candidate.profile),
+  }));
+  const defensiveImpactPercentiles = tiedMidrankPercentiles(
+    nagurskiCandidates,
+    candidate => candidate.primaryProduction,
+  );
+  const impactShare = config.nagurskiDefensiveImpactShare;
+  const nagurski = nagurskiCandidates.map(candidate => ({
+    ...candidate,
+    coreScore: candidate.performanceScore * (1 - impactShare)
+      + (defensiveImpactPercentiles.get(candidate) ?? 0) * impactShare,
+  }));
+  return {
+    heisman: finalizeScores(heisman, config.teamRankShares.heisman),
+    maxwell: finalizeScores(offensiveCandidates, config.teamRankShares.standard),
+    davey_obrien: finalizeScores(quarterbacks, config.teamRankShares.standard),
+    doak_walker: finalizeScores(runningBacks, config.teamRankShares.standard),
+    biletnikoff: finalizeScores(wideReceivers, config.teamRankShares.standard),
+    mackey: finalizeScores(tightEnds, config.teamRankShares.standard),
+    bednarik: finalizeScores(bednarik, config.teamRankShares.standard),
+    nagurski: finalizeScores(nagurski, config.teamRankShares.standard),
+    ted_hendricks: finalizeScores(defensiveLine, config.teamRankShares.standard),
+    butkus: finalizeScores(linebackers, config.teamRankShares.standard),
+    thorpe: finalizeScores(defensiveBacks, config.teamRankShares.standard),
+    lou_groza: finalizeScores(kickers, config.teamRankShares.standard),
+  } satisfies Record<AwardSlug, ScoredCandidate[]>;
 };
 
-const calcDoakWalker = (
+export const buildAwardScoringSnapshot = (
+  league: LeagueState,
   players: PlayerRecord[],
-  statCache: AwardStatCache,
-) => {
-  const candidates: AwardCandidate[] = [];
-  players.forEach(player => {
-    if (player.pos !== 'rb' || !player.starter) return;
-    const stats = statCache.rushing.get(player.id);
-    if (!stats) return;
-    const score = (player.rating || 0) + (stats.yards_per_game || 0) * 1.8;
-    candidates.push({ player, score });
-  });
-  return candidates.sort((a, b) => b.score - a.score).slice(0, 3);
-};
-
-const calcBiletnikoff = (
-  players: PlayerRecord[],
-  statCache: AwardStatCache,
-) => {
-  const candidates: AwardCandidate[] = [];
-  players.forEach(player => {
-    if (player.pos !== 'wr' || !player.starter) return;
-    const stats = statCache.receiving.get(player.id);
-    if (!stats) return;
-    const score = (player.rating || 0) + (stats.yards_per_game || 0) * 2;
-    candidates.push({ player, score });
-  });
-  return candidates.sort((a, b) => b.score - a.score).slice(0, 3);
-};
-
-const calcDefensivePlayer = (
-  players: PlayerRecord[],
-  statCache: AwardStatCache,
-) => {
-  const candidates: AwardCandidate[] = [];
-  players.forEach(player => {
-    if (!player.starter) return;
-    if (!DEFENSIVE_POSITIONS.has(player.pos)) return;
-    const stats = statCache.defensive.get(player.id);
-    if (!stats) return;
-    const score = (player.rating || 0) + stats.tackles * 1.5 + stats.sacks * 4 + stats.interceptions * 3;
-    candidates.push({ player, score });
-  });
-  return candidates.sort((a, b) => b.score - a.score).slice(0, 3);
-};
-
-const calcSpecificDefender = (
-  players: PlayerRecord[],
-  statCache: AwardStatCache,
-  allowedPositions: Set<string>,
-  weights: Partial<Record<'tackles' | 'sacks' | 'interceptions', number>>,
-) => {
-  const candidates: AwardCandidate[] = [];
-  players.forEach(player => {
-    if (!player.starter) return;
-    if (!allowedPositions.has(player.pos)) return;
-    const stats = statCache.defensive.get(player.id);
-    if (!stats) return;
-    let score = player.rating || 0;
-    Object.entries(weights).forEach(([key, weight]) => {
-      const value = stats[key as keyof typeof weights] ?? 0;
-      score += value * weight;
+  games: GameRecord[],
+  logs: GameLogRecord[],
+  config: AwardScoringConfig = AWARD_SCORING_CONFIG,
+): AwardScoringSnapshot => {
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const candidatesBySlug = buildCandidatePools(buildCandidateProfiles(league, players, games, logs), config);
+  const buildDisplayEntry = (slug: AwardSlug) => {
+    const keys = ['first', 'second', 'third'] as const;
+    const placements: AwardDisplayPlacement[] = keys.map((key, index) => {
+      const candidate = candidatesBySlug[slug][index];
+      if (!candidate) return { key, player: null, score: null, statLine: null };
+      const { player } = candidate.profile;
+      return {
+        key,
+        player: {
+          id: player.id,
+          first: player.first,
+          last: player.last,
+          position: player.pos,
+          teamName: teamsById.get(player.teamId)?.name ?? '',
+        },
+        score: candidate.score,
+        statLine: candidate.profile.statLine,
+      };
     });
-    candidates.push({ player, score });
-  });
-  return candidates.sort((a, b) => b.score - a.score).slice(0, 3);
-};
-
-const calcKicking = (
-  players: PlayerRecord[],
-  statCache: AwardStatCache,
-) => {
-  const candidates: AwardCandidate[] = [];
-  players.forEach(player => {
-    if (player.pos !== 'k' || !player.starter) return;
-    const stats = statCache.kicking.get(player.id);
-    if (!stats) return;
-    const accuracy = stats.field_goals_attempted > 0
-      ? (stats.field_goals_made / stats.field_goals_attempted) * 100
-      : 0;
-    const score = (player.rating || 0) + stats.field_goals_made * 2 + accuracy * 0.1;
-    candidates.push({ player, score });
-  });
-  return candidates.sort((a, b) => b.score - a.score).slice(0, 3);
+    return createAwardDisplayEntry(slug, placements);
+  };
+  const displayed = AWARD_DEFINITIONS.map(definition => buildDisplayEntry(definition.slug));
+  const candidates = Object.fromEntries(AWARD_DEFINITIONS.map(definition => [
+    definition.slug,
+    candidatesBySlug[definition.slug].map(candidate => ({
+      award: definition.slug,
+      playerId: candidate.profile.player.id,
+      teamId: candidate.profile.player.teamId,
+      position: candidate.profile.player.pos,
+      cohort: candidate.cohort,
+      games: candidate.profile.games,
+      components: candidate.components,
+      performanceScore: candidate.performanceScore,
+      preTeamRankCoreScore: candidate.preTeamRankCoreScore,
+      coreScore: candidate.resolvedCoreScore,
+      ratingPercentile: candidate.ratingPercentile,
+      ratingPriorShare: candidate.ratingPriorShare,
+      teamRank: candidate.profile.teamRank,
+      teamRankPercentile: candidate.profile.teamRankPercentile,
+      teamRankShare: candidate.teamRankShare,
+      finalScore: candidate.score,
+      primaryProduction: candidate.primaryProduction,
+      primaryProductionPercentile: candidate.primaryProductionPercentile,
+      heismanOffensiveImpact: definition.slug === 'heisman'
+        ? candidate.primaryProduction : null,
+      heismanOffensiveImpactPercentile: definition.slug === 'heisman'
+        ? candidate.primaryProductionPercentile : null,
+      heismanOffensiveImpactShare: definition.slug === 'heisman'
+        ? config.heismanOffensiveImpactShare : null,
+      tiebreakers: {
+        performanceScore: candidate.performanceScore,
+        primaryProduction: candidate.primaryProduction,
+        playerId: candidate.profile.player.id,
+      },
+    })),
+  ])) as Record<AwardSlug, AwardCandidateDiagnostic[]>;
+  return {
+    awards: {
+      live: displayed,
+      final: displayed.map(entry => ({ ...entry, placements: [...entry.placements] })),
+    },
+    candidates,
+  };
 };
 
 export const buildAwards = (
   league: LeagueState,
   players: PlayerRecord[],
-  logs: GameLogRecord[]
-): AwardsResult => {
-  const teamsById = new Map(league.teams.map(team => [team.id, team]));
-  const statCache = buildStatCache(players, logs, teamsById);
-
-  const candidatesBySlug: Record<AwardSlug, AwardCandidate[]> = {
-    heisman: calcHeisman(league, players, statCache, teamsById),
-    davey_obrien: calcDaveyObrien(players, statCache),
-    doak_walker: calcDoakWalker(players, statCache),
-    biletnikoff: calcBiletnikoff(players, statCache),
-    bednarik: calcDefensivePlayer(players, statCache),
-    ted_hendricks: calcSpecificDefender(
-      players,
-      statCache,
-      new Set(['dl', 'de']),
-      { sacks: 5, tackles: 1.2 }
-    ),
-    butkus: calcSpecificDefender(
-      players,
-      statCache,
-      new Set(['lb']),
-      { tackles: 1.3, interceptions: 3 }
-    ),
-    thorpe: calcSpecificDefender(
-      players,
-      statCache,
-      new Set(['cb', 's']),
-      { interceptions: 4, tackles: 1.0 }
-    ),
-    lou_groza: calcKicking(players, statCache),
-  };
-
-  const buildDisplayEntry = (
-    slug: AwardSlug,
-    candidates: AwardCandidate[],
-  ) => {
-    const keys = ['first', 'second', 'third'] as const;
-    const placements: AwardDisplayPlacement[] = keys.map((key, index) => {
-      const candidate = candidates[index];
-      if (!candidate) {
-        return { key, player: null, score: null, statLine: null };
-      }
-      return {
-        key,
-        player: {
-          id: candidate.player.id,
-          first: candidate.player.first,
-          last: candidate.player.last,
-          position: candidate.player.pos,
-          teamName: teamsById.get(candidate.player.teamId)?.name ?? '',
-        },
-        score: candidate.score,
-        statLine: statCache.statLines.get(candidate.player.id) ?? 'No stats yet',
-      };
-    });
-    return createAwardDisplayEntry(slug, placements);
-  };
-
-  const live = AWARD_DEFINITIONS.map(definition =>
-    buildDisplayEntry(definition.slug, candidatesBySlug[definition.slug]),
-  );
-
-  const blockedPlayers = new Set<number>();
-  const final = FINAL_WINNER_PRIORITY.map(slug => {
-    const candidates = candidatesBySlug[slug];
-    let firstCandidate: (typeof candidates)[number] | undefined = candidates[0];
-    if (firstCandidate && blockedPlayers.has(firstCandidate.player.id)) {
-      firstCandidate = candidates.find(candidate => !blockedPlayers.has(candidate.player.id));
-    }
-    if (firstCandidate) {
-      blockedPlayers.add(firstCandidate.player.id);
-    }
-    const ordered: AwardCandidate[] = [];
-    if (firstCandidate) {
-      ordered.push(firstCandidate);
-    }
-    ordered.push(...candidates.filter(candidate => candidate !== firstCandidate));
-    return buildDisplayEntry(slug, ordered);
-  });
-
-  return { live, final };
-};
+  games: GameRecord[],
+  logs: GameLogRecord[],
+): AwardsResult => buildAwardScoringSnapshot(league, players, games, logs).awards;

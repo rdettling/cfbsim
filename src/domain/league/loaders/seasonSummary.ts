@@ -61,7 +61,7 @@ export const loadSeasonSummary = async () => {
     games.filter(game => game.year === league.info.currentYear && game.winnerId !== null).map(game => game.id)
   );
   const yearLogs = gameLogs.filter(log => playedGameIds.has(log.gameId));
-  const { final } = buildAwards(league, players, yearLogs);
+  const { final } = buildAwards(league, players, games, gameLogs);
   const memory = buildSeasonMemory(league, games, players, yearLogs, plays);
 
   let champion: Team | null = null;

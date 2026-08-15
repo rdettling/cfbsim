@@ -47,7 +47,7 @@ export const PlayerCareerDesktopTable = ({
   const columns = getCareerColumns(category);
 
   return (
-    <DataTable ariaLabel="Career statistics" minWidth={760 + columns.length * 36}>
+    <DataTable embedded ariaLabel="Career statistics" minWidth={760 + columns.length * 36}>
       <TableHead>
         <TableRow sx={{ bgcolor: 'background.default' }}>
           <TableCell sx={{ ...yearCellSx, zIndex: 4, bgcolor: 'background.default' }}>Year</TableCell>

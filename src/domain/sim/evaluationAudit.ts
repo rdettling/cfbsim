@@ -430,7 +430,6 @@ export const auditSimulatedGame = (
     recordFieldPosition(totals, drive.nextFieldPosition, violations);
     if ([
       record.points,
-      record.points_needed,
       record.scoreAAfter,
       record.scoreBAfter,
     ].some(value => !finite(value))) {

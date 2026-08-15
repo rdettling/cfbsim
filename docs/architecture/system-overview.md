@@ -175,4 +175,8 @@ league advancement.
 - `src/domain/league/rosterFinalization.ts`: roster-cut and preseason
   finalization commands.
 - `src/domain/league/loaders/`: page projections.
+- `src/domain/league/loaders/postseason/`: route-specific postseason page
+  projections and shared read context.
+- `src/domain/league/utils/bowlSelection.ts`: authoritative bowl catalog,
+  NY6 rotation, classification, and matchup-selection policy.
 - `src/constants/stages.ts`: exhaustive stage catalog.

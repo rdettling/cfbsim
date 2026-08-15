@@ -36,7 +36,6 @@ const buildDriveState = (
     startingFP: 25,
     result: '',
     points: 0,
-    points_needed: 0,
     scoreAAfter: 0,
     scoreBAfter: 0,
   },
@@ -60,11 +59,6 @@ const buildPromptInput = (
   simGame: buildGame(),
   inOvertime: false,
   overtimePossession: 0,
-  simContext: {
-    offense: teamA,
-    defense: teamB,
-    lead: 0,
-  },
   ...overrides,
 });
 
@@ -79,7 +73,7 @@ describe('game simulation decision policy', () => {
     });
     expect(resolveGameSimDecisionPrompt(buildPromptInput({
       driveState: buildDriveState({ down: 4 }),
-    }))).toMatchObject({ side: 'offense', type: 'fourth_down', down: 4 });
+    }))).toMatchObject({ side: 'offense', type: 'scrimmage', down: 4 });
   });
 
   it('resolves defensive calls only when the offense is going for the play', () => {
@@ -106,11 +100,21 @@ describe('game simulation decision policy', () => {
     expect(resolveGameSimDecisionPrompt(buildPromptInput({
       userTeamId: teamB.id,
       simGame,
-      simContext: {
-        offense: teamA,
-        defense: teamB,
-        lead: 0,
-      },
+    }))).toBeNull();
+  });
+
+  it('suppresses a defensive prompt when the AI selects an any-down final field goal', () => {
+    const simGame = buildGame({
+      quarter: 4,
+      clockSecondsLeft: 3,
+      clockRunning: true,
+      scoreA: 24,
+      scoreB: 26,
+    });
+    expect(resolveGameSimDecisionPrompt(buildPromptInput({
+      userTeamId: teamB.id,
+      driveState: buildDriveState({ down: 2, fieldPosition: 82 }),
+      simGame,
     }))).toBeNull();
   });
 
@@ -126,7 +130,6 @@ describe('game simulation decision policy', () => {
       simGame: overtimeGame,
       inOvertime: true,
       overtimePossession: 0,
-      simContext: null,
     }))).toMatchObject({ side: 'defense', type: 'try', allowExtraPoint: false });
   });
 

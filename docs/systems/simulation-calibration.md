@@ -96,10 +96,10 @@ Team-rating preservation targets are:
 
 | Rating difference | Win rate | Average margin |
 |---:|---:|---:|
-| 0 | 51.5% | — |
-| +7 | 65.2% | 5.229 |
-| +14 | 78.9% | 11.359 |
-| +21 | 88.3% | 17.507 |
+| 0 | 49.7% | — |
+| +7 | 66.7% | 6.620 |
+| +14 | 80.3% | 12.809 |
+| +21 | 90.6% | 19.742 |
 
 Win rates allow ±4 percentage points; positive margins allow ±2.5 points and
 must remain strictly increasing by rating difference.
@@ -113,15 +113,18 @@ mixed-rating slate or use those distributions as hard gates.
 ## Current Status
 
 The holistic tuner candidate is adopted. The accepted simulation checksum is
-`66ccddc7`, and the accepted representative news-content checksum is
+`1b914e9a`, and the accepted representative news-content checksum is
 `b2218e6b`. The default audit passes all hard gates.
+The simulation checksum includes complete drive artifacts, so an intentional
+persisted-record shape change advances it even when football metrics and random
+sampling remain unchanged.
 
-The 1,000-game equal-team comparison aligns 15 of 22 production metrics. It
-reports seven diagnostic gaps: fourth-down conversion, turnovers, lost
-fumbles, and red-zone touchdown rate are high; made field goals and passing
-yards per attempt/completion are low. The pre-adoption five-block stability
-audit found the same general coupling: changing the remaining controls tends
-to exchange gaps instead of resolving them together.
+The 1,000-game equal-team comparison aligns 17 of 22 production metrics. It
+reports five diagnostic gaps: red-zone touchdown rate is high; made field
+goals, touchdowns, and passing yards per attempt/completion are low. The
+five-block stability audit passes the unchanged rating-preservation tolerances;
+changing the remaining controls still tends to exchange production gaps
+instead of resolving them together.
 
 This is an intentional good-enough baseline, not a claim of exact NCAA
 reproduction. Further tuning should begin only in response to a concrete game

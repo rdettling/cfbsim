@@ -99,7 +99,6 @@ const scoringDrive = ({
   startingFP: 25,
   result: 'touchdown',
   points: 7,
-  points_needed: 0,
   scoreAAfter: scoreA,
   scoreBAfter: scoreB,
   plays: [{

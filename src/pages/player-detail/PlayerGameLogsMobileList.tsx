@@ -27,7 +27,12 @@ export const PlayerGameLogsMobileList = ({
       component="section"
       variant="outlined"
       aria-label="Player game logs"
-      sx={{ display: { xs: 'block', md: 'none' }, overflow: 'hidden' }}
+      sx={{
+        display: { xs: 'block', md: 'none' },
+        overflow: 'hidden',
+        border: 0,
+        borderRadius: 0,
+      }}
     >
       {logs.map((log, index) => {
         const logKey = `${log.game.id}-${index}`;

@@ -4,12 +4,14 @@ import type { ReactNode } from 'react';
 type DataTableProps = {
   ariaLabel: string;
   minWidth?: number;
+  embedded?: boolean;
   children: ReactNode;
 };
 
 export const DataTable = ({
   ariaLabel,
   minWidth,
+  embedded = false,
   children,
 }: DataTableProps) => (
   <Box
@@ -22,7 +24,14 @@ export const DataTable = ({
     <TableContainer
       component={Paper}
       variant="outlined"
-      sx={{ height: { lg: '100%' }, overflow: 'auto' }}
+      sx={{
+        height: { lg: '100%' },
+        overflow: 'auto',
+        ...(embedded && {
+          border: 0,
+          borderRadius: 0,
+        }),
+      }}
     >
       <Table
         stickyHeader

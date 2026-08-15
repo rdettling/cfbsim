@@ -170,7 +170,7 @@ IDs must remain stable once their coverage is established.
 11. Run `npm run eval:sim` for exact replay, game-state invariants, relationship
     gates, rating preservation, and diagnostics for the 22 frozen production
     metrics. Production, score, and margin comparisons do not fail the command.
-    The accepted replay checksum is `66ccddc7`.
+    The accepted replay checksum is `1b914e9a`.
 12. Run `npm run generate:sim-benchmark -- --check` when benchmark generation,
     calibration metrics, or source documentation changes. Routine tests remain
     offline; this explicit check is the networked source-verification step.
@@ -224,7 +224,8 @@ internal scrolling; below `lg`, verify no unintended horizontal overflow.
   - `src/domain/sim/postseason.ts`
 - Rankings/playoff/awards:
   - `src/domain/sim/rankings.ts`
-  - `src/domain/league/loaders/playoff.ts`
+  - `src/domain/league/loaders/postseason/`
+  - `src/domain/league/utils/bowlSelection.ts`
   - `src/domain/league/awards.ts`
 - Roster/recruiting:
   - `src/domain/roster.ts`

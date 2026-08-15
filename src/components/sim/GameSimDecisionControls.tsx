@@ -184,20 +184,22 @@ const GameSimDecisionControls = ({
                 </Button>
               ))}
             </ChoiceGroup>
-            {decisionPrompt.type === 'fourth_down' && (
+            {!isTry && (
               <ChoiceGroup
                 label="Special teams"
                 ariaLabel="Special teams calls"
                 secondary
               >
-                <Button
-                  variant="outlined"
-                  size="small"
-                  disabled={disabled}
-                  onClick={() => onDecision({ kind: 'special_teams', concept: 'punt' })}
-                >
-                  Punt
-                </Button>
+                {decisionPrompt.down === 4 && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={disabled}
+                    onClick={() => onDecision({ kind: 'special_teams', concept: 'punt' })}
+                  >
+                    Punt
+                  </Button>
+                )}
                 <Button
                   variant="outlined"
                   size="small"

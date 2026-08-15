@@ -54,7 +54,6 @@ describe('game detail persistence projections', () => {
       startingFP: 25,
       result: 'touchdown',
       points: 7,
-      points_needed: 0,
       scoreAAfter: 7,
       scoreBAfter: 0,
     };
@@ -82,6 +81,7 @@ describe('game detail persistence projections', () => {
 
     expect(detail.drives[0]).not.toHaveProperty('id');
     expect(detail.drives[0]).not.toHaveProperty('gameId');
+    expect(detail.drives[0]).not.toHaveProperty('points_needed');
     expect(detail.drives[0].plays[0]).not.toHaveProperty('id');
     expect(detail.drives[0].plays[0]).not.toHaveProperty('gameId');
     expect(detail.drives[0].plays[0]).not.toHaveProperty('driveId');

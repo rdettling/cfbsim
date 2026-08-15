@@ -58,10 +58,10 @@ export const SIM_PRODUCTION_METRIC_KEYS = Object.keys(
 ).sort();
 
 export const SIM_RATING_PRESERVATION = [
-  { ratingDifference: 0, winRate: 0.515, margin: null },
-  { ratingDifference: 7, winRate: 0.652, margin: 5.229 },
-  { ratingDifference: 14, winRate: 0.789, margin: 11.359 },
-  { ratingDifference: 21, winRate: 0.883, margin: 17.507 },
+  { ratingDifference: 0, winRate: 0.497, margin: null },
+  { ratingDifference: 7, winRate: 0.667, margin: 6.62 },
+  { ratingDifference: 14, winRate: 0.803, margin: 12.809 },
+  { ratingDifference: 21, winRate: 0.906, margin: 19.742 },
 ] as const;
 export const SIM_RATING_WIN_RATE_TOLERANCE = 0.04;
 export const SIM_RATING_MARGIN_TOLERANCE = 2.5;

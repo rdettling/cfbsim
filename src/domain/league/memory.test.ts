@@ -49,7 +49,7 @@ const game = (
 
 const log: GameLogRecord = {
   playerId: 1,
-  gameId: 13,
+  gameId: 10,
   pass_yards: 350,
   pass_attempts: 30,
   pass_completions: 22,
@@ -105,8 +105,33 @@ describe('buildSeasonMemory', () => {
         game(12, 'Playoff semifinal', 1, 'playoff_semifinal'),
         game(13, 'National Championship', 1, 'national_championship'),
       ],
-      [buildTestPlayer()],
-      [log],
+      [
+        buildTestPlayer({ id: 1, pos: 'qb' }),
+        buildTestPlayer({ id: 2, pos: 'rb' }),
+        buildTestPlayer({ id: 3, pos: 'wr' }),
+        buildTestPlayer({ id: 4, pos: 'te' }),
+        buildTestPlayer({ id: 5, pos: 'dl' }),
+        buildTestPlayer({ id: 6, pos: 'lb' }),
+        buildTestPlayer({ id: 7, pos: 'cb' }),
+        buildTestPlayer({ id: 8, pos: 'k' }),
+      ],
+      [
+        log,
+        { ...log, playerId: 2, rush_attempts: 20, rush_yards: 120, rush_touchdowns: 2 },
+        { ...log, playerId: 3, receiving_catches: 7, receiving_yards: 110, receiving_touchdowns: 1 },
+        { ...log, playerId: 4, receiving_catches: 5, receiving_yards: 80, receiving_touchdowns: 1 },
+        { ...log, playerId: 5, tackles: 6, sacks: 2 },
+        { ...log, playerId: 6, tackles: 10, interceptions: 1 },
+        { ...log, playerId: 7, tackles: 5, interceptions: 2 },
+        {
+          ...log,
+          playerId: 8,
+          field_goals_made: 3,
+          field_goals_attempted: 3,
+          extra_points_made: 4,
+          extra_points_attempted: 4,
+        },
+      ],
       [],
     );
 
@@ -136,11 +161,21 @@ describe('buildSeasonMemory', () => {
         defense: buildTestTeamAggregateTotals({ points: 124 }),
       }),
     ]);
-    expect(memory.awards[0]).toMatchObject({
-      categorySlug: 'heisman',
-      playerId: 1,
-      teamId: 1,
-    });
+    expect(memory.awards.map(award => award.categorySlug)).toEqual([
+      'heisman',
+      'maxwell',
+      'davey_obrien',
+      'doak_walker',
+      'biletnikoff',
+      'mackey',
+      'bednarik',
+      'nagurski',
+      'ted_hendricks',
+      'butkus',
+      'thorpe',
+      'lou_groza',
+    ]);
+    expect(memory.awards.every(award => award.teamId === 1)).toBe(true);
     expect(memory).not.toHaveProperty('last_updated');
   });
 

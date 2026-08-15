@@ -112,7 +112,7 @@ The tuning model is intentionally stochastic: many mechanisms rely on probabilis
   - Benchmark schema 3 defines 22 production comparisons, including combined
     third- and fourth-down attempt volume. The adopted modern-FBS baseline is
     intentionally close rather than overfit; the accepted runtime checksum is
-    `66ccddc7`.
+    `1b914e9a`.
 - **Recruiting controls**:
   - Locked rules include six rounds, the 25-player board, prestige budget
     table, meaningful-pursuit minimum, rating-range width, four-player

@@ -23,6 +23,7 @@
     "tune:sim": "tsx scripts/tune_sim.ts",
     "eval:recruiting-balance": "tsx scripts/eval_recruiting_balance.ts",
     "eval:news": "tsx scripts/eval_news.ts",
+    "eval:awards": "tsx scripts/eval_awards.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.scripts.json"
   },
   "dependencies": {

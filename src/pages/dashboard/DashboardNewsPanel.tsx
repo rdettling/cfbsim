@@ -1,6 +1,7 @@
 import { Box, Button, Divider, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { NewsStoryCard } from '../../components/news/NewsStoryCard';
+import { ROUTES } from '../../constants/routes';
 import type { NewsItem } from '../../types/news';
 import { DashboardPanel } from './DashboardPanel';
 
@@ -17,7 +18,7 @@ export const DashboardNewsPanel = ({ stories }: { stories: NewsItem[] }) => (
           </Box>
         ))}
         <Box sx={{ p: 1.25 }}>
-          <Button component={RouterLink} to="/news" size="small" fullWidth>
+          <Button component={RouterLink} to={ROUTES.NEWS} size="small" fullWidth>
             View all league news
           </Button>
         </Box>

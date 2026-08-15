@@ -40,7 +40,6 @@ export interface DriveRecord {
   startingFP: number;
   result: string;
   points: number;
-  points_needed: number;
   scoreAAfter: number;
   scoreBAfter: number;
 }

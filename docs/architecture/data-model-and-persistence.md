@@ -5,7 +5,7 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 
 ## IndexedDB Schema
 
-`src/db/db.ts` defines the current database at version 23. It is the single
+`src/db/db.ts` defines the current database at version 24. It is the single
 current destructive schema epoch, including the authoritative league-history
 archive shape.
 
@@ -86,8 +86,9 @@ the offensive concept and defensive intent, a punt/field-goal special-teams
 call, a contextual spike/kneel clock-management call, an extra-point try, or a
 two-point concept/intent matchup. Historical integrity
 rejects missing or extra fields, unknown concepts or intents, calls that
-disagree with the coarse play type, clock management in overtime, defensive
-intent on special teams, and special-teams calls outside fourth down.
+    disagree with the coarse play type, clock management in overtime, defensive
+    intent on special teams, and punts outside fourth down. Field goals are valid
+    on any scrimmage down.
 `yardsLeft` always records the pre-snap distance; post-play distance remains
 transient drive state.
 

@@ -103,13 +103,16 @@ describe('AwardsBoard', () => {
     expect(markup).not.toContain('300.0');
   });
 
-  it('keeps all nine empty award rows visible in canonical groups', () => {
+  it('keeps all twelve empty award rows visible in canonical groups', () => {
     const markup = renderBoard([
       award('heisman', 'Heisman Trophy', 'overall', [emptyPlacement('first')]),
+      award('maxwell', 'Maxwell Award', 'overall', [emptyPlacement('first')]),
       award('davey_obrien', "Davey O'Brien Award", 'offense', [emptyPlacement('first')]),
       award('doak_walker', 'Doak Walker Award', 'offense', [emptyPlacement('first')]),
       award('biletnikoff', 'Biletnikoff Award', 'offense', [emptyPlacement('first')]),
+      award('mackey', 'John Mackey Award', 'offense', [emptyPlacement('first')]),
       award('bednarik', 'Bednarik Award', 'defense', [emptyPlacement('first')]),
+      award('nagurski', 'Bronko Nagurski Trophy', 'defense', [emptyPlacement('first')]),
       award('ted_hendricks', 'Ted Hendricks Award', 'defense', [emptyPlacement('first')]),
       award('butkus', 'Butkus Award', 'defense', [emptyPlacement('first')]),
       award('thorpe', 'Thorpe Award', 'defense', [emptyPlacement('first')]),
@@ -120,7 +123,7 @@ describe('AwardsBoard', () => {
     expect(markup).toContain('Offense');
     expect(markup).toContain('Defense');
     expect(markup).toContain('Special Teams');
-    expect(markup.match(/No leader yet/g)).toHaveLength(9);
+    expect(markup.match(/No leader yet/g)).toHaveLength(12);
     expect(markup).not.toContain('View race');
   });
 

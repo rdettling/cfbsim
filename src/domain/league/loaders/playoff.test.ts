@@ -7,12 +7,10 @@ import { loadOddsContext } from '../../odds';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { buildPlayoffSelection } from '../utils/playoffSelection';
 import { buildResumeComparisonSnapshot } from '../utils/resumeComparison';
-import {
-  loadBowlGames,
-  loadPlayoffBracket,
-  loadPlayoffPicture,
-  loadResumeComparison,
-} from './playoff';
+import { loadBowlGames } from './postseason/loadBowlGames';
+import { loadPlayoffBracket } from './postseason/loadPlayoffBracket';
+import { loadPlayoffPicture } from './postseason/loadPlayoffPicture';
+import { loadResumeComparison } from './postseason/loadResumeComparison';
 
 vi.mock('../../../db/simRepo');
 vi.mock('../leagueStore');

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadBowlGames } from '../domain/league/loaders/playoff';
+import { loadBowlGames } from '../domain/league/loaders/postseason/loadBowlGames';
 import type { BowlGamesPageData } from '../types/pages';
 import { PostseasonBowlView } from './playoff/PostseasonBowlView';
 import { PostseasonHeader } from './playoff/PostseasonHeader';

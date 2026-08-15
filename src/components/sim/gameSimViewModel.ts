@@ -2,6 +2,7 @@ import { SECONDS_PER_QUARTER } from '../../domain/sim/clock';
 import { canShowKneel, canShowSpike } from '../../domain/sim/clockManagement';
 import { kickoffStartFieldPosition } from '../../domain/sim/kickoffs';
 import { emptyPlayParticipants } from '../../domain/sim/participants';
+import { getOffenseLead } from '../../domain/sim/score';
 import { buildNextHeader } from '../../domain/sim/ui';
 import type { Team } from '../../types/domain';
 import type { Drive, GameData, Play } from '../../types/game';
@@ -111,6 +112,11 @@ export const buildGameSimViewModel = ({
   const fieldPosition = displayPlay?.startingFP
     ?? driveState?.fieldPosition
     ?? kickoffStartFieldPosition();
+  const previousPlayYards = lastPlay
+    && driveState
+    && lastPlay.driveId === driveState.drive.id
+    ? lastPlay.yardsGained
+    : 0;
   const isBusy = phase === 'preparing' || phase === 'advancing' || phase === 'finalizing';
   const userSide: GameSimUserSide = driveState?.phase === 'try'
     ? null
@@ -124,9 +130,9 @@ export const buildGameSimViewModel = ({
     : context?.userTeamId === context?.simGame.teamB.id
       ? context?.simGame.timeoutsRemainingB ?? 0
       : 0;
-  const offenseLead = context?.currentOffense?.id === context?.simGame.teamA.id
-    ? (context?.simGame.scoreA ?? 0) - (context?.simGame.scoreB ?? 0)
-    : (context?.simGame.scoreB ?? 0) - (context?.simGame.scoreA ?? 0);
+  const offenseLead = context?.currentOffense
+    ? getOffenseLead(context.simGame, context.currentOffense)
+    : 0;
   const managementClock = {
     quarter: context?.simGame.quarter ?? 1,
     secondsLeft: context?.simGame.clockSecondsLeft ?? SECONDS_PER_QUARTER,
@@ -138,6 +144,7 @@ export const buildGameSimViewModel = ({
     displayDrive,
     isTeamAOnOffense,
     fieldPosition,
+    previousPlayYards,
     isBusy,
     lastPlayText: lastPlay?.text ?? '',
     quarter: context?.simGame.quarter ?? 1,

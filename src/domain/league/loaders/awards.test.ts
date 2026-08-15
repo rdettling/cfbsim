@@ -94,10 +94,13 @@ describe('loadAwards', () => {
     expect(result.mode).toBe(expectedMode);
     expect(result.awards.map(award => award.categorySlug)).toEqual([
       'heisman',
+      'maxwell',
       'davey_obrien',
       'doak_walker',
       'biletnikoff',
+      'mackey',
       'bednarik',
+      'nagurski',
       'ted_hendricks',
       'butkus',
       'thorpe',

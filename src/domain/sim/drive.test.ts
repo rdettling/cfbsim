@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Team } from '../../types/domain';
 import type { LeagueState } from '../../types/league';
-import type { InteractivePlayChoice, SimGame } from '../../types/sim';
+import type { InteractivePlayChoice, SimContext, SimGame } from '../../types/sim';
 import { buildTestPlayer } from '../../test/fixtures';
 import { createSeededRandom, withSeededMathRandom } from '../utils/random';
 import {
@@ -11,7 +11,6 @@ import {
   startInteractiveDrive,
   startOvertimeShootoutDrive,
   stepInteractiveDrive,
-  type SimContext,
 } from './drive';
 import { buildStartersCacheFromPlayers } from './statistics';
 import { OFFENSIVE_CONCEPTS } from './concepts';
@@ -116,7 +115,6 @@ const buildContext = (clockEnabled = false): SimContext => {
     starters: buildStartersCacheFromPlayers(players),
     offense: teamA,
     defense: teamB,
-    lead: 0,
     clockEnabled,
     overtimePossession: clockEnabled ? null : 0,
   };
@@ -209,13 +207,22 @@ describe('drive resolution', () => {
     },
   );
 
-  it('rejects special teams before fourth down', () => {
+  it('allows field goals on any down but rejects punts before fourth down', () => {
     const context = buildContext();
     expect(() => stepInteractiveDrive(
       context,
       startInteractiveDrive(context, 25, 0),
       instruction({ kind: 'special_teams', concept: 'punt' }),
-    )).toThrow('special teams before fourth down');
+    )).toThrow('punt before fourth down');
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.001);
+    const fieldGoalContext = buildContext();
+    const fieldGoal = stepInteractiveDrive(
+      fieldGoalContext,
+      startInteractiveDrive(fieldGoalContext, 90, 0),
+      instruction({ kind: 'special_teams', concept: 'field_goal' }),
+    );
+    expect(fieldGoal.play.result).toBe('made field goal');
   });
 
   it('pairs a manual defensive intent with a hidden automatic offensive concept', () => {
@@ -400,6 +407,34 @@ describe('drive resolution', () => {
     expect(context.game.quarter).toBe(3);
   });
 
+  it('kicks the winning field goal instead of running out the final clock', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.001);
+    const context = buildContext(true);
+    context.game.quarter = 4;
+    context.game.clockSecondsLeft = 3;
+    context.game.clockRunning = true;
+    context.game.timeoutsRemainingA = 0;
+    context.game.scoreA = 24;
+    context.game.scoreB = 26;
+    const state = startInteractiveDrive(context, 82, 0);
+    state.down = 4;
+    state.yardsLeft = 1;
+
+    const result = stepInteractiveDrive(context, state, instruction());
+
+    expect(result.play.call).toEqual({ kind: 'special_teams', concept: 'field_goal' });
+    expect(result.play.result).toBe('made field goal');
+    expect(result.play.timing).toMatchObject({
+      kind: 'regulation',
+      eventAfter: 'end_of_regulation',
+      end: { secondsLeft: 0 },
+    });
+    expect(context.game.scoreA).toBe(27);
+    expect(context.game.scoreB).toBe(26);
+    expect(result.driveComplete).toBe(true);
+    expect(result.gameComplete).toBe(true);
+  });
+
   it('resolves participant-linked spikes without accepting fewer than three seconds', () => {
     const context = buildContext(true);
     context.game.quarter = 4;
@@ -433,7 +468,7 @@ describe('drive resolution', () => {
     const context = buildContext(true);
     context.game.quarter = 4;
     context.game.clockSecondsLeft = 80;
-    context.lead = 3;
+    context.game.scoreA = 3;
     const timeoutInstruction = instruction({ kind: 'clock_management', action: 'kneel' });
     timeoutInstruction.timeoutAfter = { offense: 'hold', defense: 'use' };
     const result = stepInteractiveDrive(

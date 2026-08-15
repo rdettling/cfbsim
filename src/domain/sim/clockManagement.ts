@@ -4,11 +4,11 @@ import type {
 } from '../../types/db';
 import type {
   InteractiveStepInstruction,
+  ClockState,
   SimGame,
   TimeoutInstruction,
 } from '../../types/sim';
 import type { Team } from '../../types/domain';
-import type { ClockState } from './clock';
 import { SIM_TUNING } from './config';
 
 export const CLOCK_MANAGEMENT_LABELS: Record<ClockManagementAction, string> = {

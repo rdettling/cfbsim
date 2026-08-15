@@ -1,6 +1,6 @@
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Chip, Link, Paper, Stack, Typography } from '@mui/material';
-import { PLAYER_YEAR_LABELS } from './config';
+import { PLAYER_YEAR_LABELS } from '../../constants/player';
 import type { RosterViewProps } from './types';
 
 export const RosterMobileList = ({ groups }: RosterViewProps) => (

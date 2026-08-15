@@ -9,6 +9,7 @@ import type { Team } from '../../types/domain';
 import type { SimGame } from '../../types/sim';
 import { SIM_TUNING } from './config';
 import { isPassConcept, isRunConcept } from './concepts';
+import { getOffenseLead } from './score';
 
 export const TRY_FIELD_POSITION = 97;
 export const TRY_YARDS = 3;
@@ -53,11 +54,6 @@ export const mapTwoPointResult = (
 export const makeExtraPoint = () =>
   Math.random() < SIM_TUNING.conversions.extraPointMakeProbability;
 
-const offenseLead = (game: SimGame, offense: Team) =>
-  offense.id === game.teamA.id
-    ? game.scoreA - game.scoreB
-    : game.scoreB - game.scoreA;
-
 export const chooseAutomaticTryAttempt = ({
   game,
   offense,
@@ -70,7 +66,7 @@ export const chooseAutomaticTryAttempt = ({
   overtimePossession: 0 | 1 | null;
 }): 'extra_point' | 'two_point' => {
   if (origin === 'overtime_shootout' || game.overtime >= 2) return 'two_point';
-  const lead = offenseLead(game, offense);
+  const lead = getOffenseLead(game, offense);
   if (game.overtime === 1) {
     return overtimePossession === 1 && lead === -2 ? 'two_point' : 'extra_point';
   }
@@ -93,7 +89,7 @@ export const tryRequiredAfterTouchdown = ({
   offense: Team;
   overtimePossession: 0 | 1 | null;
 }) => {
-  const lead = offenseLead(game, offense);
+  const lead = getOffenseLead(game, offense);
   if (game.overtime > 0) {
     return overtimePossession !== 1 || (lead <= 0 && lead >= -2);
   }

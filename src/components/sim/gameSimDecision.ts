@@ -1,13 +1,12 @@
-import {
-  AUTO_STEP_INSTRUCTION,
-  chooseAutomaticClockAction,
-} from '../../domain/sim/clockManagement';
+import { AUTO_STEP_INSTRUCTION } from '../../domain/sim/clockManagement';
 import {
   chooseAutomaticTryAttempt,
   extraPointAllowed,
 } from '../../domain/sim/conversions';
-import type { SimContext } from '../../domain/sim/drive';
-import { decideFourthDown } from '../../domain/sim/playcalling';
+import {
+  buildAutomaticOffenseSituation,
+  chooseAutomaticOffenseAction,
+} from '../../domain/sim/playcalling';
 import type { ClockTempo } from '../../types/db';
 import type { Team } from '../../types/domain';
 import type {
@@ -28,7 +27,6 @@ type DecisionPromptInput = {
   simGame: SimGame;
   inOvertime: boolean;
   overtimePossession: number;
-  simContext: Pick<SimContext, 'offense' | 'defense' | 'lead'> | null;
 };
 
 type StepInstructionInput = {
@@ -45,9 +43,9 @@ type StepInstructionInput = {
 const buildDecisionPrompt = (
   state: InteractiveDriveState,
   side: SimulationDecisionPrompt['side'],
-): SimulationDecisionPrompt => ({
+): Extract<SimulationDecisionPrompt, { type: 'scrimmage' }> => ({
   side,
-  type: side === 'offense' && state.down === 4 ? 'fourth_down' : 'scrimmage',
+  type: 'scrimmage',
   down: state.down,
   yardsLeft: state.yardsLeft,
   fieldPosition: state.fieldPosition,
@@ -61,7 +59,6 @@ export const resolveGameSimDecisionPrompt = ({
   simGame,
   inOvertime,
   overtimePossession,
-  simContext,
 }: DecisionPromptInput): SimulationDecisionPrompt | null => {
   if (!driveState || !userTeamId) return null;
 
@@ -97,35 +94,21 @@ export const resolveGameSimDecisionPrompt = ({
   }
 
   if (currentDefense?.id === userTeamId) {
-    if (
-      !inOvertime
-      && simContext
-      && chooseAutomaticClockAction({
-        game: simGame,
-        offense: simContext.offense,
-        defense: simContext.defense,
-        offenseLead: simContext.lead,
-        down: driveState.down,
-        clock: {
-          quarter: simGame.quarter,
-          secondsLeft: simGame.clockSecondsLeft,
-          clockRunning: simGame.clockRunning,
-        },
-      })
-    ) {
-      return null;
+    if (currentOffense) {
+      const automaticAction = chooseAutomaticOffenseAction(
+        buildAutomaticOffenseSituation({
+          game: simGame,
+          offense: currentOffense,
+          defense: currentDefense,
+          down: driveState.down,
+          yardsLeft: driveState.yardsLeft,
+          fieldPosition: driveState.fieldPosition,
+          clockEnabled: !inOvertime,
+        }),
+      );
+      if (automaticAction.kind !== 'scrimmage') return null;
     }
-
-    const fourthDownCall = driveState.down === 4
-      ? decideFourthDown(
-          driveState.fieldPosition,
-          driveState.yardsLeft,
-          driveState.drive.points_needed,
-        )
-      : 'go';
-    return fourthDownCall === 'go'
-      ? buildDecisionPrompt(driveState, 'defense')
-      : null;
+    return buildDecisionPrompt(driveState, 'defense');
   }
 
   return null;

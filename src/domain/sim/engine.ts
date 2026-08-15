@@ -43,7 +43,6 @@ export const simGame = (
   while (true) {
     const offense = nextOffenseIsTeamA ? game.teamA : game.teamB;
     const defense = nextOffenseIsTeamA ? game.teamB : game.teamA;
-    const lead = nextOffenseIsTeamA ? game.scoreA - game.scoreB : game.scoreB - game.scoreA;
     const prevQuarter = game.quarter;
 
     const driveResult = simDrive(
@@ -53,7 +52,6 @@ export const simGame = (
         starters,
         offense,
         defense,
-        lead,
         clockEnabled: true,
         overtimePossession: null,
       },
@@ -89,14 +87,12 @@ export const simGame = (
         const isTeamA = possession === 0;
         const offense = isTeamA ? game.teamA : game.teamB;
         const defense = isTeamA ? game.teamB : game.teamA;
-        const lead = isTeamA ? game.scoreA - game.scoreB : game.scoreB - game.scoreA;
         const overtimeContext = {
           league,
           game,
           starters,
           offense,
           defense,
-          lead,
           clockEnabled: false,
           overtimePossession: possession as 0 | 1,
         };

@@ -28,14 +28,16 @@ updating winner/result metadata, and then persisting one nested
 
 1. **Game hydration and context creation**
 - `hydrateGame` converts a persisted `GameRecord` into in-memory `SimGame` shape.
-- `SimContext` binds `league`, `game`, `starters`, offense/defense sides, current lead, and whether clock rules are active.
+- `SimContext` binds `league`, `game`, `starters`, offense/defense sides, and
+  whether clock rules are active. Score margin is always derived from the live
+  game score.
 
 2. **Drive simulation loop**
 - `simDrive` creates game-local drive/play identities for in-memory orchestration.
-- `stepInteractiveDrive` is the single-play resolver for both batch and live
-  simulation. For each down it chooses or accepts a call, runs outcome
-  simulation, selects participants, applies clock and scoring, formats text,
-  and returns updated state.
+- `stepInteractiveDrive` is the single-play entry point for both batch and live
+  simulation. It dispatches to focused regulation or try resolution, which
+  chooses or accepts a call, runs the outcome, applies timing and scoring,
+  formats text, and returns updated state.
 - Automatic fourth downs use one explicit field-position/distance policy from
   tuning, with the existing late-game points-needed override. Ordinary
   third-down outcomes pass their exact down into the shared run/pass resolver,
@@ -70,7 +72,7 @@ flowchart TD
   A["simGame() start"] --> B["Initialize quarter/clock/score state"]
   B --> C["Build SimContext for current possession"]
   C --> D["simDrive(): down loop"]
-  D --> E["resolve offense + defense PlayCall / decideFourthDown"]
+  D --> E["chooseAutomaticOffenseAction / resolve typed PlayCall"]
   E --> F["matchup-aware simRun / simPass / fieldGoal"]
   F --> G["resolveRegulationTiming() / overtime timing"]
   G --> H{"Drive resolved?"}
@@ -117,7 +119,10 @@ omissions are stated explicitly.
   or Pressure from situation-aware weights. The selection is keyed by play ID,
   does not consume outcome randomness, and forms one persisted matchup with
   the offensive concept. Defensive coach calls use the same path.
-- **4th-down behavior**: `decideFourthDown` combines field position, yards to go, and urgency (`pointsNeeded`) to choose punt/FG/go.
+- **Automatic offensive strategy**: `chooseAutomaticOffenseAction` first handles
+  final-snap field goals and clock management from the live score and clock,
+  then applies the calibrated field-position/distance policy on fourth down.
+  Field goals are legal on any down; punts remain fourth-down-only.
 - **Punts**: punts travel a fixed 40 yards. A punt that reaches or crosses the
   receiving end zone is a touchback at the receiving 20; all others use the
   mirrored post-punt field position.
@@ -205,8 +210,9 @@ omissions are stated explicitly.
   - `simGame`, `finalizeGameResult`, hydration, final response construction
   - constants/utils: `OT_START_YARD_LINE`, `isTeamAOpeningOffense`, `buildDriveResponse`, `buildGameData`
 - `src/domain/sim/drive.ts`
-  - `simDrive`, `startInteractiveDrive`, `stepInteractiveDrive`, all play and
-    drive termination resolution, and the shared drive safety limit
+  - drive lifecycle, `stepInteractiveDrive` dispatch, and the shared safety limit
+- `src/domain/sim/regulationResolution.ts`, `tryResolution.ts`
+  - regulation-play and untimed-try resolution behind the shared drive entry point
 - `src/domain/sim/statistics.ts`
   - starter-cache loading and deterministic participant-linked player logs
 - `src/domain/sim/participants.ts`, `participantRules.ts`, and `participantValidation.ts`
@@ -221,7 +227,7 @@ omissions are stated explicitly.
   - try strategy, fixed extra-point sampling, two-point result mapping, timing,
     terminal-skip rules, and conversion validation
 - `src/domain/sim/playcalling.ts`
-  - `choosePlayType`, `decideFourthDown`, `pointsNeeded`
+  - `chooseAutomaticOffenseAction`, `choosePlayType`, `pointsNeeded`
 - `src/domain/sim/concepts.ts`
   - call labels, validation, situation-aware selection, and concept maps
 - `src/domain/sim/defensiveIntents.ts`
