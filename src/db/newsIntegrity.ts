@@ -127,7 +127,7 @@ const assertPreviewReferences = (
   const game = item.featuredGameId === null ? null : gamesById.get(item.featuredGameId);
   const validGame = item.primaryAngle === 'marquee_opener'
     ? Boolean(game && game.year === item.year && game.weekPlayed >= 1 &&
-      game.winnerId === null && item.featuredTeamIds.length === 2 &&
+      item.featuredTeamIds.length === 2 &&
       item.featuredTeamIds[0] === game.teamAId && item.featuredTeamIds[1] === game.teamBId)
     : item.featuredGameId === null;
   if (

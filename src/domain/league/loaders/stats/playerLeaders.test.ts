@@ -11,6 +11,7 @@ import {
   buildTestLeague,
   buildTestPlayer,
   buildTestPlayerSeason,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
   buildTestTeam,
 } from '../../../../test/fixtures';
@@ -39,16 +40,13 @@ describe('loadPlayerLeaders', () => {
   });
 
   it('preserves archived starter and yardage qualifications and player identities', async () => {
-    vi.mocked(getAllSeasonMemories).mockResolvedValue([{
+    vi.mocked(getAllSeasonMemories).mockResolvedValue([buildTestSeasonMemory({
       year: 2024,
-      playoffTeams: 12,
       teamSnapshots: [
         buildTestSeasonTeamSnapshot(),
         buildTestSeasonTeamSnapshot({ teamId: 2 }),
       ],
-      events: [],
-      awards: [],
-    }]);
+    })]);
     vi.mocked(getPlayerSeasonsByYear).mockResolvedValue([
       buildTestPlayerSeason({
         playerId: 10,

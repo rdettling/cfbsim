@@ -1,12 +1,12 @@
 import type { HistoryRow } from '../../types/baseData';
 import type { GameRecord } from '../../types/db';
 import type { RivalryDefinition, Team } from '../../types/domain';
-import type {
-  SeasonMemory,
-  SeasonMemoryEvent,
-  SeasonMemoryEventType,
-} from '../../types/memory';
+import type { SeasonMemory } from '../../types/memory';
 import { rivalryKey } from '../rivalryScheduling';
+import {
+  getArchivedPostseasonGameType,
+  type ArchivedPostseasonGameType,
+} from './postseasonArchive';
 
 export interface MemoryAccomplishment {
   type:
@@ -39,14 +39,7 @@ export interface DynastyOverview {
   awardWinners: number;
 }
 
-const PLAYOFF_TYPES = new Set<SeasonMemoryEventType>([
-  'playoff_first_round',
-  'playoff_quarterfinal',
-  'playoff_semifinal',
-  'national_championship',
-]);
-
-const POSTSEASON_PRIORITY: Record<SeasonMemoryEventType, number> = {
+const POSTSEASON_PRIORITY: Record<ArchivedPostseasonGameType, number> = {
   national_championship: 6,
   playoff_semifinal: 5,
   playoff_quarterfinal: 4,
@@ -54,11 +47,6 @@ const POSTSEASON_PRIORITY: Record<SeasonMemoryEventType, number> = {
   conference_championship: 2,
   bowl: 1,
 };
-
-const eventForGame = (
-  memory: SeasonMemory | undefined,
-  gameId: number,
-) => memory?.events.find(event => event.gameId === gameId);
 
 const includesTeam = (game: GameRecord, teamId: number) =>
   game.teamAId === teamId || game.teamBId === teamId;
@@ -99,8 +87,8 @@ const eventPriority = (
   memory: SeasonMemory | undefined,
   gameId: number,
 ) => {
-  const event = eventForGame(memory, gameId);
-  return event ? POSTSEASON_PRIORITY[event.type] : 0;
+  const type = getArchivedPostseasonGameType(memory, gameId);
+  return type ? POSTSEASON_PRIORITY[type] : 0;
 };
 
 const rivalryPairs = (
@@ -116,39 +104,30 @@ export const buildTeamAccomplishments = (
   gamesById: Map<number, GameRecord>,
 ): MemoryAccomplishment[] => {
   const results: MemoryAccomplishment[] = [];
-  const events = memory.events
-    .map(event => ({ event, game: gamesById.get(event.gameId) }))
-    .filter(
-      (
-        entry,
-      ): entry is { event: SeasonMemoryEvent; game: GameRecord } =>
-        Boolean(entry.game && includesTeam(entry.game, teamId)),
-    );
-  const national = events.find(
-    entry => entry.event.type === 'national_championship',
+  const championship = gamesById.get(
+    memory.postseason.playoff.games.championship,
   );
-  if (national) {
+  if (championship && includesTeam(championship, teamId)) {
     results.push(
-      national.game.winnerId === teamId
+      championship.winnerId === teamId
         ? { type: 'national_champion', label: 'National Champion' }
         : { type: 'national_runner_up', label: 'National Runner-up' },
     );
   }
-  if (events.some(entry => PLAYOFF_TYPES.has(entry.event.type))) {
+  if (memory.postseason.playoff.seeds.includes(teamId)) {
     results.push({ type: 'playoff', label: 'Playoff' });
   }
-  for (const { event, game } of events) {
-    if (
-      event.type === 'conference_championship' &&
-      game.winnerId === teamId
-    ) {
-      results.push({
-        type: 'conference_champion',
-        label: `${event.conferenceName} Champion`,
-      });
-    }
-    if (event.type === 'bowl' && game.winnerId === teamId) {
-      results.push({ type: 'bowl_win', label: `${event.bowlName} Winner` });
+  for (const champion of memory.postseason.conferenceChampions) {
+    if (champion.teamId !== teamId) continue;
+    results.push({
+      type: 'conference_champion',
+      label: `${champion.conferenceName} Champion`,
+    });
+  }
+  for (const bowl of memory.postseason.bowls) {
+    const game = gamesById.get(bowl.gameId);
+    if (game?.winnerId === teamId) {
+      results.push({ type: 'bowl_win', label: `${bowl.name} Winner` });
     }
   }
   const awards = memory.awards.filter(award => award.teamId === teamId);

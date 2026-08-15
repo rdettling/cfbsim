@@ -53,7 +53,7 @@ describe('application navigation', () => {
       entry.type === 'item' ? entry.label : entry.desktopLabel
     )).toEqual([
       'Dashboard',
-      'News',
+      'League',
       'Team',
       'Schedule',
       'Standings',
@@ -65,12 +65,17 @@ describe('application navigation', () => {
     const groups = navigation.entries.filter(
       (entry): entry is NavigationGroup => entry.type === 'group'
     );
+    expect(groups.find(group => group.id === 'league')?.items.map(item => item.label)).toEqual([
+      'News',
+      'Awards',
+      'History',
+      'Records',
+    ]);
     expect(groups.find(group => group.id === 'stats')?.items.map(item => item.label)).toEqual([
       'Team Rankings',
       'Player Leaders',
       'Advanced Stats',
       'Ratings',
-      'Awards',
     ]);
     expect(groups.find(group => group.id === 'postseason')?.items.map(item => item.label)).toEqual([
       'Playoff Bracket',
@@ -79,6 +84,42 @@ describe('application navigation', () => {
       'Projections',
       'Bowl Games',
     ]);
+  });
+
+  it('matches league news, awards, history, and records independently', () => {
+    const league = buildTestLeague('season');
+    const navigation = buildNavigationModel({
+      team: league.teams[0],
+      currentStage: 'season',
+      info: league.info,
+      conferences: league.conferences,
+    });
+    const leagueGroup = navigation.entries.find(
+      (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'league'
+    )!;
+    const statsGroup = navigation.entries.find(
+      (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'stats'
+    )!;
+    const news = leagueGroup.items[0];
+    const awards = leagueGroup.items[1];
+    const history = leagueGroup.items[2];
+    const records = leagueGroup.items[3];
+
+    expect(isPathActive('/news', news)).toBe(true);
+    expect(isPathActive('/news/2025', news)).toBe(true);
+    expect(isPathActive('/awards', news)).toBe(false);
+    expect(isPathActive('/awards', awards)).toBe(true);
+    expect(isGroupActive('/news/2025', leagueGroup)).toBe(true);
+    expect(isGroupActive('/awards', leagueGroup)).toBe(true);
+    expect(isGroupActive('/awards', statsGroup)).toBe(false);
+    expect(isPathActive('/league/history', history)).toBe(true);
+    expect(isPathActive('/league/history/2025', history)).toBe(true);
+    expect(isPathActive('/league/history', awards)).toBe(false);
+    expect(isGroupActive('/league/history/2025', leagueGroup)).toBe(true);
+    expect(isPathActive('/league/records', records)).toBe(true);
+    expect(isPathActive('/league/records/extra', records)).toBe(false);
+    expect(isPathActive('/league/records', history)).toBe(false);
+    expect(isGroupActive('/league/records', leagueGroup)).toBe(true);
   });
 
   it('matches the bracket exactly and postseason child routes independently', () => {

@@ -5,6 +5,7 @@ import type { LeagueState } from '../../types/league';
 import {
   buildTestLeague,
   buildTestPlayer,
+  buildTestTeam,
   TEST_NAMES_DATA,
   TEST_STATES_DATA,
 } from '../../test/fixtures';
@@ -28,6 +29,7 @@ import {
 } from './recruiting';
 import { finalizeRoster } from './rosterFinalization';
 import { loadRecruitingState } from '../../db/recruitingRepo';
+import type { GameRecord } from '../../types/db';
 
 const resetDatabase = async () => {
   const db = await getDb();
@@ -51,12 +53,77 @@ const resetDatabase = async () => {
 
 const seedFullCycle = async () => {
   const db = await getDb();
-  const tx = db.transaction(['baseData', 'league', 'players'], 'readwrite');
+  const baseLeague = buildTestLeague('summary');
+  const userTeam = baseLeague.teams[0];
+  const opponent = buildTestTeam({
+    id: 2,
+    name: 'Opponent State',
+    abbreviation: 'OPP',
+    ranking: 2,
+    conference: 'Test Conference',
+  });
+  const league = buildTestLeague('summary', {
+    teams: [userTeam, opponent],
+    conferences: [{
+      ...baseLeague.conferences[0],
+      teams: [userTeam, opponent],
+    }],
+    settings: {
+      ...baseLeague.settings,
+      playoffTeams: 2,
+      playoffAutobids: 0,
+      conferenceChampionsReceiveTopSeeds: false,
+    },
+    playoff: { seeds: [userTeam.id, opponent.id], natty: 1 },
+    idCounters: { game: 2, player: 3 },
+  });
+  const championship: GameRecord = {
+    id: 1,
+    teamAId: userTeam.id,
+    teamBId: opponent.id,
+    homeTeamId: null,
+    awayTeamId: null,
+    neutralSite: true,
+    venue: null,
+    winnerId: userTeam.id,
+    baseLabel: 'National Championship',
+    name: 'National Championship',
+    gameType: 'national_championship',
+    rivalryKey: null,
+    spreadA: '-3',
+    spreadB: '+3',
+    moneylineA: '-150',
+    moneylineB: '+130',
+    winProbA: 0.6,
+    winProbB: 0.4,
+    weekPlayed: 16,
+    year: 2025,
+    rankATOG: 1,
+    rankBTOG: 2,
+    resultA: 'W',
+    resultB: 'L',
+    overtime: 0,
+    scoreA: 31,
+    scoreB: 24,
+    watchability: 95,
+  };
+  const tx = db.transaction(
+    ['baseData', 'league', 'players', 'games', 'gameDetails'],
+    'readwrite',
+  );
   await tx.objectStore('league').put({
     key: 'current',
-    value: buildTestLeague('summary'),
+    value: league,
   });
   await tx.objectStore('players').put(buildTestPlayer());
+  await tx.objectStore('players').put(buildTestPlayer({ id: 2, teamId: 2 }));
+  await tx.objectStore('games').put(championship);
+  await tx.objectStore('gameDetails').put({
+    gameId: championship.id,
+    year: championship.year,
+    drives: [],
+    playerStats: [],
+  });
 
   const baseRecords = [
     {
@@ -97,6 +164,17 @@ const seedFullCycle = async () => {
             state: 'TS',
             stadium: 'Entry Stadium',
           },
+          'Opponent State': {
+            mascot: 'Opponents',
+            abbreviation: 'OPP',
+            ceiling: 5,
+            floor: 1,
+            colorPrimary: '#333333',
+            colorSecondary: '#ffffff',
+            city: 'Opponent City',
+            state: 'TS',
+            stadium: 'Opponent Stadium',
+          },
         },
       },
     },
@@ -114,7 +192,7 @@ const seedFullCycle = async () => {
         conferences: {
           'Test Conference': {
             games: 0,
-            teams: { 'Test State': 4, 'Entry State': 3 },
+            teams: { 'Test State': 4, 'Opponent State': 3, 'Entry State': 3 },
           },
         },
         independents: {},
@@ -166,8 +244,9 @@ describe('offseason lifecycle integration', () => {
     const memoryDb = await getDb();
     expect(await memoryDb.get('seasonMemories', 2025)).toMatchObject({
       year: 2025,
-      playoffTeams: 12,
-      events: [],
+      postseason: {
+        playoff: { format: 2, seeds: [1, 2], games: { championship: 1 } },
+      },
     });
     expect(league.info.stage).toBe('realignment');
     expect(league.teams[0]).toMatchObject({

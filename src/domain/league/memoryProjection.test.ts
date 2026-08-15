@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { GameRecord } from '../../types/db';
 import type { SeasonMemory } from '../../types/memory';
-import { buildTestSeasonTeamSnapshot, buildTestTeam } from '../../test/fixtures';
+import {
+  buildTestSeasonMemory,
+  buildTestSeasonTeamSnapshot,
+  buildTestTeam,
+} from '../../test/fixtures';
 import {
   buildSeasonMilestones,
   buildTeamAccomplishments,
@@ -50,19 +54,27 @@ const game = (
   ...options,
 });
 
-const memory: SeasonMemory = {
-  year: 2025,
-  playoffTeams: 12,
+const memory: SeasonMemory = buildTestSeasonMemory({
   teamSnapshots: [
     buildTestSeasonTeamSnapshot(),
     buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2, record: '11-1 (7-1)' }),
   ],
-  events: [
-    { type: 'conference_championship', gameId: 2, conferenceName: 'Test Conference' },
-    { type: 'national_championship', gameId: 3 },
-  ],
-  awards: [],
-};
+  postseason: {
+    playoff: {
+      format: 2,
+      seeds: [1, 2],
+      autobids: 0,
+      conferenceChampionsReceiveTopSeeds: false,
+      games: { championship: 3 },
+    },
+    conferenceChampions: [{
+      conferenceName: 'Test Conference',
+      teamId: 1,
+      championshipGameId: 2,
+    }],
+    bowls: [],
+  },
+});
 
 describe('dynasty memory projections', () => {
   it('builds proven accomplishments and selects achievement and heartbreak games', () => {

@@ -183,7 +183,7 @@ describe('news repository', () => {
     )).toThrow(NewsDataIntegrityError);
   });
 
-  it('validates the complete preseason package and its unplayed matchup', async () => {
+  it('validates the complete preseason package before and after its matchup', async () => {
     const opener = completedGame({ id: 5, winnerId: null, weekPlayed: 1 });
     expect(() => assertNewsIntegrity(
       [story(), ...previewStories()],
@@ -197,6 +197,14 @@ describe('news repository', () => {
       new Set(),
       new Set([1, 2]),
     )).toThrow(NewsDataIntegrityError);
+    const completedOpener = completedGame({ id: 5, weekPlayed: 1 });
+    const openerStory = story({ id: 'game:5', gameId: 5, week: 1 });
+    expect(() => assertNewsIntegrity(
+      [story(), openerStory, ...previewStories()],
+      [completedGame(), completedOpener],
+      new Set(),
+      new Set([1, 2]),
+    )).not.toThrow();
 
     const db = await getDb();
     for (const preview of previewStories()) await db.put('newsItems', preview);

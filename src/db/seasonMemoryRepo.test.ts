@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildTestLeague,
   buildTestPlayer,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
 } from '../test/fixtures';
 import type { GameRecord } from '../types/db';
@@ -11,15 +12,11 @@ import {
   assertSeasonMemoryReferences,
 } from './seasonMemoryRepo';
 
-const memory: SeasonMemory = {
-  year: 2025,
-  playoffTeams: 12,
+const memory: SeasonMemory = buildTestSeasonMemory({
   teamSnapshots: [
     buildTestSeasonTeamSnapshot(),
   ],
-  events: [{ type: 'national_championship', gameId: 1 }],
-  awards: [],
-};
+});
 
 const game: GameRecord = {
   id: 1,
@@ -47,7 +44,7 @@ const game: GameRecord = {
   overtime: 0,
   scoreA: 31,
   scoreB: 24,
-  gameType: 'regular_season',
+  gameType: 'national_championship',
   rivalryKey: null,
   watchability: 90,
 };
@@ -86,6 +83,9 @@ describe('season memory integrity', () => {
   it('rejects aliases and dangling game references', () => {
     expect(() =>
       assertCurrentSeasonMemory({ ...memory, legacyYear: 2025 }),
+    ).toThrow();
+    expect(() =>
+      assertCurrentSeasonMemory({ ...memory, playoffTeams: 2, events: [] }),
     ).toThrow();
     expect(() =>
       assertSeasonMemoryReferences(

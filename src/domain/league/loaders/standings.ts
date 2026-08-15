@@ -1,21 +1,7 @@
 import { getAllGames } from '../../../db/simRepo';
-import type { Team } from '../../../types/domain';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { buildScheduleGameForTeam } from '../utils/scheduleView';
-
-const sortStandings = (teams: Team[]) =>
-  teams.slice().sort((a, b) => {
-    const aConfGames = a.confWins + a.confLosses;
-    const bConfGames = b.confWins + b.confLosses;
-    const aConfPct = aConfGames ? a.confWins / aConfGames : 0;
-    const bConfPct = bConfGames ? b.confWins / bConfGames : 0;
-    if (bConfPct !== aConfPct) return bConfPct - aConfPct;
-    if (b.confWins !== a.confWins) return b.confWins - a.confWins;
-    if (a.confLosses !== b.confLosses) return a.confLosses - b.confLosses;
-    if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
-    if (a.totalLosses !== b.totalLosses) return a.totalLosses - b.totalLosses;
-    return a.ranking - b.ranking;
-  });
+import { sortStandingsTeams } from '../utils/standings';
 
 export const loadStandings = async (conferenceName: string) => {
   const league = await loadLeagueOrThrow();
@@ -30,7 +16,7 @@ export const loadStandings = async (conferenceName: string) => {
   const games = (await getAllGames()).filter(game => game.year === league.info.currentYear);
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
-  const rankedTeams = sortStandings(teams).map(team => {
+  const rankedTeams = sortStandingsTeams(teams).map(team => {
     const lastGameRecord = games.find(
       game => game.weekPlayed === league.info.currentWeek - 1 &&
         (game.teamAId === team.id || game.teamBId === team.id),

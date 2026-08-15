@@ -9,6 +9,7 @@ import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
 import { getAllGameLogs, getAllPlays, getGamesByTeam } from '../../../../db/simRepo';
 import {
   buildTestLeague,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
 } from '../../../../test/fixtures';
 import { SeasonMemoryDataIntegrityError } from '../../../../types/memory';
@@ -42,9 +43,8 @@ describe('loadTeamHistory', () => {
         ],
       },
     });
-    vi.mocked(getAllSeasonMemories).mockResolvedValue([{
+    vi.mocked(getAllSeasonMemories).mockResolvedValue([buildTestSeasonMemory({
       year: 2025,
-      playoffTeams: 12,
       teamSnapshots: [
         buildTestSeasonTeamSnapshot({
           rating: 77,
@@ -53,9 +53,7 @@ describe('loadTeamHistory', () => {
           record: '9-4 (6-2)',
         }),
       ],
-      events: [],
-      awards: [],
-    }]);
+    })]);
     vi.mocked(getRivalriesData).mockResolvedValue({ rivalries: [] });
     vi.mocked(getHistoricalGamesIndex).mockResolvedValue({
       source: 'CollegeFootballData.com',
@@ -113,13 +111,10 @@ describe('loadTeamHistory', () => {
   });
 
   it('rejects a dynasty history row without its team snapshot', async () => {
-    vi.mocked(getAllSeasonMemories).mockResolvedValue([{
+    vi.mocked(getAllSeasonMemories).mockResolvedValue([buildTestSeasonMemory({
       year: 2025,
-      playoffTeams: 12,
       teamSnapshots: [],
-      events: [],
-      awards: [],
-    }]);
+    })]);
 
     await expect(loadTeamHistory('Test State')).rejects.toBeInstanceOf(
       SeasonMemoryDataIntegrityError,

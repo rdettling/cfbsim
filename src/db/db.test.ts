@@ -15,8 +15,8 @@ const deleteTestDatabase = (name: string) =>
   });
 
 describe('current database schema', () => {
-  it('uses the destructive defensive-intent epoch', () => {
-    expect(DB_VERSION).toBe(22);
+  it('uses the destructive league-history epoch', () => {
+    expect(DB_VERSION).toBe(23);
   });
 
   it('creates every authoritative store in a fresh database', async () => {

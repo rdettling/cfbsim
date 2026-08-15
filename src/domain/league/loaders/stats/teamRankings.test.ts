@@ -4,6 +4,7 @@ import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
 import { getAllGames, getAllPlays } from '../../../../db/simRepo';
 import {
   buildTestLeague,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
   buildTestTeam,
   buildTestTeamAggregateTotals,
@@ -28,9 +29,8 @@ describe('loadTeamRankings', () => {
   });
 
   it('reconstructs archived values and averages without detailed game reads', async () => {
-    vi.mocked(getAllSeasonMemories).mockResolvedValue([{
+    vi.mocked(getAllSeasonMemories).mockResolvedValue([buildTestSeasonMemory({
       year: 2024,
-      playoffTeams: 12,
       teamSnapshots: [
         buildTestSeasonTeamSnapshot({
           offense: buildTestTeamAggregateTotals({ games: 10, points: 300 }),
@@ -42,9 +42,7 @@ describe('loadTeamRankings', () => {
           defense: buildTestTeamAggregateTotals({ games: 10, points: 300 }),
         }),
       ],
-      events: [],
-      awards: [],
-    }]);
+    })]);
 
     const result = await loadTeamRankings(2024);
 
@@ -67,8 +65,8 @@ describe('loadTeamRankings', () => {
 
   it('orders years descending and resolves invalid years to live data', async () => {
     vi.mocked(getAllSeasonMemories).mockResolvedValue([
-      { year: 2022, playoffTeams: 12, teamSnapshots: [], events: [], awards: [] },
-      { year: 2024, playoffTeams: 12, teamSnapshots: [], events: [], awards: [] },
+      buildTestSeasonMemory({ year: 2022, teamSnapshots: [] }),
+      buildTestSeasonMemory({ year: 2024, teamSnapshots: [] }),
     ]);
 
     const result = await loadTeamRankings(Number.NaN);

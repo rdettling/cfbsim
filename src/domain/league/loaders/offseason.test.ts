@@ -6,6 +6,7 @@ import type { LeagueState } from '../../../types/league';
 import {
   buildTestLeague,
   buildTestPlayer,
+  buildTestTeam,
   TEST_NAMES_DATA,
   TEST_STATES_DATA,
 } from '../../../test/fixtures';
@@ -67,10 +68,26 @@ const buildCompliantRoster = () => {
 
 const seedScenario = async (stage: LeagueStage) => {
   const db = await getDb();
-  const tx = db.transaction(['baseData', 'league', 'recruiting', 'players'], 'readwrite');
+  const baseLeague = buildTestLeague(stage);
+  const opponent = buildTestTeam({ id: 2, name: 'Other State', abbreviation: 'OTH', ranking: 2 });
+  const summaryLeague = buildTestLeague(stage, {
+    teams: [baseLeague.teams[0], opponent],
+    conferences: [{
+      ...baseLeague.conferences[0],
+      teams: [baseLeague.teams[0], opponent],
+    }],
+    settings: {
+      ...baseLeague.settings,
+      playoffTeams: 2,
+      playoffAutobids: 0,
+      conferenceChampionsReceiveTopSeeds: false,
+    },
+    playoff: { seeds: [1, 2], natty: 1 },
+  });
+  const tx = db.transaction(['baseData', 'league', 'recruiting', 'players', 'games'], 'readwrite');
   await tx.objectStore('league').put({
     key: 'current',
-    value: buildTestLeague(stage),
+    value: stage === 'summary' ? summaryLeague : baseLeague,
   });
   if (stage === 'roster_cuts') {
     for (const player of buildCompliantRoster()) {
@@ -78,6 +95,39 @@ const seedScenario = async (stage: LeagueStage) => {
     }
   } else {
     await tx.objectStore('players').put(buildTestPlayer());
+    if (stage === 'summary') {
+      await tx.objectStore('players').put(buildTestPlayer({ id: 2, teamId: 2 }));
+      await tx.objectStore('games').put({
+        id: 1,
+        teamAId: 1,
+        teamBId: 2,
+        homeTeamId: null,
+        awayTeamId: null,
+        neutralSite: true,
+        venue: null,
+        winnerId: 1,
+        baseLabel: 'National Championship',
+        name: 'National Championship',
+        gameType: 'national_championship',
+        rivalryKey: null,
+        spreadA: '-3',
+        spreadB: '+3',
+        moneylineA: '-150',
+        moneylineB: '+130',
+        winProbA: 0.6,
+        winProbB: 0.4,
+        weekPlayed: 18,
+        year: 2025,
+        rankATOG: 1,
+        rankBTOG: 2,
+        resultA: 'W',
+        resultB: 'L',
+        overtime: 0,
+        scoreA: 31,
+        scoreB: 24,
+        watchability: 90,
+      });
+    }
   }
   if (
     stage === 'recruiting' ||

@@ -9,6 +9,7 @@ import type {
 import {
   buildTestLeague,
   buildTestPlayer,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
   TEST_BETTING_ODDS_DATA,
   TEST_NAMES_DATA,
@@ -223,9 +224,8 @@ const seedExistingLeague = async () => {
     stars: 3,
     development_trait: 2,
   });
-  await db.put('seasonMemories', {
+  await db.put('seasonMemories', buildTestSeasonMemory({
     year: 2025,
-    playoffTeams: 12,
     teamSnapshots: [
       buildTestSeasonTeamSnapshot({
         rating: 77,
@@ -233,9 +233,7 @@ const seedExistingLeague = async () => {
         record: '1-0 (0-0)',
       }),
     ],
-    events: [],
-    awards: [],
-  });
+  }));
 };
 
 const buildInput = (

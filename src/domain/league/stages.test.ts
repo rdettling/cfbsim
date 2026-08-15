@@ -29,7 +29,6 @@ vi.mock('../../db/simRepo', () => ({
 vi.mock('./memory', () => ({
   buildSeasonMemory: vi.fn(league => ({
     year: league.info.currentYear,
-    playoffTeams: league.settings.playoffTeams,
     teamSnapshots: league.teams.map((team: LeagueState['teams'][number]) => ({
       teamId: team.id,
       rating: team.rating,
@@ -37,7 +36,17 @@ vi.mock('./memory', () => ({
       ranking: team.ranking,
       record: team.record,
     })),
-    events: [],
+    postseason: {
+      playoff: {
+        format: 2,
+        seeds: [1, 2],
+        autobids: 0,
+        conferenceChampionsReceiveTopSeeds: false,
+        games: { championship: 1 },
+      },
+      conferenceChampions: [],
+      bowls: [],
+    },
     awards: [],
   })),
 }));

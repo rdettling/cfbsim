@@ -9,6 +9,7 @@ import { getSeasonMemory } from '../../../../db/seasonMemoryRepo';
 import { getAllGames } from '../../../../db/simRepo';
 import {
   buildTestLeague,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
   buildTestTeam,
 } from '../../../../test/fixtures';
@@ -150,9 +151,8 @@ describe('loadTeamSchedule', () => {
       independents: {},
       results: null,
     });
-    vi.mocked(getSeasonMemory).mockResolvedValue({
+    vi.mocked(getSeasonMemory).mockResolvedValue(buildTestSeasonMemory({
       year: 2025,
-      playoffTeams: 12,
       teamSnapshots: [
         buildTestSeasonTeamSnapshot({
           teamId: 1,
@@ -169,9 +169,7 @@ describe('loadTeamSchedule', () => {
           record: '7-5 (4-4)',
         }),
       ],
-      events: [],
-      awards: [],
-    });
+    }));
   });
 
   it('uses live and archived dynasty snapshots for simulated seasons', async () => {
@@ -211,13 +209,10 @@ describe('loadTeamSchedule', () => {
   });
 
   it('rejects an archived dynasty season without the selected team snapshot', async () => {
-    vi.mocked(getSeasonMemory).mockResolvedValue({
+    vi.mocked(getSeasonMemory).mockResolvedValue(buildTestSeasonMemory({
       year: 2025,
-      playoffTeams: 12,
       teamSnapshots: [buildTestSeasonTeamSnapshot({ teamId: 2 })],
-      events: [],
-      awards: [],
-    });
+    }));
 
     await expect(loadTeamSchedule('Test State', 2025)).rejects.toThrow(
       'Season 2025 is missing the team snapshot for Test State.',

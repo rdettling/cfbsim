@@ -1,5 +1,7 @@
 import type { listAvailableTeams } from '../domain/league/loaders/season/listAvailableTeams';
 import type { loadDashboard } from '../domain/league/loaders/season/loadDashboard';
+import type { loadLeagueHistory } from '../domain/league/loaders/leagueHistory';
+import type { loadLeagueRecords } from '../domain/league/loaders/leagueRecords';
 import type { loadGame } from '../domain/league/loaders/season/loadGame';
 import type { loadHomeData } from '../domain/league/loaders/season/loadHomeData';
 import type { loadNews } from '../domain/league/loaders/season/loadNews';
@@ -37,6 +39,8 @@ import type {
 export type HomePageData = Awaited<ReturnType<typeof loadHomeData>>;
 export type NonConPageData = Awaited<ReturnType<typeof loadNonCon>>;
 export type DashboardPageData = Awaited<ReturnType<typeof loadDashboard>>;
+export type LeagueHistoryPageData = Awaited<ReturnType<typeof loadLeagueHistory>>;
+export type LeagueRecordsPageData = Awaited<ReturnType<typeof loadLeagueRecords>>;
 export type NewsPageData = Awaited<ReturnType<typeof loadNews>>;
 export type TeamSchedulePageData = Awaited<ReturnType<typeof loadTeamSchedule>>;
 export type WeekSchedulePageData = Awaited<ReturnType<typeof loadWeekSchedule>>;

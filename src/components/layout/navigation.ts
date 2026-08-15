@@ -56,7 +56,18 @@ export const buildNavigationModel = ({
 }: AppNavigationData, navigationTeamName = info.team || team.name): NavigationModel => ({
   entries: [
     { type: 'item', label: 'Dashboard', path: '/dashboard' },
-    { type: 'item', label: 'News', path: '/news', match: 'prefix' },
+    {
+      type: 'group',
+      id: 'league',
+      desktopLabel: 'League',
+      mobileLabel: 'League',
+      items: [
+        { type: 'item', label: 'News', path: '/news', match: 'prefix' },
+        { type: 'item', label: 'Awards', path: '/awards' },
+        { type: 'item', label: 'History', path: '/league/history', match: 'prefix' },
+        { type: 'item', label: 'Records', path: '/league/records' },
+      ],
+    },
     {
       type: 'group',
       id: 'team',
@@ -107,7 +118,6 @@ export const buildNavigationModel = ({
         { type: 'item', label: 'Player Leaders', path: '/stats/players' },
         { type: 'item', label: 'Advanced Stats', path: '/stats/advanced' },
         { type: 'item', label: 'Ratings', path: '/stats/ratings' },
-        { type: 'item', label: 'Awards', path: '/awards' },
       ],
     },
     {

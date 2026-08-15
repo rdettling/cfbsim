@@ -11,6 +11,7 @@ import {
 import type { GameLogRecord, GameRecord } from '../../../../types/db';
 import {
   buildTestLeague,
+  buildTestSeasonMemory,
   buildTestPlayer,
   buildTestPlayerSeason,
   buildTestSeasonTeamSnapshot,
@@ -176,9 +177,8 @@ describe('loadTeamStats', () => {
   });
 
   it('loads archived team and retired-player statistics without game detail reads', async () => {
-    vi.mocked(getAllSeasonMemories).mockResolvedValue([{
+    vi.mocked(getAllSeasonMemories).mockResolvedValue([buildTestSeasonMemory({
       year: 2024,
-      playoffTeams: 12,
       teamSnapshots: [
         buildTestSeasonTeamSnapshot({
           conference: 'Old Conference',
@@ -195,9 +195,7 @@ describe('loadTeamStats', () => {
           defense: buildTestTeamAggregateTotals({ games: 13, points: 390 }),
         }),
       ],
-      events: [],
-      awards: [],
-    }]);
+    })]);
     vi.mocked(getPlayerSeasonsByYearTeam).mockResolvedValue([
       buildTestPlayerSeason({
         playerId: 99,

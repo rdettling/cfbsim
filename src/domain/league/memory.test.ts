@@ -14,10 +14,12 @@ const game = (
   name: string,
   winnerId = 1,
   gameType: GameRecord['gameType'] = 'regular_season',
+  teamAId = 1,
+  teamBId = 2,
 ): GameRecord => ({
   id,
-  teamAId: 1,
-  teamBId: 2,
+  teamAId,
+  teamBId,
   homeTeamId: null,
   awayTeamId: null,
   neutralSite: true,
@@ -35,8 +37,8 @@ const game = (
   year: 2025,
   rankATOG: 1,
   rankBTOG: 2,
-  resultA: winnerId === 1 ? 'W' : 'L',
-  resultB: winnerId === 2 ? 'W' : 'L',
+  resultA: winnerId === teamAId ? 'W' : 'L',
+  resultB: winnerId === teamBId ? 'W' : 'L',
   overtime: 0,
   scoreA: 31,
   scoreB: 24,
@@ -75,8 +77,15 @@ describe('buildSeasonMemory', () => {
   it('captures typed postseason facts and structured award totals', () => {
     const teamA = buildTestTeam();
     const teamB = buildTestTeam({ id: 2, name: 'Other State', abbreviation: 'OTH' });
+    const baseLeague = buildTestLeague('summary');
     const league = buildTestLeague('summary', {
       teams: [teamA, teamB],
+      settings: {
+        ...baseLeague.settings,
+        playoffTeams: 2,
+        playoffAutobids: 0,
+        conferenceChampionsReceiveTopSeeds: false,
+      },
       conferences: [{
         id: 1,
         confName: 'Test Conference',
@@ -86,7 +95,7 @@ describe('buildSeasonMemory', () => {
         championship: 10,
         teams: [teamA, teamB],
       }],
-      playoff: { seeds: [1, 2], left_semi: 12, natty: 13 },
+      playoff: { seeds: [1, 2], natty: 13 },
     });
     const memory = buildSeasonMemory(
       league,
@@ -101,12 +110,21 @@ describe('buildSeasonMemory', () => {
       [],
     );
 
-    expect(memory.events).toEqual([
-      { type: 'conference_championship', gameId: 10, conferenceName: 'Test Conference' },
-      { type: 'bowl', gameId: 11, bowlName: 'Rose Bowl' },
-      { type: 'playoff_semifinal', gameId: 12 },
-      { type: 'national_championship', gameId: 13 },
-    ]);
+    expect(memory.postseason).toEqual({
+      playoff: {
+        format: 2,
+        seeds: [1, 2],
+        autobids: 0,
+        conferenceChampionsReceiveTopSeeds: false,
+        games: { championship: 13 },
+      },
+      conferenceChampions: [{
+        conferenceName: 'Test Conference',
+        teamId: 1,
+        championshipGameId: 10,
+      }],
+      bowls: [{ gameId: 11, name: 'Rose Bowl', tier: 'ny6' }],
+    });
     expect(memory.teamSnapshots).toEqual([
       buildTestSeasonTeamSnapshot({
         offense: buildTestTeamAggregateTotals({ points: 124 }),
@@ -124,5 +142,141 @@ describe('buildSeasonMemory', () => {
       teamId: 1,
     });
     expect(memory).not.toHaveProperty('last_updated');
+  });
+
+  it.each([
+    {
+      format: 4 as const,
+      playoff: { seeds: [1, 2, 3, 4], left_semi: 1, right_semi: 2, natty: 3 },
+      games: {
+        leftSemifinal: 1,
+        rightSemifinal: 2,
+        championship: 3,
+      },
+    },
+    {
+      format: 12 as const,
+      playoff: {
+        seeds: Array.from({ length: 12 }, (_, index) => index + 1),
+        left_r1_1: 1,
+        left_r1_2: 2,
+        right_r1_1: 3,
+        right_r1_2: 4,
+        left_quarter_1: 5,
+        left_quarter_2: 6,
+        right_quarter_1: 7,
+        right_quarter_2: 8,
+        left_semi: 9,
+        right_semi: 10,
+        natty: 11,
+      },
+      games: {
+        leftFirstRound1: 1,
+        leftFirstRound2: 2,
+        rightFirstRound1: 3,
+        rightFirstRound2: 4,
+        leftQuarterfinal1: 5,
+        leftQuarterfinal2: 6,
+        rightQuarterfinal1: 7,
+        rightQuarterfinal2: 8,
+        leftSemifinal: 9,
+        rightSemifinal: 10,
+        championship: 11,
+      },
+    },
+  ])('captures every explicit $format-team playoff slot', ({ format, playoff, games }) => {
+    const teams = Array.from({ length: format }, (_, index) => buildTestTeam({
+      id: index + 1,
+      name: `Team ${index + 1}`,
+      abbreviation: `T${index + 1}`,
+      ranking: index + 1,
+    }));
+    const baseLeague = buildTestLeague('summary');
+    const records = format === 4
+      ? [
+          game(1, 'Left semifinal', 1, 'playoff_semifinal', 1, 4),
+          game(2, 'Right semifinal', 2, 'playoff_semifinal', 2, 3),
+          game(3, 'National Championship', 1, 'national_championship', 1, 2),
+        ]
+      : [
+          game(1, 'Left first round 1', 8, 'playoff_first_round', 8, 9),
+          game(2, 'Left first round 2', 5, 'playoff_first_round', 5, 12),
+          game(3, 'Right first round 1', 7, 'playoff_first_round', 7, 10),
+          game(4, 'Right first round 2', 6, 'playoff_first_round', 6, 11),
+          game(5, 'Left quarterfinal 1', 1, 'playoff_quarterfinal', 1, 8),
+          game(6, 'Left quarterfinal 2', 4, 'playoff_quarterfinal', 4, 5),
+          game(7, 'Right quarterfinal 1', 2, 'playoff_quarterfinal', 2, 7),
+          game(8, 'Right quarterfinal 2', 3, 'playoff_quarterfinal', 3, 6),
+          game(9, 'Left semifinal', 1, 'playoff_semifinal', 1, 4),
+          game(10, 'Right semifinal', 2, 'playoff_semifinal', 2, 3),
+          game(11, 'National Championship', 1, 'national_championship', 1, 2),
+        ];
+    const memory = buildSeasonMemory(
+      buildTestLeague('summary', {
+        teams,
+        conferences: [],
+        settings: {
+          ...baseLeague.settings,
+          playoffTeams: format,
+          playoffAutobids: 0,
+          conferenceChampionsReceiveTopSeeds: false,
+        },
+        playoff,
+      }),
+      records,
+      [],
+      [],
+      [],
+    );
+
+    expect(memory.postseason.playoff).toMatchObject({ format, games });
+  });
+
+  it('rejects incomplete, duplicate, and unknown playoff seeds', () => {
+    const baseLeague = buildTestLeague('summary');
+    const build = (seeds: number[]) => buildSeasonMemory(
+      buildTestLeague('summary', {
+        settings: { ...baseLeague.settings, playoffTeams: 2 },
+        playoff: { seeds, natty: 1 },
+      }),
+      [game(1, 'National Championship', 1, 'national_championship')],
+      [],
+      [],
+      [],
+    );
+
+    expect(() => build([1])).toThrow();
+    expect(() => build([1, 1])).toThrow();
+    expect(() => build([1, 2])).toThrow();
+  });
+
+  it('resolves a conference without a title game using the standings tie-break order', () => {
+    const teamA = buildTestTeam({ totalWins: 10, ranking: 1 });
+    const teamB = buildTestTeam({
+      id: 2,
+      name: 'Other State',
+      abbreviation: 'OTH',
+      totalWins: 11,
+      ranking: 2,
+    });
+    const baseLeague = buildTestLeague('summary');
+    const memory = buildSeasonMemory(
+      buildTestLeague('summary', {
+        teams: [teamA, teamB],
+        conferences: [{ ...baseLeague.conferences[0], teams: [teamA, teamB] }],
+        settings: { ...baseLeague.settings, playoffTeams: 2, playoffAutobids: 0 },
+        playoff: { seeds: [1, 2], natty: 1 },
+      }),
+      [game(1, 'National Championship', 1, 'national_championship')],
+      [],
+      [],
+      [],
+    );
+
+    expect(memory.postseason.conferenceChampions).toEqual([{
+      conferenceName: 'Test Conference',
+      teamId: 2,
+      championshipGameId: null,
+    }]);
   });
 });

@@ -4,6 +4,9 @@ export const ROUTES = {
   NONCON: '/noncon',
   DASHBOARD: '/dashboard',
   NEWS: '/news',
+  LEAGUE_HISTORY: '/league/history',
+  LEAGUE_HISTORY_YEAR: '/league/history/:year',
+  LEAGUE_RECORDS: '/league/records',
   RANKINGS: '/rankings',
   TEAM_SCHEDULE: '/:teamName/schedule',
   TEAM_ROSTER: '/:teamName/roster',
@@ -30,6 +33,8 @@ export const ROUTES = {
   REALIGNMENT: '/realignment',
   AWARDS: '/awards',
 } as const;
+
+export const getLeagueHistoryPath = (year: number) => `/league/history/${year}`;
 
 export const getTeamStatsPath = (teamName: string, year?: number) =>
   `/${teamName}/stats${year === undefined ? '' : `/${year}`}`;

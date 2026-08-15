@@ -112,7 +112,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
     );
     const totalWeeks = selectedYear === league.info.currentYear
       ? league.info.lastWeek || 14
-      : getLastWeekByPlayoffTeams(memory!.playoffTeams);
+      : getLastWeekByPlayoffTeams(memory!.postseason.playoff.format);
     schedule = buildTeamScheduleCalendar(selectedYear, totalWeeks, simulatedGames);
     selectedTeamMetrics = {
       record: formatSelectedYearRecord(selectedYearGames, team.id),

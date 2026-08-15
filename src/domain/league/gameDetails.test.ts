@@ -4,6 +4,7 @@ import {
   buildTestPlayer,
   buildTestPlayParticipants,
   buildTestPlayTiming,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
 } from '../../test/fixtures';
 import type { DriveRecord, GameLogRecord, PlayRecord } from '../../types/db';
@@ -135,19 +136,26 @@ describe('game detail persistence projections', () => {
   });
 
   it('retains every user game and every major postseason event, but not AI bowls', () => {
-    const memory: SeasonMemory = {
-      year: 2025,
-      playoffTeams: 12,
+    const memory: SeasonMemory = buildTestSeasonMemory({
       teamSnapshots: [
         buildTestSeasonTeamSnapshot(),
       ],
-      events: [
-        { type: 'conference_championship', gameId: 2, conferenceName: 'Big' },
-        { type: 'bowl', gameId: 3, bowlName: 'AI Bowl' },
-        { type: 'playoff_semifinal', gameId: 4 },
-      ],
-      awards: [],
-    };
+      postseason: {
+        playoff: {
+          format: 2,
+          seeds: [6, 7],
+          autobids: 0,
+          conferenceChampionsReceiveTopSeeds: false,
+          games: { championship: 4 },
+        },
+        conferenceChampions: [{
+          conferenceName: 'Big',
+          teamId: 2,
+          championshipGameId: 2,
+        }],
+        bowls: [{ gameId: 3, name: 'AI Bowl', tier: 'other' }],
+      },
+    });
     const retained = selectRetainedGameIds(
       1,
       [

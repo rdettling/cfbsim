@@ -7,6 +7,7 @@ import type {
   PlayerSeasonStats,
 } from '../../types/db';
 import type { SeasonMemory } from '../../types/memory';
+import { getRetainedArchiveGameIds } from './postseasonArchive';
 
 export const buildGameDetail = (
   gameId: number,
@@ -142,8 +143,6 @@ export const selectRetainedGameIds = (
       .filter(game => game.teamAId === userTeamId || game.teamBId === userTeamId)
       .map(game => game.id),
   );
-  for (const event of memory.events) {
-    if (event.type !== 'bowl') retained.add(event.gameId);
-  }
+  for (const gameId of getRetainedArchiveGameIds(memory)) retained.add(gameId);
   return retained;
 };

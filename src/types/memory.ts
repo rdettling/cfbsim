@@ -1,37 +1,60 @@
-import type { PlayoffTeamCount } from './domain';
 import type { TeamAggregateTotals } from './stats';
 
-export const SEASON_MEMORY_EVENT_TYPES = [
-  'conference_championship',
-  'bowl',
-  'playoff_first_round',
-  'playoff_quarterfinal',
-  'playoff_semifinal',
-  'national_championship',
-] as const;
+interface SeasonPlayoffArchiveBase {
+  seeds: number[];
+  autobids: number;
+  conferenceChampionsReceiveTopSeeds: boolean;
+}
 
-export type SeasonMemoryEventType =
-  (typeof SEASON_MEMORY_EVENT_TYPES)[number];
-
-export type SeasonMemoryEvent =
-  | {
-      type: 'conference_championship';
-      gameId: number;
-      conferenceName: string;
+export type SeasonPlayoffArchive =
+  | SeasonPlayoffArchiveBase & {
+      format: 2;
+      games: {
+        championship: number;
+      };
     }
-  | {
-      type: 'bowl';
-      gameId: number;
-      bowlName: string;
+  | SeasonPlayoffArchiveBase & {
+      format: 4;
+      games: {
+        leftSemifinal: number;
+        rightSemifinal: number;
+        championship: number;
+      };
     }
-  | {
-      type:
-        | 'playoff_first_round'
-        | 'playoff_quarterfinal'
-        | 'playoff_semifinal'
-        | 'national_championship';
-      gameId: number;
+  | SeasonPlayoffArchiveBase & {
+      format: 12;
+      games: {
+        leftFirstRound1: number;
+        leftFirstRound2: number;
+        rightFirstRound1: number;
+        rightFirstRound2: number;
+        leftQuarterfinal1: number;
+        leftQuarterfinal2: number;
+        rightQuarterfinal1: number;
+        rightQuarterfinal2: number;
+        leftSemifinal: number;
+        rightSemifinal: number;
+        championship: number;
+      };
     };
+
+export interface SeasonConferenceChampion {
+  conferenceName: string;
+  teamId: number;
+  championshipGameId: number | null;
+}
+
+export interface SeasonBowlArchive {
+  gameId: number;
+  name: string;
+  tier: 'ny6' | 'other';
+}
+
+export interface SeasonPostseasonArchive {
+  playoff: SeasonPlayoffArchive;
+  conferenceChampions: SeasonConferenceChampion[];
+  bowls: SeasonBowlArchive[];
+}
 
 export interface SeasonAwardWinner {
   categorySlug: string;
@@ -52,9 +75,8 @@ export interface SeasonTeamSnapshot {
 
 export interface SeasonMemory {
   year: number;
-  playoffTeams: PlayoffTeamCount;
   teamSnapshots: SeasonTeamSnapshot[];
-  events: SeasonMemoryEvent[];
+  postseason: SeasonPostseasonArchive;
   awards: SeasonAwardWinner[];
 }
 

@@ -5,9 +5,9 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 
 ## IndexedDB Schema
 
-`src/db/db.ts` defines the current database at version 22. It is the single
-current destructive schema epoch for exact calls, participants, timing, clock
-management, and touchdown tries.
+`src/db/db.ts` defines the current database at version 23. It is the single
+current destructive schema epoch, including the authoritative league-history
+archive shape.
 
 | Store | Key | Value |
 | --- | --- | --- |
@@ -54,10 +54,20 @@ have no simulation detail or clickable game identity. See [Static Data
 System](static-data.md) for public-data ownership, exact contracts, generated
 projections, ingestion, cache keys, and maintenance workflows.
 
-Completed simulated seasons also write one exact-schema `SeasonMemory`. It
-stores typed postseason game references and lean award-winner facts without
-duplicating scores, identities, season totals, full player logs, or generated
-prose. Award display joins identity and `playerSeasons` at load time.
+Completed simulated seasons write one exact-schema `SeasonMemory` only when
+the user advances out of Season Summary. Each memory owns the season year,
+final team snapshots, lean award-winner references, and a strict postseason
+archive. The postseason archive contains the configured 2-, 4-, or 12-team
+format, seeded team IDs, every explicit bracket game slot, each
+non-independent conference champion and optional title-game ID, and every
+non-playoff bowl with its NY6/other classification. It does not store the old
+generic event list or a separate playoff-team alias.
+
+Scores, team names, player identities, and season stat lines remain normalized
+in authoritative game, team, historical-player, and `playerSeasons` records.
+League History joins those records at load time. Missing, incomplete, or
+structurally inconsistent playoff games and dangling archive references are
+integrity failures; repository reads never synthesize or repair them.
 
 Every completed game atomically publishes one `game:<gameId>` news item with
 stable rendered copy, editorial classification, and newsworthiness. Game

@@ -7,7 +7,7 @@ import type {
 } from '../types/db';
 import type { NamesData } from '../types/baseData';
 import type { LeagueStage, Team } from '../types/domain';
-import type { SeasonTeamSnapshot } from '../types/memory';
+import type { SeasonMemory, SeasonTeamSnapshot } from '../types/memory';
 import type { TeamAggregateTotals } from '../types/stats';
 import {
   DEFAULT_NEXT_SEASON_CONFIGURATION,
@@ -226,6 +226,26 @@ export const buildTestSeasonTeamSnapshot = (
   record: '12-0 (8-0)',
   offense: buildTestTeamAggregateTotals(),
   defense: buildTestTeamAggregateTotals(),
+  ...overrides,
+});
+
+export const buildTestSeasonMemory = (
+  overrides: Partial<SeasonMemory> = {},
+): SeasonMemory => ({
+  year: 2025,
+  teamSnapshots: [buildTestSeasonTeamSnapshot()],
+  postseason: {
+    playoff: {
+      format: 2,
+      seeds: [1, 2],
+      autobids: 0,
+      conferenceChampionsReceiveTopSeeds: false,
+      games: { championship: 1 },
+    },
+    conferenceChampions: [],
+    bowls: [],
+  },
+  awards: [],
   ...overrides,
 });
 

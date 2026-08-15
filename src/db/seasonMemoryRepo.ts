@@ -5,14 +5,20 @@ import type {
   PlayerSeasonStats,
 } from '../types/db';
 import {
-  SEASON_MEMORY_EVENT_TYPES,
   SeasonMemoryDataIntegrityError,
   type SeasonAwardWinner,
+  type SeasonBowlArchive,
+  type SeasonConferenceChampion,
   type SeasonMemory,
-  type SeasonMemoryEvent,
+  type SeasonPlayoffArchive,
+  type SeasonPostseasonArchive,
   type SeasonTeamSnapshot,
 } from '../types/memory';
 import type { LeagueState } from '../types/league';
+import {
+  getArchivedPlayoffGameIds,
+  getArchivedPostseasonGameType,
+} from '../domain/league/postseasonArchive';
 import { getDb } from './db';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -23,31 +29,135 @@ const hasExactKeys = (value: Record<string, unknown>, keys: readonly string[]) =
   return actual.length === keys.length && actual.every(key => keys.includes(key));
 };
 
-const isEvent = (value: unknown): value is SeasonMemoryEvent => {
+const isId = (value: unknown) => Number.isInteger(value) && Number(value) > 0;
+
+const PLAYOFF_GAME_KEYS = {
+  2: ['championship'],
+  4: ['leftSemifinal', 'rightSemifinal', 'championship'],
+  12: [
+    'leftFirstRound1',
+    'leftFirstRound2',
+    'rightFirstRound1',
+    'rightFirstRound2',
+    'leftQuarterfinal1',
+    'leftQuarterfinal2',
+    'rightQuarterfinal1',
+    'rightQuarterfinal2',
+    'leftSemifinal',
+    'rightSemifinal',
+    'championship',
+  ],
+} as const;
+
+const matchupKey = (teamAId: number, teamBId: number) =>
+  teamAId < teamBId ? `${teamAId}:${teamBId}` : `${teamBId}:${teamAId}`;
+
+const assertMatchup = (
+  gameById: Map<number, GameRecord>,
+  gameId: number,
+  teamAId: number,
+  teamBId: number,
+) => {
+  const game = gameById.get(gameId);
+  if (!game || matchupKey(game.teamAId, game.teamBId) !== matchupKey(teamAId, teamBId)) {
+    throw new SeasonMemoryDataIntegrityError();
+  }
+  return game;
+};
+
+const assertPlayoffBracket = (
+  playoff: SeasonPlayoffArchive,
+  gameById: Map<number, GameRecord>,
+) => {
+  const seeds = playoff.seeds;
+  if (playoff.format === 2) {
+    assertMatchup(gameById, playoff.games.championship, seeds[0], seeds[1]);
+    return;
+  }
+  if (playoff.format === 4) {
+    const left = assertMatchup(gameById, playoff.games.leftSemifinal, seeds[0], seeds[3]);
+    const right = assertMatchup(gameById, playoff.games.rightSemifinal, seeds[1], seeds[2]);
+    assertMatchup(
+      gameById,
+      playoff.games.championship,
+      left.winnerId!,
+      right.winnerId!,
+    );
+    return;
+  }
+  const games = playoff.games;
+  const leftFirst1 = assertMatchup(gameById, games.leftFirstRound1, seeds[7], seeds[8]);
+  const leftFirst2 = assertMatchup(gameById, games.leftFirstRound2, seeds[4], seeds[11]);
+  const rightFirst1 = assertMatchup(gameById, games.rightFirstRound1, seeds[6], seeds[9]);
+  const rightFirst2 = assertMatchup(gameById, games.rightFirstRound2, seeds[5], seeds[10]);
+  const leftQuarter1 = assertMatchup(gameById, games.leftQuarterfinal1, seeds[0], leftFirst1.winnerId!);
+  const leftQuarter2 = assertMatchup(gameById, games.leftQuarterfinal2, seeds[3], leftFirst2.winnerId!);
+  const rightQuarter1 = assertMatchup(gameById, games.rightQuarterfinal1, seeds[1], rightFirst1.winnerId!);
+  const rightQuarter2 = assertMatchup(gameById, games.rightQuarterfinal2, seeds[2], rightFirst2.winnerId!);
+  const leftSemi = assertMatchup(gameById, games.leftSemifinal, leftQuarter1.winnerId!, leftQuarter2.winnerId!);
+  const rightSemi = assertMatchup(gameById, games.rightSemifinal, rightQuarter1.winnerId!, rightQuarter2.winnerId!);
+  assertMatchup(gameById, games.championship, leftSemi.winnerId!, rightSemi.winnerId!);
+};
+
+const isPlayoff = (value: unknown): value is SeasonPlayoffArchive => {
   if (
     !isRecord(value) ||
-    typeof value.type !== 'string' ||
-    !SEASON_MEMORY_EVENT_TYPES.some(type => type === value.type)
-  ) {
-    return false;
-  }
-  if (!Number.isInteger(value.gameId)) return false;
-  if (value.type === 'conference_championship') {
-    return (
-      hasExactKeys(value, ['type', 'gameId', 'conferenceName']) &&
-      typeof value.conferenceName === 'string' &&
-      value.conferenceName.length > 0
-    );
-  }
-  if (value.type === 'bowl') {
-    return (
-      hasExactKeys(value, ['type', 'gameId', 'bowlName']) &&
-      typeof value.bowlName === 'string' &&
-      value.bowlName.length > 0
-    );
-  }
-  return hasExactKeys(value, ['type', 'gameId']);
+    !hasExactKeys(value, [
+      'format',
+      'seeds',
+      'autobids',
+      'conferenceChampionsReceiveTopSeeds',
+      'games',
+    ]) ||
+    (value.format !== 2 && value.format !== 4 && value.format !== 12) ||
+    !Array.isArray(value.seeds) ||
+    value.seeds.length !== value.format ||
+    !value.seeds.every(isId) ||
+    new Set(value.seeds).size !== value.seeds.length ||
+    !Number.isInteger(value.autobids) ||
+    Number(value.autobids) < 0 ||
+    Number(value.autobids) > value.format ||
+    typeof value.conferenceChampionsReceiveTopSeeds !== 'boolean'
+  ) return false;
+  const games = value.games;
+  if (!isRecord(games)) return false;
+  const keys = PLAYOFF_GAME_KEYS[value.format];
+  return (
+    hasExactKeys(games, keys) &&
+    keys.every(key => isId(games[key])) &&
+    new Set(keys.map(key => games[key])).size === keys.length
+  );
 };
+
+const isConferenceChampion = (
+  value: unknown,
+): value is SeasonConferenceChampion =>
+  isRecord(value) &&
+  hasExactKeys(value, ['conferenceName', 'teamId', 'championshipGameId']) &&
+  typeof value.conferenceName === 'string' &&
+  value.conferenceName.trim().length > 0 &&
+  isId(value.teamId) &&
+  (value.championshipGameId === null || isId(value.championshipGameId));
+
+const isBowl = (value: unknown): value is SeasonBowlArchive =>
+  isRecord(value) &&
+  hasExactKeys(value, ['gameId', 'name', 'tier']) &&
+  isId(value.gameId) &&
+  typeof value.name === 'string' &&
+  value.name.trim().length > 0 &&
+  (value.tier === 'ny6' || value.tier === 'other');
+
+const isPostseason = (value: unknown): value is SeasonPostseasonArchive =>
+  isRecord(value) &&
+  hasExactKeys(value, ['playoff', 'conferenceChampions', 'bowls']) &&
+  isPlayoff(value.playoff) &&
+  Array.isArray(value.conferenceChampions) &&
+  value.conferenceChampions.every(isConferenceChampion) &&
+  new Set(value.conferenceChampions.map(entry => entry.conferenceName)).size ===
+    value.conferenceChampions.length &&
+  Array.isArray(value.bowls) &&
+  value.bowls.every(isBowl) &&
+  new Set(value.bowls.map(entry => entry.gameId)).size === value.bowls.length;
 
 const isAward = (value: unknown): value is SeasonAwardWinner =>
   isRecord(value) &&
@@ -115,18 +225,13 @@ export function assertCurrentSeasonMemory(
 ): asserts value is SeasonMemory {
   const valid =
     isRecord(value) &&
-    hasExactKeys(value, ['year', 'playoffTeams', 'teamSnapshots', 'events', 'awards']) &&
+    hasExactKeys(value, ['year', 'teamSnapshots', 'postseason', 'awards']) &&
     Number.isInteger(value.year) &&
-    (value.playoffTeams === 2 ||
-      value.playoffTeams === 4 ||
-      value.playoffTeams === 12) &&
     Array.isArray(value.teamSnapshots) &&
     value.teamSnapshots.every(isTeamSnapshot) &&
     new Set(value.teamSnapshots.map(snapshot => snapshot.teamId)).size ===
       value.teamSnapshots.length &&
-    Array.isArray(value.events) &&
-    value.events.every(isEvent) &&
-    new Set(value.events.map(event => event.gameId)).size === value.events.length &&
+    isPostseason(value.postseason) &&
     Array.isArray(value.awards) &&
     value.awards.every(isAward) &&
     new Set(value.awards.map(award => award.categorySlug)).size === value.awards.length;
@@ -173,9 +278,44 @@ export const assertSeasonMemoryReferences = (
     ) {
       throw new SeasonMemoryDataIntegrityError();
     }
-    for (const event of memory.events) {
-      const game = gameById.get(event.gameId);
+    const playoffGameIds = getArchivedPlayoffGameIds(memory.postseason.playoff);
+    const conferenceGameIds = memory.postseason.conferenceChampions.flatMap(entry =>
+      entry.championshipGameId === null ? [] : [entry.championshipGameId]
+    );
+    const bowlGameIds = memory.postseason.bowls.map(entry => entry.gameId);
+    const archiveGameIds = [...playoffGameIds, ...conferenceGameIds, ...bowlGameIds];
+    if (
+      new Set(archiveGameIds).size !== archiveGameIds.length ||
+      memory.postseason.playoff.seeds.some(teamId => !snapshotTeamIds.has(teamId))
+    ) {
+      throw new SeasonMemoryDataIntegrityError();
+    }
+    for (const gameId of archiveGameIds) {
+      const game = gameById.get(gameId);
       if (!game || game.year !== memory.year || game.winnerId === null) {
+        throw new SeasonMemoryDataIntegrityError();
+      }
+    }
+    for (const gameId of playoffGameIds) {
+      const game = gameById.get(gameId)!;
+      if (game.gameType !== getArchivedPostseasonGameType(memory, gameId)) {
+        throw new SeasonMemoryDataIntegrityError();
+      }
+    }
+    assertPlayoffBracket(memory.postseason.playoff, gameById);
+    for (const champion of memory.postseason.conferenceChampions) {
+      const game = champion.championshipGameId === null
+        ? null
+        : gameById.get(champion.championshipGameId);
+      if (
+        !snapshotTeamIds.has(champion.teamId) ||
+        (game && game.winnerId !== champion.teamId)
+      ) {
+        throw new SeasonMemoryDataIntegrityError();
+      }
+    }
+    for (const bowl of memory.postseason.bowls) {
+      if (gameById.get(bowl.gameId)?.gameType !== 'bowl') {
         throw new SeasonMemoryDataIntegrityError();
       }
     }

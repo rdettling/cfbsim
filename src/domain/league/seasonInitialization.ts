@@ -24,9 +24,9 @@ import { generatePreseasonNews } from '../news/previews';
 
 const getDefendingChampionId = async (year: number) => {
   const memory = await getSeasonMemory(year - 1);
-  const championship = memory?.events.find(event => event.type === 'national_championship');
-  if (!championship) return null;
-  const game = await getGameById(championship.gameId);
+  const championshipGameId = memory?.postseason.playoff.games.championship;
+  if (!championshipGameId) return null;
+  const game = await getGameById(championshipGameId);
   return game?.winnerId ?? null;
 };
 

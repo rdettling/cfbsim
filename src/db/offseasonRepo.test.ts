@@ -10,6 +10,7 @@ import {
 import {
   buildTestLeague,
   buildTestPlayer,
+  buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
 } from '../test/fixtures';
 import { buildGameDetail, buildPlayerSeasons } from '../domain/league/gameDetails';
@@ -240,15 +241,23 @@ describe('commitOffseasonTransition', () => {
     ];
     for (const detail of details) await db.put('gameDetails', detail);
     const playerSeasons = buildPlayerSeasons(2025, details, [player]);
-    const memory = {
+    const memory = buildTestSeasonMemory({
       year: 2025,
-      playoffTeams: 12 as const,
       teamSnapshots: [
         buildTestSeasonTeamSnapshot(),
       ],
-      events: [{ type: 'playoff_semifinal' as const, gameId: 3 }],
-      awards: [],
-    };
+      postseason: {
+        playoff: {
+          format: 2,
+          seeds: [1, 2],
+          autobids: 0,
+          conferenceChampionsReceiveTopSeeds: false,
+          games: { championship: 3 },
+        },
+        conferenceChampions: [],
+        bowls: [],
+      },
+    });
     const destination = buildTestLeague('realignment');
 
     await commitOffseasonTransition({
