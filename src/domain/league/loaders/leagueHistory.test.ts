@@ -77,7 +77,17 @@ describe('loadLeagueHistory', () => {
     });
     vi.mocked(getAllHistoricalPlayers).mockResolvedValue([]);
     vi.mocked(getPlayerSeasonsByYear).mockResolvedValue([
-      buildTestPlayerSeason({ year: 2025, pass_yards: 4_200, pass_attempts: 400, pass_completions: 280, pass_touchdowns: 40 }),
+      buildTestPlayerSeason({
+        year: 2025,
+        pass_yards: 4_200,
+        pass_attempts: 400,
+        pass_completions: 280,
+        pass_touchdowns: 40,
+        pass_interceptions: 5,
+        rush_yards: 420,
+        rush_attempts: 80,
+        rush_touchdowns: 6,
+      }),
     ]);
   });
 
@@ -176,11 +186,41 @@ describe('loadLeagueHistory', () => {
       bowls: [{ id: 3, name: 'Rose Bowl', is_ny6: true, winner: 'Test State' }],
       awards: [{
         categorySlug: 'heisman',
-        playerId: 1,
-        teamName: 'Test State',
-        position: 'qb',
-        statLine: '280/400, 4200 pass yds, 40 TD',
+        categoryName: 'Heisman Trophy',
+        categoryDescription: 'Most outstanding overall player',
+        group: 'overall',
+        placements: [{
+          key: 'first',
+          player: {
+            id: 1,
+            first: 'Pat',
+            last: 'Player',
+            teamName: 'Test State',
+            position: 'qb',
+          },
+          score: null,
+          statLine: '280/400, 4200 pass yds, 40 pass TD, 5 INT · 80 carries, 420 rush yds, 6 rush TD',
+        }],
       }],
     });
+  });
+
+  it('rejects an archived award with an unknown category', async () => {
+    vi.mocked(getAllSeasonMemories).mockResolvedValue([
+      buildTestSeasonMemory({
+        teamSnapshots: [
+          buildTestSeasonTeamSnapshot(),
+          buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2 }),
+        ],
+        awards: [{ categorySlug: 'unknown_award', playerId: 1, teamId: 1 }],
+      }),
+    ]);
+    vi.mocked(getGamesByYear).mockResolvedValue([
+      game(1, 1, 2, 1, 'national_championship', 'National Championship'),
+    ]);
+
+    await expect(loadLeagueHistory(2025)).rejects.toThrow(
+      'Unknown award category: unknown_award.',
+    );
   });
 });

@@ -1,7 +1,11 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { deleteCurrentDatabase, getDb } from '../../../../db/db';
-import { buildTestLeague, buildTestPlayer } from '../../../../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestPlayer,
+  buildTestSeasonMemory,
+} from '../../../../test/fixtures';
 import type { PlayerSeasonStats } from '../../../../types/db';
 import { PLAYER_SEASON_STAT_KEYS } from '../../gameDetails';
 import { loadPlayer } from './loadPlayer';
@@ -45,6 +49,9 @@ describe('player origin loading', () => {
       starter: true,
       games: 1,
     });
+    await db.put('seasonMemories', buildTestSeasonMemory({
+      awards: [{ categorySlug: 'heisman', playerId: historical.id, teamId: 1 }],
+    }));
     await db.put('playerOrigins', {
       playerId: walkOn.id,
       kind: 'walk_on',
@@ -94,6 +101,7 @@ describe('player origin loading', () => {
         nationalRank: 18,
         originalTeam: 'Test State',
       },
+      awards: [{ slug: 'heisman', name: 'Heisman Trophy' }],
     });
     await expect(loadPlayer('4')).resolves.toMatchObject({
       origin: {

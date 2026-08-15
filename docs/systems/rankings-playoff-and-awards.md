@@ -42,8 +42,8 @@ as season weeks advance.
   context.
 
 4. **Awards generation path**
-- `loadAwards()` and `loadSeasonSummary()` collect played-game logs for current year.
-- `buildAwards(...)` computes favorites/finalists/winners from cached stat aggregates and award-specific scoring heuristics.
+- `loadAwards()` and `loadSeasonSummary()` collect played-game logs for the current year.
+- `buildAwards(...)` computes live and final placements from shared stat aggregates and award-specific scoring heuristics.
 
 ```mermaid
 flowchart TD
@@ -56,7 +56,7 @@ flowchart TD
   F -- no --> H["remain in season stage"]
   A --> I["Per-game player-stat accumulation"]
   I --> J["buildAwards()"]
-  J --> K["awards favorites/final"]
+  J --> K["live/final award placements"]
 ```
 
 ## Selection and Scoring Rules
@@ -103,5 +103,9 @@ flowchart TD
   - route-specific bracket, picture, résumé, and bowl view composition
 - `src/domain/league/awards.ts`
   - `buildAwards`, stat cache construction, award calculators
-- `src/domain/league/loaders/offseason.ts`
-  - `loadAwards`, `loadSeasonSummary` integration and summary-stage handling
+- `src/domain/league/awardDefinitions.ts`
+  - canonical metadata, ordering, and award slugs
+- `src/domain/league/loaders/awards.ts`
+  - current-season awards lifecycle gating and projection
+- `src/domain/league/loaders/seasonSummary.ts`
+  - summary-stage awards integration

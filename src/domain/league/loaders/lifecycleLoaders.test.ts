@@ -16,7 +16,7 @@ import {
 } from '../../../test/recruitingFixtures';
 import {
   loadSeasonSummary,
-} from './offseason';
+} from './seasonSummary';
 import { loadRosterCuts } from './loadRosterCuts';
 import { loadRecruitingSummary } from './loadRecruitingSummary';
 import { loadRecruiting } from './loadRecruiting';
@@ -227,7 +227,7 @@ const snapshotLifecycleStores = async () => {
   };
 };
 
-describe('offseason loaders', () => {
+describe('lifecycle loaders', () => {
   beforeEach(resetDatabase);
 
   it.each([

@@ -70,19 +70,27 @@ const buildData = (): LeagueHistoryPageData => {
       awards: [{
         categorySlug: 'heisman',
         categoryName: 'Heisman Trophy',
-        playerId: 1,
-        first: 'Pat',
-        last: 'Player',
-        position: 'qb',
-        teamName: champion.name,
-        statLine: '280/400, 4200 pass yds, 40 TD',
+        categoryDescription: 'Most outstanding overall player',
+        group: 'overall',
+        placements: [{
+          key: 'first',
+          player: {
+            id: 1,
+            first: 'Pat',
+            last: 'Player',
+            position: 'qb',
+            teamName: champion.name,
+          },
+          score: null,
+          statLine: '280/400, 4200 pass yds, 40 TD',
+        }],
       }],
     },
   };
 };
 
-const renderPage = () => renderToStaticMarkup(
-  <MemoryRouter initialEntries={['/league/history/2025']}>
+const renderPage = (entry = '/league/history/2025') => renderToStaticMarkup(
+  <MemoryRouter initialEntries={[entry]}>
     <Routes>
       <Route path="/league/history/:year" element={<LeagueHistory />} />
     </Routes>
@@ -121,5 +129,20 @@ describe('LeagueHistory page', () => {
     const markup = renderPage();
     expect(markup).toContain('No completed seasons in League History');
     expect(markup).toContain('after you advance out of Season Summary');
+  });
+
+  it('opens archived awards directly from the tab query', () => {
+    const markup = renderPage('/league/history/2025?tab=awards');
+
+    expect(markup).toContain('Heisman Trophy');
+    expect(markup).toContain('Awards board');
+    expect(markup).toContain('Overall');
+    expect(markup).toContain('Pat Player');
+    expect(markup).toContain('href="/players/1"');
+    expect(markup).toContain('Test State');
+    expect(markup).toContain('280/400, 4200 pass yds, 40 TD');
+    expect(markup).toContain('QB');
+    expect(markup).not.toContain('View finalists');
+    expect(markup).not.toContain('Score');
   });
 });

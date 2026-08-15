@@ -1,34 +1,21 @@
 import { useState } from 'react';
-import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Button, Paper, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { loadAwards } from '../domain/league/loaders/offseason';
+import { loadAwards } from '../domain/league/loaders/awards';
 import type { AwardsPageData } from '../types/pages';
-import { AwardDetail } from './awards/AwardDetail';
-import { AwardsCategoryNavigation } from './awards/AwardsCategoryNavigation';
+import { AwardsBoard } from './awards/AwardsBoard';
 import { AwardsHeader } from './awards/AwardsHeader';
-import type { AwardMode } from './awards/types';
-import { AwardsHistory } from './awards/AwardsHistory';
 
 const Awards = () => {
-  const [selectedSlug, setSelectedSlug] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [view, setView] = useState<'current' | 'history'>('current');
 
   const { data, loading, error } = useDomainData<AwardsPageData>({
     fetcher: loadAwards,
   });
-
-  const mode: AwardMode = data?.info.stage === 'summary' ? 'final' : 'live';
-  const awards = data ? (mode === 'final' ? data.final : data.favorites) : [];
-  const selectedAward =
-    awards.find((award) => award.category_slug === selectedSlug) ?? awards[0] ?? null;
-  const hasAnyCandidate = awards.some(
-    (award) =>
-      award.first_place !== null || award.second_place !== null || award.third_place !== null,
-  );
 
   const handleTeamClick = (teamName: string) => {
     setSelectedTeam(teamName);
@@ -62,63 +49,36 @@ const Awards = () => {
               minHeight: { lg: 0 },
             }}
           >
-            <AwardsHeader year={data.info.currentYear} week={data.info.currentWeek} mode={mode} />
-            <Tabs
-              value={view}
-              onChange={(_, value: 'current' | 'history') => setView(value)}
-              aria-label="Awards views"
-              sx={{ mb: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}
-            >
-              <Tab value="current" label="Current Season" />
-              <Tab value="history" label="History" />
-            </Tabs>
-
-            {view === 'history' ? (
-              <AwardsHistory history={data.history} onTeamClick={handleTeamClick} />
-            ) : !hasAnyCandidate ? (
-              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="h6">No award candidates yet</Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                    mt: 0.5,
-                  }}
-                >
-                  Awards will populate after eligible players record game statistics.
-                </Typography>
-              </Paper>
-            ) : selectedAward ? (
-              <Box
-                sx={{
-                  display: { xs: 'block', lg: 'grid' },
-                  gridTemplateColumns: { lg: 'minmax(250px, 0.3fr) minmax(0, 1fr)' },
-                  gridTemplateRows: { lg: 'minmax(0, 1fr)' },
-                  gap: 1.25,
-                  flex: { lg: 1 },
-                  minHeight: { lg: 0 },
-                }}
-              >
-                <AwardsCategoryNavigation
-                  awards={awards}
-                  selectedSlug={selectedAward.category_slug}
-                  mode={mode}
-                  onSelect={setSelectedSlug}
+            {data.mode ? (
+              <>
+                <AwardsHeader
+                  year={data.info.currentYear}
+                  week={data.info.currentWeek}
+                  mode={data.mode}
                 />
-                <AwardDetail award={selectedAward} mode={mode} onTeamClick={handleTeamClick} />
-              </Box>
+                <AwardsBoard
+                  awards={data.awards}
+                  mode={data.mode}
+                  onTeamClick={handleTeamClick}
+                />
+              </>
             ) : (
-              <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="h6">Awards are unavailable</Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                    mt: 0.5,
-                  }}
-                >
-                  No award categories were returned for this season.
+              <Paper variant="outlined" sx={{ p: { xs: 2.5, md: 4 }, textAlign: 'center' }}>
+                <Typography component="h1" variant="h5">
+                  Current awards unavailable
                 </Typography>
+                <Typography sx={{ color: 'text.secondary', mt: 0.75 }}>
+                  Award races are available during the season. Finalized winners are archived in
+                  League History.
+                </Typography>
+                <Button
+                  component={RouterLink}
+                  to="/league/history?tab=awards"
+                  variant="contained"
+                  sx={{ mt: 2 }}
+                >
+                  View award history
+                </Button>
               </Paper>
             )}
           </Box>

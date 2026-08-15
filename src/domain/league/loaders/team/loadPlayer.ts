@@ -10,7 +10,8 @@ import {
 } from '../../../../db/simRepo';
 import type { PlayerRecord } from '../../../../types/db';
 import type { PlayerCareerSeason, PlayerGameLog } from '../../../../types/player';
-import { buildAwards, getAwardName } from '../../awards';
+import { getAwardName } from '../../awardDefinitions';
+import { buildAwards } from '../../awards';
 import { buildPlayerSeasons } from '../../gameDetails';
 import { buildScheduleGameForTeam } from '../../utils/scheduleView';
 import { average, percentage } from '../../utils/statMath';
@@ -155,8 +156,8 @@ export const loadPlayer = async (playerId: string) => {
             return game?.year === league.info.currentYear && game.winnerId !== null;
           }),
         ).final
-          .filter(entry => entry.first_place?.id === player.id)
-          .map(entry => ({ slug: entry.category_slug, name: entry.category_name }))
+          .filter(entry => entry.placements[0]?.player?.id === player.id)
+          .map(entry => ({ slug: entry.categorySlug, name: entry.categoryName }))
       : []),
   ];
 

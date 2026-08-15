@@ -149,7 +149,7 @@ IDs must remain stable once their coverage is established.
 | Interactive recruiting | Add/remove board targets, submit manual points with assisted advancement, use Sim to End of Recruiting, reload between rounds, resolve Signing Day | manual points are preserved; AI fills legally; public standings match resolution; drafts never overwrite newer state; hidden prospect data is absent | Loader and lifecycle tests + Recruiting page |
 | Roster finalization | Select, undo, reload, then finalize | stale versions fail; user selections remain exact; non-user cuts, starters, ratings, and reset commit once | Fake-IndexedDB command tests plus finalization harness |
 | Rankings | Weekly poll movement | rank movement reflects latest outcomes, not random reshuffle | Check rankings across multiple weeks |
-| Awards | Late-season awards richness | favorites/final outputs expand with played-game logs | Inspect Awards page mid/late season |
+| Awards | Late-season awards richness | live/final placements expand with played-game logs | Inspect Awards page mid/late season |
 | Loader contracts | Route data completeness | pages receive expected `info/team/conferences` envelope + exact gated page payload | Run loader tests and spot-check stale routes |
 | Refresh sync | pageDataRefresh path | open pages refetch after actions without discarding recoverable shell feedback | Advance from a stale tab and observe refreshed unavailable state plus retry feedback |
 | Offseason concurrency | duplicate/stale/configuration race | only one consistent command commits; failures leave all affected stores unchanged | Run atomic integration tests and exercise a two-tab stale action |
@@ -216,7 +216,8 @@ internal scrolling; below `lg`, verify no unintended horizontal overflow.
   - `src/domain/league/loaders/loadRealignment.ts`
   - `src/domain/league/loaders/loadRosterProgression.ts`
   - `src/domain/league/loaders/loadRecruitingSummary.ts`
-  - `src/domain/league/loaders/offseason.ts`
+  - `src/domain/league/loaders/awards.ts`
+  - `src/domain/league/loaders/seasonSummary.ts`
   - `src/domain/league/loaders/season/loadNonCon.ts`
 - Week advancement and sim orchestration:
   - `src/domain/sim/orchestrator.ts`

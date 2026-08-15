@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Chip,
-  Link as MuiLink,
   MenuItem,
   Paper,
   Stack,
@@ -12,7 +11,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { TeamLink } from '../components/team/TeamLink';
@@ -21,12 +25,18 @@ import { getLeagueHistoryPath } from '../constants/routes';
 import { useDomainData } from '../domain/hooks';
 import { loadLeagueHistory } from '../domain/league/loaders/leagueHistory';
 import type { LeagueHistoryPageData } from '../types/pages';
+import { AwardsBoard } from './awards/AwardsBoard';
 import { PostseasonBowlView } from './playoff/PostseasonBowlView';
 import { PostseasonBracketView } from './playoff/PostseasonBracketView';
 import type { PostseasonFormat } from './playoff/types';
 
 type HistorySeason = NonNullable<LeagueHistoryPageData['season']>;
 type TabId = 'overview' | 'playoff' | 'bowls' | 'awards';
+
+const TAB_IDS = new Set<TabId>(['overview', 'playoff', 'bowls', 'awards']);
+
+const getSelectedTab = (value: string | null): TabId =>
+  value !== null && TAB_IDS.has(value as TabId) ? value as TabId : 'overview';
 
 const TeamButton = ({ name, onTeamClick }: { name: string; onTeamClick: (name: string) => void }) => (
   <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
@@ -177,81 +187,41 @@ const Overview = ({
   </Box>
 );
 
-const Awards = ({
-  season,
-  onTeamClick,
-}: {
-  season: HistorySeason;
-  onTeamClick: (name: string) => void;
-}) => (
-  <Paper
-    role="tabpanel"
-    aria-label="Award winners"
-    variant="outlined"
-    sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}
-  >
-    {season.awards.length ? season.awards.map(award => (
-      <Box
-        component="article"
-        key={award.categorySlug}
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr auto', md: 'minmax(180px, .7fr) minmax(0, 1fr) auto' },
-          gap: 1.5,
-          alignItems: 'center',
-          px: 2,
-          py: 1.5,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Typography variant="subtitle2">{award.categoryName}</Typography>
-        <Box sx={{ minWidth: 0 }}>
-          <MuiLink component={RouterLink} to={`/players/${award.playerId}`} underline="hover" sx={{ fontWeight: 700 }}>
-            {award.first} {award.last}
-          </MuiLink>
-          <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mt: 0.25 }}>
-            <TeamLogo name={award.teamName} size={22} />
-            <TeamLink name={award.teamName} onTeamClick={onTeamClick} />
-          </Stack>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-            {award.statLine}
-          </Typography>
-        </Box>
-        <Chip label={award.position.toUpperCase()} size="small" variant="outlined" />
-      </Box>
-    )) : (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="h6">No award winners archived</Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          This season did not include finalized individual awards.
-        </Typography>
-      </Box>
-    )}
-  </Paper>
-);
-
 const LeagueHistory = () => {
   const { year: yearParam } = useParams<{ year?: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const parsedYear = yearParam === undefined ? undefined : Number(yearParam);
   const requestedYear = parsedYear === undefined || Number.isInteger(parsedYear)
     ? parsedYear
     : Number.NaN;
-  const [tab, setTab] = useState<TabId>('overview');
   const [selectedTeam, setSelectedTeam] = useState('');
+  const tab = getSelectedTab(searchParams.get('tab'));
   const { data, loading, error } = useDomainData<LeagueHistoryPageData>({
     fetcher: () => loadLeagueHistory(requestedYear),
     deps: [yearParam],
   });
 
-  useEffect(() => setTab('overview'), [data?.season?.year]);
   useEffect(() => {
     document.title = data?.season ? `${data.season.year} League History` : 'League History';
     return () => { document.title = 'College Football'; };
   }, [data?.season]);
 
   const openTeam = (name: string) => setSelectedTeam(name);
+  const selectTab = (value: TabId) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === 'overview') next.delete('tab');
+    else next.set('tab', value);
+    setSearchParams(next);
+  };
+
+  const selectSeason = (year: number) => {
+    const search = searchParams.toString();
+    navigate({
+      pathname: getLeagueHistoryPath(year),
+      search: search ? `?${search}` : '',
+    });
+  };
 
   return (
     <PageLayout
@@ -287,7 +257,7 @@ const LeagueHistory = () => {
                   size="small"
                   label="Season"
                   value={data.season.year}
-                  onChange={event => navigate(getLeagueHistoryPath(Number(event.target.value)))}
+                  onChange={event => selectSeason(Number(event.target.value))}
                   sx={{ minWidth: 120 }}
                 >
                   {data.years.map(year => <MenuItem key={year} value={year}>{year}</MenuItem>)}
@@ -299,7 +269,7 @@ const LeagueHistory = () => {
               <>
                 <Tabs
                   value={tab}
-                  onChange={(_, value: TabId) => setTab(value)}
+                  onChange={(_, value: TabId) => selectTab(value)}
                   variant="scrollable"
                   scrollButtons="auto"
                   aria-label="League history sections"
@@ -328,7 +298,21 @@ const LeagueHistory = () => {
                     onTeamClick={openTeam}
                   />
                 )}
-                {tab === 'awards' && <Awards season={data.season} onTeamClick={openTeam} />}
+                {tab === 'awards' && (
+                  <Box
+                    role="tabpanel"
+                    aria-label="Award winners"
+                    sx={{ display: 'flex', flex: 1, minHeight: 0 }}
+                  >
+                    <AwardsBoard
+                      awards={data.season.awards}
+                      mode="final"
+                      onTeamClick={openTeam}
+                      emptyTitle="No award winners archived"
+                      emptyDescription="This season did not include finalized individual awards."
+                    />
+                  </Box>
+                )}
               </>
             ) : (
               <Paper variant="outlined" sx={{ p: { xs: 3, md: 5 }, textAlign: 'center' }}>

@@ -16,7 +16,7 @@ import { loadRecruitingSummary } from './loaders/loadRecruitingSummary';
 import { loadRealignment } from './loaders/loadRealignment';
 import { loadRosterCuts } from './loaders/loadRosterCuts';
 import { loadRosterProgression } from './loaders/loadRosterProgression';
-import { loadSeasonSummary } from './loaders/offseason';
+import { loadSeasonSummary } from './loaders/seasonSummary';
 import { loadNonCon } from './loaders/season/loadNonCon';
 import {
   FINAL_ROSTER_SIZE,
@@ -228,17 +228,7 @@ describe('offseason lifecycle integration', () => {
 
     const summaryPreview = await loadSeasonSummary();
     const summaryReload = await loadSeasonSummary();
-    const withoutAwardTimestamps = (
-      awards: typeof summaryPreview.awards,
-    ) =>
-      awards.map(({ last_updated: _lastUpdated, ...award }) => award);
-    expect({
-      ...summaryReload,
-      awards: withoutAwardTimestamps(summaryReload.awards),
-    }).toEqual({
-      ...summaryPreview,
-      awards: withoutAwardTimestamps(summaryPreview.awards),
-    });
+    expect(summaryReload).toEqual(summaryPreview);
     await advanceOffseasonStage('summary');
     let league = await loadPersistedLeague();
     const memoryDb = await getDb();

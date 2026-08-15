@@ -1,36 +1,31 @@
-export interface AwardPlayer {
+export type AwardMode = 'live' | 'final';
+export type AwardGroup = 'overall' | 'offense' | 'defense' | 'specialTeams';
+export type AwardPlacementKey = 'first' | 'second' | 'third';
+
+export interface AwardDisplayPlayer {
   id: number;
   first: string;
   last: string;
-  pos: string;
-  rating: number;
-  stars: number;
-  team_name: string;
+  position: string;
+  teamName: string;
 }
 
-export interface AwardStats {
-  stat_line?: string;
-  [key: string]: unknown;
+export interface AwardDisplayPlacement {
+  key: AwardPlacementKey;
+  player: AwardDisplayPlayer | null;
+  score: number | null;
+  statLine: string | null;
 }
 
-export interface AwardEntry {
-  category_slug: string;
-  category_name: string;
-  category_description: string;
-  is_final: boolean;
-  last_updated: string;
-  first_place: AwardPlayer | null;
-  first_score: number | null;
-  first_stats: AwardStats | null;
-  second_place: AwardPlayer | null;
-  second_score: number | null;
-  second_stats: AwardStats | null;
-  third_place: AwardPlayer | null;
-  third_score: number | null;
-  third_stats: AwardStats | null;
+export interface AwardDisplayEntry {
+  categorySlug: string;
+  categoryName: string;
+  categoryDescription: string;
+  group: AwardGroup;
+  placements: AwardDisplayPlacement[];
 }
 
 export interface AwardsResult {
-  favorites: AwardEntry[];
-  final: AwardEntry[];
+  live: AwardDisplayEntry[];
+  final: AwardDisplayEntry[];
 }

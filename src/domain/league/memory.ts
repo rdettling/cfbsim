@@ -235,13 +235,13 @@ export const buildSeasonMemory = (
     year,
   );
   const awards = final.flatMap(entry => {
-    const winner = entry.first_place;
+    const winner = entry.placements.find(placement => placement.key === 'first')?.player;
     if (!winner) return [];
     const player = players.find(candidate => candidate.id === winner.id);
-    const team = teamsByName.get(winner.team_name);
+    const team = teamsByName.get(winner.teamName);
     if (!player || !team) return [];
     return [{
-      categorySlug: entry.category_slug,
+      categorySlug: entry.categorySlug,
       playerId: player.id,
       teamId: team.id,
     }];

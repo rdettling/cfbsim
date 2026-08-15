@@ -1,5 +1,5 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
-import type { AwardMode } from './types';
+import type { AwardMode } from '../../types/awards';
 
 type AwardsHeaderProps = {
   year: number;

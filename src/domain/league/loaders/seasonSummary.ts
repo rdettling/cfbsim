@@ -10,71 +10,18 @@ import {
   getAllGames,
   getAllGameLogs,
   getAllPlays,
-  getAllHistoricalPlayers,
-  getAllPlayerSeasons,
   getGameById,
 } from '../../../db/simRepo';
 import { getAllSeasonMemories } from '../../../db/seasonMemoryRepo';
-import { buildAwards, getAwardName } from '../awards';
-import { calculatePrestigeChanges, getPrestigeAvgRanks } from '../prestige';
-import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
+import { buildAwards } from '../awards';
 import { buildSeasonMemory } from '../memory';
+import { calculatePrestigeChanges, getPrestigeAvgRanks } from '../prestige';
 import {
   buildSeasonMilestones,
   buildTeamAccomplishments,
-  formatAwardStats,
   selectSignatureGames,
 } from '../memoryProjection';
-
-export const loadAwards = async () => {
-  const { league, players } = await loadLeaguePlayersSnapshot();
-  const [gameLogs, games, memories, historicalPlayers, playerSeasons] = await Promise.all([
-    getAllGameLogs(),
-    getAllGames(),
-    getAllSeasonMemories(),
-    getAllHistoricalPlayers(),
-    getAllPlayerSeasons(),
-  ]);
-  const identities = new Map(
-    [...players, ...historicalPlayers].map(player => [player.id, player]),
-  );
-  const seasonsByKey = new Map(
-    playerSeasons.map(season => [`${season.year}:${season.playerId}`, season]),
-  );
-  const teamsById = new Map(league.teams.map(team => [team.id, team]));
-
-  const playedGameIds = new Set(
-    games.filter(game => game.year === league.info.currentYear && game.winnerId !== null).map(game => game.id)
-  );
-  const yearLogs = gameLogs.filter(log => playedGameIds.has(log.gameId));
-  const { favorites, final } = buildAwards(league, players, yearLogs);
-
-  return {
-    info: league.info,
-    team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
-    conferences: league.conferences,
-    favorites,
-    final: league.info.stage === 'summary' ? final : [],
-    history: memories.map(memory => ({
-      year: memory.year,
-      winners: memory.awards.flatMap(winner => {
-        const player = identities.get(winner.playerId);
-        const season = seasonsByKey.get(`${memory.year}:${winner.playerId}`);
-        const winnerTeam = teamsById.get(winner.teamId);
-        if (!player || !season || !winnerTeam) return [];
-        return [{
-          ...winner,
-          categoryName: getAwardName(winner.categorySlug),
-          first: player.first,
-          last: player.last,
-          position: player.pos,
-          teamName: winnerTeam.name,
-          statLine: formatAwardStats(season),
-        }];
-      }),
-    })),
-  };
-};
+import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
 export const loadSeasonSummary = async () => {
   const { league, players } = await loadLeaguePlayersSnapshot();

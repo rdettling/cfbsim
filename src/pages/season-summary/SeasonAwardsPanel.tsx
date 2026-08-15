@@ -55,11 +55,12 @@ export const SeasonAwardsPanel = ({ awards, onTeamClick }: SeasonAwardsPanelProp
         </Box>
       ) : (
         awards.map((award) => {
-          const winner = award.first_place;
+          const winner = award.placements.find(placement => placement.key === 'first');
+          const player = winner?.player ?? null;
           return (
             <Box
               component="article"
-              key={award.category_slug}
+              key={award.categorySlug}
               sx={{
                 display: 'grid',
                 gridTemplateColumns: 'minmax(0, 1fr) auto',
@@ -80,9 +81,9 @@ export const SeasonAwardsPanel = ({ awards, onTeamClick }: SeasonAwardsPanelProp
                     display: 'block',
                   }}
                 >
-                  {award.category_name}
+                  {award.categoryName}
                 </Typography>
-                {winner ? (
+                {player ? (
                   <>
                     <Stack
                       direction="row"
@@ -92,17 +93,17 @@ export const SeasonAwardsPanel = ({ awards, onTeamClick }: SeasonAwardsPanelProp
                         mt: 0.25,
                       }}
                     >
-                      <TeamLogo name={winner.team_name} size={28} />
+                      <TeamLogo name={player.teamName} size={28} />
                       <Box sx={{ minWidth: 0 }}>
                         <MuiLink
                           component={RouterLink}
-                          to={`/players/${winner.id}`}
+                          to={`/players/${player.id}`}
                           underline="hover"
                           sx={{ display: 'block', fontWeight: 700 }}
                         >
-                          {winner.first} {winner.last}
+                          {player.first} {player.last}
                         </MuiLink>
-                        <TeamLink name={winner.team_name} onTeamClick={onTeamClick} />
+                        <TeamLink name={player.teamName} onTeamClick={onTeamClick} />
                       </Box>
                     </Stack>
                     <Typography
@@ -112,7 +113,7 @@ export const SeasonAwardsPanel = ({ awards, onTeamClick }: SeasonAwardsPanelProp
                         mt: 0.5,
                       }}
                     >
-                      {award.first_stats?.stat_line ?? 'No final stat line available'}
+                      {winner?.statLine ?? 'No final stat line available'}
                     </Typography>
                   </>
                 ) : (
@@ -131,7 +132,7 @@ export const SeasonAwardsPanel = ({ awards, onTeamClick }: SeasonAwardsPanelProp
                   </Box>
                 )}
               </Box>
-              <Chip label={winner?.pos.toUpperCase() ?? '—'} size="small" variant="outlined" />
+              <Chip label={player?.position.toUpperCase() ?? '—'} size="small" variant="outlined" />
             </Box>
           );
         })

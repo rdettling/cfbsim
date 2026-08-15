@@ -42,12 +42,9 @@ export const currentSeasonGameIds = (games: GameRecord[], currentYear: number) =
       .map(game => game.id),
   );
 
-export const buildPlayerSeasonTotals = (
-  gameLogs: GameLogRecord[],
-  playedGameIds: Set<number>,
-) => {
+export const aggregatePlayerLogs = (gameLogs: GameLogRecord[]) => {
   const totals = new Map<number, PlayerSeasonTotals>();
-  gameLogs.filter(log => playedGameIds.has(log.gameId)).forEach(log => {
+  gameLogs.forEach(log => {
     const total = totals.get(log.playerId) ?? emptyPlayerSeasonTotals(log.playerId);
     (Object.keys(total) as Array<keyof PlayerSeasonTotals>).forEach(key => {
       if (key !== 'playerId') total[key] += log[key];
@@ -56,6 +53,11 @@ export const buildPlayerSeasonTotals = (
   });
   return totals;
 };
+
+export const buildPlayerSeasonTotals = (
+  gameLogs: GameLogRecord[],
+  playedGameIds: Set<number>,
+) => aggregatePlayerLogs(gameLogs.filter(log => playedGameIds.has(log.gameId)));
 
 const passerRating = (
   completions: number,

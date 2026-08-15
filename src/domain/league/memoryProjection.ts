@@ -348,21 +348,3 @@ export const buildSeasonMilestones = ({
   }
   return milestones.slice(0, 3);
 };
-
-export const formatAwardStats = (
-  stats: import('../../types/db').PlayerSeasonStats,
-) => {
-  if (stats.pass_attempts) {
-    return `${stats.pass_completions}/${stats.pass_attempts}, ${stats.pass_yards} pass yds, ${stats.pass_touchdowns} TD`;
-  }
-  if (stats.rush_attempts) {
-    return `${stats.rush_attempts} carries, ${stats.rush_yards} rush yds, ${stats.rush_touchdowns} TD`;
-  }
-  if (stats.receiving_catches) {
-    return `${stats.receiving_catches} catches, ${stats.receiving_yards} rec yds, ${stats.receiving_touchdowns} TD`;
-  }
-  if (stats.tackles || stats.sacks || stats.interceptions) {
-    return `${stats.tackles} tackles, ${stats.sacks} sacks, ${stats.interceptions} INT`;
-  }
-  return `${stats.field_goals_made}/${stats.field_goals_attempted} FG`;
-};

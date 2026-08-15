@@ -12,8 +12,12 @@ import {
   type SeasonMemory,
   type SeasonTeamSnapshot,
 } from '../../../types/memory';
-import { getAwardName } from '../awards';
-import { formatAwardStats, buildTeamAccomplishments } from '../memoryProjection';
+import { buildTeamAccomplishments } from '../memoryProjection';
+import { formatAwardStatLine } from '../utils/awardStatLine';
+import {
+  createAwardDisplayEntry,
+  sortAwardDisplayEntries,
+} from '../utils/awardDisplay';
 import type {
   BowlGameEntry,
   PlayoffBracket,
@@ -292,7 +296,7 @@ export const loadLeagueHistory = async (requestedYear?: number) => {
         championshipGameId: entry.championshipGameId,
       })),
       bowls: buildBowlEntries(memory, gamesById, teamsById, snapshotsByTeamId),
-      awards: memory.awards.map(entry => {
+      awards: sortAwardDisplayEntries(memory.awards.map(entry => {
         const player = requireValue(
           identitiesById.get(entry.playerId),
           `Season ${selectedYear} references missing award winner ${entry.playerId}.`,
@@ -305,17 +309,19 @@ export const loadLeagueHistory = async (requestedYear?: number) => {
           teamsById.get(entry.teamId),
           `Season ${selectedYear} references missing award team ${entry.teamId}.`,
         );
-        return {
-          categorySlug: entry.categorySlug,
-          categoryName: getAwardName(entry.categorySlug),
-          playerId: entry.playerId,
-          first: player.first,
-          last: player.last,
-          position: player.pos,
-          teamName: team.name,
-          statLine: formatAwardStats(playerSeason),
-        };
-      }),
+        return createAwardDisplayEntry(entry.categorySlug, [{
+          key: 'first',
+          player: {
+            id: entry.playerId,
+            first: player.first,
+            last: player.last,
+            position: player.pos,
+            teamName: team.name,
+          },
+          score: null,
+          statLine: formatAwardStatLine(playerSeason),
+        }]);
+      })),
     },
   };
 };
