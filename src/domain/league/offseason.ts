@@ -81,6 +81,7 @@ const applyRealignment = (
       movement: 0,
       poll_score: 0,
       strength_of_record: 0,
+      strength_of_record_avg: 0,
       last_game: null,
       next_game: null,
     };

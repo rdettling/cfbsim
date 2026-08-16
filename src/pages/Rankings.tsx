@@ -57,14 +57,6 @@ const Rankings = () => {
               <Typography component="h1" variant="h4">
                 Rankings
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                {data.info.currentYear} season · Week {data.info.currentWeek}
-              </Typography>
             </Box>
             {data.rankings.length > 25 && (
               <Button
@@ -80,8 +72,16 @@ const Rankings = () => {
 
           {displayedTeams.length > 0 ? (
             <>
-              <RankingsDesktopTable teams={displayedTeams} onTeamClick={handleTeamClick} />
-              <RankingsMobileList teams={displayedTeams} onTeamClick={handleTeamClick} />
+              <RankingsDesktopTable
+                teams={displayedTeams}
+                hasUpcomingGames={data.hasUpcomingGames}
+                onTeamClick={handleTeamClick}
+              />
+              <RankingsMobileList
+                teams={displayedTeams}
+                hasUpcomingGames={data.hasUpcomingGames}
+                onTeamClick={handleTeamClick}
+              />
             </>
           ) : (
             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>

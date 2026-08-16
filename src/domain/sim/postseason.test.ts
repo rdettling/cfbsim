@@ -157,4 +157,49 @@ describe('postseason bowl scheduling', () => {
       expect(scheduled).toEqual(expected);
     },
   );
+
+  it('applies 12-team committee order without replacing weekly poll scores', async () => {
+    const league = buildPostseasonLeague(12);
+    league.settings.playoffAutobids = 1;
+    league.settings.conferenceChampionsReceiveTopSeeds = true;
+
+    const champion = league.teams[19];
+    const challenger = league.teams[20];
+    champion.conference = 'Test Conference';
+    champion.confName = 'Test Conference';
+    champion.confWins = 8;
+    champion.confLosses = 0;
+    challenger.conference = 'Test Conference';
+    challenger.confName = 'Test Conference';
+    challenger.confWins = 7;
+    challenger.confLosses = 1;
+    league.conferences = [{
+      id: 1,
+      confName: 'Test Conference',
+      confFullName: 'Test Conference',
+      confGames: 8,
+      info: '',
+      championship: null,
+      teams: [champion, challenger],
+    }];
+
+    league.teams.forEach((team, index) => {
+      team.poll_score = 100 - index * 0.5;
+    });
+    const pollScores = new Map(league.teams.map(team => [team.id, team.poll_score]));
+
+    await handleSpecialWeeks(league, oddsContext);
+
+    expect(league.playoff.seeds).toEqual([
+      champion.id,
+      ...league.teams.slice(0, 11).map(team => team.id),
+    ]);
+    expect(champion).toMatchObject({ ranking: 1, last_rank: 20 });
+    expect(league.teams[0]).toMatchObject({ ranking: 2, last_rank: 1 });
+    expect(league.teams[10]).toMatchObject({ ranking: 12, last_rank: 11 });
+    expect(league.teams[11]).toMatchObject({ ranking: 13, last_rank: 12 });
+    expect(league.teams.every(team =>
+      team.poll_score === pollScores.get(team.id)
+    )).toBe(true);
+  });
 });

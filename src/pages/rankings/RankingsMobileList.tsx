@@ -1,10 +1,12 @@
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
-import { CompactGameSummary } from '../../components/game/CompactGameSummary';
 import { TeamLink } from '../../components/team/TeamLink';
 import { TeamLogo } from '../../components/team/TeamLogo';
 import type { RankingsViewProps } from './types';
 
-export const RankingsMobileList = ({ teams, onTeamClick }: RankingsViewProps) => (
+export const RankingsMobileList = ({
+  teams,
+  onTeamClick,
+}: RankingsViewProps) => (
   <Paper
     component="section"
     variant="outlined"
@@ -23,9 +25,7 @@ export const RankingsMobileList = ({ teams, onTeamClick }: RankingsViewProps) =>
         <Stack
           direction="row"
           spacing={1.25}
-          sx={{
-            alignItems: 'center',
-          }}
+          sx={{ alignItems: 'center' }}
         >
           <Stack
             sx={{
@@ -47,7 +47,16 @@ export const RankingsMobileList = ({ teams, onTeamClick }: RankingsViewProps) =>
           </Stack>
           <TeamLogo name={team.name} size={36} />
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <TeamLink name={team.name} onTeamClick={onTeamClick} />
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+            >
+              <TeamLink name={team.name} onTeamClick={onTeamClick} />
+              {team.isPlayoffTeam && (
+                <Chip label="Playoff" size="small" color="primary" variant="outlined" />
+              )}
+            </Stack>
             <Typography
               variant="body2"
               sx={{
@@ -57,78 +66,22 @@ export const RankingsMobileList = ({ teams, onTeamClick }: RankingsViewProps) =>
               {team.record}
             </Typography>
           </Box>
-        </Stack>
-
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 1,
-            mt: 1.5,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-              }}
-            >
-              Poll score
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {team.poll_score !== undefined ? team.poll_score.toFixed(1) : '—'}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-              }}
-            >
-              Strength of record
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {team.strength_of_record !== undefined ? team.strength_of_record.toFixed(1) : '—'}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Stack spacing={1} sx={{ mt: 1.5 }}>
-          <Box>
+          <Box sx={{ flexShrink: 0, textAlign: 'right' }}>
             <Typography
               variant="caption"
               sx={{
                 color: 'text.secondary',
                 display: 'block',
-                mb: 0.25,
+                lineHeight: 1.2,
               }}
             >
-              Last week
+              Wins above
+              <br />
+              average
             </Typography>
-            <CompactGameSummary
-              game={team.last_game}
-              mode="previous"
-              onOpponentClick={onTeamClick}
-            />
-          </Box>
-          <Box>
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                display: 'block',
-                mb: 0.25,
-              }}
-            >
-              This week
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              {team.gamesPlayed > 0 ? team.strength_of_record.toFixed(1) : '—'}
             </Typography>
-            <CompactGameSummary
-              game={team.next_game}
-              mode="upcoming"
-              onOpponentClick={onTeamClick}
-            />
           </Box>
         </Stack>
       </Box>

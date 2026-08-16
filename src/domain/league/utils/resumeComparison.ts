@@ -30,9 +30,7 @@ const buildSorRanks = (teams: Team[]) => {
   teams
     .slice()
     .sort((a, b) => {
-      const aGames = Math.max(1, a.totalWins + a.totalLosses);
-      const bGames = Math.max(1, b.totalWins + b.totalLosses);
-      const difference = (b.strength_of_record / bGames) - (a.strength_of_record / aGames);
+      const difference = b.strength_of_record_avg - a.strength_of_record_avg;
       return difference || a.id - b.id;
     })
     .forEach((team, index) => ranks.set(team.id, index + 1));

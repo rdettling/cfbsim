@@ -93,7 +93,7 @@ const ResumeDesktopTable = ({
         <TableCell sx={{ minWidth: 210 }}>Team</TableCell>
         <TableCell sx={{ width: 118 }}>Record</TableCell>
         <TableCell sx={{ minWidth: 125 }}>Conference</TableCell>
-        <TableCell align="right" sx={{ width: 82 }}>Poll</TableCell>
+        <TableCell align="right" sx={{ width: 110 }}>Weekly Score</TableCell>
         <TableCell align="right" sx={{ width: 72 }}>SOR</TableCell>
         <TableCell align="right" sx={{ width: 72 }}>SOS</TableCell>
         <TableCell align="center" sx={{ width: 104 }}>Top 25</TableCell>
@@ -203,7 +203,7 @@ const ResumeMobileList = ({
             mt: 1.5,
           }}
         >
-          <Metric label="Poll score" value={team.poll_score.toFixed(1)} />
+          <Metric label="Weekly Score" value={team.poll_score.toFixed(1)} />
           <Metric label="SOR rank" value={`#${team.sor_rank}`} />
           <Metric label="SOS rank" value={team.sos_rank ? `#${team.sos_rank}` : '—'} />
           <Metric label="Top-25 record" value={team.top_25_record} />

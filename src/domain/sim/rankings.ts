@@ -1,10 +1,10 @@
-import type { Info, Team } from '../../types/domain';
+import type { Info, PlayoffTeamCount, Team } from '../../types/domain';
 import type { SimGame } from '../../types/sim';
 import type { LeagueState } from '../../types/league';
 import type { GameRecord } from '../../types/db';
 import type { OddsContext } from '../odds';
 import { getWinProbForRatings, HOME_FIELD_ADVANTAGE } from '../odds';
-import { REGULAR_SEASON_WEEKS } from '../league/postseason';
+import { BOWL_WEEK, REGULAR_SEASON_WEEKS } from '../league/postseason';
 
 type TeamRecordDelta = {
   team: Team;
@@ -26,11 +26,11 @@ export const formatRecord = (team: Team) =>
 const averageTeamRating = (teams: Team[]) =>
   teams.reduce((sum, team) => sum + team.rating, 0) / Math.max(1, teams.length);
 
-const getRankingFreezeWeeks = (playoffTeams: number) =>
+const getRankingFreezeWeeks = (playoffTeams: PlayoffTeamCount) =>
   playoffTeams === 4
-    ? [16]
+    ? [BOWL_WEEK]
     : playoffTeams === 12
-      ? [16, 17, 18]
+      ? [BOWL_WEEK, BOWL_WEEK + 1, BOWL_WEEK + 2]
       : [];
 
 const getInertiaWeight = (currentWeek: number) => {
@@ -42,7 +42,7 @@ const getInertiaWeight = (currentWeek: number) => {
 };
 
 const buildSorNormalizer = (teams: Team[]) => {
-  const sorValues = teams.map(team => team.strength_of_record_avg ?? 0);
+  const sorValues = teams.map(team => team.strength_of_record_avg);
   const minSor = sorValues.length ? Math.min(...sorValues) : 0;
   const maxSor = sorValues.length ? Math.max(...sorValues) : 0;
   const sorRange = maxSor - minSor;
@@ -217,7 +217,7 @@ export const updateRankings = (
     teamCount <= 1 ? 100 : ((teamCount - rank) / (teamCount - 1)) * 100;
   const toSorScore = buildSorNormalizer(teams);
   const topSor = teams.reduce(
-    (best, team) => Math.max(best, team.strength_of_record_avg ?? 0),
+    (best, team) => Math.max(best, team.strength_of_record_avg),
     Number.NEGATIVE_INFINITY
   );
   const inertiaWeight = getInertiaWeight(info.currentWeek);
@@ -226,9 +226,9 @@ export const updateRankings = (
     const previousRank = team.ranking;
     team.last_rank = previousRank;
     const rankScore = toScore(previousRank);
-    const sorScore = toSorScore(team.strength_of_record_avg ?? 0);
+    const sorScore = toSorScore(team.strength_of_record_avg);
     let pollScore = inertiaWeight * rankScore + (1 - inertiaWeight) * sorScore;
-    const isBestSor = (team.strength_of_record_avg ?? 0) === topSor;
+    const isBestSor = team.strength_of_record_avg === topSor;
     const canBePerfect = previousRank === 1 && isBestSor;
     if (!canBePerfect) {
       pollScore = Math.min(pollScore, 99.9);
@@ -254,9 +254,7 @@ export const finalizePostseasonRankings = (
   natty: GameRecord | null
 ) => {
   teams.forEach(team => {
-    const gamesPlayed = team.totalWins + team.totalLosses;
-    const baseScore = team.strength_of_record / Math.max(1, gamesPlayed);
-    team.poll_score = roundTo3(baseScore);
+    team.poll_score = roundTo3(team.strength_of_record_avg);
   });
 
   const sorted = sortByPollScore(teams);
