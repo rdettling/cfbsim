@@ -7,7 +7,7 @@ import type { FullGame } from '../../types/scheduleTypes';
 import type { NamesData } from '../../types/baseData';
 import { buildTeamsAndConferencesFromData } from '../baseData';
 import { buildGameDetail } from '../league/gameDetails';
-import { REGULAR_SEASON_WEEKS } from '../league/postseason';
+import { REGULAR_SEASON_WEEKS } from '../schedule/constants';
 import { buildOddsContext, buildOddsFields, type OddsContext } from '../odds';
 import { prepareInitialRostersFromData } from '../rosterBootstrap';
 import {

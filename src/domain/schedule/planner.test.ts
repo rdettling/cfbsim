@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { buildTestTeam } from '../../test/fixtures';
 import type { Team } from '../../types/domain';
 import type { GameRecord } from '../../types/db';
+import type { FullGame } from '../../types/scheduleTypes';
 import {
   assertCompleteSchedule,
   buildFullScheduleFromExisting,
 } from './planner';
+import { isConferenceGame } from './matchups';
 import { preservesScheduleCapacityWithOpponent } from './feasibility';
 
 const plannerOptions = (seed: number) => ({
@@ -13,7 +16,7 @@ const plannerOptions = (seed: number) => ({
   requireComplete: true,
 });
 
-const buildTeam = (id: number, conference: string): Team => ({
+const buildTeam = (id: number, conference: string): Team => buildTestTeam({
   id,
   name: `${conference} Team ${id}`,
   abbreviation: `T${id}`,
@@ -21,19 +24,9 @@ const buildTeam = (id: number, conference: string): Team => ({
   confLimit: 11,
   nonConfGames: 0,
   nonConfLimit: 1,
-  prestige: 4,
-  prestige_change: 0,
-  ceiling: 7,
-  floor: 1,
-  mascot: 'Testers',
-  city: 'Test City',
-  state: 'TS',
-  stadium: 'Test Stadium',
   ranking: id,
   offense: 90,
   defense: 90,
-  colorPrimary: '#123456',
-  colorSecondary: '#ffffff',
   conference,
   confName: conference,
   confWins: 0,
@@ -112,6 +105,40 @@ const scheduleSignature = (
       Number(left[2]) - Number(right[2]),
     );
 
+const conferenceHomeAwayCounts = (teams: Team[], games: ReturnType<
+  typeof buildFullScheduleFromExisting
+>['fullGames']) => {
+  const counts = new Map(teams.map(team => [team.id, { home: 0, away: 0 }]));
+  games.filter(game => isConferenceGame(game.teamA, game.teamB)).forEach(game => {
+    if (game.homeTeam) counts.get(game.homeTeam.id)!.home += 1;
+    if (game.awayTeam) counts.get(game.awayTeam.id)!.away += 1;
+  });
+  return counts;
+};
+
+const conferenceSiteSignature = (games: ReturnType<
+  typeof buildFullScheduleFromExisting
+>['fullGames']) => games
+  .filter(game => isConferenceGame(game.teamA, game.teamB))
+  .map(game => [
+    Math.min(game.teamA.id, game.teamB.id),
+    Math.max(game.teamA.id, game.teamB.id),
+    game.homeTeam?.id ?? null,
+  ])
+  .sort((left, right) =>
+    Number(left[0]) - Number(right[0]) ||
+    Number(left[1]) - Number(right[1])
+  );
+
+const matchupSignature = (games: ReturnType<
+  typeof buildFullScheduleFromExisting
+>['fullGames']) => games
+  .map(game => [
+    Math.min(game.teamA.id, game.teamB.id),
+    Math.max(game.teamA.id, game.teamB.id),
+  ])
+  .sort((left, right) => left[0] - right[0] || left[1] - right[1]);
+
 describe('seeded complete scheduling', () => {
   it('rotates one reduced slot for odd conference target totals and gives everyone 12 games', () => {
     const teams = buildLargeConferenceTeams();
@@ -122,6 +149,70 @@ describe('seeded complete scheduling', () => {
       plannerOptions(100),
     );
     assertCompleteSchedule(teams, first.fullGames);
+
+    const conferenceCounts = conferenceHomeAwayCounts(teams, first.fullGames);
+    teams.forEach(team => {
+      const counts = conferenceCounts.get(team.id)!;
+      expect(Math.abs(counts.home - counts.away)).toBeLessThanOrEqual(1);
+      if (team.confLimit % 2 === 0) expect(counts.home).toBe(counts.away);
+    });
+    const conferenceHomePenalty = teams.reduce((total, team) => {
+      const home = conferenceCounts.get(team.id)!.home;
+      return total + (home - 6) ** 2;
+    }, 0);
+    const totalHomeCounts = new Map(teams.map(team => [team.id, 0]));
+    first.fullGames.forEach(game => {
+      if (game.homeTeam) {
+        totalHomeCounts.set(
+          game.homeTeam.id,
+          (totalHomeCounts.get(game.homeTeam.id) ?? 0) + 1,
+        );
+      }
+    });
+    const completedHomePenalty = teams.reduce(
+      (total, team) => total + ((totalHomeCounts.get(team.id) ?? 0) - 6) ** 2,
+      0,
+    );
+    expect(completedHomePenalty).toBeLessThanOrEqual(conferenceHomePenalty);
+
+    const conferenceGames = first.fullGames.filter(game =>
+      isConferenceGame(game.teamA, game.teamB)
+    );
+    const automaticNonConferenceGames = first.fullGames.filter(game =>
+      !isConferenceGame(game.teamA, game.teamB)
+    );
+    let optimalHomePenalty = Number.POSITIVE_INFINITY;
+    for (
+      let mask = 0;
+      mask < 2 ** automaticNonConferenceGames.length;
+      mask += 1
+    ) {
+      const candidateHomeCounts = new Map(teams.map(team => [team.id, 0]));
+      conferenceGames.forEach(game => {
+        if (game.homeTeam) {
+          candidateHomeCounts.set(
+            game.homeTeam.id,
+            candidateHomeCounts.get(game.homeTeam.id)! + 1,
+          );
+        }
+      });
+      automaticNonConferenceGames.forEach((game, index) => {
+        const homeTeam = mask & (1 << index) ? game.teamA : game.teamB;
+        candidateHomeCounts.set(
+          homeTeam.id,
+          candidateHomeCounts.get(homeTeam.id)! + 1,
+        );
+      });
+      optimalHomePenalty = Math.min(
+        optimalHomePenalty,
+        teams.reduce(
+          (total, team) =>
+            total + (candidateHomeCounts.get(team.id)! - 6) ** 2,
+          0,
+        ),
+      );
+    }
+    expect(completedHomePenalty).toBe(optimalHomePenalty);
 
     const reducedByConference = new Map<string, number>();
     for (const conference of ['East', 'West']) {
@@ -194,6 +285,86 @@ describe('seeded complete scheduling', () => {
         name: 'Fixed matchup',
       });
     }
+  });
+
+  it('keeps conference sites independent from a manual nonconference site', () => {
+    const homeTeams = buildLargeConferenceTeams();
+    const homeResult = buildFullScheduleFromExisting(
+      homeTeams[0],
+      homeTeams,
+      [fixedGame(1, 14, 2)],
+      plannerOptions(250),
+    );
+    const awayTeams = buildLargeConferenceTeams();
+    const awayResult = buildFullScheduleFromExisting(
+      awayTeams[0],
+      awayTeams,
+      [fixedGame(1, 14, 2, { homeTeamId: 14, awayTeamId: 1 })],
+      plannerOptions(250),
+    );
+
+    assertCompleteSchedule(homeTeams, homeResult.fullGames);
+    assertCompleteSchedule(awayTeams, awayResult.fullGames);
+    expect(matchupSignature(awayResult.fullGames)).toEqual(
+      matchupSignature(homeResult.fullGames),
+    );
+    expect(conferenceSiteSignature(awayResult.fullGames)).toEqual(
+      conferenceSiteSignature(homeResult.fullGames),
+    );
+    expect(
+      homeResult.fullGames.find(game =>
+        Math.min(game.teamA.id, game.teamB.id) === 1 &&
+        Math.max(game.teamA.id, game.teamB.id) === 14
+      )?.homeTeam?.id,
+    ).toBe(1);
+    expect(
+      awayResult.fullGames.find(game =>
+        Math.min(game.teamA.id, game.teamB.id) === 1 &&
+        Math.max(game.teamA.id, game.teamB.id) === 14
+      )?.homeTeam?.id,
+    ).toBe(14);
+  });
+
+  it('preserves a required neutral rivalry venue through generated outputs', () => {
+    const teams = buildLargeConferenceTeams();
+    const requiredGame: FullGame = {
+      teamA: teams[0],
+      teamB: teams[13],
+      weekPlayed: 0,
+      homeTeam: null,
+      awayTeam: null,
+      venue: 'Test Bowl',
+      name: 'Neutral Rivalry',
+      rivalryKey: 'neutral-rivalry',
+    };
+
+    const result = buildFullScheduleFromExisting(
+      teams[0],
+      teams,
+      [],
+      { ...plannerOptions(275), requiredGames: [requiredGame] },
+    );
+    const fullGame = result.fullGames.find(game =>
+      game.rivalryKey === requiredGame.rivalryKey
+    );
+    const newGame = result.newGames.find(game =>
+      game.rivalryKey === requiredGame.rivalryKey
+    );
+
+    expect(fullGame).toMatchObject({
+      homeTeam: null,
+      awayTeam: null,
+      venue: 'Test Bowl',
+      name: 'Neutral Rivalry',
+    });
+    expect(fullGame?.weekPlayed).toBeGreaterThan(0);
+    expect(newGame?.venue).toBe('Test Bowl');
+    expect(requiredGame.weekPlayed).toBe(0);
+    expect(result.schedule[(fullGame?.weekPlayed ?? 1) - 1]).toMatchObject({
+      location: 'Neutral',
+      venue: 'Test Bowl',
+      label: 'Neutral Rivalry',
+    });
   });
 
   it('rejects a manual nonconference choice that exceeds residual capacity', () => {

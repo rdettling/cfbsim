@@ -1,13 +1,9 @@
 import type { GameRecord } from '../../types/db';
 import type { Team } from '../../types/domain';
 import type { FullGame } from '../../types/scheduleTypes';
-import {
-  isConferenceGame,
-  resetTeamScheduleCounts,
-  stableNumber,
-} from './planner';
-
-const REGULAR_SEASON_GAMES = 12;
+import { REGULAR_SEASON_GAMES } from './constants';
+import { isConferenceGame, resetTeamScheduleCounts } from './matchups';
+import { stableNumber } from './determinism';
 
 export const preservesScheduleCapacityWithOpponent = ({
   teams,

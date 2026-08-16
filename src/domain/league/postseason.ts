@@ -1,6 +1,6 @@
 import type { PlayoffTeamCount } from '../../types/domain';
+import { REGULAR_SEASON_WEEKS } from '../schedule/constants';
 
-export const REGULAR_SEASON_WEEKS = 14;
 export const CONFERENCE_CHAMPIONSHIP_WEEK = REGULAR_SEASON_WEEKS + 1;
 export const BOWL_WEEK = CONFERENCE_CHAMPIONSHIP_WEEK + 1;
 

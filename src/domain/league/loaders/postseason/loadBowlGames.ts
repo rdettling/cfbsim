@@ -1,6 +1,6 @@
 import { getAllGames } from '../../../../db/simRepo';
 import type { BowlGameEntry } from '../../../../types/postseason';
-import { REGULAR_SEASON_WEEKS } from '../../postseason';
+import { REGULAR_SEASON_WEEKS } from '../../../schedule/constants';
 import {
   buildBowlMatchups,
   isBowlName,

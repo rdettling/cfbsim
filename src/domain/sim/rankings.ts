@@ -4,7 +4,8 @@ import type { LeagueState } from '../../types/league';
 import type { GameRecord } from '../../types/db';
 import type { OddsContext } from '../odds';
 import { getWinProbForRatings, HOME_FIELD_ADVANTAGE } from '../odds';
-import { BOWL_WEEK, REGULAR_SEASON_WEEKS } from '../league/postseason';
+import { BOWL_WEEK } from '../league/postseason';
+import { REGULAR_SEASON_WEEKS } from '../schedule/constants';
 
 type TeamRecordDelta = {
   team: Team;

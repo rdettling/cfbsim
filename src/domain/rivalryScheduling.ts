@@ -10,9 +10,10 @@ import type { FullGame, ScheduleConstraint } from '../types/scheduleTypes';
 import {
   assertCompleteSchedule,
   fillUserSchedule,
-  isScheduleFailure,
-  VALIDATION_SCHEDULE_SEED,
 } from './schedule/planner';
+import { VALIDATION_SCHEDULE_SEED } from './schedule/constants';
+import { isScheduleFailure } from './schedule/errors';
+import { isConferenceGame } from './schedule/matchups';
 import { buildSchedule } from './schedule/projection';
 
 export type RivalriesData = {
@@ -42,10 +43,6 @@ export const opponentKey = (teamAId: number, teamBId: number) =>
   teamAId < teamBId
     ? `${teamAId}:${teamBId}`
     : `${teamBId}:${teamAId}`;
-
-const isConferenceGame = (teamA: Team, teamB: Team) =>
-  teamA.conference !== 'Independent' &&
-  teamA.conference === teamB.conference;
 
 const buildFullGame = (
   rivalry: RivalryConstraint,

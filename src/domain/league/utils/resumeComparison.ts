@@ -11,7 +11,8 @@ import {
   HOME_FIELD_ADVANTAGE,
   type OddsContext,
 } from '../../odds';
-import { CONFERENCE_CHAMPIONSHIP_WEEK, REGULAR_SEASON_WEEKS } from '../postseason';
+import { CONFERENCE_CHAMPIONSHIP_WEEK } from '../postseason';
+import { REGULAR_SEASON_WEEKS } from '../../schedule/constants';
 import type { PlayoffSelection } from './playoffSelection';
 
 type ResumeComparisonInput = {

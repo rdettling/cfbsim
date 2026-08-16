@@ -12,16 +12,18 @@ import { buildTeamsAndConferences } from './baseData';
 import {
   assertCompleteSchedule,
   fillUserSchedule,
-  isScheduleFailure,
-  VALIDATION_SCHEDULE_SEED,
 } from './schedule/planner';
+import {
+  REGULAR_SEASON_GAMES,
+  VALIDATION_SCHEDULE_SEED,
+} from './schedule/constants';
+import { isScheduleFailure } from './schedule/errors';
 import { buildSchedule } from './schedule/projection';
 import {
   buildAcceptedRivalryGames,
   resolveRivalries,
 } from './rivalryScheduling';
 
-const REGULAR_SEASON_GAMES = 12;
 
 const issue = (
   code: ConferencePlanIssue['code'],

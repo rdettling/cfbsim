@@ -26,8 +26,8 @@ import {
 import {
   assertCompleteSchedule,
   buildFullScheduleFromExisting,
-  VALIDATION_SCHEDULE_SEED,
 } from '../../../schedule/planner';
+import { VALIDATION_SCHEDULE_SEED } from '../../../schedule/constants';
 import {
   buildAcceptedRivalryGames,
 } from '../../../rivalryScheduling';

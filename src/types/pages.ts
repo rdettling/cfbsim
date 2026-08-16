@@ -1,4 +1,4 @@
-import type { listAvailableTeams } from '../domain/league/loaders/season/listAvailableTeams';
+import type { listAvailableOpponents } from '../domain/league/loaders/season/listAvailableOpponents';
 import type { loadDashboard } from '../domain/league/loaders/season/loadDashboard';
 import type { loadLeagueHistory } from '../domain/league/loaders/leagueHistory';
 import type { loadLeagueRecords } from '../domain/league/loaders/leagueRecords';
@@ -60,7 +60,7 @@ export type TeamHistoryPageData = Awaited<ReturnType<typeof loadTeamHistory>>;
 export type RankingsPageData = Awaited<ReturnType<typeof loadRankings>>;
 export type PlayerPageData = Awaited<ReturnType<typeof loadPlayer>>;
 export type TeamInfoData = Awaited<ReturnType<typeof getTeamInfo>>;
-export type AvailableTeamsData = Awaited<ReturnType<typeof listAvailableTeams>>;
+export type AvailableNonConOpponentsData = Awaited<ReturnType<typeof listAvailableOpponents>>;
 export type StartNewLeagueData = Awaited<ReturnType<typeof startNewLeague>>;
 export type PlayerLeadersPageData = Awaited<ReturnType<typeof loadPlayerLeaders>>;
 export type PlayoffBracketPageData = Awaited<ReturnType<typeof loadPlayoffBracket>>;

@@ -4,8 +4,9 @@ import type { GameRecord } from '../../types/db';
 import {
   BOWL_WEEK,
   CONFERENCE_CHAMPIONSHIP_WEEK,
-  REGULAR_SEASON_WEEKS,
 } from '../league/postseason';
+import { REGULAR_SEASON_WEEKS } from '../schedule/constants';
+import { registerMatchup } from '../schedule/matchups';
 import { buildBaseLabel } from '../utils/gameLabels';
 import { buildOddsFields, loadOddsContext } from '../odds';
 import { nextId } from './ids';
@@ -22,19 +23,6 @@ import { buildResumeComparisonSnapshot } from '../league/utils/resumeComparison'
 import { buildBowlMatchups } from '../league/utils/bowlSelection';
 import { sortStandingsTeams } from '../league/utils/standings';
 import { generatePlayoffFieldNews } from '../news/rankings';
-
-const isConferenceGame = (teamA: Team, teamB: Team) =>
-  teamA.conference !== 'Independent' && teamA.conference === teamB.conference;
-
-const updateTeamGameCounts = (teamA: Team, teamB: Team) => {
-  if (isConferenceGame(teamA, teamB)) {
-    teamA.confGames += 1;
-    teamB.confGames += 1;
-  } else {
-    teamA.nonConfGames += 1;
-    teamB.nonConfGames += 1;
-  }
-};
 
 const setBowls = async (
   league: LeagueState,
@@ -115,7 +103,7 @@ const createGameRecord = (
     watchability: null,
   };
   record.watchability = buildWatchability(record, league.teams.length);
-  updateTeamGameCounts(teamA, teamB);
+  registerMatchup(teamA, teamB);
   return record;
 };
 

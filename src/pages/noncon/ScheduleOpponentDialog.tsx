@@ -1,105 +1,79 @@
-import {
-  Alert,
-  Autocomplete,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  Typography,
-} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { Dialog, DialogContent, DialogTitle, IconButton, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import type { EligibleNonConOpponent } from '../../types/league';
+import { OpponentBrowser } from './OpponentBrowser';
+import type { OpponentScheduleRequest } from './types';
 
 type ScheduleOpponentDialogProps = {
   open: boolean;
   week: number | null;
-  options: string[];
-  selectedOpponent: string | null;
+  opponents: EligibleNonConOpponent[];
+  query: string;
   loading: boolean;
-  saving: boolean;
+  savingRequest: OpponentScheduleRequest | null;
   loadError: string | null;
   saveError: string | null;
-  onOpponentChange: (opponent: string | null) => void;
+  onQueryChange: (query: string) => void;
+  onRetry: () => void;
   onClose: () => void;
-  onSubmit: () => void;
+  onSchedule: (request: OpponentScheduleRequest) => void;
 };
+
 export const ScheduleOpponentDialog = ({
   open,
   week,
-  options,
-  selectedOpponent,
+  opponents,
+  query,
   loading,
-  saving,
+  savingRequest,
   loadError,
   saveError,
-  onOpponentChange,
+  onQueryChange,
+  onRetry,
   onClose,
-  onSubmit,
+  onSchedule,
 }: ScheduleOpponentDialogProps) => {
-  const noOptions = !loading && !loadError && options.length === 0;
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <Dialog
       open={open}
-      onClose={saving ? undefined : onClose}
+      onClose={savingRequest ? undefined : onClose}
+      fullScreen={fullScreen}
       fullWidth
       maxWidth="sm"
       aria-labelledby="schedule-opponent-dialog-title"
+      slotProps={{
+        paper: {
+          sx: { height: fullScreen ? '100%' : 'min(78vh, 720px)', overflow: 'hidden' },
+        },
+      }}
     >
-      <DialogTitle id="schedule-opponent-dialog-title">Schedule Week {week ?? '—'}</DialogTitle>
-      <DialogContent>
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-            mb: 2,
-          }}
-        >
-          Eligible opponents are outside your conference, have an open week, and have remaining
-          non-conference capacity. Manually scheduled games are at home.
-        </Typography>
-
-        {loadError && (
-          <Alert severity="error" sx={{ mb: 1.5 }}>
-            {loadError}
-          </Alert>
-        )}
-        {saveError && (
-          <Alert severity="error" sx={{ mb: 1.5 }}>
-            {saveError}
-          </Alert>
-        )}
-        {noOptions && (
-          <Alert severity="info" sx={{ mb: 1.5 }}>
-            No eligible opponents are available for this week.
-          </Alert>
-        )}
-
-        <Autocomplete
-          options={options}
-          value={selectedOpponent}
-          onChange={(_, value) => onOpponentChange(value)}
+      <DialogTitle id="schedule-opponent-dialog-title" sx={{ py: 1.25, px: 1.5 }}>
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography component="span" variant="subtitle1" sx={{ fontWeight: 600 }}>
+            Schedule Week {week ?? '—'}
+          </Typography>
+          <IconButton aria-label="Close opponent selection" onClick={onClose} disabled={savingRequest !== null}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent dividers sx={{ p: 0, minHeight: 0, overflow: 'hidden' }}>
+        <OpponentBrowser
+          week={week}
+          opponents={opponents}
+          query={query}
           loading={loading}
-          disabled={loading || saving || Boolean(loadError)}
-          noOptionsText="No eligible opponents"
-          loadingText="Loading eligible opponents…"
-          renderInput={(params) => (
-            <TextField {...params} label="Opponent" placeholder="Search teams" autoFocus />
-          )}
+          loadError={loadError}
+          saveError={saveError}
+          savingRequest={savingRequest}
+          onQueryChange={onQueryChange}
+          onRetry={onRetry}
+          onSchedule={onSchedule}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={onSubmit}
-          disabled={!selectedOpponent || loading || saving || Boolean(loadError) || noOptions}
-        >
-          {saving ? 'Scheduling…' : 'Schedule Game'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 };

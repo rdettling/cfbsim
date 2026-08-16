@@ -12,7 +12,10 @@ import { createNonConGameRecord } from '../../seasonReset';
 import { getCurrentYearGames, getUserTeam } from './shared';
 import { getRivalriesData } from '../../../../db/baseData';
 import type { ScheduleConstraint } from '../../../../types/scheduleTypes';
-import type { NonConData } from '../../../../types/league';
+import type {
+  NonConData,
+  ScheduleNonConGameInput,
+} from '../../../../types/league';
 import {
   resolveRivalries,
   resolveRivalrySite,
@@ -47,10 +50,11 @@ const unavailableOpponentMessage = (
   }
 };
 
-export const scheduleNonConGame = async (
-  opponentName: string,
-  week: number,
-): Promise<NonConData> => {
+export const scheduleNonConGame = async ({
+  opponentName,
+  week,
+  site: requestedSite,
+}: ScheduleNonConGameInput): Promise<NonConData> => {
   const league = await loadLeagueOrThrow();
   requireEditablePreseason(league);
 
@@ -84,12 +88,47 @@ export const scheduleNonConGame = async (
       (rivalry.teamA === userTeam.name && rivalry.teamB === opponent.name) ||
       (rivalry.teamB === userTeam.name && rivalry.teamA === opponent.name),
   );
+  let site: ReturnType<typeof resolveRivalrySite>;
+  if (rivalry) {
+    if (requestedSite.kind !== 'rivalry') {
+      throw new Error(
+        `${rivalry.name ?? 'This rivalry'} uses a fixed rivalry site and cannot be overridden.`,
+      );
+    }
+    site = resolveRivalrySite(
+      league,
+      userTeam,
+      opponent,
+      rivalry.neutralSite,
+      rivalry.venue,
+    );
+  } else {
+    if (
+      requestedSite.kind !== 'manual' ||
+      (requestedSite.location !== 'Home' && requestedSite.location !== 'Away')
+    ) {
+      throw new Error('Choose Home or Away for this game.');
+    }
+    site = requestedSite.location === 'Home'
+      ? {
+          neutralSite: false,
+          homeTeam: userTeam,
+          awayTeam: opponent,
+          venue: null,
+        }
+      : {
+          neutralSite: false,
+          homeTeam: opponent,
+          awayTeam: userTeam,
+          venue: null,
+        };
+  }
   const prospective = {
     teamAId: userTeam.id,
     teamBId: opponent.id,
     weekPlayed: week,
-    homeTeamId: userTeam.id,
-    awayTeamId: opponent.id,
+    homeTeamId: site.homeTeam?.id ?? null,
+    awayTeamId: site.awayTeam?.id ?? null,
     name: rivalry?.name ?? null,
   } satisfies ScheduleConstraint;
   const selectedRivalryKey = rivalry
@@ -110,20 +149,6 @@ export const scheduleNonConGame = async (
       `${opponent.name} would leave the remaining schedule impossible to complete.`,
     );
   }
-  const site = rivalry
-    ? resolveRivalrySite(
-        league,
-        userTeam,
-        opponent,
-        rivalry.neutralSite,
-        rivalry.venue,
-      )
-    : {
-        neutralSite: false,
-        homeTeam: userTeam,
-        awayTeam: opponent,
-        venue: null,
-      };
   const gameName = rivalry
     ? rivalry.name ?? 'Rivalry'
     : buildScheduleLabel(userTeam, opponent);

@@ -1,140 +1,122 @@
-import CloseIcon from '@mui/icons-material/Close';
-import { Box, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { TeamLink } from '../../components/team/TeamLink';
-import type { PendingRivalry, TeamSelectionHandler } from './types';
+import { TeamLogo } from '../../components/team/TeamLogo';
 import type { RivalryPlanWarning } from '../../types/domain';
+import type { PendingRivalry, TeamSelectionHandler } from './types';
 
 type PendingRivalriesPanelProps = {
+  userTeam: string;
   rivalries: PendingRivalry[];
   warnings: RivalryPlanWarning[];
   onTeamClick: TeamSelectionHandler;
   onRemove: (rivalry: PendingRivalry) => void;
-  removalBusy: boolean;
+  removingItemKey: string | null;
+};
+
+const rivalrySiteLabel = (rivalry: PendingRivalry, userTeam: string) => {
+  if (rivalry.neutralSite) {
+    return rivalry.venue ? `Neutral · ${rivalry.venue}` : 'Neutral site';
+  }
+  if (rivalry.homeTeam === userTeam) return 'Home';
+  if (rivalry.awayTeam === userTeam) return 'Away';
+  return 'Site to be determined';
 };
 
 export const PendingRivalriesPanel = ({
+  userTeam,
   rivalries,
   warnings,
   onTeamClick,
   onRemove,
-  removalBusy,
+  removingItemKey,
 }: PendingRivalriesPanelProps) => (
   <Paper
     component="aside"
     aria-label="Pending Rivalries"
     variant="outlined"
-    sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      minHeight: 0,
-      overflow: 'hidden',
-    }}
+    sx={{ display: 'flex', flexDirection: 'column', height: { lg: '100%' }, minHeight: 0, overflow: 'hidden' }}
   >
-    <Box sx={{ px: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
-      <Typography component="h2" variant="h6">
-        Pending Rivalries
-      </Typography>
-      <Typography
-        variant="body2"
+    <>
+      <Stack
+        direction="row"
         sx={{
-          color: 'text.secondary',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minHeight: 38,
+          px: 1.25,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
-        Guaranteed flexible rivalries receive a week when the full schedule is generated
+        <Typography component="h2" variant="subtitle2">Pending rivalries</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{rivalries.length}</Typography>
+      </Stack>
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', px: 1.25, py: 0.625, borderBottom: '1px solid', borderColor: 'divider' }}
+      >
+        Automatically placed when the season starts unless declined.
       </Typography>
-    </Box>
 
-    <Stack sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-      {warnings.map(warning => (
-        <Box
-          key={`${warning.teamA}-${warning.teamB}`}
-          sx={{ p: 1.5, bgcolor: 'warning.main', color: 'warning.contrastText' }}
-        >
-          <Typography variant="subtitle2">Rivalry not guaranteed</Typography>
-          <Typography variant="body2">{warning.message}</Typography>
-        </Box>
-      ))}
-      {rivalries.length === 0 ? (
-        <Box sx={{ p: 2.5, textAlign: 'center' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-            No pending rivalries
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'text.secondary',
-            }}
-          >
-            Accepted fixed-week rivalries are already shown in the schedule. Any omissions appear above.
-          </Typography>
-        </Box>
-      ) : (
-        rivalries.map((rivalry) => (
-          <Box
-            component="article"
-            key={rivalry.id}
-            sx={{
-              p: 1.5,
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              '&:last-of-type': { borderBottom: 0 },
-            }}
-          >
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 0.5 }}>
-              <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 0 }}>
-                {rivalry.name ?? 'Rivalry Game'}
-              </Typography>
-              <Tooltip title="Remove pending rivalry">
-                <span>
-                  <IconButton
-                    size="small"
-                    disabled={removalBusy}
-                    aria-label={`Remove ${rivalry.teamA}–${rivalry.teamB} rivalry`}
-                    onClick={() => onRemove(rivalry)}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Stack>
-            <Stack
-              direction="row"
-              spacing={0.5}
-              useFlexGap
-              sx={{
-                alignItems: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <TeamLink name={rivalry.teamA} onTeamClick={onTeamClick} />
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                vs.
-              </Typography>
-              <TeamLink name={rivalry.teamB} onTeamClick={onTeamClick} />
-            </Stack>
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                display: 'block',
-                mt: 0.5,
-              }}
-            >
-              {rivalry.homeTeam && rivalry.awayTeam
-                ? `${rivalry.homeTeam} hosts ${rivalry.awayTeam}`
-                : rivalry.neutralSite
-                  ? rivalry.venue ?? 'Neutral site; week to be determined'
-                : 'Week and site to be determined'}
+      <Stack sx={{ flex: 1, minHeight: 0, overflowY: { xs: 'visible', lg: 'auto' } }}>
+        {warnings.map(warning => (
+          <Alert key={`${warning.teamA}-${warning.teamB}`} severity="warning" variant="outlined" sx={{ m: 1, mb: 0 }}>
+            <Typography variant="caption">{warning.message}</Typography>
+          </Alert>
+        ))}
+        {rivalries.length === 0 ? (
+          <Box sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>No pending rivalries</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Fixed-week rivalries already appear in the schedule.
             </Typography>
           </Box>
-        ))
-      )}
-    </Stack>
+        ) : rivalries.map(rivalry => {
+          const opponent = rivalry.teamA === userTeam ? rivalry.teamB : rivalry.teamA;
+          const removing = removingItemKey === `rivalry:${rivalry.id}`;
+          return (
+            <Box
+              component="article"
+              key={rivalry.id}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '56px minmax(0, 1fr) auto',
+                columnGap: 1,
+                alignItems: 'center',
+                px: 1.5,
+                py: 1,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                '&:last-of-type': { borderBottom: 0 },
+              }}
+            >
+              <Box sx={{ width: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TeamLogo name={opponent} size={28} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <TeamLink name={opponent} onTeamClick={onTeamClick} />
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                  {rivalry.name ?? 'Rivalry game'}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.125 }}>
+                  Week TBD · {rivalrySiteLabel(rivalry, userTeam)}
+                </Typography>
+              </Box>
+              <Button
+                variant="text"
+                color="error"
+                size="small"
+                disabled={removingItemKey !== null}
+                onClick={() => onRemove(rivalry)}
+              >
+                {removing ? 'Declining…' : 'Decline'}
+              </Button>
+            </Box>
+          );
+        })}
+      </Stack>
+    </>
   </Paper>
 );

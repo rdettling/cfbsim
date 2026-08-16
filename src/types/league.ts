@@ -58,6 +58,50 @@ export interface NonConData {
   conferences: Conference[];
 }
 
+export type ManualNonConLocation = 'Home' | 'Away';
+
+export type NonConScheduleSiteChoice =
+  | {
+      kind: 'manual';
+      location: ManualNonConLocation;
+    }
+  | {
+      kind: 'rivalry';
+    };
+
+export interface ScheduleNonConGameInput {
+  opponentName: string;
+  week: number;
+  site: NonConScheduleSiteChoice;
+}
+
+interface EligibleNonConOpponentSummary {
+  name: string;
+  conference: string;
+  ranking: number;
+  record: string;
+  rating: number;
+}
+
+export type EligibleNonConOpponent = EligibleNonConOpponentSummary & (
+  | {
+      rivalry: null;
+      site: {
+        kind: 'selectable';
+      };
+    }
+  | {
+      rivalry: {
+        name: string | null;
+      };
+      site: {
+        kind: 'fixed';
+        location: 'Home' | 'Away' | 'Neutral';
+        venue: string | null;
+      };
+    }
+);
+
 export interface PlayoffState {
   seeds: number[];
   left_r1_1?: number;

@@ -52,6 +52,11 @@ export interface FullGame {
   rivalryKey: string | null;
 }
 
+export interface UnorientedMatchup {
+  teamA: Team;
+  teamB: Team;
+}
+
 export interface ScheduleConstraint {
   teamAId: number;
   teamBId: number;

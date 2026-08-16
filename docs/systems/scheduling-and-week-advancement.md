@@ -89,7 +89,7 @@ normal creation week.
 ## Source Map
 
 - `src/domain/league/loaders/season/preseasonScheduling.ts`
-- `src/domain/league/loaders/season/listAvailableTeams.ts`
+- `src/domain/league/loaders/season/listAvailableOpponents.ts`
 - `src/domain/league/loaders/season/scheduleNonConGame.ts`
 - `src/domain/league/loaders/season/removePreseasonScheduleItem.ts`
 - `src/domain/league/seasonReset.ts`

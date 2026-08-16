@@ -21,7 +21,7 @@ import { loadNewLeagueData } from './loadNewLeagueData';
 import { loadPlayer } from '../team/loadPlayer';
 import { loadDashboard } from './loadDashboard';
 import { loadNonCon } from './loadNonCon';
-import { listAvailableTeams } from './listAvailableTeams';
+import { listAvailableOpponents } from './listAvailableOpponents';
 import { loadTeamSchedule } from './loadTeamSchedule';
 import { loadWeekSchedule } from './loadWeekSchedule';
 import { loadGame } from './loadGame';
@@ -305,6 +305,23 @@ const rivalryInput = (): StartNewLeagueInput => ({
   },
 });
 
+const scheduleManualGame = (
+  opponentName: string,
+  week: number,
+  location: 'Home' | 'Away' = 'Home',
+) => scheduleNonConGame({
+  opponentName,
+  week,
+  site: { kind: 'manual', location },
+});
+
+const scheduleRivalryGame = (opponentName: string, week: number) =>
+  scheduleNonConGame({
+    opponentName,
+    week,
+    site: { kind: 'rivalry' },
+  });
+
 beforeEach(async () => {
   responses = baseResponses();
   vi.mocked(generateRandomSeed).mockReset().mockReturnValue(12345);
@@ -580,12 +597,12 @@ describe('startNewLeague', () => {
       neutralSite: true,
       venue: 'Test Bowl',
     });
-    await expect(scheduleNonConGame('West 2', 7)).rejects.toThrow(
+    await expect(scheduleRivalryGame('West 2', 7)).rejects.toThrow(
       'Week 7 already has a scheduled game.',
     );
     expect(await db.getAllFromIndex('games', 'year', 2025)).toHaveLength(1);
 
-    await scheduleNonConGame('West 2', 8);
+    await scheduleRivalryGame('West 2', 8);
     const games = await db.getAllFromIndex('games', 'year', 2025);
     expect(games).toHaveLength(2);
     expect(games.find(game => game.teamBId !== games[0].teamBId)).toMatchObject({
@@ -608,7 +625,7 @@ describe('startNewLeague', () => {
     const gamesBefore = await db.getAllFromIndex('games', 'year', 2025);
     const leagueBefore = (await db.get('league', 'current'))?.value;
 
-    await expect(scheduleNonConGame('West 2', 8)).rejects.toThrow(
+    await expect(scheduleRivalryGame('West 2', 8)).rejects.toThrow(
       'would leave the remaining schedule impossible to complete',
     );
 
@@ -627,7 +644,7 @@ describe('startNewLeague', () => {
     ) => {
       const gamesBefore = await db.getAllFromIndex('games', 'year', 2025);
       const leagueBefore = (await db.get('league', 'current'))?.value;
-      await expect(scheduleNonConGame(opponent, week)).rejects.toThrow(message);
+      await expect(scheduleManualGame(opponent, week)).rejects.toThrow(message);
       expect(await db.getAllFromIndex('games', 'year', 2025)).toEqual(
         gamesBefore,
       );
@@ -720,8 +737,149 @@ describe('startNewLeague', () => {
     await db.put('league', { key: 'current', value: league });
 
     expect((await loadNonCon()).schedule[7].opponent).toBeNull();
-    expect(await listAvailableTeams(8)).toContain('West 2');
+    expect((await listAvailableOpponents(8)).map(opponent => opponent.name)).toContain('West 2');
     expect((await loadDashboard()).curr_game?.opponent).toBeNull();
+  });
+
+  it('returns alphabetized opponent details and resolved rivalry sites', async () => {
+    configureRivalryLeague();
+    responses.set('/data/rivalries.json', {
+      rivalries: [
+        {
+          teams: ['East 1', 'West 2'],
+          name: 'Flexible Trophy',
+          site: { type: 'neutral', venue: 'Test Bowl' },
+        },
+      ],
+    });
+    await startNewLeague(rivalryInput());
+
+    const opponents = await listAvailableOpponents(8);
+    expect(opponents.map(opponent => opponent.name)).toEqual(
+      [...opponents.map(opponent => opponent.name)].sort((left, right) => left.localeCompare(right)),
+    );
+    expect(opponents.find(opponent => opponent.name === 'West 2')).toMatchObject({
+      conference: 'West',
+      ranking: expect.any(Number),
+      record: expect.any(String),
+      rating: expect.any(Number),
+      rivalry: { name: 'Flexible Trophy' },
+      site: {
+        kind: 'fixed',
+        location: 'Neutral',
+        venue: 'Test Bowl',
+      },
+    });
+    expect(opponents.find(opponent => opponent.name === 'West 3')).toMatchObject({
+      conference: 'West',
+      rivalry: null,
+      site: { kind: 'selectable' },
+    });
+    expect(opponents.some(opponent => opponent.name === 'East 2')).toBe(false);
+  });
+
+  it('persists manual home and away sites and applies home-field odds', async () => {
+    configureRivalryLeague();
+    responses.set('/data/rivalries.json', { rivalries: [] });
+    await startNewLeague(rivalryInput());
+    const db = await getDb();
+    const league = (await db.get('league', 'current'))?.value as LeagueState;
+    const userTeam = league.teams.find(team => team.name === 'East 1')!;
+    const opponent = league.teams.find(team => team.name === 'West 3')!;
+    userTeam.rating = 80;
+    opponent.rating = 80;
+    await db.put('league', { key: 'current', value: league });
+
+    const homeResult = await scheduleManualGame('West 3', 3, 'Home');
+    const homeGame = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    expect(homeGame).toMatchObject({
+      homeTeamId: userTeam.id,
+      awayTeamId: opponent.id,
+      neutralSite: false,
+    });
+    expect(homeResult.schedule[2]).toMatchObject({
+      opponent: { name: 'West 3' },
+      location: 'Home',
+    });
+
+    await removePreseasonGame(homeGame.id);
+    const awayResult = await scheduleManualGame('West 3', 4, 'Away');
+    const awayGame = (await db.getAllFromIndex('games', 'year', 2025))[0];
+    expect(awayGame).toMatchObject({
+      homeTeamId: opponent.id,
+      awayTeamId: userTeam.id,
+      neutralSite: false,
+    });
+    expect(awayGame.winProbA).toBeLessThan(homeGame.winProbA);
+    expect(awayResult.schedule[3]).toMatchObject({
+      opponent: { name: 'West 3' },
+      location: 'Away',
+    });
+
+    await initializeSeason(2025);
+    const completedGames = await db.getAllFromIndex('games', 'year', 2025);
+    expect(completedGames.find(game => game.id === awayGame.id)).toMatchObject({
+      homeTeamId: opponent.id,
+      awayTeamId: userTeam.id,
+    });
+    expect(completedGames.filter(game => game.homeTeamId === userTeam.id)).toHaveLength(6);
+  });
+
+  it('rejects site choices that do not match the opponent type', async () => {
+    configureRivalryLeague();
+    await startNewLeague(rivalryInput());
+    const db = await getDb();
+    const gamesBefore = await db.getAllFromIndex('games', 'year', 2025);
+    const leagueBefore = (await db.get('league', 'current'))?.value;
+
+    await expect(scheduleNonConGame({
+      opponentName: 'West 2',
+      week: 8,
+      site: { kind: 'manual', location: 'Home' },
+    })).rejects.toThrow('uses a fixed rivalry site and cannot be overridden');
+    await expect(scheduleNonConGame({
+      opponentName: 'West 3',
+      week: 8,
+      site: { kind: 'rivalry' },
+    })).rejects.toThrow('Choose Home or Away for this game.');
+
+    expect(await db.getAllFromIndex('games', 'year', 2025)).toEqual(gamesBefore);
+    expect((await db.get('league', 'current'))?.value).toEqual(leagueBefore);
+  });
+
+  it('reports home and away sites from the rivalry host rotation', async () => {
+    configureRivalryLeague();
+    responses.set('/data/rivalries.json', {
+      rivalries: [{ teams: ['East 1', 'West 2'], name: 'Flexible Trophy' }],
+    });
+    await startNewLeague(rivalryInput());
+    const db = await getDb();
+    const league = (await db.get('league', 'current'))?.value as LeagueState;
+    league.rivalryHostSeeds['East 1::West 2'] = 'East 1';
+    await db.put('league', { key: 'current', value: league });
+
+    expect((await listAvailableOpponents(8)).find(opponent => opponent.name === 'West 2'))
+      .toMatchObject({
+        rivalry: { name: 'Flexible Trophy' },
+        site: {
+          kind: 'fixed',
+          location: 'Home',
+          venue: null,
+        },
+      });
+
+    league.rivalryHostSeeds['East 1::West 2'] = 'West 2';
+    await db.put('league', { key: 'current', value: league });
+
+    expect((await listAvailableOpponents(8)).find(opponent => opponent.name === 'West 2'))
+      .toMatchObject({
+        rivalry: { name: 'Flexible Trophy' },
+        site: {
+          kind: 'fixed',
+          location: 'Away',
+          venue: null,
+        },
+      });
   });
 
   it('removes fixed and pending rivalries for the current season', async () => {
@@ -779,7 +937,7 @@ describe('startNewLeague', () => {
     await startNewLeague(rivalryInput());
     const db = await getDb();
 
-    await scheduleNonConGame('West 1', 3);
+    await scheduleRivalryGame('West 1', 3);
     let game = (await db.getAllFromIndex('games', 'year', 2025))[0];
     expect(game).toMatchObject({
       weekPlayed: 3,
@@ -792,7 +950,7 @@ describe('startNewLeague', () => {
       declinedRivalries: ['East 1::West 1'],
     });
 
-    const returned = await scheduleNonConGame('West 1', 4);
+    const returned = await scheduleRivalryGame('West 1', 4);
     game = (await db.getAllFromIndex('games', 'year', 2025))[0];
     expect(game).toMatchObject({
       weekPlayed: 4,
@@ -814,7 +972,7 @@ describe('startNewLeague', () => {
 
     await removePreseasonGame(game.id);
     responses.set('/data/rivalries.json', { rivalries: [] });
-    await scheduleNonConGame('West 2', 5);
+    await scheduleManualGame('West 2', 5);
     game = (await db.getAllFromIndex('games', 'year', 2025))[0];
     await removePreseasonGame(game.id);
     expect((await db.get('league', 'current'))?.value).toMatchObject({
@@ -861,7 +1019,7 @@ describe('startNewLeague', () => {
 
     const gamesBefore = await db.getAllFromIndex('games', 'year', 2025);
     const leagueBefore = (await db.get('league', 'current'))?.value;
-    await expect(scheduleNonConGame('West 2', 8)).rejects.toThrow(
+    await expect(scheduleManualGame('West 2', 8)).rejects.toThrow(
       'Preseason scheduling is no longer editable.',
     );
     expect(await db.getAllFromIndex('games', 'year', 2025)).toEqual(

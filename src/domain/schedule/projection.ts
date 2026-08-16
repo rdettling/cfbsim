@@ -3,8 +3,8 @@ import type {
   ScheduleGame,
   Team,
 } from '../../types/domain';
-
-const REGULAR_SEASON_WEEKS = 14;
+import type { FullGame } from '../../types/scheduleTypes';
+import { REGULAR_SEASON_WEEKS } from './constants';
 
 export const buildSchedule = (weeks = REGULAR_SEASON_WEEKS): ScheduleGame[] =>
   Array.from({ length: weeks }, (_, index) => ({
@@ -74,4 +74,52 @@ export const buildUserScheduleFromGames = (
   });
 
   return schedule;
+};
+
+export const projectFullGamesToUserSchedule = (
+  schedule: ScheduleGame[],
+  userTeam: Team,
+  games: readonly FullGame[],
+) => {
+  const existingLabelsByWeek = new Map<number, string | undefined>();
+  const existingIdsByWeek = new Map<number, string | undefined>();
+  schedule.forEach(slot => {
+    existingLabelsByWeek.set(slot.weekPlayed, slot.label);
+    existingIdsByWeek.set(slot.weekPlayed, slot.id);
+    slot.opponent = null;
+    slot.label = undefined;
+    slot.location = undefined;
+    slot.venue = null;
+    slot.id = '';
+  });
+
+  games.forEach(game => {
+    if (
+      game.weekPlayed <= 0 ||
+      (game.teamA.id !== userTeam.id && game.teamB.id !== userTeam.id)
+    ) return;
+    const slot = schedule[game.weekPlayed - 1];
+    if (!slot) return;
+
+    const opponent = game.teamA.id === userTeam.id ? game.teamB : game.teamA;
+    slot.opponent = {
+      name: opponent.name,
+      rating: opponent.rating,
+      ranking: opponent.ranking,
+      record: opponent.record,
+    };
+    slot.label = existingLabelsByWeek.get(game.weekPlayed) ??
+      game.name ??
+      buildScheduleLabel(userTeam, opponent);
+    slot.location = game.homeTeam?.id === userTeam.id
+      ? 'Home'
+      : game.awayTeam?.id === userTeam.id
+        ? 'Away'
+        : 'Neutral';
+    slot.venue = game.venue;
+    const existingId = existingIdsByWeek.get(game.weekPlayed);
+    slot.id = existingId && existingId.length
+      ? existingId
+      : `${game.teamA.name}-vs-${game.teamB.name}-week-${game.weekPlayed}`;
+  });
 };

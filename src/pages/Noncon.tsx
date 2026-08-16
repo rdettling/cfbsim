@@ -4,19 +4,24 @@ import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
-import { listAvailableTeams } from '../domain/league/loaders/season/listAvailableTeams';
+import { listAvailableOpponents } from '../domain/league/loaders/season/listAvailableOpponents';
 import { loadNonCon } from '../domain/league/loaders/season/loadNonCon';
 import {
   dismissPendingRivalry,
   removePreseasonGame,
 } from '../domain/league/loaders/season/removePreseasonScheduleItem';
 import { scheduleNonConGame } from '../domain/league/loaders/season/scheduleNonConGame';
+import type { EligibleNonConOpponent } from '../types/league';
 import type { NonConPageData } from '../types/pages';
 import { NonConWorkspace } from './noncon/NonConWorkspace';
 import { ScheduleOpponentDialog } from './noncon/ScheduleOpponentDialog';
-import {
-  type NonConSection,
+import type {
+  NonConSection,
+  OpponentScheduleRequest,
 } from './noncon/types';
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
 
 export const NonCon = () => {
   const opponentRequestId = useRef(0);
@@ -24,58 +29,51 @@ export const NonCon = () => {
   const [activeSection, setActiveSection] = useState<NonConSection>('schedule');
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
-  const [availableTeams, setAvailableTeams] = useState<string[]>([]);
-  const [selectedOpponent, setSelectedOpponent] = useState<string | null>(null);
+  const [availableOpponents, setAvailableOpponents] = useState<EligibleNonConOpponent[]>([]);
+  const [opponentQuery, setOpponentQuery] = useState('');
   const [opponentsLoading, setOpponentsLoading] = useState(false);
   const [opponentsError, setOpponentsError] = useState<string | null>(null);
-  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [savingRequest, setSavingRequest] =
+    useState<OpponentScheduleRequest | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [removingItemKey, setRemovingItemKey] = useState<string | null>(null);
   const [removalError, setRemovalError] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
 
-  const fetchData = useCallback(
-    async (): Promise<NonConPageData> => loadNonCon(),
-    [],
-  );
+  const fetchData = useCallback(async (): Promise<NonConPageData> => loadNonCon(), []);
+  const { data, loading, error, refresh, replaceData } = useDomainData<NonConPageData>({
+    fetcher: fetchData,
+  });
 
-  const { data, loading, error, refresh, replaceData } =
-    useDomainData<NonConPageData>({
-      fetcher: fetchData,
-    });
-
-  const closeScheduleDialog = () => {
-    if (scheduleSaving) return;
-    opponentRequestId.current += 1;
-    setScheduleDialogOpen(false);
+  const clearOpponentSelection = () => {
     setSelectedWeek(null);
-    setAvailableTeams([]);
-    setSelectedOpponent(null);
+    setAvailableOpponents([]);
+    setOpponentQuery('');
     setOpponentsLoading(false);
     setOpponentsError(null);
     setScheduleError(null);
   };
 
-  const openScheduleDialog = async (week: number) => {
+  const loadOpponents = async (week: number) => {
     const requestId = opponentRequestId.current + 1;
     opponentRequestId.current = requestId;
-    setSelectedWeek(week);
-    setAvailableTeams([]);
-    setSelectedOpponent(null);
+    setAvailableOpponents([]);
     setOpponentsError(null);
     setScheduleError(null);
-    setScheduleDialogOpen(true);
     setOpponentsLoading(true);
 
     try {
-      const teams = await listAvailableTeams(week);
+      const opponents = await listAvailableOpponents(week);
       if (opponentRequestId.current === requestId) {
-        setAvailableTeams(teams);
+        setAvailableOpponents(opponents);
       }
-    } catch {
+    } catch (loadError) {
       if (opponentRequestId.current === requestId) {
-        setOpponentsError('Eligible opponents could not be loaded. Try again.');
+        setOpponentsError(errorMessage(
+          loadError,
+          'Eligible opponents could not be loaded. Try again.',
+        ));
       }
     } finally {
       if (opponentRequestId.current === requestId) {
@@ -84,22 +82,44 @@ export const NonCon = () => {
     }
   };
 
-  const submitScheduledGame = async () => {
-    if (selectedWeek === null || selectedOpponent === null) return;
+  const selectScheduleWeek = (week: number) => {
+    setSelectedWeek(week);
+    setOpponentQuery('');
+    setScheduleDialogOpen(true);
+    void loadOpponents(week);
+  };
 
-    setScheduleSaving(true);
+  const retryOpponents = () => {
+    if (selectedWeek !== null) void loadOpponents(selectedWeek);
+  };
+
+  const closeScheduleDialog = () => {
+    if (savingRequest) return;
+    opponentRequestId.current += 1;
+    setScheduleDialogOpen(false);
+    clearOpponentSelection();
+  };
+
+  const submitScheduledGame = async (request: OpponentScheduleRequest) => {
+    if (selectedWeek === null || savingRequest) return;
+
+    setSavingRequest(request);
     setScheduleError(null);
     try {
-      const nextData = await scheduleNonConGame(selectedOpponent, selectedWeek);
+      const nextData = await scheduleNonConGame({
+        ...request,
+        week: selectedWeek,
+      });
       replaceData(nextData);
       setScheduleDialogOpen(false);
-      setSelectedWeek(null);
-      setAvailableTeams([]);
-      setSelectedOpponent(null);
-    } catch {
-      setScheduleError('The game could not be scheduled. Refresh the candidates and try again.');
+      clearOpponentSelection();
+    } catch (saveError) {
+      setScheduleError(errorMessage(
+        saveError,
+        'The game could not be scheduled. Refresh the candidates and try again.',
+      ));
     } finally {
-      setScheduleSaving(false);
+      setSavingRequest(null);
     }
   };
 
@@ -110,15 +130,17 @@ export const NonCon = () => {
 
   const removeScheduledGame = async (gameId: string) => {
     if (removingItemKey) return;
-    const numericId = Number(gameId);
     const itemKey = `game:${gameId}`;
     setRemovingItemKey(itemKey);
     setRemovalError(null);
     try {
-      await removePreseasonGame(numericId);
+      await removePreseasonGame(Number(gameId));
       await refresh();
-    } catch {
-      setRemovalError('The scheduled game could not be removed. Try again.');
+    } catch (removeError) {
+      setRemovalError(errorMessage(
+        removeError,
+        'The scheduled game could not be removed. Try again.',
+      ));
     } finally {
       setRemovingItemKey(null);
     }
@@ -134,8 +156,11 @@ export const NonCon = () => {
     try {
       await dismissPendingRivalry(rivalry.teamA, rivalry.teamB);
       await refresh();
-    } catch {
-      setRemovalError('The pending rivalry could not be removed. Try again.');
+    } catch (removeError) {
+      setRemovalError(errorMessage(
+        removeError,
+        'The pending rivalry could not be declined. Try again.',
+      ));
     } finally {
       setRemovingItemKey(null);
     }
@@ -147,16 +172,12 @@ export const NonCon = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={
-        data
-          ? {
-              team: data.team,
-              currentStage: data.info.stage,
-              info: data.info,
-              conferences: data.conferences,
-            }
-          : undefined
-      }
+      navbarData={data ? {
+        team: data.team,
+        currentStage: data.info.stage,
+        info: data.info,
+        conferences: data.conferences,
+      } : undefined}
     >
       {data && (
         <>
@@ -170,27 +191,29 @@ export const NonCon = () => {
             <NonConWorkspace
               data={data}
               activeSection={activeSection}
+              selectedWeek={selectedWeek}
+              removingItemKey={removingItemKey}
               onSectionChange={setActiveSection}
-              onSchedule={openScheduleDialog}
+              onScheduleWeek={selectScheduleWeek}
               onTeamClick={handleTeamClick}
               onRemoveGame={removeScheduledGame}
               onRemoveRivalry={removePendingRivalry}
-              removingItemKey={removingItemKey}
             />
           )}
 
           <ScheduleOpponentDialog
             open={scheduleDialogOpen}
             week={selectedWeek}
-            options={availableTeams}
-            selectedOpponent={selectedOpponent}
+            opponents={availableOpponents}
+            query={opponentQuery}
             loading={opponentsLoading}
-            saving={scheduleSaving}
+            savingRequest={savingRequest}
             loadError={opponentsError}
             saveError={scheduleError}
-            onOpponentChange={setSelectedOpponent}
+            onQueryChange={setOpponentQuery}
+            onRetry={retryOpponents}
             onClose={closeScheduleDialog}
-            onSubmit={submitScheduledGame}
+            onSchedule={submitScheduledGame}
           />
           <TeamInfoModal
             teamName={selectedTeam}
