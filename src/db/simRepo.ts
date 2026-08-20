@@ -1,4 +1,8 @@
 import { getDb } from './db';
+import {
+  assertCurrentLeagueState,
+  assertCurrentRosterState,
+} from './leagueStateValidation';
 import type {
   DriveRecord,
   GameDetailRecord,
@@ -12,20 +16,51 @@ import type {
 import type { LeagueState } from '../types/league';
 import type { NewsItem } from '../types/news';
 import { flattenGameDetail } from '../domain/league/gameDetails';
+import {
+  assertCurrentGameRecord,
+  assertCurrentGameRecords,
+  assertLeagueGameRecords,
+} from './gameRecordValidation';
+import {
+  assertCurrentGameDetailRecord,
+  assertCurrentGameDetailRecords,
+  assertGameDetailReferences,
+} from './gameDetailValidation';
 
-export const clearCurrentGameDetails = async (year: number) => {
-  const db = await getDb();
-  const tx = db.transaction('gameDetails', 'readwrite');
-  const keys = await tx.store.index('year').getAllKeys(year);
-  await Promise.all(keys.map(key => tx.store.delete(key)));
-  await tx.done;
+const abortTransaction = async (tx: { abort: () => void; done: Promise<unknown> }) => {
+  try { tx.abort(); } catch { /* The failed request may already have aborted. */ }
+  try { await tx.done; } catch { /* Expected after abort. */ }
 };
 
-export const saveGames = async (games: GameRecord[]) => {
+export const commitSeasonInitialization = async ({
+  year,
+  league,
+  games,
+  newsItems = [],
+}: {
+  year: number;
+  league: LeagueState;
+  games: GameRecord[];
+  newsItems?: NewsItem[];
+}) => {
+  assertCurrentLeagueState(league);
+  assertLeagueGameRecords(league, games);
   const db = await getDb();
-  const tx = db.transaction('games', 'readwrite');
-  for (const game of games) await tx.store.put(game);
-  await tx.done;
+  const tx = db.transaction(['league', 'games', 'gameDetails', 'newsItems'], 'readwrite');
+  try {
+    const detailStore = tx.objectStore('gameDetails');
+    const detailKeys = await detailStore.index('year').getAllKeys(year);
+    for (const key of detailKeys) await detailStore.delete(key);
+    const gameStore = tx.objectStore('games');
+    for (const game of games) await gameStore.put(game);
+    const newsStore = tx.objectStore('newsItems');
+    for (const item of newsItems) await newsStore.put(item);
+    await tx.objectStore('league').put({ key: 'current', value: league });
+    await tx.done;
+  } catch (error) {
+    await abortTransaction(tx);
+    throw error;
+  }
 };
 
 export const saveGamesAndLeague = async (
@@ -33,6 +68,8 @@ export const saveGamesAndLeague = async (
   league: LeagueState,
   newsItems: NewsItem[] = [],
 ) => {
+  assertCurrentLeagueState(league);
+  assertLeagueGameRecords(league, games);
   const db = await getDb();
   const tx = db.transaction(['games', 'league', 'newsItems'], 'readwrite');
   try {
@@ -41,8 +78,7 @@ export const saveGamesAndLeague = async (
     await tx.objectStore('league').put({ key: 'current', value: league });
     await tx.done;
   } catch (error) {
-    try { tx.abort(); } catch { /* The failed request may already have aborted. */ }
-    try { await tx.done; } catch { /* Expected after abort. */ }
+    await abortTransaction(tx);
     throw error;
   }
 };
@@ -51,6 +87,7 @@ export const deleteGameAndSaveLeague = async (
   gameId: number,
   league: LeagueState,
 ) => {
+  assertCurrentLeagueState(league);
   const db = await getDb();
   const tx = db.transaction(['games', 'league'], 'readwrite');
   await tx.objectStore('games').delete(gameId);
@@ -58,28 +95,35 @@ export const deleteGameAndSaveLeague = async (
   await tx.done;
 };
 
-export const getAllGames = async () => (await getDb()).getAll('games');
-export const getGamesByYear = async (year: number) =>
-  (await getDb()).getAllFromIndex('games', 'year', year);
+export const getAllGames = async () => {
+  const games = await (await getDb()).getAll('games');
+  assertCurrentGameRecords(games);
+  return games;
+};
+export const getGamesByYear = async (year: number) => {
+  const games = await (await getDb()).getAllFromIndex('games', 'year', year);
+  assertCurrentGameRecords(games);
+  return games;
+};
 export const getGamesByTeam = async (teamId: number) => {
   const db = await getDb();
   const [asTeamA, asTeamB] = await Promise.all([
     db.getAllFromIndex('games', 'teamAId', teamId),
     db.getAllFromIndex('games', 'teamBId', teamId),
   ]);
-  return [...asTeamA, ...asTeamB].sort((left, right) => left.id - right.id);
+  const games = [...asTeamA, ...asTeamB].sort((left, right) => left.id - right.id);
+  assertCurrentGameRecords(games);
+  return games;
 };
-export const getGamesByWeek = async (week: number) =>
-  (await getDb()).getAllFromIndex('games', 'weekPlayed', week);
-export const getGameById = async (gameId: number) =>
-  (await getDb()).get('games', gameId);
-
-export const saveGameDetails = async (details: GameDetailRecord[]) => {
-  if (!details.length) return;
-  const db = await getDb();
-  const tx = db.transaction('gameDetails', 'readwrite');
-  for (const detail of details) await tx.store.put(detail);
-  await tx.done;
+export const getGamesByWeek = async (week: number) => {
+  const games = await (await getDb()).getAllFromIndex('games', 'weekPlayed', week);
+  assertCurrentGameRecords(games);
+  return games;
+};
+export const getGameById = async (gameId: number) => {
+  const game = await (await getDb()).get('games', gameId);
+  if (game !== undefined) assertCurrentGameRecord(game);
+  return game;
 };
 
 export const commitSimulationBatch = async ({
@@ -93,9 +137,21 @@ export const commitSimulationBatch = async ({
   details: GameDetailRecord[];
   newsItems?: NewsItem[];
 }) => {
+  assertCurrentLeagueState(league);
+  assertLeagueGameRecords(league, games);
   const db = await getDb();
-  const tx = db.transaction(['league', 'games', 'gameDetails', 'newsItems'], 'readwrite');
+  const tx = db.transaction(
+    ['league', 'games', 'gameDetails', 'newsItems', 'players'],
+    'readwrite',
+  );
   try {
+    const players = await tx.objectStore('players').getAll();
+    assertCurrentRosterState(league, players);
+    assertGameDetailReferences({
+      details,
+      games,
+      currentPlayers: players,
+    });
     const gameStore = tx.objectStore('games');
     const detailStore = tx.objectStore('gameDetails');
     for (const game of games) await gameStore.put(game);
@@ -105,24 +161,25 @@ export const commitSimulationBatch = async ({
     await tx.objectStore('league').put({ key: 'current', value: league });
     await tx.done;
   } catch (error) {
-    try {
-      tx.abort();
-    } catch {
-      // A failed request may already have aborted the transaction.
-    }
-    try {
-      await tx.done;
-    } catch {
-      // Expected after abort.
-    }
+    await abortTransaction(tx);
     throw error;
   }
 };
-export const getGameDetail = async (gameId: number) =>
-  (await getDb()).get('gameDetails', gameId);
-export const getGameDetailsByYear = async (year: number) =>
-  (await getDb()).getAllFromIndex('gameDetails', 'year', year);
-export const getAllGameDetails = async () => (await getDb()).getAll('gameDetails');
+export const getGameDetail = async (gameId: number) => {
+  const detail = await (await getDb()).get('gameDetails', gameId);
+  if (detail !== undefined) assertCurrentGameDetailRecord(detail);
+  return detail;
+};
+export const getGameDetailsByYear = async (year: number) => {
+  const details = await (await getDb()).getAllFromIndex('gameDetails', 'year', year);
+  assertCurrentGameDetailRecords(details);
+  return details;
+};
+export const getAllGameDetails = async () => {
+  const details = await (await getDb()).getAll('gameDetails');
+  assertCurrentGameDetailRecords(details);
+  return details;
+};
 export const getAllPlays = async (): Promise<PlayRecord[]> =>
   (await getAllGameDetails()).flatMap(detail => flattenGameDetail(detail).plays);
 export const getDrivesByGame = async (gameId: number): Promise<DriveRecord[]> => {
@@ -134,13 +191,6 @@ export const getPlaysByGame = async (gameId: number): Promise<PlayRecord[]> => {
   return detail ? flattenGameDetail(detail).plays : [];
 };
 
-export const savePlayers = async (players: PlayerRecord[]) => {
-  if (!players.length) return;
-  const db = await getDb();
-  const tx = db.transaction('players', 'readwrite');
-  for (const player of players) await tx.store.put(player);
-  await tx.done;
-};
 export const getPlayersByTeam = async (teamId: number) =>
   (await getDb()).getAllFromIndex('players', 'teamId', teamId);
 export const getAllPlayers = async () => (await getDb()).getAll('players');

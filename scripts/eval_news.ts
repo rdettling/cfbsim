@@ -6,25 +6,25 @@ import type { NamesData } from '../src/types/baseData';
 import {
   evaluateNewsAudit,
   type NewsAuditNotice,
-} from '../src/domain/news/audit';
-import { checksumValues } from '../src/domain/utils/checksum';
+} from './evaluation/news/audit';
+import { checksumValues } from './evaluation/shared/checksum';
 import {
   evaluateRankingNewsAudit,
   evaluateMixedNewsFrontPages,
   hasRankingAngleCoverage,
   type RankingNewsAuditEntry,
-} from '../src/domain/news/rankingAudit';
+} from './evaluation/news/rankingAudit';
 import { RANKING_STORY_ANGLES } from '../src/types/news';
 import {
   evaluatePreviewNewsAudit,
   type PreviewNewsAuditEntry,
-} from '../src/domain/news/previewAudit';
-import { buildNewsAuditMarkdown } from '../src/domain/news/auditReport';
+} from './evaluation/news/previewAudit';
+import { buildNewsAuditMarkdown } from './evaluation/news/report';
 import {
   generateNewsAuditCorpus,
-  type NewsAuditCorpusData,
-} from '../src/domain/news/corpus';
-import { newsAuditExitCode, parseNewsAuditArguments } from '../src/domain/news/auditCli';
+} from './evaluation/news/corpus';
+import type { SeasonCorpusData } from './evaluation/shared/seasonCorpus';
+import { newsAuditExitCode, parseNewsAuditArguments } from './evaluation/news/cli';
 import { normalizeRivalriesData } from '../src/domain/rivalryData';
 
 const START_YEAR = 2026;
@@ -33,7 +33,7 @@ const readJson = <T>(path: string) =>
   JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')) as T;
 
 
-const loadCorpusData = (): NewsAuditCorpusData => {
+const loadCorpusData = (): SeasonCorpusData => {
   const teamsData = readJson<TeamsData>('../public/data/teams.json');
   return {
     yearData: readJson<SeasonData>('../public/data/seasons/2026.json'),

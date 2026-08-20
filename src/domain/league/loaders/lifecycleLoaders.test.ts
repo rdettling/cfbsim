@@ -123,6 +123,8 @@ const seedScenario = async (stage: LeagueStage) => {
         resultA: 'W',
         resultB: 'L',
         overtime: 0,
+        quarter: 4,
+        clockSecondsLeft: 0,
         scoreA: 31,
         scoreB: 24,
         watchability: 90,

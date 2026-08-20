@@ -92,7 +92,7 @@ export const getGamesToLiveSim = async () => {
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
 
   const unplayed = games.filter(game => game.winnerId === null);
-  unplayed.sort((a, b) => (b.watchability ?? 0) - (a.watchability ?? 0));
+  unplayed.sort((a, b) => b.watchability - a.watchability);
 
   const userTeam = league.teams.find(team => team.name === league.info.team);
   const userGames: typeof unplayed = [];
@@ -119,7 +119,7 @@ export const getGamesToLiveSim = async () => {
       teamA: { name: teamA.name, ranking: game.rankATOG, record: teamA.record },
       teamB: { name: teamB.name, ranking: game.rankBTOG, record: teamB.record },
       label: game.baseLabel,
-      watchability: game.watchability ?? 0,
+      watchability: game.watchability,
       is_user_game: userTeam ? (game.teamAId === userTeam.id || game.teamBId === userTeam.id) : false,
     };
   });
@@ -218,7 +218,7 @@ export const finalizeGameSimulation = async (params: {
 
   const logs = createGameLogsFromPlays(simGame, playRecords, starters);
 
-  updateTeamRecords([simGame], league.teams, await loadOddsContext(), league.info);
+  updateTeamRecords([simGame], league.teams, await loadOddsContext());
 
   const updatedRecord: GameRecord = {
     ...record,
@@ -336,7 +336,7 @@ export const advanceWeeks = async (destWeek: number) => {
     });
 
     if (simGames.length) {
-      updateTeamRecords(simGames, league.teams, oddsContext, league.info);
+      updateTeamRecords(simGames, league.teams, oddsContext);
     }
 
     const futureGames = await getAllGames();
@@ -382,5 +382,3 @@ export const advanceWeeks = async (destWeek: number) => {
 
   await saveLeague(league);
 };
-
-export { buildDriveResponse };

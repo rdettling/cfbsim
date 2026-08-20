@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildTestPlayTiming, buildTestPlayer, buildTestTeam } from '../../test/fixtures';
-import type { PlayRecord, PlayerRecord } from '../../types/db';
+import type {
+  PlayRecord,
+  PlayerRecord,
+  PlayResult,
+  PlayType,
+} from '../../types/db';
 import { PARTICIPANT_ROLES, requiredParticipantRoles } from './participantRules';
 import { validatePlayParticipants } from './participantValidation';
 import { emptyPlayParticipants, selectPlayParticipants } from './participants';
@@ -47,8 +52,8 @@ const buildPlayers = () => {
 };
 
 const buildPlay = (
-  playType: string,
-  result: string,
+  playType: PlayType,
+  result: PlayResult,
   id = 1001,
 ): PlayRecord => ({
   id,
@@ -89,7 +94,7 @@ describe('participant-linked play resolution', () => {
     ['pass', 'touchdown'],
     ['field goal', 'made field goal'],
     ['punt', 'punt'],
-  ])('links and names every required role for %s / %s', (playType, result) => {
+  ] as const)('links and names every required role for %s / %s', (playType, result) => {
     const starters = buildStartersCacheFromPlayers(buildPlayers());
     const play = buildPlay(playType, result, 1000 + result.length);
 
@@ -238,7 +243,7 @@ describe('participant-linked play resolution', () => {
 
   it('names persisted out-of-bounds results in run and pass text', () => {
     const starters = buildStartersCacheFromPlayers(buildPlayers());
-    for (const playType of ['run', 'pass']) {
+    for (const playType of ['run', 'pass'] as const) {
       const play = buildPlay(playType, playType);
       play.timing = buildTestPlayTiming({ outOfBounds: true });
       play.participants = selectPlayParticipants(play, starters, offense, defense);

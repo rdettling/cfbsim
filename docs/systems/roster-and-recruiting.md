@@ -109,7 +109,7 @@ least 55 interest; exact ties use the persisted recruiting seed.
 contains the prospect pool, team boards and totals, round, status, seed,
 version, and pending user cut IDs.
 
-Commands in `src/domain/league/recruiting.ts` own initialization, board
+Commands in `src/domain/league/commands/recruiting.ts` own initialization, board
 updates, round advancement, AI completion, and Signing Day. Each command checks
 the expected stage, year, round, status, and version inside its transaction.
 Stale or invalid commands leave every store unchanged.
@@ -153,9 +153,10 @@ deletes recruiting state, and enters `preseason` atomically.
 - `src/domain/rosterConfig.ts`
 - `src/domain/rosterBootstrap.ts`
 - `src/domain/league/loaders/loadRosterProgression.ts`
-- `src/domain/league/recruiting.ts`
+- `src/domain/league/commands/recruiting.ts`
 - `src/domain/league/loaders/loadRecruiting.ts`
-- `src/domain/league/rosterFinalization.ts`
+- `src/domain/league/commands/rosterFinalization.ts`
+- `src/domain/league/utils/recruitingLifecycleState.ts`
 - `src/domain/recruiting/config.ts`
 - `src/domain/recruiting/resolution.ts`
 - `src/domain/recruiting/freshmen.ts`

@@ -9,21 +9,21 @@ import {
   AWARD_EVALUATION_CHECKPOINTS,
   evaluateAwards,
   type AwardSeasonEvaluation,
-} from '../src/domain/league/awardEvaluation';
+} from './evaluation/awards/evaluation';
 import {
   AWARD_EVALUATION_PROFILES,
   deriveAwardSeedFamily,
   parseAwardEvaluationArguments,
-} from '../src/domain/league/awardEvaluationCli';
+} from './evaluation/awards/cli';
 import {
   buildAwardEvaluationMarkdown,
   buildAwardSeasonArtifact,
-} from '../src/domain/league/awardEvaluationReport';
+} from './evaluation/awards/report';
 import {
-  generateNewsAuditCorpus,
-  type NewsAuditCorpusData,
+  runSeasonCorpus,
+  type SeasonCorpusData,
   type SeasonSimulationSnapshot,
-} from '../src/domain/news/corpus';
+} from './evaluation/shared/seasonCorpus';
 import { normalizeRivalriesData } from '../src/domain/rivalryData';
 
 const START_YEAR = 2026;
@@ -31,7 +31,7 @@ const START_YEAR = 2026;
 const readJson = <T>(path: string) =>
   JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')) as T;
 
-const loadCorpusData = (): NewsAuditCorpusData => {
+const loadCorpusData = (): SeasonCorpusData => {
   const teamsData = readJson<TeamsData>('../public/data/teams.json');
   return {
     yearData: readJson<SeasonData>('../public/data/seasons/2026.json'),
@@ -105,13 +105,13 @@ const scoreCachedSeason = (cached: CachedSeason): AwardSeasonEvaluation => ({
 });
 
 export const collectAwardSeasonEvaluations = (
-  data: NewsAuditCorpusData,
+  data: SeasonCorpusData,
   seeds: number[],
   seasons: number,
 ) => {
   const cache: CachedSeason[] = [];
   seeds.forEach(seed => {
-    generateNewsAuditCorpus(data, {
+    runSeasonCorpus(data, {
       seed,
       seeds: 1,
       seasons,

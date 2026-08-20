@@ -1,12 +1,14 @@
 # Technical Documentation
 
 The root [README](../README.md) explains CFB Sim for players. This directory is
-the current engineering reference: each document owns a distinct contract, and
-implementation history belongs in Git.
+the current engineering reference. Code and manifests are the executable source
+of truth; these documents own intent, boundaries, invariants, and workflows.
+Implementation history belongs in Git, while proposals and roadmap belong in
+the issue tracker.
 
 ## Work on the Repository
 
-Use Node 24 LTS, as recorded in `.nvmrc` and `package.json`.
+Use the Node version recorded in `.nvmrc` and `package.json`:
 
 ```bash
 nvm install
@@ -15,75 +17,64 @@ npm ci
 npm run dev
 ```
 
-Before committing a change, run the validation appropriate to its scope. The
-complete repository check is:
+Use [Validation and Test Strategy](operations/validation-and-test-strategy.md)
+to choose the checks required by a change.
 
-```bash
-npm run data:check
-npm test
-npm run typecheck
-npm run build
-git diff --check
-```
-
-## Understand the Architecture
+## Architecture
 
 - [System Overview](architecture/system-overview.md) maps runtime layers,
-  authoritative state, lifecycle flow, and application-wide invariants.
+  authoritative state, command flow, lifecycle, and global invariants.
 - [Data Model and Persistence](architecture/data-model-and-persistence.md)
-  defines IndexedDB records, validation boundaries, and write ownership.
-- [Static Data System](architecture/static-data.md) defines canonical and
-  generated assets, data contracts, ingestion, runtime caching, and season
-  maintenance workflows.
-- [Season State Machine](architecture/season-state-machine.md) defines every
-  stage transition and the command that owns it.
+  owns IndexedDB records, exact validation, retention, and transaction
+  ownership.
+- [Static Data System](architecture/static-data.md) owns canonical and generated
+  assets, ingestion, runtime caching, and season maintenance.
+- [Season State Machine](architecture/season-state-machine.md) owns every annual
+  stage and transition.
 
-## Change a Game System
+## Product Systems
 
-- [Simulation Engine](systems/simulation-engine.md) owns drive, play, clock,
-  outcome, and game-finalization mechanics.
-- [Simulation Engine Assessment](systems/simulation-engine-assessment.md)
-  records the current depth, accepted diagnostic baseline, known limitations,
-  and maintenance direction.
-- [Simulation Calibration](systems/simulation-calibration.md) defines the
-  frozen modern-FBS benchmark, comparable metric denominators, and diagnostic
-  tolerance contract.
+- [Simulation Engine](systems/simulation-engine.md) owns game resolution,
+  drives, plays, clock, calls, participants, and game finalization.
+- [Simulation Calibration](systems/simulation-calibration.md) owns the frozen
+  benchmark, metric denominators, accepted baseline, and audit gates.
 - [Scheduling and Week Advancement](systems/scheduling-and-week-advancement.md)
-  owns preseason scheduling, the weekly simulation pipeline, and postseason
-  game creation.
+  owns preseason scheduling, weekly simulation, and postseason hooks.
 - [Rankings, Playoff, and Awards](systems/rankings-playoff-and-awards.md) owns
-  ranking updates, postseason selection, bracket behavior, bowls, and awards.
+  national ordering, selection, bracket behavior, bowls, and awards.
 - [Roster and Recruiting Lifecycle](systems/roster-and-recruiting.md) owns
-  roster scale, progression, the player recruiting loop, Signing Day, roster
-  cuts, and their transactions.
-- [Recruiting Model](systems/recruiting-model.md) owns public talent, fit, AI
-  strategy, class scoring, and balance expectations.
+  progression, recruiting persistence, Signing Day, cuts, and finalization.
+- [Recruiting Model](systems/recruiting-model.md) owns talent visibility, fit,
+  AI strategy, class scoring, and balance expectations.
+- [League News](systems/league-news.md) owns publishers, editorial policy,
+  persisted stories, ordering, integrity, and the offline news audit.
 
-## Change the Frontend or an Interface
+## Frontend and Interfaces
 
-- [Frontend Principles and Patterns](frontend/README.md) defines layout,
-  responsive behavior, accessibility, component boundaries, and completion
-  standards.
-- [Loaders and Page Contracts](interfaces/loaders-and-page-contracts.md)
-  defines read-only page projections and integrity rules.
-- [UI Simulation Integration](interfaces/ui-sim-integration.md) defines live
-  simulation session ownership, persistence, and page refresh behavior.
+- [Frontend Principles and Patterns](frontend/README.md) owns visual,
+  responsive, accessibility, and component-boundary standards.
+- [Loaders and Page Contracts](interfaces/loaders-and-page-contracts.md) owns
+  read-only page projections and loader integrity rules.
+- [UI Simulation Integration](interfaces/ui-sim-integration.md) owns live-game
+  session coordination, persistence, and page refresh behavior.
 
-## Configure and Validate Behavior
+## Operations
 
 - [Configuration and Tuning](operations/configuration-and-tuning.md) identifies
-  runtime tuning, league settings, recruiting controls, and generated data.
+  authoritative configuration surfaces, mutation rules, and change risk.
 - [Validation and Test Strategy](operations/validation-and-test-strategy.md)
-  maps change types to automated checks and lifecycle scenarios.
-- [League News Editorial Style](operations/league-news-editorial-style.md)
-  defines reader-facing voice, evidence-bound language, and copy variety.
+  owns common checks, statistical principles, and cross-system scenarios.
 
 ## Documentation Rules
 
 - Describe only the current product, architecture, persisted schema, and API.
-- Put proposals in the issue tracker and implementation history in Git.
-- Give each contract one owning document; link to it instead of duplicating it.
-- Prefer invariants, data flow, and source maps over file-by-file narration.
-- Verify code paths, symbols, links, and numeric claims whenever behavior
-  changes.
-- Delete a document when it no longer owns a distinct decision surface.
+- Give each contract one owning document and link to it instead of duplicating
+  rules, commands, constants, or source maps.
+- Prefer invariants, data flow, and ownership over narration of discoverable
+  implementation details.
+- Keep acceptance values only when the document defines their active contract;
+  otherwise reference the authoritative code or manifest.
+- Verify paths, symbols, links, transaction claims, and numeric contracts when
+  behavior changes.
+- Delete a document when it no longer owns a distinct decision surface. Do not
+  retain redirects or archival copies.

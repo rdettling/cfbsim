@@ -1,43 +1,65 @@
 # AGENTS.md
 
-This file is for Codex/agent context. For human‑readable docs, see:
-- `docs/README.md` for docs index
-- `docs/architecture/system-overview.md` for system overview
-- `docs/architecture/static-data.md` for static-data ownership and workflows
-- `docs/frontend/README.md` for frontend principles, patterns, and completion criteria
+This file contains the universal rules for agent work in this repository. Use
+`docs/README.md` to find the one engineering document that owns the subsystem
+being changed.
 
-## Conventions
+## Core Conventions
 
-- Active app lives at repo root `src/`
-- Frontend visuals stay clean, simple, and utilitarian
-- All code stays lean, explicit, directly imported, and easy for an LLM to
-  navigate
-- Domain logic goes under `src/domain/`
-- Page data loaders live under `src/domain/league/loaders/`
-- Shared helpers live under `src/domain/league/utils/` or `src/domain/utils/`
-- Types live under `src/types/`
+- The active application lives under `src/`.
+- Keep code lean, explicit, directly imported, and easy for an LLM to navigate.
+- Domain logic lives under `src/domain/`; shared types live under `src/types/`.
+- Pages load through `src/domain/league/loaders/` and never write persisted
+  league state directly.
+- User-triggered league lifecycle and configuration writes live under
+  `src/domain/league/commands/`. Simulation writes flow through the simulation
+  orchestrator and database repositories.
+- Shared helpers live under `src/domain/league/utils/` or `src/domain/utils/`.
+- IndexedDB is the authoritative runtime state.
+- Frontend visuals stay clean, simple, and utilitarian. Follow
+  `docs/frontend/README.md` for UI work.
 
-## Current-Version Policy
+## Change Discipline
+
+- Identify the current owning module before editing; do not create a second
+  owner for the same behavior.
+- Implement the requested current behavior directly. When an internal contract
+  changes, update every caller, validator, fixture, and test in the same
+  change, then delete replaced fields, symbols, and files.
+- Tests describe current required behavior; they are not compatibility
+  requirements. Update or delete obsolete tests when a product change makes
+  their expectations invalid.
+- Do not add deprecated exports, compatibility aliases, feature flags,
+  fallback fields, legacy adapters, repair logic, alternate implementations,
+  or TODO scaffolding unless a current product requirement explicitly needs
+  them.
+- Extract shared code only after current reuse demonstrates a stable contract.
+- Add a dependency only when it removes meaningful implementation complexity.
+- Before finishing, remove code, exports, files, and documentation made
+  obsolete by the change.
+
+## Current-Version and Persistence Policy
 
 - Support exactly one current architecture, persisted schema, and internal API
-  shape
-- Do not add migrations, compatibility aliases, fallback fields, legacy
-  adapters, synthesized persisted state, or repair-on-read behavior
-- Remove obsolete paths when replacing behavior instead of retaining parallel
-  implementations
-- Prefer small domain modules, explicit transaction ownership, and direct
-  dependencies over generalized frameworks or indirection
-- Only introduce backward compatibility when a current product requirement
-  explicitly calls for it
+  shape.
+- Do not add migrations or repair-on-read behavior.
+- For a persisted-schema change, update the current schema, exact validators,
+  fixtures, and tests; increment `DB_VERSION`; and allow the existing database
+  to be discarded.
+- Repository reads validate authoritative records and fail on invalid current
+  state rather than normalizing or synthesizing it.
 
 ## Static Data
 
-- Edit canonical inputs only; never hand-edit generated projections
+- Edit canonical inputs only; never hand-edit generated projections.
 - After canonical data changes, run `npm run data:build` and then
-  `npm run data:check`
+  `npm run data:check`.
 - Keep provider-specific CFBD normalization under `scripts/`; runtime code uses
-  canonical program and conference names only
+  canonical program and conference names only.
 
-## Gotchas
+## Verification
 
-- IndexedDB is the source of truth
+- Use `docs/operations/validation-and-test-strategy.md` to select checks based
+  on the changed behavior and risk.
+- Do not regenerate tracked data, refresh external sources, or run tuning
+  workflows unless the task changes their authoritative inputs.

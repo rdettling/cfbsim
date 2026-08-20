@@ -16,7 +16,7 @@ export const loadHomeData = async (): Promise<HomeData> => {
       name: team.name,
       record: team.record,
       ranking: team.ranking,
-      conference: team.confName ?? team.conference,
+      conference: team.confName,
       rating: team.rating,
       colorPrimary: team.colorPrimary,
     },

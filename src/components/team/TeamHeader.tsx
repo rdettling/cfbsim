@@ -38,7 +38,7 @@ export const TeamHeader = ({
   controls,
 }: TeamHeaderProps) => {
   const teamSelectLabelId = useId();
-  const conferenceName = metrics?.conference ?? team.confName ?? team.conference;
+  const conferenceName = metrics?.conference ?? team.confName;
   const displayedMetrics = metrics ?? team;
   const ranking = metrics?.ranking ?? team.ranking;
   const prestige = Math.min(Math.max(displayedMetrics.prestige, 0), 7);

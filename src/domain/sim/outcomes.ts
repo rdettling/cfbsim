@@ -136,7 +136,8 @@ export const simPass = (
   const randSack = Math.random();
   const randCompletion = Math.random();
   const randInterception = Math.random();
-  const result = { outcome: '', yards: 0 };
+  let outcome: 'sack' | 'touchdown' | 'pass' | 'interception' | 'incomplete pass';
+  let yards = 0;
 
   const exec = executionFactor(offense, defense, game);
   const profile = SIM_TUNING.concepts.pass[concept];
@@ -167,23 +168,23 @@ export const simPass = (
   );
 
   if (randSack < sackRate) {
-    result.outcome = 'sack';
-    result.yards = sackYards();
+    outcome = 'sack';
+    yards = sackYards();
   } else if (randCompletion < compRate) {
-    result.yards = passYards(concept, intent, fieldPosition, context, offense, defense, game);
-    if (result.yards + fieldPosition >= 100) {
-      result.yards = 100 - fieldPosition;
-      result.outcome = 'touchdown';
+    yards = passYards(concept, intent, fieldPosition, context, offense, defense, game);
+    if (yards + fieldPosition >= 100) {
+      yards = 100 - fieldPosition;
+      outcome = 'touchdown';
     } else {
-      result.outcome = 'pass';
+      outcome = 'pass';
     }
   } else if (randInterception < intRate) {
-    result.outcome = 'interception';
+    outcome = 'interception';
   } else {
-    result.outcome = 'incomplete pass';
+    outcome = 'incomplete pass';
   }
 
-  return result;
+  return { outcome, yards };
 };
 
 export const simRun = (
@@ -196,7 +197,8 @@ export const simRun = (
   game?: SimGame,
 ) => {
   const randFumble = Math.random();
-  const result = { outcome: '', yards: 0 };
+  let outcome: 'fumble' | 'touchdown' | 'run';
+  let yards = 0;
   const exec = executionFactor(offense, defense, game);
   const profile = SIM_TUNING.concepts.run[concept];
   const defenseProfile = defensiveProfile(intent, concept);
@@ -209,17 +211,17 @@ export const simRun = (
     0.08,
   );
   if (randFumble < fumbleRate) {
-    result.outcome = 'fumble';
+    outcome = 'fumble';
   } else {
-    result.yards = runYards(concept, intent, fieldPosition, context, offense, defense, game);
-    if (result.yards + fieldPosition >= 100) {
-      result.yards = 100 - fieldPosition;
-      result.outcome = 'touchdown';
+    yards = runYards(concept, intent, fieldPosition, context, offense, defense, game);
+    if (yards + fieldPosition >= 100) {
+      yards = 100 - fieldPosition;
+      outcome = 'touchdown';
     } else {
-      result.outcome = 'run';
+      outcome = 'run';
     }
   }
-  return result;
+  return { outcome, yards };
 };
 
 const interpolate = (

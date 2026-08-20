@@ -48,6 +48,8 @@ const game = (overrides: Partial<GameRecord>): GameRecord => ({
   resultA: 'W',
   resultB: 'L',
   overtime: 0,
+  quarter: 4,
+  clockSecondsLeft: 0,
   scoreA: 28,
   scoreB: 14,
   gameType: 'regular_season',

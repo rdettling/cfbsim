@@ -11,7 +11,7 @@ import {
   type LeagueState,
 } from '../src/types/league';
 import type { NamesData } from '../src/types/baseData';
-import { runRecruitingEvaluationSuite } from '../src/domain/recruiting/evaluation';
+import { runRecruitingEvaluationSuite } from './evaluation/recruiting/evaluation';
 import { RECRUIT_STAR_COUNTS } from '../src/domain/recruiting/config';
 import { createSeededRandom } from '../src/domain/utils/random';
 import { prepareInitialRostersFromData } from '../src/domain/rosterBootstrap';
@@ -158,6 +158,7 @@ const buildLeague = (
           poll_score: 0,
           strength_of_record: 0,
           strength_of_record_avg: 0,
+          last_rank: null,
           last_game: null,
           next_game: null,
         };

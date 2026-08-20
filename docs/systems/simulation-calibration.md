@@ -104,29 +104,23 @@ Team-rating preservation targets are:
 Win rates allow ±4 percentage points; positive margins allow ±2.5 points and
 must remain strictly increasing by rating difference.
 
-These are compatibility targets inherited from the established simulator, not
-an empirical mapping from rating difference to modern FBS results. The frozen
-national score and margin distributions include mixed real-world matchup
-strength, but the current calibration does not construct a representative
-mixed-rating slate or use those distributions as hard gates.
+These are behavioral regression baselines for the current rating model, not an
+empirical mapping from rating difference to modern FBS results. Their win-rate
+and margin tolerances are calibration acceptance bands. The frozen national
+score and margin distributions include mixed real-world matchup strength, but
+the current calibration does not construct a representative mixed-rating slate
+or use those distributions as hard gates.
 
-## Current Status
+## Accepted Baseline
 
-The holistic tuner candidate is adopted. The accepted simulation checksum is
-`1b914e9a`, and the accepted representative news-content checksum is
-`b2218e6b`. The default audit passes all hard gates.
+The current runtime tuning is the accepted baseline. The simulation checksum
+is `1b914e9a`, and the default audit passes all hard gates.
 The simulation checksum includes complete drive artifacts, so an intentional
 persisted-record shape change advances it even when football metrics and random
 sampling remain unchanged.
 
-The 1,000-game equal-team comparison aligns 17 of 22 production metrics. It
-reports five diagnostic gaps: red-zone touchdown rate is high; made field
-goals, touchdowns, and passing yards per attempt/completion are low. The
-five-block stability audit passes the unchanged rating-preservation tolerances;
-changing the remaining controls still tends to exchange production gaps
-instead of resolving them together.
-
 This is an intentional good-enough baseline, not a claim of exact NCAA
-reproduction. Further tuning should begin only in response to a concrete game
-behavior problem or a deliberately refreshed benchmark cycle. Mixed-rating
-calibration remains an optional future exercise rather than unfinished work.
+reproduction. Production differences remain visible diagnostics rather than
+release failures. Change the baseline only for a concrete game-behavior problem
+or a deliberate benchmark refresh, with the stability audit preserving the
+rating-model acceptance bands.

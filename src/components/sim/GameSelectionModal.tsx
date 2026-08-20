@@ -18,7 +18,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { getGamesToLiveSim } from '../../domain/sim';
+import { getGamesToLiveSim } from '../../domain/sim/orchestrator';
 import { resolveHomeAway } from '../../domain/utils/gameDisplay';
 import { TeamLogo } from '../team/TeamLogo';
 

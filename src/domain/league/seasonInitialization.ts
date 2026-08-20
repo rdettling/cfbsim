@@ -1,9 +1,6 @@
 import { getRivalriesData } from '../../db/baseData';
 import { requireCurrentRoster } from '../../db/leagueRepo';
-import {
-  clearCurrentGameDetails,
-  commitSimulationBatch,
-} from '../../db/simRepo';
+import { commitSeasonInitialization } from '../../db/simRepo';
 import type { GameRecord } from '../../types/db';
 import type { LeagueState } from '../../types/league';
 import type { FullGame } from '../../types/scheduleTypes';
@@ -35,7 +32,6 @@ const initializeSimulation = async (
   fullGames: FullGame[],
 ) => {
   await requireCurrentRoster(league);
-  await clearCurrentGameDetails(league.info.currentYear);
   const oddsContext = await loadOddsContext();
   const gameRecords: GameRecord[] = fullGames.map(game => {
     const neutralSite = game.homeTeam === null && game.awayTeam === null;
@@ -70,7 +66,7 @@ const initializeSimulation = async (
       clockSecondsLeft: SECONDS_PER_QUARTER,
       scoreA: null,
       scoreB: null,
-      watchability: null,
+      watchability: 0,
     };
     record.watchability = buildWatchability(record, league.teams.length);
     return record;
@@ -85,10 +81,10 @@ const initializeSimulation = async (
       }).map(generated => generated.item)
     : [];
   league.simInitialized = true;
-  await commitSimulationBatch({
+  await commitSeasonInitialization({
+    year: league.info.currentYear,
     league,
     games: gameRecords,
-    details: [],
     newsItems: previews,
   });
 };

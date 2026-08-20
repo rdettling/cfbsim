@@ -4,7 +4,7 @@ import {
   finalizeRoster,
   selectRosterCut,
   undoRosterCut,
-} from '../../domain/league/rosterFinalization';
+} from '../../domain/league/commands/rosterFinalization';
 import type { RosterCutsPageData } from '../../types/pages';
 import { RosterFinalizationConflictError } from '../../types/roster';
 

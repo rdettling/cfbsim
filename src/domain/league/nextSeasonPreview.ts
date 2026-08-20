@@ -26,7 +26,7 @@ export const buildNextSeasonPreview = (
   const currentConferences = new Map(
     league.teams.map(team => [
       team.name,
-      team.conference || team.confName || 'Independent',
+      team.conference,
     ]),
   );
   const teamNames = new Set([

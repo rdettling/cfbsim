@@ -283,7 +283,7 @@ export const buildSeasonMemory = (
     year,
     teamSnapshots: league.teams.map(team => ({
       teamId: team.id,
-      conference: team.confName ?? team.conference,
+      conference: team.confName,
       rating: team.rating,
       prestige: team.prestige,
       ranking: team.ranking,

@@ -22,7 +22,9 @@ A play combines:
 
 The game result is produced by accumulating drive outcomes into `scoreA/scoreB`,
 updating winner/result metadata, and then persisting one nested
-`GameDetailRecord`.
+`GameDetailRecord`. Only completed play and drive result unions cross that
+boundary; transient empty results used while resolving a play or drive are
+rejected by persistence.
 
 ## Execution
 
@@ -63,9 +65,15 @@ updating winner/result metadata, and then persisting one nested
 
 5. **Interactive integration path**
 - `prepareInteractiveLiveGame` loads/hydrates the game and supporting caches.
-- `useGameSim` executes `startInteractiveDrive` + repeated `stepInteractiveDrive` calls (auto or user decision).
-- On completion, `finalizeGameSimulation` atomically writes the game, nested
-  detail, persisted news story, and league state, then returns the UI-ready response.
+- `createGameSimSession` initializes the opening possession and owns mutable
+  in-memory session state. `advanceGameSimSession` executes one play or one
+  complete drive through the shared `stepInteractiveDrive` resolver.
+- `useGameSim.advance('play' | 'drive' | 'game')` adapts the controller to
+  React. Game scope remains a guarded hook loop over drive advancement so each
+  completed drive is published incrementally.
+- On completion, `finalizeGameSimulation` validates and atomically writes the
+  game, nested detail, persisted news story, and league state, then returns the
+  UI-ready response.
 
 ```mermaid
 flowchart TD
@@ -89,19 +97,17 @@ flowchart TD
 flowchart TD
   A["GameSelectionModal -> prepareInteractiveLiveGame"] --> B{"Already completed?"}
   B -- yes --> C["Return nested persisted detail"]
-  B -- no --> D["useGameSim.start(): reset sim state"]
-  D --> E["startInteractiveDrive()"]
-  E --> F{"Decision mode?"}
-  F -- user --> G["handleDecision() -> stepInteractiveDrive()"]
-  F -- auto --> H["simulateAutoPlays/Drive -> stepInteractiveDrive()"]
-  G --> I["applyStepResult(): append play"]
-  H --> I
-  I --> J{"Drive complete?"}
-  J -- no --> F
-  J -- yes --> K["finalizeDrive(): possession/OT transitions"]
-  K --> L{"Game complete?"}
-  L -- no --> E
-  L -- yes --> M["finalizeGameSimulation() persist + return final game"]
+  B -- no --> D["createGameSimSession(): reset state + opening drive"]
+  D --> E["useGameSim.advance(play | drive | game)"]
+  E --> F["advanceGameSimSession(play | drive)"]
+  F --> G["stepInteractiveDrive(): resolve exact instruction"]
+  G --> H["Buffer play and affected drive"]
+  H --> I{"Drive complete?"}
+  I -- no --> E
+  I -- yes --> J["Session computes possession / overtime transition"]
+  J --> K{"Game complete?"}
+  K -- no --> E
+  K -- yes --> L["Hook calls finalizeGameSimulation()"]
 ```
 
 ## Game Rules
@@ -187,7 +193,13 @@ omissions are stated explicitly.
 - Regulation `SimGame` state owns the current timeout counts. Persisted history
   reconstructs usage from `PlayTiming.chargedTimeoutAfter` instead of storing a
   duplicate final total.
-- `GameRecord` and in-memory `SimGame` must remain consistent on score, winner, overtime, and clock metadata before persistence.
+- Every persisted `GameRecord` has one exact shape. Upcoming games carry the
+  initial regulation clock and null outcome fields; completed games carry a
+  finished regulation clock, aligned winner/results, non-tied scores, and a
+  finite watchability value. Repository reads and all game write owners reject
+  any other shape.
+- `GameRecord` and in-memory `SimGame` must remain consistent on score, winner,
+  overtime, and clock metadata before persistence.
 - Interactive and batch paths use the same single-play resolver and 200-play
   drive safety limit.
 - `starters` cache is assumed available for text/player-log generation quality.
@@ -239,20 +251,24 @@ omissions are stated explicitly.
   - participant-linked play text and situation headers
 - `src/domain/sim/orchestrator.ts`
   - `advanceWeeks`, `prepareInteractiveLiveGame`, `finalizeGameSimulation`
+- `src/components/sim/gameSimSession.ts`
+  - mutable interactive context, buffered artifacts, play/drive advancement,
+    possession transitions, and in-memory result finalization
 - `src/components/sim/useGameSim.ts`
-  - `start`, `handleDecision`, `simulateAutoDrive`, `simulateToEnd`, finalize/persistence integration
-- `src/domain/sim/evaluation.ts`, `evaluationAudit.ts`, and
-  `calibrationMetrics.ts`
+  - React adapter for preparation, `advance('play' | 'drive' | 'game')`,
+    incremental publication, controls, and final persistence
+- `scripts/evaluation/sim/evaluation.ts`, `evaluationMetrics.ts`,
+  `evaluationAudit.ts`, `evaluationGates.ts`, and `calibrationMetrics.ts`
   - deterministic scenario/metric collection, game and relationship gates,
     modern-FBS production comparisons, and the authoritative rating contract
     (`npm run eval:sim`)
-- `src/domain/sim/calibrationBenchmark.ts` and
+- `scripts/evaluation/sim/calibrationBenchmark.ts` and
   `scripts/generate_sim_benchmark.ts`
   - frozen 2023–25 NCAA aggregate, exact metric contract, source parsing, and
     explicit networked benchmark refresh/check
-- `src/domain/sim/tuner.ts` and `scripts/tune_sim.ts`
+- `scripts/evaluation/sim/tuner.ts` and `scripts/tune_sim.ts`
   - scoped deterministic production candidate search (`npm run tune:sim`)
-- `src/domain/sim/stabilityAudit.ts`, `stabilityStatistics.ts`, and
+- `scripts/evaluation/sim/stabilityAudit.ts`, `stabilityStatistics.ts`, and
   `scripts/eval_sim_stability.ts`
   - held-out candidate validation and common-seed sensitivity diagnostics
     (`npm run eval:sim-stability`)

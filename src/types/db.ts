@@ -21,15 +21,54 @@ export interface GameRecord {
   year: number;
   rankATOG: number;
   rankBTOG: number;
-  resultA: string | null;
-  resultB: string | null;
+  resultA: 'W' | 'L' | null;
+  resultB: 'W' | 'L' | null;
   overtime: number;
-  quarter?: number;
-  clockSecondsLeft?: number;
+  quarter: number;
+  clockSecondsLeft: number;
   scoreA: number | null;
   scoreB: number | null;
-  watchability: number | null;
+  watchability: number;
 }
+
+export type PlayType = 'run' | 'pass' | 'field goal' | 'punt' | 'extra point';
+
+export type PlayResult =
+  | 'run'
+  | 'pass'
+  | 'sack'
+  | 'interception'
+  | 'incomplete pass'
+  | 'fumble'
+  | 'touchdown'
+  | 'made field goal'
+  | 'missed field goal'
+  | 'punt'
+  | 'spike'
+  | 'kneel'
+  | 'made extra point'
+  | 'missed extra point'
+  | 'made two point run'
+  | 'made two point pass'
+  | 'failed two point run'
+  | 'failed two point pass'
+  | 'failed two point incomplete'
+  | 'failed two point sack'
+  | 'failed two point interception'
+  | 'failed two point fumble';
+
+export type DriveResult =
+  | 'touchdown'
+  | 'interception'
+  | 'fumble'
+  | 'safety'
+  | 'turnover on downs'
+  | 'made field goal'
+  | 'missed field goal'
+  | 'punt'
+  | 'end of half'
+  | 'end of game'
+  | Extract<PlayResult, `${'made' | 'failed'} two point ${string}`>;
 
 export interface DriveRecord {
   id: number;
@@ -38,7 +77,7 @@ export interface DriveRecord {
   offenseId: number;
   defenseId: number;
   startingFP: number;
-  result: string;
+  result: DriveResult | '';
   points: number;
   scoreAAfter: number;
   scoreBAfter: number;
@@ -144,9 +183,9 @@ export interface PlayRecord {
   startingFP: number;
   down: number;
   yardsLeft: number;
-  playType: string;
+  playType: PlayType;
   yardsGained: number;
-  result: string;
+  result: PlayResult | '';
   text: string;
   header: string;
   scoreA: number;
@@ -256,10 +295,11 @@ export type PlayerOrigin =
 
 export type GameDetailPlay = Omit<
   PlayRecord,
-  'id' | 'gameId' | 'driveId' | 'offenseId' | 'defenseId'
->;
+  'id' | 'gameId' | 'driveId' | 'offenseId' | 'defenseId' | 'result'
+> & { result: PlayResult };
 
-export type GameDetailDrive = Omit<DriveRecord, 'id' | 'gameId'> & {
+export type GameDetailDrive = Omit<DriveRecord, 'id' | 'gameId' | 'result'> & {
+  result: DriveResult;
   plays: GameDetailPlay[];
 };
 

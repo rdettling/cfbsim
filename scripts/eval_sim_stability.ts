@@ -3,7 +3,7 @@ import {
   parseStabilityAuditArguments,
   runCalibrationStabilityAudit,
   stabilityAuditExitCode,
-} from '../src/domain/sim/stabilityAudit';
+} from './evaluation/sim/stabilityAudit';
 
 export const runSimulationStabilityAudit = (arguments_: string[]) => {
   const result = runCalibrationStabilityAudit(parseStabilityAuditArguments(arguments_));

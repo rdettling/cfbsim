@@ -35,6 +35,8 @@ const facts = (overrides: Partial<GameStoryFacts> = {}): GameStoryFacts => ({
     resultA: 'W',
     resultB: 'L',
     overtime: 0,
+    quarter: 4,
+    clockSecondsLeft: 0,
     scoreA: 24,
     scoreB: 17,
     watchability: 50,

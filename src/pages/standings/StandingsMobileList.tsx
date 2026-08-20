@@ -40,7 +40,7 @@ export const StandingsMobileList = ({ teams, isIndependent, onTeamClick }: Stand
                 display: 'block',
               }}
             >
-              {team.confName ?? team.conference}
+              {team.confName}
             </Typography>
           </Box>
         </Stack>

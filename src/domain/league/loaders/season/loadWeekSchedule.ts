@@ -30,7 +30,7 @@ export const loadWeekSchedule = async (week: number) => {
         spreadB: game.spreadB,
         winner: Boolean(game.winnerId),
         overtime: game.overtime,
-        watchability: game.watchability ?? 0,
+        watchability: game.watchability,
       };
     })
     .sort((a, b) => b.watchability - a.watchability);

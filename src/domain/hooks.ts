@@ -47,9 +47,6 @@ export const useDomainData = <T>({ fetcher, deps = [], onData }: UseDomainDataOp
 
   const refetch = useCallback(() => run(), [run]);
   const refresh = useCallback(() => run(false), [run]);
-  const replaceData = useCallback((nextData: T) => {
-    if (mounted.current) setData(nextData);
-  }, []);
 
-  return { data, loading, error, refetch, refresh, replaceData };
+  return { data, loading, error, refetch, refresh };
 };

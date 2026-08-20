@@ -6,7 +6,7 @@ import {
   completeRecruitingWithAi,
   finalizeRecruiting,
   updateRecruitingBoard,
-} from '../../domain/league/recruiting';
+} from '../../domain/league/commands/recruiting';
 import type { RecruitingPageData } from '../../types/pages';
 import {
   RecruitingConflictError,

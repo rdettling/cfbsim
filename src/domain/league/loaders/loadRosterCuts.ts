@@ -5,7 +5,9 @@ import type {
   RosterPositionCutPreview,
 } from '../../../types/roster';
 import { buildRosterCutsPreview } from '../../rosterCuts';
-import { requireFinalizedRecruitingState } from '../recruiting';
+import {
+  requireFinalizedRecruitingState,
+} from '../utils/recruitingLifecycleState';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
 const EMPTY_SUMMARY: RosterCutsSummary = {

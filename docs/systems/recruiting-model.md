@@ -136,5 +136,7 @@ npm run eval:recruiting-balance -- \
 - `src/domain/recruiting/aiAllocation.ts`
 - `src/domain/recruiting/aiStrategy.ts`
 - `src/domain/recruiting/classScoring.ts`
-- `src/domain/recruiting/evaluation.ts`
+- `scripts/evaluation/recruiting/evaluation.ts`
+- `scripts/evaluation/recruiting/evaluationSeason.ts`
+- `scripts/evaluation/recruiting/evaluationMetrics.ts`
 - `scripts/eval_recruiting_balance.ts`

@@ -89,15 +89,10 @@ export const updateTeamRecords = (
   games: SimGame[],
   teams: Team[],
   oddsContext: OddsContext,
-  info?: Info
 ) => {
   const updates = new Map<number, TeamRecordDelta>();
 
   const averageRating = averageTeamRating(teams);
-  if (info) {
-    info.averageTeamRating = Math.round(averageRating * 10) / 10;
-  }
-
   const getUpdate = (team: Team) => {
     const existing = updates.get(team.id);
     if (existing) return existing;

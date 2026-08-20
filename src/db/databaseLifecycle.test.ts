@@ -5,7 +5,9 @@ import { buildRecruitingState } from '../test/recruitingFixtures';
 import {
   buildTestLeague,
   buildTestPlayer,
+  buildTestTeam,
 } from '../test/fixtures';
+import type { GameRecord } from '../types/db';
 import type { LeagueState } from '../types/league';
 import type { RecruitingState } from '../types/recruiting';
 import {
@@ -36,6 +38,39 @@ const currentSaveCounts = async () => {
     db.count('seasonMemories'),
   ]);
 };
+
+const upcomingGame = (): GameRecord => ({
+  id: 1,
+  teamAId: 1,
+  teamBId: 2,
+  homeTeamId: 1,
+  awayTeamId: 2,
+  neutralSite: false,
+  venue: null,
+  winnerId: null,
+  baseLabel: 'Test State vs Other State',
+  name: null,
+  gameType: 'regular_season',
+  rivalryKey: null,
+  spreadA: '-3',
+  spreadB: '+3',
+  moneylineA: '-150',
+  moneylineB: '+130',
+  winProbA: 0.6,
+  winProbB: 0.4,
+  weekPlayed: 1,
+  year: 2025,
+  rankATOG: 1,
+  rankBTOG: 2,
+  resultA: null,
+  resultB: null,
+  overtime: 0,
+  quarter: 1,
+  clockSecondsLeft: 900,
+  scoreA: null,
+  scoreB: null,
+  watchability: 75,
+});
 
 describe('database startup lifecycle', () => {
   beforeEach(resetDatabase);
@@ -94,6 +129,77 @@ describe('database startup lifecycle', () => {
       value: buildTestLeague('season'),
     });
     await db.put('players', buildTestPlayer({ first: '' }));
+
+    await initializeDatabase();
+
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it('deletes the database when a persisted game is malformed', async () => {
+    const db = await getDb();
+    const teamA = buildTestTeam();
+    const teamB = buildTestTeam({
+      id: 2,
+      name: 'Other State',
+      abbreviation: 'OTH',
+      ranking: 2,
+    });
+    const base = buildTestLeague('season');
+    const league = buildTestLeague('season', {
+      teams: [teamA, teamB],
+      conferences: [{ ...base.conferences[0], teams: [teamA, teamB] }],
+    });
+    await db.put('league', { key: 'current', value: league });
+    await db.put('players', buildTestPlayer());
+    await db.put('players', buildTestPlayer({ id: 2, teamId: 2 }));
+    await db.put('playerOrigins', {
+      playerId: 1,
+      kind: 'initial_roster',
+      acquisitionYear: 2025,
+      originalTeamId: 1,
+      classAtStart: 'jr',
+    });
+    await db.put('playerOrigins', {
+      playerId: 2,
+      kind: 'initial_roster',
+      acquisitionYear: 2025,
+      originalTeamId: 2,
+      classAtStart: 'jr',
+    });
+    await db.put('games', {
+      ...upcomingGame(),
+      legacyClock: 900,
+    } as unknown as GameRecord);
+
+    await initializeDatabase();
+
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it('deletes the database when a persisted game detail is malformed', async () => {
+    const db = await getDb();
+    const teamA = buildTestTeam();
+    const teamB = buildTestTeam({
+      id: 2,
+      name: 'Other State',
+      abbreviation: 'OTH',
+      ranking: 2,
+    });
+    const base = buildTestLeague('season');
+    const league = buildTestLeague('season', {
+      teams: [teamA, teamB],
+      conferences: [{ ...base.conferences[0], teams: [teamA, teamB] }],
+    });
+    await db.put('league', { key: 'current', value: league });
+    await db.put('players', buildTestPlayer());
+    await db.put('players', buildTestPlayer({ id: 2, teamId: 2 }));
+    await db.put('games', upcomingGame());
+    await db.put('gameDetails', {
+      gameId: 1,
+      year: 2025,
+      drives: [],
+      playerStats: [],
+    });
 
     await initializeDatabase();
 

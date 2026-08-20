@@ -29,6 +29,8 @@ const game = (id: number, week: number, winnerId: number | null): GameRecord => 
   resultA: winnerId ? 'W' : null,
   resultB: winnerId ? 'L' : null,
   overtime: 0,
+  quarter: winnerId ? 4 : 1,
+  clockSecondsLeft: winnerId ? 0 : 900,
   scoreA: winnerId ? 28 : null,
   scoreB: winnerId ? 17 : null,
   watchability: 50,

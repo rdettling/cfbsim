@@ -13,6 +13,7 @@ import {
   chooseAutomaticTryAttempt,
   makeExtraPoint,
   mapTwoPointResult,
+  isTwoPointResult,
   twoPointSucceeded,
   validateTryCall,
 } from './conversions';
@@ -151,7 +152,12 @@ export const resolveTryStep = (
     ? play.result === 'made extra point' ? 1 : 0
     : twoPointSucceeded(play.result) ? 2 : 0;
   addOffensePoints(game, state.drive, offense, points);
-  if (origin === 'overtime_shootout') state.drive.result = play.result;
+  if (origin === 'overtime_shootout') {
+    if (!isTwoPointResult(play.result)) {
+      throw new Error(`Play ${playId} produced an invalid overtime-shootout result.`);
+    }
+    state.drive.result = play.result;
+  }
 
   const terminalRegulation = game.overtime === 0
     && game.quarter === 4

@@ -27,10 +27,10 @@ const SeasonSummary = () => {
   };
 
   const orderedPrestigeChanges = (data?.teams ?? [])
-    .filter((team) => (team.prestige_change ?? 0) !== 0)
+    .filter((team) => team.prestige_change !== 0)
     .slice()
     .sort((a, b) => {
-      const changeDifference = (b.prestige_change ?? 0) - (a.prestige_change ?? 0);
+      const changeDifference = b.prestige_change - a.prestige_change;
       return changeDifference || a.name.localeCompare(b.name);
     });
 

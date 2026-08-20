@@ -1,11 +1,6 @@
 import type { PlayerRecord } from '../types/db';
 import type { PlayerProgressionProjection } from '../types/roster';
 
-export {
-  prepareInitialRosters,
-} from './rosterBootstrap';
-export { recalculateTeamRatings, setStarters } from './rosterRatings';
-
 export const projectPlayerProgression = (
   player: PlayerRecord,
 ): PlayerProgressionProjection | null => {

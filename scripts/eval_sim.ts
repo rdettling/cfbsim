@@ -1,9 +1,9 @@
 import { pathToFileURL } from 'node:url';
-import { evaluateSimulation } from '../src/domain/sim/evaluation';
+import { evaluateSimulation } from './evaluation/sim/evaluation';
 import {
   parseSimulationEvaluationArguments,
   simulationEvaluationExitCode,
-} from '../src/domain/sim/evaluationCli';
+} from './evaluation/sim/cli';
 
 export const runSimulationEvaluation = (arguments_: string[]) => {
   const summary = evaluateSimulation(parseSimulationEvaluationArguments(arguments_));

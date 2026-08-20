@@ -49,7 +49,7 @@ export const StandingsDesktopTable = ({
                     display: 'block',
                   }}
                 >
-                  {team.confName ?? team.conference}
+                  {team.confName}
                 </Typography>
               </Box>
             </Box>

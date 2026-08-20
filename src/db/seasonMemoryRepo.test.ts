@@ -42,6 +42,8 @@ const game: GameRecord = {
   resultA: 'W',
   resultB: 'L',
   overtime: 0,
+  quarter: 4,
+  clockSecondsLeft: 0,
   scoreA: 31,
   scoreB: 24,
   gameType: 'national_championship',

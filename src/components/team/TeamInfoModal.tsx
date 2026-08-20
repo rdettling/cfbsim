@@ -116,7 +116,7 @@ export const TeamInfoModal = ({
                 {teamInfo.name} {teamInfo.mascot}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {teamInfo.confName ?? teamInfo.conference}
+                {teamInfo.confName}
               </Typography>
             </Box>
             {teamInfo.ranking > 0 && (

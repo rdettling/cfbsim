@@ -93,7 +93,7 @@ export const generatePreseasonNews = ({
   const opener = unplayedGames
     .filter(game => game.weekPlayed === openingWeek)
     .sort((left, right) =>
-      (right.watchability ?? 0) - (left.watchability ?? 0) || left.id - right.id)[0];
+      right.watchability - left.watchability || left.id - right.id)[0];
   if (!opener) throw new Error('Preseason news requires an opening matchup.');
   const teamA = teamsById.get(opener.teamAId);
   const teamB = teamsById.get(opener.teamBId);

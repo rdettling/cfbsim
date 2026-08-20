@@ -41,30 +41,27 @@ remains lean, explicit, and easy for an LLM or human contributor to navigate.
 - Frontend work must preserve calculations, supported years, playoff behavior,
   stage routes, lifecycle transitions, and persistence semantics unless a
   feature explicitly changes them.
-- Pages may shape loader results into display records, but shared presentation
-  components must not read IndexedDB or invoke domain commands.
+- Pages and application containers may shape loader results into display
+  records and invoke their owning commands. Shared presentation components
+  must not read IndexedDB or invoke domain commands.
 - Keep simulation tuning and calculation audits separate from presentation
   work unless they are part of the feature.
 
 ## Current Stack
 
-- Node 24 LTS
-- React 19
-- React Router 7 with `BrowserRouter`
-- MUI 9 with Emotion
-- Vite 8
-- TypeScript 7
-
-Direct dependencies are pinned exactly, and `package-lock.json` is the
-reproducible install contract. Dependency maintenance is documented in
+The frontend uses React, React Router with `BrowserRouter`, MUI with Emotion,
+Vite, and TypeScript. `package.json`, `package-lock.json`, and `.nvmrc` own the
+exact dependency and Node versions. Dependency maintenance is documented in
 `docs/operations/validation-and-test-strategy.md`.
 
 ## Ownership and Data Flow
 
-- Route pages own loading, navigation, command execution, and page-level state.
+- Route pages own loading and page-level command execution. Application
+  containers such as `AppNavigation` own cross-route navigation commands.
 - Loaders under `src/domain/league/loaders/` return typed, presentation-ready
   contracts.
-- Domain commands own calculations and persistence changes.
+- Commands under `src/domain/league/commands/` own user-triggered league
+  calculations and persistence changes.
 - Shared layout and UI components receive data and callbacks through props.
 - Page-specific display types stay beside the page. Shared domain records live
   under `src/types/`.
@@ -185,14 +182,8 @@ workflow.
 - Page-specific logic remains local and shared abstractions have demonstrated
   reuse.
 - Relevant lifecycle, persistence, and reload behavior has been exercised.
-- The following commands pass:
-
-```bash
-npm test
-npm run typecheck
-npm run build
-git diff --check
-```
+- Run the checks selected by
+  `docs/operations/validation-and-test-strategy.md` for the affected behavior.
 
 ## Related References
 

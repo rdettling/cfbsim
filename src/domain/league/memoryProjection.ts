@@ -229,7 +229,7 @@ export const selectSignatureGames = ({
         right.overtime - left.overtime ||
         Number(opponentRank(right, teamId) > 0) -
           Number(opponentRank(left, teamId) > 0) ||
-        (right.watchability ?? 0) - (left.watchability ?? 0) ||
+        right.watchability - left.watchability ||
         left.id - right.id,
     );
   for (const game of fillers) {

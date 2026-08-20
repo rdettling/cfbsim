@@ -6,7 +6,7 @@ import { useDomainData } from '../domain/hooks';
 import {
   normalizeNextSeasonConfiguration,
   updateNextSeasonConfiguration,
-} from '../domain/league/nextSeasonConfiguration';
+} from '../domain/league/commands/nextSeasonConfiguration';
 import { loadRealignment } from '../domain/league/loaders/loadRealignment';
 import type { NextSeasonConfiguration } from '../types/domain';
 import { OffseasonStageMismatchError } from '../types/league';

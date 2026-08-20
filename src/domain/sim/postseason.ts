@@ -100,7 +100,7 @@ const createGameRecord = (
     clockSecondsLeft: 900,
     scoreA: null,
     scoreB: null,
-    watchability: null,
+    watchability: 0,
   };
   record.watchability = buildWatchability(record, league.teams.length);
   registerMatchup(teamA, teamB);

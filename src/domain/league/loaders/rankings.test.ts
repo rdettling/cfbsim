@@ -53,6 +53,8 @@ const game = ({
   resultA: winnerId === null ? null : winnerId === teamAId ? 'W' : 'L',
   resultB: winnerId === null ? null : winnerId === teamBId ? 'W' : 'L',
   overtime: 0,
+  quarter: winnerId === null ? 1 : 4,
+  clockSecondsLeft: winnerId === null ? 900 : 0,
   scoreA: winnerId === null ? null : winnerId === teamAId ? 28 : 17,
   scoreB: winnerId === null ? null : winnerId === teamBId ? 28 : 17,
   watchability: 50,

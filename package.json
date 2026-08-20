@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
+    "test:news:representative": "NEWS_REPRESENTATIVE=1 vitest run scripts/evaluation/news/corpus.test.ts -t \"matches the accepted representative news-content contract\"",
     "start": "sirv dist --single --host 0.0.0.0",
     "preview": "vite preview",
     "data:build": "tsx scripts/data_build.ts",

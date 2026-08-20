@@ -15,8 +15,8 @@ const deleteTestDatabase = (name: string) =>
   });
 
 describe('current database schema', () => {
-  it('uses the destructive league-history epoch', () => {
-    expect(DB_VERSION).toBe(24);
+  it('uses the exact-game-detail schema epoch', () => {
+    expect(DB_VERSION).toBe(27);
   });
 
   it('creates every authoritative store in a fresh database', async () => {
@@ -46,7 +46,7 @@ describe('current database schema', () => {
 
   it('replaces every legacy store during a version upgrade', async () => {
     const name = `cfbsim-destructive-upgrade-${Date.now()}`;
-    const legacy = await openDB(name, DB_VERSION - 1, {
+    const legacy = await openDB(name, 26, {
       upgrade(database) {
         database.createObjectStore('league', { keyPath: 'key' });
         database.createObjectStore('obsolete', { keyPath: 'id' });

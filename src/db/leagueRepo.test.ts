@@ -7,6 +7,7 @@ import {
   loadLeague,
   loadLeaguePlayersSnapshot,
   requireCurrentRoster,
+  saveLeague,
 } from './leagueRepo';
 
 const resetDatabase = async () => {
@@ -36,6 +37,18 @@ describe('current league persistence boundary', () => {
 
   it.each([
     {
+      name: 'unknown league field',
+      mutate: (league: LeagueState) => {
+        Object.assign(league, { obsoleteLeagueField: true });
+      },
+    },
+    {
+      name: 'unknown info field',
+      mutate: (league: LeagueState) => {
+        Object.assign(league.info, { obsoleteInfoField: true });
+      },
+    },
+    {
       name: 'missing settings',
       mutate: (league: LeagueState) => {
         delete (league as Partial<LeagueState>).settings;
@@ -63,11 +76,81 @@ describe('current league persistence boundary', () => {
       },
     },
     {
+      name: 'non-record rivalry host seeds',
+      mutate: (league: LeagueState) => {
+        league.rivalryHostSeeds = [] as unknown as Record<string, string>;
+      },
+    },
+    {
+      name: 'team missing rating',
+      mutate: (league: LeagueState) => {
+        delete (league.teams[0] as Partial<LeagueState['teams'][number]>).rating;
+      },
+    },
+    {
+      name: 'team missing ranking',
+      mutate: (league: LeagueState) => {
+        delete (league.teams[0] as Partial<LeagueState['teams'][number]>).ranking;
+      },
+    },
+    {
+      name: 'team missing current last rank',
+      mutate: (league: LeagueState) => {
+        delete (league.teams[0] as Partial<LeagueState['teams'][number]>).last_rank;
+      },
+    },
+    {
+      name: 'team with an unknown field',
+      mutate: (league: LeagueState) => {
+        Object.assign(league.teams[0], { obsoleteTeamField: true });
+      },
+    },
+    {
+      name: 'team with a non-finite rating',
+      mutate: (league: LeagueState) => {
+        league.teams[0].rating = Number.NaN;
+      },
+    },
+    {
+      name: 'conference with an unknown field',
+      mutate: (league: LeagueState) => {
+        Object.assign(league.conferences[0], { obsoleteConferenceField: true });
+      },
+    },
+    {
+      name: 'conference with an invalid championship ID',
+      mutate: (league: LeagueState) => {
+        league.conferences[0].championship = 0;
+      },
+    },
+    {
+      name: 'malformed pending rivalry',
+      mutate: (league: LeagueState) => {
+        league.pending_rivalries = [{
+          id: 1,
+          teamA: 'Test State',
+          teamB: 'Other State',
+          name: null,
+          homeTeam: null,
+          awayTeam: null,
+          neutralSite: false,
+          venue: null,
+        }];
+        Object.assign(league.pending_rivalries[0], { obsoleteRivalryField: true });
+      },
+    },
+    {
       name: 'invalid playoff state',
       mutate: (league: LeagueState) => {
         (
           league.playoff as unknown as { seeds: unknown }
         ).seeds = 'invalid';
+      },
+    },
+    {
+      name: 'unknown playoff field',
+      mutate: (league: LeagueState) => {
+        Object.assign(league.playoff, { obsoletePlayoffField: 1 });
       },
     },
     {
@@ -80,6 +163,13 @@ describe('current league persistence boundary', () => {
       name: 'malformed resume snapshot',
       mutate: (league: LeagueState) => {
         league.resumeSnapshot = {} as LeagueState['resumeSnapshot'];
+      },
+    },
+    {
+      name: 'resume snapshot with an unknown field',
+      mutate: (league: LeagueState) => {
+        league.resumeSnapshot = buildTestLeague('summary').resumeSnapshot;
+        Object.assign(league.resumeSnapshot!, { obsoleteSnapshotField: true });
       },
     },
   ])(
@@ -97,6 +187,29 @@ describe('current league persistence boundary', () => {
       expect(await snapshot()).toEqual(before);
     },
   );
+
+  it('accepts explicit null current-state values', async () => {
+    const league = buildTestLeague('season');
+    league.teams[0].last_rank = null;
+    league.conferences[0].championship = null;
+    const db = await getDb();
+    await db.put('league', { key: 'current', value: league });
+
+    await expect(loadLeague()).resolves.toEqual(league);
+  });
+
+  it('rejects an invalid league before save without replacing the stored league', async () => {
+    const original = buildTestLeague('season');
+    const db = await getDb();
+    await db.put('league', { key: 'current', value: original });
+    const invalid = structuredClone(original);
+    Object.assign(invalid.info, { obsoleteInfoField: true });
+
+    await expect(saveLeague(invalid)).rejects.toMatchObject({
+      code: 'INVALID_LEAGUE_STATE',
+    });
+    expect((await db.get('league', 'current'))?.value).toEqual(original);
+  });
 
   it.each([
     {

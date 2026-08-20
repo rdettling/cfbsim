@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTestTeam } from '../../test/fixtures';
 import type { GameRecord } from '../../types/db';
-import { buildPreviewNewsAuditEntry, evaluatePreviewNewsAudit } from './previewAudit';
 import { generatePreseasonNews } from './previews';
 
 const teams = Array.from({ length: 30 }, (_, index) => buildTestTeam({
@@ -42,6 +41,8 @@ const game = (
   resultA: null,
   resultB: null,
   overtime: 0,
+  quarter: 1,
+  clockSecondsLeft: 900,
   scoreA: null,
   scoreB: null,
   watchability,
@@ -96,47 +97,4 @@ describe('preseason news', () => {
     expect(opener.item.importance).toBe(22);
   });
 
-  it('audits the complete publisher package independently', () => {
-    const entry = buildPreviewNewsAuditEntry({
-      auditId: 'preview-test:2027',
-      source: 'scenario',
-      rootSeed: 1,
-      sample: 0,
-      season: 0,
-      year: 2027,
-      teams,
-      games: [game(10, 8, 9, 70), game(11, 2, 3, 95, 'rivalry')],
-      defendingChampionId: 7,
-    });
-    const metrics = evaluatePreviewNewsAudit([entry]);
-    expect(metrics).toMatchObject({
-      cases: 1,
-      published: 3,
-      angles: {
-        marquee_opener: 1,
-        national_outlook: 1,
-        preseason_poll: 1,
-      },
-      violations: [],
-    });
-  });
-
-  it('reports corrupted preview facts and scores', () => {
-    const entry = buildPreviewNewsAuditEntry({
-      auditId: 'preview-test:corrupt',
-      source: 'scenario',
-      rootSeed: 1,
-      sample: 0,
-      season: 0,
-      year: 2027,
-      teams,
-      games: [game(11, 2, 3, 95)],
-      defendingChampionId: null,
-    });
-    entry.stories[0].item.importance += 1;
-    expect(evaluatePreviewNewsAudit([entry]).violations).toEqual([{
-      code: 'invalid_preview_story',
-      storyIds: ['preview-test:corrupt:preseason_poll'],
-    }]);
-  });
 });

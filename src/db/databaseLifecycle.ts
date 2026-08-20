@@ -6,7 +6,7 @@ import { RecruitingDataIntegrityError } from '../types/recruiting';
 import {
   assertCurrentLeagueState,
   assertCurrentRosterState,
-} from './leagueRepo';
+} from './leagueStateValidation';
 import { assertCurrentRecruitingState } from './recruitingRepo';
 import { deleteCurrentDatabase, getDb } from './db';
 import { assertSeasonMemoryReferences } from './seasonMemoryRepo';
@@ -14,6 +14,8 @@ import { assertHistoricalIntegrity } from './historyRepo';
 import { selectRetainedGameIds } from '../domain/league/gameDetails';
 import { assertPlayerOriginIntegrity } from './playerOriginRepo';
 import { assertNewsIntegrity } from './newsIntegrity';
+import { assertLeagueGameRecords } from './gameRecordValidation';
+import { assertGameDetailReferences } from './gameDetailValidation';
 
 const RECRUITING_STAGES = new Set<LeagueState['info']['stage']>([
   'recruiting',
@@ -85,13 +87,19 @@ const assertCurrentDatabase = async () => {
 
   assertCurrentLeagueState(leagueRecord.value);
   const league = leagueRecord.value;
+  assertLeagueGameRecords(league, games);
   assertCurrentRosterState(league, players);
   assertHistoricalIntegrity({
     currentPlayers: players,
     historicalPlayers,
     playerSeasons,
+  });
+  assertGameDetailReferences({
     details,
-    gameIds: new Set(games.map(game => game.id)),
+    games,
+    currentPlayers: players,
+    historicalPlayers,
+    playerSeasons,
   });
   assertPlayerOriginIntegrity({
     league,

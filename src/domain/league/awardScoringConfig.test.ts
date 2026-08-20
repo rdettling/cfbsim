@@ -5,7 +5,6 @@ import {
   AWARD_TUNING_CONTROLS,
   validateAwardScoringConfig,
 } from './awardScoringConfig';
-import { AWARD_BALANCE_TARGETS } from './awardEvaluation';
 
 describe('award scoring configuration', () => {
   it('validates the shipped weights, bounds, and weight sums', () => {
@@ -59,23 +58,4 @@ describe('award scoring configuration', () => {
       || path.includes('eligibleGameTypes') || path.includes('multipleAward'))).toBe(false);
   });
 
-  it('versions every balance target with rationale, sample requirements, and causal mapping', () => {
-    expect(AWARD_BALANCE_TARGETS).toHaveLength(57);
-    expect(AWARD_BALANCE_TARGETS.every(target => target.rationale.length > 20)).toBe(true);
-    expect(AWARD_BALANCE_TARGETS.every(target => target.sampleMinimum === 20)).toBe(true);
-    expect(AWARD_BALANCE_TARGETS.every(target => 'control' in target)).toBe(true);
-    expect(AWARD_BALANCE_TARGETS.filter(target =>
-      target.metric.startsWith('winner_team_rank_percentile.'))).toHaveLength(12);
-    expect(AWARD_BALANCE_TARGETS.find(target =>
-      target.metric === 'winner_team_rank_percentile.heisman')?.minimum).toBe(90);
-    expect(AWARD_BALANCE_TARGETS.find(target =>
-      target.metric === 'winner_team_rank_percentile.maxwell')?.minimum).toBe(75);
-    expect(AWARD_BALANCE_TARGETS.find(target =>
-      target.metric === 'minimum_heisman_winner_offensive_impact_percentile'))
-      .toEqual(expect.objectContaining({ minimum: 95, control: 'heisman_impact_share' }));
-    expect(AWARD_BALANCE_TARGETS.some(target =>
-      target.metric === 'heisman_qb_winner_share'
-      || target.metric === 'heisman_rb_winner_share'
-      || target.metric === 'heisman_receiver_winner_share')).toBe(false);
-  });
 });

@@ -92,7 +92,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
       (selectedYear === league.info.currentYear
         ? league.teams.map(entry => ({
             teamId: entry.id,
-            conference: entry.confName ?? entry.conference,
+            conference: entry.confName,
             rating: entry.rating,
             prestige: entry.prestige,
             ranking: entry.ranking,

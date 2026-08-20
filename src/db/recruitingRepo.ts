@@ -11,7 +11,7 @@ import { getDb } from './db';
 import {
   assertCurrentLeagueState,
   assertCurrentRosterState,
-} from './leagueRepo';
+} from './leagueStateValidation';
 
 export const RECRUITING_KEY = 'current';
 

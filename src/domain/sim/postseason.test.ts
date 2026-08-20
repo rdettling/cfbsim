@@ -42,7 +42,15 @@ const buildPostseasonLeague = (playoffTeams: PlayoffTeamCount) => {
       lastWeek: playoffTeams === 4 ? 17 : 19,
     },
     teams,
-    conferences: [],
+    conferences: [{
+      id: 1,
+      confName: 'Independent',
+      confFullName: 'Independent',
+      confGames: 0,
+      info: '',
+      championship: null,
+      teams,
+    }],
     settings: {
       conferencePolicy: 'historical',
       postseasonPolicy: 'custom',

@@ -576,15 +576,8 @@ formatting noise.
 | Generator logic or simulation odds | Generator tests, two clean builds or `data:check`, affected simulation tests |
 | Provider aliases or request behavior | CFBD helper and both ingestion-boundary tests |
 
-The complete repository verification is:
-
-```text
-npm run data:check
-npm test
-npm run typecheck
-npm run build
-git diff --check
-```
+Use [Validation and Test Strategy](../operations/validation-and-test-strategy.md)
+for the complete repository check and cross-system scenarios.
 
 `fetch:season-results -- --all --check` is an additional network-backed
 provider audit, not part of the offline repository check.

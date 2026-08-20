@@ -48,7 +48,7 @@ const TeamIdentity = ({
 );
 
 export const SeasonOverview = ({ champion, userTeam, onTeamClick }: SeasonOverviewProps) => {
-  const prestigeChange = userTeam.prestige_change ?? 0;
+  const prestigeChange = userTeam.prestige_change;
   const nextPrestige = userTeam.prestige + prestigeChange;
   const isChampion = champion?.id === userTeam.id;
 

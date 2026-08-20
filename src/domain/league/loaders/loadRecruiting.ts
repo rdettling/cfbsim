@@ -13,7 +13,7 @@ import {
   getRecruitingInterestTotal,
 } from '../../recruiting/standings';
 import { indexRecruitingState } from '../../recruiting/validation';
-import { requireRecruitingState } from '../recruiting';
+import { requireRecruitingState } from '../utils/recruitingLifecycleState';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 
 const EMPTY_RECRUITING = {

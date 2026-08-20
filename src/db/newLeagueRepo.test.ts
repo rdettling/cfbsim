@@ -1,7 +1,11 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { GameRecord, PlayerRecord } from '../types/db';
-import { buildTestLeague, buildTestPlayer } from '../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestPlayer,
+  buildTestTeam,
+} from '../test/fixtures';
 import { getDb } from './db';
 import { commitNewLeague } from './newLeagueRepo';
 import { buildRecruitingState } from '../test/recruitingFixtures';
@@ -30,12 +34,29 @@ const buildTestGame = (): GameRecord => ({
   resultA: null,
   resultB: null,
   overtime: 0,
+  quarter: 1,
+  clockSecondsLeft: 900,
   scoreA: null,
   scoreB: null,
   gameType: 'regular_season',
   rivalryKey: null,
   watchability: 80,
 });
+
+const buildLeagueForGame = () => {
+  const teamA = buildTestTeam();
+  const teamB = buildTestTeam({
+    id: 2,
+    name: 'Other State',
+    abbreviation: 'OTH',
+    ranking: 2,
+  });
+  const base = buildTestLeague('preseason');
+  return buildTestLeague('preseason', {
+    teams: [teamA, teamB],
+    conferences: [{ ...base.conferences[0], teams: [teamA, teamB] }],
+  });
+};
 
 const resetDatabase = async () => {
   const db = await getDb();
@@ -84,7 +105,7 @@ describe('commitNewLeague', () => {
       originalTeamId: 1,
     });
 
-    const nextLeague = buildTestLeague('preseason');
+    const nextLeague = buildLeagueForGame();
     const nextPlayer = buildTestPlayer({ id: 1, year: 'fr' });
     const nextGame = buildTestGame();
     await commitNewLeague({
@@ -146,5 +167,44 @@ describe('commitNewLeague', () => {
     expect((await db.get('recruiting', 'current'))?.value).toEqual(
       oldRecruiting,
     );
+  });
+
+  it('rolls back cleared stores when the prepared league is not current', async () => {
+    const db = await getDb();
+    const oldLeague = buildTestLeague('season');
+    const oldPlayer = buildTestPlayer({ id: 99 });
+    await db.put('league', { key: 'current', value: oldLeague });
+    await db.put('players', oldPlayer);
+
+    const invalidLeague = buildTestLeague('preseason');
+    Object.assign(invalidLeague, { obsoleteLeagueField: true });
+    await expect(commitNewLeague({
+      league: invalidLeague,
+      players: [buildTestPlayer()],
+      games: [],
+      playerOrigins: [],
+    })).rejects.toMatchObject({ code: 'INVALID_LEAGUE_STATE' });
+
+    expect((await db.get('league', 'current'))?.value).toEqual(oldLeague);
+    expect(await db.getAll('players')).toEqual([oldPlayer]);
+  });
+
+  it('leaves the existing save unchanged when a prepared game is invalid', async () => {
+    const db = await getDb();
+    const oldLeague = buildTestLeague('season');
+    const oldPlayer = buildTestPlayer({ id: 99 });
+    await db.put('league', { key: 'current', value: oldLeague });
+    await db.put('players', oldPlayer);
+
+    await expect(commitNewLeague({
+      league: buildLeagueForGame(),
+      players: [buildTestPlayer()],
+      games: [{ ...buildTestGame(), watchability: Number.NaN }],
+      playerOrigins: [],
+    })).rejects.toMatchObject({ code: 'INVALID_GAME_RECORD' });
+
+    expect((await db.get('league', 'current'))?.value).toEqual(oldLeague);
+    expect(await db.getAll('players')).toEqual([oldPlayer]);
+    expect(await db.getAll('games')).toEqual([]);
   });
 });

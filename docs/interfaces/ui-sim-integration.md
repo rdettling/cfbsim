@@ -25,15 +25,19 @@ This allows one game to run interactively while the broader league state remains
 2. **Session start**
 - `useGameSim.start()` calls `prepareInteractiveLiveGame(gameId)`.
 - If game already complete, the hook loads its nested detail and marks the session complete.
-- Otherwise, it resets in-memory state and hydrates runtime context (`league`, `record`, teams map, starters cache, players map, `SimGame` state).
+- Otherwise, the hook passes the prepared runtime context to
+  `createGameSimSession(...)`, which resets transient game state and creates the
+  opening possession.
 
 3. **Interactive stepping**
-- Hook creates first drive via `startInteractiveDrive`.
 - Session state moves through `preparing`, `ready`, `advancing`, `finalizing`,
   and terminal `complete` or `error` phases.
-- Progresses through `stepInteractiveDrive` either by:
-  - user-selected typed offensive, defensive, special-teams, or try instructions, or
-  - auto stepping (`simulateAutoPlays`, `simulateAutoDrive`, `simulateToEnd`).
+- `useGameSim.advance('play' | 'drive' | 'game')` serializes UI actions. Play
+  and drive scopes call `advanceGameSimSession(...)`; game scope is a guarded
+  hook loop over drive advancement so completed drives publish incrementally.
+- The session controller translates user-selected typed offensive, defensive,
+  special-teams, or try decisions and automatic advancement into repeated
+  `stepInteractiveDrive` calls.
 - Each step submits one exact call/tempo/timeout instruction and maps the
   resulting `PlayRecord`, including its exact call and participant role IDs,
   into UI play objects and drive cards. Rendered labels, text, timeout events,
@@ -42,13 +46,14 @@ This allows one game to run interactively while the broader league state remains
 4. **Drive transitions and overtime management**
 - A touchdown updates the score strip by six, enters a try prompt in the same
   drive, and updates the strip again after a successful conversion.
-- `finalizeDrive` records completed drive artifacts and computes next possession.
-- Handles halftime possession flip, first/second-overtime full possessions,
-  and third-and-later paired two-point rounds.
-- Continues `advanceToNextDrive` until game completion.
+- `gameSimSession` buffers completed drive/play artifacts, computes the next
+  possession, and detects terminal game state.
+- It handles the halftime possession flip, first/second-overtime full
+  possessions, and third-and-later paired two-point rounds.
 
 5. **Final commit**
-- `finishInteractiveGame` calls `finalizeGameSimulation(...)`.
+- After the session reports completion, the hook calls
+  `finalizeGameSimulation(...)` exactly once.
 - Domain atomically writes the compact game, nested detail, and league state,
   then returns the final game and drives for UI.
 - Hook enters the complete phase only after final persistence succeeds and then
@@ -65,6 +70,7 @@ sequenceDiagram
   participant Modal as GameSelectionModal
   participant Domain as sim/orchestrator
   participant Hook as useGameSim
+  participant Session as gameSimSession
   participant Engine as sim/engine
   participant DB as IndexedDB
 
@@ -72,10 +78,13 @@ sequenceDiagram
   Domain-->>Modal: game list (user game prioritized)
   Hook->>Domain: prepareInteractiveLiveGame(gameId)
   Domain-->>Hook: ready context or completed data
-  Hook->>Engine: startInteractiveDrive(...)
+  Hook->>Session: createGameSimSession(...)
+  Session->>Engine: startInteractiveDrive(...)
   loop per play
-    Hook->>Engine: stepInteractiveDrive(...)
-    Engine-->>Hook: play + drive state + completion flags
+    Hook->>Session: advanceGameSimSession(...)
+    Session->>Engine: stepInteractiveDrive(...)
+    Engine-->>Session: play + drive state + completion flags
+    Session-->>Hook: new plays + affected drive + completion flags
   end
   Hook->>Domain: finalizeGameSimulation(...)
   Domain->>DB: commitSimulationBatch(league + game + nested detail)
@@ -112,13 +121,15 @@ sequenceDiagram
 - **Shared core primitives**:
   - Interactive mode uses same underlying engine logic and artifacts as batch mode, reducing divergence.
 - **Derived UI state**:
-  - Hook computes `displayPlay`, `displayDrive`, possession side, field position, quarter/clock, and overtime indicators from interactive state.
+  - Hook computes `displayPlay`, `displayDrive`, possession side, field
+    position, quarter/clock, and overtime indicators from session state.
   - The score strip derives remaining timeouts from runtime state. Drive history
     reads regulation labels, overtime periods, durations, tempo, charged-timeout
     separators, clock-event separators, conversion results, and exact overtime
     periods directly from persisted artifacts.
 - **Persistence timing**:
-  - Interactive artifacts are buffered in refs during play and committed on game completion, not after every play.
+  - The framework-free session buffers interactive artifacts in memory. The
+    hook commits them on game completion, not after every play.
 
 ## Invariants
 
@@ -136,15 +147,21 @@ sequenceDiagram
 - Completed games are returned in read-only replay mode without rerunning simulation.
 - Auto-drive and auto-end loops include guards to prevent runaway loops in pathological states.
 - Unfinished sessions remain in memory and require confirmation before discard.
-- Finalization failures require application reload to reconcile the separate
-  IndexedDB writes; normal successful and cancelled closes do not reload.
+- The game, detail, news, and league batch is atomic. If later postseason or
+  final league follow-up fails after that batch commits, the persisted batch is
+  authoritative and the UI requires reload before retry; normal successful and
+  cancelled closes do not reload.
 
 ## Source Map
 
 - `src/components/sim/GameSelectionModal.tsx`
   - live game discovery and selection UX
 - `src/components/sim/useGameSim.ts`
-  - session orchestration (`start`, stepping methods, finalize path)
+  - React state, serialized `advance('play' | 'drive' | 'game')`, incremental
+    UI publication, preparation, and final persistence
+- `src/components/sim/gameSimSession.ts`
+  - in-memory session state, play/drive advancement, possession transitions,
+    artifact buffering, and terminal result finalization
 - `src/domain/sim/orchestrator.ts`
   - `getGamesToLiveSim`, `prepareInteractiveLiveGame`, `finalizeGameSimulation`
 - `src/domain/sim/drive.ts`

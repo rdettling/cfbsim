@@ -8,10 +8,10 @@ import {
   parseStatisticsTable,
   type BenchmarkContest,
   type BenchmarkSeasonInput,
-} from '../src/domain/sim/calibrationBenchmark';
+} from './evaluation/sim/calibrationBenchmark';
 
 const BENCHMARK_PATH = new URL(
-  '../src/domain/sim/calibration_benchmark.json',
+  './evaluation/sim/calibration_benchmark.json',
   import.meta.url,
 );
 

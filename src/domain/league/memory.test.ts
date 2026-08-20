@@ -40,6 +40,8 @@ const game = (
   resultA: winnerId === teamAId ? 'W' : 'L',
   resultB: winnerId === teamBId ? 'W' : 'L',
   overtime: 0,
+  quarter: 4,
+  clockSecondsLeft: 0,
   scoreA: 31,
   scoreB: 24,
   gameType,

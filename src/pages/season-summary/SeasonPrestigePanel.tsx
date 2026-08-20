@@ -106,7 +106,7 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
             </TableHead>
             <TableBody>
               {teams.map((team) => {
-                const change = team.prestige_change ?? 0;
+                const change = team.prestige_change;
                 return (
                   <TableRow key={team.name}>
                     <TableCell>
@@ -131,7 +131,7 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
           sx={{ display: { xs: 'flex', lg: 'none' }, flex: 1, minHeight: 0, overflow: 'auto' }}
         >
           {teams.map((team) => {
-            const change = team.prestige_change ?? 0;
+            const change = team.prestige_change;
             return (
               <Box
                 component="article"

@@ -84,7 +84,7 @@ export const buildRecruitingResults = (
     candidates.push({
       teamId,
       teamName: team.name,
-      conference: team.confName ?? team.conference,
+      conference: team.confName,
       prestige: team.prestige,
       recruits,
       totalRecruits: recruits.length,

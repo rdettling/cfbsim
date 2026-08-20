@@ -61,10 +61,10 @@ Malformed league or roster data throws `LeagueDataIntegrityError`.
 
 - `src/constants/stages.ts`
 - `src/constants/routes.ts`
-- `src/domain/league/stages.ts`
-- `src/domain/league/season.ts`
-- `src/domain/league/recruiting.ts`
-- `src/domain/league/rosterFinalization.ts`
+- `src/domain/league/commands/stages.ts`
+- `src/domain/league/commands/season.ts`
+- `src/domain/league/commands/recruiting.ts`
+- `src/domain/league/commands/rosterFinalization.ts`
 - `src/db/offseasonRepo.ts`
 - `src/domain/league/loaders/loadRosterProgression.ts`
 - `src/domain/league/loaders/loadRecruitingSummary.ts`

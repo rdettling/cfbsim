@@ -46,6 +46,8 @@ const game = (
   resultA: winnerId === 1 ? 'W' : 'L',
   resultB: winnerId === 2 ? 'W' : 'L',
   overtime: 0,
+  quarter: 4,
+  clockSecondsLeft: 0,
   scoreA: winnerId === 1 ? 31 : 24,
   scoreB: winnerId === 2 ? 31 : 24,
   gameType: 'regular_season',

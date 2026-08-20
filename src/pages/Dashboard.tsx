@@ -28,7 +28,7 @@ const Dashboard = () => {
   };
 
   const conferenceName = data
-    ? data.team.confName ?? data.team.conference
+    ? data.team.confName
     : '';
   const stage = data ? getStageDefinition(data.info.stage) : undefined;
   const seasonContext = data

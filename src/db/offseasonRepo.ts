@@ -12,7 +12,7 @@ import { getDb } from './db';
 import {
   assertCurrentLeagueState,
   assertCurrentRosterState,
-} from './leagueRepo';
+} from './leagueStateValidation';
 import { isPlayerOrigin } from './playerOriginRepo';
 
 const LEAGUE_KEY = 'current';
@@ -164,6 +164,7 @@ export const commitOffseasonTransition = async ({
       }
     }
 
+    assertCurrentLeagueState(league);
     await tx.objectStore('league').put({
       key: LEAGUE_KEY,
       value: league,

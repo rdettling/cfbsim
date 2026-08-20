@@ -88,12 +88,12 @@ normal creation week.
 
 ## Source Map
 
-- `src/domain/league/loaders/season/preseasonScheduling.ts`
+- `src/domain/league/commands/preseasonScheduling.ts`
+- `src/domain/league/commands/preseasonScheduleRemoval.ts`
+- `src/domain/league/commands/scheduleNonConGame.ts`
 - `src/domain/league/loaders/season/listAvailableOpponents.ts`
-- `src/domain/league/loaders/season/scheduleNonConGame.ts`
-- `src/domain/league/loaders/season/removePreseasonScheduleItem.ts`
 - `src/domain/league/seasonReset.ts`
-- `src/domain/league/season.ts`
+- `src/domain/league/commands/season.ts`
 - `src/domain/league/seasonInitialization.ts`
 - `src/domain/schedule/preseasonCandidates.ts`
 - `src/domain/schedule/feasibility.ts`

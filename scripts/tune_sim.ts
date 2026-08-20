@@ -2,7 +2,7 @@ import { pathToFileURL } from 'node:url';
 import {
   parseSimulationTuningArguments,
   searchSimulationTuning,
-} from '../src/domain/sim/tuner';
+} from './evaluation/sim/tuner';
 
 export const runSimulationTuner = (arguments_: string[]) => {
   const result = searchSimulationTuning(parseSimulationTuningArguments(arguments_));

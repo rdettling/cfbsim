@@ -1,6 +1,8 @@
 import { loadRecruitingLifecycleSnapshot } from '../../../db/recruitingRepo';
 import type { RecruitingResults } from '../../../types/recruiting';
-import { requireFinalizedRecruitingState } from '../recruiting';
+import {
+  requireFinalizedRecruitingState,
+} from '../utils/recruitingLifecycleState';
 import { buildRecruitingResults } from '../recruitingResults';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
 

@@ -53,6 +53,7 @@ const createTeam = (id: number, rating: number): Team => ({
   poll_score: 0,
   strength_of_record: 0,
   strength_of_record_avg: 0,
+  last_rank: null,
   last_game: null,
   next_game: null,
 });

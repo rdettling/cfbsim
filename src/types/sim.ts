@@ -34,8 +34,8 @@ export interface SimGame {
   year: number;
   rankATOG: number;
   rankBTOG: number;
-  resultA: string | null;
-  resultB: string | null;
+  resultA: 'W' | 'L' | null;
+  resultB: 'W' | 'L' | null;
   overtime: number;
   quarter: number;
   clockSecondsLeft: number;

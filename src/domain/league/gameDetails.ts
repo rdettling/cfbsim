@@ -1,13 +1,25 @@
 import type {
   DriveRecord,
+  DriveResult,
   GameDetailRecord,
   GameLogRecord,
+  PlayResult,
   PlayRecord,
   PlayerRecord,
   PlayerSeasonStats,
 } from '../../types/db';
 import type { SeasonMemory } from '../../types/memory';
 import { getRetainedArchiveGameIds } from './postseasonArchive';
+
+const requireDriveResult = (result: DriveRecord['result']): DriveResult => {
+  if (result === '') throw new Error('Completed game detail has an unfinished drive.');
+  return result;
+};
+
+const requirePlayResult = (result: PlayRecord['result']): PlayResult => {
+  if (result === '') throw new Error('Completed game detail has an unfinished play.');
+  return result;
+};
 
 export const buildGameDetail = (
   gameId: number,
@@ -27,8 +39,9 @@ export const buildGameDetail = (
     year,
     drives: [...drives]
       .sort((a, b) => a.driveNum - b.driveNum)
-      .map(({ id, gameId: _gameId, ...drive }) => ({
+      .map(({ id, gameId: _gameId, result, ...drive }) => ({
         ...drive,
+        result: requireDriveResult(result),
         plays: (playsByDrive.get(id) ?? [])
           .sort((a, b) => a.id - b.id)
           .map(({
@@ -37,9 +50,11 @@ export const buildGameDetail = (
             driveId: _driveId,
             offenseId: _offenseId,
             defenseId: _defenseId,
+            result,
             ...play
           }) => ({
             ...play,
+            result: requirePlayResult(result),
           })),
       })),
     playerStats: logs.map(({ gameId: _logGameId, ...log }) => log),

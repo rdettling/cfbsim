@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildTestPlayTiming, buildTestPlayer, buildTestTeam } from '../../test/fixtures';
-import type { PlayRecord } from '../../types/db';
+import type { PlayRecord, PlayResult, PlayType } from '../../types/db';
 import type { SimGame } from '../../types/sim';
-import { auditParticipantLinks } from './participantAudit';
 import { emptyPlayParticipants, selectPlayParticipants } from './participants';
 import { formatPlayText } from './plays';
 import { buildStartersCacheFromPlayers, createGameLogsFromPlays } from './statistics';
@@ -27,8 +26,8 @@ const game = { id: 5, teamA, teamB } as SimGame;
 
 const linkedPlay = (
   id: number,
-  playType: string,
-  result: string,
+  playType: PlayType,
+  result: PlayResult,
   yardsGained: number,
   starters: ReturnType<typeof buildStartersCacheFromPlayers>,
 ): PlayRecord => {
@@ -132,18 +131,6 @@ describe('participant-linked game logs', () => {
     expect(total('extra_points_attempted')).toBe(1);
     expect(total('extra_points_made')).toBe(1);
     expect(logs.some(log => log.playerId === 6)).toBe(true);
-    expect(auditParticipantLinks(game, plays, logs, starters)).toEqual([]);
     expect(random).not.toHaveBeenCalled();
-
-    const originalText = plays[0].text;
-    plays[0].text = 'Anonymous run';
-    expect(auditParticipantLinks(game, plays, logs, starters)).toContain(
-      'Simulation produced participant text that does not match its role IDs.',
-    );
-    plays[0].text = originalText;
-    logs[0].tackles += 1;
-    expect(auditParticipantLinks(game, plays, logs, starters)).toContain(
-      'Simulation produced player logs that do not match play participants.',
-    );
   });
 });

@@ -4,350 +4,358 @@
   "max_diff": 100,
   "odds": {
     "0": {
-      "favSpread": "Even",
-      "udSpread": "Even",
-      "favWinProb": 0.505,
-      "udWinProb": 0.495,
-      "favMoneyline": "-113",
-      "udMoneyline": "-108"
+      "favSpread": "-1",
+      "udSpread": "+1",
+      "favWinProb": 0.512,
+      "udWinProb": 0.488,
+      "favMoneyline": "-117",
+      "udMoneyline": "-104"
     },
     "1": {
-      "favSpread": "-1.5",
-      "udSpread": "+1.5",
-      "favWinProb": 0.543,
-      "udWinProb": 0.457,
+      "favSpread": "-1",
+      "udSpread": "+1",
+      "favWinProb": 0.549,
+      "udWinProb": 0.451,
       "favMoneyline": "-133",
       "udMoneyline": "+108"
     },
     "2": {
-      "favSpread": "-2.5",
-      "udSpread": "+2.5",
-      "favWinProb": 0.561,
-      "udWinProb": 0.439,
-      "favMoneyline": "-144",
-      "udMoneyline": "+117"
+      "favSpread": "-1",
+      "udSpread": "+1",
+      "favWinProb": 0.518,
+      "udWinProb": 0.482,
+      "favMoneyline": "-117",
+      "udMoneyline": "-104"
     },
     "3": {
-      "favSpread": "-3.5",
-      "udSpread": "+3.5",
-      "favWinProb": 0.574,
-      "udWinProb": 0.426,
-      "favMoneyline": "-150",
-      "udMoneyline": "+122"
+      "favSpread": "-3",
+      "udSpread": "+3",
+      "favWinProb": 0.557,
+      "udWinProb": 0.443,
+      "favMoneyline": "-138",
+      "udMoneyline": "+113"
     },
     "4": {
-      "favSpread": "-3.5",
-      "udSpread": "+3.5",
-      "favWinProb": 0.605,
-      "udWinProb": 0.395,
+      "favSpread": "-4.5",
+      "udSpread": "+4.5",
+      "favWinProb": 0.603,
+      "udWinProb": 0.397,
       "favMoneyline": "-170",
       "udMoneyline": "+138"
     },
     "5": {
       "favSpread": "-5",
       "udSpread": "+5",
-      "favWinProb": 0.645,
-      "udWinProb": 0.355,
-      "favMoneyline": "-203",
-      "udMoneyline": "+163"
+      "favWinProb": 0.633,
+      "udWinProb": 0.367,
+      "favMoneyline": "-194",
+      "udMoneyline": "+156"
     },
     "6": {
       "favSpread": "-5.5",
       "udSpread": "+5.5",
-      "favWinProb": 0.664,
-      "udWinProb": 0.336,
-      "favMoneyline": "-223",
-      "udMoneyline": "+178"
+      "favWinProb": 0.65,
+      "udWinProb": 0.35,
+      "favMoneyline": "-213",
+      "udMoneyline": "+163"
     },
     "7": {
       "favSpread": "-6.5",
       "udSpread": "+6.5",
-      "favWinProb": 0.682,
-      "udWinProb": 0.318,
+      "favWinProb": 0.687,
+      "udWinProb": 0.313,
       "favMoneyline": "-245",
       "udMoneyline": "+194"
     },
     "8": {
-      "favSpread": "-7.5",
-      "udSpread": "+7.5",
-      "favWinProb": 0.684,
-      "udWinProb": 0.316,
-      "favMoneyline": "-245",
-      "udMoneyline": "+194"
+      "favSpread": "-8.5",
+      "udSpread": "+8.5",
+      "favWinProb": 0.721,
+      "udWinProb": 0.279,
+      "favMoneyline": "-300",
+      "udMoneyline": "+233"
     },
     "9": {
-      "favSpread": "-9",
-      "udSpread": "+9",
-      "favWinProb": 0.739,
-      "udWinProb": 0.261,
-      "favMoneyline": "-317",
-      "udMoneyline": "+245"
+      "favSpread": "-8.5",
+      "udSpread": "+8.5",
+      "favWinProb": 0.729,
+      "udWinProb": 0.271,
+      "favMoneyline": "-300",
+      "udMoneyline": "+233"
     },
     "10": {
-      "favSpread": "-10.5",
-      "udSpread": "+10.5",
-      "favWinProb": 0.753,
-      "udWinProb": 0.247,
-      "favMoneyline": "-355",
-      "udMoneyline": "+270"
-    },
-    "11": {
       "favSpread": "-10",
       "udSpread": "+10",
-      "favWinProb": 0.75,
-      "udWinProb": 0.25,
-      "favMoneyline": "-355",
+      "favWinProb": 0.741,
+      "udWinProb": 0.259,
+      "favMoneyline": "-335",
       "udMoneyline": "+257"
     },
-    "12": {
-      "favSpread": "-13",
-      "udSpread": "+13",
-      "favWinProb": 0.814,
-      "udWinProb": 0.186,
-      "favMoneyline": "-525",
-      "udMoneyline": "+376"
+    "11": {
+      "favSpread": "-11",
+      "udSpread": "+11",
+      "favWinProb": 0.772,
+      "udWinProb": 0.228,
+      "favMoneyline": "-400",
+      "udMoneyline": "+300"
     },
-    "13": {
-      "favSpread": "-12",
-      "udSpread": "+12",
-      "favWinProb": 0.784,
-      "udWinProb": 0.216,
+    "12": {
+      "favSpread": "-11.5",
+      "udSpread": "+11.5",
+      "favWinProb": 0.786,
+      "udWinProb": 0.214,
       "favMoneyline": "-426",
       "udMoneyline": "+317"
     },
+    "13": {
+      "favSpread": "-11.5",
+      "udSpread": "+11.5",
+      "favWinProb": 0.776,
+      "udWinProb": 0.224,
+      "favMoneyline": "-400",
+      "udMoneyline": "+300"
+    },
     "14": {
-      "favSpread": "-13.5",
-      "udSpread": "+13.5",
-      "favWinProb": 0.822,
-      "udWinProb": 0.178,
-      "favMoneyline": "-567",
-      "udMoneyline": "+400"
+      "favSpread": "-13",
+      "udSpread": "+13",
+      "favWinProb": 0.807,
+      "udWinProb": 0.193,
+      "favMoneyline": "-488",
+      "udMoneyline": "+355"
     },
     "15": {
-      "favSpread": "-15",
-      "udSpread": "+15",
-      "favWinProb": 0.852,
-      "udWinProb": 0.148,
-      "favMoneyline": "-733",
-      "udMoneyline": "+488"
+      "favSpread": "-14.5",
+      "udSpread": "+14.5",
+      "favWinProb": 0.828,
+      "udWinProb": 0.172,
+      "favMoneyline": "-567",
+      "udMoneyline": "+400"
     },
     "16": {
       "favSpread": "-15",
       "udSpread": "+15",
-      "favWinProb": 0.865,
-      "udWinProb": 0.135,
-      "favMoneyline": "-809",
-      "udMoneyline": "+525"
+      "favWinProb": 0.841,
+      "udWinProb": 0.159,
+      "favMoneyline": "-669",
+      "udMoneyline": "+456"
     },
     "17": {
       "favSpread": "-16.5",
       "udSpread": "+16.5",
-      "favWinProb": 0.878,
-      "udWinProb": 0.122,
+      "favWinProb": 0.873,
+      "udWinProb": 0.127,
       "favMoneyline": "-900",
       "udMoneyline": "+567"
     },
     "18": {
       "favSpread": "-17",
       "udSpread": "+17",
-      "favWinProb": 0.874,
-      "udWinProb": 0.126,
-      "favMoneyline": "-900",
-      "udMoneyline": "+567"
+      "favWinProb": 0.883,
+      "udWinProb": 0.117,
+      "favMoneyline": "-1011",
+      "udMoneyline": "+614"
     },
     "19": {
-      "favSpread": "-18.5",
-      "udSpread": "+18.5",
-      "favWinProb": 0.894,
-      "udWinProb": 0.106,
-      "favMoneyline": "-1150",
-      "udMoneyline": "+669"
-    },
-    "20": {
       "favSpread": "-19",
       "udSpread": "+19",
-      "favWinProb": 0.897,
-      "udWinProb": 0.103,
-      "favMoneyline": "-1150",
+      "favWinProb": 0.91,
+      "udWinProb": 0.09,
+      "favMoneyline": "-1567",
+      "udMoneyline": "+733"
+    },
+    "20": {
+      "favSpread": "-19.5",
+      "udSpread": "+19.5",
+      "favWinProb": 0.9,
+      "udWinProb": 0.1,
+      "favMoneyline": "-1329",
       "udMoneyline": "+669"
     },
     "21": {
-      "favSpread": "-20",
-      "udSpread": "+20",
-      "favWinProb": 0.916,
-      "udWinProb": 0.084,
-      "favMoneyline": "-1567",
-      "udMoneyline": "+809"
+      "favSpread": "-19.5",
+      "udSpread": "+19.5",
+      "favWinProb": 0.901,
+      "udWinProb": 0.099,
+      "favMoneyline": "-1329",
+      "udMoneyline": "+733"
     },
     "22": {
-      "favSpread": "-21",
-      "udSpread": "+21",
-      "favWinProb": 0.926,
-      "udWinProb": 0.074,
-      "favMoneyline": "-1900",
-      "udMoneyline": "+900"
+      "favSpread": "-20.5",
+      "udSpread": "+20.5",
+      "favWinProb": 0.931,
+      "udWinProb": 0.069,
+      "favMoneyline": "-2400",
+      "udMoneyline": "+1011"
     },
     "23": {
-      "favSpread": "-22",
-      "udSpread": "+22",
-      "favWinProb": 0.938,
-      "udWinProb": 0.062,
+      "favSpread": "-21.5",
+      "udSpread": "+21.5",
+      "favWinProb": 0.935,
+      "udWinProb": 0.065,
       "favMoneyline": "-2400",
       "udMoneyline": "+1011"
     },
     "24": {
-      "favSpread": "-23.5",
-      "udSpread": "+23.5",
-      "favWinProb": 0.936,
-      "udWinProb": 0.064,
-      "favMoneyline": "-2400",
-      "udMoneyline": "+1011"
-    },
-    "25": {
       "favSpread": "-24",
       "udSpread": "+24",
-      "favWinProb": 0.951,
-      "udWinProb": 0.049,
+      "favWinProb": 0.941,
+      "udWinProb": 0.059,
+      "favMoneyline": "-3233",
+      "udMoneyline": "+1150"
+    },
+    "25": {
+      "favSpread": "-24.5",
+      "udSpread": "+24.5",
+      "favWinProb": 0.952,
+      "udWinProb": 0.048,
       "favMoneyline": "-4900",
       "udMoneyline": "+1329"
     },
     "26": {
-      "favSpread": "-25.5",
-      "udSpread": "+25.5",
-      "favWinProb": 0.947,
-      "udWinProb": 0.053,
-      "favMoneyline": "-3233",
-      "udMoneyline": "+1150"
+      "favSpread": "-25",
+      "udSpread": "+25",
+      "favWinProb": 0.954,
+      "udWinProb": 0.046,
+      "favMoneyline": "-4900",
+      "udMoneyline": "+1329"
     },
     "27": {
-      "favSpread": "-26.5",
-      "udSpread": "+26.5",
-      "favWinProb": 0.97,
-      "udWinProb": 0.03,
+      "favSpread": "-25.5",
+      "udSpread": "+25.5",
+      "favWinProb": 0.961,
+      "udWinProb": 0.039,
       "favMoneyline": "-9900",
       "udMoneyline": "+1567"
     },
     "28": {
-      "favSpread": "-27.5",
-      "udSpread": "+27.5",
-      "favWinProb": 0.968,
-      "udWinProb": 0.032,
+      "favSpread": "-28",
+      "udSpread": "+28",
+      "favWinProb": 0.966,
+      "udWinProb": 0.034,
       "favMoneyline": "-9900",
       "udMoneyline": "+1567"
     },
     "29": {
-      "favSpread": "-28",
-      "udSpread": "+28",
-      "favWinProb": 0.971,
-      "udWinProb": 0.029,
+      "favSpread": "-28.5",
+      "udSpread": "+28.5",
+      "favWinProb": 0.975,
+      "udWinProb": 0.025,
       "favMoneyline": "-9900",
       "udMoneyline": "+1900"
     },
     "30": {
       "favSpread": "-28",
       "udSpread": "+28",
-      "favWinProb": 0.963,
-      "udWinProb": 0.037,
+      "favWinProb": 0.975,
+      "udWinProb": 0.025,
       "favMoneyline": "-9900",
-      "udMoneyline": "+1567"
+      "udMoneyline": "+1900"
     },
     "31": {
-      "favSpread": "-28.5",
-      "udSpread": "+28.5",
-      "favWinProb": 0.977,
-      "udWinProb": 0.023,
+      "favSpread": "-30",
+      "udSpread": "+30",
+      "favWinProb": 0.972,
+      "udWinProb": 0.028,
       "favMoneyline": "-9900",
       "udMoneyline": "+1900"
     },
     "32": {
-      "favSpread": "-30",
-      "udSpread": "+30",
-      "favWinProb": 0.977,
-      "udWinProb": 0.023,
+      "favSpread": "-31",
+      "udSpread": "+31",
+      "favWinProb": 0.979,
+      "udWinProb": 0.021,
       "favMoneyline": "-9900",
       "udMoneyline": "+1900"
     },
     "33": {
-      "favSpread": "-31.5",
-      "udSpread": "+31.5",
+      "favSpread": "-32.5",
+      "udSpread": "+32.5",
+      "favWinProb": 0.985,
+      "udWinProb": 0.015,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+2400"
+    },
+    "34": {
+      "favSpread": "-33",
+      "udSpread": "+33",
       "favWinProb": 0.989,
       "udWinProb": 0.011,
       "favMoneyline": "-9900",
       "udMoneyline": "+2400"
     },
-    "34": {
-      "favSpread": "-31.5",
-      "udSpread": "+31.5",
-      "favWinProb": 0.982,
-      "udWinProb": 0.018,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+2400"
-    },
     "35": {
-      "favSpread": "-33.5",
-      "udSpread": "+33.5",
-      "favWinProb": 0.998,
-      "udWinProb": 0.002,
+      "favSpread": "-34.5",
+      "udSpread": "+34.5",
+      "favWinProb": 0.991,
+      "udWinProb": 0.009,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "36": {
       "favSpread": "-34.5",
       "udSpread": "+34.5",
-      "favWinProb": 0.984,
-      "udWinProb": 0.016,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+2400"
-    },
-    "37": {
-      "favSpread": "-36",
-      "udSpread": "+36",
-      "favWinProb": 0.995,
-      "udWinProb": 0.005,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
-    "38": {
-      "favSpread": "-37",
-      "udSpread": "+37",
       "favWinProb": 0.992,
       "udWinProb": 0.008,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
-    "39": {
-      "favSpread": "-37.5",
-      "udSpread": "+37.5",
-      "favWinProb": 0.997,
-      "udWinProb": 0.003,
+    "37": {
+      "favSpread": "-36.5",
+      "udSpread": "+36.5",
+      "favWinProb": 0.988,
+      "udWinProb": 0.012,
       "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
+      "udMoneyline": "+2400"
     },
-    "40": {
-      "favSpread": "-38.5",
-      "udSpread": "+38.5",
-      "favWinProb": 0.995,
-      "udWinProb": 0.005,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
-    "41": {
-      "favSpread": "-39",
-      "udSpread": "+39",
-      "favWinProb": 0.993,
-      "udWinProb": 0.007,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
-    "42": {
-      "favSpread": "-41.5",
-      "udSpread": "+41.5",
+    "38": {
+      "favSpread": "-37",
+      "udSpread": "+37",
       "favWinProb": 0.996,
       "udWinProb": 0.004,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
+    "39": {
+      "favSpread": "-38",
+      "udSpread": "+38",
+      "favWinProb": 0.996,
+      "udWinProb": 0.004,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
+    "40": {
+      "favSpread": "-39.5",
+      "udSpread": "+39.5",
+      "favWinProb": 0.997,
+      "udWinProb": 0.003,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
+    "41": {
+      "favSpread": "-40.5",
+      "udSpread": "+40.5",
+      "favWinProb": 0.995,
+      "udWinProb": 0.005,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
+    "42": {
+      "favSpread": "-42",
+      "udSpread": "+42",
+      "favWinProb": 0.999,
+      "udWinProb": 0.001,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
     "43": {
+      "favSpread": "-41.5",
+      "udSpread": "+41.5",
+      "favWinProb": 0.999,
+      "udWinProb": 0.001,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
+    "44": {
       "favSpread": "-42.5",
       "udSpread": "+42.5",
       "favWinProb": 0.998,
@@ -355,55 +363,39 @@
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
-    "44": {
-      "favSpread": "-43",
-      "udSpread": "+43",
-      "favWinProb": 0.998,
-      "udWinProb": 0.002,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
     "45": {
-      "favSpread": "-44.5",
-      "udSpread": "+44.5",
-      "favWinProb": 1,
-      "udWinProb": 0,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
-    "46": {
-      "favSpread": "-44.5",
-      "udSpread": "+44.5",
-      "favWinProb": 0.997,
-      "udWinProb": 0.003,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
-    "47": {
-      "favSpread": "-45",
-      "udSpread": "+45",
-      "favWinProb": 0.998,
-      "udWinProb": 0.002,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
-    "48": {
-      "favSpread": "-47",
-      "udSpread": "+47",
+      "favSpread": "-44",
+      "udSpread": "+44",
       "favWinProb": 0.999,
       "udWinProb": 0.001,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
-    "49": {
-      "favSpread": "-47",
-      "udSpread": "+47",
-      "favWinProb": 0.997,
-      "udWinProb": 0.003,
+    "46": {
+      "favSpread": "-44",
+      "udSpread": "+44",
+      "favWinProb": 1,
+      "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
-    "50": {
+    "47": {
+      "favSpread": "-46",
+      "udSpread": "+46",
+      "favWinProb": 1,
+      "udWinProb": 0,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
+    "48": {
+      "favSpread": "-46.5",
+      "udSpread": "+46.5",
+      "favWinProb": 0.998,
+      "udWinProb": 0.002,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
+    "49": {
       "favSpread": "-48.5",
       "udSpread": "+48.5",
       "favWinProb": 1,
@@ -411,11 +403,19 @@
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
-    "51": {
-      "favSpread": "-49.5",
-      "udSpread": "+49.5",
+    "50": {
+      "favSpread": "-48.5",
+      "udSpread": "+48.5",
       "favWinProb": 0.999,
       "udWinProb": 0.001,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
+    "51": {
+      "favSpread": "-50",
+      "udSpread": "+50",
+      "favWinProb": 1,
+      "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
@@ -428,30 +428,22 @@
       "udMoneyline": "+3233"
     },
     "53": {
-      "favSpread": "-51.5",
-      "udSpread": "+51.5",
-      "favWinProb": 1,
-      "udWinProb": 0,
+      "favSpread": "-52",
+      "udSpread": "+52",
+      "favWinProb": 0.998,
+      "udWinProb": 0.002,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "54": {
-      "favSpread": "-52",
-      "udSpread": "+52",
+      "favSpread": "-52.5",
+      "udSpread": "+52.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "55": {
-      "favSpread": "-53",
-      "udSpread": "+53",
-      "favWinProb": 1,
-      "udWinProb": 0,
-      "favMoneyline": "-9900",
-      "udMoneyline": "+3233"
-    },
-    "56": {
       "favSpread": "-53.5",
       "udSpread": "+53.5",
       "favWinProb": 1,
@@ -459,9 +451,17 @@
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
+    "56": {
+      "favSpread": "-54",
+      "udSpread": "+54",
+      "favWinProb": 1,
+      "udWinProb": 0,
+      "favMoneyline": "-9900",
+      "udMoneyline": "+3233"
+    },
     "57": {
-      "favSpread": "-55.5",
-      "udSpread": "+55.5",
+      "favSpread": "-56.5",
+      "udSpread": "+56.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -476,24 +476,24 @@
       "udMoneyline": "+3233"
     },
     "59": {
-      "favSpread": "-57.5",
-      "udSpread": "+57.5",
+      "favSpread": "-58",
+      "udSpread": "+58",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "60": {
-      "favSpread": "-58.5",
-      "udSpread": "+58.5",
+      "favSpread": "-58",
+      "udSpread": "+58",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "61": {
-      "favSpread": "-60",
-      "udSpread": "+60",
+      "favSpread": "-60.5",
+      "udSpread": "+60.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -508,8 +508,8 @@
       "udMoneyline": "+3233"
     },
     "63": {
-      "favSpread": "-62",
-      "udSpread": "+62",
+      "favSpread": "-61.5",
+      "udSpread": "+61.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -524,16 +524,16 @@
       "udMoneyline": "+3233"
     },
     "65": {
-      "favSpread": "-63.5",
-      "udSpread": "+63.5",
+      "favSpread": "-64",
+      "udSpread": "+64",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "66": {
-      "favSpread": "-65.5",
-      "udSpread": "+65.5",
+      "favSpread": "-65",
+      "udSpread": "+65",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -548,32 +548,32 @@
       "udMoneyline": "+3233"
     },
     "68": {
-      "favSpread": "-67",
-      "udSpread": "+67",
+      "favSpread": "-67.5",
+      "udSpread": "+67.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "69": {
-      "favSpread": "-67",
-      "udSpread": "+67",
+      "favSpread": "-67.5",
+      "udSpread": "+67.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "70": {
-      "favSpread": "-68",
-      "udSpread": "+68",
+      "favSpread": "-68.5",
+      "udSpread": "+68.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "71": {
-      "favSpread": "-69.5",
-      "udSpread": "+69.5",
+      "favSpread": "-70",
+      "udSpread": "+70",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -588,8 +588,8 @@
       "udMoneyline": "+3233"
     },
     "73": {
-      "favSpread": "-71.5",
-      "udSpread": "+71.5",
+      "favSpread": "-72.5",
+      "udSpread": "+72.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -604,24 +604,24 @@
       "udMoneyline": "+3233"
     },
     "75": {
-      "favSpread": "-73.5",
-      "udSpread": "+73.5",
+      "favSpread": "-74.5",
+      "udSpread": "+74.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "76": {
-      "favSpread": "-74",
-      "udSpread": "+74",
+      "favSpread": "-74.5",
+      "udSpread": "+74.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "77": {
-      "favSpread": "-76",
-      "udSpread": "+76",
+      "favSpread": "-75",
+      "udSpread": "+75",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -636,8 +636,8 @@
       "udMoneyline": "+3233"
     },
     "79": {
-      "favSpread": "-77",
-      "udSpread": "+77",
+      "favSpread": "-78",
+      "udSpread": "+78",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -652,8 +652,8 @@
       "udMoneyline": "+3233"
     },
     "81": {
-      "favSpread": "-79.5",
-      "udSpread": "+79.5",
+      "favSpread": "-80.5",
+      "udSpread": "+80.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -676,56 +676,56 @@
       "udMoneyline": "+3233"
     },
     "84": {
-      "favSpread": "-82",
-      "udSpread": "+82",
+      "favSpread": "-82.5",
+      "udSpread": "+82.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "85": {
-      "favSpread": "-83",
-      "udSpread": "+83",
+      "favSpread": "-84.5",
+      "udSpread": "+84.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "86": {
-      "favSpread": "-84.5",
-      "udSpread": "+84.5",
+      "favSpread": "-85.5",
+      "udSpread": "+85.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "87": {
-      "favSpread": "-84.5",
-      "udSpread": "+84.5",
+      "favSpread": "-86",
+      "udSpread": "+86",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "88": {
-      "favSpread": "-85",
-      "udSpread": "+85",
+      "favSpread": "-87",
+      "udSpread": "+87",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "89": {
-      "favSpread": "-87.5",
-      "udSpread": "+87.5",
+      "favSpread": "-88.5",
+      "udSpread": "+88.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "90": {
-      "favSpread": "-88",
-      "udSpread": "+88",
+      "favSpread": "-89.5",
+      "udSpread": "+89.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -740,8 +740,8 @@
       "udMoneyline": "+3233"
     },
     "92": {
-      "favSpread": "-89.5",
-      "udSpread": "+89.5",
+      "favSpread": "-91",
+      "udSpread": "+91",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -756,16 +756,16 @@
       "udMoneyline": "+3233"
     },
     "94": {
-      "favSpread": "-93",
-      "udSpread": "+93",
+      "favSpread": "-92.5",
+      "udSpread": "+92.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "95": {
-      "favSpread": "-93.5",
-      "udSpread": "+93.5",
+      "favSpread": "-94",
+      "udSpread": "+94",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
@@ -780,32 +780,32 @@
       "udMoneyline": "+3233"
     },
     "97": {
-      "favSpread": "-95.5",
-      "udSpread": "+95.5",
+      "favSpread": "-95",
+      "udSpread": "+95",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "98": {
-      "favSpread": "-96.5",
-      "udSpread": "+96.5",
+      "favSpread": "-97",
+      "udSpread": "+97",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "99": {
-      "favSpread": "-96",
-      "udSpread": "+96",
+      "favSpread": "-97.5",
+      "udSpread": "+97.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",
       "udMoneyline": "+3233"
     },
     "100": {
-      "favSpread": "-98.5",
-      "udSpread": "+98.5",
+      "favSpread": "-99.5",
+      "udSpread": "+99.5",
       "favWinProb": 1,
       "udWinProb": 0,
       "favMoneyline": "-9900",

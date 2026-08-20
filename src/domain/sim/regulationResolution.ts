@@ -254,7 +254,7 @@ export const resolveRegulationStep = (
     };
   }
 
-  let result: { yards: number; outcome: string };
+  let result: { yards: number; outcome: PlayRecord['result'] };
   if (down < 1 || down > 4) throw new Error(`Play ${playId} has an impossible down.`);
   const outcomeContext = {
     kind: 'scrimmage' as const,

@@ -9,8 +9,8 @@ import { loadNonCon } from '../domain/league/loaders/season/loadNonCon';
 import {
   dismissPendingRivalry,
   removePreseasonGame,
-} from '../domain/league/loaders/season/removePreseasonScheduleItem';
-import { scheduleNonConGame } from '../domain/league/loaders/season/scheduleNonConGame';
+} from '../domain/league/commands/preseasonScheduleRemoval';
+import { scheduleNonConGame } from '../domain/league/commands/scheduleNonConGame';
 import type { EligibleNonConOpponent } from '../types/league';
 import type { NonConPageData } from '../types/pages';
 import { NonConWorkspace } from './noncon/NonConWorkspace';
@@ -42,7 +42,7 @@ export const NonCon = () => {
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
 
   const fetchData = useCallback(async (): Promise<NonConPageData> => loadNonCon(), []);
-  const { data, loading, error, refresh, replaceData } = useDomainData<NonConPageData>({
+  const { data, loading, error, refresh } = useDomainData<NonConPageData>({
     fetcher: fetchData,
   });
 
@@ -106,11 +106,11 @@ export const NonCon = () => {
     setSavingRequest(request);
     setScheduleError(null);
     try {
-      const nextData = await scheduleNonConGame({
+      await scheduleNonConGame({
         ...request,
         week: selectedWeek,
       });
-      replaceData(nextData);
+      await refresh();
       setScheduleDialogOpen(false);
       clearOpponentSelection();
     } catch (saveError) {

@@ -31,6 +31,7 @@ const buildTeam = (id: number): Team => ({
   nonConfGames: 0,
   nonConfLimit: 0,
   prestige: 75,
+  prestige_change: 0,
   ceiling: 99,
   floor: 1,
   mascot: 'Testers',
@@ -43,6 +44,7 @@ const buildTeam = (id: number): Team => ({
   colorPrimary: '#000000',
   colorSecondary: '#ffffff',
   conference: 'Test',
+  confName: 'Test',
   confWins: 0,
   confLosses: 0,
   nonConfWins: 0,
@@ -56,6 +58,7 @@ const buildTeam = (id: number): Team => ({
   poll_score: 0,
   strength_of_record: 0,
   strength_of_record_avg: 0,
+  last_rank: null,
   last_game: null,
   next_game: null,
 });

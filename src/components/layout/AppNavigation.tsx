@@ -12,8 +12,8 @@ import {
 import {
   advanceOffseasonStage,
   isOffseasonAdvanceStage,
-} from '../../domain/league/stages';
-import { initializeSeason } from '../../domain/league/season';
+} from '../../domain/league/commands/stages';
+import { initializeSeason } from '../../domain/league/commands/season';
 import {
   OffseasonConfigurationConflictError,
   OffseasonStageMismatchError,
@@ -63,7 +63,7 @@ const AppNavigation = ({
   const commandManagedStage =
     currentStageInfo?.id === 'recruiting' ||
     currentStageInfo?.id === 'roster_cuts';
-  const teamAccent = data.info.colorPrimary || data.team.colorPrimary || 'primary.main';
+  const teamAccent = data.team.colorPrimary || 'primary.main';
 
   const handleGameSelect = (gameId: number) => {
     setSelectedGameId(gameId);

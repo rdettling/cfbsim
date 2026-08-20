@@ -28,6 +28,8 @@ const game = (overrides: Partial<GameRecord> = {}): GameRecord => ({
   resultA: 'W',
   resultB: 'L',
   overtime: 0,
+  quarter: 4,
+  clockSecondsLeft: 0,
   scoreA: 27,
   scoreB: 20,
   watchability: 80,
@@ -43,6 +45,8 @@ describe('buildPreviousMatchups', () => {
       winnerId: null,
       resultA: null,
       resultB: null,
+      quarter: 1,
+      clockSecondsLeft: 900,
       scoreA: null,
       scoreB: null,
     });
@@ -58,7 +62,17 @@ describe('buildPreviousMatchups', () => {
       }),
     );
     const unrelated = game({ id: 90, teamBId: 3, year: 2027 });
-    const incomplete = game({ id: 91, year: 2027, winnerId: null });
+    const incomplete = game({
+      id: 91,
+      year: 2027,
+      winnerId: null,
+      resultA: null,
+      resultB: null,
+      quarter: 1,
+      clockSecondsLeft: 900,
+      scoreA: null,
+      scoreB: null,
+    });
 
     const result = buildPreviousMatchups({
       targetGame: target,

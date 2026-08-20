@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { buildTestLeague } from '../test/fixtures';
+import { buildTestLeague, buildTestTeam } from '../test/fixtures';
 import type { GameDetailRecord, GameRecord } from '../types/db';
 import type { GameNewsItem, PreviewNewsItem, RankingNewsItem } from '../types/news';
 import { getDb } from './db';
@@ -34,15 +34,33 @@ const completedGame = (overrides: Partial<GameRecord> = {}): GameRecord => ({
   weekPlayed: 3,
   year: 2025,
   rankATOG: 1,
-  rankBTOG: 0,
+  rankBTOG: 2,
   resultA: 'W',
   resultB: 'L',
   overtime: 0,
+  quarter: 4,
+  clockSecondsLeft: 0,
   scoreA: 28,
   scoreB: 17,
   watchability: 60,
   ...overrides,
 });
+
+const buildGameLeague = () => {
+  const teamA = buildTestTeam();
+  const teamB = buildTestTeam({
+    id: 2,
+    name: 'Other State',
+    abbreviation: 'OTH',
+    ranking: 2,
+  });
+  const base = buildTestLeague('season');
+  return buildTestLeague('season', {
+    teams: [teamA, teamB],
+    conferences: [{ ...base.conferences[0], teams: [teamA, teamB] }],
+    idCounters: { ...base.idCounters, game: 5 },
+  });
+};
 
 const story = (overrides: Partial<GameNewsItem> = {}): GameNewsItem => ({
   id: 'game:4',
@@ -213,7 +231,7 @@ describe('news repository', () => {
 
   it('rolls back game and news writes when another batch record is invalid', async () => {
     await expect(commitSimulationBatch({
-      league: buildTestLeague('season'),
+      league: buildGameLeague(),
       games: [completedGame()],
       details: [{ year: 2025 } as GameDetailRecord],
       newsItems: [story()],
@@ -230,9 +248,26 @@ describe('news repository', () => {
     invalid.unserializable = () => undefined;
     await expect(saveGamesAndLeague(
       [completedGame()],
-      buildTestLeague('season'),
+      buildGameLeague(),
       [invalid],
     )).rejects.toBeDefined();
+    const db = await getDb();
+    expect(await db.getAll('games')).toEqual([]);
+    expect(await db.getAll('newsItems')).toEqual([]);
+    expect(await db.getAll('league')).toEqual([]);
+  });
+
+  it('rolls back simulation writes when the final league is not current', async () => {
+    const league = buildGameLeague();
+    Object.assign(league.teams[0], { obsoleteTeamField: true });
+
+    await expect(commitSimulationBatch({
+      league,
+      games: [completedGame()],
+      details: [],
+      newsItems: [story()],
+    })).rejects.toMatchObject({ code: 'INVALID_LEAGUE_STATE' });
+
     const db = await getDb();
     expect(await db.getAll('games')).toEqual([]);
     expect(await db.getAll('newsItems')).toEqual([]);

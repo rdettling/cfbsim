@@ -82,6 +82,7 @@ const applyRealignment = (
       poll_score: 0,
       strength_of_record: 0,
       strength_of_record_avg: 0,
+      last_rank: null,
       last_game: null,
       next_game: null,
     };
@@ -143,7 +144,7 @@ const applyRealignment = (
   if (unassignedTeams.length) {
     const grouped: Record<string, Team[]> = {};
     unassignedTeams.forEach(team => {
-      const confName = team.conference || 'Independent';
+      const confName = team.conference;
       if (!grouped[confName]) grouped[confName] = [];
       grouped[confName].push(team);
     });

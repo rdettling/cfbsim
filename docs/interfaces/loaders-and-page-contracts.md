@@ -9,7 +9,8 @@ Page loaders are read-only application queries. They:
 3. build a page-specific projection;
 4. return typed data without persisting defaults, repairs, or projections.
 
-Commands are the only mutation entry points.
+Commands under `src/domain/league/commands/` are the only user-triggered
+league mutation entry points.
 
 ## League Readers
 
@@ -68,6 +69,7 @@ roster read merely as a side effect.
 ## Source Map
 
 - `src/domain/league/leagueStore.ts`
+- `src/domain/league/commands/`
 - `src/db/leagueRepo.ts`
 - `src/db/recruitingRepo.ts`
 - `src/domain/league/loaders/navigationEnvelope.ts`

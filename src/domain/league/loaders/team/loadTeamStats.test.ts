@@ -50,6 +50,8 @@ const game = (overrides: Partial<GameRecord> = {}): GameRecord => ({
   resultA: 'W',
   resultB: 'L',
   overtime: 0,
+  quarter: 4,
+  clockSecondsLeft: 0,
   scoreA: 21,
   scoreB: 7,
   watchability: 50,

@@ -5,9 +5,8 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 
 ## IndexedDB Schema
 
-`src/db/db.ts` defines the current database at version 24. It is the single
-current destructive schema epoch, including the authoritative league-history
-archive shape.
+`DB_VERSION` in `src/db/db.ts` defines the single current destructive schema
+epoch for every authoritative persisted shape.
 
 | Store | Key | Value |
 | --- | --- | --- |
@@ -26,6 +25,21 @@ archive shape.
 The IndexedDB version is a destructive schema epoch. Opening an older version
 deletes every existing object store and recreates exactly the current schema.
 There are no migrations, compatibility paths, or record-level repairs.
+
+`GameRecord` is an exact current-schema object. Every game repository read and
+every write owner validates its complete shape before returning or committing
+it. Upcoming records persist an initial regulation clock and null outcome
+fields; completed records persist a finished regulation clock, aligned winner
+and result fields, non-tied scores, and a finite watchability value. Collection
+validation also enforces unique IDs, current team references, and the league's
+next-game counter.
+
+`GameDetailRecord` is the exact nested simulation boundary. Drives, plays,
+calls, timing variants, participant roles, and player-game rows are fully
+required current-schema objects. `src/db/gameDetailValidation.ts` owns their
+shape and coherence checks. Detail repository reads validate before returning;
+simulation writes validate the final detail batch against its games and roster
+before writing any participating store.
 
 `newsItems` stores an explicit `GameNewsItem | RankingNewsItem |
 PreviewNewsItem` union. The
@@ -77,14 +91,14 @@ completed game and none for unplayed games.
 
 Every persisted game-detail play contains one exact `PlayParticipants` object.
 Its nullable role IDs distinguish non-applicable roles from required linked
-starters. Historical integrity joins those IDs to the matching current player
+starters. Game-detail integrity joins those IDs to the matching current player
 or annual player identity and rejects dangling, wrong-team, or ineligible-role
 references; there is no anonymous-play fallback.
 
 Every play also contains one exact `PlayCall`: a scrimmage matchup containing
 the offensive concept and defensive intent, a punt/field-goal special-teams
 call, a contextual spike/kneel clock-management call, an extra-point try, or a
-two-point concept/intent matchup. Historical integrity
+two-point concept/intent matchup. Game-detail integrity
 rejects missing or extra fields, unknown concepts or intents, calls that
     disagree with the coarse play type, clock management in overtime, defensive
     intent on special teams, and punts outside fourth down. Field goals are valid
@@ -97,7 +111,7 @@ start/end clock snapshots, elapsed game-clock seconds, out-of-bounds status,
 tempo, an optional charged-timeout side, and an optional two-minute or
 period-boundary event. Overtime timing stores only the explicit untimed
 overtime period. Untimed try timing stores either the regulation dead-ball
-quarter/time or the explicit overtime period. Historical validation rejects
+quarter/time or the explicit overtime period. Game-detail validation rejects
 the removed flat timing fields,
 malformed regulation/overtime combinations, more than three timeouts per team
 per half, timeouts after natural stops, and incoherent spike/kneel artifacts.
@@ -105,7 +119,7 @@ Runtime timeout counts are not duplicated in game detail; historical use and
 remaining counts are reconstructed from play timing.
 
 A touchdown play and its try are separate persisted plays in one drive.
-Historical integrity requires an immediate final try unless the terminal score
+Game-detail integrity requires an immediate final try unless the terminal score
 legally makes it unnecessary, rejects extra points in the second and later
 overtimes, and requires third-and-later overtime drives to contain exactly one
 two-point attempt. Extra points credit existing kicker fields; two-point
@@ -143,7 +157,9 @@ in memory and are emitted to stdout only.
 
 ## Integrity Boundary
 
-`loadLeague()` validates `league/current` before returning it.
+`loadLeague()` validates `league/current` before returning it. Every command
+also validates its final mutated `LeagueState` immediately before writing it;
+an invalid value aborts the owning transaction.
 `loadLeaguePlayersSnapshot()` reads league and players in one readonly
 transaction and then verifies:
 
@@ -216,8 +232,11 @@ clears prior play-by-play, and deletes recruiting state in one transaction.
 - `src/db/baseData.ts`
 - `src/db/databaseLifecycle.ts`
 - `src/db/leagueRepo.ts`
+- `src/db/leagueStateValidation.ts`
+- `src/db/gameRecordValidation.ts`
+- `src/db/gameDetailValidation.ts`
 - `src/db/recruitingRepo.ts`
 - `src/db/newLeagueRepo.ts`
 - `src/db/offseasonRepo.ts`
 - `src/db/seasonMemoryRepo.ts`
-- `src/domain/league/rosterFinalization.ts`
+- `src/domain/league/commands/rosterFinalization.ts`

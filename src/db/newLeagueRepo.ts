@@ -1,6 +1,8 @@
 import type { GameRecord, PlayerOrigin, PlayerRecord } from '../types/db';
 import type { LeagueState } from '../types/league';
 import { getDb } from './db';
+import { assertCurrentLeagueState } from './leagueStateValidation';
+import { assertLeagueGameRecords } from './gameRecordValidation';
 
 const LEAGUE_KEY = 'current';
 
@@ -17,6 +19,8 @@ export const commitNewLeague = async ({
   games,
   playerOrigins,
 }: NewLeagueCommit): Promise<void> => {
+  assertCurrentLeagueState(league);
+  assertLeagueGameRecords(league, games);
   const db = await getDb();
   const tx = db.transaction(
     [

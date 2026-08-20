@@ -2,7 +2,7 @@ import { Box, Button, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import { useId, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
-import { advanceWeeks } from '../../domain/sim';
+import { advanceWeeks } from '../../domain/sim/orchestrator';
 import type { Info } from '../../types/domain';
 import LoadingDialog from '../sim/LoadingDialog';
 

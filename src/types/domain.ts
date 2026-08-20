@@ -4,7 +4,7 @@ export interface Conference {
   confFullName: string;
   confGames: number;
   info: string;
-  championship: null | any;
+  championship: number | null;
   teams: Team[];
 }
 
@@ -17,7 +17,7 @@ export interface Team {
   nonConfGames: number;
   nonConfLimit: number;
   prestige: number;
-  prestige_change?: number;
+  prestige_change: number;
   ceiling: number;
   floor: number;
   mascot: string;
@@ -30,7 +30,7 @@ export interface Team {
   colorPrimary: string;
   colorSecondary: string;
   conference: string;
-  confName?: string;
+  confName: string;
   confWins: number;
   confLosses: number;
   nonConfWins: number;
@@ -44,7 +44,7 @@ export interface Team {
   poll_score: number;
   strength_of_record: number;
   strength_of_record_avg: number;
-  last_rank?: number;
+  last_rank: number | null;
   last_game: ScheduleGame | null;
   next_game: ScheduleGame | null;
 }
@@ -69,9 +69,6 @@ export interface Info {
   stage: LeagueStage;
   team: string;
   lastWeek: number;
-  averageTeamRating?: number;
-  colorPrimary?: string;
-  colorSecondary?: string;
 }
 
 export interface ScheduleGame {
