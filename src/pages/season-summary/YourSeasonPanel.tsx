@@ -35,7 +35,7 @@ export const YourSeasonPanel = ({
   onTeamClick,
 }: YourSeasonPanelProps) => {
   const prestigeChange = userTeam.prestige_change;
-  const nextPrestige = userTeam.prestige + prestigeChange;
+  const nextPrestige = userTeam.next_prestige;
   const accomplishments = legacy?.accomplishments ?? [];
   const milestones = legacy?.milestones ?? [];
   const signatureGames = legacy?.signatureGames ?? [];

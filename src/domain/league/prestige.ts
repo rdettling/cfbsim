@@ -1,168 +1,254 @@
 import type { LeagueState } from '../../types/league';
-import type { Team } from '../../types/domain';
-import type { HistoryData, PrestigeConfig, TeamsData } from '../../types/baseData';
+import type { HistoryData, PrestigeConfig } from '../../types/baseData';
 
-type AvgRanks = Record<string, { before: number | null; after: number | null }>;
+export interface PrestigeFinishObservation {
+  year: number;
+  rank: number;
+  teamCount: number;
+}
 
-const calculateTierCounts = (prestigeConfig: PrestigeConfig, totalTeams: number) =>
-  Object.fromEntries(
-    Object.entries(prestigeConfig).map(([tier, percentage]) => [
-      Number(tier),
-      Math.floor((percentage / 100) * totalTeams),
-    ])
-  );
+export interface PrestigeProgramInput {
+  id: number;
+  name: string;
+  currentPrestige: number;
+  floor: number;
+  ceiling: number;
+  observations: PrestigeFinishObservation[];
+}
 
-const assignPrestigeTiers = (
-  sortedTeams: Array<{ team: Team; avg_rank: number | null }>,
-  teamsData: TeamsData,
-  tierCounts: Record<number, number>
-) => {
-  const result: Array<{ team: Team; prestige: number }> = [];
-  const teamsInTiers: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
-  let currentTier = 7;
+export interface PrestigeWindowMetrics {
+  score: number | null;
+  averageRank: number | null;
+  seasons: number;
+}
 
-  for (const entry of sortedTeams) {
-    const team = entry.team;
-    const teamInfo = teamsData.teams?.[team.name] ?? {};
-    const ceiling = teamInfo.ceiling ?? 7;
-    const floor = teamInfo.floor ?? 1;
+export interface PrestigeProgramEvaluation extends PrestigeWindowMetrics {
+  id: number;
+  name: string;
+  currentPrestige: number;
+  rawTargetPrestige: number;
+  targetPrestige: number;
+  change: number;
+}
 
-    const targetTier = Math.min(currentTier, ceiling);
-    let assignedTier = targetTier;
+export interface PrestigeChangeEvaluation {
+  currentPrestige: number;
+  targetPrestige: number;
+  change: number;
+  before: PrestigeWindowMetrics;
+  after: PrestigeWindowMetrics;
+}
 
-    if (targetTier < currentTier) {
-      for (let tier = targetTier; tier > 0; tier -= 1) {
-        if ((teamsInTiers[tier] ?? 0) < (tierCounts[tier] ?? 0)) {
-          assignedTier = tier;
-          break;
-        }
-      }
-    } else {
-      if ((teamsInTiers[currentTier] ?? 0) >= (tierCounts[currentTier] ?? 0)) {
-        currentTier -= 1;
-        while (currentTier > 0 && (teamsInTiers[currentTier] ?? 0) >= (tierCounts[currentTier] ?? 0)) {
-          currentTier -= 1;
-        }
-        if (currentTier === 0) {
-          currentTier = 1;
-        }
-      }
-      assignedTier = currentTier;
-    }
+export type PrestigeChanges = Record<string, PrestigeChangeEvaluation>;
 
-    let prestige = Math.min(assignedTier, ceiling);
-    prestige = Math.max(prestige, floor);
-    teamsInTiers[prestige] = (teamsInTiers[prestige] ?? 0) + 1;
+const PRESTIGE_TIERS_DESCENDING = [7, 6, 5, 4, 3, 2, 1] as const;
 
-    result.push({ team, prestige });
-  }
+const clamp = (value: number, minimum: number, maximum: number) =>
+  Math.min(maximum, Math.max(minimum, value));
 
-  return result;
+export const normalizePrestigeFinish = (rank: number, teamCount: number) => {
+  if (teamCount <= 1) return 100;
+  return (100 * (teamCount - rank)) / (teamCount - 1);
 };
 
-const collectRankAverages = (
+const calculateWindowMetrics = (
+  observations: PrestigeFinishObservation[],
+): PrestigeWindowMetrics => {
+  if (!observations.length) {
+    return { score: null, averageRank: null, seasons: 0 };
+  }
+  return {
+    score:
+      observations.reduce(
+        (sum, observation) =>
+          sum + normalizePrestigeFinish(observation.rank, observation.teamCount),
+        0,
+      ) / observations.length,
+    averageRank:
+      observations.reduce((sum, observation) => sum + observation.rank, 0) /
+      observations.length,
+    seasons: observations.length,
+  };
+};
+
+const latestRank = (observations: PrestigeFinishObservation[]) =>
+  observations.reduce(
+    (latest, observation) =>
+      observation.year > latest.year ? observation : latest,
+    { year: Number.NEGATIVE_INFINITY, rank: Number.POSITIVE_INFINITY, teamCount: 0 },
+  ).rank;
+
+export const evaluatePrestigePrograms = (
+  programs: PrestigeProgramInput[],
+  prestigeConfig: PrestigeConfig,
+): PrestigeProgramEvaluation[] => {
+  const evaluated = programs.map(program => ({
+    ...program,
+    ...calculateWindowMetrics(program.observations),
+    latestRank: latestRank(program.observations),
+    rawTargetPrestige: 1,
+  }));
+  evaluated.sort(
+    (left, right) =>
+      (right.score ?? Number.NEGATIVE_INFINITY) -
+        (left.score ?? Number.NEGATIVE_INFINITY) ||
+      left.latestRank - right.latestRank ||
+      left.name.localeCompare(right.name),
+  );
+
+  let start = 0;
+  let cumulativePercentage = 0;
+  PRESTIGE_TIERS_DESCENDING.forEach((tier, index) => {
+    cumulativePercentage += prestigeConfig[String(tier)] ?? 0;
+    const end = index === PRESTIGE_TIERS_DESCENDING.length - 1
+      ? evaluated.length
+      : Math.round((cumulativePercentage / 100) * evaluated.length);
+    for (let position = start; position < end; position += 1) {
+      evaluated[position].rawTargetPrestige = tier;
+    }
+    start = end;
+  });
+
+  return evaluated.map(program => {
+    const boundedCurrent = clamp(
+      program.currentPrestige,
+      program.floor,
+      program.ceiling,
+    );
+    const targetPrestige = program.seasons
+      ? clamp(program.rawTargetPrestige, program.floor, program.ceiling)
+      : boundedCurrent;
+    return {
+      id: program.id,
+      name: program.name,
+      currentPrestige: program.currentPrestige,
+      rawTargetPrestige: program.rawTargetPrestige,
+      targetPrestige,
+      change: targetPrestige - program.currentPrestige,
+      score: program.score,
+      averageRank: program.averageRank,
+      seasons: program.seasons,
+    };
+  });
+};
+
+const buildHistoricalTeamCounts = (historyData: HistoryData) => {
+  const teamsByYear = new Map<number, Set<string>>();
+  Object.entries(historyData.teams).forEach(([teamName, rows]) => {
+    rows.forEach(row => {
+      const teams = teamsByYear.get(row[0]) ?? new Set<string>();
+      teams.add(teamName);
+      teamsByYear.set(row[0], teams);
+    });
+  });
+  return new Map(
+    [...teamsByYear].map(([year, teams]) => [year, teams.size]),
+  );
+};
+
+const collectObservations = (
   league: LeagueState,
   historyData: HistoryData,
+  historicalTeamCounts: Map<number, number>,
   startYear: number,
-  endYear: number
-) => {
-  const ranksByTeam: Record<string, number[]> = {};
-  league.teams.forEach(team => {
-    ranksByTeam[team.name] = [];
-  });
-
-  league.teams.forEach(team => {
-    const historyRows = historyData.teams[team.name] ?? [];
-    historyRows.forEach(entry => {
-      const year = entry[0];
-      const rank = entry[2];
-      if (year >= startYear && year <= endYear && typeof rank === 'number' && rank > 0) {
-        if (year !== league.info.currentYear) {
-          ranksByTeam[team.name].push(rank);
-        }
+  endYear: number,
+) =>
+  new Map(
+    league.teams.map(team => {
+      const observations = (historyData.teams[team.name] ?? [])
+        .filter(row =>
+          row[0] >= startYear &&
+          row[0] <= endYear &&
+          row[0] !== league.info.currentYear &&
+          row[2] > 0
+        )
+        .map(row => ({
+          year: row[0],
+          rank: row[2],
+          teamCount: historicalTeamCounts.get(row[0]) ?? league.teams.length,
+        }));
+      if (
+        league.info.currentYear >= startYear &&
+        league.info.currentYear <= endYear &&
+        team.ranking > 0
+      ) {
+        observations.push({
+          year: league.info.currentYear,
+          rank: team.ranking,
+          teamCount: league.teams.length,
+        });
       }
-    });
-  });
-
-  if (league.info.currentYear >= startYear && league.info.currentYear <= endYear) {
-    league.teams.forEach(team => {
-      if (team.ranking && team.ranking > 0) {
-        ranksByTeam[team.name].push(team.ranking);
-      }
-    });
-  }
-
-  const avgByTeam: Record<string, number | null> = {};
-  Object.entries(ranksByTeam).forEach(([teamName, ranks]) => {
-    avgByTeam[teamName] = ranks.length ? ranks.reduce((sum, value) => sum + value, 0) / ranks.length : null;
-  });
-
-  return avgByTeam;
-};
-
-export const getPrestigeAvgRanks = (league: LeagueState, historyData: HistoryData): AvgRanks => {
-  const currentYear = league.info.currentYear;
-  const avgAfter = collectRankAverages(league, historyData, currentYear - 3, currentYear);
-  const avgBefore = collectRankAverages(league, historyData, currentYear - 4, currentYear - 1);
-
-  return Object.fromEntries(
-    league.teams.map(team => [
-      team.name,
-      { before: avgBefore[team.name] ?? null, after: avgAfter[team.name] ?? null },
-    ])
+      return [team.name, observations] as const;
+    }),
   );
-};
 
 export const calculatePrestigeChanges = (
   league: LeagueState,
   historyData: HistoryData,
-  teamsData: TeamsData,
-  prestigeConfig: PrestigeConfig
-): AvgRanks => {
+  prestigeConfig: PrestigeConfig,
+): PrestigeChanges => {
   const currentYear = league.info.currentYear;
-  const avgAfter = collectRankAverages(league, historyData, currentYear - 3, currentYear);
-  const avgBefore = collectRankAverages(league, historyData, currentYear - 4, currentYear - 1);
-
-  const teamsWithAvg = league.teams.map(team => ({
-    team,
-    avg_rank: avgAfter[team.name] ?? null,
-  }));
-
-  const sortedTeams = teamsWithAvg.slice().sort((a, b) => {
-    const aRank = a.avg_rank ?? Number.POSITIVE_INFINITY;
-    const bRank = b.avg_rank ?? Number.POSITIVE_INFINITY;
-    return aRank - bRank;
-  });
-
-  const tierCounts = calculateTierCounts(prestigeConfig, sortedTeams.length);
-  const assigned = assignPrestigeTiers(sortedTeams, teamsData, tierCounts);
-
-  assigned.forEach(entry => {
-    const team = entry.team;
-    let desired = entry.prestige;
-
-    if (desired > team.prestige) {
-      desired = Math.min(team.prestige + 1, desired);
-    } else if (desired < team.prestige) {
-      desired = Math.max(team.prestige - 1, desired);
-    }
-
-    team.prestige_change = desired - team.prestige;
-  });
-
-  return Object.fromEntries(
+  const historicalTeamCounts = buildHistoricalTeamCounts(historyData);
+  const beforeObservations = collectObservations(
+    league,
+    historyData,
+    historicalTeamCounts,
+    currentYear - 4,
+    currentYear - 1,
+  );
+  const afterObservations = collectObservations(
+    league,
+    historyData,
+    historicalTeamCounts,
+    currentYear - 3,
+    currentYear,
+  );
+  const beforeMetrics = new Map(
     league.teams.map(team => [
       team.name,
-      { before: avgBefore[team.name] ?? null, after: avgAfter[team.name] ?? null },
-    ])
+      calculateWindowMetrics(beforeObservations.get(team.name) ?? []),
+    ]),
+  );
+  const after = evaluatePrestigePrograms(
+    league.teams.map(team => ({
+      id: team.id,
+      name: team.name,
+      currentPrestige: team.prestige,
+      floor: team.floor,
+      ceiling: team.ceiling,
+      observations: afterObservations.get(team.name) ?? [],
+    })),
+    prestigeConfig,
+  );
+
+  return Object.fromEntries(
+    after.map(program => [
+      program.name,
+      {
+        currentPrestige: program.currentPrestige,
+        targetPrestige: program.targetPrestige,
+        change: program.change,
+        before: beforeMetrics.get(program.name) ?? {
+          score: null,
+          averageRank: null,
+          seasons: 0,
+        },
+        after: {
+          score: program.score,
+          averageRank: program.averageRank,
+          seasons: program.seasons,
+        },
+      },
+    ]),
   );
 };
 
-export const applyPrestigeChanges = (league: LeagueState) => {
+export const applyPrestigeChanges = (
+  league: LeagueState,
+  changes: PrestigeChanges,
+) => {
   league.teams.forEach(team => {
-    if (team.prestige_change) {
-      team.prestige += team.prestige_change;
-      team.prestige_change = 0;
-    }
+    const evaluation = changes[team.name];
+    if (evaluation) team.prestige = evaluation.targetPrestige;
   });
 };

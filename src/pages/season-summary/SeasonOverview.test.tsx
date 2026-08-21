@@ -11,10 +11,15 @@ const userTeam = {
     totalLosses: 3,
     ranking: 3,
     prestige: 5,
-    prestige_change: 1,
   }),
+  next_prestige: 6,
+  prestige_change: 1,
   avg_rank_before: 18.5,
   avg_rank_after: 14.25,
+  prestige_score_before: 82.5,
+  prestige_score_after: 87.25,
+  prestige_seasons_before: 4,
+  prestige_seasons_after: 4,
 };
 
 const championship = {
@@ -98,7 +103,7 @@ describe('SeasonOverview', () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter>
         <SeasonOverview
-          userTeam={{ ...userTeam, prestige_change: 0 }}
+          userTeam={{ ...userTeam, next_prestige: 5, prestige_change: 0 }}
           championship={championship}
           legacy={null}
           onTeamClick={vi.fn()}

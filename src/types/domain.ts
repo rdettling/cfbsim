@@ -17,7 +17,6 @@ export interface Team {
   nonConfGames: number;
   nonConfLimit: number;
   prestige: number;
-  prestige_change: number;
   ceiling: number;
   floor: number;
   mascot: string;

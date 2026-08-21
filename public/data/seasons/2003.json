@@ -25,7 +25,7 @@
       "games": 8,
       "teams": {
         "LSU": 6,
-        "Georgia": 6,
+        "Georgia": 7,
         "Ole Miss": 4,
         "Tennessee": 6,
         "Florida": 6,
@@ -34,7 +34,7 @@
         "Alabama": 5,
         "South Carolina": 5,
         "Kentucky": 3,
-        "Vanderbilt": 2,
+        "Vanderbilt": 3,
         "Mississippi State": 3
       }
     },
@@ -49,7 +49,7 @@
         "Texas Tech": 5,
         "Missouri": 4,
         "Colorado": 5,
-        "Kansas": 3,
+        "Kansas": 2,
         "Texas A&M": 4,
         "Baylor": 2,
         "Iowa State": 4
@@ -58,13 +58,13 @@
     "Big Ten": {
       "games": 9,
       "teams": {
-        "Ohio State": 6,
+        "Ohio State": 7,
         "Michigan": 7,
         "Iowa": 5,
         "Purdue": 5,
         "Minnesota": 4,
         "Michigan State": 4,
-        "Wisconsin": 4,
+        "Wisconsin": 5,
         "Penn State": 4,
         "Northwestern": 3,
         "Illinois": 4,
@@ -81,7 +81,7 @@
         "Boston College": 5,
         "Syracuse": 4,
         "Rutgers": 2,
-        "Temple": 2
+        "Temple": 3
       }
     },
     "MAC": {
@@ -106,13 +106,13 @@
     "ACC": {
       "games": 8,
       "teams": {
-        "Florida State": 7,
+        "Florida State": 6,
         "Maryland": 5,
         "Clemson": 5,
         "NC State": 5,
         "Virginia": 4,
         "Georgia Tech": 5,
-        "Wake Forest": 3,
+        "Wake Forest": 4,
         "Duke": 2,
         "North Carolina": 4
       }
@@ -122,7 +122,7 @@
       "teams": {
         "Boise State": 5,
         "Hawaii": 3,
-        "Tulsa": 1,
+        "Tulsa": 2,
         "Fresno State": 4,
         "Louisiana Tech": 2,
         "Nevada": 2,
@@ -136,13 +136,13 @@
       "games": 7,
       "teams": {
         "Utah": 4,
-        "Colorado State": 4,
+        "Colorado State": 5,
         "New Mexico": 3,
         "Air Force": 3,
         "UNLV": 3,
-        "San Diego State": 2,
+        "San Diego State": 3,
         "BYU": 4,
-        "Wyoming": 1
+        "Wyoming": 2
       }
     },
     "CUSA": {
@@ -165,8 +165,8 @@
       "games": 6,
       "teams": {
         "North Texas": 3,
-        "Middle Tennessee State": 2,
-        "Utah State": 1,
+        "Middle Tennessee State": 3,
+        "Utah State": 2,
         "New Mexico State": 2,
         "Louisiana": 1,
         "Idaho": 1,

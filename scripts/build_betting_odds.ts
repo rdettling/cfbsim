@@ -26,7 +26,6 @@ const createTeam = (id: number, rating: number): Team => ({
   nonConfGames: 0,
   nonConfLimit: 4,
   prestige: 50,
-  prestige_change: 0,
   ceiling: 99,
   floor: 1,
   mascot: 'Testers',

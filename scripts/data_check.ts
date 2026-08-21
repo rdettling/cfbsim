@@ -20,7 +20,6 @@ import {
 import { normalizeRivalriesData } from '../src/domain/rivalryData';
 import { validateSeasonData } from '../src/domain/seasonDataValidation';
 import type {
-  PrestigeConfig,
   SeasonData,
   TeamsData,
 } from '../src/types/baseData';
@@ -34,9 +33,8 @@ import {
   prettyJson,
   readJson,
 } from './data_files';
+import { buildStartingPrestigeCandidates } from './generate_starting_prestige';
 
-const PRESTIGE_TIERS = [1, 2, 3, 4, 5, 6, 7] as const;
-const PRESTIGE_DISTRIBUTION_TOLERANCE = 3;
 const HISTORICAL_GAME_COVERAGE_EXCEPTIONS = new Map([
   [2020, new Set(['New Mexico State'])],
 ]);
@@ -56,10 +54,9 @@ const prestigesFor = (season: SeasonData) => new Map<string, number>([
   ...Object.entries(season.independents),
 ]);
 
-const validatePrestiges = (
+const validatePrestigeBounds = (
   season: SeasonData,
   teams: TeamsData,
-  config: PrestigeConfig,
   errors: string[],
 ) => {
   const prestiges = prestigesFor(season);
@@ -69,18 +66,6 @@ const validatePrestiges = (
       errors.push(
         `seasons/${season.year}.json: ${team} prestige ${prestige} is outside ` +
         `metadata bounds ${metadata.floor}-${metadata.ceiling}.`,
-      );
-    }
-  }
-  for (const tier of PRESTIGE_TIERS) {
-    const count = [...prestiges.values()].filter(value => value === tier).length;
-    const actual = (count / prestiges.size) * 100;
-    const target = config[String(tier)];
-    if (Math.abs(actual - target) > PRESTIGE_DISTRIBUTION_TOLERANCE) {
-      errors.push(
-        `seasons/${season.year}.json: prestige ${tier} represents ` +
-        `${actual.toFixed(2)}% of teams; target is ${target}% with a ` +
-        `${PRESTIGE_DISTRIBUTION_TOLERANCE}-point tolerance.`,
       );
     }
   }
@@ -191,8 +176,8 @@ export const checkData = async (
       assignments.forEach((_conference, team) => referencedTeams.add(team));
       Object.keys(season.conferences).forEach(conference =>
         referencedConferences.add(conference));
-      if (teams && prestigeConfig) {
-        validatePrestiges(season, teams, prestigeConfig, errors);
+      if (teams) {
+        validatePrestigeBounds(season, teams, errors);
       }
     } catch (error) {
       errors.push(error instanceof Error ? error.message : describeError(`seasons/${year}.json`, error));
@@ -209,6 +194,29 @@ export const checkData = async (
   const completedYears = new Set(
     seasons.filter(season => season.results !== null).map(season => season.year),
   );
+
+  if (teams && prestigeConfig && seasons.length === seasonYears.length) {
+    try {
+      const generated = buildStartingPrestigeCandidates({
+        seasons,
+        teams,
+        prestigeConfig,
+      });
+      for (const audit of generated.audits.filter(entry => entry.changed)) {
+        const examples = audit.teamAudits
+          .filter(team => team.before !== team.after)
+          .slice(0, 5)
+          .map(team => `${team.team} ${team.before}->${team.after}`);
+        errors.push(
+          `seasons/${audit.year}.json: ${audit.changed} generated starting ` +
+          `prestige value(s) are stale (${examples.join(', ')}); run ` +
+          '`npm run generate:starting-prestige -- --write`.',
+        );
+      }
+    } catch (error) {
+      errors.push(describeError('generated starting prestige', error));
+    }
+  }
 
   for (const team of referencedTeams) {
     if (!teams?.teams[team]) errors.push(`teams.json: missing metadata for ${team}.`);

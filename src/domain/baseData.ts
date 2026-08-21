@@ -100,7 +100,6 @@ export const buildTeamsAndConferencesFromData = (
       nonConfGames: 0,
       nonConfLimit: 12 - confGames,
       prestige,
-      prestige_change: 0,
       ceiling: meta.ceiling,
       floor: meta.floor,
       mascot: meta.mascot,

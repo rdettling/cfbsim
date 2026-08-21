@@ -34,7 +34,6 @@ const buildTeam = (
   nonConfGames: 0,
   nonConfLimit: 12 - confLimit,
   prestige: 4,
-  prestige_change: 0,
   ceiling: 7,
   floor: 1,
   mascot: 'Testers',

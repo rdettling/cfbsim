@@ -106,6 +106,32 @@ describe('current league persistence boundary', () => {
       },
     },
     {
+      name: 'team with removed prestige change field',
+      mutate: (league: LeagueState) => {
+        Object.assign(league.teams[0], { prestige_change: 1 });
+      },
+    },
+    {
+      name: 'team with prestige outside the tier range',
+      mutate: (league: LeagueState) => {
+        league.teams[0].prestige = 8;
+      },
+    },
+    {
+      name: 'team with prestige below its floor',
+      mutate: (league: LeagueState) => {
+        league.teams[0].floor = 5;
+        league.teams[0].prestige = 4;
+      },
+    },
+    {
+      name: 'team with prestige above its ceiling',
+      mutate: (league: LeagueState) => {
+        league.teams[0].ceiling = 3;
+        league.teams[0].prestige = 4;
+      },
+    },
+    {
       name: 'team with a non-finite rating',
       mutate: (league: LeagueState) => {
         league.teams[0].rating = Number.NaN;

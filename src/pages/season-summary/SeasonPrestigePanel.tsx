@@ -19,7 +19,19 @@ type SeasonPrestigePanelProps = {
   onTeamClick: TeamSelectionHandler;
 };
 
-const formatAverage = (value: number | null) => (value === null ? '—' : value.toFixed(1));
+const formatMetric = (value: number | null) => (value === null ? '—' : value.toFixed(1));
+
+const ShortHistory = ({ team }: { team: SeasonSummaryTeam }) => {
+  if (
+    team.prestige_seasons_before >= 4 &&
+    team.prestige_seasons_after >= 4
+  ) return null;
+  return (
+    <Typography component="span" variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+      {team.prestige_seasons_before} → {team.prestige_seasons_after} seasons
+    </Typography>
+  );
+};
 
 export const getOrderedPrestigeChanges = (teams: SeasonSummaryTeam[]) =>
   teams
@@ -96,115 +108,154 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
         </Box>
       ) : (
         <>
-        <Box sx={{ display: { xs: 'none', lg: 'block' }, flex: 1, minHeight: 0, overflow: 'auto' }}>
-          <Table size="small" stickyHeader aria-label="Prestige movement">
-            <TableHead>
-              <TableRow>
-                <TableCell>Team</TableCell>
-                <TableCell align="right">4-Year Avg</TableCell>
-                <TableCell align="right">Tier</TableCell>
-                <TableCell align="right">Movement</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {changes.map((team) => {
-                const change = team.prestige_change;
-                return (
-                  <TableRow key={team.name}>
-                    <TableCell>
-                      <TeamCell team={team} onTeamClick={onTeamClick} />
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatAverage(team.avg_rank_before)} → {formatAverage(team.avg_rank_after)}
-                    </TableCell>
-                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                      {team.prestige} → {team.prestige + change}
-                    </TableCell>
-                    <TableCell align="right">
-                      <MovementChip change={change} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Box>
+          <Box
+            sx={{
+              display: { xs: 'none', lg: 'block' },
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+            }}
+          >
+            <Table size="small" stickyHeader aria-label="Prestige movement">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Team</TableCell>
+                  <TableCell align="right">4-Year Score</TableCell>
+                  <TableCell align="right">Avg Finish</TableCell>
+                  <TableCell align="right">Tier</TableCell>
+                  <TableCell align="right">Movement</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {changes.map((team) => {
+                  const change = team.prestige_change;
+                  return (
+                    <TableRow key={team.name}>
+                      <TableCell>
+                        <TeamCell team={team} onTeamClick={onTeamClick} />
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatMetric(team.prestige_score_before)} →{' '}
+                        {formatMetric(team.prestige_score_after)}
+                        <ShortHistory team={team} />
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatMetric(team.avg_rank_before)} →{' '}
+                        {formatMetric(team.avg_rank_after)}
+                      </TableCell>
+                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                        {team.prestige} → {team.next_prestige}
+                      </TableCell>
+                      <TableCell align="right">
+                        <MovementChip change={change} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Box>
 
-        <Stack
-          sx={{ display: { xs: 'flex', lg: 'none' }, flex: 1, minHeight: 0, overflow: 'auto' }}
-        >
-          {changes.map((team) => {
-            const change = team.prestige_change;
-            return (
-              <Box
-                component="article"
-                key={team.name}
-                sx={{
-                  p: 1.5,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  '&:last-of-type': { borderBottom: 0 },
-                }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <TeamCell team={team} onTeamClick={onTeamClick} />
-                  <MovementChip change={change} />
-                </Stack>
+          <Stack
+            sx={{
+              display: { xs: 'flex', lg: 'none' },
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+            }}
+          >
+            {changes.map((team) => {
+              const change = team.prestige_change;
+              return (
                 <Box
+                  component="article"
+                  key={team.name}
                   sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                    gap: 1,
-                    mt: 1.25,
+                    p: 1.5,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    '&:last-of-type': { borderBottom: 0 },
                   }}
                 >
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                      }}
-                    >
-                      4-Year Avg
-                    </Typography>
-                    <Typography variant="body2">
-                      {formatAverage(team.avg_rank_before)} → {formatAverage(team.avg_rank_after)}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                      }}
-                    >
-                      Current
-                    </Typography>
-                    <Typography variant="body2">Tier {team.prestige}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                      }}
-                    >
-                      Next
-                    </Typography>
-                    <Typography variant="body2">Tier {team.prestige + change}</Typography>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <TeamCell team={team} onTeamClick={onTeamClick} />
+                    <MovementChip change={change} />
+                  </Stack>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                      gap: 1,
+                      mt: 1.25,
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                        }}
+                      >
+                        4-Year Score
+                      </Typography>
+                      <Typography variant="body2">
+                        {formatMetric(team.prestige_score_before)} →{' '}
+                        {formatMetric(team.prestige_score_after)}
+                      </Typography>
+                      <ShortHistory team={team} />
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                        }}
+                      >
+                        Avg Finish
+                      </Typography>
+                      <Typography variant="body2">
+                        {formatMetric(team.avg_rank_before)} →{' '}
+                        {formatMetric(team.avg_rank_after)}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                        }}
+                      >
+                        Current
+                      </Typography>
+                      <Typography variant="body2">
+                        Tier {team.prestige}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                        }}
+                      >
+                        Next
+                      </Typography>
+                      <Typography variant="body2">
+                        Tier {team.next_prestige}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            );
-          })}
-        </Stack>
+              );
+            })}
+          </Stack>
         </>
       )}
     </Paper>

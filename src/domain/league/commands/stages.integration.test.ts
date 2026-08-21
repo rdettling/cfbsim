@@ -310,9 +310,14 @@ describe('offseason lifecycle integration', () => {
     });
     expect(league.info.stage).toBe('realignment');
     expect(league.teams[0]).toMatchObject({
-      prestige: 5,
-      prestige_change: 0,
+      prestige: 7,
     });
+    const savedHistory = await memoryDb.get('baseData', 'history');
+    expect(
+      (savedHistory?.value as {
+        teams: Record<string, Array<[number, number, number, number, number, number]>>;
+      }).teams['Test State'].find(row => row[0] === 2025)?.[5],
+    ).toBe(4);
     await expect(advanceOffseasonStage('summary')).rejects.toMatchObject({
       actualStage: 'realignment',
     });

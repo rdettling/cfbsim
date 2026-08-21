@@ -46,6 +46,8 @@ to choose the checks required by a change.
   progression, recruiting persistence, Signing Day, cuts, and finalization.
 - [Recruiting Model](systems/recruiting-model.md) owns talent visibility, fit,
   AI strategy, class scoring, and balance expectations.
+- [Program Prestige](systems/program-prestige.md) owns starting prestige,
+  dynamic calculation, program bounds, and annual application timing.
 - [League News](systems/league-news.md) owns publishers, editorial policy,
   persisted stories, ordering, integrity, and the offline news audit.
 

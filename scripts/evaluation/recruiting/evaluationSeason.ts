@@ -1,4 +1,4 @@
-import type { HistoryData, PrestigeConfig, TeamsData, NamesData } from '../../../src/types/baseData';
+import type { HistoryData, PrestigeConfig, NamesData } from '../../../src/types/baseData';
 import type { PlayerRecord } from '../../../src/types/db';
 import type { LeagueState } from '../../../src/types/league';
 import type { RecruitingEvaluationRun, RecruitingEvaluationSeason, RecruitingEvaluationTeamYear } from './types';
@@ -37,7 +37,6 @@ export interface EvaluateRunInput {
   names: NamesData;
   states: Record<string, number>;
   history: HistoryData;
-  teamsData: TeamsData;
   prestigeConfig: PrestigeConfig;
   seed: number;
   seasons: number;
@@ -51,7 +50,6 @@ export const runRecruitingEvaluation = ({
   names,
   states,
   history: sourceHistory,
-  teamsData,
   prestigeConfig,
   seed,
   seasons,
@@ -191,9 +189,13 @@ export const runRecruitingEvaluation = ({
         .fork('team-ratings'),
     );
 
-    calculatePrestigeChanges(league, history, teamsData, prestigeConfig);
+    const prestigeChanges = calculatePrestigeChanges(
+      league,
+      history,
+      prestigeConfig,
+    );
     history = updateHistoryForSeason(league, history);
-    applyPrestigeChanges(league);
+    applyPrestigeChanges(league, prestigeChanges);
     const prestigeAfter = new Map(
       league.teams.map(team => [team.id, team.prestige]),
     );

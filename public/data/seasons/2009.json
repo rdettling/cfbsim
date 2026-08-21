@@ -18,8 +18,8 @@
         "Georgia": 6,
         "Tennessee": 5,
         "South Carolina": 5,
-        "Kentucky": 5,
-        "Mississippi State": 4,
+        "Kentucky": 4,
+        "Mississippi State": 3,
         "Vanderbilt": 4
       }
     },
@@ -28,23 +28,23 @@
       "teams": {
         "Texas": 7,
         "Nebraska": 5,
-        "Texas Tech": 5,
-        "Oklahoma": 7,
-        "Oklahoma State": 5,
-        "Missouri": 6,
+        "Texas Tech": 6,
+        "Oklahoma": 6,
+        "Oklahoma State": 4,
+        "Missouri": 5,
         "Texas A&M": 4,
-        "Kansas": 4,
+        "Kansas": 5,
         "Iowa State": 3,
         "Kansas State": 3,
         "Baylor": 3,
-        "Colorado": 3
+        "Colorado": 4
       }
     },
     "WAC": {
       "games": 6,
       "teams": {
         "Boise State": 5,
-        "Nevada": 4,
+        "Nevada": 3,
         "Fresno State": 3,
         "Louisiana Tech": 2,
         "Idaho": 1,
@@ -63,9 +63,9 @@
         "Wisconsin": 6,
         "Michigan State": 4,
         "Purdue": 4,
-        "Minnesota": 3,
-        "Northwestern": 3,
-        "Michigan": 4,
+        "Minnesota": 4,
+        "Northwestern": 4,
+        "Michigan": 5,
         "Illinois": 4,
         "Indiana": 3
       }
@@ -75,26 +75,26 @@
       "teams": {
         "Texas Christian": 6,
         "BYU": 5,
-        "Utah": 6,
+        "Utah": 5,
         "Air Force": 4,
         "Wyoming": 3,
         "UNLV": 2,
         "San Diego State": 2,
-        "Colorado State": 2,
+        "Colorado State": 3,
         "New Mexico": 3
       }
     },
     "Big East": {
       "games": 7,
       "teams": {
-        "Cincinnati": 5,
+        "Cincinnati": 4,
         "Pittsburgh": 4,
         "West Virginia": 6,
-        "Connecticut": 3,
+        "Connecticut": 4,
         "Rutgers": 5,
-        "South Florida": 4,
+        "South Florida": 5,
         "Louisville": 4,
-        "Syracuse": 2
+        "Syracuse": 3
       }
     },
     "ACC": {
@@ -103,13 +103,13 @@
         "Virginia Tech": 6,
         "Georgia Tech": 5,
         "Miami": 4,
-        "Clemson": 6,
+        "Clemson": 5,
         "North Carolina": 4,
         "Florida State": 5,
         "Boston College": 5,
-        "Wake Forest": 5,
-        "NC State": 3,
-        "Duke": 3,
+        "Wake Forest": 4,
+        "NC State": 4,
+        "Duke": 2,
         "Virginia": 4,
         "Maryland": 4
       }
@@ -119,13 +119,13 @@
       "teams": {
         "Oregon": 6,
         "USC": 7,
-        "Stanford": 4,
+        "Stanford": 3,
         "Oregon State": 5,
         "Arizona": 5,
         "California": 5,
         "UCLA": 4,
-        "Washington": 3,
-        "Arizona State": 4,
+        "Washington": 4,
+        "Arizona State": 5,
         "Washington State": 3
       }
     },
@@ -133,17 +133,17 @@
       "games": 8,
       "teams": {
         "Central Michigan": 3,
-        "Ohio": 3,
+        "Ohio": 2,
         "Bowling Green": 3,
-        "Temple": 2,
+        "Temple": 1,
         "Northern Illinois": 3,
         "Buffalo": 2,
         "Western Michigan": 3,
         "Kent State": 1,
-        "Toledo": 2,
+        "Toledo": 3,
         "Akron": 2,
         "Ball State": 3,
-        "Miami Ohio": 1,
+        "Miami Ohio": 2,
         "Eastern Michigan": 1
       }
     },
@@ -151,26 +151,26 @@
       "games": 8,
       "teams": {
         "Houston": 4,
-        "East Carolina": 4,
+        "East Carolina": 3,
         "Southern Miss": 4,
         "Central Florida": 3,
         "Southern Methodist": 2,
         "Marshall": 2,
         "Tulsa": 4,
         "Alabama Birmingham": 2,
-        "Texas El Paso": 2,
+        "Texas El Paso": 3,
         "Memphis": 2,
         "Tulane": 2,
-        "Rice": 3
+        "Rice": 2
       }
     },
     "Sun Belt": {
       "games": 7,
       "teams": {
-        "Troy": 4,
-        "Middle Tennessee State": 3,
+        "Troy": 3,
+        "Middle Tennessee State": 2,
         "Louisiana Monroe": 2,
-        "Arkansas State": 2,
+        "Arkansas State": 1,
         "Louisiana": 2,
         "Florida Atlantic": 2,
         "Florida International": 1,

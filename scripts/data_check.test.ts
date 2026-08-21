@@ -171,9 +171,11 @@ describe('checkData', () => {
 
   it('accepts the latest starting year without completed season results', async () => {
     const dataRoot = await createFixture();
+    const scheduled = seasonData(2025, null);
+    scheduled.conferences.Test.teams.Alpha = 2;
     await writeJson(
       join(dataRoot, 'seasons', '2025.json'),
-      seasonData(2025, null),
+      scheduled,
     );
     await unlink(join(dataRoot, 'historical-games', '2025.json'));
     await writeJson(join(dataRoot, 'historical-games', 'index.json'), {
@@ -277,7 +279,7 @@ describe('checkData', () => {
     );
   });
 
-  it('rejects starting prestige outside metadata bounds and tier tolerance', async () => {
+  it('rejects starting prestige outside metadata bounds and exact generated values', async () => {
     const dataRoot = await createFixture();
     await Promise.all([
       writeJson(join(dataRoot, 'teams.json'), {
@@ -303,14 +305,51 @@ describe('checkData', () => {
         expect.stringContaining(
           'Alpha prestige 3 is outside metadata bounds 1-2',
         ),
+        expect.stringContaining('generated starting prestige value(s) are stale'),
+      ]),
+    );
+  });
+
+  it('accepts an exact bounded distribution beyond the former tolerance', async () => {
+    const dataRoot = await createFixture();
+    const bounded = seasonData(2025);
+    bounded.conferences.Test.teams = { Alpha: 3, Beta: 3 };
+    await Promise.all([
+      writeJson(join(dataRoot, 'seasons', '2025.json'), bounded),
+      writeJson(join(dataRoot, 'prestige_config.json'), {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 100,
+      }),
+    ]);
+    await writeJson(
+      join(dataRoot, 'history.json'),
+      await buildHistoryData(dataRoot),
+    );
+
+    await expect(checkFixture(dataRoot)).resolves.toEqual([]);
+  });
+
+  it('rejects one stale generated starting tier without writing it', async () => {
+    const dataRoot = await createFixture();
+    const seasonPath = join(dataRoot, 'seasons', '2025.json');
+    const stale = seasonData(2025);
+    stale.conferences.Test.teams.Alpha = 2;
+    await writeJson(seasonPath, stale);
+    const before = await readFile(seasonPath, 'utf8');
+
+    await expect(checkFixture(dataRoot)).resolves.toEqual(
+      expect.arrayContaining([
         expect.stringContaining(
-          'prestige 2 represents 50.00% of teams; target is 0%',
-        ),
-        expect.stringContaining(
-          'prestige 3 represents 50.00% of teams; target is 100%',
+          'seasons/2025.json: 1 generated starting prestige value(s) are stale',
         ),
       ]),
     );
+    expect(await readFile(seasonPath, 'utf8')).toBe(before);
   });
 
   it('validates split historical-game file coverage', async () => {

@@ -36,7 +36,7 @@
         "Texas A&M": {
             "mascot": "Aggies",
             "abbreviation": "TAMU",
-            "ceiling": 6,
+            "ceiling": 7,
             "floor": 4,
             "colorPrimary": "#500000",
             "colorSecondary": "#FFFFFF",
@@ -69,8 +69,8 @@
         "Tennessee": {
             "mascot": "Volunteers",
             "abbreviation": "TEN",
-            "ceiling": 6,
-            "floor": 3,
+            "ceiling": 7,
+            "floor": 4,
             "colorPrimary": "#FF8200",
             "colorSecondary": "#FFFFFF",
             "city": "Knoxville",
@@ -80,8 +80,8 @@
         "Auburn": {
             "mascot": "Tigers",
             "abbreviation": "AUB",
-            "ceiling": 6,
-            "floor": 3,
+            "ceiling": 7,
+            "floor": 4,
             "colorPrimary": "#0C2340",
             "colorSecondary": "#E87722",
             "city": "Auburn",
@@ -234,7 +234,7 @@
         "UCLA": {
             "mascot": "Bruins",
             "abbreviation": "UCLA",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#2D68C4",
             "colorSecondary": "#F2A900",
@@ -278,8 +278,8 @@
         "Washington": {
             "mascot": "Huskies",
             "abbreviation": "WASH",
-            "ceiling": 6,
-            "floor": 3,
+            "ceiling": 7,
+            "floor": 4,
             "colorPrimary": "#4B2E83",
             "colorSecondary": "#B7A57A",
             "city": "Seattle",
@@ -366,8 +366,8 @@
         "Nebraska": {
             "mascot": "Cornhuskers",
             "abbreviation": "NEB",
-            "ceiling": 6,
-            "floor": 2,
+            "ceiling": 7,
+            "floor": 3,
             "colorPrimary": "#E41C38",
             "colorSecondary": "#FDF2D9",
             "city": "Lincoln",
@@ -443,7 +443,7 @@
         "North Carolina": {
             "mascot": "Tar Heels",
             "abbreviation": "UNC",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#7BAFD4",
             "colorSecondary": "#FFFFFF",
@@ -476,7 +476,7 @@
         "Pittsburgh": {
             "mascot": "Panthers",
             "abbreviation": "PITT",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#003594",
             "colorSecondary": "#FFB81C",
@@ -575,7 +575,7 @@
         "BYU": {
             "mascot": "Cougars",
             "abbreviation": "BYU",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#002E5D",
             "colorSecondary": "#FFFFFF",
@@ -586,7 +586,7 @@
         "Houston": {
             "mascot": "Cougars",
             "abbreviation": "HOU",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#C8102E",
             "colorSecondary": "#B2B4B2",
@@ -597,7 +597,7 @@
         "Colorado": {
             "mascot": "Buffaloes",
             "abbreviation": "CU",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#CFB87C",
             "colorSecondary": "#000000",
@@ -608,7 +608,7 @@
         "Arizona State": {
             "mascot": "Sun Devils",
             "abbreviation": "ASU",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#8C1D40",
             "colorSecondary": "#FFC627",
@@ -641,7 +641,7 @@
         "Texas Tech": {
             "mascot": "Red Raiders",
             "abbreviation": "TTU",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#CC0000",
             "colorSecondary": "#000000",
@@ -652,7 +652,7 @@
         "Cincinnati": {
             "mascot": "Bearcats",
             "abbreviation": "CINC",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#E00122",
             "colorSecondary": "#000000",
@@ -663,7 +663,7 @@
         "Central Florida": {
             "mascot": "Knights",
             "abbreviation": "UCF",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 2,
             "colorPrimary": "#BA9B37",
             "colorSecondary": "#000000",
@@ -762,7 +762,7 @@
         "Texas San Antonio": {
             "mascot": "Roadrunners",
             "abbreviation": "UTSA",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 1,
             "colorPrimary": "#F15A22",
             "colorSecondary": "#0C2340",
@@ -773,7 +773,7 @@
         "East Carolina": {
             "mascot": "Pirates",
             "abbreviation": "ECU",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 1,
             "colorPrimary": "#592A8A",
             "colorSecondary": "#FDC82F",
@@ -784,7 +784,7 @@
         "Rice": {
             "mascot": "Owls",
             "abbreviation": "RICE",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#00205B",
             "colorSecondary": "#C1C6C8",
@@ -839,7 +839,7 @@
         "South Florida": {
             "mascot": "Bulls",
             "abbreviation": "USF",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 1,
             "colorPrimary": "#006747",
             "colorSecondary": "#CFC493",
@@ -916,7 +916,7 @@
         "Boise State": {
             "mascot": "Broncos",
             "abbreviation": "BOI",
-            "ceiling": 5,
+            "ceiling": 6,
             "floor": 3,
             "colorPrimary": "#0033A0",
             "colorSecondary": "#D64309",
@@ -927,7 +927,7 @@
         "Fresno State": {
             "mascot": "Bulldogs",
             "abbreviation": "FRES",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#DB0032",
             "colorSecondary": "#002E6D",
@@ -949,7 +949,7 @@
         "San Diego State": {
             "mascot": "Aztecs",
             "abbreviation": "SDSU",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#A6192E",
             "colorSecondary": "#000000",
@@ -960,7 +960,7 @@
         "UNLV": {
             "mascot": "Rebels",
             "abbreviation": "UNLV",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 1,
             "colorPrimary": "#CF0A2C",
             "colorSecondary": "#CAC8C8",
@@ -993,8 +993,8 @@
         "Colorado State": {
             "mascot": "Rams",
             "abbreviation": "CSU",
-            "ceiling": 4,
-            "floor": 1,
+            "ceiling": 5,
+            "floor": 2,
             "colorPrimary": "#1E4D2B",
             "colorSecondary": "#C8C372",
             "city": "Fort Collins",
@@ -1015,7 +1015,7 @@
         "New Mexico": {
             "mascot": "Lobos",
             "abbreviation": "UNM",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#BA0C2F",
             "colorSecondary": "#63666A",
@@ -1026,7 +1026,7 @@
         "San Jose State": {
             "mascot": "Spartans",
             "abbreviation": "SJSU",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#0055A2",
             "colorSecondary": "#E5A823",
@@ -1037,7 +1037,7 @@
         "Utah State": {
             "mascot": "Aggies",
             "abbreviation": "USU",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#00263A",
             "colorSecondary": "#8A8D8F",
@@ -1048,7 +1048,7 @@
         "Appalachian State": {
             "mascot": "Mountaineers",
             "abbreviation": "APP",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#222222",
             "colorSecondary": "#FFCC00",
@@ -1092,7 +1092,7 @@
         "James Madison": {
             "mascot": "Dukes",
             "abbreviation": "JMU",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#450084",
             "colorSecondary": "#CBB677",
@@ -1114,7 +1114,7 @@
         "Old Dominion": {
             "mascot": "Monarchs",
             "abbreviation": "ODU",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#003087",
             "colorSecondary": "#7C878E",
@@ -1180,7 +1180,7 @@
         "Texas State": {
             "mascot": "Bobcats",
             "abbreviation": "TST",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#501214",
             "colorSecondary": "#8D734A",
@@ -1268,7 +1268,7 @@
         "Toledo": {
             "mascot": "Rockets",
             "abbreviation": "TOL",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#15397F",
             "colorSecondary": "#FFDA00",
@@ -1323,7 +1323,7 @@
         "Northern Illinois": {
             "mascot": "Huskies",
             "abbreviation": "NIU",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#BA0C2F",
             "colorSecondary": "#8A8D8F",
@@ -1356,7 +1356,7 @@
         "Florida International": {
             "mascot": "Golden Panthers",
             "abbreviation": "FIU",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#081E3F",
             "colorSecondary": "#B6862C",
@@ -1378,7 +1378,7 @@
         "Liberty": {
             "mascot": "Flames",
             "abbreviation": "LIB",
-            "ceiling": 4,
+            "ceiling": 5,
             "floor": 2,
             "colorPrimary": "#002D62",
             "colorSecondary": "#C41230",
@@ -1400,7 +1400,7 @@
         "Texas El Paso": {
             "mascot": "Miners",
             "abbreviation": "UTEP",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#041E42",
             "colorSecondary": "#FF8200",
@@ -1422,7 +1422,7 @@
         "Jacksonville State": {
             "mascot": "Gamecocks",
             "abbreviation": "JVST",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#CC0000",
             "colorSecondary": "#FFFFFF",
@@ -1433,7 +1433,7 @@
         "Sam Houston State": {
             "mascot": "Bearkats",
             "abbreviation": "SHSU",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#FE5100",
             "colorSecondary": "#FFFFFF",
@@ -1455,7 +1455,7 @@
         "Connecticut": {
             "mascot": "Huskies",
             "abbreviation": "CONN",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#000E2F",
             "colorSecondary": "#E4002B",
@@ -1488,7 +1488,7 @@
         "Missouri State": {
             "mascot": "Bears",
             "abbreviation": "MOST",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#5E0009",
             "colorSecondary": "#000000",
@@ -1499,7 +1499,7 @@
         "Delaware": {
             "mascot": "Blue Hens",
             "abbreviation": "DEL",
-            "ceiling": 3,
+            "ceiling": 4,
             "floor": 1,
             "colorPrimary": "#00539F",
             "colorSecondary": "#FFDD31",

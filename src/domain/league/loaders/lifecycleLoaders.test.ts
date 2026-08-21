@@ -283,6 +283,41 @@ describe('lifecycle loaders', () => {
     );
   });
 
+  it('projects both prestige windows and the complete target without writing it', async () => {
+    await seedScenario('summary');
+    const before = await snapshotLifecycleStores();
+
+    const summary = await loadSeasonSummary();
+
+    expect(summary.teams).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'Test State',
+        prestige: 4,
+        next_prestige: 4,
+        prestige_change: 0,
+        avg_rank_before: null,
+        avg_rank_after: 1,
+        prestige_score_before: null,
+        prestige_score_after: 100,
+        prestige_seasons_before: 0,
+        prestige_seasons_after: 1,
+      }),
+      expect.objectContaining({
+        name: 'Other State',
+        prestige: 4,
+        next_prestige: 4,
+        prestige_change: 0,
+        avg_rank_before: null,
+        avg_rank_after: 2,
+        prestige_score_before: null,
+        prestige_score_after: 0,
+        prestige_seasons_before: 0,
+        prestige_seasons_after: 1,
+      }),
+    ]));
+    expect(await snapshotLifecycleStores()).toEqual(before);
+  });
+
   it('returns exact empty page payloads from every off-stage lifecycle loader', async () => {
     await seedScenario('season');
     const before = await snapshotLifecycleStores();

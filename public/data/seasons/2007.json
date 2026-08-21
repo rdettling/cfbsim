@@ -9,34 +9,34 @@
     "SEC": {
       "games": 8,
       "teams": {
-        "Alabama": 6,
+        "Alabama": 5,
         "Georgia": 7,
         "LSU": 7,
         "Florida": 6,
-        "Kentucky": 4,
-        "Tennessee": 6,
+        "Kentucky": 3,
+        "Tennessee": 5,
         "Auburn": 6,
         "Arkansas": 5,
         "Mississippi State": 3,
         "Vanderbilt": 3,
-        "South Carolina": 5,
-        "Ole Miss": 3
+        "South Carolina": 4,
+        "Ole Miss": 4
       }
     },
     "Big Ten": {
       "games": 9,
       "teams": {
-        "Purdue": 4,
-        "Iowa": 4,
-        "Illinois": 3,
+        "Purdue": 5,
+        "Iowa": 6,
+        "Illinois": 2,
         "Michigan": 6,
         "Ohio State": 7,
         "Michigan State": 4,
         "Wisconsin": 6,
         "Indiana": 3,
         "Northwestern": 4,
-        "Penn State": 6,
-        "Minnesota": 4
+        "Penn State": 5,
+        "Minnesota": 5
       }
     },
     "Pac-10": {
@@ -45,7 +45,7 @@
         "UCLA": 5,
         "USC": 7,
         "Washington": 4,
-        "Oregon": 6,
+        "Oregon": 5,
         "Stanford": 4,
         "Arizona State": 5,
         "California": 5,
@@ -57,13 +57,13 @@
     "ACC": {
       "games": 8,
       "teams": {
-        "Clemson": 6,
-        "Florida State": 5,
-        "Miami": 5,
+        "Clemson": 5,
+        "Florida State": 6,
+        "Miami": 6,
         "Maryland": 4,
         "Virginia Tech": 6,
         "Georgia Tech": 5,
-        "North Carolina": 4,
+        "North Carolina": 3,
         "Virginia": 4,
         "NC State": 4,
         "Wake Forest": 4,
@@ -74,18 +74,18 @@
     "Big 12": {
       "games": 9,
       "teams": {
-        "Kansas": 5,
+        "Kansas": 4,
         "Baylor": 3,
         "Texas Tech": 5,
         "Colorado": 4,
         "Oklahoma State": 4,
         "Texas": 7,
-        "Texas A&M": 5,
-        "Missouri": 5,
+        "Texas A&M": 4,
+        "Missouri": 4,
         "Oklahoma": 7,
         "Iowa State": 3,
         "Kansas State": 4,
-        "Nebraska": 4
+        "Nebraska": 5
       }
     },
     "Big East": {
@@ -95,24 +95,24 @@
         "West Virginia": 6,
         "South Florida": 4,
         "Pittsburgh": 4,
-        "Cincinnati": 4,
-        "Syracuse": 2,
-        "Connecticut": 3,
+        "Cincinnati": 3,
+        "Syracuse": 3,
+        "Connecticut": 4,
         "Louisville": 6
       }
     },
     "MWC": {
       "games": 8,
       "teams": {
-        "San Diego State": 2,
+        "San Diego State": 3,
         "UNLV": 2,
         "Utah": 5,
-        "BYU": 5,
-        "Texas Christian": 4,
+        "BYU": 4,
+        "Texas Christian": 5,
         "Wyoming": 3,
-        "Air Force": 4,
+        "Air Force": 3,
         "Colorado State": 3,
-        "New Mexico": 3
+        "New Mexico": 4
       }
     },
     "Sun Belt": {
@@ -120,9 +120,9 @@
       "teams": {
         "Arkansas State": 1,
         "Louisiana": 1,
-        "Louisiana Monroe": 2,
-        "North Texas": 1,
-        "Troy": 3,
+        "Louisiana Monroe": 1,
+        "North Texas": 2,
+        "Troy": 2,
         "Middle Tennessee State": 2,
         "Florida International": 1,
         "Florida Atlantic": 2
@@ -134,16 +134,16 @@
         "Buffalo": 1,
         "Ohio": 2,
         "Bowling Green": 3,
-        "Kent State": 1,
-        "Miami Ohio": 3,
+        "Kent State": 2,
+        "Miami Ohio": 4,
         "Akron": 2,
         "Toledo": 3,
         "Ball State": 2,
-        "Western Michigan": 2,
+        "Western Michigan": 3,
         "Temple": 1,
         "Eastern Michigan": 1,
         "Central Michigan": 3,
-        "Northern Illinois": 3
+        "Northern Illinois": 4
       }
     },
     "WAC": {
@@ -154,9 +154,9 @@
         "Fresno State": 4,
         "Nevada": 3,
         "Louisiana Tech": 2,
-        "New Mexico State": 2,
-        "Boise State": 5,
-        "Hawaii": 4,
+        "New Mexico State": 1,
+        "Boise State": 6,
+        "Hawaii": 3,
         "Idaho": 1
       }
     },
@@ -164,17 +164,17 @@
       "games": 8,
       "teams": {
         "Texas El Paso": 3,
-        "Alabama Birmingham": 2,
+        "Alabama Birmingham": 3,
         "Tulane": 2,
-        "Tulsa": 4,
+        "Tulsa": 3,
         "Rice": 2,
         "Southern Miss": 4,
-        "Central Florida": 3,
-        "Marshall": 2,
+        "Central Florida": 2,
+        "Marshall": 3,
         "Memphis": 3,
         "Houston": 3,
         "Southern Methodist": 2,
-        "East Carolina": 3
+        "East Carolina": 2
       }
     }
   },
@@ -182,7 +182,7 @@
     "Army": 2,
     "Navy": 4,
     "Notre Dame": 5,
-    "Western Kentucky": 3
+    "Western Kentucky": 2
   },
   "results": {
     "LSU": {

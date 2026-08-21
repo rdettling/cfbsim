@@ -220,7 +220,7 @@ const isTeamSnapshot = (value: unknown): value is SeasonTeamSnapshot =>
   Number.isInteger(value.rating) &&
   typeof value.prestige === 'number' &&
   Number.isInteger(value.prestige) &&
-  value.prestige >= 0 &&
+  value.prestige >= 1 &&
   value.prestige <= 7 &&
   typeof value.ranking === 'number' &&
   Number.isInteger(value.ranking) &&

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { HistoryData, TeamsData } from '../../../src/types/baseData';
+import type { HistoryData } from '../../../src/types/baseData';
 import type { PlayerRecord } from '../../../src/types/db';
 import {
   buildTestLeague,
@@ -96,24 +96,6 @@ const history: HistoryData = {
     ]),
   ),
 };
-const teamsData: TeamsData = {
-  teams: Object.fromEntries(
-    teams.map(team => [
-      team.name,
-      {
-        mascot: team.mascot,
-        abbreviation: team.abbreviation,
-        ceiling: team.ceiling,
-        floor: team.floor,
-        colorPrimary: team.colorPrimary,
-        colorSecondary: team.colorSecondary,
-        city: team.city,
-        state: team.state,
-        stadium: team.stadium,
-      },
-    ]),
-  ),
-};
 const input = {
   league: buildTestLeague('preseason', {
     teams,
@@ -126,7 +108,6 @@ const input = {
   names,
   states: { TS: 1, OS: 1 },
   history,
-  teamsData,
   prestigeConfig: { 1: 50, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 50 },
   rootSeed: 1234,
   seedCount: 1,
@@ -192,7 +173,8 @@ describe('multi-season recruiting evaluation', () => {
           season.prestigeUnchanged,
       ).toBe(2);
       season.teams.forEach(team => {
-        expect(Math.abs(team.prestigeAfter - team.prestigeBefore)).toBeLessThanOrEqual(1);
+        expect(team.prestigeAfter).toBeGreaterThanOrEqual(1);
+        expect(team.prestigeAfter).toBeLessThanOrEqual(7);
       });
     });
     expect(input.league).toEqual(sourceLeague);

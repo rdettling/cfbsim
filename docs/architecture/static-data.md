@@ -63,7 +63,7 @@ committed asset.
 | `public/data/names.json` | Maintainer | Weighted player first- and last-name pools |
 | `public/data/states.json` | Maintainer | Weighted recruiting-origin distribution |
 | `public/data/prestige_config.json` | Maintainer | Target percentage for each prestige tier |
-| `public/data/seasons/YYYY.json` | Maintainer plus CFBD season-result ingestion | Season topology, prestige, playoff rules, and final results |
+| `public/data/seasons/YYYY.json` | Maintainer, starting-prestige generator, plus CFBD season-result ingestion | Season topology, generated prestige, playoff rules, and final results |
 | `public/data/historical-games/YYYY.json` | CFBD game-history transformation | Canonical detailed games for one completed season |
 
 `public/logos/teams/<canonical team>.png` is a companion asset rather than JSON,
@@ -135,7 +135,8 @@ program has exactly:
 - `floor` and `ceiling`: prestige integers from 1 through 7, with
   `floor <= ceiling`.
 
-Season prestige must also remain inside each program's catalog bounds.
+Generated season prestige must also remain inside each program's catalog
+bounds.
 
 ### Conference catalog
 
@@ -194,9 +195,12 @@ are relative weights; they do not need to total 100.
 ### Prestige distribution
 
 `prestige_config.json` contains exactly keys `1` through `7`. Values are finite
-percentages from 0 through 100 and must total 100. For every season,
-`data:check` allows each actual tier share to differ from its target by at most
-three percentage points.
+percentages from 0 through 100 and must total 100. Starting and runtime
+prestige use it for the same league-relative raw tier bands. Program bounds may
+move the final tier distribution away from those raw percentages, so
+`data:check` verifies the exact generated assignments instead of applying an
+approximate final-share tolerance. [Program Prestige](../systems/program-prestige.md)
+owns the calculation and bounds behavior.
 
 ### Seasons
 
@@ -238,7 +242,8 @@ The contract is:
 - A conference's `games` is an integer from zero through the lesser of 12 and
   one fewer than its member count.
 - Every team belongs to exactly one conference or the independents object.
-- The number beside a team is its starting prestige from 1 through 7.
+- The number beside a team is its generated starting prestige from 1 through
+  7. It is materialized for runtime loading and must not be hand-tuned.
 - `results: null` means scheduled. Only the newest season may be scheduled.
 - A completed `results` object covers the exact active-team universe.
 - Every result contains exactly `rank`, `wins`, and `losses`; records are
@@ -361,7 +366,7 @@ npm run data:check
 - verifies that season filenames, embedded years, and the season index agree;
 - allows null results only on the newest season;
 - checks program, conference, rivalry, and logo references;
-- checks season prestige bounds and distribution;
+- checks season prestige bounds and exact generator agreement;
 - requires historical games only for completed seasons and verifies program
   coverage;
 - regenerates every derived candidate in memory;
@@ -499,23 +504,28 @@ product should expose that season's real schedules and game results.
 ### Edit an existing canonical input
 
 1. Edit only the canonical file.
-2. Run `npm run data:build`.
-3. Run `npm run data:check`.
-4. Run tests and typecheck appropriate to the affected domain.
-5. Review generated diffs for plausible scope.
-6. Increment `STATIC_DATA_VERSION` once before release.
+2. If topology, results, bounds, or the tier distribution changed, run
+   `npm run generate:starting-prestige -- --write`.
+3. Run `npm run data:build`.
+4. Run `npm run data:check`.
+5. Run tests and typecheck appropriate to the affected domain.
+6. Review generated diffs for plausible scope.
+7. Increment `STATIC_DATA_VERSION` once before release.
 
-Do not hand-edit a projection to make a check pass.
+Do not hand-edit a projection or an embedded starting-prestige value to make a
+check pass.
 
 ### Add a scheduled season
 
 1. Copy the newest season only as a structural starting point.
 2. Create `public/data/seasons/YYYY.json` with the new year, exact topology,
-   prestige, playoff configuration, and `results: null`.
+   valid in-bounds prestige placeholders, playoff configuration, and
+   `results: null`.
 3. Confirm it is the newest season and the only scheduled season.
 4. Run:
 
 ```text
+npm run generate:starting-prestige -- --write
 npm run data:build
 npm run data:check
 ```
@@ -530,6 +540,7 @@ After the final AP poll and records are available:
 
 ```text
 npm run fetch:season-results -- --year YYYY
+npm run generate:starting-prestige -- --write
 npm run data:build
 npm run fetch:season-results -- --year YYYY --check
 npm run data:check
@@ -557,6 +568,7 @@ Use this only when deliberately accepting a provider-wide data refresh:
 
 ```text
 npm run fetch:season-results -- --all --refresh
+npm run generate:starting-prestige -- --write
 npm run data:build
 npm run fetch:season-results -- --all --check
 npm run data:check
@@ -629,6 +641,7 @@ memory. It remains offline and write-free.
 - Runtime loading and caching: `src/db/baseData.ts`
 - Script typechecking: `tsconfig.scripts.json`
 - Deterministic builder: `scripts/data_build.ts`
+- Starting-prestige generator: `scripts/generate_starting_prestige.ts`
 - Repository-wide checker: `scripts/data_check.ts`
 - Season-result CLI and transformation: `scripts/fetch_season_results.ts`,
   `scripts/season_results_pipeline.ts`

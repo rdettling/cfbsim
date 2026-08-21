@@ -33,7 +33,7 @@ export const updateHistoryForSeason = (
       team.ranking ?? 0,
       team.totalWins ?? 0,
       team.totalLosses ?? 0,
-      team.prestige ?? 0,
+      team.prestige,
     ];
 
     const historyRows = teams[team.name] ? [...teams[team.name]] : [];

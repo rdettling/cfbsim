@@ -5,9 +5,15 @@ import { buildTestTeam } from '../../test/fixtures';
 import { getOrderedPrestigeChanges, SeasonPrestigePanel } from './SeasonPrestigePanel';
 
 const team = (name: string, prestigeChange: number) => ({
-  ...buildTestTeam({ name, prestige_change: prestigeChange }),
+  ...buildTestTeam({ name }),
+  next_prestige: 4 + prestigeChange,
+  prestige_change: prestigeChange,
   avg_rank_before: 30,
   avg_rank_after: 20,
+  prestige_score_before: 70,
+  prestige_score_after: 80,
+  prestige_seasons_before: 3,
+  prestige_seasons_after: 4,
 });
 
 describe('SeasonPrestigePanel', () => {
@@ -35,5 +41,26 @@ describe('SeasonPrestigePanel', () => {
     );
 
     expect(markup).toContain('No prestige changes');
+  });
+
+  it('renders both performance metrics, short history, and multi-tier movement', () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <SeasonPrestigePanel
+          teams={[team('Rising State', 2)]}
+          onTeamClick={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain('4-Year Score');
+    expect(markup).toContain('70.0');
+    expect(markup).toContain('80.0');
+    expect(markup).toContain('Avg Finish');
+    expect(markup).toContain('30.0');
+    expect(markup).toContain('20.0');
+    expect(markup).toContain('3 → 4 seasons');
+    expect(markup).toContain('4 → 6');
+    expect(markup).toContain('+2 Promotion');
   });
 });

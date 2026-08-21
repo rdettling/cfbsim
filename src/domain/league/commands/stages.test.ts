@@ -71,13 +71,17 @@ vi.mock('../history', () => ({
 }));
 
 vi.mock('../prestige', () => ({
-  calculatePrestigeChanges: vi.fn((league: LeagueState) => {
-    league.teams[0].prestige_change = 1;
-    return {};
-  }),
-  applyPrestigeChanges: vi.fn((league: LeagueState) => {
-    league.teams[0].prestige += league.teams[0].prestige_change ?? 0;
-    league.teams[0].prestige_change = 0;
+  calculatePrestigeChanges: vi.fn((league: LeagueState) => ({
+    [league.teams[0].name]: {
+      currentPrestige: league.teams[0].prestige,
+      targetPrestige: league.teams[0].prestige + 1,
+      change: 1,
+      before: { score: 50, averageRank: 2, seasons: 1 },
+      after: { score: 100, averageRank: 1, seasons: 1 },
+    },
+  })),
+  applyPrestigeChanges: vi.fn((league: LeagueState, changes) => {
+    league.teams[0].prestige = changes[league.teams[0].name].targetPrestige;
   }),
 }));
 

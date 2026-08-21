@@ -1,7 +1,6 @@
 import {
   getHistoryData,
   getPrestigeConfig,
-  getTeamsData,
 } from '../../../db/baseData';
 import { commitOffseasonTransition } from '../../../db/offseasonRepo';
 import type { HistoryData } from '../../../types/baseData';
@@ -48,13 +47,11 @@ export const advanceOffseasonStage = async (
     case 'summary': {
       const [
         historyData,
-        teamsData,
         prestigeConfig,
         games,
         memory,
       ] = await Promise.all([
         getHistoryData(),
-        getTeamsData(),
         getPrestigeConfig(),
         getGamesByYear(league.info.currentYear),
         getSeasonMemory(league.info.currentYear),
@@ -64,10 +61,9 @@ export const advanceOffseasonStage = async (
           `Season ${league.info.currentYear} is missing its finalized memory.`,
         );
       }
-      calculatePrestigeChanges(
+      const prestigeChanges = calculatePrestigeChanges(
         league,
         historyData,
-        teamsData,
         prestigeConfig,
       );
       history = updateHistoryForSeason(league, historyData);
@@ -78,7 +74,7 @@ export const advanceOffseasonStage = async (
         games,
         memory,
       );
-      applyPrestigeChanges(league);
+      applyPrestigeChanges(league, prestigeChanges);
       league.info.stage = destination.id;
       await commitOffseasonTransition({
         expectedStage,

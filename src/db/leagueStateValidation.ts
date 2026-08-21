@@ -43,7 +43,6 @@ const TEAM_KEYS = [
   'nonConfGames',
   'nonConfLimit',
   'prestige',
-  'prestige_change',
   'ceiling',
   'floor',
   'mascot',
@@ -270,10 +269,17 @@ const isCurrentTeam = (value: unknown): value is Team =>
   isIntegerAtLeast(value.confLimit, 0) &&
   isIntegerAtLeast(value.nonConfGames, 0) &&
   isIntegerAtLeast(value.nonConfLimit, 0) &&
-  isIntegerAtLeast(value.prestige, 1) &&
-  Number.isInteger(value.prestige_change) &&
-  isIntegerAtLeast(value.ceiling, 1) &&
-  isIntegerAtLeast(value.floor, 1) &&
+  Number.isInteger(value.prestige) &&
+  Number(value.prestige) >= 1 &&
+  Number(value.prestige) <= 7 &&
+  Number.isInteger(value.ceiling) &&
+  Number(value.ceiling) >= 1 &&
+  Number(value.ceiling) <= 7 &&
+  Number.isInteger(value.floor) &&
+  Number(value.floor) >= 1 &&
+  Number(value.floor) <= 7 &&
+  Number(value.floor) <= Number(value.prestige) &&
+  Number(value.prestige) <= Number(value.ceiling) &&
   isNonemptyString(value.mascot) &&
   isNonemptyString(value.city) &&
   isNonemptyString(value.state) &&

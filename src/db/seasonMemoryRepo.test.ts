@@ -97,6 +97,14 @@ describe('season memory integrity', () => {
       ...memory,
       teamSnapshots: [{ ...memory.teamSnapshots[0], conference: '' }],
     })).toThrow();
+    expect(() => assertCurrentSeasonMemory({
+      ...memory,
+      teamSnapshots: [{ ...memory.teamSnapshots[0], prestige: 0 }],
+    })).toThrow();
+    expect(() => assertCurrentSeasonMemory({
+      ...memory,
+      teamSnapshots: [{ ...memory.teamSnapshots[0], prestige: 8 }],
+    })).toThrow();
   });
 
   it('rejects aliases and dangling game references', () => {

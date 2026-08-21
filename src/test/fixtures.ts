@@ -66,7 +66,6 @@ export const buildTestTeam = (overrides: Partial<Team> = {}): Team => ({
   nonConfGames: 0,
   nonConfLimit: 4,
   prestige: 4,
-  prestige_change: 0,
   ceiling: 7,
   floor: 1,
   mascot: 'Testers',

@@ -2,7 +2,6 @@ import {
   getHistoryData,
   getPrestigeConfig,
   getRivalriesData,
-  getTeamsData,
 } from '../../../db/baseData';
 import { getPlayersByIds } from '../../../db/leagueRepo';
 import { getGamesByYear } from '../../../db/simRepo';
@@ -35,14 +34,12 @@ export const loadSeasonSummary = async () => {
   const [
     games,
     historyData,
-    teamsData,
     prestigeConfig,
     priorMemories,
     rivalries,
   ] = await Promise.all([
     getGamesByYear(league.info.currentYear),
     getHistoryData(),
-    getTeamsData(),
     getPrestigeConfig(),
     getAllSeasonMemories(),
     getRivalriesData(),
@@ -87,18 +84,26 @@ export const loadSeasonSummary = async () => {
   }
 
   const displayLeague = structuredClone(league);
-  const avgRanks = calculatePrestigeChanges(
+  const prestigeChanges = calculatePrestigeChanges(
     displayLeague,
     historyData,
-    teamsData,
     prestigeConfig,
   );
 
-  const teamsWithAvgRanks = displayLeague.teams.map(team => ({
-    ...team,
-    avg_rank_before: avgRanks[team.name]?.before ?? null,
-    avg_rank_after: avgRanks[team.name]?.after ?? null,
-  }));
+  const teamsWithAvgRanks = displayLeague.teams.map(team => {
+    const evaluation = prestigeChanges[team.name];
+    return {
+      ...team,
+      next_prestige: evaluation?.targetPrestige ?? team.prestige,
+      prestige_change: evaluation?.change ?? 0,
+      avg_rank_before: evaluation?.before.averageRank ?? null,
+      avg_rank_after: evaluation?.after.averageRank ?? null,
+      prestige_score_before: evaluation?.before.score ?? null,
+      prestige_score_after: evaluation?.after.score ?? null,
+      prestige_seasons_before: evaluation?.before.seasons ?? 0,
+      prestige_seasons_after: evaluation?.after.seasons ?? 0,
+    };
+  });
   const userTeam =
     league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
   const gamesById = new Map(games.map(game => [game.id, game]));

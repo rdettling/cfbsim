@@ -31,7 +31,6 @@ const buildTeam = (id: number): Team => ({
   nonConfGames: 0,
   nonConfLimit: 0,
   prestige: 75,
-  prestige_change: 0,
   ceiling: 99,
   floor: 1,
   mascot: 'Testers',

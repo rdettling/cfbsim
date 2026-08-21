@@ -151,6 +151,12 @@ in memory and are emitted to stdout only.
 - playoff state;
 - game and player ID counters.
 
+Each persisted team stores only its current integer prestige and its floor and
+ceiling, all within tiers 1 through 7. Pending prestige, change, and performance
+metrics are derived Season Summary fields rather than saved team state. See
+[Program Prestige](../systems/program-prestige.md) for their calculation and
+transition lifecycle.
+
 `NextSeasonConfiguration` is persisted directly with:
 
 - `conferencePolicy`;
