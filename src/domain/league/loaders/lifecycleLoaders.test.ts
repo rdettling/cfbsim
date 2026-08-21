@@ -6,6 +6,9 @@ import type { LeagueState } from '../../../types/league';
 import {
   buildTestLeague,
   buildTestPlayer,
+  buildTestPlayerSeason,
+  buildTestSeasonMemory,
+  buildTestSeasonTeamSnapshot,
   buildTestTeam,
   TEST_NAMES_DATA,
   TEST_STATES_DATA,
@@ -84,7 +87,15 @@ const seedScenario = async (stage: LeagueStage) => {
     },
     playoff: { seeds: [1, 2], natty: 1 },
   });
-  const tx = db.transaction(['baseData', 'league', 'recruiting', 'players', 'games'], 'readwrite');
+  const tx = db.transaction([
+    'baseData',
+    'league',
+    'recruiting',
+    'players',
+    'games',
+    'seasonMemories',
+    'playerSeasons',
+  ], 'readwrite');
   await tx.objectStore('league').put({
     key: 'current',
     value: stage === 'summary' ? summaryLeague : baseLeague,
@@ -129,6 +140,23 @@ const seedScenario = async (stage: LeagueStage) => {
         scoreB: 24,
         watchability: 90,
       });
+      await tx.objectStore('seasonMemories').put(buildTestSeasonMemory({
+        year: summaryLeague.info.currentYear,
+        teamSnapshots: [
+          buildTestSeasonTeamSnapshot({ teamId: 1 }),
+          buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2 }),
+        ],
+      }));
+      await tx.objectStore('playerSeasons').put(buildTestPlayerSeason({
+        year: summaryLeague.info.currentYear,
+        playerId: 1,
+        teamId: 1,
+      }));
+      await tx.objectStore('playerSeasons').put(buildTestPlayerSeason({
+        year: summaryLeague.info.currentYear,
+        playerId: 2,
+        teamId: 2,
+      }));
     }
   }
   if (
@@ -268,7 +296,7 @@ describe('lifecycle loaders', () => {
     const preseason = await loadNonCon();
 
     expect(summary).toMatchObject({
-      champion: null,
+      championship: null,
       awards: [],
       teams: [],
     });
@@ -319,6 +347,57 @@ describe('lifecycle loaders', () => {
       pending_rivalries: [],
     });
     expect(await snapshotLifecycleStores()).toEqual(before);
+  });
+
+  it.each([
+    {
+      winnerId: 1,
+      scoreA: 31,
+      scoreB: 24,
+      champion: 'Test State',
+      runnerUp: 'Other State',
+      championScore: 31,
+      runnerUpScore: 24,
+    },
+    {
+      winnerId: 2,
+      scoreA: 20,
+      scoreB: 27,
+      champion: 'Other State',
+      runnerUp: 'Test State',
+      championScore: 27,
+      runnerUpScore: 20,
+    },
+  ])('orients the championship projection around winner $winnerId', async ({
+    winnerId,
+    scoreA,
+    scoreB,
+    champion,
+    runnerUp,
+    championScore,
+    runnerUpScore,
+  }) => {
+    await seedScenario('summary');
+    const db = await getDb();
+    const game = await db.get('games', 1);
+    await db.put('games', {
+      ...game!,
+      winnerId,
+      scoreA,
+      scoreB,
+      resultA: winnerId === 1 ? 'W' : 'L',
+      resultB: winnerId === 2 ? 'W' : 'L',
+    });
+
+    const summary = await loadSeasonSummary();
+
+    expect(summary.championship).toMatchObject({
+      gameId: 1,
+      champion: { name: champion },
+      runnerUp: { name: runnerUp },
+      championScore,
+      runnerUpScore,
+    });
   });
 
   it('returns a gated setup preview when realignment is off-stage', async () => {

@@ -96,6 +96,25 @@ describe('database startup lifecycle', () => {
     expect(await current.get('players', player.id)).toEqual(player);
   });
 
+  it('deletes a summary-stage save without finalized season artifacts', async () => {
+    const db = await getDb();
+    const league = buildTestLeague('summary');
+    const player = buildTestPlayer();
+    await db.put('league', { key: 'current', value: league });
+    await db.put('players', player);
+    await db.put('playerOrigins', {
+      playerId: player.id,
+      kind: 'initial_roster',
+      acquisitionYear: league.info.startYear,
+      originalTeamId: player.teamId,
+      classAtStart: player.year,
+    });
+
+    await initializeDatabase();
+
+    expect(await currentSaveCounts()).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
   it('deletes the database when the current league is malformed', async () => {
     const db = await getDb();
     const malformed = buildTestLeague('season');

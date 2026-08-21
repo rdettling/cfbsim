@@ -68,9 +68,11 @@ have no simulation detail or clickable game identity. See [Static Data
 System](static-data.md) for public-data ownership, exact contracts, generated
 projections, ingestion, cache keys, and maintenance workflows.
 
-Completed simulated seasons write one exact-schema `SeasonMemory` only when
-the user advances out of Season Summary. Each memory owns the season year,
-final team snapshots, lean award-winner references, and a strict postseason
+Completed simulated seasons atomically write one exact-schema `SeasonMemory`
+and their `PlayerSeasonStats` when the national championship resolves and the
+league enters Season Summary. Each memory owns the season year, final team
+snapshots, lean award-winner references with award-window statistical totals,
+and a strict postseason
 archive. The postseason archive contains the configured 2-, 4-, or 12-team
 format, seeded team IDs, every explicit bracket game slot, each
 non-independent conference champion and optional title-game ID, and every
@@ -79,7 +81,9 @@ generic event list or a separate playoff-team alias.
 
 Scores, team names, player identities, and season stat lines remain normalized
 in authoritative game, team, historical-player, and `playerSeasons` records.
-League History joins those records at load time. Missing, incomplete, or
+League History joins those records at load time. Leaving Season Summary applies
+prestige and history changes and prunes non-retained game details without
+rebuilding the completed-season artifacts. Missing, incomplete, or
 structurally inconsistent playoff games and dangling archive references are
 integrity failures; repository reads never synthesize or repair them.
 

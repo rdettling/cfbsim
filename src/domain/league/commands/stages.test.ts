@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LeagueState } from '../../../types/league';
-import { buildTestLeague } from '../../../test/fixtures';
+import { buildTestLeague, buildTestSeasonMemory } from '../../../test/fixtures';
 
 const state = vi.hoisted(() => ({
   league: null as unknown,
@@ -14,41 +14,12 @@ vi.mock('../../../db/offseasonRepo', () => ({
   commitOffseasonTransition: vi.fn(async () => undefined),
 }));
 
-vi.mock('../../../db/leagueRepo', () => ({
-  loadLeaguePlayersSnapshot: vi.fn(async () => ({
-    league: state.league,
-    players: [],
-  })),
-}));
-
 vi.mock('../../../db/simRepo', () => ({
   getGamesByYear: vi.fn(async () => []),
-  getGameDetailsByYear: vi.fn(async () => []),
 }));
 
-vi.mock('../memory', () => ({
-  buildSeasonMemory: vi.fn(league => ({
-    year: league.info.currentYear,
-    teamSnapshots: league.teams.map((team: LeagueState['teams'][number]) => ({
-      teamId: team.id,
-      rating: team.rating,
-      prestige: team.prestige,
-      ranking: team.ranking,
-      record: team.record,
-    })),
-    postseason: {
-      playoff: {
-        format: 2,
-        seeds: [1, 2],
-        autobids: 0,
-        conferenceChampionsReceiveTopSeeds: false,
-        games: { championship: 1 },
-      },
-      conferenceChampions: [],
-      bowls: [],
-    },
-    awards: [],
-  })),
+vi.mock('../../../db/seasonMemoryRepo', () => ({
+  getSeasonMemory: vi.fn(async () => buildTestSeasonMemory()),
 }));
 
 vi.mock('../../../db/baseData', () => ({

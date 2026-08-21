@@ -4,12 +4,16 @@ import {
   buildTestLeague,
   buildTestPlayParticipants,
   buildTestPlayer,
+  buildTestPlayerSeason,
+  buildTestSeasonMemory,
+  buildTestSeasonTeamSnapshot,
   buildTestTeam,
 } from '../test/fixtures';
 import type { GameDetailRecord, GameRecord } from '../types/db';
 import { getDb } from './db';
 import {
   commitSimulationBatch,
+  commitSeasonCompletion,
   commitSeasonInitialization,
   getAllGameDetails,
   getAllGameLogs,
@@ -142,13 +146,25 @@ const league = () => {
 
 const clearStores = async () => {
   const db = await getDb();
-  const tx = db.transaction(['games', 'league', 'gameDetails', 'newsItems', 'players'], 'readwrite');
+  const tx = db.transaction([
+    'games',
+    'league',
+    'gameDetails',
+    'newsItems',
+    'players',
+    'historicalPlayers',
+    'seasonMemories',
+    'playerSeasons',
+  ], 'readwrite');
   await Promise.all([
     tx.objectStore('games').clear(),
     tx.objectStore('league').clear(),
     tx.objectStore('gameDetails').clear(),
     tx.objectStore('newsItems').clear(),
     tx.objectStore('players').clear(),
+    tx.objectStore('historicalPlayers').clear(),
+    tx.objectStore('seasonMemories').clear(),
+    tx.objectStore('playerSeasons').clear(),
   ]);
   await tx.done;
 };
@@ -281,6 +297,107 @@ describe('game repository boundary', () => {
     expect(await db.get('games', 1)).toEqual(completed);
     expect(await db.get('gameDetails', 1)).toEqual(detail());
     expect((await db.get('league', 'current'))?.value).toEqual(nextLeague);
+  });
+
+  it('atomically commits finalized artifacts with the summary transition', async () => {
+    const db = await getDb();
+    const source = league();
+    source.playoff = { seeds: [1, 2], natty: 1 };
+    const destination = structuredClone(source);
+    destination.info.stage = 'summary';
+    const championship = game({
+      gameType: 'national_championship',
+      name: 'National Championship',
+      neutralSite: true,
+      homeTeamId: null,
+      awayTeamId: null,
+      winnerId: 1,
+      resultA: 'W',
+      resultB: 'L',
+      scoreA: 6,
+      scoreB: 0,
+      quarter: 4,
+      clockSecondsLeft: 0,
+    });
+    const player = buildTestPlayer({ id: 10, teamId: 1, pos: 'rb' });
+    const opponent = buildTestPlayer({ id: 20, teamId: 2, pos: 'rb' });
+    const memory = buildTestSeasonMemory({
+      year: 2026,
+      teamSnapshots: [
+        buildTestSeasonTeamSnapshot({ teamId: 1 }),
+        buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2 }),
+      ],
+    });
+    const playerSeason = buildTestPlayerSeason({
+      year: 2026,
+      playerId: player.id,
+      teamId: player.teamId,
+      position: player.pos,
+    });
+    await db.put('league', { key: 'current', value: source });
+    await db.put('games', championship);
+    await db.put('players', player);
+    await db.put('players', opponent);
+
+    await commitSeasonCompletion({
+      league: destination,
+      memory,
+      playerSeasons: [playerSeason],
+    });
+
+    expect((await db.get('league', 'current'))?.value).toEqual(destination);
+    expect(await db.get('seasonMemories', 2026)).toEqual(memory);
+    expect(await db.getAll('playerSeasons')).toEqual([playerSeason]);
+    await expect(commitSeasonCompletion({
+      league: destination,
+      memory,
+      playerSeasons: [playerSeason],
+    })).rejects.toThrow('no longer ready');
+    expect(await db.count('seasonMemories')).toBe(1);
+  });
+
+  it('rolls back season completion when finalized artifacts are invalid', async () => {
+    const db = await getDb();
+    const source = league();
+    source.playoff = { seeds: [1, 2], natty: 1 };
+    const destination = structuredClone(source);
+    destination.info.stage = 'summary';
+    const championship = game({
+      gameType: 'national_championship',
+      name: 'National Championship',
+      winnerId: 1,
+      resultA: 'W',
+      resultB: 'L',
+      scoreA: 6,
+      scoreB: 0,
+      quarter: 4,
+      clockSecondsLeft: 0,
+    });
+    const player = buildTestPlayer({ id: 10, teamId: 1, pos: 'rb' });
+    await db.put('league', { key: 'current', value: source });
+    await db.put('games', championship);
+    await db.put('players', player);
+    await db.put('players', buildTestPlayer({ id: 20, teamId: 2, pos: 'rb' }));
+
+    await expect(commitSeasonCompletion({
+      league: destination,
+      memory: buildTestSeasonMemory({
+        year: 2026,
+        teamSnapshots: [
+          buildTestSeasonTeamSnapshot({ teamId: 1 }),
+          buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2 }),
+        ],
+      }),
+      playerSeasons: [buildTestPlayerSeason({
+        year: 2026,
+        playerId: 999,
+        teamId: 1,
+      })],
+    })).rejects.toBeDefined();
+
+    expect((await db.get('league', 'current'))?.value).toEqual(source);
+    expect(await db.getAll('seasonMemories')).toEqual([]);
+    expect(await db.getAll('playerSeasons')).toEqual([]);
   });
 
   it('clears prior details only as part of a valid season-initialization commit', async () => {

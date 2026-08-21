@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { deleteCurrentDatabase, getDb } from '../../../../db/db';
 import {
+  buildTestAwardStats,
   buildTestLeague,
   buildTestPlayer,
   buildTestSeasonMemory,
@@ -51,8 +52,18 @@ describe('player origin loading', () => {
     });
     await db.put('seasonMemories', buildTestSeasonMemory({
       awards: [
-        { categorySlug: 'heisman', playerId: historical.id, teamId: 1 },
-        { categorySlug: 'maxwell', playerId: historical.id, teamId: 1 },
+        {
+          categorySlug: 'heisman',
+          playerId: historical.id,
+          teamId: 1,
+          stats: buildTestAwardStats(),
+        },
+        {
+          categorySlug: 'maxwell',
+          playerId: historical.id,
+          teamId: 1,
+          stats: buildTestAwardStats(),
+        },
       ],
     }));
     await db.put('playerOrigins', {

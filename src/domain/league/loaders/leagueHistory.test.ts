@@ -4,12 +4,11 @@ import { getAllSeasonMemories } from '../../../db/seasonMemoryRepo';
 import {
   getAllHistoricalPlayers,
   getGamesByYear,
-  getPlayerSeasonsByYear,
 } from '../../../db/simRepo';
 import {
+  buildTestAwardStats,
   buildTestLeague,
   buildTestPlayer,
-  buildTestPlayerSeason,
   buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
   buildTestTeam,
@@ -78,19 +77,6 @@ describe('loadLeagueHistory', () => {
       players: [buildTestPlayer()],
     });
     vi.mocked(getAllHistoricalPlayers).mockResolvedValue([]);
-    vi.mocked(getPlayerSeasonsByYear).mockResolvedValue([
-      buildTestPlayerSeason({
-        year: 2025,
-        pass_yards: 4_200,
-        pass_attempts: 400,
-        pass_completions: 280,
-        pass_touchdowns: 40,
-        pass_interceptions: 5,
-        rush_yards: 420,
-        rush_attempts: 80,
-        rush_touchdowns: 6,
-      }),
-    ]);
   });
 
   it('returns a navbar-enabled empty result before a season is archived', async () => {
@@ -157,7 +143,21 @@ describe('loadLeagueHistory', () => {
           }],
           bowls: [{ gameId: 3, name: 'Rose Bowl', tier: 'ny6' }],
         },
-        awards: [{ categorySlug: 'nagurski', playerId: 1, teamId: 1 }],
+        awards: [{
+          categorySlug: 'nagurski',
+          playerId: 1,
+          teamId: 1,
+          stats: buildTestAwardStats({
+            pass_yards: 4_200,
+            pass_attempts: 400,
+            pass_completions: 280,
+            pass_touchdowns: 40,
+            pass_interceptions: 5,
+            rush_yards: 420,
+            rush_attempts: 80,
+            rush_touchdowns: 6,
+          }),
+        }],
       }),
     ]);
     vi.mocked(getGamesByYear).mockResolvedValue([
@@ -214,7 +214,12 @@ describe('loadLeagueHistory', () => {
           buildTestSeasonTeamSnapshot(),
           buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2 }),
         ],
-        awards: [{ categorySlug: 'unknown_award', playerId: 1, teamId: 1 }],
+        awards: [{
+          categorySlug: 'unknown_award',
+          playerId: 1,
+          teamId: 1,
+          stats: buildTestAwardStats(),
+        }],
       }),
     ]);
     vi.mocked(getGamesByYear).mockResolvedValue([

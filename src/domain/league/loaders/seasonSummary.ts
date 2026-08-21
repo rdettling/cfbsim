@@ -1,36 +1,31 @@
-import type { Team } from '../../../types/domain';
 import {
   getHistoryData,
   getPrestigeConfig,
   getRivalriesData,
   getTeamsData,
 } from '../../../db/baseData';
-import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
-import {
-  getAllGames,
-  getAllGameLogs,
-  getAllPlays,
-  getGameById,
-} from '../../../db/simRepo';
+import { getPlayersByIds } from '../../../db/leagueRepo';
+import { getGamesByYear } from '../../../db/simRepo';
 import { getAllSeasonMemories } from '../../../db/seasonMemoryRepo';
-import { buildAwards } from '../awards';
-import { buildSeasonMemory } from '../memory';
-import { calculatePrestigeChanges, getPrestigeAvgRanks } from '../prestige';
+import { SeasonMemoryDataIntegrityError } from '../../../types/memory';
+import { calculatePrestigeChanges } from '../prestige';
 import {
   buildSeasonMilestones,
   buildTeamAccomplishments,
   selectSignatureGames,
 } from '../memoryProjection';
 import { buildLeagueNavigationEnvelope } from './navigationEnvelope';
+import { projectSeasonAwardWinners } from '../utils/awardDisplay';
+import { loadLeagueOrThrow } from '../leagueStore';
 
 export const loadSeasonSummary = async () => {
-  const { league, players } = await loadLeaguePlayersSnapshot();
+  const league = await loadLeagueOrThrow();
   const envelope = buildLeagueNavigationEnvelope(league);
 
   if (league.info.stage !== 'summary') {
     return {
       ...envelope,
-      champion: null,
+      championship: null,
       awards: [],
       teams: [],
       legacy: null,
@@ -38,52 +33,66 @@ export const loadSeasonSummary = async () => {
   }
 
   const [
-    gameLogs,
     games,
     historyData,
     teamsData,
     prestigeConfig,
     priorMemories,
     rivalries,
-    plays,
   ] = await Promise.all([
-    getAllGameLogs(),
-    getAllGames(),
+    getGamesByYear(league.info.currentYear),
     getHistoryData(),
     getTeamsData(),
     getPrestigeConfig(),
     getAllSeasonMemories(),
     getRivalriesData(),
-    getAllPlays(),
   ]);
-
-  const playedGameIds = new Set(
-    games.filter(game => game.year === league.info.currentYear && game.winnerId !== null).map(game => game.id)
+  const memory = priorMemories.find(
+    entry => entry.year === league.info.currentYear,
   );
-  const yearLogs = gameLogs.filter(log => playedGameIds.has(log.gameId));
-  const { final } = buildAwards(league, players, games, gameLogs);
-  const memory = buildSeasonMemory(league, games, players, yearLogs, plays);
+  if (!memory) {
+    throw new SeasonMemoryDataIntegrityError(
+      `Season ${league.info.currentYear} is missing its finalized memory.`,
+    );
+  }
+  const players = await getPlayersByIds(
+    league,
+    memory.awards.map(award => award.playerId),
+  );
 
-  let champion: Team | null = null;
+  let championship = null;
   if (league.playoff.natty) {
-    const nattyGame =
-      games.find(game => game.id === league.playoff.natty) ??
-      (await getGameById(league.playoff.natty));
-    if (nattyGame?.winnerId) {
-      champion = league.teams.find(team => team.id === nattyGame.winnerId) ?? null;
+    const nattyGame = games.find(game => game.id === league.playoff.natty);
+    if (
+      nattyGame?.winnerId &&
+      nattyGame.scoreA !== null &&
+      nattyGame.scoreB !== null
+    ) {
+      const champion = league.teams.find(team => team.id === nattyGame.winnerId) ?? null;
+      const runnerUpId = nattyGame.teamAId === nattyGame.winnerId
+        ? nattyGame.teamBId
+        : nattyGame.teamAId;
+      const runnerUp = league.teams.find(team => team.id === runnerUpId) ?? null;
+      if (champion && runnerUp) {
+        const championIsTeamA = champion.id === nattyGame.teamAId;
+        championship = {
+          gameId: nattyGame.id,
+          champion,
+          runnerUp,
+          championScore: championIsTeamA ? nattyGame.scoreA : nattyGame.scoreB,
+          runnerUpScore: championIsTeamA ? nattyGame.scoreB : nattyGame.scoreA,
+        };
+      }
     }
   }
 
-  const displayLeague =
-    league.info.stage === 'summary' ? structuredClone(league) : league;
-  const avgRanks = league.info.stage === 'summary'
-    ? calculatePrestigeChanges(
-        displayLeague,
-        historyData,
-        teamsData,
-        prestigeConfig,
-      )
-    : getPrestigeAvgRanks(displayLeague, historyData);
+  const displayLeague = structuredClone(league);
+  const avgRanks = calculatePrestigeChanges(
+    displayLeague,
+    historyData,
+    teamsData,
+    prestigeConfig,
+  );
 
   const teamsWithAvgRanks = displayLeague.teams.map(team => ({
     ...team,
@@ -93,6 +102,8 @@ export const loadSeasonSummary = async () => {
   const userTeam =
     league.teams.find(team => team.name === league.info.team) ?? league.teams[0];
   const gamesById = new Map(games.map(game => [game.id, game]));
+  const teamsById = new Map(league.teams.map(team => [team.id, team]));
+  const playersById = new Map(players.map(player => [player.id, player]));
   const previousRows = (historyData.teams[userTeam.name] ?? []).filter(
     row => row[0] >= league.info.startYear && row[0] < league.info.currentYear,
   );
@@ -112,7 +123,7 @@ export const loadSeasonSummary = async () => {
     milestones: buildSeasonMilestones({
       teamId: userTeam.id,
       current: memory,
-      previous: priorMemories,
+      previous: priorMemories.filter(entry => entry.year < memory.year),
       games,
       currentWins: userTeam.totalWins,
       currentRank: userTeam.ranking,
@@ -122,8 +133,8 @@ export const loadSeasonSummary = async () => {
 
   return {
     ...envelope,
-    champion,
-    awards: final,
+    championship,
+    awards: projectSeasonAwardWinners(memory, playersById, teamsById),
     teams: teamsWithAvgRanks,
     legacy,
   };

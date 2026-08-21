@@ -479,3 +479,18 @@ export function assertCurrentRosterState(
     );
   }
 }
+
+export function assertCurrentPlayerRecords(
+  league: LeagueState,
+  players: unknown[],
+): asserts players is PlayerRecord[] {
+  const teamIds = new Set(league.teams.map(team => team.id));
+  if (players.some(player =>
+    !isCurrentPlayerRecord(player) || !teamIds.has(player.teamId)
+  )) {
+    throw new LeagueDataIntegrityError(
+      'INVALID_ROSTER_STATE',
+      'The saved player records do not match the current data model.',
+    );
+  }
+}

@@ -23,6 +23,11 @@ const RECRUITING_STAGES = new Set<LeagueState['info']['stage']>([
   'roster_cuts',
 ]);
 
+const FINALIZED_CURRENT_YEAR_STAGES = new Set<LeagueState['info']['stage']>([
+  'summary',
+  'realignment',
+]);
+
 const assertCurrentDatabase = async () => {
   const db = await getDb();
   const tx = db.transaction(
@@ -121,6 +126,24 @@ const assertCurrentDatabase = async () => {
     historicalPlayers,
     playerSeasons,
   );
+  const currentYearFinalized = FINALIZED_CURRENT_YEAR_STAGES.has(
+    league.info.stage,
+  );
+  const hasCurrentMemory = memories.some(
+    memory => memory.year === league.info.currentYear,
+  );
+  const hasCurrentPlayerSeasons = playerSeasons.some(
+    season => season.year === league.info.currentYear,
+  );
+  if (
+    hasCurrentMemory !== currentYearFinalized ||
+    hasCurrentPlayerSeasons !== currentYearFinalized
+  ) {
+    throw new LeagueDataIntegrityError(
+      'INVALID_LEAGUE_STATE',
+      `Season ${league.info.currentYear} finalization does not match the ${league.info.stage} stage.`,
+    );
+  }
   const detailsByGameId = new Map(details.map(detail => [detail.gameId, detail]));
   const userTeam = leagueRecord.value.teams.find(
     team => team.name === league.info.team,
@@ -137,6 +160,18 @@ const assertCurrentDatabase = async () => {
         throw new LeagueDataIntegrityError(
           'INVALID_LEAGUE_STATE',
           `Completed current-season game ${game.id} has no detail record.`,
+        );
+      }
+      continue;
+    }
+    if (
+      game.year === league.info.currentYear &&
+      league.info.stage === 'summary'
+    ) {
+      if (!detailsByGameId.has(game.id)) {
+        throw new LeagueDataIntegrityError(
+          'INVALID_LEAGUE_STATE',
+          `Completed summary game ${game.id} has no detail record.`,
         );
       }
       continue;

@@ -259,13 +259,16 @@ describe('commitOffseasonTransition', () => {
       },
     });
     const destination = buildTestLeague('realignment');
+    await db.put('seasonMemories', memory);
+    for (const season of playerSeasons) await db.put('playerSeasons', season);
 
     await commitOffseasonTransition({
       expectedStage: 'summary',
       league: destination,
-      memory,
-      playerSeasons,
-      retainedGameIds: new Set([1, 3]),
+      detailPruning: {
+        year: 2025,
+        retainedGameIds: new Set([1, 3]),
+      },
     });
 
     expect(await db.getAllKeys('gameDetails')).toEqual([1, 3]);

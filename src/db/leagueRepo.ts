@@ -1,7 +1,9 @@
 import type { LeagueState } from '../types/league';
+import type { PlayerRecord } from '../types/db';
 import { getDb } from './db';
 import {
   assertCurrentLeagueState,
+  assertCurrentPlayerRecords,
   assertCurrentRosterState,
 } from './leagueStateValidation';
 
@@ -42,4 +44,24 @@ export const loadLeaguePlayersSnapshot = async () => {
   assertCurrentLeagueState(record.value);
   assertCurrentRosterState(record.value, players);
   return { league: record.value, players };
+};
+
+export const getPlayersByIds = async (
+  league: LeagueState,
+  playerIds: number[],
+) => {
+  const ids = [...new Set(playerIds)];
+  if (!ids.length) return [];
+  const db = await getDb();
+  const tx = db.transaction('players', 'readonly');
+  const players = await Promise.all(
+    ids.map(playerId => tx.objectStore('players').get(playerId)),
+  );
+  await tx.done;
+  if (players.some(player => player === undefined)) {
+    throw new Error('Finalized awards reference a missing current player.');
+  }
+  const resolved = players as PlayerRecord[];
+  assertCurrentPlayerRecords(league, resolved);
+  return resolved;
 };

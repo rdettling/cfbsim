@@ -14,6 +14,7 @@ import type {
   PlayRecord,
 } from '../types/db';
 import type { LeagueState } from '../types/league';
+import type { SeasonMemory } from '../types/memory';
 import type { NewsItem } from '../types/news';
 import { flattenGameDetail } from '../domain/league/gameDetails';
 import {
@@ -26,6 +27,8 @@ import {
   assertCurrentGameDetailRecords,
   assertGameDetailReferences,
 } from './gameDetailValidation';
+import { assertCurrentSeasonMemory, assertSeasonMemoryReferences } from './seasonMemoryRepo';
+import { assertHistoricalIntegrity } from './historyRepo';
 
 const abortTransaction = async (tx: { abort: () => void; done: Promise<unknown> }) => {
   try { tx.abort(); } catch { /* The failed request may already have aborted. */ }
@@ -158,6 +161,98 @@ export const commitSimulationBatch = async ({
     for (const detail of details) await detailStore.put(detail);
     const newsStore = tx.objectStore('newsItems');
     for (const item of newsItems) await newsStore.put(item);
+    await tx.objectStore('league').put({ key: 'current', value: league });
+    await tx.done;
+  } catch (error) {
+    await abortTransaction(tx);
+    throw error;
+  }
+};
+
+export const commitSeasonCompletion = async ({
+  league,
+  memory,
+  playerSeasons,
+}: {
+  league: LeagueState;
+  memory: SeasonMemory;
+  playerSeasons: PlayerSeasonStats[];
+}) => {
+  if (league.info.stage !== 'summary' || memory.year !== league.info.currentYear) {
+    throw new Error('Completed-season artifacts do not match the summary league.');
+  }
+  assertCurrentLeagueState(league);
+  assertCurrentSeasonMemory(memory);
+
+  const db = await getDb();
+  const tx = db.transaction(
+    [
+      'league',
+      'games',
+      'players',
+      'historicalPlayers',
+      'seasonMemories',
+      'playerSeasons',
+    ],
+    'readwrite',
+  );
+  try {
+    const [persisted, games, players, historicalPlayers, memories, seasons] =
+      await Promise.all([
+        tx.objectStore('league').get('current'),
+        tx.objectStore('games').getAll(),
+        tx.objectStore('players').getAll(),
+        tx.objectStore('historicalPlayers').getAll(),
+        tx.objectStore('seasonMemories').getAll(),
+        tx.objectStore('playerSeasons').getAll(),
+      ]);
+    if (!persisted) {
+      throw new Error('No league found. Start a new game from the Home page.');
+    }
+    assertCurrentLeagueState(persisted.value);
+    const persistedLeague = persisted.value;
+    if (
+      persistedLeague.info.stage !== 'season' ||
+      persistedLeague.info.currentYear !== league.info.currentYear ||
+      persistedLeague.playoff.natty !== league.playoff.natty
+    ) {
+      throw new Error('The persisted league is no longer ready for season completion.');
+    }
+    const championship = games.find(game => game.id === league.playoff.natty);
+    if (
+      !championship ||
+      championship.year !== league.info.currentYear ||
+      championship.gameType !== 'national_championship' ||
+      championship.winnerId === null
+    ) {
+      throw new Error('The national championship is not complete.');
+    }
+    if (
+      memories.some(existing => existing.year === memory.year) ||
+      seasons.some(season => season.year === memory.year)
+    ) {
+      throw new Error(`Completed-season artifacts already exist for ${memory.year}.`);
+    }
+
+    assertLeagueGameRecords(league, games);
+    assertCurrentRosterState(league, players);
+    assertHistoricalIntegrity({
+      currentPlayers: players,
+      historicalPlayers,
+      playerSeasons: [...seasons, ...playerSeasons],
+    });
+    assertSeasonMemoryReferences(
+      [...memories, memory],
+      league,
+      games,
+      players,
+      historicalPlayers,
+      [...seasons, ...playerSeasons],
+    );
+
+    await tx.objectStore('seasonMemories').put(memory);
+    const playerSeasonStore = tx.objectStore('playerSeasons');
+    for (const season of playerSeasons) await playerSeasonStore.put(season);
     await tx.objectStore('league').put({ key: 'current', value: league });
     await tx.done;
   } catch (error) {

@@ -31,6 +31,7 @@ import {
 import { finalizeRoster } from './rosterFinalization';
 import { loadRecruitingState } from '../../../db/recruitingRepo';
 import type { GameRecord } from '../../../types/db';
+import { buildCompletedSeasonArtifacts } from '../memory';
 
 const resetDatabase = async () => {
   const db = await getDb();
@@ -271,6 +272,16 @@ const seedFullCycle = async () => {
     await tx.objectStore('baseData').put(record);
   }
   await tx.done;
+  const artifacts = buildCompletedSeasonArtifacts(
+    league,
+    [championship],
+    await db.getAllFromIndex('gameDetails', 'year', league.info.currentYear),
+    await db.getAll('players'),
+  );
+  await db.put('seasonMemories', artifacts.memory);
+  for (const season of artifacts.playerSeasons) {
+    await db.put('playerSeasons', season);
+  }
 };
 
 const loadPersistedLeague = async () => {

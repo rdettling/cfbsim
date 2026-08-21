@@ -3,7 +3,6 @@ import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import {
   getAllHistoricalPlayers,
   getGamesByYear,
-  getPlayerSeasonsByYear,
 } from '../../../db/simRepo';
 import type { GameRecord } from '../../../types/db';
 import type { Team } from '../../../types/domain';
@@ -13,11 +12,7 @@ import {
   type SeasonTeamSnapshot,
 } from '../../../types/memory';
 import { buildTeamAccomplishments } from '../memoryProjection';
-import { formatAwardStatLine } from '../utils/awardStatLine';
-import {
-  createAwardDisplayEntry,
-  sortAwardDisplayEntries,
-} from '../utils/awardDisplay';
+import { projectSeasonAwardWinners } from '../utils/awardDisplay';
 import type {
   BowlGameEntry,
   PlayoffBracket,
@@ -225,10 +220,9 @@ export const loadLeagueHistory = async (requestedYear?: number) => {
     throw new Error(`League history is unavailable for the ${selectedYear} season.`);
   }
 
-  const [games, historicalPlayers, playerSeasons] = await Promise.all([
+  const [games, historicalPlayers] = await Promise.all([
     getGamesByYear(selectedYear),
     getAllHistoricalPlayers(),
-    getPlayerSeasonsByYear(selectedYear),
   ]);
   const gamesById = new Map(games.map(game => [game.id, game]));
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
@@ -237,9 +231,6 @@ export const loadLeagueHistory = async (requestedYear?: number) => {
   );
   const identitiesById = new Map(
     [...players, ...historicalPlayers].map(player => [player.id, player]),
-  );
-  const playerSeasonsById = new Map(
-    playerSeasons.map(season => [season.playerId, season]),
   );
   const championshipGame = requireValue(
     gamesById.get(memory.postseason.playoff.games.championship),
@@ -296,32 +287,7 @@ export const loadLeagueHistory = async (requestedYear?: number) => {
         championshipGameId: entry.championshipGameId,
       })),
       bowls: buildBowlEntries(memory, gamesById, teamsById, snapshotsByTeamId),
-      awards: sortAwardDisplayEntries(memory.awards.map(entry => {
-        const player = requireValue(
-          identitiesById.get(entry.playerId),
-          `Season ${selectedYear} references missing award winner ${entry.playerId}.`,
-        );
-        const playerSeason = requireValue(
-          playerSeasonsById.get(entry.playerId),
-          `Season ${selectedYear} is missing award-winner stats for ${entry.playerId}.`,
-        );
-        const team = requireValue(
-          teamsById.get(entry.teamId),
-          `Season ${selectedYear} references missing award team ${entry.teamId}.`,
-        );
-        return createAwardDisplayEntry(entry.categorySlug, [{
-          key: 'first',
-          player: {
-            id: entry.playerId,
-            first: player.first,
-            last: player.last,
-            position: player.pos,
-            teamName: team.name,
-          },
-          score: null,
-          statLine: formatAwardStatLine(playerSeason),
-        }]);
-      })),
+      awards: projectSeasonAwardWinners(memory, identitiesById, teamsById),
     },
   };
 };

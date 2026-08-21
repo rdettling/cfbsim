@@ -42,7 +42,11 @@ const SeasonBanner = ({ info, compact = false }: SeasonBannerProps) => {
     setIsSimulating(true);
     try {
       await advanceWeeks(destWeek);
-      window.dispatchEvent(new Event('pageDataRefresh'));
+      if (destWeek > info.lastWeek) {
+        navigate(ROUTES.SEASON_SUMMARY);
+      } else {
+        window.dispatchEvent(new Event('pageDataRefresh'));
+      }
     } catch (error) {
       console.error('Error simulating weeks:', error);
     } finally {

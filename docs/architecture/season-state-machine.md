@@ -16,7 +16,7 @@ route metadata.
 | Source | Destination | Owner |
 | --- | --- | --- |
 | `preseason` | `season` | `initializeSeason` |
-| `season` | `summary` | season completion |
+| `season` | `summary` | guarded season completion; final rankings, memory, and player-season totals commit atomically |
 | `summary` | `realignment` | `advanceOffseasonStage` |
 | `realignment` | `progression` | `advanceOffseasonStage` |
 | `progression` | `recruiting` | `initializeRecruiting` |

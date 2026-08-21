@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import StageUnavailableState from '../components/layout/StageUnavailableState';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
@@ -10,7 +10,6 @@ import { SeasonAwardsPanel } from './season-summary/SeasonAwardsPanel';
 import { SeasonOverview } from './season-summary/SeasonOverview';
 import { SeasonPrestigePanel } from './season-summary/SeasonPrestigePanel';
 import type { SeasonSummaryDetail } from './season-summary/types';
-import { SeasonLegacyPanel } from './season-summary/SeasonLegacyPanel';
 
 const SeasonSummary = () => {
   const [activeDetail, setActiveDetail] = useState<SeasonSummaryDetail>('awards');
@@ -25,14 +24,6 @@ const SeasonSummary = () => {
     setSelectedTeam(teamName);
     setModalOpen(true);
   };
-
-  const orderedPrestigeChanges = (data?.teams ?? [])
-    .filter((team) => team.prestige_change !== 0)
-    .slice()
-    .sort((a, b) => {
-      const changeDifference = b.prestige_change - a.prestige_change;
-      return changeDifference || a.name.localeCompare(b.name);
-    });
 
   const userTeam = data
     ? (data.teams.find((team) => team.id === data.team.id) ?? data.teams[0])
@@ -69,10 +60,15 @@ const SeasonSummary = () => {
                 flexDirection: 'column',
                 flex: { lg: 1 },
                 minHeight: { lg: 0 },
+                overflow: { lg: 'hidden' },
               }}
             >
-              <Box sx={{ mb: 1.25 }}>
-                <Typography component="h1" variant="h4" sx={{ fontWeight: 800 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={{ xs: 0.25, sm: 1.5 }}
+                sx={{ alignItems: { sm: 'baseline' }, mb: 1 }}
+              >
+                <Typography component="h1" variant="h5" sx={{ fontWeight: 800 }}>
                   {data.info.currentYear} Season Summary
                 </Typography>
                 <Typography
@@ -83,14 +79,14 @@ const SeasonSummary = () => {
                 >
                   Champions, individual honors, and next season’s prestige movement.
                 </Typography>
-              </Box>
+              </Stack>
 
               <SeasonOverview
-                champion={data.champion}
+                championship={data.championship}
                 userTeam={userTeam}
+                legacy={data.legacy}
                 onTeamClick={handleTeamClick}
               />
-              {data.legacy && <SeasonLegacyPanel legacy={data.legacy} />}
 
               <Box
                 sx={{
@@ -100,14 +96,18 @@ const SeasonSummary = () => {
                   gap: 1.25,
                   flex: 1,
                   minHeight: 0,
-                  mt: 1.25,
+                  mt: 1,
                 }}
               >
-                <SeasonAwardsPanel awards={data.awards} onTeamClick={handleTeamClick} />
-                <SeasonPrestigePanel teams={orderedPrestigeChanges} onTeamClick={handleTeamClick} />
+                <SeasonAwardsPanel
+                  awards={data.awards}
+                  userTeamName={userTeam.name}
+                  onTeamClick={handleTeamClick}
+                />
+                <SeasonPrestigePanel teams={data.teams} onTeamClick={handleTeamClick} />
               </Box>
 
-              <Box sx={{ display: { xs: 'block', lg: 'none' }, mt: 1.25 }}>
+              <Box sx={{ display: { xs: 'block', lg: 'none' }, mt: 1 }}>
                 <Tabs
                   value={activeDetail}
                   onChange={(_, value: SeasonSummaryDetail) => setActiveDetail(value)}
@@ -136,10 +136,14 @@ const SeasonSummary = () => {
                   sx={{ height: { xs: 'min(56vh, 540px)', md: 'min(58vh, 620px)' }, pt: 1.25 }}
                 >
                   {activeDetail === 'awards' ? (
-                    <SeasonAwardsPanel awards={data.awards} onTeamClick={handleTeamClick} />
+                    <SeasonAwardsPanel
+                      awards={data.awards}
+                      userTeamName={userTeam.name}
+                      onTeamClick={handleTeamClick}
+                    />
                   ) : (
                     <SeasonPrestigePanel
-                      teams={orderedPrestigeChanges}
+                      teams={data.teams}
                       onTeamClick={handleTeamClick}
                     />
                   )}

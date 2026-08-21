@@ -4,6 +4,7 @@ import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
 import { getAllSeasonMemories } from '../../../db/seasonMemoryRepo';
 import { getAllGames } from '../../../db/simRepo';
 import {
+  buildTestAwardStats,
   buildTestLeague,
   buildTestSeasonMemory,
   buildTestSeasonTeamSnapshot,
@@ -113,7 +114,12 @@ describe('loadLeagueRecords', () => {
           }],
           bowls: [{ gameId: 2, name: 'Test Bowl', tier: 'other' }],
         },
-        awards: [{ categorySlug: 'heisman', playerId: 10, teamId: 1 }],
+        awards: [{
+          categorySlug: 'heisman',
+          playerId: 10,
+          teamId: 1,
+          stats: buildTestAwardStats(),
+        }],
       }),
     ]);
     vi.mocked(getAllGames).mockResolvedValue([

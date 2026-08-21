@@ -34,7 +34,7 @@ as season weeks advance.
 - Final playoff selection publishes one `playoff_field` rankings item in the
   same transaction as the selected seeds, league state, and first playoff
   games for every supported field size.
-- `ensureSummaryStage(...)` promotes stage to `summary` when natty winner exists and applies final postseason ranking normalization.
+- `finalizeCompletedSeasonIfReady(...)` applies final postseason ranking normalization and atomically persists completed-season artifacts with the `summary` stage when a national-championship winner exists.
 
 3. **Playoff presentation path**
 - Route-specific postseason loaders compose the bracket, playoff picture,
@@ -42,8 +42,9 @@ as season weeks advance.
   context.
 
 4. **Awards generation path**
-- `loadAwards()` and `loadSeasonSummary()` provide current-year games and logs to `buildAwards(...)`.
+- Live `loadAwards()` projections provide current-year games and logs to `buildAwards(...)`.
 - `buildAwards(...)` owns the award window, eligibility, normalized scoring, and live/final placements.
+- Season completion calculates final awards once; Season Summary reads the persisted winners and their award-window totals from `SeasonMemory`.
 
 ```mermaid
 flowchart TD
@@ -89,8 +90,8 @@ flowchart TD
 - If postseason round prerequisites are incomplete, next round creation is deferred.
 - If natty does not resolve, stage remains non-summary and summary-specific outputs are withheld.
 - Award pages can show empty/fewer outputs early when insufficient games/logs exist.
-- Final award winners are copied into the completed season's compact
-  `SeasonMemory` before detailed game logs are cleared. Historical finalists
+- Final award winners and their numeric award-window totals are copied into the
+  completed season's compact `SeasonMemory` when Summary begins. Historical finalists
   and generated award prose are not retained.
 
 ## Source Map
@@ -112,4 +113,4 @@ flowchart TD
 - `src/domain/league/loaders/awards.ts`
   - current-season awards lifecycle gating and projection
 - `src/domain/league/loaders/seasonSummary.ts`
-  - summary-stage awards integration
+  - persisted summary-stage awards projection

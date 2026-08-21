@@ -19,14 +19,10 @@ import { applyPrestigeChanges, calculatePrestigeChanges } from '../prestige';
 import { getNextStageDefinition } from '../../../constants/stages';
 import { initializeRecruiting } from './recruiting';
 import { initializeRosterFinalization } from './rosterFinalization';
-import { getGameDetailsByYear, getGamesByYear } from '../../../db/simRepo';
-import { loadLeaguePlayersSnapshot } from '../../../db/leagueRepo';
-import { buildSeasonMemory } from '../memory';
-import {
-  buildPlayerSeasons,
-  flattenGameDetail,
-  selectRetainedGameIds,
-} from '../gameDetails';
+import { getGamesByYear } from '../../../db/simRepo';
+import { getSeasonMemory } from '../../../db/seasonMemoryRepo';
+import { selectRetainedGameIds } from '../gameDetails';
+import { SeasonMemoryDataIntegrityError } from '../../../types/memory';
 import { prepareProgramEntryRosters } from '../../rosterBootstrap';
 import { buildProgramEntryOrigins } from '../../playerOrigins';
 
@@ -54,44 +50,27 @@ export const advanceOffseasonStage = async (
         historyData,
         teamsData,
         prestigeConfig,
-        snapshot,
         games,
-        details,
+        memory,
       ] = await Promise.all([
         getHistoryData(),
         getTeamsData(),
         getPrestigeConfig(),
-        loadLeaguePlayersSnapshot(),
         getGamesByYear(league.info.currentYear),
-        getGameDetailsByYear(league.info.currentYear),
+        getSeasonMemory(league.info.currentYear),
       ]);
+      if (!memory) {
+        throw new SeasonMemoryDataIntegrityError(
+          `Season ${league.info.currentYear} is missing its finalized memory.`,
+        );
+      }
       calculatePrestigeChanges(
         league,
         historyData,
         teamsData,
         prestigeConfig,
       );
-      const detailedIds = new Set(details.map(detail => detail.gameId));
-      const missingDetail = games.find(
-        game => game.winnerId !== null && !detailedIds.has(game.id),
-      );
-      if (missingDetail) {
-        throw new Error(`Completed game ${missingDetail.id} has no detail record.`);
-      }
       history = updateHistoryForSeason(league, historyData);
-      const flattenedDetails = details.map(flattenGameDetail);
-      const memory = buildSeasonMemory(
-        snapshot.league,
-        games,
-        snapshot.players,
-        flattenedDetails.flatMap(detail => detail.logs),
-        flattenedDetails.flatMap(detail => detail.plays),
-      );
-      const playerSeasons = buildPlayerSeasons(
-        league.info.currentYear,
-        details,
-        snapshot.players,
-      );
       const userTeam = league.teams.find(team => team.name === league.info.team);
       if (!userTeam) throw new Error('The user program is missing.');
       const retainedGameIds = selectRetainedGameIds(
@@ -105,9 +84,10 @@ export const advanceOffseasonStage = async (
         expectedStage,
         league,
         history,
-        memory,
-        playerSeasons,
-        retainedGameIds,
+        detailPruning: {
+          year: memory.year,
+          retainedGameIds,
+        },
       });
       return {
         previousStage: expectedStage,

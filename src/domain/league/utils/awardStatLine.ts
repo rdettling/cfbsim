@@ -1,29 +1,6 @@
-import type { GameLogRecord } from '../../../types/db';
+import type { AwardStatLineStats } from '../../../types/memory';
 
-export type AwardStatLineStats = Pick<
-  GameLogRecord,
-  | 'pass_yards'
-  | 'pass_attempts'
-  | 'pass_completions'
-  | 'pass_touchdowns'
-  | 'pass_interceptions'
-  | 'rush_yards'
-  | 'rush_attempts'
-  | 'rush_touchdowns'
-  | 'receiving_yards'
-  | 'receiving_catches'
-  | 'receiving_touchdowns'
-  | 'fumbles'
-  | 'tackles'
-  | 'sacks'
-  | 'interceptions'
-  | 'fumbles_forced'
-  | 'fumbles_recovered'
-  | 'field_goals_made'
-  | 'field_goals_attempted'
-  | 'extra_points_made'
-  | 'extra_points_attempted'
->;
+export type { AwardStatLineStats } from '../../../types/memory';
 
 export const formatAwardStatLine = (stats: AwardStatLineStats) => {
   const parts: string[] = [];

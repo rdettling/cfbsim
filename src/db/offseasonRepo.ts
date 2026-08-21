@@ -6,8 +6,7 @@ import {
   type LeagueState,
 } from '../types/league';
 import type { NextSeasonConfiguration } from '../types/domain';
-import type { SeasonMemory } from '../types/memory';
-import type { PlayerOrigin, PlayerRecord, PlayerSeasonStats } from '../types/db';
+import type { PlayerOrigin, PlayerRecord } from '../types/db';
 import { getDb } from './db';
 import {
   assertCurrentLeagueState,
@@ -27,9 +26,7 @@ export interface OffseasonTransitionCommit {
   expectedSettings?: NextSeasonConfiguration;
   league: LeagueState;
   history?: HistoryData;
-  memory?: SeasonMemory;
-  playerSeasons?: PlayerSeasonStats[];
-  retainedGameIds?: Set<number>;
+  detailPruning?: { year: number; retainedGameIds: Set<number> };
   players?: PlayerRecord[];
   playerOrigins?: PlayerOrigin[];
 }
@@ -71,9 +68,7 @@ export const commitOffseasonTransition = async ({
   expectedSettings,
   league,
   history,
-  memory,
-  playerSeasons,
-  retainedGameIds,
+  detailPruning,
   players,
   playerOrigins,
 }: OffseasonTransitionCommit) => {
@@ -85,8 +80,6 @@ export const commitOffseasonTransition = async ({
     [
       'baseData',
       'league',
-      'seasonMemories',
-      'playerSeasons',
       'gameDetails',
       'players',
       'playerOrigins',
@@ -136,31 +129,13 @@ export const commitOffseasonTransition = async ({
       });
     }
 
-    if (memory) {
-      const existing = await tx.objectStore('seasonMemories').get(memory.year);
-      if (existing) {
-        throw new Error(`Dynasty memory for ${memory.year} already exists.`);
-      }
-      await tx.objectStore('seasonMemories').put(memory);
-    }
-
-    if (playerSeasons) {
-      const store = tx.objectStore('playerSeasons');
-      for (const season of playerSeasons) {
-        if (await store.get([season.year, season.playerId])) {
-          throw new Error(
-            `Player season ${season.year}/${season.playerId} already exists.`,
-          );
-        }
-        await store.put(season);
-      }
-    }
-
-    if (memory && retainedGameIds) {
+    if (detailPruning) {
       const detailStore = tx.objectStore('gameDetails');
-      const keys = await detailStore.index('year').getAllKeys(memory.year);
+      const keys = await detailStore.index('year').getAllKeys(detailPruning.year);
       for (const key of keys) {
-        if (!retainedGameIds.has(Number(key))) await detailStore.delete(key);
+        if (!detailPruning.retainedGameIds.has(Number(key))) {
+          await detailStore.delete(key);
+        }
       }
     }
 

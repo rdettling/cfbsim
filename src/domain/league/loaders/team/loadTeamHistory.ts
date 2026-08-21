@@ -6,14 +6,11 @@ import {
 import { loadLeaguePlayersSnapshot } from '../../../../db/leagueRepo';
 import { getAllSeasonMemories } from '../../../../db/seasonMemoryRepo';
 import {
-  getAllGameLogs,
-  getAllPlays,
   getGamesByTeam,
   getGamesByYear,
 } from '../../../../db/simRepo';
 import type { HistoryRow } from '../../../../types/baseData';
 import { SeasonMemoryDataIntegrityError } from '../../../../types/memory';
-import { buildSeasonMemory } from '../../memory';
 import {
   buildDynastyOverview,
   buildTeamAccomplishments,
@@ -22,7 +19,7 @@ import {
 import { listTeamNames, resolveTeam } from './shared';
 
 export const loadTeamHistory = async (teamName?: string) => {
-  const { league, players } = await loadLeaguePlayersSnapshot();
+  const { league } = await loadLeaguePlayersSnapshot();
   const team = resolveTeam(league, teamName);
   const cutoffYear = league.info.currentYear - 1;
 
@@ -32,8 +29,6 @@ export const loadTeamHistory = async (teamName?: string) => {
     currentYearGames,
     persistedMemories,
     rivalries,
-    gameLogs,
-    plays,
     historicalGamesIndex,
   ] = await Promise.all([
     getHistoryData(),
@@ -43,15 +38,13 @@ export const loadTeamHistory = async (teamName?: string) => {
       : Promise.resolve([]),
     getAllSeasonMemories(),
     getRivalriesData(),
-    getAllGameLogs(),
-    getAllPlays(),
     getHistoricalGamesIndex(),
   ]);
   const allGames = Array.from(
     new Map([...teamGames, ...currentYearGames].map(game => [game.id, game])).values(),
   );
   const currentMemory = league.info.stage === 'summary'
-    ? buildSeasonMemory(league, allGames, players, gameLogs, plays)
+    ? persistedMemories.find(memory => memory.year === league.info.currentYear) ?? null
     : null;
   const memories = currentMemory
     ? [

@@ -1,17 +1,23 @@
 import type {
-  GameLogRecord,
+  GameDetailRecord,
   GameRecord,
   PlayerRecord,
   PlayRecord,
+  PlayerSeasonStats,
 } from '../../types/db';
+import type { AwardDisplayEntry } from '../../types/awards';
 import type { LeagueState } from '../../types/league';
 import type {
+  AwardStatLineStats,
   SeasonMemory,
   SeasonPlayoffArchive,
 } from '../../types/memory';
 import { SeasonMemoryDataIntegrityError } from '../../types/memory';
 import { buildAwards } from './awards';
+import { AWARD_SCORING_POLICY } from './awardScoringConfig';
+import { buildPlayerSeasons, flattenGameDetail } from './gameDetails';
 import { isNy6Bowl } from './utils/bowlSelection';
+import { aggregatePlayerLogs } from './utils/stats/playerAggregates';
 import { buildTeamAggregateTotalTables } from './utils/stats/teamAggregates';
 import { sortStandingsTeams } from './utils/standings';
 
@@ -204,11 +210,12 @@ const buildPlayoffArchive = (
   };
 };
 
-export const buildSeasonMemory = (
+const buildSeasonMemory = (
   league: LeagueState,
   games: GameRecord[],
   players: PlayerRecord[],
-  logs: GameLogRecord[],
+  finalAwards: AwardDisplayEntry[],
+  awardStatsByPlayer: Map<number, AwardStatLineStats>,
   plays: PlayRecord[],
 ): SeasonMemory => {
   const year = league.info.currentYear;
@@ -217,23 +224,28 @@ export const buildSeasonMemory = (
   );
   const gamesById = new Map(yearGames.map(game => [game.id, game]));
   const teamsByName = new Map(league.teams.map(team => [team.name, team]));
-  const { final } = buildAwards(league, players, games, logs);
   const totals = buildTeamAggregateTotalTables(
     league.teams,
     yearGames,
     plays,
     year,
   );
-  const awards = final.flatMap(entry => {
+  const awards = finalAwards.flatMap(entry => {
     const winner = entry.placements.find(placement => placement.key === 'first')?.player;
     if (!winner) return [];
     const player = players.find(candidate => candidate.id === winner.id);
     const team = teamsByName.get(winner.teamName);
-    if (!player || !team) return [];
+    const stats = awardStatsByPlayer.get(winner.id);
+    if (!player || !team || !stats) {
+      throw new SeasonMemoryDataIntegrityError(
+        `Season ${year} has an invalid ${entry.categorySlug} award winner.`,
+      );
+    }
     return [{
       categorySlug: entry.categorySlug,
       playerId: player.id,
       teamId: team.id,
+      stats,
     }];
   });
   const playoff = buildPlayoffArchive(league, gamesById);
@@ -297,5 +309,66 @@ export const buildSeasonMemory = (
       bowls,
     },
     awards,
+  };
+};
+
+export interface CompletedSeasonArtifacts {
+  memory: SeasonMemory;
+  playerSeasons: PlayerSeasonStats[];
+}
+
+export const buildCompletedSeasonArtifacts = (
+  league: LeagueState,
+  games: GameRecord[],
+  details: GameDetailRecord[],
+  players: PlayerRecord[],
+): CompletedSeasonArtifacts => {
+  const year = league.info.currentYear;
+  const yearGames = games.filter(game => game.year === year);
+  const completedGames = yearGames.filter(game => game.winnerId !== null);
+  const detailsByGameId = new Map(
+    details
+      .filter(detail => detail.year === year)
+      .map(detail => [detail.gameId, detail]),
+  );
+  const missingDetail = completedGames.find(game => !detailsByGameId.has(game.id));
+  if (missingDetail) {
+    throw new SeasonMemoryDataIntegrityError(
+      `Completed game ${missingDetail.id} has no detail record.`,
+    );
+  }
+
+  const flattenedDetails = [...detailsByGameId.values()].map(flattenGameDetail);
+  const logs = flattenedDetails.flatMap(detail => detail.logs);
+  const plays = flattenedDetails.flatMap(detail => detail.plays);
+  const { final } = buildAwards(league, players, yearGames, logs);
+
+  const awardGameTypes = new Set<GameRecord['gameType']>(
+    AWARD_SCORING_POLICY.eligibleGameTypes,
+  );
+  const awardGameIds = new Set(
+    completedGames
+      .filter(game => awardGameTypes.has(game.gameType))
+      .map(game => game.id),
+  );
+  const awardTotals = aggregatePlayerLogs(
+    logs.filter(log => awardGameIds.has(log.gameId)),
+  );
+  const awardStatsByPlayer = new Map<number, AwardStatLineStats>();
+  awardTotals.forEach((totals, playerId) => {
+    const { playerId: _playerId, ...stats } = totals;
+    awardStatsByPlayer.set(playerId, stats);
+  });
+
+  return {
+    memory: buildSeasonMemory(
+      league,
+      yearGames,
+      players,
+      final,
+      awardStatsByPlayer,
+      plays,
+    ),
+    playerSeasons: buildPlayerSeasons(year, [...detailsByGameId.values()], players),
   };
 };

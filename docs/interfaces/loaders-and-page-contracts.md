@@ -30,7 +30,7 @@ loaders and discards an invalid authoritative save as a whole.
 
 | Loader | On-stage projection | Off-stage projection | Snapshot |
 | --- | --- | --- | --- |
-| `loadSeasonSummary` | champion, awards, prestige summary | empty summary | league + players |
+| `loadSeasonSummary` | championship, persisted award winners, legacy, prestige summary | empty summary | league + finalized season memory + referenced award players |
 | `loadRealignment` | current configuration and next-season preview | gated empty setup | league |
 | `loadRosterProgression` | returning/departing player preview | empty progression | league + players |
 | `loadRecruiting` | public prospect market, board, standings, capacity, budget, rules, cursor | empty recruiting workspace | league + recruiting + players |

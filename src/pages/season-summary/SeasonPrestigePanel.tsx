@@ -21,6 +21,14 @@ type SeasonPrestigePanelProps = {
 
 const formatAverage = (value: number | null) => (value === null ? '—' : value.toFixed(1));
 
+export const getOrderedPrestigeChanges = (teams: SeasonSummaryTeam[]) =>
+  teams
+    .filter(team => team.prestige_change !== 0)
+    .slice()
+    .sort((left, right) =>
+      right.prestige_change - left.prestige_change || left.name.localeCompare(right.name)
+    );
+
 const MovementChip = ({ change }: { change: number }) => (
   <Chip
     label={`${change > 0 ? '+' : ''}${change} ${change > 0 ? 'Promotion' : 'Relegation'}`}
@@ -48,64 +56,58 @@ const TeamCell = ({
   </Stack>
 );
 
-export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelProps) => (
-  <Paper
-    component="section"
-    aria-labelledby="season-prestige-title"
-    variant="outlined"
-    sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: 0,
-      height: '100%',
-      overflow: 'hidden',
-    }}
-  >
-    <Box
-      sx={{ px: { xs: 1.5, md: 2 }, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}
-    >
-      <Typography id="season-prestige-title" component="h2" variant="h6">
-        Prestige Movement
-      </Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          color: 'text.secondary',
-        }}
-      >
-        Preview for next season · 4-year average rank
-      </Typography>
-    </Box>
+export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelProps) => {
+  const changes = getOrderedPrestigeChanges(teams);
 
-    {teams.length === 0 ? (
-      <Box sx={{ p: 2.5, textAlign: 'center' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-          No prestige changes
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-          }}
-        >
-          No teams qualified for promotion or relegation this season.
+  return (
+    <Paper
+      component="section"
+      aria-labelledby="season-prestige-title"
+      variant="outlined"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        sx={{ px: { xs: 1.5, md: 1.75 }, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}
+      >
+        <Typography id="season-prestige-title" component="h2" variant="h6">
+          Prestige Movement
         </Typography>
       </Box>
-    ) : (
-      <>
+
+      {changes.length === 0 ? (
+        <Box sx={{ p: 2.5, textAlign: 'center' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+            No prestige changes
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
+            No teams qualified for promotion or relegation this season.
+          </Typography>
+        </Box>
+      ) : (
+        <>
         <Box sx={{ display: { xs: 'none', lg: 'block' }, flex: 1, minHeight: 0, overflow: 'auto' }}>
           <Table size="small" stickyHeader aria-label="Prestige movement">
             <TableHead>
               <TableRow>
                 <TableCell>Team</TableCell>
                 <TableCell align="right">4-Year Avg</TableCell>
-                <TableCell align="right">Current Tier</TableCell>
-                <TableCell align="right">Next Tier</TableCell>
+                <TableCell align="right">Tier</TableCell>
                 <TableCell align="right">Movement</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {teams.map((team) => {
+              {changes.map((team) => {
                 const change = team.prestige_change;
                 return (
                   <TableRow key={team.name}>
@@ -115,8 +117,9 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
                     <TableCell align="right">
                       {formatAverage(team.avg_rank_before)} → {formatAverage(team.avg_rank_after)}
                     </TableCell>
-                    <TableCell align="right">Tier {team.prestige}</TableCell>
-                    <TableCell align="right">Tier {team.prestige + change}</TableCell>
+                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                      {team.prestige} → {team.prestige + change}
+                    </TableCell>
                     <TableCell align="right">
                       <MovementChip change={change} />
                     </TableCell>
@@ -130,7 +133,7 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
         <Stack
           sx={{ display: { xs: 'flex', lg: 'none' }, flex: 1, minHeight: 0, overflow: 'auto' }}
         >
-          {teams.map((team) => {
+          {changes.map((team) => {
             const change = team.prestige_change;
             return (
               <Box
@@ -202,7 +205,8 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
             );
           })}
         </Stack>
-      </>
-    )}
-  </Paper>
-);
+        </>
+      )}
+    </Paper>
+  );
+};

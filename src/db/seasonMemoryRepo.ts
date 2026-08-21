@@ -19,6 +19,7 @@ import {
   getArchivedPlayoffGameIds,
   getArchivedPostseasonGameType,
 } from '../domain/league/postseasonArchive';
+import { PLAYER_SEASON_STAT_KEYS } from '../domain/league/gameDetails';
 import { getDb } from './db';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -159,13 +160,22 @@ const isPostseason = (value: unknown): value is SeasonPostseasonArchive =>
   value.bowls.every(isBowl) &&
   new Set(value.bowls.map(entry => entry.gameId)).size === value.bowls.length;
 
-const isAward = (value: unknown): value is SeasonAwardWinner =>
-  isRecord(value) &&
-  hasExactKeys(value, ['categorySlug', 'playerId', 'teamId']) &&
-  typeof value.categorySlug === 'string' &&
-  value.categorySlug.length > 0 &&
-  Number.isInteger(value.playerId) &&
-  Number.isInteger(value.teamId);
+const isAward = (value: unknown): value is SeasonAwardWinner => {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ['categorySlug', 'playerId', 'teamId', 'stats']) ||
+    typeof value.categorySlug !== 'string' ||
+    value.categorySlug.length === 0 ||
+    !Number.isInteger(value.playerId) ||
+    !Number.isInteger(value.teamId) ||
+    !isRecord(value.stats)
+  ) return false;
+  const stats = value.stats;
+  return hasExactKeys(stats, PLAYER_SEASON_STAT_KEYS) &&
+    PLAYER_SEASON_STAT_KEYS.every(key =>
+      typeof stats[key] === 'number' && Number.isFinite(stats[key])
+    );
+};
 
 const TEAM_TOTAL_KEYS = [
   'games',

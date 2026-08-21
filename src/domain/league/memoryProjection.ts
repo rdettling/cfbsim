@@ -22,7 +22,9 @@ export interface MemoryAccomplishment {
 export interface SignatureGame {
   id: number;
   year: number;
+  week: number;
   opponent: string;
+  gameLabel: string;
   result: 'W' | 'L';
   score: string;
   label: string;
@@ -76,7 +78,9 @@ const toSignatureGame = (
   return {
     id: game.id,
     year: game.year,
+    week: game.weekPlayed,
     opponent: opponent?.name ?? 'Unknown',
+    gameLabel: game.name ?? game.baseLabel,
     result,
     score: `${teamScore(game, teamId)}-${opponentScore(game, teamId)}`,
     label: `${result} ${teamScore(game, teamId)}-${opponentScore(game, teamId)} vs ${opponent?.name ?? 'Unknown'}`,
@@ -236,9 +240,10 @@ export const selectSignatureGames = ({
     if (selected.length >= 3) break;
     add(game);
   }
-  return selected.slice(0, 3).map(game =>
-    toSignatureGame(game, teamId, teamsById),
-  );
+  return selected
+    .slice(0, 3)
+    .sort((left, right) => left.weekPlayed - right.weekPlayed || left.id - right.id)
+    .map(game => toSignatureGame(game, teamId, teamsById));
 };
 
 export const buildDynastyOverview = ({

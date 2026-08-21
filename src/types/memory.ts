@@ -1,3 +1,4 @@
+import type { GameLogRecord } from './db';
 import type { TeamAggregateTotals } from './stats';
 
 interface SeasonPlayoffArchiveBase {
@@ -60,7 +61,10 @@ export interface SeasonAwardWinner {
   categorySlug: string;
   playerId: number;
   teamId: number;
+  stats: AwardStatLineStats;
 }
+
+export type AwardStatLineStats = Omit<GameLogRecord, 'gameId' | 'playerId'>;
 
 export interface SeasonTeamSnapshot {
   teamId: number;

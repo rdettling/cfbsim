@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildTestAwardStats,
   buildTestLeague,
   buildTestPlayer,
   buildTestSeasonMemory,
@@ -54,6 +55,22 @@ const game: GameRecord = {
 describe('season memory integrity', () => {
   it('accepts the exact current shape', () => {
     expect(() => assertCurrentSeasonMemory(memory)).not.toThrow();
+  });
+
+  it('requires exact numeric award-window totals', () => {
+    const awardMemory = buildTestSeasonMemory({
+      awards: [{
+        categorySlug: 'heisman',
+        playerId: 1,
+        teamId: 1,
+        stats: buildTestAwardStats({ pass_yards: 3_500 }),
+      }],
+    });
+    expect(() => assertCurrentSeasonMemory(awardMemory)).not.toThrow();
+    const malformed = structuredClone(awardMemory);
+    delete (malformed.awards[0].stats as Partial<typeof malformed.awards[0]['stats']>)
+      .pass_yards;
+    expect(() => assertCurrentSeasonMemory(malformed)).toThrow();
   });
 
   it('rejects malformed snapshot rankings and records', () => {

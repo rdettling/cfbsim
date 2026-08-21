@@ -81,9 +81,21 @@ const memory: SeasonMemory = buildTestSeasonMemory({
 describe('dynasty memory projections', () => {
   it('builds proven accomplishments and selects achievement and heartbreak games', () => {
     const games = [
-      game(1, 2025, 1, { winProbA: 0.2 }),
-      game(2, 2025, 1),
-      game(3, 2025, 2, { overtime: 2, scoreA: 27, scoreB: 30 }),
+      game(1, 2025, 1, {
+        baseLabel: 'Conference: Test Conference',
+        winProbA: 0.2,
+      }),
+      game(2, 2025, 1, {
+        baseLabel: 'Test State vs Other State · Conference Championship',
+        name: 'Conference Championship',
+      }),
+      game(3, 2025, 2, {
+        baseLabel: 'Test State vs Other State · National Championship',
+        name: 'National Championship',
+        overtime: 2,
+        scoreA: 27,
+        scoreB: 30,
+      }),
     ];
     const gamesById = new Map(games.map(entry => [entry.id, entry]));
     expect(buildTeamAccomplishments(1, memory, gamesById).map(entry => entry.type))
@@ -103,7 +115,11 @@ describe('dynasty memory projections', () => {
           venue: null,
         }],
       },
-    }).map(entry => entry.id)).toEqual([3, 1, 2]);
+    }).map(entry => [entry.id, entry.week, entry.gameLabel])).toEqual([
+      [1, 1, 'Conference: Test Conference'],
+      [2, 2, 'Conference Championship'],
+      [3, 3, 'National Championship'],
+    ]);
   });
 
   it('limits legacy milestones and recognizes new dynasty bests', () => {

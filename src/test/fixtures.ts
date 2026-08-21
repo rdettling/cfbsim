@@ -7,7 +7,11 @@ import type {
 } from '../types/db';
 import type { NamesData } from '../types/baseData';
 import type { LeagueStage, Team } from '../types/domain';
-import type { SeasonMemory, SeasonTeamSnapshot } from '../types/memory';
+import type {
+  AwardStatLineStats,
+  SeasonMemory,
+  SeasonTeamSnapshot,
+} from '../types/memory';
 import type { TeamAggregateTotals } from '../types/stats';
 import {
   DEFAULT_NEXT_SEASON_CONFIGURATION,
@@ -282,6 +286,33 @@ export const buildTestSeasonMemory = (
     bowls: [],
   },
   awards: [],
+  ...overrides,
+});
+
+export const buildTestAwardStats = (
+  overrides: Partial<AwardStatLineStats> = {},
+): AwardStatLineStats => ({
+  pass_yards: 0,
+  pass_attempts: 0,
+  pass_completions: 0,
+  pass_touchdowns: 0,
+  pass_interceptions: 0,
+  rush_yards: 0,
+  rush_attempts: 0,
+  rush_touchdowns: 0,
+  receiving_yards: 0,
+  receiving_catches: 0,
+  receiving_touchdowns: 0,
+  fumbles: 0,
+  tackles: 0,
+  sacks: 0,
+  interceptions: 0,
+  fumbles_forced: 0,
+  fumbles_recovered: 0,
+  field_goals_made: 0,
+  field_goals_attempted: 0,
+  extra_points_made: 0,
+  extra_points_attempted: 0,
   ...overrides,
 });
 

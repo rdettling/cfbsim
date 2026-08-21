@@ -7,7 +7,8 @@ import {
   buildTestTeam,
   buildTestTeamAggregateTotals,
 } from '../../test/fixtures';
-import { buildSeasonMemory } from './memory';
+import { buildGameDetail } from './gameDetails';
+import { buildCompletedSeasonArtifacts } from './memory';
 
 const game = (
   id: number,
@@ -75,7 +76,38 @@ const log: GameLogRecord = {
   extra_points_attempted: 0,
 };
 
-describe('buildSeasonMemory', () => {
+describe('buildCompletedSeasonArtifacts', () => {
+  const buildMemory = (
+    league: ReturnType<typeof buildTestLeague>,
+    games: GameRecord[],
+    players: ReturnType<typeof buildTestPlayer>[],
+    logs: GameLogRecord[] = [],
+  ) => buildCompletedSeasonArtifacts(
+    league,
+    games,
+    games.map(record => buildGameDetail(
+      record.id,
+      record.year,
+      [],
+      [],
+      logs.filter(entry => entry.gameId === record.id),
+    )),
+    players,
+  ).memory;
+
+  it('rejects a completed game without its detail record', () => {
+    const baseLeague = buildTestLeague('summary');
+    expect(() => buildCompletedSeasonArtifacts(
+      buildTestLeague('summary', {
+        settings: { ...baseLeague.settings, playoffTeams: 2 },
+        playoff: { seeds: [1, 2], natty: 1 },
+      }),
+      [game(1, 'National Championship', 1, 'national_championship')],
+      [],
+      [],
+    )).toThrow('no detail record');
+  });
+
   it('captures typed postseason facts and structured award totals', () => {
     const teamA = buildTestTeam();
     const teamB = buildTestTeam({ id: 2, name: 'Other State', abbreviation: 'OTH' });
@@ -99,7 +131,7 @@ describe('buildSeasonMemory', () => {
       }],
       playoff: { seeds: [1, 2], natty: 13 },
     });
-    const memory = buildSeasonMemory(
+    const memory = buildMemory(
       league,
       [
         game(10, 'Test Conference championship', 1, 'conference_championship'),
@@ -133,8 +165,8 @@ describe('buildSeasonMemory', () => {
           extra_points_made: 4,
           extra_points_attempted: 4,
         },
+        { ...log, gameId: 13, pass_yards: 999 },
       ],
-      [],
     );
 
     expect(memory.postseason).toEqual({
@@ -178,6 +210,8 @@ describe('buildSeasonMemory', () => {
       'lou_groza',
     ]);
     expect(memory.awards.every(award => award.teamId === 1)).toBe(true);
+    expect(memory.awards.find(award => award.categorySlug === 'heisman')?.stats)
+      .toMatchObject({ pass_yards: 350, pass_touchdowns: 4 });
     expect(memory).not.toHaveProperty('last_updated');
   });
 
@@ -248,7 +282,7 @@ describe('buildSeasonMemory', () => {
           game(10, 'Right semifinal', 2, 'playoff_semifinal', 2, 3),
           game(11, 'National Championship', 1, 'national_championship', 1, 2),
         ];
-    const memory = buildSeasonMemory(
+    const memory = buildMemory(
       buildTestLeague('summary', {
         teams,
         conferences: [],
@@ -262,8 +296,6 @@ describe('buildSeasonMemory', () => {
       }),
       records,
       [],
-      [],
-      [],
     );
 
     expect(memory.postseason.playoff).toMatchObject({ format, games });
@@ -271,14 +303,12 @@ describe('buildSeasonMemory', () => {
 
   it('rejects incomplete, duplicate, and unknown playoff seeds', () => {
     const baseLeague = buildTestLeague('summary');
-    const build = (seeds: number[]) => buildSeasonMemory(
+    const build = (seeds: number[]) => buildMemory(
       buildTestLeague('summary', {
         settings: { ...baseLeague.settings, playoffTeams: 2 },
         playoff: { seeds, natty: 1 },
       }),
       [game(1, 'National Championship', 1, 'national_championship')],
-      [],
-      [],
       [],
     );
 
@@ -297,7 +327,7 @@ describe('buildSeasonMemory', () => {
       ranking: 2,
     });
     const baseLeague = buildTestLeague('summary');
-    const memory = buildSeasonMemory(
+    const memory = buildMemory(
       buildTestLeague('summary', {
         teams: [teamA, teamB],
         conferences: [{ ...baseLeague.conferences[0], teams: [teamA, teamB] }],
@@ -305,8 +335,6 @@ describe('buildSeasonMemory', () => {
         playoff: { seeds: [1, 2], natty: 1 },
       }),
       [game(1, 'National Championship', 1, 'national_championship')],
-      [],
-      [],
       [],
     );
 

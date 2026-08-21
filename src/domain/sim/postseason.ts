@@ -17,12 +17,12 @@ import {
   getGamesByWeek,
   saveGamesAndLeague,
 } from '../../db/simRepo';
-import { finalizePostseasonRankings } from './rankings';
 import { buildPlayoffSelection } from '../league/utils/playoffSelection';
 import { buildResumeComparisonSnapshot } from '../league/utils/resumeComparison';
 import { buildBowlMatchups } from '../league/utils/bowlSelection';
 import { sortStandingsTeams } from '../league/utils/standings';
 import { generatePlayoffFieldNews } from '../news/rankings';
+import { finalizeCompletedSeasonIfReady } from './seasonCompletion';
 
 const setBowls = async (
   league: LeagueState,
@@ -387,16 +387,6 @@ const setNatty = async (
   }
 };
 
-const ensureSummaryStage = async (league: LeagueState) => {
-  if (league.info.stage === 'summary') return;
-  if (!league.playoff.natty) return;
-  const natty = await getGameById(league.playoff.natty);
-  if (natty?.winnerId) {
-    league.info.stage = 'summary';
-    finalizePostseasonRankings(league.teams, natty);
-  }
-};
-
 export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
   const playoffTeams = league.settings.playoffTeams;
   const baseWeek = REGULAR_SEASON_WEEKS;
@@ -451,7 +441,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
       }
     }
     await action(league, oddsContext);
-    await ensureSummaryStage(league);
+    await finalizeCompletedSeasonIfReady(league);
     return;
   }
 
@@ -476,7 +466,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
       if (r1Games.every(game => game?.winnerId)) {
         await setPlayoffQuarter(league, oddsContext, currentWeek);
       }
-      await ensureSummaryStage(league);
+      await finalizeCompletedSeasonIfReady(league);
       return;
     }
 
@@ -485,7 +475,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
       if (qGames.every(game => game?.winnerId)) {
         await setPlayoffSemi(league, oddsContext, currentWeek);
       }
-      await ensureSummaryStage(league);
+      await finalizeCompletedSeasonIfReady(league);
       return;
     }
 
@@ -495,7 +485,7 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
         await setNatty(league, oddsContext, currentWeek);
       }
     }
-    await ensureSummaryStage(league);
+    await finalizeCompletedSeasonIfReady(league);
     return;
   }
 
@@ -510,9 +500,9 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
         await setNatty(league, oddsContext, currentWeek);
       }
     }
-    await ensureSummaryStage(league);
+    await finalizeCompletedSeasonIfReady(league);
     return;
   }
 
-  await ensureSummaryStage(league);
+  await finalizeCompletedSeasonIfReady(league);
 };
