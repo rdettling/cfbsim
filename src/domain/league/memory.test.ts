@@ -108,6 +108,26 @@ describe('buildCompletedSeasonArtifacts', () => {
     )).toThrow('no detail record');
   });
 
+  it('rejects an unfinished current-year game instead of omitting it', () => {
+    const unfinishedBowl: GameRecord = {
+      ...game(2, 'Rose Bowl', 1, 'bowl'),
+      winnerId: null,
+      resultA: null,
+      resultB: null,
+      quarter: 1,
+      clockSecondsLeft: 900,
+      scoreA: null,
+      scoreB: null,
+    };
+
+    expect(() => buildCompletedSeasonArtifacts(
+      buildTestLeague('summary'),
+      [unfinishedBowl],
+      [],
+      [],
+    )).toThrow('Season 2025 has unfinished game 2.');
+  });
+
   it('captures typed postseason facts and structured award totals', () => {
     const teamA = buildTestTeam();
     const teamB = buildTestTeam({ id: 2, name: 'Other State', abbreviation: 'OTH' });
@@ -127,6 +147,13 @@ describe('buildCompletedSeasonArtifacts', () => {
         confGames: 8,
         info: '',
         championship: 10,
+        finalStandings: {
+          year: 2025,
+          entries: [
+            { teamId: 1, pollRank: 1, resolvedBy: null },
+            { teamId: 2, pollRank: 2, resolvedBy: null },
+          ],
+        },
         teams: [teamA, teamB],
       }],
       playoff: { seeds: [1, 2], natty: 13 },
@@ -317,7 +344,7 @@ describe('buildCompletedSeasonArtifacts', () => {
     expect(() => build([1, 2])).toThrow();
   });
 
-  it('resolves a conference without a title game using the standings tie-break order', () => {
+  it('rejects a completed season without a conference title game', () => {
     const teamA = buildTestTeam({ totalWins: 10, ranking: 1 });
     const teamB = buildTestTeam({
       id: 2,
@@ -327,7 +354,7 @@ describe('buildCompletedSeasonArtifacts', () => {
       ranking: 2,
     });
     const baseLeague = buildTestLeague('summary');
-    const memory = buildMemory(
+    expect(() => buildMemory(
       buildTestLeague('summary', {
         teams: [teamA, teamB],
         conferences: [{ ...baseLeague.conferences[0], teams: [teamA, teamB] }],
@@ -336,12 +363,6 @@ describe('buildCompletedSeasonArtifacts', () => {
       }),
       [game(1, 'National Championship', 1, 'national_championship')],
       [],
-    );
-
-    expect(memory.postseason.conferenceChampions).toEqual([{
-      conferenceName: 'Test Conference',
-      teamId: 2,
-      championshipGameId: null,
-    }]);
+    )).toThrow('no Test Conference championship');
   });
 });

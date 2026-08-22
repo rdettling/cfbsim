@@ -39,7 +39,12 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
     game => game.teamAId === team.id || game.teamBId === team.id,
   );
   const historyRows = historyData.teams[team.name] ?? [];
-  const historyRowsByYear = new Map(historyRows.map(row => [row[0], row]));
+  const historyRowsByYear = new Map(
+    historyRows.map(row => {
+      const [year] = row;
+      return [year, row] as const;
+    }),
+  );
   const historicalYears = historicalIndex.years.filter(
     year => year < league.info.startYear && historyRowsByYear.has(year),
   );

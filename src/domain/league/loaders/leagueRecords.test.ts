@@ -110,7 +110,7 @@ describe('loadLeagueRecords', () => {
           conferenceChampions: [{
             conferenceName: 'Test Conference',
             teamId: 1,
-            championshipGameId: null,
+            championshipGameId: 3,
           }],
           bowls: [{ gameId: 2, name: 'Test Bowl', tier: 'other' }],
         },
@@ -125,6 +125,7 @@ describe('loadLeagueRecords', () => {
     vi.mocked(getAllGames).mockResolvedValue([
       game(1, 1, 2, 1, 'national_championship'),
       game(2, 2, 3, 2, 'bowl'),
+      game(3, 1, 2, 1, 'conference_championship'),
     ]);
 
     const result = await loadLeagueRecords();

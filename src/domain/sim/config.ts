@@ -109,6 +109,8 @@ export type SimTuning = {
       kneelBudgetSeconds: number;
       trailingOffenseTimeoutSeconds: number;
       trailingDefenseFirstHalfSeconds: number;
+      fieldGoalCloseoutTargetSeconds: number;
+      maximumPostPlayRunoffSeconds: number;
     };
   };
   kickoffs: {

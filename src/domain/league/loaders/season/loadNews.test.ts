@@ -1,7 +1,11 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getDb } from '../../../../db/db';
-import { buildTestLeague } from '../../../../test/fixtures';
+import {
+  buildTestLeague,
+  buildTestTeam,
+  TEST_BETTING_ODDS_DATA,
+} from '../../../../test/fixtures';
 import type {
   GameNewsItem,
   PreviewNewsItem,
@@ -10,6 +14,7 @@ import type {
 } from '../../../../types/news';
 import { loadDashboard } from './loadDashboard';
 import { loadNews } from './loadNews';
+import { loadStandings } from '../standings';
 
 const story = (
   gameId: number,
@@ -71,6 +76,10 @@ describe('league news loaders', () => {
       tx.objectStore('newsItems').clear(),
     ]);
     await tx.done;
+    await db.put('baseData', {
+      key: 'betting_odds',
+      value: TEST_BETTING_ODDS_DATA,
+    });
     await db.put('league', {
       key: 'current',
       value: buildTestLeague('season', {
@@ -134,5 +143,45 @@ describe('league news loaders', () => {
       'preview:2026:preseason_poll',
       'preview:2026:national_outlook',
     ]);
+  });
+
+  it('uses the same conference ordering as the standings page', async () => {
+    const db = await getDb();
+    const teams = [
+      buildTestTeam({ id: 1, name: 'Alpha', abbreviation: 'ALP', ranking: 3 }),
+      buildTestTeam({ id: 2, name: 'Beta', abbreviation: 'BET', ranking: 1 }),
+      buildTestTeam({ id: 3, name: 'Gamma', abbreviation: 'GAM', ranking: 2 }),
+    ];
+    const league = buildTestLeague('season', {
+      info: {
+        currentWeek: 4,
+        lastRankingsWeek: 3,
+        currentYear: 2026,
+        startYear: 2026,
+        stage: 'season',
+        team: 'Alpha',
+        lastWeek: 18,
+      },
+      teams,
+      conferences: [{
+        id: 1,
+        confName: 'Test Conference',
+        confFullName: 'Test Conference',
+        confGames: 8,
+        info: '',
+        championship: null,
+        finalStandings: null,
+        teams,
+      }],
+    });
+    await db.put('league', { key: 'current', value: league });
+
+    const [dashboard, standings] = await Promise.all([
+      loadDashboard(),
+      loadStandings('Test Conference'),
+    ]);
+
+    expect(dashboard.confTeams.map(team => team.id))
+      .toEqual(standings.teams.map(team => team.id));
   });
 });

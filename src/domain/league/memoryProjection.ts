@@ -277,10 +277,10 @@ export const buildDynastyOverview = ({
       achievements.some(entry => entry.type === 'national_champion'),
     );
   }
-  const ranked = historyRows.map(row => row[2]).filter(rank => rank > 0);
+  const ranked = historyRows.map(([, , rank]) => rank).filter(rank => rank > 0);
   return {
-    wins: historyRows.reduce((sum, row) => sum + row[3], 0),
-    losses: historyRows.reduce((sum, row) => sum + row[4], 0),
+    wins: historyRows.reduce((sum, [, , , wins]) => sum + wins, 0),
+    losses: historyRows.reduce((sum, [, , , , losses]) => sum + losses, 0),
     bestFinalRank: ranked.length ? Math.min(...ranked) : null,
     conferenceTitles,
     playoffAppearances,
@@ -339,7 +339,9 @@ export const buildSeasonMilestones = ({
   ) {
     milestones.push('First playoff appearance of the dynasty era.');
   }
-  const previousRanks = previousRows.map(row => row[2]).filter(rank => rank > 0);
+  const previousRanks = previousRows
+    .map(([, , rank]) => rank)
+    .filter(rank => rank > 0);
   if (
     currentRank > 0 &&
     previousRanks.length > 0 &&
@@ -347,7 +349,10 @@ export const buildSeasonMilestones = ({
   ) {
     milestones.push(`New dynasty-best final ranking: #${currentRank}.`);
   }
-  const previousBestWins = Math.max(0, ...previousRows.map(row => row[3]));
+  const previousBestWins = Math.max(
+    0,
+    ...previousRows.map(([, , , wins]) => wins),
+  );
   if (previousRows.length && currentWins > previousBestWins) {
     milestones.push(`New dynasty record with ${currentWins} wins.`);
   }

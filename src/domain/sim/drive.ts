@@ -67,6 +67,7 @@ export const startInteractiveDrive = (
     phase: 'scrimmage',
     tryOrigin: null,
     tryTiming: null,
+    automaticOffenseIntent: 'standard',
     fieldPosition,
     down: 1,
     yardsLeft: startingYardsLeft(fieldPosition),

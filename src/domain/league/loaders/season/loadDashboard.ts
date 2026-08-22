@@ -8,6 +8,7 @@ import {
 import { getNewsByWeek } from '../../../../db/newsRepo';
 import { sortNewsItems } from '../../../news/ordering';
 import type { NewsItem } from '../../../../types/news';
+import { buildConferenceStandings } from '../../utils/standings';
 
 export interface DashboardPageResult {
   info: Info;
@@ -24,13 +25,22 @@ export const loadDashboard = async (): Promise<DashboardPageResult> => {
   const league = await loadLeagueOrThrow();
 
   const userTeam = getUserTeam(league);
-  const confTeams = league.teams
-    .filter(team => team.conference === userTeam.conference)
-    .sort((a, b) => a.ranking - b.ranking);
-
   const top10 = [...league.teams].sort((a, b) => a.ranking - b.ranking).slice(0, 10);
 
   const games = await getCurrentYearGames(league);
+  const conference = league.conferences.find(
+    candidate => candidate.confName === userTeam.conference,
+  );
+  const confTeams = buildConferenceStandings({
+    teams: league.teams.filter(team => team.conference === userTeam.conference),
+    games,
+    year: league.info.currentYear,
+    finalStandings: conference?.finalStandings ?? null,
+  }).map(row => ({
+    ...row.team,
+    confWins: row.conferenceWins,
+    confLosses: row.conferenceLosses,
+  }));
   const schedule = buildUserScheduleFromGames(
     userTeam,
     league.teams,

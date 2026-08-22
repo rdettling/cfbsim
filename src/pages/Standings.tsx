@@ -1,23 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Box,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Paper, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
-import { ConferenceLogo } from '../components/team/TeamLogo';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
 import { useDomainData } from '../domain/hooks';
 import { loadStandings } from '../domain/league/loaders/standings';
 import type { StandingsPageData } from '../types/pages';
 import { StandingsDesktopTable } from './standings/StandingsDesktopTable';
 import { StandingsMobileList } from './standings/StandingsMobileList';
+import { StandingsCommandBar } from './standings/StandingsCommandBar';
 
 const Standings = () => {
   const { conference_name: conferenceName } = useParams();
@@ -63,58 +54,11 @@ const Standings = () => {
     >
       {data && (
         <>
-          <Stack
-            component="header"
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            sx={{
-              alignItems: { xs: 'stretch', sm: 'center' },
-              justifyContent: 'space-between',
-              mb: 1.5,
-            }}
-          >
-            <Stack
-              direction="row"
-              spacing={1.25}
-              sx={{
-                alignItems: 'center',
-              }}
-            >
-              {!isIndependent && <ConferenceLogo name={data.conference} size={44} />}
-              <Box>
-                <Typography component="h1" variant="h4">
-                  {isIndependent ? 'Independent Standings' : `${data.conference} Standings`}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                  }}
-                >
-                  {data.info.currentYear} season · Week {data.info.currentWeek}
-                </Typography>
-              </Box>
-            </Stack>
-
-            <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, flexShrink: 0 }}>
-              <InputLabel id="standings-conference-label">Conference</InputLabel>
-              <Select
-                labelId="standings-conference-label"
-                value={data.conference}
-                label="Conference"
-                onChange={(event) => handleConferenceChange(event.target.value)}
-              >
-                {data.conferences
-                  .filter((conference) => conference.confName.toLowerCase() !== 'independent')
-                  .map((conference) => (
-                    <MenuItem key={conference.confName} value={conference.confName}>
-                      {conference.confName}
-                    </MenuItem>
-                  ))}
-                <MenuItem value="Independent">Independent</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
+          <StandingsCommandBar
+            data={data}
+            onConferenceChange={handleConferenceChange}
+            onTeamClick={handleTeamClick}
+          />
 
           {data.teams.length > 0 ? (
             <>

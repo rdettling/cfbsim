@@ -1,9 +1,10 @@
-import { Box, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import { CompactGameSummary } from '../../components/game/CompactGameSummary';
 import { TeamLink } from '../../components/team/TeamLink';
 import { TeamLogo } from '../../components/team/TeamLogo';
 import { DataTable } from '../../components/ui/DataTable';
 import type { StandingsViewProps } from './types';
+import { TIEBREAK_LABELS } from './tiebreakLabels';
 
 export const StandingsDesktopTable = ({
   teams,
@@ -18,9 +19,10 @@ export const StandingsDesktopTable = ({
         </TableCell>
         <TableCell sx={{ minWidth: 220 }}>Team</TableCell>
         {!isIndependent && (
-          <TableCell align="center" sx={{ width: 100 }}>
-            Conf
-          </TableCell>
+          <>
+            <TableCell align="center" sx={{ width: 100 }}>Conf</TableCell>
+            <TableCell align="center" sx={{ width: 110 }}>Tiebreak</TableCell>
+          </>
         )}
         <TableCell align="center" sx={{ width: 100 }}>
           Overall
@@ -40,24 +42,28 @@ export const StandingsDesktopTable = ({
           <TableCell>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <TeamLogo name={team.name} size={32} />
-              <Box sx={{ minWidth: 0 }}>
-                <TeamLink name={team.name} onTeamClick={onTeamClick} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    display: 'block',
-                  }}
-                >
-                  {team.confName}
-                </Typography>
-              </Box>
+              <TeamLink name={team.name} onTeamClick={onTeamClick} />
             </Box>
           </TableCell>
           {!isIndependent && (
-            <TableCell align="center" sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
-              {team.confWins}-{team.confLosses}
-            </TableCell>
+            <>
+              <TableCell align="center" sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
+                {team.confWins}-{team.confLosses}
+              </TableCell>
+              <TableCell align="center">
+                {team.tiebreaker ? (
+                  <Tooltip title={TIEBREAK_LABELS[team.tiebreaker].full}>
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      aria-label={`Tiebreak: ${TIEBREAK_LABELS[team.tiebreaker].full}`}
+                    >
+                      {TIEBREAK_LABELS[team.tiebreaker].short}
+                    </Typography>
+                  </Tooltip>
+                ) : '—'}
+              </TableCell>
+            </>
           )}
           <TableCell align="center" sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
             {team.totalWins}-{team.totalLosses}

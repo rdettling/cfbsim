@@ -80,7 +80,7 @@ flowchart TD
   A["simGame() start"] --> B["Initialize quarter/clock/score state"]
   B --> C["Build SimContext for current possession"]
   C --> D["simDrive(): down loop"]
-  D --> E["chooseAutomaticOffenseAction / resolve typed PlayCall"]
+  D --> E["chooseAutomaticOffensePlan / resolve typed PlayCall"]
   E --> F["matchup-aware simRun / simPass / fieldGoal"]
   F --> G["resolveRegulationTiming() / overtime timing"]
   G --> H{"Drive resolved?"}
@@ -125,10 +125,17 @@ omissions are stated explicitly.
   or Pressure from situation-aware weights. The selection is keyed by play ID,
   does not consume outcome randomness, and forms one persisted matchup with
   the offensive concept. Defensive coach calls use the same path.
-- **Automatic offensive strategy**: `chooseAutomaticOffenseAction` first handles
-  final-snap field goals and clock management from the live score and clock,
-  then applies the calibrated field-position/distance policy on fourth down.
-  Field goals are legal on any down; punts remain fourth-down-only.
+- **Automatic offensive strategy**: `chooseAutomaticOffensePlan` coordinates the
+  call, tempo, offensive timeout, and transient follow-up intent from the live
+  score and clock. In late Q4 field-goal range, when a normal scrimmage snap can
+  exhaust regulation and three points can win or force overtime, it either
+  kicks immediately or calls one inside setup run, drains an available timeout
+  toward three seconds, and kicks next. The pending kick survives a natural
+  clock stop or loss beyond ordinary range. Closeout-specific timeout and
+  follow-up intent apply only while the automatic call remains authoritative;
+  a manual call uses ordinary automatic clock management unless its timeout is
+  explicitly set to Use or Hold. Field goals are legal on any down; punts
+  remain fourth-down-only.
 - **Punts**: punts travel a fixed 40 yards. A punt that reaches or crosses the
   receiving end zone is a touchback at the receiving 20; all others use the
   mirrored post-punt field position.
@@ -155,8 +162,11 @@ omissions are stated explicitly.
   - Normal, hurry-up, and chew-clock tempo modify runoff only. Automatic tempo
     remains conservative and coach mode may persist one choice for a possession.
   - Each team has three charged timeouts per half. A pre-snap intent charges a
-    timeout after the play only when the clock would otherwise run; halftime
-    resets the runtime count and historical counts are derived from play timing.
+    timeout after the play only when the clock would otherwise run. Ordinary
+    and manual timeout requests stop the clock immediately; the automatic
+    field-goal closeout may deliberately consume bounded post-play runoff before
+    charging its timeout. Halftime resets the runtime count and historical
+    counts are derived from play timing.
   - Contextual spikes and kneels use the starting QB, exact keyed timing, normal
     down progression, and the same resolver as ordinary calls.
 - **Halftime/game boundaries**:
@@ -193,6 +203,9 @@ omissions are stated explicitly.
 - Regulation `SimGame` state owns the current timeout counts. Persisted history
   reconstructs usage from `PlayTiming.chargedTimeoutAfter` instead of storing a
   duplicate final total.
+- The active drive alone owns the transient automatic field-goal follow-up
+  intent; it is cleared by the kick, a manual override, or drive completion and
+  is never persisted as authoritative league state.
 - Every persisted `GameRecord` has one exact shape. Upcoming games carry the
   initial regulation clock and null outcome fields; completed games carry a
   finished regulation clock, aligned winner/results, non-tied scores, and a
@@ -239,7 +252,7 @@ omissions are stated explicitly.
   - try strategy, fixed extra-point sampling, two-point result mapping, timing,
     terminal-skip rules, and conversion validation
 - `src/domain/sim/playcalling.ts`
-  - `chooseAutomaticOffenseAction`, `choosePlayType`, `pointsNeeded`
+  - `chooseAutomaticOffensePlan`, `choosePlayType`, `pointsNeeded`
 - `src/domain/sim/concepts.ts`
   - call labels, validation, situation-aware selection, and concept maps
 - `src/domain/sim/defensiveIntents.ts`

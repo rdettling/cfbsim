@@ -34,7 +34,7 @@ import {
   validateHistoricalGamesForTeam,
 } from '../domain/historicalGames';
 
-export const STATIC_DATA_VERSION = 15;
+export const STATIC_DATA_VERSION = 16;
 const STATIC_DATA_VERSION_KEY = 'static_data_version';
 const MUTABLE_BASE_DATA_KEYS = new Set(['history']);
 

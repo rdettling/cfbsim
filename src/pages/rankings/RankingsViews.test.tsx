@@ -10,6 +10,8 @@ const rankedTeam = {
     strength_of_record_avg: 0.45,
   }),
   isPlayoffTeam: true,
+  last_week: null,
+  current_week: null,
 };
 
 describe('rankings wins-above-average presentation', () => {
@@ -17,7 +19,6 @@ describe('rankings wins-above-average presentation', () => {
     const markup = renderToStaticMarkup(
       <RankingsDesktopTable
         teams={[rankedTeam]}
-        hasUpcomingGames={false}
         onTeamClick={() => {}}
       />,
     );
@@ -30,8 +31,10 @@ describe('rankings wins-above-average presentation', () => {
     expect(markup).toContain('6.3');
     expect(markup).toContain('Playoff');
     expect(markup).toContain('Movement');
-    expect(markup).toContain('Recent Result');
+    expect(markup).toContain('Last Week');
+    expect(markup).toContain('This Week');
     expect(markup).not.toContain('Poll');
+    expect(markup).not.toContain('Recent Result');
     expect(markup).not.toContain('Next Game');
     expect(markup).not.toContain('SOR/Game');
     expect(markup).not.toContain('SOR Rank');
@@ -41,7 +44,6 @@ describe('rankings wins-above-average presentation', () => {
     const markup = renderToStaticMarkup(
       <RankingsMobileList
         teams={[rankedTeam]}
-        hasUpcomingGames={false}
         onTeamClick={() => {}}
       />,
     );
@@ -58,23 +60,23 @@ describe('rankings wins-above-average presentation', () => {
     expect(markup).not.toContain('SOR rank');
   });
 
-  it('shows the next game only on desktop while games remain', () => {
+  it('shows the fixed weekly game columns only on desktop', () => {
     const desktop = renderToStaticMarkup(
       <RankingsDesktopTable
         teams={[rankedTeam]}
-        hasUpcomingGames
         onTeamClick={() => {}}
       />,
     );
     const mobile = renderToStaticMarkup(
       <RankingsMobileList
         teams={[rankedTeam]}
-        hasUpcomingGames
         onTeamClick={() => {}}
       />,
     );
 
-    expect(desktop).toContain('Next Game');
-    expect(mobile).not.toContain('Next game');
+    expect(desktop).toContain('Last Week');
+    expect(desktop).toContain('This Week');
+    expect(mobile).not.toContain('Last Week');
+    expect(mobile).not.toContain('This Week');
   });
 });

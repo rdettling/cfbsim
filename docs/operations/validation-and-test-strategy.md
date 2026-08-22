@@ -29,6 +29,11 @@ git diff --check
 Run the checks appropriate to the changed behavior during development. Run the
 complete sequence before accepting a broad or cross-system change.
 
+Static-data iteration may use `npm run data:build -- --scope SCOPE` and
+`npm run data:check -- --scope SCOPE`, where `SCOPE` is `seasons`, `odds`, or
+`historical-games`. A scope touches and validates only its outputs and direct
+dependencies. Always finish static-data work with the unscoped `data:check`.
+
 ## Statistical and Generated-System Checks
 
 Seeded replay must be exact, while behavioral credibility requires aggregate

@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { TeamLink } from '../../components/team/TeamLink';
 import { TeamLogo } from '../../components/team/TeamLogo';
+import { PRESTIGE_WINDOW_SEASONS } from '../../constants/prestige';
 import type { SeasonSummaryTeam, TeamSelectionHandler } from './types';
 
 type SeasonPrestigePanelProps = {
@@ -23,8 +24,8 @@ const formatMetric = (value: number | null) => (value === null ? '—' : value.t
 
 const ShortHistory = ({ team }: { team: SeasonSummaryTeam }) => {
   if (
-    team.prestige_seasons_before >= 4 &&
-    team.prestige_seasons_after >= 4
+    team.prestige_seasons_before >= PRESTIGE_WINDOW_SEASONS &&
+    team.prestige_seasons_after >= PRESTIGE_WINDOW_SEASONS
   ) return null;
   return (
     <Typography component="span" variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
@@ -120,7 +121,9 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
               <TableHead>
                 <TableRow>
                   <TableCell>Team</TableCell>
-                  <TableCell align="right">4-Year Score</TableCell>
+                  <TableCell align="right">
+                    {PRESTIGE_WINDOW_SEASONS}-Year Score
+                  </TableCell>
                   <TableCell align="right">Avg Finish</TableCell>
                   <TableCell align="right">Tier</TableCell>
                   <TableCell align="right">Movement</TableCell>
@@ -203,7 +206,7 @@ export const SeasonPrestigePanel = ({ teams, onTeamClick }: SeasonPrestigePanelP
                           color: 'text.secondary',
                         }}
                       >
-                        4-Year Score
+                        {PRESTIGE_WINDOW_SEASONS}-Year Score
                       </Typography>
                       <Typography variant="body2">
                         {formatMetric(team.prestige_score_before)} →{' '}

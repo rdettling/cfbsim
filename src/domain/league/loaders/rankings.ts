@@ -16,18 +16,6 @@ const buildGamesByTeam = (games: GameRecord[]) => {
   return byTeam;
 };
 
-const latestCompletedGame = (games: GameRecord[]) => games
-  .filter(game => game.winnerId !== null)
-  .sort((left, right) =>
-    right.weekPlayed - left.weekPlayed || right.id - left.id
-  )[0] ?? null;
-
-const earliestUpcomingGame = (games: GameRecord[]) => games
-  .filter(game => game.winnerId === null)
-  .sort((left, right) =>
-    left.weekPlayed - right.weekPlayed || left.id - right.id
-  )[0] ?? null;
-
 export const loadRankings = async () => {
   const league = await loadLeagueOrThrow();
 
@@ -41,23 +29,27 @@ export const loadRankings = async () => {
     .sort((a, b) => a.ranking - b.ranking)
     .map(team => {
       const teamGames = gamesByTeam.get(team.id) ?? [];
-      const lastGameRecord = latestCompletedGame(teamGames);
-      const nextGameRecord = earliestUpcomingGame(teamGames);
+      const lastWeekRecord = teamGames.find(
+        game => game.weekPlayed === league.info.currentWeek - 1,
+      );
+      const currentWeekRecord = teamGames.find(
+        game => game.weekPlayed === league.info.currentWeek,
+      );
 
-      const last_game =
-        lastGameRecord
-          ? buildScheduleGameForTeam(team, lastGameRecord, teamsById)
+      const last_week =
+        lastWeekRecord?.winnerId
+          ? buildScheduleGameForTeam(team, lastWeekRecord, teamsById)
           : null;
-      const next_game = nextGameRecord
-        ? buildScheduleGameForTeam(team, nextGameRecord, teamsById)
+      const current_week = currentWeekRecord
+        ? buildScheduleGameForTeam(team, currentWeekRecord, teamsById)
         : null;
 
       return {
         ...team,
         movement: team.last_rank ? team.last_rank - team.ranking : 0,
         isPlayoffTeam: playoffTeamIds.has(team.id),
-        last_game,
-        next_game,
+        last_week,
+        current_week,
       };
     });
 
@@ -66,6 +58,5 @@ export const loadRankings = async () => {
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     rankings,
     conferences: league.conferences,
-    hasUpcomingGames: games.some(game => game.winnerId === null),
   };
 };

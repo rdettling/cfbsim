@@ -42,6 +42,7 @@ const buildDriveState = (
   phase: 'scrimmage',
   tryOrigin: null,
   tryTiming: null,
+  automaticOffenseIntent: 'standard',
   fieldPosition: 42,
   down: 2,
   yardsLeft: 6,
@@ -115,6 +116,30 @@ describe('game simulation decision policy', () => {
       userTeamId: teamB.id,
       driveState: buildDriveState({ down: 2, fieldPosition: 82 }),
       simGame,
+    }))).toBeNull();
+  });
+
+  it('prompts for the blind setup run and suppresses the pending kick prompt', () => {
+    const simGame = buildGame({
+      quarter: 4,
+      clockSecondsLeft: 33,
+      clockRunning: false,
+      scoreA: 24,
+      scoreB: 24,
+    });
+    expect(resolveGameSimDecisionPrompt(buildPromptInput({
+      userTeamId: teamB.id,
+      simGame,
+      driveState: buildDriveState({ down: 1, fieldPosition: 77 }),
+    }))).toMatchObject({ side: 'defense', type: 'scrimmage' });
+    expect(resolveGameSimDecisionPrompt(buildPromptInput({
+      userTeamId: teamB.id,
+      simGame,
+      driveState: buildDriveState({
+        down: 2,
+        fieldPosition: 76,
+        automaticOffenseIntent: 'field_goal_kick_next',
+      }),
     }))).toBeNull();
   });
 

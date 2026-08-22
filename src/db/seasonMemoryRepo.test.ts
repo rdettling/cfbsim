@@ -73,6 +73,21 @@ describe('season memory integrity', () => {
     expect(() => assertCurrentSeasonMemory(malformed)).toThrow();
   });
 
+  it('requires every archived conference champion to reference a title game', () => {
+    const malformed = buildTestSeasonMemory({
+      postseason: {
+        ...memory.postseason,
+        conferenceChampions: [{
+          conferenceName: 'Test Conference',
+          teamId: 1,
+          championshipGameId: null as unknown as number,
+        }],
+      },
+    });
+
+    expect(() => assertCurrentSeasonMemory(malformed)).toThrow();
+  });
+
   it('rejects malformed snapshot rankings and records', () => {
     expect(() => assertCurrentSeasonMemory({
       ...memory,
@@ -152,6 +167,14 @@ describe('season memory integrity', () => {
         { ...buildTestLeague('realignment').teams[0], id: 2, name: 'Other State' },
       ],
     });
+    const conferenceChampionship: GameRecord = {
+      ...game,
+      id: 2,
+      gameType: 'conference_championship',
+      name: 'Test Conference championship',
+      baseLabel: 'Test Conference championship',
+      weekPlayed: 15,
+    };
     expect(() =>
       assertSeasonMemoryReferences(
         [{
@@ -165,9 +188,17 @@ describe('season memory integrity', () => {
               record: '11-1 (7-1)',
             }),
           ],
+          postseason: {
+            ...memory.postseason,
+            conferenceChampions: [{
+              conferenceName: 'Test Conference',
+              teamId: 1,
+              championshipGameId: 2,
+            }],
+          },
         }],
         league,
-        [game],
+        [game, conferenceChampionship],
         [buildTestPlayer()],
         [],
         [],

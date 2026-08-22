@@ -223,10 +223,10 @@ const seedScenario = async (stage: LeagueStage) => {
       conferences: {
         'Test Conference': {
           games: 0,
-          teams: { 'Test State': 4 },
+          teams: ['Test State'],
         },
       },
-      independents: {},
+      independents: [],
       results: null,
     },
   });

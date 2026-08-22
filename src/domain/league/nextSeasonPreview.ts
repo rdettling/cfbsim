@@ -14,12 +14,12 @@ export const buildNextSeasonPreview = (
   const assignments = new Map<string, string>();
   Object.entries(resolved.yearData.conferences).forEach(
     ([conferenceName, conference]) => {
-      Object.keys(conference.teams).forEach(teamName => {
+      conference.teams.forEach(teamName => {
         assignments.set(teamName, conferenceName);
       });
     },
   );
-  Object.keys(resolved.yearData.independents).forEach(teamName => {
+  resolved.yearData.independents.forEach(teamName => {
     assignments.set(teamName, 'Independent');
   });
 

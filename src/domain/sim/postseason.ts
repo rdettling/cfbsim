@@ -20,7 +20,11 @@ import {
 import { buildPlayoffSelection } from '../league/utils/playoffSelection';
 import { buildResumeComparisonSnapshot } from '../league/utils/resumeComparison';
 import { buildBowlMatchups } from '../league/utils/bowlSelection';
-import { sortStandingsTeams } from '../league/utils/standings';
+import {
+  buildConferenceStandings,
+  freezeConferenceStandings,
+  resolveConferenceChampion,
+} from '../league/utils/standings';
 import { generatePlayoffFieldNews } from '../news/rankings';
 import { finalizeCompletedSeasonIfReady } from './seasonCompletion';
 
@@ -107,38 +111,28 @@ const createGameRecord = (
   return record;
 };
 
-const getConferenceChampion = async (
-  league: LeagueState,
-  conferenceName: string,
-  teamsById: Map<number, Team>
-) => {
-  const conference = league.conferences.find(conf => conf.confName === conferenceName);
-  if (!conference || conference.confName === 'Independent') return null;
-
-  if (conference.championship) {
-    const game = await getGameById(conference.championship);
-    if (game?.winnerId) {
-      return teamsById.get(game.winnerId) ?? null;
-    }
-  }
-
-  const conferenceTeams = league.teams.filter(team => team.conference === conferenceName);
-  const sorted = sortStandingsTeams(conferenceTeams);
-  return sorted[0] ?? null;
-};
-
 const getPostseasonSelectionContext = async (
   league: LeagueState,
-  teamsById: Map<number, Team>
+  teamsById: Map<number, Team>,
+  requireActualChampions = false,
 ) => {
-  const conferenceNames = league.conferences
-    .map(conf => conf.confName)
-    .filter(confName => confName !== 'Independent');
-
+  const games = await getAllGames();
   const champions: Team[] = [];
-  for (const confName of conferenceNames) {
-    const champion = await getConferenceChampion(league, confName, teamsById);
-    if (champion) champions.push(champion);
+  for (const conference of league.conferences) {
+    if (conference.confName === 'Independent') continue;
+    const conferenceTeams = league.teams.filter(
+      team => team.conference === conference.confName,
+    );
+    const standings = buildConferenceStandings({
+      teams: conferenceTeams,
+      games,
+      year: league.info.currentYear,
+      finalStandings: conference.finalStandings,
+    });
+    const champion = resolveConferenceChampion({ conference, standings, games });
+    if (!champion) continue;
+    if (requireActualChampions && champion.status !== 'actual') return null;
+    champions.push(teamsById.get(champion.team.id) ?? champion.team);
   }
 
   champions.sort((a, b) => a.ranking - b.ranking);
@@ -160,17 +154,52 @@ const setConferenceChampionships = async (
   oddsContext: Awaited<ReturnType<typeof loadOddsContext>>,
   weekOverride?: number
 ) => {
+  const conferences = league.conferences.filter(
+    conference => conference.confName !== 'Independent',
+  );
+  if (conferences.every(conference =>
+    conference.championship !== null && conference.finalStandings !== null)) return;
+  if (conferences.some(conference =>
+    conference.championship !== null || conference.finalStandings !== null)) {
+    throw new Error('Conference championship state is only partially initialized.');
+  }
+  const conferenceTeams = conferences.map(conference => ({
+    conference,
+    teams: league.teams.filter(team => team.conference === conference.confName),
+  }));
+  const invalid = conferenceTeams.find(entry => entry.teams.length < 2);
+  if (invalid) {
+    throw new Error(`${invalid.conference.confName} requires at least two teams for its championship.`);
+  }
+  const games = await getAllGames();
+  const regularSeasonGames = games.filter(game =>
+    game.year === league.info.currentYear &&
+    game.gameType === 'regular_season' &&
+    game.weekPlayed <= REGULAR_SEASON_WEEKS,
+  );
+  if (
+    regularSeasonGames.some(game => game.winnerId === null) ||
+    league.info.lastRankingsWeek !== REGULAR_SEASON_WEEKS
+  ) return;
+
+  const selections = conferenceTeams.map(({ conference, teams }) => {
+    const standings = buildConferenceStandings({
+      teams,
+      games,
+      year: league.info.currentYear,
+    });
+    return {
+      conference,
+      standings: freezeConferenceStandings(league.info.currentYear, standings),
+      teamA: standings[0]?.team,
+      teamB: standings[1]?.team,
+    };
+  });
   const gamesToCreate: GameRecord[] = [];
-  league.conferences.forEach(conference => {
-    if (conference.confName === 'Independent') return;
-    if (conference.championship) return;
-
-    const conferenceTeams = league.teams.filter(team => team.conference === conference.confName);
-    const sortedTeams = sortStandingsTeams(conferenceTeams);
-    const teamA = sortedTeams[0];
-    const teamB = sortedTeams[1];
-    if (!teamA || !teamB) return;
-
+  selections.forEach(({ conference, standings, teamA, teamB }) => {
+    if (!teamA || !teamB) {
+      throw new Error(`${conference.confName} championship participants are unavailable.`);
+    }
     const game = createGameRecord(
       league,
       teamA,
@@ -181,6 +210,7 @@ const setConferenceChampionships = async (
       { neutralSite: true, gameType: 'conference_championship' }
     );
     conference.championship = game.id;
+    conference.finalStandings = standings;
     gamesToCreate.push(game);
   });
 
@@ -197,7 +227,9 @@ const setPlayoffR1 = async (
   }
 
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
-  const { selection } = await getPostseasonSelectionContext(league, teamsById);
+  const context = await getPostseasonSelectionContext(league, teamsById, true);
+  if (!context) return;
+  const { selection } = context;
   const teams = selection.order;
   applyPlayoffCommitteeRankings(teams);
   const seeds = teams.slice(0, 12);
@@ -207,10 +239,10 @@ const setPlayoffR1 = async (
 
   const week = weekOverride ?? CONFERENCE_CHAMPIONSHIP_WEEK + 1;
   const gamesToCreate = [
-    createGameRecord(league, seeds[7], seeds[8], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
-    createGameRecord(league, seeds[4], seeds[11], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
-    createGameRecord(league, seeds[6], seeds[9], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
-    createGameRecord(league, seeds[5], seeds[10], week, 'Playoff round 1', oddsContext, { neutralSite: true, gameType: 'playoff_first_round' }),
+    createGameRecord(league, seeds[7], seeds[8], week, 'Playoff round 1', oddsContext, { neutralSite: false, gameType: 'playoff_first_round' }),
+    createGameRecord(league, seeds[4], seeds[11], week, 'Playoff round 1', oddsContext, { neutralSite: false, gameType: 'playoff_first_round' }),
+    createGameRecord(league, seeds[6], seeds[9], week, 'Playoff round 1', oddsContext, { neutralSite: false, gameType: 'playoff_first_round' }),
+    createGameRecord(league, seeds[5], seeds[10], week, 'Playoff round 1', oddsContext, { neutralSite: false, gameType: 'playoff_first_round' }),
   ];
 
   league.playoff.left_r1_1 = gamesToCreate[0].id;
@@ -388,6 +420,11 @@ const setNatty = async (
 };
 
 export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Awaited<ReturnType<typeof loadOddsContext>>) => {
+  const currentWeekGames = (await getGamesByWeek(league.info.currentWeek)).filter(
+    game => game.year === league.info.currentYear,
+  );
+  if (currentWeekGames.some(game => game.winnerId === null)) return;
+
   const playoffTeams = league.settings.playoffTeams;
   const baseWeek = REGULAR_SEASON_WEEKS;
   const ccWeek = CONFERENCE_CHAMPIONSHIP_WEEK;
@@ -421,16 +458,24 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
 
   const action = specialActions[playoffTeams]?.[league.info.currentWeek];
   if (action) {
-    if (league.info.currentWeek === ccWeek && league.resumeSnapshot === null) {
+    if (league.info.currentWeek === ccWeek) {
       const games = await getAllGames();
       const gamesById = new Map(games.map(game => [game.id, game]));
-      const championshipIds = league.conferences
+      const championshipConferences = league.conferences.filter(
+        conference => conference.confName !== 'Independent',
+      );
+      const championshipIds = championshipConferences
         .map(conference => conference.championship)
         .filter((id): id is number => Boolean(id));
-      const championshipsComplete = championshipIds.every(id => gamesById.get(id)?.winnerId);
-      if (championshipsComplete) {
+      const championshipsComplete =
+        championshipIds.length === championshipConferences.length &&
+        championshipIds.every(id => gamesById.get(id)?.winnerId);
+      if (!championshipsComplete) return;
+      if (league.resumeSnapshot === null) {
         const teamsById = new Map(league.teams.map(team => [team.id, team]));
-        const { champions, selection } = await getPostseasonSelectionContext(league, teamsById);
+        const context = await getPostseasonSelectionContext(league, teamsById, true);
+        if (!context) return;
+        const { champions, selection } = context;
         league.resumeSnapshot = buildResumeComparisonSnapshot({
           league,
           games,

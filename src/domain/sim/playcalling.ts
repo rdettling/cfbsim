@@ -1,9 +1,25 @@
 import type { Team } from '../../types/domain';
-import type { ClockState, PlaySituation, SimGame } from '../../types/sim';
-import { createClockState, totalSecondsLeft } from './clock';
-import type { PlayCall } from '../../types/db';
+import type { ClockTempo, OffensiveConcept, PlayCall } from '../../types/db';
+import type {
+  ClockState,
+  InteractiveDriveState,
+  PlaySituation,
+  SimGame,
+  TimeoutInstruction,
+} from '../../types/sim';
+import {
+  createClockState,
+  maximumNormalRunningScrimmageSeconds,
+  totalSecondsLeft,
+} from './clock';
+import type { OffenseTimeoutRequest } from './clock';
 import type { ManagementSituation } from './clockManagement';
-import { chooseAutomaticClockAction } from './clockManagement';
+import {
+  chooseAutomaticClockAction,
+  chooseAutomaticOffenseTimeoutRequest,
+  chooseAutomaticTempo,
+  timeoutsRemainingFor,
+} from './clockManagement';
 import { SIM_TUNING } from './config';
 import { getOffenseLead } from './score';
 
@@ -12,6 +28,7 @@ export type AutomaticOffenseSituation = ManagementSituation & Pick<
   'yardsLeft' | 'fieldPosition'
 > & {
   clockEnabled: boolean;
+  automaticOffenseIntent: InteractiveDriveState['automaticOffenseIntent'];
 };
 
 export const buildAutomaticOffenseSituation = ({
@@ -22,6 +39,7 @@ export const buildAutomaticOffenseSituation = ({
   yardsLeft,
   fieldPosition,
   clockEnabled,
+  automaticOffenseIntent,
 }: {
   game: SimGame;
   offense: Team;
@@ -30,6 +48,7 @@ export const buildAutomaticOffenseSituation = ({
   yardsLeft: number;
   fieldPosition: number;
   clockEnabled: boolean;
+  automaticOffenseIntent: InteractiveDriveState['automaticOffenseIntent'];
 }): AutomaticOffenseSituation => ({
   game,
   offense,
@@ -40,11 +59,19 @@ export const buildAutomaticOffenseSituation = ({
   fieldPosition,
   clockEnabled,
   clock: createClockState(game),
+  automaticOffenseIntent,
 });
 
-export type AutomaticOffenseAction =
-  | { kind: 'scrimmage' }
+type AutomaticOffenseAction =
+  | { kind: 'scrimmage'; offense: OffensiveConcept | 'auto' }
   | Extract<PlayCall, { kind: 'special_teams' | 'clock_management' }>;
+
+type AutomaticOffensePlan = {
+  action: AutomaticOffenseAction;
+  tempo: ClockTempo;
+  offenseTimeoutRequest: OffenseTimeoutRequest | null;
+  intentAfterPlay: InteractiveDriveState['automaticOffenseIntent'];
+};
 
 export const pointsNeeded = (lead: number, timeLeftSeconds: number) => {
   if (lead >= 0) return 0;
@@ -109,15 +136,20 @@ const fieldGoalInRange = (fieldPosition: number) =>
 const fieldGoalChangesFinalOutcome = (offenseLead: number) =>
   offenseLead <= 0 && offenseLead + 3 >= 0;
 
-const isGuaranteedFinalSnap = (clock: ClockState) => (
-  clock.quarter === 4
-  && clock.secondsLeft > 0
-  && clock.secondsLeft <= SIM_TUNING.clock.liveBallSeconds.scrimmage.min
-);
-
-export const chooseAutomaticOffenseAction = (
+const standardPlan = (
   situation: AutomaticOffenseSituation,
-): AutomaticOffenseAction => {
+  action: AutomaticOffenseAction,
+): AutomaticOffensePlan => ({
+  action,
+  tempo: chooseAutomaticTempo(situation.offenseLead, situation.clock),
+  offenseTimeoutRequest: chooseAutomaticOffenseTimeoutRequest(situation),
+  intentAfterPlay: 'standard',
+});
+
+export const chooseAutomaticOffensePlan = (
+  situation: AutomaticOffenseSituation,
+  offenseTimeoutInstruction: TimeoutInstruction,
+): AutomaticOffensePlan => {
   const {
     clockEnabled,
     clock,
@@ -125,36 +157,68 @@ export const chooseAutomaticOffenseAction = (
     fieldPosition,
     down,
     yardsLeft,
+    offense,
+    game,
+    automaticOffenseIntent,
   } = situation;
   const inFieldGoalRange = fieldGoalInRange(fieldPosition);
+  const changesFinalOutcome = fieldGoalChangesFinalOutcome(offenseLead);
 
   if (
     clockEnabled
-    && isGuaranteedFinalSnap(clock)
-    && inFieldGoalRange
-    && fieldGoalChangesFinalOutcome(offenseLead)
+    && automaticOffenseIntent === 'field_goal_kick_next'
+    && changesFinalOutcome
   ) {
-    return { kind: 'special_teams', concept: 'field_goal' };
+    return standardPlan(situation, { kind: 'special_teams', concept: 'field_goal' });
+  }
+
+  const closeoutOpportunity = (
+    clockEnabled
+    && clock.quarter === 4
+    && clock.secondsLeft > 0
+    && clock.secondsLeft <= maximumNormalRunningScrimmageSeconds()
+    && inFieldGoalRange
+    && changesFinalOutcome
+  );
+  if (closeoutOpportunity) {
+    const targetSeconds = SIM_TUNING.clock.management.fieldGoalCloseoutTargetSeconds;
+    const enoughTimeForSetup = clock.secondsLeft
+      > targetSeconds + SIM_TUNING.clock.liveBallSeconds.scrimmage.max;
+    const canUseTimeout = offenseTimeoutInstruction !== 'hold'
+      && timeoutsRemainingFor(game, offense.id) > 0;
+    if (down === 4 || !enoughTimeForSetup || !canUseTimeout) {
+      return standardPlan(situation, { kind: 'special_teams', concept: 'field_goal' });
+    }
+    return {
+      action: { kind: 'scrimmage', offense: 'inside_run' },
+      tempo: 'normal',
+      offenseTimeoutRequest: offenseTimeoutInstruction === 'auto'
+        ? { side: 'offense', timing: 'drain_to', targetSeconds }
+        : { side: 'offense', timing: 'immediate' },
+      intentAfterPlay: 'field_goal_kick_next',
+    };
   }
 
   if (clockEnabled) {
     const clockAction = chooseAutomaticClockAction(situation);
-    if (clockAction) return { kind: 'clock_management', action: clockAction };
+    if (clockAction) {
+      return standardPlan(situation, { kind: 'clock_management', action: clockAction });
+    }
   }
 
-  if (down !== 4) return { kind: 'scrimmage' };
+  if (down !== 4) return standardPlan(situation, { kind: 'scrimmage', offense: 'auto' });
 
   const needed = clockEnabled ? pointsNeeded(offenseLead, totalSecondsLeft(clock)) : 0;
   if (inFieldGoalRange && needed === 3) {
-    return { kind: 'special_teams', concept: 'field_goal' };
+    return standardPlan(situation, { kind: 'special_teams', concept: 'field_goal' });
   }
 
   const decision = baseFourthDownDecision(fieldPosition, yardsLeft);
   if (needed > 0 && (decision === 'punt' || (decision === 'field_goal' && needed > 3))) {
-    return { kind: 'scrimmage' };
+    return standardPlan(situation, { kind: 'scrimmage', offense: 'auto' });
   }
   if (decision === 'punt' || decision === 'field_goal') {
-    return { kind: 'special_teams', concept: decision };
+    return standardPlan(situation, { kind: 'special_teams', concept: decision });
   }
-  return { kind: 'scrimmage' };
+  return standardPlan(situation, { kind: 'scrimmage', offense: 'auto' });
 };

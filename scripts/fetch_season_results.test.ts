@@ -30,9 +30,9 @@ const makeDataRoot = async (years = [2025]) => {
         conf_champ_top_4: true,
       },
       conferences: {
-        Test: { games: 12, teams: Object.fromEntries(teams.map(team => [team, 3])) },
+        Test: { games: 12, teams },
       },
-      independents: {},
+      independents: [],
       results: null,
     }, null, 2)}\n`);
   }

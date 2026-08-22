@@ -5,8 +5,8 @@ export interface SeasonData {
     conf_champ_autobids: number;
     conf_champ_top_4: boolean;
   };
-  conferences: Record<string, { games: number; teams: Record<string, number> }>;
-  independents: Record<string, number>;
+  conferences: Record<string, { games: number; teams: string[] }>;
+  independents: string[];
   results: Record<
     string,
     {

@@ -15,8 +15,8 @@ const deleteTestDatabase = (name: string) =>
   });
 
 describe('current database schema', () => {
-  it('uses the completed-season-finalization schema epoch', () => {
-    expect(DB_VERSION).toBe(29);
+  it('uses the frozen conference-standings schema epoch', () => {
+    expect(DB_VERSION).toBe(30);
   });
 
   it('creates every authoritative store in a fresh database', async () => {

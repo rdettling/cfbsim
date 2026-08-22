@@ -1,7 +1,6 @@
 import { loadLeaguePlayersSnapshot } from '../../db/leagueRepo';
 import {
   commitSeasonCompletion,
-  getGameById,
   getGameDetailsByYear,
   getGamesByYear,
 } from '../../db/simRepo';
@@ -14,10 +13,12 @@ export const finalizeCompletedSeasonIfReady = async (league: LeagueState) => {
   if (league.info.stage !== 'season' || !league.playoff.natty) return false;
 
   const year = league.info.currentYear;
-  const championship = await getGameById(league.playoff.natty);
-  if (!championship?.winnerId || championship.year !== year) return false;
-  const [games, details, snapshot] = await Promise.all([
-    getGamesByYear(year),
+  const games = await getGamesByYear(year);
+  const championship = games.find(game => game.id === league.playoff.natty);
+  if (!championship?.winnerId || games.some(game => game.winnerId === null)) {
+    return false;
+  }
+  const [details, snapshot] = await Promise.all([
     getGameDetailsByYear(year),
     loadLeaguePlayersSnapshot(),
   ]);

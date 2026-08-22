@@ -150,7 +150,7 @@ describe('loadTeamSchedule', () => {
       year: 2025,
       playoff: { teams: 12, conf_champ_autobids: 5, conf_champ_top_4: false },
       conferences: {},
-      independents: {},
+      independents: [],
       results: null,
     });
     vi.mocked(getSeasonMemory).mockResolvedValue(buildTestSeasonMemory({

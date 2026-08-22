@@ -226,7 +226,9 @@
       "kneelLiveBallSeconds": { "min": 1, "max": 2 },
       "kneelBudgetSeconds": 40,
       "trailingOffenseTimeoutSeconds": 85,
-      "trailingDefenseFirstHalfSeconds": 55
+      "trailingDefenseFirstHalfSeconds": 55,
+      "fieldGoalCloseoutTargetSeconds": 3,
+      "maximumPostPlayRunoffSeconds": 40
     }
   },
   "kickoffs": {

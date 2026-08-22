@@ -18,8 +18,8 @@ const userTeam = {
   avg_rank_after: 14.25,
   prestige_score_before: 82.5,
   prestige_score_after: 87.25,
-  prestige_seasons_before: 4,
-  prestige_seasons_after: 4,
+  prestige_seasons_before: 3,
+  prestige_seasons_after: 3,
 };
 
 const championship = {

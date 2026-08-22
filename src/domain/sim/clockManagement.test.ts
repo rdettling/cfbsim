@@ -77,8 +77,21 @@ describe('clock management strategy', () => {
       offenseLead: -3,
       clock: { quarter: 2, secondsLeft: 80, clockRunning: true },
     });
-    expect(resolveTimeoutRequest({ offense: 'auto', defense: 'auto' }, current)).toBe('offense');
-    expect(resolveTimeoutRequest({ offense: 'hold', defense: 'use' }, current)).toBe('defense');
+    expect(resolveTimeoutRequest(
+      { offense: 'auto', defense: 'auto' },
+      current,
+      { side: 'offense', timing: 'immediate' },
+    )).toEqual({ side: 'offense', timing: 'immediate' });
+    expect(resolveTimeoutRequest(
+      { offense: 'hold', defense: 'use' },
+      current,
+      null,
+    )).toEqual({ side: 'defense', timing: 'immediate' });
+    expect(resolveTimeoutRequest(
+      { offense: 'auto', defense: 'use' },
+      current,
+      { side: 'offense', timing: 'drain_to', targetSeconds: 3 },
+    )).toEqual({ side: 'defense', timing: 'immediate' });
     chargeTimeout(current.game, teamA.id);
     expect(current.game.timeoutsRemainingA).toBe(2);
     current.game.timeoutsRemainingA = 0;

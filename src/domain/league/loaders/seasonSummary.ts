@@ -110,7 +110,7 @@ export const loadSeasonSummary = async () => {
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const playersById = new Map(players.map(player => [player.id, player]));
   const previousRows = (historyData.teams[userTeam.name] ?? []).filter(
-    row => row[0] >= league.info.startYear && row[0] < league.info.currentYear,
+    ([year]) => year >= league.info.startYear && year < league.info.currentYear,
   );
   const legacy = {
     accomplishments: buildTeamAccomplishments(

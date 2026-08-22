@@ -1,5 +1,10 @@
 import type { LeagueState } from '../../types/league';
-import type { HistoryData, PrestigeConfig } from '../../types/baseData';
+import type {
+  HistoryData,
+  PrestigeConfig,
+  TeamsData,
+} from '../../types/baseData';
+import { PRESTIGE_WINDOW_SEASONS } from '../../constants/prestige';
 
 export interface PrestigeFinishObservation {
   year: number;
@@ -135,14 +140,59 @@ export const evaluatePrestigePrograms = (
 const buildHistoricalTeamCounts = (historyData: HistoryData) => {
   const teamsByYear = new Map<number, Set<string>>();
   Object.entries(historyData.teams).forEach(([teamName, rows]) => {
-    rows.forEach(row => {
-      const teams = teamsByYear.get(row[0]) ?? new Set<string>();
+    rows.forEach(([year]) => {
+      const teams = teamsByYear.get(year) ?? new Set<string>();
       teams.add(teamName);
-      teamsByYear.set(row[0], teams);
+      teamsByYear.set(year, teams);
     });
   });
   return new Map(
     [...teamsByYear].map(([year, teams]) => [year, teams.size]),
+  );
+};
+
+export const calculateStartingPrestiges = ({
+  year,
+  teamNames,
+  historyData,
+  teamsData,
+  prestigeConfig,
+}: {
+  year: number;
+  teamNames: string[];
+  historyData: HistoryData;
+  teamsData: TeamsData;
+  prestigeConfig: PrestigeConfig;
+}): Record<string, number> => {
+  const historicalTeamCounts = buildHistoricalTeamCounts(historyData);
+  const evaluations = evaluatePrestigePrograms(
+    teamNames.map((name, index) => {
+      const metadata = teamsData.teams[name];
+      if (!metadata) throw new Error(`${name} is missing program metadata.`);
+      const observations = (historyData.teams[name] ?? [])
+        .filter(([observationYear, , rank]) =>
+          observationYear >= year - PRESTIGE_WINDOW_SEASONS &&
+          observationYear < year &&
+          rank > 0
+        )
+        .map(([observationYear, , rank]) => ({
+          year: observationYear,
+          rank,
+          teamCount: historicalTeamCounts.get(observationYear) ?? teamNames.length,
+        }));
+      return {
+        id: index + 1,
+        name,
+        currentPrestige: Math.round((metadata.floor + metadata.ceiling) / 2),
+        floor: metadata.floor,
+        ceiling: metadata.ceiling,
+        observations,
+      };
+    }),
+    prestigeConfig,
+  );
+  return Object.fromEntries(
+    evaluations.map(evaluation => [evaluation.name, evaluation.targetPrestige]),
   );
 };
 
@@ -156,16 +206,16 @@ const collectObservations = (
   new Map(
     league.teams.map(team => {
       const observations = (historyData.teams[team.name] ?? [])
-        .filter(row =>
-          row[0] >= startYear &&
-          row[0] <= endYear &&
-          row[0] !== league.info.currentYear &&
-          row[2] > 0
+        .filter(([year, , rank]) =>
+          year >= startYear &&
+          year <= endYear &&
+          year !== league.info.currentYear &&
+          rank > 0
         )
-        .map(row => ({
-          year: row[0],
-          rank: row[2],
-          teamCount: historicalTeamCounts.get(row[0]) ?? league.teams.length,
+        .map(([year, , rank]) => ({
+          year,
+          rank,
+          teamCount: historicalTeamCounts.get(year) ?? league.teams.length,
         }));
       if (
         league.info.currentYear >= startYear &&
@@ -193,14 +243,14 @@ export const calculatePrestigeChanges = (
     league,
     historyData,
     historicalTeamCounts,
-    currentYear - 4,
+    currentYear - PRESTIGE_WINDOW_SEASONS,
     currentYear - 1,
   );
   const afterObservations = collectObservations(
     league,
     historyData,
     historicalTeamCounts,
-    currentYear - 3,
+    currentYear - (PRESTIGE_WINDOW_SEASONS - 1),
     currentYear,
   );
   const beforeMetrics = new Map(

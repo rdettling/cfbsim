@@ -48,10 +48,10 @@ const yearData = (teams: 2 | 4 | 12 = 12, year = 2025) => ({
   conferences: {
     'Test Conference': {
       games: 0,
-      teams: { 'Test State': 4 },
+      teams: ['Test State'],
     },
   },
-  independents: {},
+  independents: [],
   results: null,
 });
 
@@ -66,6 +66,10 @@ const baseResponses = () =>
         source: 'CollegeFootballData.com',
         years: [],
       },
+    ],
+    [
+      '/data/prestige_config.json',
+      { 1: 0, 2: 0, 3: 0, 4: 100, 5: 0, 6: 0, 7: 0 },
     ],
     [
       '/data/history.json',
@@ -252,13 +256,9 @@ const buildInput = (
 });
 
 const configureRivalryLeague = () => {
-  const east = Object.fromEntries(
-    Array.from({ length: 13 }, (_, index) => [`East ${index + 1}`, 4]),
-  );
-  const west = Object.fromEntries(
-    Array.from({ length: 13 }, (_, index) => [`West ${index + 1}`, 4]),
-  );
-  const names = [...Object.keys(east), ...Object.keys(west)];
+  const east = Array.from({ length: 13 }, (_, index) => `East ${index + 1}`);
+  const west = Array.from({ length: 13 }, (_, index) => `West ${index + 1}`);
+  const names = [...east, ...west];
   responses.set('/data/seasons/2025.json', {
     ...yearData(),
     conferences: {
@@ -453,7 +453,7 @@ describe('startNewLeague', () => {
 
   it('keeps season loaders read-only and initializes the season by command', async () => {
     await startNewLeague(buildInput());
-    expect(fetch).not.toHaveBeenCalledWith('/data/history.json');
+    expect(fetch).toHaveBeenCalledWith('/data/history.json');
     const before = await snapshotSave();
 
     await loadDashboard();
@@ -474,8 +474,9 @@ describe('startNewLeague', () => {
   });
 
   it('creates a custom alignment, preserves it, and builds complete schedules', async () => {
-    const customTeams = Object.fromEntries(
-      Array.from({ length: 13 }, (_, index) => [`Team ${index + 1}`, 4]),
+    const customTeams = Array.from(
+      { length: 13 },
+      (_, index) => `Team ${index + 1}`,
     );
     responses.set('/data/seasons/2025.json', {
       ...yearData(),
@@ -488,7 +489,7 @@ describe('startNewLeague', () => {
     });
     responses.set('/data/teams.json', {
       teams: Object.fromEntries(
-        Object.keys(customTeams).map((name, index) => [
+        customTeams.map((name, index) => [
           name,
           {
             mascot: `Mascot ${index + 1}`,
@@ -507,7 +508,7 @@ describe('startNewLeague', () => {
 
     const conferencePlan = {
       assignments: Object.fromEntries(
-        Object.keys(customTeams).map(name => [name, 'Test Conference']),
+        customTeams.map(name => [name, 'Test Conference']),
       ),
       conferenceGames: {
         'Test Conference': { mode: 'automatic' as const },

@@ -58,6 +58,7 @@ const game = ({
   winner,
   homeTeam = null,
   neutralSite = homeTeam === null,
+  gameType = 'regular_season',
 }: {
   id: number;
   teamA: Team;
@@ -65,6 +66,7 @@ const game = ({
   winner: Team | null;
   homeTeam?: Team | null;
   neutralSite?: boolean;
+  gameType?: SimGame['gameType'];
 }): SimGame => ({
   id,
   teamA,
@@ -76,7 +78,7 @@ const game = ({
   winner,
   baseLabel: `${teamA.name} vs ${teamB.name}`,
   name: null,
-  gameType: 'regular_season',
+  gameType,
   rivalryKey: null,
   spreadA: '-3',
   spreadB: '+3',
@@ -260,6 +262,36 @@ describe('ranking strength of record', () => {
       record: '0-2 (0-2)',
       strength_of_record: -1,
       strength_of_record_avg: -0.5,
+    });
+  });
+
+  it('keeps every postseason game out of conference and nonconference splits', () => {
+    const winner = team(1);
+    const loser = team(2);
+
+    updateTeamRecords([
+      game({
+        id: 1,
+        teamA: winner,
+        teamB: loser,
+        winner,
+        gameType: 'conference_championship',
+      }),
+    ], [winner, loser], oddsContext);
+
+    expect(winner).toMatchObject({
+      totalWins: 1,
+      confWins: 0,
+      confLosses: 0,
+      nonConfWins: 0,
+      nonConfLosses: 0,
+    });
+    expect(loser).toMatchObject({
+      totalLosses: 1,
+      confWins: 0,
+      confLosses: 0,
+      nonConfWins: 0,
+      nonConfLosses: 0,
     });
   });
 });

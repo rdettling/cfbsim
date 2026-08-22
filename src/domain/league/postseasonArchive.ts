@@ -54,7 +54,5 @@ export const getArchivedPostseasonGameType = (
 export const getRetainedArchiveGameIds = (memory: SeasonMemory) =>
   new Set([
     ...getArchivedPlayoffGameIds(memory.postseason.playoff),
-    ...memory.postseason.conferenceChampions.flatMap(entry =>
-      entry.championshipGameId === null ? [] : [entry.championshipGameId]
-    ),
+    ...memory.postseason.conferenceChampions.map(entry => entry.championshipGameId),
   ]);

@@ -37,20 +37,28 @@ export interface LeagueRecordProgram {
 
 const finalRank = (rank: number) => rank > 0 ? rank : null;
 
-const seasonWinPercentage = (row: HistoryRow) => {
-  const games = row[3] + row[4];
-  return games === 0 ? 0 : row[3] / games;
+const seasonWinPercentage = ([, , , wins, losses]: HistoryRow) => {
+  const games = wins + losses;
+  return games === 0 ? 0 : wins / games;
 };
 
 const isBetterSeason = (candidate: HistoryRow, current: HistoryRow) => {
   const percentageDifference = seasonWinPercentage(candidate) - seasonWinPercentage(current);
   if (percentageDifference !== 0) return percentageDifference > 0;
-  if (candidate[3] !== current[3]) return candidate[3] > current[3];
-  if (candidate[4] !== current[4]) return candidate[4] < current[4];
-  const candidateRank = finalRank(candidate[2]) ?? Number.POSITIVE_INFINITY;
-  const currentRank = finalRank(current[2]) ?? Number.POSITIVE_INFINITY;
+  const [candidateYear, , candidateFinalRank, candidateWins, candidateLosses] = candidate;
+  const [currentYear, , currentFinalRank, currentWins, currentLosses] = current;
+  if (candidateWins !== currentWins) return candidateWins > currentWins;
+  if (candidateLosses !== currentLosses) return candidateLosses < currentLosses;
+  const candidateRank = finalRank(candidateFinalRank) ?? Number.POSITIVE_INFINITY;
+  const currentRank = finalRank(currentFinalRank) ?? Number.POSITIVE_INFINITY;
   if (candidateRank !== currentRank) return candidateRank < currentRank;
-  return candidate[0] > current[0];
+  return candidateYear > currentYear;
+};
+
+const toBestSeason = (row: HistoryRow | null): LeagueRecordBestSeason | null => {
+  if (!row) return null;
+  const [year, , rank, wins, losses] = row;
+  return { year, wins, losses, finalRank: finalRank(rank) };
 };
 
 const requireTeam = (
@@ -163,18 +171,22 @@ export const loadLeagueRecords = async () => {
   const programs = [...programNames].map(name => {
     const team = teamsByName.get(name);
     const rows = (history.teams[name] ?? [])
-      .filter(row => row[0] < league.info.startYear || archivedYears.has(row[0]))
-      .sort((left, right) => left[0] - right[0]);
-    rows.forEach(row => includedYears.add(row[0]));
-    const wins = rows.reduce((total, row) => total + row[3], 0);
-    const losses = rows.reduce((total, row) => total + row[4], 0);
+      .filter(([year]) => year < league.info.startYear || archivedYears.has(year))
+      .sort(([leftYear], [rightYear]) => leftYear - rightYear);
+    rows.forEach(([year]) => includedYears.add(year));
+    const wins = rows.reduce((total, [, , , rowWins]) => total + rowWins, 0);
+    const losses = rows.reduce(
+      (total, [, , , , rowLosses]) => total + rowLosses,
+      0,
+    );
     const gamesPlayed = wins + losses;
     const bestRow = rows.reduce<HistoryRow | null>(
       (best, row) => !best || isBetterSeason(row, best) ? row : best,
       null,
     );
-    const rankedRows = rows.map(row => row[2]).filter(rank => rank > 0);
+    const rankedRows = rows.map(([, , rank]) => rank).filter(rank => rank > 0);
     const lastRow = rows[rows.length - 1];
+    const [, lastConferenceId] = lastRow ?? [];
     const honors = team ? honorsByTeamId.get(team.id) ?? emptyHonors() : emptyHonors();
 
     return {
@@ -182,20 +194,15 @@ export const loadLeagueRecords = async () => {
       active: Boolean(team),
       conference:
         team?.conference ??
-        (lastRow ? conferenceById.get(lastRow[1]) : undefined) ??
+        (lastConferenceId === undefined
+          ? undefined
+          : conferenceById.get(lastConferenceId)) ??
         'Independent',
       seasons: rows.length,
       wins,
       losses,
       winPercentage: gamesPlayed === 0 ? null : wins / gamesPlayed,
-      bestSeason: bestRow
-        ? {
-            year: bestRow[0],
-            wins: bestRow[3],
-            losses: bestRow[4],
-            finalRank: finalRank(bestRow[2]),
-          }
-        : null,
+      bestSeason: toBestSeason(bestRow),
       bestFinalRank: rankedRows.length ? Math.min(...rankedRows) : null,
       ...honors,
     } satisfies LeagueRecordProgram;

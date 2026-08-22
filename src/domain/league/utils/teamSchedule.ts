@@ -149,12 +149,12 @@ export const buildSimulatedScheduleRow = ({
 };
 
 export const getHistoricalScheduleMetrics = (
-  row: HistoryRow,
+  [, conferenceId, ranking, wins, losses, prestige]: HistoryRow,
   conferenceNames: Map<number, string>,
 ): TeamScheduleHeaderMetrics => ({
-  record: `${row[3]}-${row[4]}`,
+  record: `${wins}-${losses}`,
   rating: null,
-  prestige: row[5],
-  ranking: row[2],
-  conference: conferenceNames.get(row[1]) ?? 'Independent',
+  prestige,
+  ranking,
+  conference: conferenceNames.get(conferenceId) ?? 'Independent',
 });

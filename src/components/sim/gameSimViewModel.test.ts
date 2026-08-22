@@ -52,6 +52,7 @@ const driveState = (
   phase: 'scrimmage',
   tryOrigin: null,
   tryTiming: null,
+  automaticOffenseIntent: 'standard',
   fieldPosition: 42,
   down: 2,
   yardsLeft: 6,

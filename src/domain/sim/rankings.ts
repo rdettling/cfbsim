@@ -133,7 +133,12 @@ export const updateTeamRecords = (
       teamAUpdate.totalLosses += 1;
     }
 
-    if (teamA.conference !== 'Independent' && teamA.conference === teamB.conference) {
+    const isRegularSeason = game.gameType === 'regular_season';
+    if (
+      isRegularSeason &&
+      teamA.conference !== 'Independent' &&
+      teamA.conference === teamB.conference
+    ) {
       if (teamAWin) {
         teamAUpdate.confWins += 1;
         teamBUpdate.confLosses += 1;
@@ -141,7 +146,7 @@ export const updateTeamRecords = (
         teamBUpdate.confWins += 1;
         teamAUpdate.confLosses += 1;
       }
-    } else {
+    } else if (isRegularSeason) {
       if (teamAWin) {
         teamAUpdate.nonConfWins += 1;
         teamBUpdate.nonConfLosses += 1;

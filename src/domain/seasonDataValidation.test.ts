@@ -14,15 +14,10 @@ const validSeasonData = () => ({
   conferences: {
     Test: {
       games: 1,
-      teams: {
-        Alpha: 7,
-        Beta: 1,
-      },
+      teams: ['Alpha', 'Beta'],
     },
   },
-  independents: {
-    Gamma: 3,
-  },
+  independents: ['Gamma'],
   results: {
     Alpha: { rank: 1, wins: 12, losses: 1 },
     Beta: { rank: 2, wins: 8, losses: 4 },
@@ -64,14 +59,18 @@ describe('validateSeasonData', () => {
 
   it('rejects duplicate team membership', () => {
     const value = validSeasonData();
-    (value.independents as Record<string, number>).Alpha = 4;
+    value.independents.push('Alpha');
     expectInvalid(value, 'Alpha belongs to both Test and independents');
   });
 
-  it.each([0, 8, 2.5])('rejects invalid prestige %s', prestige => {
+  it('rejects duplicate teams and the removed prestige map', () => {
     const value = validSeasonData();
-    value.conferences.Test.teams.Alpha = prestige;
-    expectInvalid(value, 'prestige for Alpha');
+    value.conferences.Test.teams.push('Alpha');
+    expectInvalid(value, 'contains a duplicate team');
+
+    const legacy = validSeasonData();
+    legacy.conferences.Test.teams = { Alpha: 7, Beta: 1 } as unknown as string[];
+    expectInvalid(legacy, 'conference Test.teams must be an array');
   });
 
   it.each([-1, 2, 13, 0.5])(

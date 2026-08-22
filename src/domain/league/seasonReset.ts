@@ -128,6 +128,10 @@ export const prepareSeasonReset = async (
   data?: SeasonResetData,
 ) => {
   league.resumeSnapshot = null;
+  league.conferences.forEach(conference => {
+    conference.championship = null;
+    conference.finalStandings = null;
+  });
   league.info.lastRankingsWeek = 0;
   league.teams.forEach(team => {
     team.nonConfGames = 0;

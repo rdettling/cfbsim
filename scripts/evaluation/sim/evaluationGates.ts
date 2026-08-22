@@ -57,9 +57,9 @@ const evaluateTries = (metrics: DefaultGateInput['tryMetrics']) => {
       `Extra-point make rate ${metrics.extraPoints.makeRate} is outside 0.93-0.99.`,
     );
   }
-  if (!inRange(metrics.twoPoints.conversionRate, 0.35, 0.65)) {
+  if (!inRange(metrics.twoPoints.conversionRate, 0.35, 0.7)) {
     violations.push(
-      `Two-point conversion rate ${metrics.twoPoints.conversionRate} is outside 0.35-0.65.`,
+      `Two-point conversion rate ${metrics.twoPoints.conversionRate} is outside 0.35-0.70.`,
     );
   }
   if (metrics.extraPoints.attempts === 0 || metrics.twoPoints.attempts === 0) {

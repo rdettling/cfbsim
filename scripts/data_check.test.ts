@@ -1,11 +1,25 @@
 /// <reference types="node" />
-import { copyFile, mkdtemp, mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdtemp,
+  mkdir,
+  readFile,
+  rm,
+  stat,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
 import { validateBettingOddsData } from '../src/domain/baseDataValidation';
-import { buildHistoricalGameProjections } from './data_build';
+import {
+  buildHistoricalGameProjections,
+  parseDataScope,
+  runDataBuild,
+  writeDataOutputs,
+} from './data_build';
 import { buildHistoryData, buildSeasonIndexData } from './build_history';
 import { checkData } from './data_check';
 
@@ -18,14 +32,16 @@ const writeCompactJson = (path: string, value: unknown) =>
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const checkFixture = (dataRoot: string) => checkData(dataRoot, async () => ({
-  seasonIndex: await buildSeasonIndexData(dataRoot),
-  history: await buildHistoryData(dataRoot),
-  bettingOdds: validateBettingOddsData(
-    JSON.parse(await readFile(join(REPO_ROOT, 'public', 'data', 'betting_odds.json'), 'utf8')),
-  ),
-  ...await buildHistoricalGameProjections(dataRoot),
-}));
+const checkFixture = (dataRoot: string) => checkData(dataRoot, {
+  buildOutputs: async () => ({
+    seasonIndex: await buildSeasonIndexData(dataRoot),
+    history: await buildHistoryData(dataRoot),
+    bettingOdds: validateBettingOddsData(
+      JSON.parse(await readFile(join(REPO_ROOT, 'public', 'data', 'betting_odds.json'), 'utf8')),
+    ),
+    ...await buildHistoricalGameProjections(dataRoot),
+  }),
+});
 
 const teamMetadata = (abbreviation: string) => ({
   mascot: 'Testers',
@@ -55,10 +71,10 @@ const seasonData = (
   conferences: {
     Test: {
       games: 1,
-      teams: { Alpha: 3, Beta: 2 },
+      teams: ['Alpha', 'Beta'],
     },
   },
-  independents: {},
+  independents: [],
   results,
 });
 
@@ -164,15 +180,92 @@ afterEach(async () => {
 });
 
 describe('checkData', () => {
+  it('accepts exactly one supported scope', () => {
+    expect(parseDataScope([])).toBe('all');
+    expect(parseDataScope(['--scope', 'seasons'])).toBe('seasons');
+    expect(parseDataScope(['--scope', 'odds'])).toBe('odds');
+    expect(parseDataScope(['--scope', 'historical-games']))
+      .toBe('historical-games');
+    expect(() => parseDataScope(['--scope', 'unknown'])).toThrow();
+    expect(() => parseDataScope(['--scope', 'seasons', '--scope', 'odds']))
+      .toThrow();
+    expect(() => parseDataScope(['--scope', 'seasons', 'odds'])).toThrow();
+  });
+
   it('accepts a complete consistent dataset', async () => {
     const dataRoot = await createFixture();
     await expect(checkFixture(dataRoot)).resolves.toEqual([]);
   });
 
+  it('builds and checks scopes without unrelated static inputs', async () => {
+    let dataRoot = await createFixture();
+    await Promise.all([
+      rm(join(dataRoot, 'historical-games'), { recursive: true }),
+      unlink(join(dataRoot, 'betting_odds.json')),
+    ]);
+    await expect(runDataBuild(dataRoot, 'seasons')).resolves.toMatchObject({
+      seasonIndex: { years: ['2025'] },
+    });
+    await expect(checkData(dataRoot, { scope: 'seasons' })).resolves.toEqual([]);
+
+    await rm(fixtureRoot!, { recursive: true });
+    fixtureRoot = null;
+    dataRoot = await createFixture();
+    await Promise.all([
+      rm(join(dataRoot, 'seasons'), { recursive: true }),
+      unlink(join(dataRoot, 'teams.json')),
+    ]);
+    const bettingOdds = validateBettingOddsData(
+      JSON.parse(await readFile(join(dataRoot, 'betting_odds.json'), 'utf8')),
+    );
+    await expect(checkData(dataRoot, {
+      scope: 'odds',
+      buildOutputs: async () => ({ bettingOdds }),
+    })).resolves.toEqual([]);
+
+    await rm(fixtureRoot!, { recursive: true });
+    fixtureRoot = null;
+    dataRoot = await createFixture();
+    await Promise.all([
+      unlink(join(dataRoot, 'history.json')),
+      unlink(join(dataRoot, 'prestige_config.json')),
+      unlink(join(dataRoot, 'conferences.json')),
+      unlink(join(dataRoot, 'betting_odds.json')),
+    ]);
+    await expect(runDataBuild(dataRoot, 'historical-games')).resolves
+      .toHaveProperty('historicalByTeam');
+    await expect(checkData(dataRoot, { scope: 'historical-games' }))
+      .resolves.toEqual([]);
+  });
+
+  it('leaves generated files and directories untouched when bytes match', async () => {
+    const dataRoot = await createFixture();
+    const paths = [
+      join(dataRoot, 'seasons', 'index.json'),
+      join(dataRoot, 'history.json'),
+      join(dataRoot, 'betting_odds.json'),
+      join(dataRoot, 'historical-games', 'index.json'),
+      join(dataRoot, 'historical-games', 'by-team'),
+    ];
+    const before = await Promise.all(paths.map(path => stat(path).then(value => value.mtimeMs)));
+
+    const bettingOdds = validateBettingOddsData(
+      JSON.parse(await readFile(join(dataRoot, 'betting_odds.json'), 'utf8')),
+    );
+    await runDataBuild(dataRoot, 'seasons');
+    await runDataBuild(dataRoot, 'historical-games');
+    await writeDataOutputs({ bettingOdds }, dataRoot);
+    await runDataBuild(dataRoot, 'seasons');
+    await runDataBuild(dataRoot, 'historical-games');
+    await writeDataOutputs({ bettingOdds }, dataRoot);
+
+    const after = await Promise.all(paths.map(path => stat(path).then(value => value.mtimeMs)));
+    expect(after).toEqual(before);
+  });
+
   it('accepts the latest starting year without completed season results', async () => {
     const dataRoot = await createFixture();
     const scheduled = seasonData(2025, null);
-    scheduled.conferences.Test.teams.Alpha = 2;
     await writeJson(
       join(dataRoot, 'seasons', '2025.json'),
       scheduled,
@@ -212,6 +305,59 @@ describe('checkData', () => {
     );
 
     await expect(checkFixture(dataRoot)).resolves.toEqual([]);
+  });
+
+  it('builds historical Prestige before adding each season result', async () => {
+    const dataRoot = await createFixture();
+    await Promise.all([
+      writeJson(join(dataRoot, 'seasons', '2024.json'), seasonData(2024)),
+      writeJson(
+        join(dataRoot, 'seasons', '2025.json'),
+        seasonData(2025, {
+          Beta: { rank: 1, wins: 10, losses: 2 },
+          Alpha: { rank: 2, wins: 2, losses: 10 },
+        }),
+      ),
+    ]);
+
+    const first = await buildHistoryData(dataRoot);
+    const second = await buildHistoryData(dataRoot);
+    const alpha2024 = first.teams.Alpha.find(([year]) => year === 2024);
+    const alpha2025 = first.teams.Alpha.find(([year]) => year === 2025);
+    const beta2025 = first.teams.Beta.find(([year]) => year === 2025);
+    if (!alpha2024 || !alpha2025 || !beta2025) {
+      throw new Error('Expected both completed seasons in generated history.');
+    }
+    const [, , , , , alpha2024Prestige] = alpha2024;
+    const [, , , , , alpha2025Prestige] = alpha2025;
+    const [, , , , , beta2025Prestige] = beta2025;
+
+    expect(alpha2024Prestige).toBe(2);
+    expect(alpha2025Prestige).toBe(3);
+    expect(beta2025Prestige).toBe(2);
+    expect(second).toEqual(first);
+  });
+
+  it('rejects a season program missing from the catalog', async () => {
+    const dataRoot = await createFixture();
+    const season = seasonData(2025);
+    season.conferences.Test.teams.push('Unknown');
+    season.results = {
+      Alpha: { rank: 1, wins: 10, losses: 2 },
+      Beta: { rank: 2, wins: 2, losses: 10 },
+      Unknown: { rank: 3, wins: 0, losses: 12 },
+    };
+    await writeJson(join(dataRoot, 'seasons', '2025.json'), season);
+
+    await expect(checkData(dataRoot, {
+      scope: 'seasons',
+      buildOutputs: async () => ({
+        seasonIndex: await buildSeasonIndexData(dataRoot),
+        history: await buildHistoryData(dataRoot),
+      }),
+    })).resolves.toEqual(expect.arrayContaining([
+      expect.stringContaining('teams.json: missing metadata for Unknown'),
+    ]));
   });
 
   it('requires completed results for every older starting year', async () => {
@@ -277,79 +423,6 @@ describe('checkData', () => {
         expect.stringContaining('Alpha.rank must equal ordinal position 1'),
       ]),
     );
-  });
-
-  it('rejects starting prestige outside metadata bounds and exact generated values', async () => {
-    const dataRoot = await createFixture();
-    await Promise.all([
-      writeJson(join(dataRoot, 'teams.json'), {
-        teams: {
-          Alpha: { ...teamMetadata('ALP'), ceiling: 2 },
-          Beta: teamMetadata('BET'),
-        },
-      }),
-      writeJson(join(dataRoot, 'prestige_config.json'), {
-        1: 0,
-        2: 0,
-        3: 100,
-        4: 0,
-        5: 0,
-        6: 0,
-        7: 0,
-      }),
-    ]);
-
-    const errors = await checkFixture(dataRoot);
-    expect(errors).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining(
-          'Alpha prestige 3 is outside metadata bounds 1-2',
-        ),
-        expect.stringContaining('generated starting prestige value(s) are stale'),
-      ]),
-    );
-  });
-
-  it('accepts an exact bounded distribution beyond the former tolerance', async () => {
-    const dataRoot = await createFixture();
-    const bounded = seasonData(2025);
-    bounded.conferences.Test.teams = { Alpha: 3, Beta: 3 };
-    await Promise.all([
-      writeJson(join(dataRoot, 'seasons', '2025.json'), bounded),
-      writeJson(join(dataRoot, 'prestige_config.json'), {
-        1: 0,
-        2: 0,
-        3: 0,
-        4: 0,
-        5: 0,
-        6: 0,
-        7: 100,
-      }),
-    ]);
-    await writeJson(
-      join(dataRoot, 'history.json'),
-      await buildHistoryData(dataRoot),
-    );
-
-    await expect(checkFixture(dataRoot)).resolves.toEqual([]);
-  });
-
-  it('rejects one stale generated starting tier without writing it', async () => {
-    const dataRoot = await createFixture();
-    const seasonPath = join(dataRoot, 'seasons', '2025.json');
-    const stale = seasonData(2025);
-    stale.conferences.Test.teams.Alpha = 2;
-    await writeJson(seasonPath, stale);
-    const before = await readFile(seasonPath, 'utf8');
-
-    await expect(checkFixture(dataRoot)).resolves.toEqual(
-      expect.arrayContaining([
-        expect.stringContaining(
-          'seasons/2025.json: 1 generated starting prestige value(s) are stale',
-        ),
-      ]),
-    );
-    expect(await readFile(seasonPath, 'utf8')).toBe(before);
   });
 
   it('validates split historical-game file coverage', async () => {

@@ -8,181 +8,181 @@
   "conferences": {
     "Big 12": {
       "games": 9,
-      "teams": {
-        "Texas": 7,
-        "Texas Tech": 5,
-        "Oklahoma": 7,
-        "Nebraska": 5,
-        "Iowa State": 3,
-        "Colorado": 5,
-        "Kansas": 3,
-        "Missouri": 4,
-        "Texas A&M": 4,
-        "Baylor": 2,
-        "Kansas State": 6,
-        "Oklahoma State": 4
-      }
+      "teams": [
+        "Texas",
+        "Texas Tech",
+        "Oklahoma",
+        "Nebraska",
+        "Iowa State",
+        "Colorado",
+        "Kansas",
+        "Missouri",
+        "Texas A&M",
+        "Baylor",
+        "Kansas State",
+        "Oklahoma State"
+      ]
     },
     "Pac-10": {
       "games": 9,
-      "teams": {
-        "USC": 7,
-        "Oregon": 5,
-        "UCLA": 5,
-        "California": 4,
-        "Arizona State": 4,
-        "Washington State": 5,
-        "Stanford": 4,
-        "Arizona": 3,
-        "Oregon State": 5,
-        "Washington": 4
-      }
+      "teams": [
+        "USC",
+        "Oregon",
+        "UCLA",
+        "California",
+        "Arizona State",
+        "Washington State",
+        "Stanford",
+        "Arizona",
+        "Oregon State",
+        "Washington"
+      ]
     },
     "Big Ten": {
       "games": 9,
-      "teams": {
-        "Penn State": 4,
-        "Ohio State": 6,
-        "Wisconsin": 5,
-        "Michigan": 6,
-        "Minnesota": 4,
-        "Iowa": 6,
-        "Northwestern": 3,
-        "Michigan State": 4,
-        "Purdue": 5,
-        "Indiana": 3,
-        "Illinois": 4
-      }
+      "teams": [
+        "Penn State",
+        "Ohio State",
+        "Wisconsin",
+        "Michigan",
+        "Minnesota",
+        "Iowa",
+        "Northwestern",
+        "Michigan State",
+        "Purdue",
+        "Indiana",
+        "Illinois"
+      ]
     },
     "Big East": {
       "games": 6,
-      "teams": {
-        "West Virginia": 4,
-        "Louisville": 5,
-        "South Florida": 3,
-        "Rutgers": 2,
-        "Pittsburgh": 5,
-        "Connecticut": 3,
-        "Cincinnati": 4,
-        "Syracuse": 4
-      }
+      "teams": [
+        "West Virginia",
+        "Louisville",
+        "South Florida",
+        "Rutgers",
+        "Pittsburgh",
+        "Connecticut",
+        "Cincinnati",
+        "Syracuse"
+      ]
     },
     "SEC": {
       "games": 8,
-      "teams": {
-        "LSU": 6,
-        "Alabama": 5,
-        "Georgia": 7,
-        "Florida": 6,
-        "Auburn": 6,
-        "South Carolina": 4,
-        "Tennessee": 6,
-        "Arkansas": 5,
-        "Vanderbilt": 3,
-        "Mississippi State": 3,
-        "Ole Miss": 4,
-        "Kentucky": 3
-      }
+      "teams": [
+        "LSU",
+        "Alabama",
+        "Georgia",
+        "Florida",
+        "Auburn",
+        "South Carolina",
+        "Tennessee",
+        "Arkansas",
+        "Vanderbilt",
+        "Mississippi State",
+        "Ole Miss",
+        "Kentucky"
+      ]
     },
     "ACC": {
       "games": 8,
-      "teams": {
-        "Virginia Tech": 6,
-        "Miami": 7,
-        "Boston College": 5,
-        "Clemson": 4,
-        "Florida State": 6,
-        "Georgia Tech": 5,
-        "NC State": 5,
-        "Virginia": 5,
-        "Maryland": 5,
-        "North Carolina": 4,
-        "Wake Forest": 4,
-        "Duke": 2
-      }
+      "teams": [
+        "Virginia Tech",
+        "Miami",
+        "Boston College",
+        "Clemson",
+        "Florida State",
+        "Georgia Tech",
+        "NC State",
+        "Virginia",
+        "Maryland",
+        "North Carolina",
+        "Wake Forest",
+        "Duke"
+      ]
     },
     "MWC": {
       "games": 7,
-      "teams": {
-        "Texas Christian": 4,
-        "Utah": 5,
-        "BYU": 4,
-        "San Diego State": 3,
-        "New Mexico": 4,
-        "Colorado State": 4,
-        "Air Force": 3,
-        "Wyoming": 3,
-        "UNLV": 3
-      }
+      "teams": [
+        "Texas Christian",
+        "Utah",
+        "BYU",
+        "San Diego State",
+        "New Mexico",
+        "Colorado State",
+        "Air Force",
+        "Wyoming",
+        "UNLV"
+      ]
     },
     "WAC": {
       "games": 6,
-      "teams": {
-        "Fresno State": 4,
-        "Boise State": 6,
-        "Louisiana Tech": 3,
-        "Nevada": 2,
-        "Hawaii": 3,
-        "San Jose State": 1,
-        "Utah State": 2,
-        "Idaho": 1,
-        "New Mexico State": 2
-      }
+      "teams": [
+        "Fresno State",
+        "Boise State",
+        "Louisiana Tech",
+        "Nevada",
+        "Hawaii",
+        "San Jose State",
+        "Utah State",
+        "Idaho",
+        "New Mexico State"
+      ]
     },
     "CUSA": {
       "games": 8,
-      "teams": {
-        "Tulsa": 2,
-        "Southern Miss": 4,
-        "Memphis": 3,
-        "Texas El Paso": 2,
-        "Houston": 2,
-        "Central Florida": 3,
-        "Alabama Birmingham": 3,
-        "Southern Methodist": 2,
-        "East Carolina": 3,
-        "Marshall": 4,
-        "Rice": 2,
-        "Tulane": 2
-      }
+      "teams": [
+        "Tulsa",
+        "Southern Miss",
+        "Memphis",
+        "Texas El Paso",
+        "Houston",
+        "Central Florida",
+        "Alabama Birmingham",
+        "Southern Methodist",
+        "East Carolina",
+        "Marshall",
+        "Rice",
+        "Tulane"
+      ]
     },
     "MAC": {
       "games": 8,
-      "teams": {
-        "Toledo": 4,
-        "Northern Illinois": 3,
-        "Miami Ohio": 4,
-        "Central Michigan": 1,
-        "Bowling Green": 3,
-        "Akron": 2,
-        "Western Michigan": 2,
-        "Ball State": 2,
-        "Eastern Michigan": 1,
-        "Ohio": 2,
-        "Kent State": 2,
-        "Buffalo": 1
-      }
+      "teams": [
+        "Toledo",
+        "Northern Illinois",
+        "Miami Ohio",
+        "Central Michigan",
+        "Bowling Green",
+        "Akron",
+        "Western Michigan",
+        "Ball State",
+        "Eastern Michigan",
+        "Ohio",
+        "Kent State",
+        "Buffalo"
+      ]
     },
     "Sun Belt": {
       "games": 7,
-      "teams": {
-        "Louisiana": 1,
-        "Middle Tennessee State": 3,
-        "Arkansas State": 1,
-        "Florida International": 1,
-        "Louisiana Monroe": 1,
-        "Troy": 2,
-        "North Texas": 3,
-        "Florida Atlantic": 1
-      }
+      "teams": [
+        "Louisiana",
+        "Middle Tennessee State",
+        "Arkansas State",
+        "Florida International",
+        "Louisiana Monroe",
+        "Troy",
+        "North Texas",
+        "Florida Atlantic"
+      ]
     }
   },
-  "independents": {
-    "Notre Dame": 5,
-    "Navy": 3,
-    "Army": 2,
-    "Temple": 2
-  },
+  "independents": [
+    "Notre Dame",
+    "Navy",
+    "Army",
+    "Temple"
+  ],
   "results": {
     "Texas": {
       "rank": 1,

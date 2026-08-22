@@ -15,7 +15,7 @@ const runContext = (
   possessionEnds: false,
   tempo: 'normal',
   clockAction: null,
-  chargedTimeoutAfter: null,
+  timeoutRequest: null,
   ...overrides,
 });
 
@@ -157,7 +157,7 @@ describe('regulation clock', () => {
     const charged = resolveRegulationTiming(
       33,
       clock({ quarter: 4, secondsLeft: 110 }),
-      runContext({ chargedTimeoutAfter: 'defense' }),
+      runContext({ timeoutRequest: { side: 'defense', timing: 'immediate' } }),
     );
     const incomplete = resolveRegulationTiming(
       33,
@@ -165,13 +165,13 @@ describe('regulation clock', () => {
       runContext({
         playType: 'pass',
         result: 'incomplete pass',
-        chargedTimeoutAfter: 'offense',
+        timeoutRequest: { side: 'offense', timing: 'immediate' },
       }),
     );
     const event = resolveRegulationTiming(
       33,
       clock({ quarter: 4, secondsLeft: 122 }),
-      runContext({ chargedTimeoutAfter: 'defense' }),
+      runContext({ timeoutRequest: { side: 'defense', timing: 'immediate' } }),
     );
 
     expect(charged.timing.chargedTimeoutAfter).toBe('defense');
@@ -180,6 +180,34 @@ describe('regulation clock', () => {
     expect(incomplete.timing.chargedTimeoutAfter).toBeNull();
     expect(event.timing.eventAfter).toBe('two_minute_timeout');
     expect(event.timing.chargedTimeoutAfter).toBeNull();
+  });
+
+  it('drains to a requested timeout target unless the play stops the clock naturally', () => {
+    const request = {
+      side: 'offense' as const,
+      timing: 'drain_to' as const,
+      targetSeconds: 3,
+    };
+    const drained = resolveRegulationTiming(
+      33,
+      clock({ quarter: 4, secondsLeft: 33, clockRunning: false }),
+      runContext({ timeoutRequest: request }),
+    );
+    const firstDown = resolveRegulationTiming(
+      33,
+      clock({ quarter: 4, secondsLeft: 33, clockRunning: false }),
+      runContext({ isFirstDown: true, timeoutRequest: request }),
+    );
+
+    expect(drained.timing).toMatchObject({
+      elapsedSeconds: 30,
+      chargedTimeoutAfter: 'offense',
+      end: { secondsLeft: 3, running: false },
+    });
+    expect(firstDown.timing.chargedTimeoutAfter).toBeNull();
+    expect(firstDown.timing.elapsedSeconds).toBeGreaterThanOrEqual(4);
+    expect(firstDown.timing.elapsedSeconds).toBeLessThanOrEqual(8);
+    expect(firstDown.timing.end.running).toBe(false);
   });
 
   it('uses dedicated spike and kneel timing', () => {

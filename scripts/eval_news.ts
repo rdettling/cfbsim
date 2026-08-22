@@ -1,7 +1,13 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { ConferencesData, TeamsData, SeasonData } from '../src/types/baseData';
+import type {
+  ConferencesData,
+  HistoryData,
+  PrestigeConfig,
+  TeamsData,
+  SeasonData,
+} from '../src/types/baseData';
 import type { NamesData } from '../src/types/baseData';
 import {
   evaluateNewsAudit,
@@ -39,6 +45,8 @@ const loadCorpusData = (): SeasonCorpusData => {
     yearData: readJson<SeasonData>('../public/data/seasons/2026.json'),
     teamsData,
     conferencesData: readJson<ConferencesData>('../public/data/conferences.json'),
+    historyData: readJson<HistoryData>('../public/data/history.json'),
+    prestigeConfig: readJson<PrestigeConfig>('../public/data/prestige_config.json'),
     names: readJson<NamesData>('../public/data/names.json'),
     states: readJson<Record<string, number>>('../public/data/states.json'),
     rivalries: normalizeRivalriesData(

@@ -42,7 +42,7 @@ export type SeasonPlayoffArchive =
 export interface SeasonConferenceChampion {
   conferenceName: string;
   teamId: number;
-  championshipGameId: number | null;
+  championshipGameId: number;
 }
 
 export interface SeasonBowlArchive {

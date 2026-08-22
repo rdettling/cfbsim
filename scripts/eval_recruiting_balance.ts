@@ -15,6 +15,7 @@ import { runRecruitingEvaluationSuite } from './evaluation/recruiting/evaluation
 import { RECRUIT_STAR_COUNTS } from '../src/domain/recruiting/config';
 import { createSeededRandom } from '../src/domain/utils/random';
 import { prepareInitialRostersFromData } from '../src/domain/rosterBootstrap';
+import { calculateStartingPrestiges } from '../src/domain/league/prestige';
 
 const DEFAULT_SEED = 20260727;
 const DEFAULT_SEEDS = 1;
@@ -94,30 +95,47 @@ const historyRanking = (
   teamName: string,
   year: number,
 ) => {
-  const row = history.teams[teamName]?.find(entry => entry[0] === year);
-  if (!row || !Number.isInteger(row[2]) || row[2] < 1) {
+  const row = history.teams[teamName]?.find(([rowYear]) => rowYear === year);
+  if (!row) {
     throw new Error(
       `History is missing the ${year} ranking for ${teamName}.`,
     );
   }
-  return row[2];
+  const [, , rank] = row;
+  if (!Number.isInteger(rank) || rank < 1) {
+    throw new Error(
+      `History is missing the ${year} ranking for ${teamName}.`,
+    );
+  }
+  return rank;
 };
 
 const buildLeague = (
   yearData: SeasonData,
   teamsData: TeamsData,
   history: HistoryData,
+  prestigeConfig: PrestigeConfig,
 ) => {
   let nextTeamId = 1;
   const conferences: Conference[] = [];
   const teams: Team[] = [];
+  const startingPrestiges = calculateStartingPrestiges({
+    year: START_YEAR,
+    teamNames: [
+      ...Object.values(yearData.conferences).flatMap(conference => conference.teams),
+      ...yearData.independents,
+    ],
+    historyData: history,
+    teamsData,
+    prestigeConfig,
+  });
   const addConference = (
     confName: string,
     confGames: number,
-    members: Record<string, number>,
+    members: string[],
   ) => {
-    const conferenceTeams = Object.entries(members).map(
-      ([teamName, prestige]) => {
+    const conferenceTeams = members.map(
+      teamName => {
         const metadata = teamsData.teams[teamName];
         if (!metadata) {
           throw new Error(`Team metadata is missing for ${teamName}.`);
@@ -130,7 +148,7 @@ const buildLeague = (
           confLimit: confGames,
           nonConfGames: 0,
           nonConfLimit: 12 - confGames,
-          prestige,
+          prestige: startingPrestiges[teamName],
           ceiling: metadata.ceiling,
           floor: metadata.floor,
           mascot: metadata.mascot,
@@ -172,6 +190,7 @@ const buildLeague = (
       confGames,
       info: '',
       championship: null,
+      finalStandings: null,
       teams: conferenceTeams,
     });
   };
@@ -179,7 +198,7 @@ const buildLeague = (
   Object.entries(yearData.conferences).forEach(([confName, conference]) => {
     addConference(confName, conference.games, conference.teams);
   });
-  if (yearData.independents && Object.keys(yearData.independents).length) {
+  if (yearData.independents.length) {
     addConference('Independent', 0, yearData.independents);
   }
 
@@ -221,7 +240,7 @@ const history = readJson<HistoryData>('../public/data/history.json');
 const prestigeConfig = readJson<PrestigeConfig>(
   '../public/data/prestige_config.json',
 );
-const league = buildLeague(yearData, teamsData, history);
+const league = buildLeague(yearData, teamsData, history, prestigeConfig);
 const recruitStarCounts = {
   ...RECRUIT_STAR_COUNTS,
   3: options.threeStars,

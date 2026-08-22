@@ -74,12 +74,10 @@ const Rankings = () => {
             <>
               <RankingsDesktopTable
                 teams={displayedTeams}
-                hasUpcomingGames={data.hasUpcomingGames}
                 onTeamClick={handleTeamClick}
               />
               <RankingsMobileList
                 teams={displayedTeams}
-                hasUpcomingGames={data.hasUpcomingGames}
                 onTeamClick={handleTeamClick}
               />
             </>

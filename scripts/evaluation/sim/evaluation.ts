@@ -42,7 +42,7 @@ import {
 
 const BASE_RATING = 75;
 export const SIM_EVALUATION_DIFFS = [0, 7, 14, 21] as const;
-export const SIM_EVALUATION_BASELINE_CHECKSUM = '1b914e9a';
+export const SIM_EVALUATION_BASELINE_CHECKSUM = '1e97c7cf';
 
 const average = (value: number, count: number) => count ? value / count : 0;
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { HistoryData, PrestigeConfig } from '../../types/baseData';
+import type { HistoryData, PrestigeConfig, TeamsData } from '../../types/baseData';
 import { buildTestLeague, buildTestTeam } from '../../test/fixtures';
 import {
   applyPrestigeChanges,
+  calculateStartingPrestiges,
   calculatePrestigeChanges,
   evaluatePrestigePrograms,
   normalizePrestigeFinish,
@@ -35,7 +36,74 @@ const program = (
   ...overrides,
 });
 
+const teamsData = (bounds: Record<string, [number, number]>): TeamsData => ({
+  teams: Object.fromEntries(Object.entries(bounds).map(([name, [floor, ceiling]]) => [
+    name,
+    {
+      mascot: name,
+      abbreviation: name.slice(0, 3).toUpperCase(),
+      ceiling,
+      floor,
+      colorPrimary: '#000000',
+      colorSecondary: '#ffffff',
+      city: name,
+      state: 'Test',
+      stadium: `${name} Stadium`,
+    },
+  ])),
+});
+
 describe('prestige evaluation', () => {
+  it('calculates a 2026 start from 2023 through 2025 only', () => {
+    const history: HistoryData = {
+      years: [2026, 2025, 2024, 2023, 2022],
+      conf_index: { Test: 1 },
+      teams: {
+        Alpha: [
+          [2026, 1, 100, 0, 0, 1],
+          [2025, 1, 1, 0, 0, 1],
+          [2024, 1, 1, 0, 0, 1],
+          [2023, 1, 1, 0, 0, 1],
+          [2022, 1, 100, 0, 0, 1],
+        ],
+        Beta: [
+          [2026, 1, 1, 0, 0, 7],
+          [2025, 1, 2, 0, 0, 7],
+          [2024, 1, 2, 0, 0, 7],
+          [2023, 1, 2, 0, 0, 7],
+          [2022, 1, 1, 0, 0, 7],
+        ],
+      },
+    };
+
+    expect(calculateStartingPrestiges({
+      year: 2026,
+      teamNames: ['Alpha', 'Beta'],
+      historyData: history,
+      teamsData: teamsData({ Alpha: [1, 7], Beta: [1, 7] }),
+      prestigeConfig: config({ 1: 50, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 50 }),
+    })).toEqual({ Alpha: 7, Beta: 1 });
+  });
+
+  it('uses one or two available prior finishes and the bounds midpoint without history', () => {
+    const history: HistoryData = {
+      years: [2025, 2024],
+      conf_index: { Test: 1 },
+      teams: {
+        Alpha: [[2025, 1, 1, 0, 0, 1]],
+        Beta: [[2025, 1, 2, 0, 0, 7], [2024, 1, 2, 0, 0, 7]],
+      },
+    };
+
+    expect(calculateStartingPrestiges({
+      year: 2026,
+      teamNames: ['Alpha', 'Beta', 'Gamma'],
+      historyData: history,
+      teamsData: teamsData({ Alpha: [1, 7], Beta: [1, 7], Gamma: [2, 5] }),
+      prestigeConfig: config({ 1: 50, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 50 }),
+    })).toEqual({ Alpha: 7, Beta: 7, Gamma: 4 });
+  });
+
   it('normalizes equivalent finishes across league sizes and handles one team', () => {
     expect(normalizePrestigeFinish(6, 11)).toBe(50);
     expect(normalizePrestigeFinish(51, 101)).toBe(50);
@@ -163,7 +231,7 @@ describe('prestige evaluation', () => {
       .toEqual(['Alpha', 'Beta', 'Zulu']);
   });
 
-  it('uses available years and replaces canonical current-year history', () => {
+  it('uses exactly three years and replaces canonical current-year history', () => {
     const league = buildTestLeague('summary', {
       info: {
         ...buildTestLeague('summary').info,
@@ -183,11 +251,13 @@ describe('prestige evaluation', () => {
           [2025, 1, 2, 0, 0, 1],
           [2024, 1, 2, 0, 0, 1],
           [2023, 1, 1, 0, 0, 1],
+          [2022, 1, 2, 0, 0, 1],
         ],
         Beta: [
           [2025, 1, 1, 0, 0, 7],
           [2024, 1, 1, 0, 0, 7],
           [2023, 1, 2, 0, 0, 7],
+          [2022, 1, 1, 0, 0, 7],
         ],
       },
     };
@@ -201,7 +271,7 @@ describe('prestige evaluation', () => {
     expect(changes.Alpha).toMatchObject({
       targetPrestige: 7,
       change: 6,
-      before: { averageRank: 1.5, seasons: 2 },
+      before: { averageRank: 5 / 3, seasons: 3 },
       after: { averageRank: 4 / 3, seasons: 3 },
     });
     expect(changes.Beta.targetPrestige).toBe(1);

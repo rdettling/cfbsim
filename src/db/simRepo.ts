@@ -227,6 +227,11 @@ export const commitSeasonCompletion = async ({
     ) {
       throw new Error('The national championship is not complete.');
     }
+    if (games.some(game =>
+      game.year === league.info.currentYear && game.winnerId === null
+    )) {
+      throw new Error('The current season has unfinished games.');
+    }
     if (
       memories.some(existing => existing.year === memory.year) ||
       seasons.some(season => season.year === memory.year)

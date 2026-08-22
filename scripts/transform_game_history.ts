@@ -174,11 +174,11 @@ const normalizeProviderConference = (value: unknown) => {
 const buildTeamConferences = (yearData: SeasonData) => {
   const conferences = new Map<string, string | null>();
   for (const [conference, data] of Object.entries(yearData.conferences)) {
-    for (const team of Object.keys(data.teams)) {
+    for (const team of data.teams) {
       conferences.set(canonicalCfbdTeamName(team), conference);
     }
   }
-  for (const team of Object.keys(yearData.independents)) {
+  for (const team of yearData.independents) {
     conferences.set(canonicalCfbdTeamName(team), null);
   }
   return conferences;

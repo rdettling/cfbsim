@@ -14,4 +14,8 @@ describe('statistics routes', () => {
     expect(ROUTES.NEWS).toBe('/news');
     expect(ROUTES.NEWS_YEAR).toBe('/news/:year');
   });
+
+  it('defines the biggest upsets league route', () => {
+    expect(ROUTES.BIGGEST_UPSETS).toBe('/league/upsets');
+  });
 });

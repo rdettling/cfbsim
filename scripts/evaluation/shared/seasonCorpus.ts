@@ -1,4 +1,10 @@
-import type { ConferencesData, TeamsData, SeasonData } from '../../../src/types/baseData';
+import type {
+  ConferencesData,
+  HistoryData,
+  PrestigeConfig,
+  TeamsData,
+  SeasonData,
+} from '../../../src/types/baseData';
 import type { GameLogRecord, GameRecord, PlayerRecord } from '../../../src/types/db';
 import type { Team } from '../../../src/types/domain';
 import { DEFAULT_NEXT_SEASON_CONFIGURATION, type LeagueState } from '../../../src/types/league';
@@ -6,6 +12,7 @@ import type { GameType } from '../../../src/types/news';
 import type { FullGame } from '../../../src/types/scheduleTypes';
 import type { NamesData } from '../../../src/types/baseData';
 import { buildTeamsAndConferencesFromData } from '../../../src/domain/baseData';
+import { calculateStartingPrestiges } from '../../../src/domain/league/prestige';
 import { buildGameDetail } from '../../../src/domain/league/gameDetails';
 import { REGULAR_SEASON_WEEKS } from '../../../src/domain/schedule/constants';
 import { buildOddsContext, buildOddsFields, type OddsContext } from '../../../src/domain/odds';
@@ -37,6 +44,8 @@ export interface SeasonCorpusData {
   yearData: SeasonData;
   teamsData: TeamsData;
   conferencesData: ConferencesData;
+  historyData: HistoryData;
+  prestigeConfig: PrestigeConfig;
   names: NamesData;
   states: Record<string, number>;
   rivalries: RivalriesData;
@@ -131,10 +140,21 @@ const buildLeague = (
   data: SeasonCorpusData,
   random: RandomSource,
 ) => {
+  const startingPrestiges = calculateStartingPrestiges({
+    year,
+    teamNames: [
+      ...Object.values(data.yearData.conferences).flatMap(conference => conference.teams),
+      ...data.yearData.independents,
+    ],
+    historyData: data.historyData,
+    teamsData: data.teamsData,
+    prestigeConfig: data.prestigeConfig,
+  });
   const { teams, conferences } = buildTeamsAndConferencesFromData(
     data.yearData,
     data.teamsData,
     data.conferencesData,
+    startingPrestiges,
   );
   const league: LeagueState = {
     info: {

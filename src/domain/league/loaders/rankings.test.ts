@@ -122,13 +122,14 @@ describe('rankings page loader', () => {
     vi.mocked(getAllGames).mockResolvedValue([]);
   });
 
-  it('projects playoff status and the nearest games', async () => {
+  it('projects playoff status and the exact last and current weeks', async () => {
     const league = buildLeague();
     vi.mocked(loadLeagueOrThrow).mockResolvedValue(league);
     vi.mocked(getAllGames).mockResolvedValue([
-      game({ id: 1, week: 2, teamAId: 1, teamBId: 2, winnerId: 1 }),
-      game({ id: 2, week: 5, teamAId: 1, teamBId: 3, winnerId: 3 }),
-      game({ id: 3, week: 8, teamAId: 1, teamBId: 2, winnerId: null }),
+      game({ id: 1, week: 5, teamAId: 1, teamBId: 3, winnerId: 1 }),
+      game({ id: 2, week: 6, teamAId: 1, teamBId: 2, winnerId: 2 }),
+      game({ id: 3, week: 7, teamAId: 1, teamBId: 3, winnerId: null }),
+      game({ id: 4, week: 8, teamAId: 1, teamBId: 2, winnerId: null }),
     ]);
 
     const result = await loadRankings();
@@ -137,28 +138,30 @@ describe('rankings page loader', () => {
     expect(first).toMatchObject({
       isPlayoffTeam: false,
       movement: 1,
-      last_game: { weekPlayed: 5, result: 'L' },
-      next_game: { weekPlayed: 8 },
+      last_week: { weekPlayed: 6, result: 'L' },
+      current_week: { weekPlayed: 7 },
     });
     expect(second).toMatchObject({
       isPlayoffTeam: true,
-      last_game: { weekPlayed: 2 },
-      next_game: { weekPlayed: 8 },
+      last_week: { weekPlayed: 6 },
+      current_week: null,
     });
-    expect(third).toMatchObject({ isPlayoffTeam: false });
-    expect(result.hasUpcomingGames).toBe(true);
+    expect(third).toMatchObject({
+      isPlayoffTeam: false,
+      last_week: null,
+      current_week: { weekPlayed: 7 },
+    });
   });
 
-  it('ignores completed and upcoming games from other seasons', async () => {
+  it('ignores last-week and current-week games from other seasons', async () => {
     vi.mocked(getAllGames).mockResolvedValue([
-      game({ id: 1, week: 18, teamAId: 1, teamBId: 2, winnerId: 1, year: 2024 }),
-      game({ id: 2, week: 19, teamAId: 1, teamBId: 3, winnerId: null, year: 2024 }),
+      game({ id: 1, week: 6, teamAId: 1, teamBId: 2, winnerId: 1, year: 2024 }),
+      game({ id: 2, week: 7, teamAId: 1, teamBId: 3, winnerId: null, year: 2024 }),
     ]);
 
     const result = await loadRankings();
 
-    expect(result.rankings.every(team => team.last_game === null)).toBe(true);
-    expect(result.rankings.every(team => team.next_game === null)).toBe(true);
-    expect(result.hasUpcomingGames).toBe(false);
+    expect(result.rankings.every(team => team.last_week === null)).toBe(true);
+    expect(result.rankings.every(team => team.current_week === null)).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { buildTestLeague, buildTestPlayer } from '../test/fixtures';
+import { buildTestLeague, buildTestPlayer, buildTestTeam } from '../test/fixtures';
 import type { LeagueState } from '../types/league';
 import { getDb } from './db';
 import {
@@ -25,6 +25,25 @@ const snapshot = async () => {
   return {
     league: await db.getAll('league'),
     players: await db.getAll('players'),
+  };
+};
+
+const addFinalConferenceStandings = (league: LeagueState) => {
+  const second = buildTestTeam({
+    id: 2,
+    name: 'Other State',
+    abbreviation: 'OTH',
+    ranking: 2,
+  });
+  league.teams.push(second);
+  league.conferences[0].teams.push(second);
+  league.conferences[0].championship = 1;
+  league.conferences[0].finalStandings = {
+    year: league.info.currentYear,
+    entries: [
+      { teamId: league.teams[0].id, pollRank: 1, resolvedBy: null },
+      { teamId: second.id, pollRank: 2, resolvedBy: 'poll_rank' },
+    ],
   };
 };
 
@@ -147,6 +166,56 @@ describe('current league persistence boundary', () => {
       name: 'conference with an invalid championship ID',
       mutate: (league: LeagueState) => {
         league.conferences[0].championship = 0;
+      },
+    },
+    {
+      name: 'conference championship without frozen standings',
+      mutate: (league: LeagueState) => {
+        league.conferences[0].championship = 1;
+      },
+    },
+    {
+      name: 'frozen conference standings without a championship',
+      mutate: (league: LeagueState) => {
+        addFinalConferenceStandings(league);
+        league.conferences[0].championship = null;
+      },
+    },
+    {
+      name: 'conference standings from another year',
+      mutate: (league: LeagueState) => {
+        addFinalConferenceStandings(league);
+        league.conferences[0].finalStandings!.year -= 1;
+      },
+    },
+    {
+      name: 'conference standings missing a member',
+      mutate: (league: LeagueState) => {
+        addFinalConferenceStandings(league);
+        league.conferences[0].finalStandings!.entries.pop();
+      },
+    },
+    {
+      name: 'conference standings with a duplicate team',
+      mutate: (league: LeagueState) => {
+        addFinalConferenceStandings(league);
+        league.conferences[0].finalStandings!.entries[1].teamId = 1;
+      },
+    },
+    {
+      name: 'conference standings with a foreign team',
+      mutate: (league: LeagueState) => {
+        addFinalConferenceStandings(league);
+        league.conferences[0].finalStandings!.entries[1].teamId = 99;
+      },
+    },
+    {
+      name: 'conference standings with a malformed entry',
+      mutate: (league: LeagueState) => {
+        addFinalConferenceStandings(league);
+        Object.assign(league.conferences[0].finalStandings!.entries[0], {
+          resolvedBy: 'coin_flip',
+        });
       },
     },
     {

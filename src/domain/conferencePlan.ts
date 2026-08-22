@@ -279,6 +279,7 @@ export const applyResolvedConferenceAlignment = (
         ...conference,
         confGames: conferenceGames,
         championship: null,
+        finalStandings: null,
         teams: teamsByConference.get(conference.confName) ?? [],
       };
     });
@@ -297,6 +298,7 @@ export const applyResolvedConferenceAlignment = (
       confGames: 0,
       info: '',
       championship: null,
+      finalStandings: null,
       teams: teamsByConference.get('Independent') ?? [],
     });
   }

@@ -5,7 +5,7 @@ import {
 } from '../../domain/sim/conversions';
 import {
   buildAutomaticOffenseSituation,
-  chooseAutomaticOffenseAction,
+  chooseAutomaticOffensePlan,
 } from '../../domain/sim/playcalling';
 import type { ClockTempo } from '../../types/db';
 import type { Team } from '../../types/domain';
@@ -95,7 +95,7 @@ export const resolveGameSimDecisionPrompt = ({
 
   if (currentDefense?.id === userTeamId) {
     if (currentOffense) {
-      const automaticAction = chooseAutomaticOffenseAction(
+      const automaticPlan = chooseAutomaticOffensePlan(
         buildAutomaticOffenseSituation({
           game: simGame,
           offense: currentOffense,
@@ -104,9 +104,11 @@ export const resolveGameSimDecisionPrompt = ({
           yardsLeft: driveState.yardsLeft,
           fieldPosition: driveState.fieldPosition,
           clockEnabled: !inOvertime,
+          automaticOffenseIntent: driveState.automaticOffenseIntent,
         }),
+        'auto',
       );
-      if (automaticAction.kind !== 'scrimmage') return null;
+      if (automaticPlan.action.kind !== 'scrimmage') return null;
     }
     return buildDecisionPrompt(driveState, 'defense');
   }

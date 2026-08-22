@@ -12,8 +12,8 @@ const team = (name: string, prestigeChange: number) => ({
   avg_rank_after: 20,
   prestige_score_before: 70,
   prestige_score_after: 80,
-  prestige_seasons_before: 3,
-  prestige_seasons_after: 4,
+  prestige_seasons_before: 2,
+  prestige_seasons_after: 3,
 });
 
 describe('SeasonPrestigePanel', () => {
@@ -53,13 +53,13 @@ describe('SeasonPrestigePanel', () => {
       </MemoryRouter>,
     );
 
-    expect(markup).toContain('4-Year Score');
+    expect(markup).toContain('3-Year Score');
     expect(markup).toContain('70.0');
     expect(markup).toContain('80.0');
     expect(markup).toContain('Avg Finish');
     expect(markup).toContain('30.0');
     expect(markup).toContain('20.0');
-    expect(markup).toContain('3 → 4 seasons');
+    expect(markup).toContain('2 → 3 seasons');
     expect(markup).toContain('4 → 6');
     expect(markup).toContain('+2 Promotion');
   });

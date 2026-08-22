@@ -138,7 +138,7 @@ const isConferenceChampion = (
   typeof value.conferenceName === 'string' &&
   value.conferenceName.trim().length > 0 &&
   isId(value.teamId) &&
-  (value.championshipGameId === null || isId(value.championshipGameId));
+  isId(value.championshipGameId);
 
 const isBowl = (value: unknown): value is SeasonBowlArchive =>
   isRecord(value) &&
@@ -277,6 +277,17 @@ export const assertSeasonMemoryReferences = (
     }
     years.add(memory.year);
     const snapshotTeamIds = new Set(memory.teamSnapshots.map(snapshot => snapshot.teamId));
+    const snapshotsByTeamId = new Map(
+      memory.teamSnapshots.map(snapshot => [snapshot.teamId, snapshot]),
+    );
+    const conferenceNames = new Set(
+      memory.teamSnapshots
+        .map(snapshot => snapshot.conference)
+        .filter(conference => conference !== 'Independent'),
+    );
+    const archivedConferenceNames = new Set(
+      memory.postseason.conferenceChampions.map(champion => champion.conferenceName),
+    );
     const participantTeamIds = new Set(
       games
         .filter(game => game.year === memory.year)
@@ -284,13 +295,15 @@ export const assertSeasonMemoryReferences = (
     );
     if (
       memory.teamSnapshots.some(snapshot => !teamIds.has(snapshot.teamId)) ||
-      [...participantTeamIds].some(teamId => !snapshotTeamIds.has(teamId))
+      [...participantTeamIds].some(teamId => !snapshotTeamIds.has(teamId)) ||
+      archivedConferenceNames.size !== conferenceNames.size ||
+      [...conferenceNames].some(name => !archivedConferenceNames.has(name))
     ) {
       throw new SeasonMemoryDataIntegrityError();
     }
     const playoffGameIds = getArchivedPlayoffGameIds(memory.postseason.playoff);
-    const conferenceGameIds = memory.postseason.conferenceChampions.flatMap(entry =>
-      entry.championshipGameId === null ? [] : [entry.championshipGameId]
+    const conferenceGameIds = memory.postseason.conferenceChampions.map(
+      entry => entry.championshipGameId,
     );
     const bowlGameIds = memory.postseason.bowls.map(entry => entry.gameId);
     const archiveGameIds = [...playoffGameIds, ...conferenceGameIds, ...bowlGameIds];
@@ -314,12 +327,14 @@ export const assertSeasonMemoryReferences = (
     }
     assertPlayoffBracket(memory.postseason.playoff, gameById);
     for (const champion of memory.postseason.conferenceChampions) {
-      const game = champion.championshipGameId === null
-        ? null
-        : gameById.get(champion.championshipGameId);
+      const game = gameById.get(champion.championshipGameId);
       if (
         !snapshotTeamIds.has(champion.teamId) ||
-        (game && game.winnerId !== champion.teamId)
+        game?.gameType !== 'conference_championship' ||
+        game.winnerId !== champion.teamId ||
+        snapshotsByTeamId.get(champion.teamId)?.conference !== champion.conferenceName ||
+        snapshotsByTeamId.get(game.teamAId)?.conference !== champion.conferenceName ||
+        snapshotsByTeamId.get(game.teamBId)?.conference !== champion.conferenceName
       ) {
         throw new SeasonMemoryDataIntegrityError();
       }

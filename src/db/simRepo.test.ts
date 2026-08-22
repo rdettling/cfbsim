@@ -303,6 +303,14 @@ describe('game repository boundary', () => {
     const db = await getDb();
     const source = league();
     source.playoff = { seeds: [1, 2], natty: 1 };
+    source.conferences[0].championship = 2;
+    source.conferences[0].finalStandings = {
+      year: 2026,
+      entries: [
+        { teamId: 1, pollRank: 1, resolvedBy: null },
+        { teamId: 2, pollRank: 2, resolvedBy: null },
+      ],
+    };
     const destination = structuredClone(source);
     destination.info.stage = 'summary';
     const championship = game({
@@ -319,6 +327,22 @@ describe('game repository boundary', () => {
       quarter: 4,
       clockSecondsLeft: 0,
     });
+    const conferenceChampionship = game({
+      id: 2,
+      gameType: 'conference_championship',
+      name: 'Test Conference championship',
+      neutralSite: true,
+      homeTeamId: null,
+      awayTeamId: null,
+      weekPlayed: 15,
+      winnerId: 1,
+      resultA: 'W',
+      resultB: 'L',
+      scoreA: 24,
+      scoreB: 17,
+      quarter: 4,
+      clockSecondsLeft: 0,
+    });
     const player = buildTestPlayer({ id: 10, teamId: 1, pos: 'rb' });
     const opponent = buildTestPlayer({ id: 20, teamId: 2, pos: 'rb' });
     const memory = buildTestSeasonMemory({
@@ -327,6 +351,21 @@ describe('game repository boundary', () => {
         buildTestSeasonTeamSnapshot({ teamId: 1 }),
         buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2 }),
       ],
+      postseason: {
+        playoff: {
+          format: 2,
+          seeds: [1, 2],
+          autobids: 0,
+          conferenceChampionsReceiveTopSeeds: false,
+          games: { championship: 1 },
+        },
+        conferenceChampions: [{
+          conferenceName: 'Test Conference',
+          teamId: 1,
+          championshipGameId: 2,
+        }],
+        bowls: [],
+      },
     });
     const playerSeason = buildTestPlayerSeason({
       year: 2026,
@@ -336,6 +375,7 @@ describe('game repository boundary', () => {
     });
     await db.put('league', { key: 'current', value: source });
     await db.put('games', championship);
+    await db.put('games', conferenceChampionship);
     await db.put('players', player);
     await db.put('players', opponent);
 
@@ -354,6 +394,78 @@ describe('game repository boundary', () => {
       playerSeasons: [playerSeason],
     })).rejects.toThrow('no longer ready');
     expect(await db.count('seasonMemories')).toBe(1);
+  });
+
+  it('rejects season completion atomically while a current-year game is unfinished', async () => {
+    const db = await getDb();
+    const source = league();
+    source.idCounters.game = 4;
+    source.playoff = { seeds: [1, 2], natty: 1 };
+    const destination = structuredClone(source);
+    destination.info.stage = 'summary';
+    const championship = game({
+      gameType: 'national_championship',
+      name: 'National Championship',
+      neutralSite: true,
+      homeTeamId: null,
+      awayTeamId: null,
+      winnerId: 1,
+      resultA: 'W',
+      resultB: 'L',
+      scoreA: 6,
+      scoreB: 0,
+      quarter: 4,
+      clockSecondsLeft: 0,
+    });
+    const unfinishedBowl = game({
+      id: 3,
+      gameType: 'bowl',
+      name: 'Rose Bowl',
+      neutralSite: true,
+      homeTeamId: null,
+      awayTeamId: null,
+      weekPlayed: 16,
+    });
+    const player = buildTestPlayer({ id: 10, teamId: 1, pos: 'rb' });
+    const opponent = buildTestPlayer({ id: 20, teamId: 2, pos: 'rb' });
+    const memory = buildTestSeasonMemory({
+      year: 2026,
+      teamSnapshots: [
+        buildTestSeasonTeamSnapshot({ teamId: 1 }),
+        buildTestSeasonTeamSnapshot({ teamId: 2, ranking: 2 }),
+      ],
+      postseason: {
+        playoff: {
+          format: 2,
+          seeds: [1, 2],
+          autobids: 0,
+          conferenceChampionsReceiveTopSeeds: false,
+          games: { championship: 1 },
+        },
+        conferenceChampions: [],
+        bowls: [],
+      },
+    });
+    await db.put('league', { key: 'current', value: source });
+    await db.put('games', championship);
+    await db.put('games', unfinishedBowl);
+    await db.put('players', player);
+    await db.put('players', opponent);
+
+    await expect(commitSeasonCompletion({
+      league: destination,
+      memory,
+      playerSeasons: [buildTestPlayerSeason({
+        year: 2026,
+        playerId: player.id,
+        teamId: player.teamId,
+        position: player.pos,
+      })],
+    })).rejects.toThrow('The current season has unfinished games.');
+
+    expect((await db.get('league', 'current'))?.value).toEqual(source);
+    expect(await db.getAll('seasonMemories')).toEqual([]);
+    expect(await db.getAll('playerSeasons')).toEqual([]);
   });
 
   it('rolls back season completion when finalized artifacts are invalid', async () => {

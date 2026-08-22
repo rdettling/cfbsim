@@ -68,6 +68,7 @@ describe('application navigation', () => {
     );
     expect(groups.find(group => group.id === 'league')?.items.map(item => item.label)).toEqual([
       'News',
+      'Biggest Upsets',
       'Awards',
       'History',
       'Records',
@@ -87,7 +88,7 @@ describe('application navigation', () => {
     ]);
   });
 
-  it('matches league news, awards, history, and records independently', () => {
+  it('matches league news, biggest upsets, awards, history, and records independently', () => {
     const league = buildTestLeague('season');
     const navigation = buildNavigationModel({
       team: league.teams[0],
@@ -102,12 +103,16 @@ describe('application navigation', () => {
       (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'stats'
     )!;
     const news = leagueGroup.items[0];
-    const awards = leagueGroup.items[1];
-    const history = leagueGroup.items[2];
-    const records = leagueGroup.items[3];
+    const biggestUpsets = leagueGroup.items[1];
+    const awards = leagueGroup.items[2];
+    const history = leagueGroup.items[3];
+    const records = leagueGroup.items[4];
 
     expect(isPathActive(ROUTES.NEWS, news)).toBe(true);
     expect(isPathActive(`${ROUTES.NEWS}/2025`, news)).toBe(true);
+    expect(isPathActive(ROUTES.BIGGEST_UPSETS, biggestUpsets)).toBe(true);
+    expect(isPathActive(`${ROUTES.BIGGEST_UPSETS}/extra`, biggestUpsets)).toBe(false);
+    expect(isGroupActive(ROUTES.BIGGEST_UPSETS, leagueGroup)).toBe(true);
     expect(isPathActive('/awards', news)).toBe(false);
     expect(isPathActive('/awards', awards)).toBe(true);
     expect(isGroupActive(`${ROUTES.NEWS}/2025`, leagueGroup)).toBe(true);

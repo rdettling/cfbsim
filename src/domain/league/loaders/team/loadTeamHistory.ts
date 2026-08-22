@@ -65,35 +65,35 @@ export const loadTeamHistory = async (teamName?: string) => {
     Object.entries(historyData.conf_index).map(([name, id]) => [id, name]),
   );
   const years = (historyData.teams[team.name] ?? [])
-    .filter(entry => entry[0] <= cutoffYear)
-    .sort((left, right) => right[0] - left[0])
-    .map(entry => {
-      const memory = memoriesByYear.get(entry[0]);
+    .filter(([year]) => year <= cutoffYear)
+    .sort(([leftYear], [rightYear]) => rightYear - leftYear)
+    .map(([year, conferenceId, rank, wins, losses, prestige]) => {
+      const memory = memoriesByYear.get(year);
       const teamSnapshot = memory?.teamSnapshots.find(
         snapshot => snapshot.teamId === team.id,
       );
-      const era = entry[0] >= league.info.startYear
+      const era = year >= league.info.startYear
         ? 'dynasty' as const
         : 'historical' as const;
       if (era === 'dynasty' && !teamSnapshot) {
         throw new SeasonMemoryDataIntegrityError(
-          `Season ${entry[0]} is missing a ${team.name} team snapshot.`,
+          `Season ${year} is missing a ${team.name} team snapshot.`,
         );
       }
-      const yearGames = gamesByYear.get(entry[0]) ?? [];
+      const yearGames = gamesByYear.get(year) ?? [];
       const accomplishments = memory
         ? buildTeamAccomplishments(team.id, memory, gamesById)
         : [];
       return {
-        year: entry[0],
-        prestige: teamSnapshot?.prestige ?? entry[5],
+        year,
+        prestige: teamSnapshot?.prestige ?? prestige,
         rating: teamSnapshot?.rating ?? null,
-        conference: confById.get(entry[1]) ?? 'Independent',
-        wins: entry[3],
-        losses: entry[4],
-        rank: entry[2],
+        conference: confById.get(conferenceId) ?? 'Independent',
+        wins,
+        losses,
+        rank,
         hasSchedule: era === 'historical'
-          ? historicalGamesIndex.years.includes(entry[0])
+          ? historicalGamesIndex.years.includes(year)
           : yearGames.some(game =>
               game.teamAId === team.id || game.teamBId === team.id
             ),

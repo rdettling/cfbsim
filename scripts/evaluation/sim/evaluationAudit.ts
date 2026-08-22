@@ -13,6 +13,7 @@ import {
   samplePotentialRunoffSeconds,
 } from '../../../src/domain/sim/clock';
 import { validatePlayCall } from '../../../src/domain/sim/concepts';
+import { SIM_TUNING } from '../../../src/domain/sim/config';
 import { tryResultMatchesCall, twoPointSucceeded } from '../../../src/domain/sim/conversions';
 import type { simGame } from '../../../src/domain/sim/engine';
 import { auditParticipantLinks } from './participantAudit';
@@ -262,10 +263,12 @@ const evaluateGameTiming = (
     const afterLiveSeconds = timing.start.secondsLeft - liveBallSeconds;
     const lateFirstDown = firstDown
       && (timing.start.quarter === 2 || timing.start.quarter === 4)
-      && afterLiveSeconds <= 120;
+      && afterLiveSeconds <= SIM_TUNING.clock.firstDownStopSeconds;
     const outOfBoundsWindow = timing.outOfBounds && (
-      (timing.start.quarter === 2 && afterLiveSeconds <= 120)
-      || (timing.start.quarter === 4 && afterLiveSeconds <= 300)
+      (timing.start.quarter === 2
+        && afterLiveSeconds <= SIM_TUNING.clock.outOfBoundsStop.firstHalfSeconds)
+      || (timing.start.quarter === 4
+        && afterLiveSeconds <= SIM_TUNING.clock.outOfBoundsStop.secondHalfSeconds)
     );
     const shouldStop = terminal
       || lateFirstDown
@@ -288,9 +291,19 @@ const evaluateGameTiming = (
       const timeoutKey = `${half}:${teamId}`;
       const uses = (timeoutUses.get(timeoutKey) ?? 0) + 1;
       timeoutUses.set(timeoutKey, uses);
+      const timeoutRunoffSeconds = timing.elapsedSeconds - liveBallSeconds;
+      const validDelayedCloseout = timeoutRunoffSeconds > 0
+        && timing.chargedTimeoutAfter === 'offense'
+        && timing.start.quarter === 4
+        && timing.end.secondsLeft === SIM_TUNING.clock.management.fieldGoalCloseoutTargetSeconds
+        && timeoutRunoffSeconds <= SIM_TUNING.clock.management.maximumPostPlayRunoffSeconds
+        && play.call.kind === 'scrimmage'
+        && play.call.offense === 'inside_run'
+        && play.startingFP
+          >= SIM_TUNING.playcalling.fourthDown.fieldGoalRangeStartFieldPosition;
       if (uses > 3
         || timing.eventAfter !== null
-        || timing.elapsedSeconds !== liveBallSeconds
+        || (timeoutRunoffSeconds !== 0 && !validDelayedCloseout)
         || timing.end.running) {
         addViolation(violations, 'Simulation produced invalid charged timeout timing.');
       }
@@ -301,7 +314,7 @@ const evaluateGameTiming = (
       && play.yardsGained === 0
       && play.down <= 3
       && timing.start.running
-      && timing.start.secondsLeft >= 3
+      && timing.start.secondsLeft >= SIM_TUNING.clock.management.minimumSpikeSeconds
       && timing.tempo === 'hurry_up'
       && timing.elapsedSeconds === liveBallSeconds
       && !timing.end.running
@@ -344,13 +357,18 @@ const evaluateGameTiming = (
         else totals.defenseTimeouts += 1;
         if (timing.start.quarter <= 2) totals.firstHalfTimeouts += 1;
         else totals.secondHalfTimeouts += 1;
-        totals.timeoutSecondsSaved += samplePotentialRunoffSeconds(
+        const potentialRunoffSeconds = samplePotentialRunoffSeconds(
           play.id,
           play.playType,
           play.result,
           timing.tempo,
           clockAction,
           liveBallSeconds,
+        );
+        const actualRunoffSeconds = Math.max(0, timing.elapsedSeconds - liveBallSeconds);
+        totals.timeoutSecondsSaved += Math.max(
+          0,
+          potentialRunoffSeconds - actualRunoffSeconds,
         );
       }
       if (clockAction === 'spike') totals.spikes += 1;

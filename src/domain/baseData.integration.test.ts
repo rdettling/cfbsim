@@ -44,7 +44,7 @@ describe('2004 starting-year data', () => {
       preview.teams.find(team => team.name === 'Florida A&M'),
     ).toMatchObject({
       mascot: 'Rattlers',
-      prestige: 1,
+      prestige: 2,
       ceiling: 2,
       floor: 1,
       conferenceName: null,
@@ -53,6 +53,7 @@ describe('2004 starting-year data', () => {
       leagueData.teams.find(team => team.name === 'Florida A&M'),
     ).toMatchObject({
       abbreviation: 'FAMU',
+      prestige: 2,
       conference: 'Independent',
       city: 'Tallahassee',
       state: 'Florida',

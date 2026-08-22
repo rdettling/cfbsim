@@ -1,3 +1,20 @@
+export type ConferenceTiebreaker =
+  | 'head_to_head'
+  | 'common_opponents'
+  | 'overall_record'
+  | 'poll_rank';
+
+export interface ConferenceFinalStandingEntry {
+  teamId: number;
+  pollRank: number;
+  resolvedBy: ConferenceTiebreaker | null;
+}
+
+export interface ConferenceFinalStandings {
+  year: number;
+  entries: ConferenceFinalStandingEntry[];
+}
+
 export interface Conference {
   id: number;
   confName: string;
@@ -5,6 +22,7 @@ export interface Conference {
   confGames: number;
   info: string;
   championship: number | null;
+  finalStandings: ConferenceFinalStandings | null;
   teams: Team[];
 }
 

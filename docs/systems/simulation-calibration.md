@@ -114,7 +114,7 @@ or use those distributions as hard gates.
 ## Accepted Baseline
 
 The current runtime tuning is the accepted baseline. The simulation checksum
-is `1b914e9a`, and the default audit passes all hard gates.
+is `1e97c7cf`, and the default audit passes all hard gates.
 The simulation checksum includes complete drive artifacts, so an intentional
 persisted-record shape change advances it even when football metrics and random
 sampling remain unchanged.

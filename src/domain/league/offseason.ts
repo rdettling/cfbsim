@@ -5,8 +5,14 @@ import type {
   Team,
 } from '../../types/domain';
 import type { SeasonData, TeamsData, ConferencesData } from '../../types/baseData';
-import { getTeamsData, getConferencesData } from '../../db/baseData';
+import {
+  getConferencesData,
+  getHistoryData,
+  getPrestigeConfig,
+  getTeamsData,
+} from '../../db/baseData';
 import { getLastWeekByPlayoffTeams } from './postseason';
+import { calculateStartingPrestiges } from './prestige';
 import {
   resolveHistoricalData,
   type ResolvedHistoricalData,
@@ -16,7 +22,8 @@ const applyRealignment = (
   league: LeagueState,
   yearData: SeasonData,
   teamsData: TeamsData,
-  conferencesData: ConferencesData
+  conferencesData: ConferencesData,
+  startingPrestiges: Readonly<Record<string, number>>,
 ) => {
   if (league.settings.conferencePolicy === 'current') return [];
 
@@ -44,7 +51,10 @@ const applyRealignment = (
       return existing;
     }
 
-    if (!meta) return null;
+    if (!meta) throw new Error(`Team metadata for ${teamName} is unavailable.`);
+    if (!Number.isInteger(prestige)) {
+      throw new Error(`Starting Prestige for ${teamName} is unavailable.`);
+    }
 
     const team: Team = {
       id: nextTeamId,
@@ -97,9 +107,13 @@ const applyRealignment = (
 
   Object.entries(yearData.conferences).forEach(([confName, confData]) => {
     const confTeams: Team[] = [];
-    Object.entries(confData.teams ?? {}).forEach(([teamName, prestige]) => {
-      const team = ensureTeam(teamName, Number(prestige), confName, confData.games);
-      if (!team) return;
+    confData.teams.forEach(teamName => {
+      const team = ensureTeam(
+        teamName,
+        startingPrestiges[teamName],
+        confName,
+        confData.games,
+      );
       confTeams.push(team);
       assignedTeams.add(teamName);
     });
@@ -112,17 +126,17 @@ const applyRealignment = (
       confGames: confData.games,
       info: existing?.info ?? '',
       championship: null,
+      finalStandings: null,
       teams: confTeams,
     });
   });
 
   const independents = yearData.independents;
-  if (Object.keys(independents).length) {
+  if (independents.length) {
     const confName = 'Independent';
     const confTeams: Team[] = [];
-    Object.entries(independents).forEach(([teamName, prestige]) => {
-      const team = ensureTeam(teamName, Number(prestige), confName, 0);
-      if (!team) return;
+    independents.forEach(teamName => {
+      const team = ensureTeam(teamName, startingPrestiges[teamName], confName, 0);
       confTeams.push(team);
       assignedTeams.add(teamName);
     });
@@ -135,6 +149,7 @@ const applyRealignment = (
       confGames: 0,
       info: existing?.info ?? '',
       championship: null,
+      finalStandings: null,
       teams: confTeams,
     });
   }
@@ -162,6 +177,7 @@ const applyRealignment = (
         confGames: fallback?.confGames ?? 0,
         info: fallback?.info ?? '',
         championship: null,
+        finalStandings: null,
         teams: confTeams,
       });
     });
@@ -210,21 +226,39 @@ export const applyRealignmentAndPlayoff = async (
   league.info.currentYear = targetYear;
   league.info.currentWeek = 1;
 
-  const [teamsData, conferencesData] = await Promise.all([
+  const [teamsData, conferencesData, historyData, prestigeConfig] = await Promise.all([
     getTeamsData(),
     getConferencesData(),
+    getHistoryData(),
+    getPrestigeConfig(),
   ]);
 
   const typedYearData = resolved.yearData;
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
+  const startingPrestiges = calculateStartingPrestiges({
+    year: targetYear,
+    teamNames: [
+      ...Object.values(typedYearData.conferences)
+        .flatMap(conference => conference.teams),
+      ...typedYearData.independents,
+    ],
+    historyData,
+    teamsData: typedTeamsData,
+    prestigeConfig,
+  });
 
   const addedTeams = applyRealignment(
     league,
     typedYearData,
     typedTeamsData,
     typedConferencesData,
+    startingPrestiges,
   );
+  league.conferences.forEach(conference => {
+    conference.championship = null;
+    conference.finalStandings = null;
+  });
 
   const updateFormat = league.settings.postseasonPolicy === 'historical';
   refreshPlayoffFormat(league, typedYearData, updateFormat);

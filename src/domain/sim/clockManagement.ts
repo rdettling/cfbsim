@@ -9,6 +9,7 @@ import type {
   TimeoutInstruction,
 } from '../../types/sim';
 import type { Team } from '../../types/domain';
+import type { OffenseTimeoutRequest, TimeoutRequest } from './clock';
 import { SIM_TUNING } from './config';
 
 export const CLOCK_MANAGEMENT_LABELS: Record<ClockManagementAction, string> = {
@@ -186,10 +187,17 @@ const automaticTimeoutForSide = (
   return false;
 };
 
+export const chooseAutomaticOffenseTimeoutRequest = (
+  situation: ManagementSituation,
+): OffenseTimeoutRequest | null => automaticTimeoutForSide('offense', situation)
+  ? { side: 'offense', timing: 'immediate' }
+  : null;
+
 export const resolveTimeoutRequest = (
   instruction: InteractiveStepInstruction['timeoutAfter'],
   situation: ManagementSituation,
-): 'offense' | 'defense' | null => {
+  automaticOffenseTimeoutRequest: OffenseTimeoutRequest | null,
+): TimeoutRequest | null => {
   const explicitSide = instruction.offense === 'use'
     ? 'offense'
     : instruction.defense === 'use'
@@ -200,26 +208,25 @@ export const resolveTimeoutRequest = (
     if (timeoutsRemainingFor(situation.game, team.id) <= 0) {
       throw new Error(`${team.name} has no timeouts remaining.`);
     }
-    return explicitSide;
+    return { side: explicitSide, timing: 'immediate' };
   }
-  if (instruction.offense === 'auto' && automaticTimeoutForSide('offense', situation)) {
-    return 'offense';
+  if (instruction.offense === 'auto' && automaticOffenseTimeoutRequest !== null) {
+    return automaticOffenseTimeoutRequest;
   }
   if (instruction.defense === 'auto' && automaticTimeoutForSide('defense', situation)) {
-    return 'defense';
+    return { side: 'defense', timing: 'immediate' };
   }
   return null;
 };
 
 export const resolveTempo = (
   requested: ClockTempo | 'auto',
-  offenseLead: number,
-  clock: ClockState,
+  automaticTempo: ClockTempo,
   action: ClockManagementAction | null,
 ): ClockTempo => {
   if (action === 'spike') return 'hurry_up';
   if (action === 'kneel') return 'chew_clock';
-  return requested === 'auto' ? chooseAutomaticTempo(offenseLead, clock) : requested;
+  return requested === 'auto' ? automaticTempo : requested;
 };
 
 export const canShowSpike = (down: number, clock: ClockState) => (

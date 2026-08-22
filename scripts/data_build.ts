@@ -2,6 +2,7 @@
 import {
   mkdir,
   mkdtemp,
+  readFile,
   readdir,
   rename,
   rm,
@@ -49,6 +50,29 @@ export type DataBuildOutputs = {
   bettingOdds: BettingOddsData;
   historicalIndex: HistoricalGamesIndex;
   historicalByTeam: Map<string, HistoricalGamesForTeam>;
+};
+
+export type DataScope = 'all' | 'seasons' | 'odds' | 'historical-games';
+export type ScopedDataBuildOutputs = Partial<DataBuildOutputs>;
+
+const DATA_SCOPES = new Set<DataScope>([
+  'seasons',
+  'odds',
+  'historical-games',
+]);
+
+export const parseDataScope = (arguments_: string[]): DataScope => {
+  if (arguments_.length === 0) return 'all';
+  if (
+    arguments_.length !== 2 ||
+    arguments_[0] !== '--scope' ||
+    !DATA_SCOPES.has(arguments_[1] as DataScope)
+  ) {
+    throw new Error(
+      'Expected no arguments or exactly --scope seasons|odds|historical-games.',
+    );
+  }
+  return arguments_[1] as DataScope;
 };
 
 const getHistoricalSeasons = async (dataRoot: string) => {
@@ -119,7 +143,32 @@ export const buildDataOutputs = async (
   };
 };
 
+export const buildScopedDataOutputs = async (
+  dataRoot = DATA_ROOT,
+  scope: DataScope = 'all',
+): Promise<ScopedDataBuildOutputs> => {
+  if (scope === 'all') return buildDataOutputs(dataRoot);
+  if (scope === 'seasons') {
+    const [seasonIndex, history] = await Promise.all([
+      buildSeasonIndexData(dataRoot).then(value =>
+        validateSeasonIndexData(value, 'generated seasons/index.json')),
+      buildHistoryData(dataRoot).then(value =>
+        validateHistoryData(value, 'generated history.json')),
+    ]);
+    return { seasonIndex, history };
+  }
+  if (scope === 'odds') return { bettingOdds: buildBettingOddsData() };
+  return buildHistoricalGameProjections(dataRoot);
+};
+
 const writeAtomicFile = async (path: string, contents: string) => {
+  try {
+    if ((await readFile(path)).equals(Buffer.from(contents))) return;
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) {
+      throw error;
+    }
+  }
   const temporary = join(
     dirname(path),
     `.${path.split('/').at(-1)}.${process.pid}.${randomUUID()}.tmp`,
@@ -132,57 +181,98 @@ const writeAtomicFile = async (path: string, contents: string) => {
   }
 };
 
+const directoryMatches = async (
+  directory: string,
+  files: ReadonlyMap<string, HistoricalGamesForTeam>,
+) => {
+  let actualFiles: string[];
+  try {
+    actualFiles = (await readdir(directory)).sort();
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      return false;
+    }
+    throw error;
+  }
+  const expectedFiles = [...files.keys()].sort();
+  if (JSON.stringify(actualFiles) !== JSON.stringify(expectedFiles)) return false;
+  return (await Promise.all(expectedFiles.map(async fileName =>
+    (await readFile(join(directory, fileName))).equals(
+      Buffer.from(compactJson(files.get(fileName)!)),
+    )))).every(Boolean);
+};
+
 const replaceDirectory = async (staging: string, target: string) => {
   const backup = `${target}.backup`;
   await rm(backup, { recursive: true, force: true });
-  await rename(target, backup);
+  let hadTarget = true;
+  try {
+    await rename(target, backup);
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      hadTarget = false;
+    } else {
+      throw error;
+    }
+  }
   try {
     await rename(staging, target);
   } catch (error) {
-    await rename(backup, target);
+    if (hadTarget) await rename(backup, target);
     throw error;
   }
-  await rm(backup, { recursive: true, force: true });
+  if (hadTarget) await rm(backup, { recursive: true, force: true });
 };
 
 export const writeDataOutputs = async (
-  outputs: DataBuildOutputs,
+  outputs: ScopedDataBuildOutputs,
   dataRoot = DATA_ROOT,
 ) => {
   const historicalDirectory = join(dataRoot, 'historical-games');
   const byTeamDirectory = join(historicalDirectory, 'by-team');
-  await mkdir(historicalDirectory, { recursive: true });
-  const stagedByTeam = await mkdtemp(join(historicalDirectory, '.by-team-'));
-  try {
-    await Promise.all([...outputs.historicalByTeam].map(([fileName, value]) =>
-      writeFile(join(stagedByTeam, fileName), compactJson(value))));
+  await Promise.all([
+    outputs.seasonIndex
+      ? writeAtomicFile(join(dataRoot, 'seasons', 'index.json'), prettyJson(outputs.seasonIndex))
+      : undefined,
+    outputs.history
+      ? writeAtomicFile(join(dataRoot, 'history.json'), prettyJson(outputs.history))
+      : undefined,
+    outputs.bettingOdds
+      ? writeAtomicFile(join(dataRoot, 'betting_odds.json'), prettyJson(outputs.bettingOdds))
+      : undefined,
+    outputs.historicalIndex
+      ? writeAtomicFile(join(historicalDirectory, 'index.json'), prettyJson(outputs.historicalIndex))
+      : undefined,
+  ]);
 
-    await Promise.all([
-      writeAtomicFile(join(dataRoot, 'seasons', 'index.json'), prettyJson(outputs.seasonIndex)),
-      writeAtomicFile(join(dataRoot, 'history.json'), prettyJson(outputs.history)),
-      writeAtomicFile(join(dataRoot, 'betting_odds.json'), prettyJson(outputs.bettingOdds)),
-      writeAtomicFile(join(historicalDirectory, 'index.json'), prettyJson(outputs.historicalIndex)),
-    ]);
-    await replaceDirectory(stagedByTeam, byTeamDirectory);
-  } catch (error) {
-    await rm(stagedByTeam, { recursive: true, force: true });
-    throw error;
+  if (outputs.historicalByTeam) {
+    await mkdir(historicalDirectory, { recursive: true });
+    if (await directoryMatches(byTeamDirectory, outputs.historicalByTeam)) return;
+    const stagedByTeam = await mkdtemp(join(historicalDirectory, '.by-team-'));
+    try {
+      await Promise.all([...outputs.historicalByTeam].map(([fileName, value]) =>
+        writeFile(join(stagedByTeam, fileName), compactJson(value))));
+      await replaceDirectory(stagedByTeam, byTeamDirectory);
+    } catch (error) {
+      await rm(stagedByTeam, { recursive: true, force: true });
+      throw error;
+    }
   }
 };
 
-export const runDataBuild = async (dataRoot = DATA_ROOT) => {
-  const outputs = await buildDataOutputs(dataRoot);
+export const runDataBuild = async (
+  dataRoot = DATA_ROOT,
+  scope: DataScope = 'all',
+) => {
+  const outputs = await buildScopedDataOutputs(dataRoot, scope);
   await writeDataOutputs(outputs, dataRoot);
   return outputs;
 };
 
 const main = async () => {
-  const outputs = await runDataBuild();
-  console.log(
-    `Built season index, history, ${Object.keys(outputs.bettingOdds.odds).length} odds rows, ` +
-    `${outputs.historicalIndex.years.length} historical seasons, and ` +
-    `${outputs.historicalByTeam.size} team projections.`,
-  );
+  const scope = parseDataScope(process.argv.slice(2));
+  await runDataBuild(DATA_ROOT, scope);
+  console.log(`Built ${scope === 'all' ? 'all static projections' : scope}.`);
 };
 
 if (fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '')) {

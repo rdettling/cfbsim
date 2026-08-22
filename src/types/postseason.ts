@@ -42,6 +42,7 @@ export type ConferenceChampionEntry = {
   conference: string;
   record: string;
   seed: number | null;
+  is_projected: boolean;
 };
 
 export type BowlGameEntry = {

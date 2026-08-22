@@ -20,6 +20,11 @@ as season weeks advance.
 
 1. **Record + ranking updates during progression**
 - `updateTeamRecords(...)` consumes simulated games, mutating team W/L splits and strength-of-record components.
+- Completed regular-season games within one non-independent conference update
+  conference W–L; all other completed regular-season games update
+  nonconference W–L. Conference championships, bowls, and playoff games update
+  the overall record, games played, SOR, and rankings without changing either
+  regular-season split.
 - `updateRankings(...)` updates `poll_score` and rank order from inertia + normalized SOR model (with postseason freeze weeks by format) and returns the completed mutation for editorial use.
 - Week completion is idempotent: `lastRankingsWeek` records only which week was processed, while each team's `last_rank` remains the sole prior-poll snapshot.
 - Weeks 1–14 publish a rankings story only for a new No. 1, at least two top-five entrants, or at least five combined Top 25 entries and exits.
@@ -31,15 +36,31 @@ as season weeks advance.
   - bowls
   - natty.
 - Round creators are guarded by existing IDs and winner prerequisites.
+- Conference standings are derived from completed current-year regular-season
+  games. Equal conference winning percentages are progressively partitioned
+  by a complete tied-group head-to-head mini-table, record against the
+  subgroup's common conference opponents, overall regular-season winning
+  percentage, and the Week 14 poll. Each later criterion applies only to the
+  subgroup still tied, with Team ID reserved as an unreported integrity
+  fallback.
+- Once Week 14 is complete, standings and poll ranks are frozen with the title
+  games. Before that point the standings leader is the projected champion;
+  while a title game is pending its first seed remains projected; after the
+  game only its winner is the actual champion.
 - Final playoff selection publishes one `playoff_field` rankings item in the
   same transaction as the selected seeds, league state, and first playoff
-  games for every supported field size.
+  games for every supported field size. Final selection waits for an actual
+  winner from every conference championship, while projection views may use
+  projected champions.
 - `finalizeCompletedSeasonIfReady(...)` applies final postseason ranking normalization and atomically persists completed-season artifacts with the `summary` stage when a national-championship winner exists.
 
 3. **Playoff presentation path**
 - Route-specific postseason loaders compose the bracket, playoff picture,
   résumé comparison, and bowl projection/actual views from shared selection
   context.
+- The rankings page projects each team's exact previous-week result and
+  current-week matchup; bye weeks remain empty instead of substituting the
+  nearest completed or upcoming game.
 
 4. **Awards generation path**
 - Live `loadAwards()` projections provide current-year games and logs to `buildAwards(...)`.
@@ -69,6 +90,8 @@ flowchart TD
   - Certain postseason weeks skip rank recomputation (format-dependent) to stabilize bracket windows.
 - **12-team playoff ordering**:
   - Conference champions autobid logic and top-4 champion-bye option alter seed order materially.
+  - First-round games are played on campus with seeds 5–8 hosting seeds 12–9;
+    quarterfinals, semifinals, and the national championship use neutral sites.
 - **Postseason idempotence**:
   - Round creators exit when round IDs already populated, preventing duplicate bracket creation.
 - **Awards from logs, not roster ratings alone**:
@@ -81,12 +104,17 @@ flowchart TD
 
 - Ranking and record updates depend on completed game outcomes; unplayed games are excluded.
 - Postseason creation uses persistent playoff ID fields; bracket state is durable across reloads.
+- Every non-independent conference stages exactly one championship between its
+  frozen top two teams, created only after the regular season and Week 14 poll
+  are complete.
 - Awards only include completed regular-season and conference-championship games from the current year.
 - Final postseason ranking pass ensures champion/runner-up placement before rank-based score normalization.
 
 ## Incomplete-State Handling
 
-- If conference championship game winner is unavailable, champion fallback uses conference standings order.
+- Playoff projections label each conference leader or first-seeded title-game
+  participant as projected. Final playoff fields remain unset until every
+  title game has an actual winner.
 - If postseason round prerequisites are incomplete, next round creation is deferred.
 - If natty does not resolve, stage remains non-summary and summary-specific outputs are withheld.
 - Award pages can show empty/fewer outputs early when insufficient games/logs exist.
@@ -100,6 +128,8 @@ flowchart TD
   - `updateTeamRecords`, `updateRankings`, `finalizePostseasonRankings`
 - `src/domain/sim/postseason.ts`
   - `handleSpecialWeeks`, postseason round and bowl creators
+- `src/domain/league/utils/standings.ts`
+  - authoritative conference ordering, final snapshot, and champion resolution
 - `src/domain/league/postseason.ts`
   - postseason week constants and `lastWeek` mapping by playoff size
 - `src/domain/league/loaders/postseason/`

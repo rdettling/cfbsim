@@ -5,14 +5,42 @@ import type {
   PlayoffTeamCount,
 } from '../types/domain';
 import type { SeasonData, TeamsData, ConferencesData } from '../types/baseData';
-import { getConferencesData, getTeamsData, getSeasonData } from '../db/baseData';
+import {
+  getConferencesData,
+  getHistoryData,
+  getPrestigeConfig,
+  getTeamsData,
+  getSeasonData,
+} from '../db/baseData';
+import { calculateStartingPrestiges } from './league/prestige';
+
+const getSeasonTeamNames = (season: SeasonData) => [
+  ...Object.values(season.conferences).flatMap(conference => conference.teams),
+  ...season.independents,
+];
+
+const loadStartingSeasonContext = async (year: string) => {
+  const [yearData, teamsData, conferencesData, historyData, prestigeConfig] =
+    await Promise.all([
+      getSeasonData(year),
+      getTeamsData(),
+      getConferencesData(),
+      getHistoryData(),
+      getPrestigeConfig(),
+    ]);
+  const startingPrestiges = calculateStartingPrestiges({
+    year: yearData.year,
+    teamNames: getSeasonTeamNames(yearData),
+    historyData,
+    teamsData,
+    prestigeConfig,
+  });
+  return { yearData, teamsData, conferencesData, startingPrestiges };
+};
 
 export const buildPreviewData = async (year: string): Promise<PreviewData> => {
-  const [yearData, teamsData, conferencesData] = await Promise.all([
-    getSeasonData(year),
-    getTeamsData(),
-    getConferencesData(),
-  ]);
+  const { yearData, teamsData, conferencesData, startingPrestiges } =
+    await loadStartingSeasonContext(year);
   const typedYearData: SeasonData = yearData;
   const typedTeamsData = teamsData as TeamsData;
   const typedConferencesData = conferencesData as ConferencesData;
@@ -40,8 +68,8 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   const teams: PreviewData['teams'] = [];
   Object.entries(typedYearData.conferences).forEach(([confName, confData]) => {
     teams.push(
-      ...Object.entries(confData.teams || {}).map(([teamName, prestige]) =>
-        addTeamMetadata(teamName, prestige as number, confName),
+      ...confData.teams.map(teamName =>
+        addTeamMetadata(teamName, startingPrestiges[teamName], confName),
       ),
     );
     conferences.push({
@@ -52,9 +80,8 @@ export const buildPreviewData = async (year: string): Promise<PreviewData> => {
   });
 
   teams.push(
-    ...Object.entries(typedYearData.independents).map(
-      ([teamName, prestige]) =>
-        addTeamMetadata(teamName, prestige as number, null),
+    ...typedYearData.independents.map(
+      teamName => addTeamMetadata(teamName, startingPrestiges[teamName], null),
     ),
   );
   teams.sort(
@@ -78,6 +105,7 @@ export const buildTeamsAndConferencesFromData = (
   typedYearData: SeasonData,
   typedTeamsData: TeamsData,
   typedConferencesData: ConferencesData,
+  startingPrestiges: Readonly<Record<string, number>>,
 ): { teams: Team[]; conferences: Conference[] } => {
   const teams: Team[] = [];
   const conferences: Conference[] = [];
@@ -91,6 +119,10 @@ export const buildTeamsAndConferencesFromData = (
     confGames: number
   ): Team => {
     const meta = typedTeamsData.teams[teamName];
+    if (!meta) throw new Error(`Team metadata for ${teamName} is unavailable.`);
+    if (!Number.isInteger(prestige)) {
+      throw new Error(`Starting Prestige for ${teamName} is unavailable.`);
+    }
     const team: Team = {
       id: teamId,
       name: teamName,
@@ -136,8 +168,13 @@ export const buildTeamsAndConferencesFromData = (
 
   Object.entries(typedYearData.conferences).forEach(([confName, confData]) => {
     const confTeams: Team[] = [];
-    Object.entries(confData.teams).forEach(([teamName, prestige]) => {
-      const team = makeTeam(teamName, prestige as number, confName, confData.games);
+    confData.teams.forEach(teamName => {
+      const team = makeTeam(
+        teamName,
+        startingPrestiges[teamName],
+        confName,
+        confData.games,
+      );
       teams.push(team);
       confTeams.push(team);
     });
@@ -149,16 +186,17 @@ export const buildTeamsAndConferencesFromData = (
       confGames: confData.games,
       info: '',
       championship: null,
+      finalStandings: null,
       teams: confTeams,
     });
     conferenceId += 1;
   });
 
   const independents = typedYearData.independents;
-  if (Object.keys(independents).length) {
+  if (independents.length) {
     const confTeams: Team[] = [];
-    Object.entries(independents).forEach(([teamName, prestige]) => {
-      const team = makeTeam(teamName, prestige as number, null, 0);
+    independents.forEach(teamName => {
+      const team = makeTeam(teamName, startingPrestiges[teamName], null, 0);
       teams.push(team);
       confTeams.push(team);
     });
@@ -170,6 +208,7 @@ export const buildTeamsAndConferencesFromData = (
       confGames: 0,
       info: '',
       championship: null,
+      finalStandings: null,
       teams: confTeams,
     });
   }
@@ -186,14 +225,12 @@ export const buildTeamsAndConferencesFromData = (
 export const buildTeamsAndConferences = async (
   year: string,
 ): Promise<{ teams: Team[]; conferences: Conference[] }> => {
-  const [yearData, teamsData, conferencesData] = await Promise.all([
-    getSeasonData(year),
-    getTeamsData(),
-    getConferencesData(),
-  ]);
+  const { yearData, teamsData, conferencesData, startingPrestiges } =
+    await loadStartingSeasonContext(year);
   return buildTeamsAndConferencesFromData(
     yearData,
     teamsData as TeamsData,
     conferencesData as ConferencesData,
+    startingPrestiges,
   );
 };

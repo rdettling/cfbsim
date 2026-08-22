@@ -83,14 +83,14 @@ const buildHistoricalTeams = (yearData: SeasonData) => {
   let id = 1;
   const teams: Team[] = [];
   Object.entries(yearData.conferences).forEach(([conference, data]) => {
-    Object.keys(data.teams).forEach(name => {
+    data.teams.forEach(name => {
       const team = buildTeam(id++, conference, data.games);
       team.name = name;
       team.nonConfLimit = 12 - data.games;
       teams.push(team);
     });
   });
-  Object.keys(yearData.independents).forEach(name => {
+  yearData.independents.forEach(name => {
     const team = buildTeam(id++, 'Independent', 0);
     team.name = name;
     team.nonConfLimit = 12;

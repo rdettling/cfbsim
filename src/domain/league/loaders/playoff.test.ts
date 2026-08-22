@@ -79,6 +79,7 @@ const buildLeagueWithTeams = (count: number, playoffTeams: PlayoffTeamCount = 12
       confGames: 8,
       info: '',
       championship: null,
+      finalStandings: null,
       teams,
     }],
     settings: {
@@ -107,7 +108,7 @@ describe('postseason page loaders', () => {
     expect(result).not.toHaveProperty('bubble_teams');
     expect(result).not.toHaveProperty('resume_teams');
     expect(result).not.toHaveProperty('bowl_games');
-    expect(getAllGames).not.toHaveBeenCalled();
+    expect(getAllGames).toHaveBeenCalledOnce();
   });
 
   it.each([2, 4, 12] as const)('uses projected rankings until a complete %i-team field is saved', async format => {
@@ -138,10 +139,51 @@ describe('postseason page loaders', () => {
 
     expect(result.bubble_teams.map(team => team.ranking)).toEqual([12, 13, 14, 15, 16]);
     expect(result.bubble_teams.map(team => team.name)).not.toContain('Team 20');
-    expect(result.conference_champions[0]).toMatchObject({ name: 'Team 1', seed: 1 });
+    expect(result.conference_champions[0]).toMatchObject({
+      name: 'Team 1',
+      seed: 1,
+      is_projected: true,
+    });
     expect(result).not.toHaveProperty('resume_teams');
     expect(result).not.toHaveProperty('bracket');
-    expect(getAllGames).not.toHaveBeenCalled();
+    expect(getAllGames).toHaveBeenCalledOnce();
+  });
+
+  it('labels a completed conference-title winner as an actual champion', async () => {
+    const league = buildLeagueWithTeams(30);
+    const conferenceTeams = league.teams.slice(0, 2);
+    league.teams.slice(2).forEach(team => {
+      team.conference = 'Independent';
+      team.confName = 'Independent';
+    });
+    league.conferences = [{
+      ...league.conferences[0],
+      championship: 100,
+      finalStandings: {
+        year: league.info.currentYear,
+        entries: [
+          { teamId: conferenceTeams[0].id, pollRank: 1, resolvedBy: null },
+          { teamId: conferenceTeams[1].id, pollRank: 2, resolvedBy: null },
+        ],
+      },
+      teams: conferenceTeams,
+    }];
+    vi.mocked(loadLeagueOrThrow).mockResolvedValue(league);
+    vi.mocked(getAllGames).mockResolvedValue([{
+      ...buildGame(100, conferenceTeams[0].id, conferenceTeams[1].id, conferenceTeams[1].id),
+      homeTeamId: null,
+      awayTeamId: null,
+      neutralSite: true,
+      gameType: 'conference_championship',
+      name: 'Test Conference championship',
+      weekPlayed: 15,
+    }]);
+
+    const result = await loadPlayoffPicture();
+
+    expect(result.conference_champions).toEqual([
+      expect.objectContaining({ name: 'Team 2', is_projected: false }),
+    ]);
   });
 
   it('returns every team with presentation-ready resume context', async () => {

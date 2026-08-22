@@ -85,10 +85,10 @@ const yearData = (
     conf_champ_top_4: playoffTeams === 12,
   },
   conferences: {
-    'Big 12': { games: 9, teams: { 'Texas Christian': 6 } },
-    ACC: { games: 8, teams: { 'Southern Methodist': 5 } },
+    'Big 12': { games: 9, teams: ['Texas Christian'] },
+    ACC: { games: 8, teams: ['Southern Methodist'] },
   },
-  independents: {},
+  independents: [],
   results: null,
 });
 

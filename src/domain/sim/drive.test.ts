@@ -123,6 +123,16 @@ const buildContext = (clockEnabled = false): SimContext => {
   };
 };
 
+const buildFieldGoalCloseoutContext = (scoreA = 24, scoreB = 24) => {
+  const context = buildContext(true);
+  context.game.quarter = 4;
+  context.game.clockSecondsLeft = 33;
+  context.game.clockRunning = false;
+  context.game.scoreA = scoreA;
+  context.game.scoreB = scoreB;
+  return context;
+};
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -437,6 +447,210 @@ describe('drive resolution', () => {
     expect(result.driveComplete).toBe(true);
     expect(result.gameComplete).toBe(true);
   });
+
+  it('runs one field-goal setup play, drains to three seconds, and kicks', () => {
+    vi.spyOn(Math, 'random')
+      .mockReturnValue(0.5)
+      .mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.24)
+      .mockReturnValueOnce(0.5);
+    const context = buildFieldGoalCloseoutContext();
+    const state = startInteractiveDrive(context, 77, 0);
+
+    const setup = stepInteractiveDrive(context, state, instruction());
+
+    expect(setup.play.call).toMatchObject({
+      kind: 'scrimmage',
+      offense: 'inside_run',
+    });
+    expect(setup.play.yardsGained).toBe(0);
+    expect(setup.play.timing).toMatchObject({
+      kind: 'regulation',
+      elapsedSeconds: 30,
+      chargedTimeoutAfter: 'offense',
+      end: { secondsLeft: 3, running: false },
+    });
+    expect(setup.state.automaticOffenseIntent).toBe('field_goal_kick_next');
+    expect(context.game.timeoutsRemainingA).toBe(2);
+
+    const kick = stepInteractiveDrive(context, setup.state, instruction());
+
+    expect(kick.play.call).toEqual({ kind: 'special_teams', concept: 'field_goal' });
+    expect(kick.play.result).toBe('made field goal');
+    expect(kick.play.startingFP).toBe(77);
+    expect(kick.play.timing).toMatchObject({
+      kind: 'regulation',
+      eventAfter: 'end_of_regulation',
+      end: { secondsLeft: 0 },
+    });
+    expect(kick.state.automaticOffenseIntent).toBe('standard');
+    expect(context.game.scoreA).toBe(27);
+    expect(kick.gameComplete).toBe(true);
+  });
+
+  it('keeps the coordinated closeout plan for a defensive-only instruction', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const context = buildFieldGoalCloseoutContext();
+
+    const setup = stepInteractiveDrive(
+      context,
+      startInteractiveDrive(context, 77, 0),
+      instruction({ kind: 'defense', intent: 'coverage' }),
+    );
+
+    expect(setup.play.call).toMatchObject({
+      kind: 'scrimmage',
+      offense: 'inside_run',
+      defense: 'coverage',
+    });
+    expect(setup.play.timing).toMatchObject({
+      kind: 'regulation',
+      chargedTimeoutAfter: 'offense',
+      end: { secondsLeft: 3, running: false },
+    });
+    expect(setup.state.automaticOffenseIntent).toBe('field_goal_kick_next');
+  });
+
+  it.each([
+    ['holds for a tied offense on Auto', 24, 'auto', null, 3],
+    ['uses an ordinary automatic timeout while trailing', 20, 'auto', 'offense', 2],
+    ['honors explicit timeout Use', 24, 'use', 'offense', 2],
+  ] as const)(
+    '%s on a manual closeout call',
+    (_label, scoreA, timeoutInstruction, chargedTimeoutAfter, timeoutsRemaining) => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const context = buildFieldGoalCloseoutContext(scoreA, 24);
+      const manual = instruction({ kind: 'offense', concept: 'inside_run' });
+      manual.timeoutAfter.offense = timeoutInstruction;
+
+      const result = stepInteractiveDrive(
+        context,
+        startInteractiveDrive(context, 77, 0),
+        manual,
+      );
+
+      expect(result.play.timing).toMatchObject({
+        kind: 'regulation',
+        chargedTimeoutAfter,
+      });
+      if (chargedTimeoutAfter !== null) {
+        if (result.play.timing.kind !== 'regulation') {
+          throw new Error('Expected regulation timing.');
+        }
+        expect(result.play.timing.end.secondsLeft).toBeGreaterThan(3);
+      }
+      expect(result.state.automaticOffenseIntent).toBe('standard');
+      expect(context.game.timeoutsRemainingA).toBe(timeoutsRemaining);
+    },
+  );
+
+  it('consumes a pending automatic kick when the offense calls a manual play', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const context = buildFieldGoalCloseoutContext();
+    const state = startInteractiveDrive(context, 77, 0);
+    state.automaticOffenseIntent = 'field_goal_kick_next';
+
+    const result = stepInteractiveDrive(
+      context,
+      state,
+      instruction({ kind: 'offense', concept: 'inside_run' }),
+    );
+
+    expect(result.play.call).toMatchObject({ kind: 'scrimmage', offense: 'inside_run' });
+    expect(result.play.timing).toMatchObject({ chargedTimeoutAfter: null });
+    expect(result.state.automaticOffenseIntent).toBe('standard');
+  });
+
+  it('kicks immediately when a closeout timeout is unavailable', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const context = buildFieldGoalCloseoutContext();
+    context.game.timeoutsRemainingA = 0;
+
+    const result = stepInteractiveDrive(
+      context,
+      startInteractiveDrive(context, 77, 0),
+      instruction(),
+    );
+
+    expect(result.play.call).toEqual({ kind: 'special_teams', concept: 'field_goal' });
+    expect(result.play.timing).toMatchObject({
+      kind: 'regulation',
+      chargedTimeoutAfter: null,
+    });
+  });
+
+  it('keeps the pending kick after a setup first down stops the clock naturally', () => {
+    vi.spyOn(Math, 'random')
+      .mockReturnValue(0.5)
+      .mockReturnValueOnce(0.99)
+      .mockReturnValueOnce(0.1)
+      .mockReturnValueOnce(0.001);
+    const context = buildFieldGoalCloseoutContext();
+
+    const setup = stepInteractiveDrive(
+      context,
+      startInteractiveDrive(context, 77, 0),
+      instruction(),
+    );
+
+    expect(setup.play.yardsGained).toBeGreaterThanOrEqual(10);
+    expect(setup.play.timing).toMatchObject({
+      kind: 'regulation',
+      chargedTimeoutAfter: null,
+      end: { running: false },
+    });
+    expect(setup.state.automaticOffenseIntent).toBe('field_goal_kick_next');
+    expect(context.game.timeoutsRemainingA).toBe(3);
+
+    const kick = stepInteractiveDrive(context, setup.state, instruction());
+    expect(kick.play.call).toEqual({ kind: 'special_teams', concept: 'field_goal' });
+  });
+
+  it('cancels the pending kick intent when the setup run loses a fumble', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.001);
+    const context = buildFieldGoalCloseoutContext();
+
+    const result = stepInteractiveDrive(
+      context,
+      startInteractiveDrive(context, 77, 0),
+      instruction(),
+    );
+
+    expect(result.play.call).toMatchObject({ kind: 'scrimmage', offense: 'inside_run' });
+    expect(result.play.result).toBe('fumble');
+    expect(result.driveComplete).toBe(true);
+    expect(result.state.automaticOffenseIntent).toBe('standard');
+  });
+
+  it.each([
+    [0.001, 'made field goal', 24, false],
+    [0.999, 'missed field goal', 21, true],
+  ] as const)(
+    'resolves a final field goal that can force overtime (random %s)',
+    (random, expectedResult, expectedScoreA, expectedGameComplete) => {
+      vi.spyOn(Math, 'random').mockReturnValue(random);
+      const context = buildContext(true);
+      context.game.quarter = 4;
+      context.game.clockSecondsLeft = 3;
+      context.game.clockRunning = false;
+      context.game.scoreA = 21;
+      context.game.scoreB = 24;
+
+      const result = stepInteractiveDrive(
+        context,
+        startInteractiveDrive(context, 77, 0),
+        instruction(),
+      );
+
+      expect(result.play.result).toBe(expectedResult);
+      expect(context.game.scoreA).toBe(expectedScoreA);
+      expect(result.gameComplete).toBe(expectedGameComplete);
+      expect(result.play.timing).toMatchObject({
+        kind: 'regulation',
+        eventAfter: 'end_of_regulation',
+      });
+    },
+  );
 
   it('resolves participant-linked spikes without accepting fewer than three seconds', () => {
     const context = buildContext(true);

@@ -74,6 +74,16 @@ Round creation is idempotent and requires the preceding winners. Catch-up
 checks create a missing eligible round when advancement has moved beyond its
 normal creation week.
 
+Conference championship creation is a single league-wide freeze point. It
+does nothing until every current-year regular-season game through Week 14 is
+complete and the Week 14 poll has been finalized. Before allocating a game ID,
+it validates that every non-independent conference has at least two members.
+It then atomically freezes every conference's ordered standings and creates
+exactly one neutral-site Week 15 championship between positions 1 and 2. A
+two-team conference deliberately receives a rematch. Participants never
+change after creation, and a mathematically clinched berth never causes an
+early persisted game.
+
 ## Invariants
 
 - Every regular-season team receives 12 games across 14 weeks.
@@ -84,7 +94,12 @@ normal creation week.
 - Game IDs come from the league counter and remain unique.
 - Completed games are never simulated twice.
 - Postseason creators use persisted IDs to prevent duplicate rounds.
-- The season enters `summary` only after the national championship resolves.
+- Every non-independent conference has at least two members and receives one
+  Week 15 championship; Independents receive none.
+- A conference championship ID and its final-standings snapshot are both null
+  before the freeze and both present afterward.
+- The season enters `summary` only after the national championship and every
+  other current-year game resolve.
 
 ## Source Map
 

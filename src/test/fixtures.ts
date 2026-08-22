@@ -122,6 +122,7 @@ export const buildTestLeague = (
         confGames: 8,
         info: '',
         championship: null,
+        finalStandings: null,
         teams: [team],
       },
     ],

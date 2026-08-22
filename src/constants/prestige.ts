@@ -1,0 +1,1 @@
+export const PRESTIGE_WINDOW_SEASONS = 3;

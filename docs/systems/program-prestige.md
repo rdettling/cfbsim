@@ -6,9 +6,10 @@ higher numbers represent stronger programs.
 
 ## Sources and Bounds
 
-The selected canonical season file supplies every program's starting prestige
-when a league is created. Those embedded tiers are materialized by the shared
-evaluator and are not manually tuned.
+The selected canonical season file supplies the active program field when a
+league is created. The shared evaluator calculates starting Prestige from
+`history.json`, program bounds, and `prestige_config.json`; season files do not
+store tiers.
 
 Each persisted team also carries the program floor and ceiling from
 `public/data/teams.json`. The invariant is:
@@ -32,37 +33,33 @@ season score = 100 * (team count - final rank) / (team count - 1)
 
 A one-team season receives a score of 100. The evaluator averages the
 unrounded season scores and separately averages the final ranks. It uses every
-available observation when fewer than four seasons exist; a missing finish is
+available observation when fewer than three seasons exist; a missing finish is
 not replaced with zero.
 
 ## Starting-Season Calculation
 
-For starting season `Y`, the generator collects each active program's finishes
-from `Y-4` through `Y-1`. If fewer than four prior finishes exist and `Y` has
-completed results, it also includes the program's `Y` finish. This gives the
-earliest seasons and new programs every available result without exceeding
-four observations. A scheduled season cannot contribute its unfinished result.
+For starting season `Y`, the adapter collects each active program's available
+finishes from `Y-3` through `Y-1`. It never includes `Y`, even if that season's
+results are committed, and it never reaches back before `Y-3` to fill a missing
+observation.
 
 The committed `results.rank` is the performance input. Its ordering puts the
 final AP Top 25 first and orders position 26 onward by SRS. Each observation is
 normalized with the complete team count from its own result season.
 
-If a program has no prior or current result, its starting tier is the rounded
-midpoint of its floor and ceiling. The generator then runs the same score,
-league-band, tie-break, and bounds evaluation as dynamic prestige. It
-materializes the result into the existing season topology without changing
-conference membership, playoff configuration, or results.
-
-`npm run generate:starting-prestige` audits without writing. `--check` fails
-when a materialized value is stale, while `--write` stages and atomically
-replaces the complete season directory.
+If a program has no prior result, its starting tier is the rounded midpoint of
+its floor and ceiling. The adapter then runs the same score, league-band,
+tie-break, and bounds evaluation as dynamic Prestige. Preview, league creation,
+evaluation corpora, and historical realignment all consume this one calculated
+map. Realignment applies it only to newly introduced programs; existing teams
+retain their earned tier.
 
 ## Dynamic Calculation
 
 Season Summary presents two windows:
 
-- before: `Y-4` through `Y-1`;
-- after: `Y-3` through `Y`.
+- before: `Y-3` through `Y-1`;
+- after: `Y-2` through `Y`.
 
 The after window alone determines the next prestige. A canonical history row
 for `Y` is ignored during the preview and replaced by the current league's
@@ -91,7 +88,7 @@ no one-tier-per-season movement cap.
 Season Summary is read-only. Its team projection derives:
 
 - `next_prestige` and `prestige_change`;
-- before/after four-year score;
+- before/after three-year score;
 - before/after average finish;
 - before/after observation count.
 
@@ -108,10 +105,11 @@ under which it was played.
 
 ## Ownership
 
-- `src/domain/league/prestige.ts` owns the pure evaluator and the history-to-
-  observation adapter.
-- `scripts/generate_starting_prestige.ts` owns starting-window observations,
-  midpoint fallback, materialization, and the audit/check/write workflow.
+- `src/domain/league/prestige.ts` owns the pure evaluator and both history-to-
+  observation adapters, including `calculateStartingPrestiges`.
+- `scripts/build_history.ts` builds historical Prestige snapshots
+  chronologically through the same starting adapter before adding each
+  season's results.
 - `src/domain/league/loaders/seasonSummary.ts` owns the read-only presentation
   projection.
 - `src/domain/league/commands/stages.ts` owns recalculation and atomic annual

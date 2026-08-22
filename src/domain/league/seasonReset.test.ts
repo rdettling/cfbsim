@@ -27,4 +27,26 @@ describe('season reset rivalry choices', () => {
 
     expect(league.resumeSnapshot).toBeNull();
   });
+
+  it('clears conference championships and final standings for the next season', async () => {
+    const league = buildTestLeague('summary');
+    const conference = league.conferences[0];
+    conference.championship = 99;
+    conference.finalStandings = {
+      year: league.info.currentYear,
+      entries: [{
+        teamId: conference.teams[0].id,
+        pollRank: conference.teams[0].ranking,
+        resolvedBy: 'poll_rank',
+      }],
+    };
+
+    await prepareSeasonReset(league, {
+      rivalries: { rivalries: [] },
+      odds: { oddsMap: {}, maxDiff: 100 },
+    });
+
+    expect(conference.championship).toBeNull();
+    expect(conference.finalStandings).toBeNull();
+  });
 });

@@ -9,6 +9,7 @@ const NewLeague = lazy(() => import('./pages/NewLeague'));
 const NonCon = lazy(() => import('./pages/Noncon'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const News = lazy(() => import('./pages/News'));
+const BiggestUpsets = lazy(() => import('./pages/BiggestUpsets'));
 const LeagueHistory = lazy(() => import('./pages/LeagueHistory'));
 const LeagueRecords = lazy(() => import('./pages/LeagueRecords'));
 const TeamSchedule = lazy(() => import('./pages/TeamSchedule'));
@@ -49,6 +50,7 @@ const App = () => {
             <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
             <Route path={ROUTES.NEWS} element={<News />} />
             <Route path={ROUTES.NEWS_YEAR} element={<News />} />
+            <Route path={ROUTES.BIGGEST_UPSETS} element={<BiggestUpsets />} />
             <Route path={ROUTES.LEAGUE_HISTORY} element={<LeagueHistory />} />
             <Route path={ROUTES.LEAGUE_HISTORY_YEAR} element={<LeagueHistory />} />
             <Route path={ROUTES.LEAGUE_RECORDS} element={<LeagueRecords />} />

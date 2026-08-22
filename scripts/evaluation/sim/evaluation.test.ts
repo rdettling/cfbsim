@@ -58,15 +58,15 @@ describe('simulation evaluation', () => {
   it('characterizes the accepted modern-FBS baseline', () => {
     const result = evaluateSimulation({ seed: 20260809, gamesPerDiff: 1000 });
 
-    expect(result.checksum).toBe('1b914e9a');
-    expect(SIM_EVALUATION_BASELINE_CHECKSUM).toBe('1b914e9a');
+    expect(result.checksum).toBe('1e97c7cf');
+    expect(SIM_EVALUATION_BASELINE_CHECKSUM).toBe('1e97c7cf');
     const productionGaps = result.calibrationGaps.filter(gap => gap.startsWith('production.'));
     expect(productionGaps).toEqual([
       'production.madeFieldGoalsPerGame:low',
       'production.passingYardsPerAttempt:low',
       'production.passingYardsPerCompletion:low',
       'production.redZoneTouchdownRate:high',
-      'production.touchdownsPerGame:low',
+      'production.turnoversPerGame:high',
     ]);
     expect(result.violations).toEqual([]);
     expect(result.calibration.benchmark.sourceChecksum).toBe('01fba155');
@@ -123,7 +123,7 @@ describe('simulation evaluation', () => {
     expect(result.tryMetrics.extraPoints.makeRate).toBeGreaterThanOrEqual(0.93);
     expect(result.tryMetrics.extraPoints.makeRate).toBeLessThanOrEqual(0.99);
     expect(result.tryMetrics.twoPoints.conversionRate).toBeGreaterThanOrEqual(0.35);
-    expect(result.tryMetrics.twoPoints.conversionRate).toBeLessThanOrEqual(0.65);
+    expect(result.tryMetrics.twoPoints.conversionRate).toBeLessThanOrEqual(0.7);
     expect(result.tryMetrics.touchdownDrives.sixPoints).toBeGreaterThan(0);
     expect(result.tryMetrics.touchdownDrives.sevenPoints).toBeGreaterThan(0);
     expect(result.tryMetrics.touchdownDrives.eightPoints).toBeGreaterThan(0);

@@ -19,7 +19,6 @@ import { buildPlayerSeasons, flattenGameDetail } from './gameDetails';
 import { isNy6Bowl } from './utils/bowlSelection';
 import { aggregatePlayerLogs } from './utils/stats/playerAggregates';
 import { buildTeamAggregateTotalTables } from './utils/stats/teamAggregates';
-import { sortStandingsTeams } from './utils/standings';
 
 const completedGame = (
   gamesById: Map<number, GameRecord>,
@@ -253,31 +252,38 @@ const buildSeasonMemory = (
   const conferenceChampions = league.conferences
     .filter(conference => conference.confName !== 'Independent')
     .map(conference => {
-      if (conference.championship) {
-        const game = completedGame(
-          gamesById,
-          conference.championship,
-          year,
-          `${conference.confName} championship`,
-        );
-        return {
-          conferenceName: conference.confName,
-          teamId: game.winnerId!,
-          championshipGameId: game.id,
-        };
-      }
-      const champion = sortStandingsTeams(
-        league.teams.filter(team => team.conference === conference.confName),
-      )[0];
-      if (!champion) {
+      if (conference.championship === null || conference.finalStandings === null) {
         throw new SeasonMemoryDataIntegrityError(
-          `Season ${year} has no ${conference.confName} champion.`,
+          `Season ${year} has no ${conference.confName} championship.`,
+        );
+      }
+      const game = completedGame(
+        gamesById,
+        conference.championship,
+        year,
+        `${conference.confName} championship`,
+      );
+      if (game.gameType !== 'conference_championship') {
+        throw new SeasonMemoryDataIntegrityError(
+          `Season ${year} has an invalid ${conference.confName} championship game type.`,
+        );
+      }
+      const frozenFinalists = conference.finalStandings.entries.slice(0, 2);
+      const finalistIds = new Set(frozenFinalists.map(entry => entry.teamId));
+      if (
+        frozenFinalists.length !== 2 ||
+        finalistIds.size !== 2 ||
+        !finalistIds.has(game.teamAId) ||
+        !finalistIds.has(game.teamBId)
+      ) {
+        throw new SeasonMemoryDataIntegrityError(
+          `Season ${year} has invalid ${conference.confName} championship participants.`,
         );
       }
       return {
         conferenceName: conference.confName,
-        teamId: champion.id,
-        championshipGameId: null,
+        teamId: game.winnerId!,
+        championshipGameId: game.id,
       };
     });
   const bowls = yearGames
@@ -325,7 +331,13 @@ export const buildCompletedSeasonArtifacts = (
 ): CompletedSeasonArtifacts => {
   const year = league.info.currentYear;
   const yearGames = games.filter(game => game.year === year);
-  const completedGames = yearGames.filter(game => game.winnerId !== null);
+  const unfinishedGame = yearGames.find(game => game.winnerId === null);
+  if (unfinishedGame) {
+    throw new SeasonMemoryDataIntegrityError(
+      `Season ${year} has unfinished game ${unfinishedGame.id}.`,
+    );
+  }
+  const completedGames = yearGames;
   const detailsByGameId = new Map(
     details
       .filter(detail => detail.year === year)

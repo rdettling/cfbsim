@@ -37,7 +37,7 @@ export const updateHistoryForSeason = (
     ];
 
     const historyRows = teams[team.name] ? [...teams[team.name]] : [];
-    const existingIndex = historyRows.findIndex(row => row[0] === year);
+    const existingIndex = historyRows.findIndex(([rowYear]) => rowYear === year);
     if (existingIndex >= 0) {
       historyRows[existingIndex] = entry;
     } else {

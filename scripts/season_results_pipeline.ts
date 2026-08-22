@@ -37,9 +37,9 @@ const requireName = (value: unknown, field: string) => {
 const buildAssignments = (yearData: SeasonData) => {
   const assignments = new Map<string, string>();
   for (const [conference, data] of Object.entries(yearData.conferences)) {
-    for (const team of Object.keys(data.teams)) assignments.set(team, conference);
+    for (const team of data.teams) assignments.set(team, conference);
   }
-  for (const team of Object.keys(yearData.independents)) {
+  for (const team of yearData.independents) {
     assignments.set(team, 'Independent');
   }
   return assignments;

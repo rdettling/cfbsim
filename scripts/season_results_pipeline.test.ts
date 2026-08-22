@@ -17,10 +17,10 @@ const yearData = (): SeasonData => ({
   conferences: {
     Test: {
       games: 12,
-      teams: Object.fromEntries(teamNames.map(team => [team, 3])),
+      teams: teamNames,
     },
   },
-  independents: {},
+  independents: [],
   results: null,
 });
 
@@ -82,9 +82,7 @@ describe('season results transformation', () => {
     const canonicalTeams = ['Texas Christian', ...teamNames.slice(1)];
     const aliased = (team: string) => team === 'Team 01' ? 'TCU' : team;
     const season = yearData();
-    season.conferences.Test.teams = Object.fromEntries(
-      canonicalTeams.map(team => [team, 3]),
-    );
+    season.conferences.Test.teams = canonicalTeams;
     const aliasedRankings = rankings().map(entry => ({
       ...entry,
       polls: entry.polls.map(poll => ({

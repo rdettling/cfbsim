@@ -49,12 +49,11 @@ const RankingMovement = ({ movement }: { movement: number }) => {
 
 export const RankingsDesktopTable = ({
   teams,
-  hasUpcomingGames,
   onTeamClick,
 }: RankingsViewProps) => (
   <DataTable
     ariaLabel="College football rankings"
-    minWidth={hasUpcomingGames ? 1160 : 930}
+    minWidth={1160}
   >
     <TableHead>
       <TableRow sx={{ bgcolor: 'background.default' }}>
@@ -76,10 +75,8 @@ export const RankingsDesktopTable = ({
             </Tooltip>
           </Stack>
         </TableCell>
-        <TableCell sx={{ minWidth: 230 }}>Recent Result</TableCell>
-        {hasUpcomingGames && (
-          <TableCell sx={{ minWidth: 230 }}>Next Game</TableCell>
-        )}
+        <TableCell sx={{ minWidth: 230 }}>Last Week</TableCell>
+        <TableCell sx={{ minWidth: 230 }}>This Week</TableCell>
       </TableRow>
     </TableHead>
     <TableBody>
@@ -114,20 +111,18 @@ export const RankingsDesktopTable = ({
           </TableCell>
           <TableCell>
             <CompactGameSummary
-              game={team.last_game}
+              game={team.last_week}
               mode="previous"
               onOpponentClick={onTeamClick}
             />
           </TableCell>
-          {hasUpcomingGames && (
-            <TableCell>
-              <CompactGameSummary
-                game={team.next_game}
-                mode="upcoming"
-                onOpponentClick={onTeamClick}
-              />
-            </TableCell>
-          )}
+          <TableCell>
+            <CompactGameSummary
+              game={team.current_week}
+              mode="upcoming"
+              onOpponentClick={onTeamClick}
+            />
+          </TableCell>
         </TableRow>
       ))}
     </TableBody>

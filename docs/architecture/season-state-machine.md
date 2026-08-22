@@ -16,7 +16,7 @@ route metadata.
 | Source | Destination | Owner |
 | --- | --- | --- |
 | `preseason` | `season` | `initializeSeason` |
-| `season` | `summary` | guarded season completion; final rankings, memory, and player-season totals commit atomically |
+| `season` | `summary` | guarded completion after the national championship and every current-year game resolve; final rankings, memory, and player-season totals commit atomically |
 | `summary` | `realignment` | `advanceOffseasonStage` |
 | `realignment` | `progression` | `advanceOffseasonStage` |
 | `progression` | `recruiting` | `initializeRecruiting` |
@@ -30,6 +30,8 @@ advance command cannot skip either command-managed lifecycle at compile time.
 ## Transition Rules
 
 - Every command validates the persisted source stage.
+- Season completion returns without mutation while any current-year game is
+  unfinished, and its atomic commit revalidates that invariant.
 - `initializeSeason` builds and persists season simulation data; Dashboard and
   Team Schedule loaders never initialize it.
 - Realignment commits guard the exact persisted next-season configuration.

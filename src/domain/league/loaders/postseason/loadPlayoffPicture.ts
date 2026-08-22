@@ -18,12 +18,13 @@ export const loadPlayoffPicture = async () => {
       conference: team.conference ?? 'Independent',
       record: formatPostseasonRecord(team),
     }));
-  const conference_champions: ConferenceChampionEntry[] = context.champions.map(team => ({
-    name: team.name,
-    ranking: team.ranking,
-    conference: team.conference ?? 'Independent',
-    record: formatPostseasonRecord(team),
-    seed: context.playoff_teams.find(entry => entry.name === team.name)?.seed ?? null,
+  const conference_champions: ConferenceChampionEntry[] = context.championResolutions.map(resolution => ({
+    name: resolution.team.name,
+    ranking: resolution.team.ranking,
+    conference: resolution.team.conference ?? 'Independent',
+    record: formatPostseasonRecord(resolution.team),
+    seed: context.playoff_teams.find(entry => entry.name === resolution.team.name)?.seed ?? null,
+    is_projected: resolution.status === 'projected',
   }));
 
   return {

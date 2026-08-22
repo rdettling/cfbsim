@@ -1,5 +1,7 @@
 import type { PlayerRecord } from '../types/db';
 import type {
+  ConferenceFinalStandingEntry,
+  ConferenceFinalStandings,
   LeagueStage,
   Info,
   NextSeasonConfiguration,
@@ -80,7 +82,14 @@ const CONFERENCE_KEYS = [
   'confGames',
   'info',
   'championship',
+  'finalStandings',
   'teams',
+] as const;
+const CONFERENCE_FINAL_STANDINGS_KEYS = ['year', 'entries'] as const;
+const CONFERENCE_FINAL_STANDING_ENTRY_KEYS = [
+  'teamId',
+  'pollRank',
+  'resolvedBy',
 ] as const;
 const PENDING_RIVALRY_KEYS = [
   'id',
@@ -308,6 +317,33 @@ const isCurrentTeam = (value: unknown): value is Team =>
   (value.last_game === null || isScheduleGame(value.last_game)) &&
   (value.next_game === null || isScheduleGame(value.next_game));
 
+const isConferenceTiebreaker = (value: unknown) =>
+  value === 'head_to_head' ||
+  value === 'common_opponents' ||
+  value === 'overall_record' ||
+  value === 'poll_rank';
+
+const isConferenceFinalStandingEntry = (
+  value: unknown,
+): value is ConferenceFinalStandingEntry =>
+  isRecord(value) &&
+  hasExactKeys(value, CONFERENCE_FINAL_STANDING_ENTRY_KEYS) &&
+  isIntegerAtLeast(value.teamId, 1) &&
+  isIntegerAtLeast(value.pollRank, 1) &&
+  (value.resolvedBy === null || isConferenceTiebreaker(value.resolvedBy));
+
+const isConferenceFinalStandings = (
+  value: unknown,
+): value is ConferenceFinalStandings =>
+  isRecord(value) &&
+  hasExactKeys(value, CONFERENCE_FINAL_STANDINGS_KEYS) &&
+  isIntegerAtLeast(value.year, 1) &&
+  Array.isArray(value.entries) &&
+  value.entries.length >= 2 &&
+  value.entries.every(isConferenceFinalStandingEntry) &&
+  new Set(value.entries.map(entry => entry.teamId)).size === value.entries.length &&
+  new Set(value.entries.map(entry => entry.pollRank)).size === value.entries.length;
+
 const isCurrentConference = (value: unknown) =>
   isRecord(value) &&
   hasExactKeys(value, CONFERENCE_KEYS) &&
@@ -317,8 +353,33 @@ const isCurrentConference = (value: unknown) =>
   isIntegerAtLeast(value.confGames, 0) &&
   typeof value.info === 'string' &&
   (value.championship === null || isIntegerAtLeast(value.championship, 1)) &&
+  (value.finalStandings === null || isConferenceFinalStandings(value.finalStandings)) &&
   Array.isArray(value.teams) &&
   value.teams.every(isCurrentTeam);
+
+const hasCoherentConferenceFinalStandings = (
+  conferences: unknown[],
+  teams: unknown[],
+  currentYear: number,
+) => conferences.every(value => {
+  if (!isRecord(value) || !Array.isArray(value.teams)) return false;
+  if (value.confName === 'Independent') {
+    return value.championship === null && value.finalStandings === null;
+  }
+  if ((value.championship === null) !== (value.finalStandings === null)) {
+    return false;
+  }
+  if (value.finalStandings === null) return true;
+  if (!isConferenceFinalStandings(value.finalStandings)) return false;
+  if (value.finalStandings.year !== currentYear) return false;
+  const memberIds = new Set(teams
+    .filter(team => isRecord(team) && team.conference === value.confName)
+    .map(team => isRecord(team) ? team.id : undefined));
+  return (
+    value.finalStandings.entries.length === memberIds.size &&
+    value.finalStandings.entries.every(entry => memberIds.has(entry.teamId))
+  );
+});
 
 const isPendingRivalry = (value: unknown) =>
   isRecord(value) &&
@@ -438,6 +499,7 @@ export function assertCurrentLeagueState(
     Array.isArray(value.conferences) &&
     value.conferences.length > 0 &&
     value.conferences.every(isCurrentConference) &&
+    hasCoherentConferenceFinalStandings(value.conferences, value.teams, info.currentYear) &&
     Array.isArray(value.pending_rivalries) &&
     value.pending_rivalries.every(isPendingRivalry) &&
     Array.isArray(value.declinedRivalries) &&

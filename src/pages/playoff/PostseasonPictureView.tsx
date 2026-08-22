@@ -240,13 +240,13 @@ export const PostseasonPictureView = ({
 
         <Paper
           component="section"
-          aria-label={isProjection ? 'Projected conference champions' : 'Conference champions'}
+          aria-label="Conference champion outlook"
           variant="outlined"
           sx={{ p: 1.5 }}
         >
           <SectionHeading
-            title={isProjection ? 'Projected Conference Champions' : 'Conference Champions'}
-            detail={isProjection ? 'Current conference leaders used for projected autobids' : 'Conference title game winners'}
+            title="Conference Champion Outlook"
+            detail="Projected leaders and completed conference title game winners"
           />
           {conferenceChampions.length === 0 ? (
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -257,8 +257,8 @@ export const PostseasonPictureView = ({
               key={`${team.conference}-${team.name}`}
               name={team.name}
               secondary={`#${team.ranking} · ${team.record} · ${team.conference}`}
-              status={team.seed ? `Seed ${team.seed}` : 'Outside field'}
-              statusColor={team.seed ? 'success' : 'default'}
+              status={`${team.is_projected ? 'Projected' : 'Champion'} · ${team.seed ? `Seed ${team.seed}` : 'Outside field'}`}
+              statusColor={!team.is_projected && team.seed ? 'success' : 'default'}
               onTeamClick={onTeamClick}
             />
           ))}

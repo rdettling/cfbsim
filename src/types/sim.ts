@@ -109,6 +109,7 @@ export interface InteractiveDriveState {
   phase: 'scrimmage' | 'try';
   tryOrigin: 'touchdown' | 'overtime_shootout' | null;
   tryTiming: Extract<import('./db').PlayTiming, { kind: 'try' }> | null;
+  automaticOffenseIntent: 'standard' | 'field_goal_kick_next';
   fieldPosition: number;
   down: number;
   yardsLeft: number;

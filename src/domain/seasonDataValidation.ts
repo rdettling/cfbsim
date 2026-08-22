@@ -53,17 +53,28 @@ const assertNonemptyName = (name: string, source: string, field: string) => {
   }
 };
 
-const assertPrestige = (
+const assertTeamNames = (
   value: unknown,
   source: string,
-  teamName: string,
-) => {
-  if (!Number.isInteger(value) || (value as number) < 1 || (value as number) > 7) {
-    throw new SeasonDataValidationError(
-      source,
-      `prestige for ${teamName} must be an integer from 1 to 7.`,
-    );
+  field: string,
+): string[] => {
+  if (!Array.isArray(value)) {
+    throw new SeasonDataValidationError(source, `${field} must be an array.`);
   }
+  const names = value.map((teamName, index) => {
+    if (typeof teamName !== 'string') {
+      throw new SeasonDataValidationError(
+        source,
+        `${field}[${index}] must be a string.`,
+      );
+    }
+    assertNonemptyName(teamName, source, `${field}[${index}]`);
+    return teamName;
+  });
+  if (new Set(names).size !== names.length) {
+    throw new SeasonDataValidationError(source, `${field} contains a duplicate team.`);
+  }
+  return names;
 };
 
 export const validateSeasonData = (
@@ -144,7 +155,7 @@ export const validateSeasonData = (
     source,
     'conferences',
   );
-  const independents = assertRecord(
+  const independents = assertTeamNames(
     data.independents,
     source,
     'independents',
@@ -164,13 +175,13 @@ export const validateSeasonData = (
       source,
       `conference ${conferenceName}`,
     );
-    const teams = assertRecord(
+    const teams = assertTeamNames(
       conference.teams,
       source,
       `conference ${conferenceName}.teams`,
     );
     const games = conference.games;
-    const maximumGames = Math.max(0, Object.keys(teams).length - 1);
+    const maximumGames = Math.max(0, teams.length - 1);
     if (
       !Number.isInteger(games) ||
       (games as number) < 0 ||
@@ -183,9 +194,7 @@ export const validateSeasonData = (
       );
     }
 
-    for (const [teamName, prestige] of Object.entries(teams)) {
-      assertNonemptyName(teamName, source, 'team name');
-      assertPrestige(prestige, source, teamName);
+    for (const teamName of teams) {
       const existing = assignedTeams.get(teamName);
       if (existing) {
         throw new SeasonDataValidationError(
@@ -197,9 +206,7 @@ export const validateSeasonData = (
     }
   }
 
-  for (const [teamName, prestige] of Object.entries(independents)) {
-    assertNonemptyName(teamName, source, 'independent team name');
-    assertPrestige(prestige, source, teamName);
+  for (const teamName of independents) {
     const existing = assignedTeams.get(teamName);
     if (existing) {
       throw new SeasonDataValidationError(

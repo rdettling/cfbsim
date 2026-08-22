@@ -6,7 +6,7 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 ## IndexedDB Schema
 
 `DB_VERSION` in `src/db/db.ts` defines the single current destructive schema
-epoch for every authoritative persisted shape.
+epoch for every authoritative persisted shape. The current epoch is 30.
 
 | Store | Key | Value |
 | --- | --- | --- |
@@ -25,6 +25,16 @@ epoch for every authoritative persisted shape.
 The IndexedDB version is a destructive schema epoch. Opening an older version
 deletes every existing object store and recreates exactly the current schema.
 There are no migrations, compatibility paths, or record-level repairs.
+
+Each non-independent `Conference` stores a nullable championship game ID and a
+nullable `finalStandings` snapshot. They become non-null together when Week 14
+rankings and every regular-season game are complete. The snapshot records the
+season year and exactly one ordered entry for every current conference team,
+including its frozen poll rank and the sporting criterion that ultimately
+separated it from a tie when applicable. Championship and snapshot fields are
+cleared together during annual reset and realignment. Exact league validation
+rejects stale years, missing, duplicate, foreign, or malformed entries rather
+than repairing them.
 
 `GameRecord` is an exact current-schema object. Every game repository read and
 every write owner validates its complete shape before returning or committing
@@ -75,7 +85,7 @@ snapshots, lean award-winner references with award-window statistical totals,
 and a strict postseason
 archive. The postseason archive contains the configured 2-, 4-, or 12-team
 format, seeded team IDs, every explicit bracket game slot, each
-non-independent conference champion and optional title-game ID, and every
+non-independent conference champion and title-game ID, and every
 non-playoff bowl with its NY6/other classification. It does not store the old
 generic event list or a separate playoff-team alias.
 

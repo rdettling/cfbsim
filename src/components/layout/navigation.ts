@@ -64,6 +64,7 @@ export const buildNavigationModel = ({
       mobileLabel: 'League',
       items: [
         { type: 'item', label: 'News', path: ROUTES.NEWS, match: 'prefix' },
+        { type: 'item', label: 'Biggest Upsets', path: ROUTES.BIGGEST_UPSETS },
         { type: 'item', label: 'Awards', path: '/awards' },
         { type: 'item', label: 'History', path: '/league/history', match: 'prefix' },
         { type: 'item', label: 'Records', path: '/league/records' },

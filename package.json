@@ -15,7 +15,6 @@
     "preview": "vite preview",
     "data:build": "tsx scripts/data_build.ts",
     "data:check": "tsx scripts/data_check.ts",
-    "generate:starting-prestige": "tsx scripts/generate_starting_prestige.ts",
     "fetch:season-results": "node --env-file-if-exists=.env --import tsx scripts/fetch_season_results.ts",
     "fetch:game-history": "node --env-file-if-exists=.env --import tsx scripts/fetch_game_history.ts",
     "transform:game-history": "node --import tsx scripts/transform_game_history.ts",

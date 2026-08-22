@@ -1,17 +1,19 @@
-import type { PlayCall, PlayRecord } from '../../types/db';
+import type { ClockTempo, PlayCall, PlayRecord } from '../../types/db';
 import type {
   InteractiveDriveState,
   InteractiveStepInstruction,
   InteractiveStepResult,
-  PlaySituation,
   SimContext,
 } from '../../types/sim';
 import {
   chargeTimeout,
+  chooseAutomaticOffenseTimeoutRequest,
+  chooseAutomaticTempo,
   resolveTempo,
   resolveTimeoutRequest,
   resetSecondHalfTimeouts,
 } from './clockManagement';
+import type { TimeoutRequest } from './clock';
 import { resolveOvertimeTiming, resolveRegulationTiming } from './clock';
 import {
   chooseOffensiveCall,
@@ -36,9 +38,95 @@ import { emptyPlayParticipants, selectPlayParticipants } from './participants';
 import { formatPlayText, setPlayHeader, startingYardsLeft } from './plays';
 import {
   buildAutomaticOffenseSituation,
-  chooseAutomaticOffenseAction,
+  chooseAutomaticOffensePlan,
   choosePlayType,
 } from './playcalling';
+
+type EffectiveOffensePlan = {
+  call: PlayCall;
+  tempo: ClockTempo;
+  timeoutRequest: TimeoutRequest | null;
+  intentAfterPlay: InteractiveDriveState['automaticOffenseIntent'];
+};
+
+const resolveEffectiveOffensePlan = (
+  situation: ReturnType<typeof buildAutomaticOffenseSituation>,
+  instruction: InteractiveStepInstruction,
+  playId: number,
+): EffectiveOffensePlan => {
+  const automaticPlan = chooseAutomaticOffensePlan(
+    situation,
+    instruction.timeoutAfter.offense,
+  );
+  const automaticAction = automaticPlan.action;
+  const automaticOffense = () => {
+    if (automaticAction.kind === 'scrimmage' && automaticAction.offense !== 'auto') {
+      return automaticAction.offense;
+    }
+    const playType = choosePlayType(
+      situation.down,
+      situation.yardsLeft,
+      situation.offenseLead,
+      situation.clock,
+    );
+    return chooseOffensiveCall(playType, situation);
+  };
+  const decision = instruction.call;
+  const usesAutomaticOffensePlan = decision === 'auto' || decision.kind === 'defense';
+
+  let call: PlayCall;
+  if (decision === 'auto') {
+    call = automaticAction.kind === 'scrimmage'
+      ? {
+          kind: 'scrimmage',
+          offense: automaticOffense(),
+          defense: chooseDefensiveIntent(playId, situation),
+        }
+      : automaticAction;
+  } else if (decision.kind === 'special_teams' || decision.kind === 'clock_management') {
+    call = decision;
+  } else {
+    if (decision.kind === 'defense' && automaticAction.kind === 'special_teams') {
+      throw new Error(`Play ${playId} cannot apply defensive intent to special teams.`);
+    }
+    if (decision.kind === 'defense' && automaticAction.kind === 'clock_management') {
+      throw new Error(`Play ${playId} cannot apply defensive intent to clock management.`);
+    }
+    call = {
+      kind: 'scrimmage',
+      offense: decision.kind === 'offense' ? decision.concept : automaticOffense(),
+      defense: decision.kind === 'defense'
+        ? decision.intent
+        : chooseDefensiveIntent(playId, situation),
+    };
+  }
+
+  const clockAction = call.kind === 'clock_management' ? call.action : null;
+  const automaticTempo = usesAutomaticOffensePlan
+    ? automaticPlan.tempo
+    : chooseAutomaticTempo(situation.offenseLead, situation.clock);
+  const tempo = call.kind === 'special_teams'
+    ? 'normal'
+    : resolveTempo(instruction.tempo, automaticTempo, clockAction);
+  const automaticTimeoutRequest = usesAutomaticOffensePlan
+    ? automaticPlan.offenseTimeoutRequest
+    : chooseAutomaticOffenseTimeoutRequest(situation);
+
+  return {
+    call,
+    tempo,
+    timeoutRequest: situation.clockEnabled
+      ? resolveTimeoutRequest(
+          instruction.timeoutAfter,
+          situation,
+          automaticTimeoutRequest,
+        )
+      : null,
+    intentAfterPlay: usesAutomaticOffensePlan
+      ? automaticPlan.intentAfterPlay
+      : 'standard',
+  };
+};
 
 export const resolveRegulationStep = (
   context: SimContext,
@@ -60,14 +148,9 @@ export const resolveRegulationStep = (
     yardsLeft,
     fieldPosition,
     clockEnabled: applyClockEnabled,
+    automaticOffenseIntent: state.automaticOffenseIntent,
   });
-  const situation: PlaySituation = automaticSituation;
-  const { clock: clockState, offenseLead } = automaticSituation;
-  const automaticAction = chooseAutomaticOffenseAction(automaticSituation);
-  const automaticOffense = () => {
-    const playType = choosePlayType(down, yardsLeft, offenseLead, clockState);
-    return chooseOffensiveCall(playType, situation);
-  };
+  const { clock: clockState } = automaticSituation;
   const decision = instruction.call;
   const validInstruction = (
     decision === 'auto'
@@ -89,32 +172,8 @@ export const resolveRegulationStep = (
     || instruction.timeoutAfter.defense === 'use'
   )) throw new Error(`Play ${playId} cannot apply clock management in overtime.`);
 
-  let pickCall: PlayCall;
-  if (decision === 'auto') {
-    pickCall = automaticAction.kind === 'scrimmage'
-      ? {
-          kind: 'scrimmage',
-          offense: automaticOffense(),
-          defense: chooseDefensiveIntent(playId, situation),
-        }
-      : automaticAction;
-  } else if (decision.kind === 'special_teams' || decision.kind === 'clock_management') {
-    pickCall = decision;
-  } else {
-    if (decision.kind === 'defense' && automaticAction.kind === 'special_teams') {
-      throw new Error(`Play ${playId} cannot apply defensive intent to special teams.`);
-    }
-    if (decision.kind === 'defense' && automaticAction.kind === 'clock_management') {
-      throw new Error(`Play ${playId} cannot apply defensive intent to clock management.`);
-    }
-    pickCall = {
-      kind: 'scrimmage',
-      offense: decision.kind === 'offense' ? decision.concept : automaticOffense(),
-      defense: decision.kind === 'defense'
-        ? decision.intent
-        : chooseDefensiveIntent(playId, situation),
-    };
-  }
+  const effectivePlan = resolveEffectiveOffensePlan(automaticSituation, instruction, playId);
+  const pickCall = effectivePlan.call;
   const callErrors = validatePlayCall(pickCall, down);
   if (callErrors.length) {
     throw new Error(`Play ${playId} has an invalid call: ${callErrors.join(', ')}.`);
@@ -129,12 +188,11 @@ export const resolveRegulationStep = (
   }
   const playType = playTypeForCall(pickCall);
   const clockAction = pickCall.kind === 'clock_management' ? pickCall.action : null;
-  const tempo = pickCall.kind === 'special_teams'
-    ? 'normal'
-    : resolveTempo(instruction.tempo, offenseLead, clockState, clockAction);
-  const requestedTimeoutAfter = applyClockEnabled
-    ? resolveTimeoutRequest(instruction.timeoutAfter, automaticSituation)
-    : null;
+  const {
+    tempo,
+    timeoutRequest: requestedTimeoutAfter,
+    intentAfterPlay,
+  } = effectivePlan;
   const play: PlayRecord = {
     id: playId,
     gameId: game.id,
@@ -190,7 +248,7 @@ export const resolveRegulationStep = (
       possessionEnds,
       tempo,
       clockAction,
-      chargedTimeoutAfter: requestedTimeoutAfter,
+      timeoutRequest: requestedTimeoutAfter,
     });
     play.timing = result.timing;
     if (result.timing.chargedTimeoutAfter) {
@@ -204,6 +262,7 @@ export const resolveRegulationStep = (
     return result;
   };
 
+  state.automaticOffenseIntent = 'standard';
   setPlayHeader(play, offense, defense);
 
   if (pickCall.kind === 'special_teams') {
@@ -416,6 +475,7 @@ export const resolveRegulationStep = (
   return {
     state: {
       ...state,
+      automaticOffenseIntent: intentAfterPlay,
       fieldPosition: nextFieldPosition,
       down: nextDown,
       yardsLeft: nextYardsLeft,

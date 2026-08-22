@@ -19,12 +19,11 @@ import {
 } from '../src/domain/historicalGames';
 import { normalizeRivalriesData } from '../src/domain/rivalryData';
 import { validateSeasonData } from '../src/domain/seasonDataValidation';
-import type {
-  SeasonData,
-  TeamsData,
-} from '../src/types/baseData';
+import type { SeasonData } from '../src/types/baseData';
 import {
-  buildDataOutputs,
+  buildScopedDataOutputs,
+  parseDataScope,
+  type DataScope,
   type DataBuildOutputs,
 } from './data_build';
 import {
@@ -33,7 +32,6 @@ import {
   prettyJson,
   readJson,
 } from './data_files';
-import { buildStartingPrestigeCandidates } from './generate_starting_prestige';
 
 const HISTORICAL_GAME_COVERAGE_EXCEPTIONS = new Map([
   [2020, new Set(['New Mexico State'])],
@@ -44,32 +42,9 @@ const describeError = (source: string, error: unknown) =>
 
 const assignmentsFor = (season: SeasonData) => new Map<string, string>([
   ...Object.entries(season.conferences).flatMap(([conference, definition]) =>
-    Object.keys(definition.teams).map(team => [team, conference] as const)),
-  ...Object.keys(season.independents).map(team => [team, 'Independent'] as const),
+    definition.teams.map(team => [team, conference] as const)),
+  ...season.independents.map(team => [team, 'Independent'] as const),
 ]);
-
-const prestigesFor = (season: SeasonData) => new Map<string, number>([
-  ...Object.values(season.conferences).flatMap(conference =>
-    Object.entries(conference.teams)),
-  ...Object.entries(season.independents),
-]);
-
-const validatePrestigeBounds = (
-  season: SeasonData,
-  teams: TeamsData,
-  errors: string[],
-) => {
-  const prestiges = prestigesFor(season);
-  for (const [team, prestige] of prestiges) {
-    const metadata = teams.teams[team];
-    if (metadata && (prestige < metadata.floor || prestige > metadata.ceiling)) {
-      errors.push(
-        `seasons/${season.year}.json: ${team} prestige ${prestige} is outside ` +
-        `metadata bounds ${metadata.floor}-${metadata.ceiling}.`,
-      );
-    }
-  }
-};
 
 const readValidated = async <T,>(
   path: string,
@@ -102,23 +77,53 @@ const compareFile = async (
 
 export const checkData = async (
   dataRoot = DATA_ROOT,
-  buildOutputs: () => Promise<DataBuildOutputs> = () => buildDataOutputs(dataRoot),
+  {
+    scope = 'all',
+    buildOutputs = () => buildScopedDataOutputs(dataRoot, scope),
+  }: {
+    scope?: DataScope;
+    buildOutputs?: () => Promise<Partial<DataBuildOutputs>>;
+  } = {},
 ): Promise<string[]> => {
   const errors: string[] = [];
   const seasonsDirectory = join(dataRoot, 'seasons');
   const historicalDirectory = join(dataRoot, 'historical-games');
+  const checkSeasons = scope === 'all' || scope === 'seasons';
+  const checkOdds = scope === 'all' || scope === 'odds';
+  const checkHistoricalGames = scope === 'all' || scope === 'historical-games';
+  const needsSeasonFiles = checkSeasons || checkHistoricalGames;
+  const needsTeams = checkSeasons || checkHistoricalGames;
 
-  const [teams, conferences, prestigeConfig] = await Promise.all([
-    readValidated(join(dataRoot, 'teams.json'), 'teams.json', validateTeamsData, errors),
-    readValidated(join(dataRoot, 'conferences.json'), 'conferences.json', validateConferencesData, errors),
-    readValidated(join(dataRoot, 'prestige_config.json'), 'prestige_config.json', validatePrestigeConfig, errors),
-    readValidated(join(dataRoot, 'names.json'), 'names.json', validateNamesData, errors),
-    readValidated(join(dataRoot, 'states.json'), 'states.json', validateStatesData, errors),
-    readValidated(join(dataRoot, 'betting_odds.json'), 'betting_odds.json', validateBettingOddsData, errors),
-    readValidated(join(dataRoot, 'history.json'), 'history.json', validateHistoryData, errors),
-  ] as const);
+  const teamsPromise = needsTeams
+    ? readValidated(join(dataRoot, 'teams.json'), 'teams.json', validateTeamsData, errors)
+    : Promise.resolve(null);
+  const conferencesPromise = checkSeasons
+    ? readValidated(join(dataRoot, 'conferences.json'), 'conferences.json', validateConferencesData, errors)
+    : Promise.resolve(null);
+  const dependencyChecks = Promise.all([
+    checkSeasons
+      ? readValidated(join(dataRoot, 'prestige_config.json'), 'prestige_config.json', validatePrestigeConfig, errors)
+      : Promise.resolve(null),
+    scope === 'all'
+      ? readValidated(join(dataRoot, 'names.json'), 'names.json', validateNamesData, errors)
+      : Promise.resolve(null),
+    scope === 'all'
+      ? readValidated(join(dataRoot, 'states.json'), 'states.json', validateStatesData, errors)
+      : Promise.resolve(null),
+    checkOdds
+      ? readValidated(join(dataRoot, 'betting_odds.json'), 'betting_odds.json', validateBettingOddsData, errors)
+      : Promise.resolve(null),
+    checkSeasons
+      ? readValidated(join(dataRoot, 'history.json'), 'history.json', validateHistoryData, errors)
+      : Promise.resolve(null),
+  ]);
+  const [teams, conferences] = await Promise.all([
+    teamsPromise,
+    conferencesPromise,
+  ]);
+  await dependencyChecks;
 
-  if (teams) {
+  if (checkSeasons && teams) {
     try {
       normalizeRivalriesData(
         await readJson<unknown>(join(dataRoot, 'rivalries.json')),
@@ -127,12 +132,12 @@ export const checkData = async (
     } catch (error) {
       errors.push(describeError('rivalries.json', error));
     }
-  } else {
+  } else if (checkSeasons) {
     errors.push('rivalries.json: teams.json is unavailable for reference validation.');
   }
 
   let seasonYears: string[] = [];
-  try {
+  if (needsSeasonFiles) try {
     seasonYears = (await readdir(seasonsDirectory))
       .filter(name => /^\d{4}\.json$/.test(name))
       .map(name => name.slice(0, 4))
@@ -141,12 +146,14 @@ export const checkData = async (
     errors.push(describeError('seasons', error));
   }
 
-  const seasonIndex = await readValidated(
-    join(seasonsDirectory, 'index.json'),
-    'seasons/index.json',
-    validateSeasonIndexData,
-    errors,
-  );
+  const seasonIndex = checkSeasons
+    ? await readValidated(
+        join(seasonsDirectory, 'index.json'),
+        'seasons/index.json',
+        validateSeasonIndexData,
+        errors,
+      )
+    : null;
   if (seasonIndex && JSON.stringify(seasonIndex.years) !== JSON.stringify(seasonYears)) {
     errors.push(
       `seasons/index.json: years do not match season files; expected ` +
@@ -176,16 +183,13 @@ export const checkData = async (
       assignments.forEach((_conference, team) => referencedTeams.add(team));
       Object.keys(season.conferences).forEach(conference =>
         referencedConferences.add(conference));
-      if (teams) {
-        validatePrestigeBounds(season, teams, errors);
-      }
     } catch (error) {
       errors.push(error instanceof Error ? error.message : describeError(`seasons/${year}.json`, error));
     }
   }
 
   const scheduled = seasons.filter(season => season.results === null);
-  if (scheduled.some(season => String(season.year) !== seasonYears[0])) {
+  if (checkSeasons && scheduled.some(season => String(season.year) !== seasonYears[0])) {
     errors.push(
       `seasons: only the newest season may have null results; found ` +
       `${scheduled.filter(season => String(season.year) !== seasonYears[0]).map(season => season.year).join(', ')}.`,
@@ -195,45 +199,24 @@ export const checkData = async (
     seasons.filter(season => season.results !== null).map(season => season.year),
   );
 
-  if (teams && prestigeConfig && seasons.length === seasonYears.length) {
-    try {
-      const generated = buildStartingPrestigeCandidates({
-        seasons,
-        teams,
-        prestigeConfig,
-      });
-      for (const audit of generated.audits.filter(entry => entry.changed)) {
-        const examples = audit.teamAudits
-          .filter(team => team.before !== team.after)
-          .slice(0, 5)
-          .map(team => `${team.team} ${team.before}->${team.after}`);
-        errors.push(
-          `seasons/${audit.year}.json: ${audit.changed} generated starting ` +
-          `prestige value(s) are stale (${examples.join(', ')}); run ` +
-          '`npm run generate:starting-prestige -- --write`.',
-        );
-      }
-    } catch (error) {
-      errors.push(describeError('generated starting prestige', error));
-    }
-  }
-
   for (const team of referencedTeams) {
     if (!teams?.teams[team]) errors.push(`teams.json: missing metadata for ${team}.`);
-    try {
-      await access(join(dataRoot, '..', 'logos', 'teams', `${team}.png`));
-    } catch {
-      errors.push(`team logos: missing ${team}.png.`);
+    if (checkSeasons) {
+      try {
+        await access(join(dataRoot, '..', 'logos', 'teams', `${team}.png`));
+      } catch {
+        errors.push(`team logos: missing ${team}.png.`);
+      }
     }
   }
-  for (const conference of referencedConferences) {
+  for (const conference of checkSeasons ? referencedConferences : []) {
     if (!conferences?.[conference]) {
       errors.push(`conferences.json: missing metadata for ${conference}.`);
     }
   }
 
   let historicalYears: number[] = [];
-  try {
+  if (checkHistoricalGames) try {
     historicalYears = (await readdir(historicalDirectory))
       .filter(name => /^\d{4}\.json$/.test(name))
       .map(name => Number(name.slice(0, 4)))
@@ -241,12 +224,14 @@ export const checkData = async (
   } catch (error) {
     errors.push(describeError('historical-games', error));
   }
-  const historicalIndex = await readValidated(
-    join(historicalDirectory, 'index.json'),
-    'historical-games/index.json',
-    (value, _source) => validateHistoricalGamesIndex(value),
-    errors,
-  );
+  const historicalIndex = checkHistoricalGames
+    ? await readValidated(
+        join(historicalDirectory, 'index.json'),
+        'historical-games/index.json',
+        (value, _source) => validateHistoricalGamesIndex(value),
+        errors,
+      )
+    : null;
   if (historicalIndex) {
     const missing = historicalIndex.years.filter(year => !historicalYears.includes(year));
     const unexpected = historicalYears.filter(year => !historicalIndex.years.includes(year));
@@ -257,14 +242,12 @@ export const checkData = async (
       );
     }
   }
-  const historicalSeasons = [];
   for (const year of historicalYears) {
     try {
       const season = validateHistoricalGamesSeason(
         await readJson<unknown>(join(historicalDirectory, `${year}.json`)),
         year,
       );
-      historicalSeasons.push(season);
       if (!completedYears.has(year)) {
         errors.push(`historical-games/${year}.json: season results are not complete.`);
       }
@@ -295,12 +278,39 @@ export const checkData = async (
 
   try {
     const outputs = await buildOutputs();
-    await Promise.all([
-      compareFile(join(seasonsDirectory, 'index.json'), 'seasons/index.json', prettyJson(outputs.seasonIndex), errors),
-      compareFile(join(dataRoot, 'history.json'), 'history.json', prettyJson(outputs.history), errors),
-      compareFile(join(dataRoot, 'betting_odds.json'), 'betting_odds.json', prettyJson(outputs.bettingOdds), errors),
-      compareFile(join(historicalDirectory, 'index.json'), 'historical-games/index.json', prettyJson(outputs.historicalIndex), errors),
-    ]);
+    const comparisons: Promise<void>[] = [];
+    if (checkSeasons) {
+      if (!outputs.seasonIndex || !outputs.history) {
+        throw new Error('season build did not return the season index and history.');
+      }
+      comparisons.push(
+        compareFile(join(seasonsDirectory, 'index.json'), 'seasons/index.json', prettyJson(outputs.seasonIndex), errors),
+        compareFile(join(dataRoot, 'history.json'), 'history.json', prettyJson(outputs.history), errors),
+      );
+    }
+    if (checkOdds) {
+      if (!outputs.bettingOdds) {
+        throw new Error('odds build did not return betting odds.');
+      }
+      comparisons.push(
+        compareFile(join(dataRoot, 'betting_odds.json'), 'betting_odds.json', prettyJson(outputs.bettingOdds), errors),
+      );
+    }
+    if (checkHistoricalGames) {
+      if (!outputs.historicalIndex || !outputs.historicalByTeam) {
+        throw new Error('historical-games build did not return all projections.');
+      }
+      comparisons.push(
+        compareFile(join(historicalDirectory, 'index.json'), 'historical-games/index.json', prettyJson(outputs.historicalIndex), errors),
+      );
+    }
+    await Promise.all(comparisons);
+
+    if (!checkHistoricalGames) return errors;
+    const { historicalByTeam, historicalIndex: generatedHistoricalIndex } = outputs;
+    if (!historicalByTeam || !generatedHistoricalIndex) {
+      throw new Error('historical-games build did not return all projections.');
+    }
 
     const byTeamDirectory = join(historicalDirectory, 'by-team');
     let actualFiles: string[] = [];
@@ -309,7 +319,7 @@ export const checkData = async (
     } catch (error) {
       errors.push(describeError('historical-games/by-team', error));
     }
-    const expectedFiles = [...outputs.historicalByTeam.keys()].sort();
+    const expectedFiles = [...historicalByTeam.keys()].sort();
     const missing = expectedFiles.filter(file => !actualFiles.includes(file));
     const extra = actualFiles.filter(file => !expectedFiles.includes(file));
     if (missing.length || extra.length) {
@@ -318,8 +328,8 @@ export const checkData = async (
         `unexpected [${extra.join(', ')}].`,
       );
     }
-    const availableYears = new Set(outputs.historicalIndex.years);
-    await Promise.all([...outputs.historicalByTeam].map(async ([fileName, expected]) => {
+    const availableYears = new Set(generatedHistoricalIndex.years);
+    await Promise.all([...historicalByTeam].map(async ([fileName, expected]) => {
       if (!actualFiles.includes(fileName)) return;
       try {
         validateHistoricalGamesForTeam(
@@ -346,7 +356,8 @@ export const checkData = async (
 };
 
 const main = async () => {
-  const errors = await checkData();
+  const scope = parseDataScope(process.argv.slice(2));
+  const errors = await checkData(DATA_ROOT, { scope });
   if (errors.length) {
     console.error(`Data validation failed with ${errors.length} error(s):`);
     errors.forEach(error => console.error(`- ${error}`));
@@ -357,5 +368,8 @@ const main = async () => {
 };
 
 if (fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '')) {
-  await main();
+  await main().catch(error => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
 }

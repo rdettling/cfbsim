@@ -12,6 +12,14 @@ import { SIM_TUNING } from './config';
 
 export const SECONDS_PER_QUARTER = 15 * 60;
 
+export type OffenseTimeoutRequest =
+  | { side: 'offense'; timing: 'immediate' }
+  | { side: 'offense'; timing: 'drain_to'; targetSeconds: number };
+
+export type TimeoutRequest =
+  | OffenseTimeoutRequest
+  | { side: 'defense'; timing: 'immediate' };
+
 export type ClockPlayContext = {
   playType: string;
   result: string;
@@ -19,7 +27,7 @@ export type ClockPlayContext = {
   possessionEnds: boolean;
   tempo: ClockTempo;
   clockAction: ClockManagementAction | null;
-  chargedTimeoutAfter: 'offense' | 'defense' | null;
+  timeoutRequest: TimeoutRequest | null;
 };
 
 export type ClockResult = {
@@ -138,6 +146,14 @@ export const samplePotentialRunoffSeconds = (
   ? Math.max(0, SIM_TUNING.clock.management.kneelBudgetSeconds - liveBallSeconds)
   : sampleRunoffSeconds(playId, playType, result, tempo);
 
+export const maximumNormalRunningScrimmageSeconds = () => (
+  SIM_TUNING.clock.liveBallSeconds.scrimmage.max
+  + Math.round(
+    SIM_TUNING.clock.runoffSeconds.runOrSack.max
+      * SIM_TUNING.clock.tempoMultipliers.normal,
+  )
+);
+
 const periodEvent = (quarter: number): RegulationClockEvent => {
   if (quarter === 2) return 'halftime';
   if (quarter === 4) return 'end_of_regulation';
@@ -187,8 +203,18 @@ export const resolveRegulationTiming = (
     eventAfter = periodEvent(clock.quarter);
   } else if (crossedTwoMinutesDuringPlay) {
     eventAfter = 'two_minute_timeout';
-  } else if (clockRunsAfterPlay && context.chargedTimeoutAfter !== null) {
-    chargedTimeoutAfter = context.chargedTimeoutAfter;
+  } else if (clockRunsAfterPlay && context.timeoutRequest !== null) {
+    const request = context.timeoutRequest;
+    if (request.timing === 'drain_to') {
+      const requestedRunoff = Math.max(0, secondsLeft - request.targetSeconds);
+      const runoffSeconds = Math.min(
+        requestedRunoff,
+        SIM_TUNING.clock.management.maximumPostPlayRunoffSeconds,
+      );
+      secondsLeft -= runoffSeconds;
+      elapsedSeconds += runoffSeconds;
+    }
+    chargedTimeoutAfter = request.side;
   } else if (clockRunsAfterPlay) {
     const runoffSample = samplePotentialRunoffSeconds(
       playId,

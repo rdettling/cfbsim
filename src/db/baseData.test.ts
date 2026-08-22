@@ -71,7 +71,7 @@ describe('base data cache lifecycle', () => {
     });
     await db.put('baseData', {
       key: 'years:2025',
-      value: { playoff: {}, conferences: {}, independents: {} },
+      value: { playoff: {}, conferences: {}, independents: [] },
     });
     await db.put('baseData', {
       key: 'teams',

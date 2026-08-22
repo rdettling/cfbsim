@@ -64,10 +64,16 @@ const seedFullCycle = async () => {
     ranking: 2,
     conference: 'Test Conference',
   });
+  userTeam.conference = 'Independent';
+  userTeam.confName = 'Independent';
+  opponent.conference = 'Independent';
+  opponent.confName = 'Independent';
   const league = buildTestLeague('summary', {
     teams: [userTeam, opponent],
     conferences: [{
       ...baseLeague.conferences[0],
+      confName: 'Independent',
+      confFullName: 'Independent',
       teams: [userTeam, opponent],
     }],
     settings: {
@@ -252,10 +258,10 @@ const seedFullCycle = async () => {
         conferences: {
           'Test Conference': {
             games: 0,
-            teams: { 'Test State': 4, 'Opponent State': 3, 'Entry State': 3 },
+            teams: ['Test State', 'Opponent State', 'Entry State'],
           },
         },
-        independents: {},
+        independents: [],
         results: null,
       },
     },
@@ -313,11 +319,12 @@ describe('offseason lifecycle integration', () => {
       prestige: 7,
     });
     const savedHistory = await memoryDb.get('baseData', 'history');
-    expect(
-      (savedHistory?.value as {
-        teams: Record<string, Array<[number, number, number, number, number, number]>>;
-      }).teams['Test State'].find(row => row[0] === 2025)?.[5],
-    ).toBe(4);
+    const archivedRow = (savedHistory?.value as {
+      teams: Record<string, Array<[number, number, number, number, number, number]>>;
+    }).teams['Test State'].find(([year]) => year === 2025);
+    if (!archivedRow) throw new Error('Expected the archived 2025 history row.');
+    const [, , , , , archivedPrestige] = archivedRow;
+    expect(archivedPrestige).toBe(4);
     await expect(advanceOffseasonStage('summary')).rejects.toMatchObject({
       actualStage: 'realignment',
     });

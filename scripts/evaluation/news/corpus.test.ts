@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { ConferencesData, TeamsData, SeasonData } from '../../../src/types/baseData';
+import type {
+  ConferencesData,
+  HistoryData,
+  PrestigeConfig,
+  TeamsData,
+  SeasonData,
+} from '../../../src/types/baseData';
 import type { NamesData } from '../../../src/types/baseData';
 import { normalizeRivalriesData } from '../../../src/domain/rivalryData';
 import { GAME_STORY_ANGLES, GAME_TYPES } from '../../../src/types/news';
@@ -19,6 +25,7 @@ import type {
 import { createSeededRandom, withSeededMathRandom } from '../../../src/domain/utils/random';
 import { deriveEditorialIdentity } from '../../../src/domain/news/policy';
 import { STORY_TEMPLATES_BY_ID } from '../../../src/domain/news/templates';
+import { calculateStartingPrestiges } from '../../../src/domain/league/prestige';
 
 const readJson = <T>(path: string) =>
   JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')) as T;
@@ -28,6 +35,8 @@ const data: SeasonCorpusData = {
   yearData: readJson<SeasonData>('../../../public/data/seasons/2026.json'),
   teamsData,
   conferencesData: readJson<ConferencesData>('../../../public/data/conferences.json'),
+  historyData: readJson<HistoryData>('../../../public/data/history.json'),
+  prestigeConfig: readJson<PrestigeConfig>('../../../public/data/prestige_config.json'),
   names: readJson<NamesData>('../../../public/data/names.json'),
   states: readJson<Record<string, number>>('../../../public/data/states.json'),
   rivalries: normalizeRivalriesData(
@@ -54,6 +63,20 @@ describe('news editorial audit corpus', () => {
     });
     expect(Math.random).toBe(originalRandom);
     expect(completedSeasons).toHaveLength(configuration.seasons);
+    const expectedPrestiges = calculateStartingPrestiges({
+      year: configuration.startYear,
+      teamNames: [
+        ...Object.values(data.yearData.conferences)
+          .flatMap(conference => conference.teams),
+        ...data.yearData.independents,
+      ],
+      historyData: data.historyData,
+      teamsData: data.teamsData,
+      prestigeConfig: data.prestigeConfig,
+    });
+    expect(Object.fromEntries(
+      completedSeasons[0].league.teams.map(team => [team.name, team.prestige]),
+    )).toEqual(expectedPrestiges);
     expect(new Set(completedSeasons.map(snapshot => snapshot.season)).size)
       .toBe(configuration.seasons);
     completedSeasons.forEach(snapshot => {

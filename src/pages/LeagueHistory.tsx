@@ -139,11 +139,9 @@ const Overview = ({
                   </Typography>
                   <TeamButton name={entry.team.name} onTeamClick={onTeamClick} />
                 </Box>
-                {entry.championshipGameId !== null && (
-                  <Button component={RouterLink} to={`/game/${entry.championshipGameId}`} size="small">
-                    Game
-                  </Button>
-                )}
+                <Button component={RouterLink} to={`/game/${entry.championshipGameId}`} size="small">
+                  Game
+                </Button>
               </Box>
             ))}
           </Stack>
