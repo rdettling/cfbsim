@@ -6,18 +6,15 @@ import GameSimModal from '../sim/GameSimModal';
 import type { GameSimCloseOutcome } from '../sim/GameSimModal';
 import LoadingDialog from '../sim/LoadingDialog';
 import {
-  getNextStageDefinition,
   getStageDefinition,
+  getStageRoute,
+  type OffseasonFlowStage,
+  type OffseasonFlowTarget,
 } from '../../constants/stages';
-import {
-  advanceOffseasonStage,
-  isOffseasonAdvanceStage,
-} from '../../domain/league/commands/stages';
-import { initializeSeason } from '../../domain/league/commands/season';
-import {
-  OffseasonConfigurationConflictError,
-  OffseasonStageMismatchError,
-} from '../../types/league';
+import { ROUTES } from '../../constants/routes';
+import { advanceOffseasonToStage } from '../../domain/league/commands/offseasonFlow';
+import { loadCurrentStageRoute } from '../../domain/league/loaders/currentStageRoute';
+import { advanceWeeks } from '../../domain/sim/orchestrator';
 import DesktopNavigation from './DesktopNavigation';
 import MobileNavigation from './MobileNavigation';
 import {
@@ -26,30 +23,27 @@ import {
   getUserTeamName,
   normalizePath,
   type AppNavigationData,
-  type StageAdvanceAction,
+  type OffseasonAdvanceContext,
 } from './navigation';
+import { buildLeagueCalendarModel } from './leagueCalendar';
 
 export interface AppNavigationProps {
   data: AppNavigationData;
-  onAdvanceStage?: () => void;
-  advanceActions?: StageAdvanceAction[];
-  advanceLabel?: string;
+  offseasonAdvanceContext?: OffseasonAdvanceContext;
 }
 
 const AppNavigation = ({
   data,
-  onAdvanceStage,
-  advanceActions,
-  advanceLabel,
+  offseasonAdvanceContext,
 }: AppNavigationProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [gameSelectionOpen, setGameSelectionOpen] = useState(false);
   const [liveSimOpen, setLiveSimOpen] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
-  const [advancingStage, setAdvancingStage] = useState(false);
+  const [advancingTarget, setAdvancingTarget] = useState<string | null>(null);
   const [advanceError, setAdvanceError] = useState<string | null>(null);
-  const stageAdvanceLock = useRef(false);
+  const navigationActionLock = useRef(false);
 
   const userTeamName = getUserTeamName(data);
   const teamContextName = getTeamContextName(data, location.pathname);
@@ -57,15 +51,30 @@ const AppNavigation = ({
     () => buildNavigationModel(data, teamContextName),
     [data.team, data.info.lastWeek, data.info.team, data.conferences, teamContextName],
   );
+  const calendar = useMemo(
+    () => buildLeagueCalendarModel(data),
+    [data.currentStage, data.info.currentWeek, data.info.currentYear, data.info.lastWeek],
+  );
   const currentPath = normalizePath(location.pathname);
-  const currentStageInfo = getStageDefinition(data.currentStage);
-  const nextStageInfo = getNextStageDefinition(data.currentStage);
-  const commandManagedStage =
-    currentStageInfo?.id === 'recruiting' ||
-    currentStageInfo?.id === 'roster_cuts';
+  const flowStage = calendar.kind === 'offseason'
+    ? calendar.currentStage
+    : null;
   const teamAccent = data.team.colorPrimary || 'primary.main';
+  const navigationBusy = Boolean(advancingTarget) || gameSelectionOpen || liveSimOpen;
+
+  const handleOpenLiveSim = () => {
+    if (navigationActionLock.current) return;
+    navigationActionLock.current = true;
+    setGameSelectionOpen(true);
+  };
+
+  const handleGameSelectionClose = () => {
+    setGameSelectionOpen(false);
+    navigationActionLock.current = false;
+  };
 
   const handleGameSelect = (gameId: number) => {
+    setGameSelectionOpen(false);
     setSelectedGameId(gameId);
     setLiveSimOpen(true);
   };
@@ -73,50 +82,32 @@ const AppNavigation = ({
   const handleLiveSimClose = (outcome: GameSimCloseOutcome) => {
     setLiveSimOpen(false);
     setSelectedGameId(null);
+    navigationActionLock.current = false;
     if (outcome === 'completed') {
       window.dispatchEvent(new Event('pageDataRefresh'));
     }
   };
 
-  const handleAdvanceStage = async () => {
-    if (
-      !currentStageInfo ||
-      !nextStageInfo ||
-      data.advanceDisabled ||
-      (commandManagedStage &&
-        !onAdvanceStage &&
-        !advanceActions?.length) ||
-      stageAdvanceLock.current
-    ) return;
-
-    if (commandManagedStage) {
-      onAdvanceStage?.();
-      return;
-    }
-
-    if (
-      currentStageInfo.id !== 'preseason' &&
-      !isOffseasonAdvanceStage(currentStageInfo.id)
-    ) {
-      navigate(nextStageInfo.path);
-      return;
-    }
-
-    stageAdvanceLock.current = true;
-    setAdvancingStage(true);
+  const handleAdvanceOffseasonTo = async (target: OffseasonFlowTarget) => {
+    if (data.advanceDisabled || navigationActionLock.current) return;
+    navigationActionLock.current = true;
+    const targetLabel = target === 'season'
+      ? `the ${calendar.year} Season`
+      : getStageDefinition(target).flowLabel;
+    setAdvancingTarget(targetLabel);
     setAdvanceError(null);
     try {
-      const result =
-        currentStageInfo.id === 'preseason'
-          ? await initializeSeason(data.info.currentYear)
-          : await advanceOffseasonStage(currentStageInfo.id);
+      const result = await advanceOffseasonToStage(target, {
+        recruitingAllocations:
+          offseasonAdvanceContext?.recruitingAllocations,
+      });
       navigate(result.route);
     } catch (error) {
-      if (
-        error instanceof OffseasonStageMismatchError ||
-        error instanceof OffseasonConfigurationConflictError
-      ) {
+      try {
+        navigate(await loadCurrentStageRoute());
         window.dispatchEvent(new Event('pageDataRefresh'));
+      } catch {
+        // Preserve the original command failure when recovery cannot reload.
       }
       setAdvanceError(
         error instanceof Error
@@ -124,9 +115,45 @@ const AppNavigation = ({
           : 'The offseason could not be advanced. Try again.',
       );
     } finally {
-      stageAdvanceLock.current = false;
-      setAdvancingStage(false);
+      navigationActionLock.current = false;
+      setAdvancingTarget(null);
     }
+  };
+
+  const handleAdvanceToWeek = async (targetWeek: number) => {
+    if (data.advanceDisabled || navigationActionLock.current || calendar.kind !== 'season') {
+      return;
+    }
+    navigationActionLock.current = true;
+    const finishingSeason = targetWeek > calendar.lastWeek;
+    setAdvancingTarget(finishingSeason ? 'Season Summary' : `Week ${targetWeek}`);
+    setAdvanceError(null);
+    try {
+      await advanceWeeks(targetWeek);
+      if (finishingSeason) {
+        navigate(ROUTES.SEASON_SUMMARY);
+      } else {
+        window.dispatchEvent(new Event('pageDataRefresh'));
+      }
+    } catch (error) {
+      window.dispatchEvent(new Event('pageDataRefresh'));
+      setAdvanceError(
+        error instanceof Error
+          ? error.message
+          : 'The season could not be advanced. Try again.',
+      );
+    } finally {
+      navigationActionLock.current = false;
+      setAdvancingTarget(null);
+    }
+  };
+
+  const handleSelectFlowStage = (stage: OffseasonFlowStage) => {
+    if (stage === flowStage) {
+      navigate(getStageRoute(stage));
+      return;
+    }
+    void handleAdvanceOffseasonTo(stage as OffseasonFlowTarget);
   };
 
   return (
@@ -143,48 +170,36 @@ const AppNavigation = ({
         }}
       >
         <DesktopNavigation
-          data={data}
           teamName={userTeamName}
           model={model}
           currentPath={currentPath}
-          currentStageInfo={currentStageInfo}
-          nextStageInfo={nextStageInfo}
-          onLiveSim={() => setGameSelectionOpen(true)}
-          advancingStage={advancingStage}
-          advanceDisabled={
-            (data.advanceDisabled ?? false) ||
-            (commandManagedStage &&
-              !onAdvanceStage &&
-              !advanceActions?.length)
-          }
-          onAdvanceStage={handleAdvanceStage}
-          advanceActions={advanceActions}
-          advanceLabel={advanceLabel}
+          calendar={calendar}
+          onLiveSim={handleOpenLiveSim}
+          advancing={navigationBusy}
+          advanceDisabled={data.advanceDisabled ?? false}
+          onSelectFlowStage={handleSelectFlowStage}
+          onStartSeason={() => void handleAdvanceOffseasonTo('season')}
+          onAdvanceToWeek={(targetWeek) => void handleAdvanceToWeek(targetWeek)}
+          onOpenSummary={() => navigate(ROUTES.SEASON_SUMMARY)}
         />
         <MobileNavigation
-          data={data}
           teamName={userTeamName}
           model={model}
           currentPath={currentPath}
-          currentStageInfo={currentStageInfo}
-          nextStageInfo={nextStageInfo}
-          onLiveSim={() => setGameSelectionOpen(true)}
-          advancingStage={advancingStage}
-          advanceDisabled={
-            (data.advanceDisabled ?? false) ||
-            (commandManagedStage &&
-              !onAdvanceStage &&
-              !advanceActions?.length)
-          }
-          onAdvanceStage={handleAdvanceStage}
-          advanceActions={advanceActions}
-          advanceLabel={advanceLabel}
+          calendar={calendar}
+          onLiveSim={handleOpenLiveSim}
+          advancing={navigationBusy}
+          advanceDisabled={data.advanceDisabled ?? false}
+          onSelectFlowStage={handleSelectFlowStage}
+          onStartSeason={() => void handleAdvanceOffseasonTo('season')}
+          onAdvanceToWeek={(targetWeek) => void handleAdvanceToWeek(targetWeek)}
+          onOpenSummary={() => navigate(ROUTES.SEASON_SUMMARY)}
         />
       </Box>
 
       <GameSelectionModal
         open={gameSelectionOpen}
-        onClose={() => setGameSelectionOpen(false)}
+        onClose={handleGameSelectionClose}
         onGameSelect={handleGameSelect}
       />
       <GameSimModal
@@ -193,8 +208,8 @@ const AppNavigation = ({
         gameId={selectedGameId}
       />
       <LoadingDialog
-        open={advancingStage}
-        message={`Advancing to ${nextStageInfo?.label ?? 'the next stage'}`}
+        open={Boolean(advancingTarget)}
+        message={`Simulating to ${advancingTarget ?? 'the selected stage'}`}
       />
       <Snackbar
         open={Boolean(advanceError)}

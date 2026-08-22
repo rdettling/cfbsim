@@ -1,45 +1,40 @@
-import { AppBar, Box, Chip, Divider, IconButton, Stack, Toolbar, Typography } from '@mui/material';
+import { AppBar, Divider, IconButton, Stack, Toolbar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useState } from 'react';
 import { TeamLogo } from '../team/TeamLogo';
-import SeasonBanner from './SeasonBanner';
-import NonSeasonBanner from './NonSeasonBanner';
 import MobileNavigationDrawer from './MobileNavigationDrawer';
-import type {
-  AppNavigationData,
-  NavigationModel,
-  StageAdvanceAction,
-  StageInfo,
-} from './navigation';
+import { OffseasonFlowMobile } from './OffseasonFlowNavigation';
+import { SeasonProgressMobile } from './SeasonProgressMobile';
+import type { OffseasonFlowStage } from '../../constants/stages';
+import type { NavigationModel } from './navigation';
+import type { LeagueCalendarModel } from './leagueCalendar';
 
 interface MobileNavigationProps {
-  data: AppNavigationData;
   teamName: string;
   model: NavigationModel;
   currentPath: string;
-  currentStageInfo?: StageInfo;
-  nextStageInfo?: StageInfo;
+  calendar: LeagueCalendarModel;
   onLiveSim: () => void;
-  advancingStage: boolean;
+  advancing: boolean;
   advanceDisabled: boolean;
-  onAdvanceStage: () => void;
-  advanceActions?: StageAdvanceAction[];
-  advanceLabel?: string;
+  onSelectFlowStage: (stage: OffseasonFlowStage) => void;
+  onStartSeason: () => void;
+  onAdvanceToWeek: (targetWeek: number) => void;
+  onOpenSummary: () => void;
 }
 
 const MobileNavigation = ({
-  data,
   teamName,
   model,
   currentPath,
-  currentStageInfo,
-  nextStageInfo,
+  calendar,
   onLiveSim,
-  advancingStage,
+  advancing,
   advanceDisabled,
-  onAdvanceStage,
-  advanceActions,
-  advanceLabel,
+  onSelectFlowStage,
+  onStartSeason,
+  onAdvanceToWeek,
+  onOpenSummary,
 }: MobileNavigationProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerId = 'application-navigation-drawer';
@@ -106,64 +101,34 @@ const MobileNavigation = ({
           py: 0.75,
         }}
       >
-        <Box sx={{ minWidth: 0 }}>
-          <Stack
-            direction="row"
-            spacing={0.75}
-            sx={{
-              alignItems: 'center',
-            }}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {data.info.currentYear}
-            </Typography>
-            <Chip
-              label={currentStageInfo?.banner_label ?? data.currentStage}
-              size="small"
-              variant="outlined"
-              sx={{ maxWidth: 150, fontWeight: 600 }}
-            />
-          </Stack>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-            }}
-          >
-            {data.currentStage === 'season'
-              ? `Week ${data.info.currentWeek}`
-              : currentStageInfo?.label}
-          </Typography>
-        </Box>
-
-        {data.currentStage === 'season' ? (
-          <SeasonBanner info={data.info} compact />
+        {calendar.kind === 'season' ? (
+          <SeasonProgressMobile
+            calendar={calendar}
+            advancing={advancing}
+            disabled={advanceDisabled}
+            onAdvanceToWeek={onAdvanceToWeek}
+            onOpenSummary={onOpenSummary}
+          />
         ) : (
-          currentStageInfo &&
-          nextStageInfo && (
-            <NonSeasonBanner
-              currentStage={currentStageInfo}
-              nextStage={nextStageInfo}
-              compact
-              advancing={advancingStage}
-              disabled={advanceDisabled}
-              onAdvance={onAdvanceStage}
-              advanceActions={advanceActions}
-              advanceLabel={advanceLabel}
-            />
-          )
+          <OffseasonFlowMobile
+            calendar={calendar}
+            advancing={advancing}
+            disabled={advanceDisabled}
+            onSelectStage={onSelectFlowStage}
+            onStartSeason={onStartSeason}
+          />
         )}
       </Stack>
       <MobileNavigationDrawer
         id={drawerId}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        data={data}
         teamName={teamName}
         model={model}
         currentPath={currentPath}
-        currentStageInfo={currentStageInfo}
+        calendar={calendar}
         onLiveSim={onLiveSim}
+        actionsDisabled={advancing}
       />
     </AppBar>
   );

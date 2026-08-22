@@ -3,7 +3,6 @@ import { Box } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
 import { TeamHeader } from '../components/team/TeamHeader';
 import { TeamInfoModal } from '../components/team/TeamInfoModal';
-import { getStageDefinition } from '../constants/stages';
 import { useDomainData } from '../domain/hooks';
 import { loadDashboard } from '../domain/league/loaders/season/loadDashboard';
 import type { DashboardPageData } from '../types/pages';
@@ -30,13 +29,6 @@ const Dashboard = () => {
   const conferenceName = data
     ? data.team.confName
     : '';
-  const stage = data ? getStageDefinition(data.info.stage) : undefined;
-  const seasonContext = data
-    ? data.info.stage === 'season'
-      ? `${data.info.currentYear} season · Week ${data.info.currentWeek}`
-      : `${data.info.currentYear} season · ${stage?.label ?? data.info.stage}`
-    : '';
-
   return (
     <PageLayout
       loading={loading}
@@ -52,11 +44,7 @@ const Dashboard = () => {
     >
       {data && (
         <>
-          <TeamHeader
-            team={data.team}
-            title="Dashboard"
-            subtitle={seasonContext}
-          />
+          <TeamHeader team={data.team} />
           <Box
             sx={{
               display: 'grid',
@@ -76,6 +64,7 @@ const Dashboard = () => {
               currentGame={data.curr_game}
               onTeamClick={handleTeamClick}
             />
+            <DashboardNewsPanel stories={data.topStories} />
             <DashboardStandingsPanel
               conferenceName={conferenceName}
               teams={data.confTeams}
@@ -89,7 +78,6 @@ const Dashboard = () => {
               teamColor={data.team.colorPrimary}
               onTeamClick={handleTeamClick}
             />
-            <DashboardNewsPanel stories={data.topStories} />
           </Box>
 
           <TeamInfoModal

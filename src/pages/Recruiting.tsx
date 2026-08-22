@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   Snackbar,
   useMediaQuery,
@@ -20,7 +19,10 @@ import { ProspectDetailsDialog } from './recruiting/ProspectDetailsDialog';
 import { ProspectMarket } from './recruiting/ProspectMarket';
 import { RecruitingBoard } from './recruiting/RecruitingBoard';
 import { RecruitingSummaryStrip } from './recruiting/RecruitingSummaryStrip';
-import { useRecruitingWorkspace } from './recruiting/useRecruitingWorkspace';
+import {
+  normalizedAllocations,
+  useRecruitingWorkspace,
+} from './recruiting/useRecruitingWorkspace';
 
 const Recruiting = () => {
   const theme = useTheme();
@@ -45,11 +47,8 @@ const Recruiting = () => {
     busy,
     notice,
     setNotice,
-    confirmFinish,
-    setConfirmFinish,
     changeBoard,
     advanceWeek,
-    finishWithAi,
     resolveSigningDay,
     showProspect,
     clearPoints,
@@ -76,6 +75,19 @@ const Recruiting = () => {
       onRemove={id => changeBoard(id, false)}
       onAddRecruits={() => setMarketOpen(true)}
       onClear={clearPoints}
+      advanceLabel={
+        cursor?.status === 'ready_for_signing_day'
+          ? 'Resolve Signing Day'
+          : cursor?.round === 6
+            ? 'Complete Week 6'
+            : 'Advance Week'
+      }
+      advanceDisabled={busy || !allocationsValid}
+      onAdvance={
+        cursor?.status === 'ready_for_signing_day'
+          ? resolveSigningDay
+          : advanceWeek
+      }
     />
   ) : null;
 
@@ -96,29 +108,9 @@ const Recruiting = () => {
             }
           : undefined
       }
-      onAdvanceStage={
-        cursor?.status === 'ready_for_signing_day'
-          ? resolveSigningDay
-          : undefined
-      }
-      advanceLabel={
-        cursor?.status === 'active' ? 'Advance Recruiting' : undefined
-      }
-      advanceActions={
-        cursor?.status === 'active'
-          ? [
-              {
-                label:
-                  cursor.round === 6 ? 'Complete Week 6' : 'Advance Week',
-                onSelect: advanceWeek,
-              },
-              {
-                label: 'Sim to End of Recruiting',
-                onSelect: () => setConfirmFinish(true),
-              },
-            ]
-          : undefined
-      }
+      offseasonAdvanceContext={{
+        recruitingAllocations: normalizedAllocations(draftAllocations),
+      }}
     >
       {data &&
         (data.info.stage !== 'recruiting' ||
@@ -207,23 +199,6 @@ const Recruiting = () => {
           onChangeBoard={changeBoard}
         />
       )}
-
-      <Dialog open={confirmFinish} onClose={() => setConfirmFinish(false)}>
-        <DialogTitle>Sim to end of recruiting?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Your current point choices will be honored this week. AI will
-            complete every remaining recruiting week and Signing Day before
-            opening Recruiting Summary. This cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmFinish(false)}>Cancel</Button>
-          <Button variant="contained" onClick={finishWithAi}>
-            Sim to Recruiting Summary
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Snackbar
         open={Boolean(notice)}

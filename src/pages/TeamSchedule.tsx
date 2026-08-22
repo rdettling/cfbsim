@@ -72,8 +72,6 @@ const TeamSchedule = () => {
         <>
           <TeamHeader
             team={data.team}
-            title="Schedule"
-            subtitle={`${seasonYear} season`}
             metrics={data.selectedTeamMetrics}
             teamSelector={{ teams: data.teams, onChange: handleTeamChange }}
             controls={

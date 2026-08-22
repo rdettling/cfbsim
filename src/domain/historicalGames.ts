@@ -33,6 +33,7 @@ const TEAM_GAME_KEYS = [
   'year',
   'weekPlayed',
   'opponent',
+  'location',
   'teamScore',
   'opponentScore',
   'label',
@@ -129,6 +130,7 @@ const toHistoricalTeamGame = (
     year: game.year,
     weekPlayed: game.weekPlayed,
     opponent: isHome ? game.awayTeam : game.homeTeam,
+    location: game.neutralSite ? 'Neutral' : isHome ? 'Home' : 'Away',
     teamScore: isHome ? game.homeScore : game.awayScore,
     opponentScore: isHome ? game.awayScore : game.homeScore,
     label: game.label,
@@ -262,6 +264,9 @@ const isHistoricalTeamGame = (value: unknown) =>
   Number(value.weekPlayed) <= 19 &&
   typeof value.opponent === 'string' &&
   value.opponent.length > 0 &&
+  (value.location === 'Home' ||
+    value.location === 'Away' ||
+    value.location === 'Neutral') &&
   Number.isInteger(value.teamScore) &&
   Number(value.teamScore) >= 0 &&
   Number.isInteger(value.opponentScore) &&

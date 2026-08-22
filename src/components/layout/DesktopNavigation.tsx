@@ -2,7 +2,6 @@ import {
   AppBar,
   Box,
   Button,
-  Chip,
   Divider,
   IconButton,
   Menu,
@@ -16,32 +15,30 @@ import HomeIcon from '@mui/icons-material/Home';
 import { useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TeamLogo } from '../team/TeamLogo';
-import SeasonBanner from './SeasonBanner';
-import NonSeasonBanner from './NonSeasonBanner';
+import { OffseasonFlowDesktop } from './OffseasonFlowNavigation';
+import { SeasonProgressDesktop } from './SeasonProgressNavigation';
+import type { OffseasonFlowStage } from '../../constants/stages';
 import {
   isGroupActive,
   isPathActive,
-  type AppNavigationData,
   type NavigationItem,
   type NavigationGroup,
   type NavigationModel,
-  type StageAdvanceAction,
-  type StageInfo,
 } from './navigation';
+import type { LeagueCalendarModel } from './leagueCalendar';
 
 interface DesktopNavigationProps {
-  data: AppNavigationData;
   teamName: string;
   model: NavigationModel;
   currentPath: string;
-  currentStageInfo?: StageInfo;
-  nextStageInfo?: StageInfo;
+  calendar: LeagueCalendarModel;
   onLiveSim: () => void;
-  advancingStage: boolean;
+  advancing: boolean;
   advanceDisabled: boolean;
-  onAdvanceStage: () => void;
-  advanceActions?: StageAdvanceAction[];
-  advanceLabel?: string;
+  onSelectFlowStage: (stage: OffseasonFlowStage) => void;
+  onStartSeason: () => void;
+  onAdvanceToWeek: (targetWeek: number) => void;
+  onOpenSummary: () => void;
 }
 
 const navButtonSx = (active: boolean) => ({
@@ -59,18 +56,17 @@ const navButtonSx = (active: boolean) => ({
 });
 
 const DesktopNavigation = ({
-  data,
   teamName,
   model,
   currentPath,
-  currentStageInfo,
-  nextStageInfo,
+  calendar,
   onLiveSim,
-  advancingStage,
+  advancing,
   advanceDisabled,
-  onAdvanceStage,
-  advanceActions,
-  advanceLabel,
+  onSelectFlowStage,
+  onStartSeason,
+  onAdvanceToWeek,
+  onOpenSummary,
 }: DesktopNavigationProps) => {
   const navigate = useNavigate();
   const [menuAnchors, setMenuAnchors] = useState<Record<string, HTMLElement | null>>({});
@@ -170,13 +166,15 @@ const DesktopNavigation = ({
         borderColor: 'divider',
       }}
     >
-      <Toolbar sx={{ minHeight: '64px !important', gap: 2.5, px: 3 }}>
+      <Toolbar
+        sx={{ minHeight: '64px !important', gap: { lg: 1.25, xl: 2 }, px: 3 }}
+      >
         <Stack
           direction="row"
           spacing={1.25}
           sx={{
             alignItems: 'center',
-            minWidth: 190,
+            minWidth: { lg: 160, xl: 190 },
           }}
         >
           <TeamLogo name={teamName} size={38} />
@@ -195,66 +193,55 @@ const DesktopNavigation = ({
           </Typography>
         </Stack>
 
-        <Box sx={{ flex: 1 }} />
+        <Box sx={{ flex: 1, minWidth: 0 }} />
 
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{
-            alignItems: 'center',
-          }}
+        <Typography
+          variant="body2"
+          sx={{ flexShrink: 0, whiteSpace: 'nowrap', fontWeight: 700 }}
         >
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              alignItems: 'center',
-            }}
-          >
-            <Typography sx={{ fontWeight: 600 }}>{data.info.currentYear}</Typography>
-            <Chip
-              label={currentStageInfo?.banner_label ?? data.currentStage}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
+          {calendar.year} {calendar.kind === 'season' ? 'Season' : 'Offseason'}
+        </Typography>
+        <Divider orientation="vertical" flexItem />
+
+        {calendar.kind === 'season' ? (
+          <>
+            <SeasonProgressDesktop
+              calendar={calendar}
+              advancing={advancing}
+              disabled={advanceDisabled}
+              onAdvanceToWeek={onAdvanceToWeek}
+              onOpenSummary={onOpenSummary}
             />
-          </Stack>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={onLiveSim}
+              disabled={advancing}
+              sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+            >
+              Live Sim
+            </Button>
+          </>
+        ) : (
+          <OffseasonFlowDesktop
+            calendar={calendar}
+            advancing={advancing}
+            disabled={advanceDisabled}
+            onSelectStage={onSelectFlowStage}
+            onStartSeason={onStartSeason}
+          />
+        )}
 
-          <Divider orientation="vertical" flexItem />
-
-          {data.currentStage === 'season' ? (
-            <>
-              <SeasonBanner info={data.info} />
-              <Button variant="outlined" size="small" onClick={onLiveSim}>
-                Live Sim
-              </Button>
-            </>
-          ) : (
-            currentStageInfo &&
-            nextStageInfo && (
-              <NonSeasonBanner
-                currentStage={currentStageInfo}
-                nextStage={nextStageInfo}
-                advancing={advancingStage}
-                disabled={advanceDisabled}
-                onAdvance={onAdvanceStage}
-                advanceActions={advanceActions}
-                advanceLabel={advanceLabel}
-              />
-            )
-          )}
-
-          <Stack direction="row" spacing={0.25}>
-            <Tooltip title="Home">
-              <IconButton
-                aria-label="Home"
-                onClick={() => navigate('/')}
-                sx={{ color: 'text.secondary' }}
-              >
-                <HomeIcon />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+        <Stack direction="row" spacing={0.25}>
+          <Tooltip title="Home">
+            <IconButton
+              aria-label="Home"
+              onClick={() => navigate('/')}
+              sx={{ color: 'text.secondary' }}
+            >
+              <HomeIcon />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </Toolbar>
       <Divider />

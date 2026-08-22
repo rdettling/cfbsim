@@ -23,34 +23,33 @@ import { TeamLogo } from '../team/TeamLogo';
 import {
   isGroupActive,
   isPathActive,
-  type AppNavigationData,
   type NavigationItem,
   type NavigationModel,
-  type StageInfo,
 } from './navigation';
+import type { LeagueCalendarModel } from './leagueCalendar';
 
 interface MobileNavigationDrawerProps {
   id: string;
   open: boolean;
   onClose: () => void;
-  data: AppNavigationData;
   teamName: string;
   model: NavigationModel;
   currentPath: string;
-  currentStageInfo?: StageInfo;
+  calendar: LeagueCalendarModel;
   onLiveSim: () => void;
+  actionsDisabled: boolean;
 }
 
 const MobileNavigationDrawer = ({
   id,
   open,
   onClose,
-  data,
   teamName,
   model,
   currentPath,
-  currentStageInfo,
+  calendar,
   onLiveSim,
+  actionsDisabled,
 }: MobileNavigationDrawerProps) => {
   const navigate = useNavigate();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -127,7 +126,7 @@ const MobileNavigationDrawer = ({
               color: 'text.secondary',
             }}
           >
-            {data.info.currentYear} · {currentStageInfo?.banner_label ?? data.currentStage}
+            {calendar.year} · {calendar.kind === 'season' ? 'Season' : 'Offseason'}
           </Typography>
         </Box>
         <IconButton aria-label="Close navigation" onClick={onClose}>
@@ -178,17 +177,12 @@ const MobileNavigationDrawer = ({
       </List>
       <Divider />
       <List subheader={<ListSubheader component="div">Actions and utilities</ListSubheader>}>
-        {data.currentStage === 'season' && (
-          <ListItemButton onClick={handleLiveSim}>
+        {calendar.kind === 'season' && (
+          <ListItemButton onClick={handleLiveSim} disabled={actionsDisabled}>
             <ListItemIcon>
               <PlayArrowIcon />
             </ListItemIcon>
             <ListItemText primary="Live Sim" />
-          </ListItemButton>
-        )}
-        {data.currentStage !== 'season' && currentStageInfo && (
-          <ListItemButton onClick={() => navigateAndClose(currentStageInfo.path)}>
-            <ListItemText primary={`Open ${currentStageInfo.label}`} />
           </ListItemButton>
         )}
         <ListItemButton onClick={() => navigateAndClose('/')}>

@@ -71,8 +71,6 @@ const Roster = () => {
         <>
           <TeamHeader
             team={data.team}
-            title="Roster"
-            subtitle={`${data.roster.length} players`}
             teamSelector={{
               teams: data.teams,
               onChange: (name) => navigate(`/${name}/roster`),

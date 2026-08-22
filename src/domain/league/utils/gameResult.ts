@@ -37,6 +37,11 @@ export const buildPreviousMatchups = ({
       year: game.year,
       week: game.weekPlayed,
       label: game.baseLabel,
+      site: game.neutralSite
+        ? 'neutral' as const
+        : game.homeTeamId === targetGame.teamAId
+          ? 'teamA-home' as const
+          : 'teamB-home' as const,
       teamAScore: targetTeamAIsGameTeamA ? game.scoreA ?? 0 : game.scoreB ?? 0,
       teamBScore: targetTeamAIsGameTeamA ? game.scoreB ?? 0 : game.scoreA ?? 0,
       winnerSide: game.winnerId === targetGame.teamAId
@@ -61,6 +66,11 @@ export const buildPreviousMatchups = ({
       year: game.year,
       week: game.weekPlayed,
       label: game.label,
+      site: game.location === 'Neutral'
+        ? 'neutral' as const
+        : game.location === 'Home'
+          ? 'teamA-home' as const
+          : 'teamB-home' as const,
       teamAScore: game.teamScore,
       teamBScore: game.opponentScore,
       winnerSide: game.teamScore > game.opponentScore

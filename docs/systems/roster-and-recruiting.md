@@ -77,7 +77,8 @@ Recruiting lasts six rounds. The player can:
 2. assign any portion of the weekly point budget;
 3. advance one round, allowing AI to spend the remaining feasible budget;
 4. review new commitments and public interest standings;
-5. continue through round six or use **Sim to End of Recruiting**.
+5. continue through round six or select the future **Results** stage in the
+   offseason navigation.
 
 The simulation action preserves the current round's submitted allocations,
 gives AI control of later rounds, resolves Signing Day, creates freshmen, and

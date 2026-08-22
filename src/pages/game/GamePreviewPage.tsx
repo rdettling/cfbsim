@@ -83,7 +83,6 @@ const GamePreviewPage = ({ data }: GamePreviewPageProps) => {
     <PreviousMatchupsPanel
       teamA={game.teamA}
       teamB={game.teamB}
-      awayTeamId={away.id}
       matchups={data.previousMatchups.rows}
       series={data.previousMatchups.series}
     />

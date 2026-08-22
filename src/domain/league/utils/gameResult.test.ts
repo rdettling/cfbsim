@@ -87,6 +87,7 @@ describe('buildPreviousMatchups', () => {
     expect(result.rows[0]).toMatchObject({
       teamAScore: 15,
       teamBScore: 25,
+      site: 'teamB-home',
       winnerSide: 'teamB',
       gameId: 6,
       source: 'simulated',
@@ -104,6 +105,7 @@ describe('buildPreviousMatchups', () => {
         year: 2025 - index,
         weekPlayed: 10,
         opponent: 'Beta',
+        location: 'Home' as const,
         teamScore: 30 - index,
         opponentScore: 20,
         label: 'Historical Matchup',
@@ -117,6 +119,7 @@ describe('buildPreviousMatchups', () => {
       rowKey: 'historical:1000',
       source: 'historical',
       gameId: null,
+      site: 'teamA-home',
       winnerSide: 'teamA',
     });
     expect(result.series).toEqual({ teamAWins: 7, teamBWins: 0, ties: 0 });
@@ -130,6 +133,7 @@ describe('buildPreviousMatchups', () => {
       { sourceId: 3, year: 2024, opponent: 'Gamma', label: 'Other opponent' },
     ].map(entry => ({
       weekPlayed: 1,
+      location: 'Neutral' as const,
       teamScore: 24,
       opponentScore: 17,
       ...entry,

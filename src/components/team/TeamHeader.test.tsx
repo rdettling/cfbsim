@@ -8,7 +8,6 @@ describe('TeamHeader season metrics', () => {
     const markup = renderToStaticMarkup(
       <TeamHeader
         team={buildTestTeam()}
-        title="Schedule"
         metrics={{
           record: '9-4',
           rating: null,

@@ -62,7 +62,9 @@ This allows one game to run interactively while the broader league state remains
 6. **Cross-page sync**
 - Closing a successfully completed live simulation dispatches the
   `pageDataRefresh` event.
-- Season advancement also dispatches `pageDataRefresh`.
+- The league-calendar navigation owns season advancement, serializes it with
+  live-simulation entry, and dispatches `pageDataRefresh` after a successful
+  in-season destination or a failed attempt that requires authoritative data.
 - Pages using `useDomainData` subscribe and refetch on this event.
 
 ```mermaid
@@ -174,5 +176,9 @@ sequenceDiagram
   - UI mapping helpers (`mapPlayRecord`, `buildDriveUi`, decision/header helpers)
 - `src/domain/hooks.ts`
   - shared refresh listener via `pageDataRefresh`
-- `src/components/layout/SeasonBanner.tsx`
-  - emits `pageDataRefresh` after week advancement
+- `src/components/layout/AppNavigation.tsx`
+  - owns the shared season/offseason action lock and cross-page refresh
+- `src/components/layout/SeasonProgressNavigation.tsx`
+  - presents desktop week destinations without owning simulation
+- `src/components/layout/SeasonProgressMobile.tsx`
+  - presents the compact week context and focus-managed destination drawer

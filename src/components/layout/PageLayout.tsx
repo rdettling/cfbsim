@@ -5,16 +5,14 @@ import AppShell from './AppShell';
 import FullPageLoading from './FullPageLoading';
 import type {
   AppNavigationData,
-  StageAdvanceAction,
+  OffseasonAdvanceContext,
 } from './navigation';
 
 export interface PageLayoutProps {
   loading: boolean;
   error: string | null;
   navbarData?: AppNavigationData;
-  onAdvanceStage?: () => void;
-  advanceActions?: StageAdvanceAction[];
-  advanceLabel?: string;
+  offseasonAdvanceContext?: OffseasonAdvanceContext;
   containerMaxWidth?: ContainerProps['maxWidth'];
   desktopViewportConstrained?: boolean;
   children: ReactNode;
@@ -24,9 +22,7 @@ export const PageLayout = ({
   loading,
   error,
   navbarData,
-  onAdvanceStage,
-  advanceActions,
-  advanceLabel,
+  offseasonAdvanceContext,
   containerMaxWidth = 'lg',
   desktopViewportConstrained = false,
   children,
@@ -43,9 +39,7 @@ export const PageLayout = ({
     return (
       <AppShell
         navigationData={navbarData}
-        onAdvanceStage={onAdvanceStage}
-        advanceActions={advanceActions}
-        advanceLabel={advanceLabel}
+        offseasonAdvanceContext={offseasonAdvanceContext}
         containerMaxWidth={containerMaxWidth}
         desktopViewportConstrained={desktopViewportConstrained}
       >

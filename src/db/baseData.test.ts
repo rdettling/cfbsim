@@ -43,6 +43,7 @@ const historicalTeamGames = {
     year: 2025,
     weekPlayed: 1,
     opponent: 'Beta',
+    location: 'Home' as const,
     teamScore: 24,
     opponentScore: 17,
     label: 'Non-Conference: Test vs Independent',

@@ -27,6 +27,17 @@ route metadata.
 `OffseasonAdvanceStage` excludes `recruiting` and `roster_cuts`, so the generic
 advance command cannot skip either command-managed lifecycle at compile time.
 
+`advanceOffseasonToStage` is the user-facing forward orchestrator. It accepts a
+later offseason destination or the active season, invokes the owning guarded
+command for every intervening transition, and stops at the selected stage. Each
+transition remains its own atomic commit, so a failed multi-stage request
+resumes from the last successfully committed authoritative stage.
+
+The application navigation presents the same annual state as a league calendar:
+season weeks use the existing `advanceWeeks` simulator, while offseason nodes
+use `advanceOffseasonToStage`. Navigation serializes those actions with live
+simulation and refreshes page loaders after season advancement.
+
 ## Transition Rules
 
 - Every command validates the persisted source stage.
@@ -64,6 +75,7 @@ Malformed league or roster data throws `LeagueDataIntegrityError`.
 - `src/constants/stages.ts`
 - `src/constants/routes.ts`
 - `src/domain/league/commands/stages.ts`
+- `src/domain/league/commands/offseasonFlow.ts`
 - `src/domain/league/commands/season.ts`
 - `src/domain/league/commands/recruiting.ts`
 - `src/domain/league/commands/rosterFinalization.ts`

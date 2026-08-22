@@ -354,6 +354,7 @@ describe('game history generation', () => {
       games: [{
         year: 2025,
         opponent: 'Southern Methodist',
+        location: 'Home',
         teamScore: 28,
         opponentScore: 14,
       }],

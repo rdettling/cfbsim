@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ROUTES } from '../../constants/routes';
+import { getOffseasonTargetYear } from '../../constants/stages';
 import type { LeagueStage } from '../../types/domain';
 import { buildTestLeague, buildTestTeam } from '../../test/fixtures';
 import {
@@ -11,6 +12,11 @@ import {
   type NavigationGroup,
   type NavigationItem,
 } from './navigation';
+import {
+  buildLeagueCalendarModel,
+  buildOffseasonFlowModel,
+  buildSeasonCalendarModel,
+} from './leagueCalendar';
 
 const leagueStages: LeagueStage[] = [
   'preseason',
@@ -24,6 +30,103 @@ const leagueStages: LeagueStage[] = [
 ];
 
 describe('application navigation', () => {
+  it.each([16, 17, 19])('builds the complete %s-week season rail', lastWeek => {
+    const calendar = buildSeasonCalendarModel(2026, 4, lastWeek);
+
+    expect(calendar.steps).toHaveLength(lastWeek);
+    expect(calendar.steps.slice(0, 3).every(step => step.state === 'completed')).toBe(true);
+    expect(calendar.steps[3].state).toBe('current');
+    expect(calendar.steps[4].state).toBe('future');
+    expect(calendar.steps[13].phase).toBe('regular-season');
+    expect(calendar.steps[14].phase).toBe('postseason');
+  });
+
+  it('builds season primary actions and forward destinations', () => {
+    const active = buildSeasonCalendarModel(2026, 4, 16);
+    expect(active.primaryAction).toEqual({
+      kind: 'advance',
+      label: 'Advance to Week 5',
+      targetWeek: 5,
+    });
+    expect(active.menuDestinations[0]).toEqual({
+      targetWeek: 5,
+      label: 'Sim to Week 5',
+      kind: 'week',
+    });
+    expect(active.menuDestinations[active.menuDestinations.length - 1]).toEqual({
+      targetWeek: 17,
+      label: 'End of Season',
+      kind: 'end',
+    });
+
+    const finalWeek = buildSeasonCalendarModel(2026, 16, 16);
+    expect(finalWeek.primaryAction).toEqual({
+      kind: 'advance',
+      label: 'Finish Season',
+      targetWeek: 17,
+    });
+    expect(finalWeek.menuDestinations).toEqual([{
+      targetWeek: 17,
+      label: 'End of Season',
+      kind: 'end',
+    }]);
+
+    const complete = buildSeasonCalendarModel(2026, 17, 16);
+    expect(complete.primaryAction).toEqual({
+      kind: 'summary',
+      label: 'Season Summary',
+    });
+    expect(complete.steps.every(step => step.state === 'completed')).toBe(true);
+  });
+
+  it('builds discriminated season and destination-year offseason calendars', () => {
+    const seasonLeague = buildTestLeague('season');
+    const season = buildLeagueCalendarModel({
+      team: seasonLeague.teams[0],
+      currentStage: seasonLeague.info.stage,
+      info: seasonLeague.info,
+      conferences: seasonLeague.conferences,
+    });
+    expect(season.kind).toBe('season');
+
+    const summaryLeague = buildTestLeague('summary');
+    summaryLeague.info.currentYear = 2026;
+    const offseason = buildLeagueCalendarModel({
+      team: summaryLeague.teams[0],
+      currentStage: summaryLeague.info.stage,
+      info: summaryLeague.info,
+      conferences: summaryLeague.conferences,
+    });
+    expect(offseason).toMatchObject({
+      kind: 'offseason',
+      year: 2027,
+      currentStage: 'summary',
+      currentPosition: 0,
+    });
+  });
+
+  it('builds completed, current, and future offseason steps', () => {
+    expect(buildOffseasonFlowModel('recruiting').map(step => [
+      step.label,
+      step.state,
+    ])).toEqual([
+      ['Summary', 'completed'],
+      ['Setup', 'completed'],
+      ['Progression', 'completed'],
+      ['Recruiting', 'current'],
+      ['Results', 'future'],
+      ['Roster Cuts', 'future'],
+      ['Scheduling', 'future'],
+    ]);
+  });
+
+  it('uses the destination season year throughout the flow', () => {
+    expect(getOffseasonTargetYear('summary', 2026)).toBe(2027);
+    expect(getOffseasonTargetYear('realignment', 2026)).toBe(2027);
+    expect(getOffseasonTargetYear('progression', 2027)).toBe(2027);
+    expect(getOffseasonTargetYear('preseason', 2027)).toBe(2027);
+  });
+
   it.each(leagueStages)('includes the dashboard during the %s stage', stage => {
     const league = buildTestLeague(stage);
 

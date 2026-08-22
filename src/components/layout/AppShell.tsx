@@ -4,14 +4,12 @@ import type { ReactNode } from 'react';
 import AppNavigation from './AppNavigation';
 import type {
   AppNavigationData,
-  StageAdvanceAction,
+  OffseasonAdvanceContext,
 } from './navigation';
 
 export interface AppShellProps {
   navigationData: AppNavigationData;
-  onAdvanceStage?: () => void;
-  advanceActions?: StageAdvanceAction[];
-  advanceLabel?: string;
+  offseasonAdvanceContext?: OffseasonAdvanceContext;
   containerMaxWidth?: ContainerProps['maxWidth'];
   desktopViewportConstrained?: boolean;
   children: ReactNode;
@@ -19,9 +17,7 @@ export interface AppShellProps {
 
 const AppShell = ({
   navigationData,
-  onAdvanceStage,
-  advanceActions,
-  advanceLabel,
+  offseasonAdvanceContext,
   containerMaxWidth = 'lg',
   desktopViewportConstrained = false,
   children,
@@ -41,9 +37,7 @@ const AppShell = ({
   >
     <AppNavigation
       data={navigationData}
-      onAdvanceStage={onAdvanceStage}
-      advanceActions={advanceActions}
-      advanceLabel={advanceLabel}
+      offseasonAdvanceContext={offseasonAdvanceContext}
     />
     {containerMaxWidth !== false ? (
       <Container

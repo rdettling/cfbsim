@@ -120,7 +120,7 @@ Inspect affected routes at approximately:
 
 | Need | Preferred Pattern |
 |---|---|
-| Application navigation | Sticky two-tier shell at `lg`; compact context bar and drawer below `lg` |
+| Application navigation | Sticky two-tier league-calendar shell at `lg`; compact calendar context and drawers below `lg` |
 | Full-width comparable data | Shared neutral `DataTable` with a sticky header and intentional scroll owner |
 | Narrow comparable data | Page-specific compact rows that preserve the important desktop fields |
 | Team identity and switching | Shared compact `TeamHeader` |
@@ -131,7 +131,8 @@ Inspect affected routes at approximately:
 | Mobile metric browsing | Metric selector with one focused leaderboard or expanded row |
 | Mobile roster browsing | Position-grouped sections |
 | Onboarding | Side-by-side desktop workspace; explicit local steps below `lg` |
-| Offseason actions | Stage-gated loader contract, guarded command, and authoritative route recovery |
+| Offseason actions | Persistent stage flow, guarded forward simulation, and authoritative route recovery |
+| Season actions | Compact week rail and a simple Advance menu with explicit future-week destinations |
 | Interactive recruiting | Board-first workspace at every breakpoint; prospect market and shared public prospect details in responsive dialogs |
 | Interactive roster cuts | Full active-roster selection with protected, recommended, selected, and blocked states |
 

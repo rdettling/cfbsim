@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  finalizeRoster,
   selectRosterCut,
   undoRosterCut,
 } from '../../domain/league/commands/rosterFinalization';
@@ -12,9 +10,7 @@ export const useRosterCutsActions = (
   data: RosterCutsPageData | null,
   refetch: () => Promise<void>,
 ) => {
-  const navigate = useNavigate();
   const [busyPlayerId, setBusyPlayerId] = useState<number | null>(null);
-  const [finalizing, setFinalizing] = useState(false);
   const [notice, setNotice] = useState<{
     severity: 'success' | 'error';
     message: string;
@@ -66,36 +62,10 @@ export const useRosterCutsActions = (
     }
   };
 
-  const completeRoster = async () => {
-    if (!guard || actionLock.current) return;
-    actionLock.current = true;
-    setFinalizing(true);
-    try {
-      const result = await finalizeRoster(guard);
-      navigate(result.route);
-    } catch (commandError) {
-      const stale = commandError instanceof RosterFinalizationConflictError;
-      setNotice({
-        severity: 'error',
-        message: stale
-          ? 'Roster cuts changed in another view. Authoritative selections were reloaded.'
-          : commandError instanceof Error
-            ? commandError.message
-            : 'The roster could not be finalized.',
-      });
-      if (stale) await refetch();
-    } finally {
-      actionLock.current = false;
-      setFinalizing(false);
-    }
-  };
-
   return {
     busyPlayerId,
-    finalizing,
     notice,
     setNotice,
     mutateCut,
-    completeRoster,
   };
 };

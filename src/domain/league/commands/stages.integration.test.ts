@@ -27,11 +27,14 @@ import {
 import {
   advanceRecruitingRound,
   finalizeRecruiting,
+  updateRecruitingBoard,
 } from './recruiting';
 import { finalizeRoster } from './rosterFinalization';
 import { loadRecruitingState } from '../../../db/recruitingRepo';
 import type { GameRecord } from '../../../types/db';
 import { buildCompletedSeasonArtifacts } from '../memory';
+import { advanceOffseasonToStage } from './offseasonFlow';
+import type { OffseasonFlowTarget } from '../../../constants/stages';
 
 const resetDatabase = async () => {
   const db = await getDb();
@@ -298,6 +301,95 @@ const loadPersistedLeague = async () => {
 
 describe('offseason lifecycle integration', () => {
   beforeEach(resetDatabase);
+
+  it.each([
+    'realignment',
+    'progression',
+    'recruiting',
+    'recruiting_summary',
+    'roster_cuts',
+    'preseason',
+    'season',
+  ] satisfies OffseasonFlowTarget[])(
+    'advances directly from summary to %s and stops there',
+    async target => {
+      await seedFullCycle();
+
+      const result = await advanceOffseasonToStage(target);
+      const league = await loadPersistedLeague();
+
+      expect(result).toMatchObject({
+        previousStage: 'summary',
+        currentStage: target,
+      });
+      expect(league.info.stage).toBe(target);
+      if (target === 'season') {
+        expect(league.scheduleBuilt).toBe(true);
+        expect(league.simInitialized).toBe(true);
+      }
+    },
+  );
+
+  it('resumes from the last committed stage after a later transition fails', async () => {
+    await seedFullCycle();
+    const db = await getDb();
+    const odds = await db.get('baseData', 'betting_odds');
+    if (!odds) throw new Error('Expected seeded betting-odds data.');
+    await db.delete('baseData', 'betting_odds');
+
+    await expect(
+      advanceOffseasonToStage('preseason'),
+    ).rejects.toThrow('Season reset data is unavailable');
+    expect((await loadPersistedLeague()).info.stage).toBe(
+      'roster_cuts',
+    );
+
+    await db.put('baseData', odds);
+    await expect(
+      advanceOffseasonToStage('preseason'),
+    ).resolves.toMatchObject({ currentStage: 'preseason' });
+    expect((await loadPersistedLeague()).info.stage).toBe('preseason');
+  });
+
+  it('honors visible current-round allocations before AI completes recruiting', async () => {
+    await seedFullCycle();
+    await advanceOffseasonToStage('recruiting');
+    const state = (await loadRecruitingState())!;
+    const prospectId = state.prospects[0].id;
+    await updateRecruitingBoard({
+      expectedStage: 'recruiting',
+      expectedYear: state.year,
+      expectedRound: state.round,
+      expectedVersion: state.version,
+      prospectIds: [prospectId],
+    });
+
+    await advanceOffseasonToStage('recruiting_summary', {
+      recruitingAllocations: { [prospectId]: 5 },
+    });
+
+    const finalized = (await loadRecruitingState())!;
+    const userInterest = finalized.prospects
+      .find(prospect => prospect.id === prospectId)!
+      .interest.find(interest => interest.teamId === 1)!;
+    expect(userInterest.lifetimePoints).toBeGreaterThanOrEqual(5);
+    expect((await loadPersistedLeague()).info.stage).toBe(
+      'recruiting_summary',
+    );
+  });
+
+  it('serializes concurrent flow requests without repeating a transition', async () => {
+    await seedFullCycle();
+
+    const results = await Promise.allSettled([
+      advanceOffseasonToStage('progression'),
+      advanceOffseasonToStage('progression'),
+    ]);
+
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
+    expect((await loadPersistedLeague()).info.stage).toBe('progression');
+  });
 
   it('advances a complete offseason with each mutation applied once', async () => {
     await seedFullCycle();

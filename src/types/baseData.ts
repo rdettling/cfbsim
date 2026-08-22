@@ -89,6 +89,7 @@ export interface HistoricalTeamGame {
   year: number;
   weekPlayed: number;
   opponent: string;
+  location: 'Home' | 'Away' | 'Neutral';
   teamScore: number;
   opponentScore: number;
   label: string;

@@ -133,12 +133,6 @@ const TeamStats = () => {
         >
           <TeamHeader
             team={data.team}
-            title="Statistics"
-            subtitle={
-              data.selectedYear === data.info.currentYear
-                ? `${data.selectedYear} season · Week ${data.info.currentWeek}`
-                : `${data.selectedYear} season · Final`
-            }
             teamSelector={{
               teams: data.teams,
               onChange: name => navigate(statsPath(name, data.selectedYear)),

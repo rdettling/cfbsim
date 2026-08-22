@@ -46,8 +46,6 @@ const TeamHistory = () => {
         <>
           <TeamHeader
             team={data.team}
-            title="History"
-            subtitle="Season-by-season program results"
             teamSelector={{
               teams: data.teams,
               onChange: (name) => navigate(`/${name}/history`),

@@ -28,6 +28,9 @@ interface RecruitingBoardProps {
   onRemove: (prospectId: number) => void;
   onAddRecruits: () => void;
   onClear: () => void;
+  advanceLabel: string;
+  advanceDisabled: boolean;
+  onAdvance: () => void;
 }
 
 export const RecruitingBoard = ({
@@ -45,6 +48,9 @@ export const RecruitingBoard = ({
   onRemove,
   onAddRecruits,
   onClear,
+  advanceLabel,
+  advanceDisabled,
+  onAdvance,
 }: RecruitingBoardProps) => {
   const allocated = Object.values(allocations).reduce(
     (total, points) => total + points,
@@ -177,9 +183,21 @@ export const RecruitingBoard = ({
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Weekly cap: {perProspectCap} per recruit
         </Typography>
-        <Button onClick={onClear} disabled={!editable || busy || allocated === 0}>
-          Clear Points
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Button
+            onClick={onClear}
+            disabled={!editable || busy || allocated === 0}
+          >
+            Clear Points
+          </Button>
+          <Button
+            variant="contained"
+            onClick={onAdvance}
+            disabled={advanceDisabled}
+          >
+            {advanceLabel}
+          </Button>
+        </Stack>
       </Stack>
     </Paper>
   );

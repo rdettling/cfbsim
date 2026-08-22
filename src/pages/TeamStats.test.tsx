@@ -168,7 +168,7 @@ describe('TeamStats page', () => {
     expect(markup).toContain('Georgia Bulldogs');
   });
 
-  it('renders an archived season as final without a preseason message', () => {
+  it('renders an archived season without a preseason message', () => {
     const data = buildData();
     mockUseDomainData.mockReturnValue({
       data: {
@@ -188,7 +188,7 @@ describe('TeamStats page', () => {
       </MemoryRouter>,
     );
 
-    expect(markup).toContain('2024 season · Final');
+    expect(markup).toContain('value="2024"');
     expect(markup).toContain('Season</label>');
     expect(markup).not.toContain('No games have been completed');
   });

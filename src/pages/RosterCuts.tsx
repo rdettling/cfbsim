@@ -43,11 +43,9 @@ const RosterCuts = () => {
     });
   const {
     busyPlayerId,
-    finalizing,
     notice,
     setNotice,
     mutateCut,
-    completeRoster,
   } = useRosterCutsActions(data, refetch);
 
   const players = useMemo(
@@ -84,14 +82,10 @@ const RosterCuts = () => {
               currentStage: data.info.stage,
               info: data.info,
               conferences: data.conferences,
-              advanceDisabled: busyPlayerId !== null || finalizing,
+              advanceDisabled: busyPlayerId !== null,
             }
           : undefined
       }
-      onAdvanceStage={
-        data?.cursor ? () => void completeRoster() : undefined
-      }
-      advanceLabel={finalizing ? 'Finalizing roster…' : undefined}
     >
       {data &&
         (data.info.stage !== 'roster_cuts' || !data.cursor ? (

@@ -20,23 +20,8 @@ const DashboardGameRow = ({ game, onTeamClick }: DashboardGameRowProps) => {
 
   return (
     <Box sx={{ p: 1.5 }}>
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Typography
-          variant="overline"
-          sx={{
-            color: 'text.secondary',
-          }}
-        >
-          Week {game.weekPlayed}
-        </Typography>
-        {isCompleted && (
+      {isCompleted && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Chip
             label={game.result}
             size="small"
@@ -44,14 +29,14 @@ const DashboardGameRow = ({ game, onTeamClick }: DashboardGameRowProps) => {
             variant="outlined"
             aria-label={game.result === 'W' ? 'Win' : 'Loss'}
           />
-        )}
-      </Stack>
+        </Box>
+      )}
       <Stack
         direction="row"
         spacing={1}
         sx={{
           alignItems: 'center',
-          mt: 0.75,
+          mt: isCompleted ? 0.75 : 0,
         }}
       >
         <TeamLogo name={opponent.name} size={34} />
@@ -190,16 +175,16 @@ export const DashboardGamesPanel = ({
 }: DashboardGamesPanelProps) => (
   <Stack spacing={1.5} sx={{ minHeight: 0, alignSelf: 'start' }}>
     <GamePanel
-      title="Previous Game"
-      ariaLabel="Previous game"
-      emptyMessage="No previous game is available."
+      title="Last Week"
+      ariaLabel="Last week"
+      emptyMessage="No game was played last week."
       game={previousGame}
       onTeamClick={onTeamClick}
     />
     <GamePanel
-      title="Current Game"
-      ariaLabel="Current game"
-      emptyMessage="No current game is available."
+      title="This Week"
+      ariaLabel="This week"
+      emptyMessage="No game is scheduled this week."
       game={currentGame}
       onTeamClick={onTeamClick}
     />

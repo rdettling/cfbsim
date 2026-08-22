@@ -24,7 +24,7 @@ const formatLocation = (location: RecentGame['location']) => {
 };
 
 const TeamRecentForm = ({ team, games }: TeamRecentFormProps) => (
-  <Box sx={{ minWidth: 0 }}>
+  <Box component="section" aria-label={`${team.name} recent form`} sx={{ minWidth: 0 }}>
     <Stack
       direction="row"
       spacing={0.75}
@@ -33,7 +33,7 @@ const TeamRecentForm = ({ team, games }: TeamRecentFormProps) => (
       }}
     >
       <TeamLogo name={team.name} size={24} />
-      <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
+      <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
         {team.name}
       </Typography>
     </Stack>
@@ -119,9 +119,16 @@ export const RecentFormPanel = ({
   awayGames,
   homeGames,
 }: RecentFormPanelProps) => (
-  <Box>
+  <Box
+    sx={{
+      display: 'grid',
+      gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+      columnGap: 1.25,
+      alignItems: 'stretch',
+    }}
+  >
     <TeamRecentForm team={awayTeam} games={awayGames} />
-    <Divider sx={{ my: 1.25 }} />
+    <Divider orientation="vertical" flexItem />
     <TeamRecentForm team={homeTeam} games={homeGames} />
   </Box>
 );

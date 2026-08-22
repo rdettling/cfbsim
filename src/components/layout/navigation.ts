@@ -1,4 +1,3 @@
-import type { StageDefinition } from '../../constants/stages';
 import { ROUTES } from '../../constants/routes';
 import type { Conference, Info, LeagueStage, Team } from '../../types/domain';
 
@@ -10,10 +9,8 @@ export interface AppNavigationData {
   advanceDisabled?: boolean;
 }
 
-export interface StageAdvanceAction {
-  label: string;
-  onSelect: () => void;
-  disabled?: boolean;
+export interface OffseasonAdvanceContext {
+  recruitingAllocations?: Record<number, number>;
 }
 
 export interface NavigationItem {
@@ -34,8 +31,6 @@ export interface NavigationGroup {
 export interface NavigationModel {
   entries: Array<NavigationItem | NavigationGroup>;
 }
-
-export type StageInfo = StageDefinition;
 
 const isTeamContextPath = (pathname: string) =>
   /^\/[^/]+\/(schedule|roster|stats|history)(?:\/|$)/i.test(

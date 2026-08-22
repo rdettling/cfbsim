@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { getStageRoute, STAGES } from '../../constants/stages';
 import {
   advanceRecruitingRound,
-  completeRecruitingWithAi,
   finalizeRecruiting,
   updateRecruitingBoard,
 } from '../../domain/league/commands/recruiting';
@@ -19,7 +18,7 @@ export type RecruitingNotice = {
   message: string;
 };
 
-const normalizedAllocations = (allocations: Record<number, number>) =>
+export const normalizedAllocations = (allocations: Record<number, number>) =>
   Object.fromEntries(
     Object.entries(allocations)
       .filter(([, points]) => points > 0)
@@ -71,7 +70,6 @@ export const useRecruitingWorkspace = (
   >({});
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<RecruitingNotice | null>(null);
-  const [confirmFinish, setConfirmFinish] = useState(false);
   const actionLock = useRef(false);
   const roundKey = useRef<string | null>(null);
 
@@ -243,20 +241,6 @@ export const useRecruitingWorkspace = (
     );
   };
 
-  const finishWithAi = () => {
-    if (!guard || !allocationsValid) return;
-    setConfirmFinish(false);
-    void runCommand(
-      () =>
-        completeRecruitingWithAi({
-          ...guard,
-          allocations: normalizedAllocations(draftAllocations),
-        }),
-      () => 'AI completed recruiting and Signing Day.',
-      { navigateOnSuccess: true },
-    );
-  };
-
   const resolveSigningDay = () => {
     if (!guard || guard.expectedRound !== 6) return;
     void runCommand(
@@ -287,11 +271,8 @@ export const useRecruitingWorkspace = (
     busy,
     notice,
     setNotice,
-    confirmFinish,
-    setConfirmFinish,
     changeBoard,
     advanceWeek,
-    finishWithAi,
     resolveSigningDay,
     showProspect,
     clearPoints: () => setDraftAllocations({}),

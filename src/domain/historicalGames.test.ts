@@ -54,7 +54,13 @@ describe('historical games data', () => {
         year: 2000,
         games: [
           game(),
-          game({ sourceId: 20, weekPlayed: 2, homeScore: 21, awayScore: 24 }),
+          game({
+            sourceId: 20,
+            weekPlayed: 2,
+            homeScore: 21,
+            awayScore: 24,
+            neutralSite: true,
+          }),
         ],
       }],
       new Set(['Texas Christian', 'Southern Methodist', 'New Program']),
@@ -70,10 +76,15 @@ describe('historical games data', () => {
       expect.objectContaining({
         sourceId: 20,
         opponent: 'Southern Methodist',
+        location: 'Neutral',
         teamScore: 21,
         opponentScore: 24,
       }),
       expect.objectContaining({ sourceId: 10, teamScore: 28, opponentScore: 14 }),
+    ]);
+    expect(lookups[1].games).toEqual([
+      expect.objectContaining({ sourceId: 20, location: 'Neutral' }),
+      expect.objectContaining({ sourceId: 10, location: 'Away' }),
     ]);
     expect(validateHistoricalGamesForTeam(
       lookups[2],
@@ -92,6 +103,7 @@ describe('historical games data', () => {
         year: 2000,
         weekPlayed: 1,
         opponent: 'Southern Methodist',
+        location: 'Home',
         teamScore: 28,
         opponentScore: 14,
         label: 'Conference: CUSA',

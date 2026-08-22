@@ -9,10 +9,7 @@ export const DashboardNewsPanel = ({ stories }: { stories: NewsItem[] }) => (
   <DashboardPanel title="League News" ariaLabel="National league news">
     {stories.length ? (
       <Stack divider={<Divider flexItem />}>
-        <Box sx={{ p: 1.75 }}>
-          <NewsStoryCard story={stories[0]} lead />
-        </Box>
-        {stories.slice(1).map(story => (
+        {stories.map(story => (
           <Box key={story.id} sx={{ p: 1.5, '&:hover': { bgcolor: 'action.hover' } }}>
             <NewsStoryCard story={story} />
           </Box>

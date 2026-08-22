@@ -15,8 +15,6 @@ import { ConferenceLogo, TeamLogo } from './TeamLogo';
 
 type TeamHeaderProps = {
   team: Team;
-  title: string;
-  subtitle?: ReactNode;
   metrics?: Pick<Team, 'record' | 'prestige'> & {
     rating: number | null;
     ranking?: number;
@@ -31,8 +29,6 @@ type TeamHeaderProps = {
 
 export const TeamHeader = ({
   team,
-  title,
-  subtitle,
   metrics,
   teamSelector,
   controls,
@@ -89,29 +85,6 @@ export const TeamHeader = ({
               {ranking > 0 && `#${ranking} `}
               {team.name} {team.mascot}
             </Typography>
-            <Stack
-              direction="row"
-              spacing={0.75}
-              sx={{
-                alignItems: 'baseline',
-                mt: 0.35,
-                flexWrap: 'wrap',
-                rowGap: 0.25,
-              }}
-            >
-              <Typography
-                component="h2"
-                variant="body1"
-                sx={{ fontWeight: 600, lineHeight: 1.35 }}
-              >
-                {title}
-              </Typography>
-              {subtitle && (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {subtitle}
-                </Typography>
-              )}
-            </Stack>
             <Stack
               direction="row"
               spacing={0.75}

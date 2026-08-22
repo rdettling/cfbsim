@@ -68,6 +68,7 @@ export interface PreviousMatchup {
   year: number;
   week: number;
   label: string;
+  site: 'teamA-home' | 'teamB-home' | 'neutral';
   teamAScore: number;
   teamBScore: number;
   winnerSide: 'teamA' | 'teamB' | null;

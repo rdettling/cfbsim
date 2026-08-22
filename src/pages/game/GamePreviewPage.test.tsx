@@ -76,6 +76,7 @@ describe('GamePreviewPage', () => {
           year: 2025,
           week: 8,
           label: 'Rivalry Game',
+          site: 'teamB-home',
           teamAScore: 27,
           teamBScore: 24,
           winnerSide: 'teamA',

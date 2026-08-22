@@ -10,7 +10,6 @@ type PreviousMatchup = GamePageData['previousMatchups']['rows'][number];
 type PreviousMatchupsPanelProps = {
   teamA: Team;
   teamB: Team;
-  awayTeamId: number;
   matchups: PreviousMatchup[];
   series: GamePageData['previousMatchups']['series'];
 };
@@ -18,15 +17,11 @@ type PreviousMatchupsPanelProps = {
 export const PreviousMatchupsPanel = ({
   teamA,
   teamB,
-  awayTeamId,
   matchups,
   series,
 }: PreviousMatchupsPanelProps) => {
   if (matchups.length === 0) return null;
 
-  const awayIsTeamA = awayTeamId === teamA.id;
-  const awayTeam = awayIsTeamA ? teamA : teamB;
-  const homeTeam = awayIsTeamA ? teamB : teamA;
   const tiesSuffix = series.ties > 0 ? `–${series.ties}` : '';
   const seriesSummary = series.teamAWins === series.teamBWins
     ? `Series · Tied ${series.teamAWins}–${series.teamBWins}${tiesSuffix}`
@@ -47,15 +42,22 @@ export const PreviousMatchupsPanel = ({
     >
       <Stack divider={<Divider flexItem />}>
         {matchups.map(matchup => {
-          const awayScore = awayIsTeamA ? matchup.teamAScore : matchup.teamBScore;
-          const homeScore = awayIsTeamA ? matchup.teamBScore : matchup.teamAScore;
-          const awayWon = awayIsTeamA
+          const teamAIsLeft = matchup.site !== 'teamA-home';
+          const leftTeam = teamAIsLeft ? teamA : teamB;
+          const rightTeam = teamAIsLeft ? teamB : teamA;
+          const leftScore = teamAIsLeft ? matchup.teamAScore : matchup.teamBScore;
+          const rightScore = teamAIsLeft ? matchup.teamBScore : matchup.teamAScore;
+          const leftWon = teamAIsLeft
             ? matchup.winnerSide === 'teamA'
             : matchup.winnerSide === 'teamB';
-          const homeWon = awayIsTeamA
+          const rightWon = teamAIsLeft
             ? matchup.winnerSide === 'teamB'
             : matchup.winnerSide === 'teamA';
           const hasWinner = matchup.winnerSide !== null;
+          const separator = matchup.site === 'neutral' ? 'vs' : '@';
+          const matchupAriaLabel = matchup.site === 'neutral'
+            ? `${matchup.year} week ${matchup.week}: ${leftTeam.name} ${leftScore} versus ${rightTeam.name} ${rightScore}, neutral site`
+            : `${matchup.year} week ${matchup.week}: away ${leftTeam.name} ${leftScore} at home ${rightTeam.name} ${rightScore}`;
 
           const teamIdentity = (team: Team, won: boolean, align: 'left' | 'right') => (
             <Box
@@ -149,11 +151,16 @@ export const PreviousMatchupsPanel = ({
                   minHeight: 32,
                 }}
               >
-                {teamIdentity(awayTeam, awayWon, 'left')}
-                {score(awayScore, awayWon)}
-                <Typography variant="caption" sx={{ color: 'text.disabled' }}>–</Typography>
-                {score(homeScore, homeWon)}
-                {teamIdentity(homeTeam, homeWon, 'right')}
+                {teamIdentity(leftTeam, leftWon, 'left')}
+                {score(leftScore, leftWon)}
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.disabled', fontWeight: 600, textAlign: 'center' }}
+                >
+                  {separator}
+                </Typography>
+                {score(rightScore, rightWon)}
+                {teamIdentity(rightTeam, rightWon, 'right')}
               </Box>
             </>
           );
@@ -172,6 +179,7 @@ export const PreviousMatchupsPanel = ({
               key={matchup.rowKey}
               component={RouterLink}
               to={`/game/${matchup.gameId}`}
+              aria-label={matchupAriaLabel}
               sx={{
                 ...rowStyles,
                 '&:hover': { bgcolor: 'action.hover' },
@@ -185,7 +193,7 @@ export const PreviousMatchupsPanel = ({
               {content}
             </Box>
           ) : (
-            <Box key={matchup.rowKey} sx={rowStyles}>
+            <Box key={matchup.rowKey} aria-label={matchupAriaLabel} sx={rowStyles}>
               {content}
             </Box>
           );
