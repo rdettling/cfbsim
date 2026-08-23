@@ -17,7 +17,6 @@ export const buildRecruitingProspect = (
   ratingSo: 75,
   ratingJr: 79,
   ratingSr: 82,
-  developmentTrait: 3,
   publicRatingMin: 65,
   publicRatingMax: 75,
   preferenceWeights: {

@@ -1,8 +1,8 @@
-import { getNamesData, getStatesData } from '../db/baseData';
+import { getHistoryData, getNamesData, getStatesData } from '../db/baseData';
 import type { PlayerRecord } from '../types/db';
 import type { Team } from '../types/domain';
 import type { LeagueState } from '../types/league';
-import type { NamesData } from '../types/baseData';
+import type { HistoryData, NamesData } from '../types/baseData';
 import {
   RECRUIT_STAR_COUNTS,
   type RecruitStarCounts,
@@ -19,7 +19,15 @@ import {
   setStarters,
 } from './rosterRatings';
 
-const CLASS_YEARS = 4;
+const BOOTSTRAP_CLASSES = ['sr', 'jr', 'so', 'fr'] as const;
+type BootstrapClass = typeof BOOTSTRAP_CLASSES[number];
+
+const CLASS_ENTRY_YEAR_OFFSETS: Record<BootstrapClass, number> = {
+  fr: 0,
+  so: -1,
+  jr: -2,
+  sr: -3,
+};
 
 const nextPlayerId = (league: LeagueState) => {
   const id = league.idCounters.player;
@@ -28,29 +36,56 @@ const nextPlayerId = (league: LeagueState) => {
 };
 
 export const buildBootstrapClassTargets = () => {
-  const targets = Array.from({ length: CLASS_YEARS }, () =>
+  const targets = Array.from({ length: BOOTSTRAP_CLASSES.length }, () =>
     Object.fromEntries(
       Object.keys(ROSTER).map(position => [position, 0]),
     ) as Record<string, number>,
   );
   let classCursor = 0;
   Object.entries(ROSTER).forEach(([position, config]) => {
-    const base = Math.floor(config.total / CLASS_YEARS);
+    const base = Math.floor(config.total / BOOTSTRAP_CLASSES.length);
     targets.forEach(target => {
       target[position] = base;
     });
-    const remainder = config.total % CLASS_YEARS;
+    const remainder = config.total % BOOTSTRAP_CLASSES.length;
     for (let index = 0; index < remainder; index += 1) {
-      targets[(classCursor + index) % CLASS_YEARS][position] += 1;
+      targets[(classCursor + index) % BOOTSTRAP_CLASSES.length][position] += 1;
     }
-    classCursor = (classCursor + remainder) % CLASS_YEARS;
+    classCursor = (classCursor + remainder) % BOOTSTRAP_CLASSES.length;
   });
   return targets;
 };
 
+export const buildBootstrapPrestigesByClass = (
+  teams: Team[],
+  historyData: HistoryData,
+  startYear: number,
+) => Object.fromEntries(teams.map(team => {
+  const history = (historyData.teams[team.name] ?? [])
+    .filter(([year]) => year < startYear);
+  const resolveUpperclassPrestige = (classYear: BootstrapClass) => {
+    const targetYear = startYear + CLASS_ENTRY_YEAR_OFFSETS[classYear];
+    const nearest = [...history].sort(
+      ([leftYear], [rightYear]) =>
+        Math.abs(leftYear - targetYear) - Math.abs(rightYear - targetYear) ||
+        leftYear - rightYear,
+    )[0];
+    return nearest?.[5] ?? team.prestige;
+  };
+  return [team.id, {
+    fr: team.prestige,
+    so: resolveUpperclassPrestige('so'),
+    jr: resolveUpperclassPrestige('jr'),
+    sr: resolveUpperclassPrestige('sr'),
+  }];
+})) as Record<number, Record<BootstrapClass, number>>;
+
 const buildClassTargets = (teams: Team[], cycle: number) => {
-  const targets = buildBootstrapClassTargets()[cycle];
-  return Object.fromEntries(teams.map(team => [team.id, { ...targets }]));
+  const targets = buildBootstrapClassTargets();
+  return Object.fromEntries(teams.map(team => [
+    team.id,
+    { ...targets[(cycle + team.id) % targets.length] },
+  ]));
 };
 
 const buildTeamNeeds = (teams: Team[], players: PlayerRecord[]) => {
@@ -114,7 +149,6 @@ const recruitClass = (
         rating_jr: candidate.rating_jr,
         rating_sr: candidate.rating_sr,
         stars: candidate.stars,
-        development_trait: candidate.development_trait,
         starter: false,
       });
     });
@@ -147,6 +181,7 @@ const progressBootstrapClass = (players: PlayerRecord[]) => {
 
 export interface PrepareInitialRostersFromDataInput {
   league: LeagueState;
+  historyData: HistoryData;
   names: NamesData;
   states: Record<string, number>;
   random: RandomSource;
@@ -154,27 +189,31 @@ export interface PrepareInitialRostersFromDataInput {
 }
 
 export interface PrepareProgramEntryRostersFromDataInput
-  extends PrepareInitialRostersFromDataInput {
+  extends Omit<PrepareInitialRostersFromDataInput, 'historyData'> {
   teams: Team[];
 }
 
 const prepareBootstrapRosters = ({
   league,
   teams,
-  competitionTeams = teams,
+  competitionTeamsByClass,
   names,
   states,
   random,
   starCounts,
-}: PrepareProgramEntryRostersFromDataInput & { competitionTeams?: Team[] }) => {
+}: PrepareProgramEntryRostersFromDataInput & {
+  competitionTeamsByClass: Record<BootstrapClass, Team[]>;
+}) => {
   const players: PlayerRecord[] = [];
   const stateNames = Object.keys(states);
   const availableStates = stateNames.length ? stateNames : ['Unknown'];
   const stateWeights = stateNames.length
     ? stateNames.map(state => states[state])
     : [1];
-  for (let cycle = 0; cycle < CLASS_YEARS; cycle += 1) {
+  for (let cycle = 0; cycle < BOOTSTRAP_CLASSES.length; cycle += 1) {
     if (cycle > 0) progressBootstrapClass(players);
+    const classYear = BOOTSTRAP_CLASSES[cycle];
+    const competitionTeams = competitionTeamsByClass[classYear];
     recruitClass(
       league,
       competitionTeams,
@@ -194,24 +233,35 @@ const prepareBootstrapRosters = ({
 
 export const prepareInitialRostersFromData = ({
   league,
+  historyData,
   names,
   states,
   random,
   starCounts = RECRUIT_STAR_COUNTS,
 }: PrepareInitialRostersFromDataInput) => {
+  const prestigesByClass = buildBootstrapPrestigesByClass(
+    league.teams,
+    historyData,
+    league.info.startYear,
+  );
   const players = prepareBootstrapRosters({
     league,
     teams: league.teams,
+    competitionTeamsByClass: Object.fromEntries(
+      BOOTSTRAP_CLASSES.map(classYear => [
+        classYear,
+        league.teams.map(team => ({
+          ...team,
+          prestige: prestigesByClass[team.id][classYear],
+        })),
+      ]),
+    ) as Record<BootstrapClass, Team[]>,
     names,
     states,
     random,
     starCounts,
   });
-  recalculateTeamRatings(
-    league.teams,
-    players,
-    random.fork('team-ratings'),
-  );
+  recalculateTeamRatings(league.teams, players);
   return players;
 };
 
@@ -226,17 +276,15 @@ export const prepareProgramEntryRostersFromData = ({
   const players = prepareBootstrapRosters({
     league,
     teams,
-    competitionTeams: league.teams,
+    competitionTeamsByClass: Object.fromEntries(
+      BOOTSTRAP_CLASSES.map(classYear => [classYear, league.teams]),
+    ) as Record<BootstrapClass, Team[]>,
     names,
     states,
     random,
     starCounts,
   });
-  recalculateTeamStrengths(
-    teams,
-    players,
-    random.fork('team-ratings'),
-  );
+  recalculateTeamStrengths(teams, players);
   return players;
 };
 
@@ -257,9 +305,13 @@ export const prepareProgramEntryRosters = async (
 };
 
 export const prepareInitialRosters = async (league: LeagueState) => {
-  const source = await loadSourceData();
+  const [source, historyData] = await Promise.all([
+    loadSourceData(),
+    getHistoryData(),
+  ]);
   return prepareInitialRostersFromData({
     league,
+    historyData,
     names: source.names,
     states: Object.fromEntries(
       source.states.map((state, index) => [state, source.weights[index]]),

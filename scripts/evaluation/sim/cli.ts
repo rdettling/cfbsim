@@ -1,6 +1,7 @@
 export interface SimulationEvaluationOptions {
   seed: number;
   gamesPerDiff: number;
+  ratingDifferences?: readonly number[];
 }
 
 const parseInteger = (
@@ -19,6 +20,22 @@ const parseInteger = (
   return parsed;
 };
 
+const parseRatingDifferences = (value: string | undefined) => {
+  if (!value) {
+    throw new Error('--rating-differences must be comma-separated integers from -74 through 74.');
+  }
+  const values = value.split(',').map(entry => entry.trim());
+  if (values.some(entry => !/^-?\d+$/.test(entry))) {
+    throw new Error('--rating-differences must be comma-separated integers from -74 through 74.');
+  }
+  const parsed = values.map(Number);
+  if (parsed.some(entry => entry < -74 || entry > 74)
+    || new Set(parsed).size !== parsed.length) {
+    throw new Error('--rating-differences must contain unique values from -74 through 74.');
+  }
+  return parsed;
+};
+
 export const parseSimulationEvaluationArguments = (
   arguments_: string[],
 ): SimulationEvaluationOptions => {
@@ -32,6 +49,8 @@ export const parseSimulationEvaluationArguments = (
     if (name === '--seed') options.seed = parseInteger(name, value, 1, 0xffff_ffff);
     else if (name === '--games-per-diff') {
       options.gamesPerDiff = parseInteger(name, value, 1, 100_000);
+    } else if (name === '--rating-differences') {
+      options.ratingDifferences = parseRatingDifferences(value);
     } else throw new Error(`Unknown simulation evaluation argument: ${name ?? '(missing)'}.`);
   }
   return options;

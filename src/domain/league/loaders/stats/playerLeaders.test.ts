@@ -77,10 +77,10 @@ describe('loadPlayerLeaders', () => {
       }),
     ]);
     vi.mocked(getAllHistoricalPlayers).mockResolvedValue([
-      { id: 10, first: 'Transfer', last: 'Quarterback', pos: 'qb', stars: 4, development_trait: 3 },
-      { id: 11, first: 'Reserve', last: 'Runner', pos: 'rb', stars: 3, development_trait: 2 },
-      { id: 12, first: 'Retired', last: 'Receiver', pos: 'wr', stars: 3, development_trait: 2 },
-      { id: 13, first: 'Wrong', last: 'Year', pos: 'qb', stars: 3, development_trait: 2 },
+      { id: 10, first: 'Transfer', last: 'Quarterback', pos: 'qb', stars: 4 },
+      { id: 11, first: 'Reserve', last: 'Runner', pos: 'rb', stars: 3 },
+      { id: 12, first: 'Retired', last: 'Receiver', pos: 'wr', stars: 3 },
+      { id: 13, first: 'Wrong', last: 'Year', pos: 'qb', stars: 3 },
     ]);
 
     const result = await loadPlayerLeaders(2024);

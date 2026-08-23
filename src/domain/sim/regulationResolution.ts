@@ -14,7 +14,11 @@ import {
   resetSecondHalfTimeouts,
 } from './clockManagement';
 import type { TimeoutRequest } from './clock';
-import { resolveOvertimeTiming, resolveRegulationTiming } from './clock';
+import {
+  resolveOvertimeTiming,
+  resolveRegulationTiming,
+  sampleGameRunoffMultiplier,
+} from './clock';
 import {
   chooseOffensiveCall,
   isOffensiveConcept,
@@ -249,7 +253,7 @@ export const resolveRegulationStep = (
       tempo,
       clockAction,
       timeoutRequest: requestedTimeoutAfter,
-    });
+    }, sampleGameRunoffMultiplier(game));
     play.timing = result.timing;
     if (result.timing.chargedTimeoutAfter) {
       const team = result.timing.chargedTimeoutAfter === 'offense' ? offense : defense;

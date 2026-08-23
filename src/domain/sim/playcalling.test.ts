@@ -50,7 +50,7 @@ describe('automatic offensive decisions', () => {
     [51, 4, { kind: 'special_teams', concept: 'punt' }],
     [62, 3, { kind: 'scrimmage', offense: 'auto' }],
     [62, 4, { kind: 'special_teams', concept: 'punt' }],
-    [63, 4, { kind: 'scrimmage', offense: 'auto' }],
+    [63, 4, { kind: 'special_teams', concept: 'field_goal' }],
     [63, 5, { kind: 'special_teams', concept: 'field_goal' }],
   ] as const)(
     'preserves the normal fourth-down chart at field position %i and distance %i',

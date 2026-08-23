@@ -5,7 +5,7 @@ import { RosterFinalizationRuleError } from '../types/roster';
 import { validateNamesData } from './baseDataValidation';
 import {
   generateName,
-  generatePlayerRatings,
+  generateWalkOnRatings,
 } from './recruiting/generation';
 import { createSeededRandom } from './utils/random';
 import { buildWalkOnOrigins } from './playerOrigins';
@@ -169,7 +169,7 @@ export const generateWalkOns = ({
         `walk-on:${year}:${team.id}:${slot}`,
       );
       const name = generateName(position, names, random.fork('name'));
-      const ratings = generatePlayerRatings(1, random.fork('ratings'));
+      const ratings = generateWalkOnRatings(random.fork('ratings'));
       additions.push({
         id: cursor,
         teamId: team.id,
@@ -182,7 +182,6 @@ export const generateWalkOns = ({
         rating_jr: ratings.jr,
         rating_sr: ratings.sr,
         stars: 1,
-        development_trait: ratings.developmentTrait,
         starter: false,
       });
       cursor += 1;

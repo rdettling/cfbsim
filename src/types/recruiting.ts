@@ -69,7 +69,6 @@ export interface RecruitingProspect {
   ratingSo: number;
   ratingJr: number;
   ratingSr: number;
-  developmentTrait: number;
   publicRatingMin: number;
   publicRatingMax: number;
   preferenceWeights: RecruitingPreferenceWeights;

@@ -19,10 +19,69 @@ commitments and class rankings. Lifecycle and roster rules belong in
 
 ## Public Talent
 
-Prospects receive exact freshman and future ratings from the distribution for
-their star tier. Those ratings and development traits remain hidden during
-recruiting. A hidden ten-point estimate around the freshman rating orders
-prospects within each star tier; only the resulting national rank is public.
+Every ranked prospect begins on one national latent-talent continuum rather
+than inside a star-specific rating distribution. Freshman talent maps through
+the following 25–99 percentile curve:
+
+| National percentile | Freshman rating |
+| ---: | ---: |
+| 0 | 25 |
+| 1 | 27 |
+| 5 | 29 |
+| 10 | 29 |
+| 25 | 34 |
+| 50 | 50 |
+| 75 | 60 |
+| 90 | 69 |
+| 95 | 76 |
+| 99 | 86 |
+| 99.8 | 92 |
+| 99.98 | 96 |
+| 99.998 | 98 |
+| 99.9995 | 99 |
+| 99.99995 | 99 |
+| 100 | 99 |
+
+The extreme tail rises more slowly from 86 through 99 so ratings of 95 and
+above remain nationally exceptional. Standard one-star walk-ons use a
+lower entry draw of `Normal(-1.60, 0.35)` and a below-average development draw
+of `Normal(-0.90, 1)`. This preserves occasional walk-on breakouts without
+making their senior expectation exceed a ranked two-star's.
+
+Each prospect also receives an independent standard-normal development value.
+Senior latent talent preserves strong career correlation while allowing
+development outliers:
+
+```text
+senior latent talent =
+  0.30 × freshman latent talent
+  + sqrt(1 − 0.30²) × development
+```
+
+Senior talent maps to a separate curve whose 50th, 90th, 95th, and 99th
+percentiles are 66, 84, 89, and 93. Every whole rating point of career growth
+is independently assigned to the freshman-to-sophomore,
+sophomore-to-junior, or junior-to-senior transition with 50%, 35%, and 15%
+probability. Those are national timing expectations rather than a fixed path
+for an individual. Ratings do not decline, and only the resulting four class
+ratings persist.
+
+Stars are scouting labels assigned after the full national pool is generated.
+The configured exact counts receive five through two stars in descending order
+of:
+
+```text
+scouting score =
+  0.50 × freshman latent talent
+  + 0.50 × senior latent talent
+  + Normal(0, 0.55)
+```
+
+This keeps stars strongly informative while permitting adjacent-tier overlap,
+misses, and breakouts. The scouting order is the public national rank. Exact
+freshman and future ratings, along with the scouting inputs, remain hidden
+during recruiting. A hidden ten-point range containing the freshman rating is
+retained with the prospect and later becomes recruiting history.
 
 AI public talent value uses the same visible stars and within-star national
 rank available to the player:
@@ -33,8 +92,16 @@ public talent =
   + 0.10 × within-star national-rank percentile
 ```
 
-Playing-time fit uses the common expected freshman rating for the star tier,
-not a prospect-specific hidden estimate.
+Playing-time fit uses the common expected freshman rating for the public star
+label, not a prospect-specific hidden estimate:
+
+| Stars | Expected freshman rating |
+| ---: | ---: |
+| 1 | 30 |
+| 2 | 30 |
+| 3 | 50 |
+| 4 | 67 |
+| 5 | 79 |
 
 ## Team Fit
 
@@ -53,8 +120,22 @@ elite prestige fit = 100 × ((prestige − 1) / 6)²
 elite fit = 0.10 × ordinary fit + 0.90 × elite prestige fit
 ```
 
-This curve concentrates elite talent without eligibility cutoffs. A shortage
-of starters receives hard AI priority only for three- and two-star targets.
+Three-star prospects use a strong linear prestige blend:
+
+```text
+three-star fit = 0.35 × ordinary fit + 0.65 × prestige fit
+```
+
+These curves preserve program-quality separation as generated classes replace
+bootstrap rosters without creating eligibility cutoffs. Two- and one-star fit
+remains entirely preference-driven. A shortage of starters receives hard AI
+priority only for three- and two-star targets.
+
+Initial-roster allocation reuses these prestige shapes rather than annual
+rounds and point spending: elite recruits receive the nonlinear signal,
+three-stars receive a strong linear signal, and lower labels receive a weaker
+linear signal. Seeded individual preference noise and a willing-destination
+set create overlap without assigning or targeting any team's eventual rating.
 
 ## AI Strategy
 
@@ -110,16 +191,52 @@ Repeated seeded evaluation checks:
 
 Signing Day share, meaningful contention, low-prestige elite share, class-size
 distribution, score ties, and unsigned supply are diagnostics rather than
-single-season quotas. Run the production evaluator with:
+single-season quotas. Each team-season also records offense, defense, overall,
+roster-mean, and the 23 non-specialist starters that contribute to the team
+rating, including their elite-rating counts. These diagnostics expose how the
+player distribution becomes the mature roster and team-rating distribution
+without involving game simulation. Run the production evaluator with:
+
+Mature-roster overlap is measured as the share of within-season team pairs in
+which the lower-prestige team has the strictly higher overall rating. Ties are
+reported separately. Initial diagnostic targets express the intended product
+shape without acting as recruiting acceptance gates:
+
+| Prestige gap | Lower tier rated higher |
+| ---: | ---: |
+| 1 | 20–35% |
+| 2 | 5–15% |
+| 3 | 0–2% |
+
+Larger gaps remain visible diagnostics. These comparisons use absolute team
+ratings and never normalize a league's best or worst roster to a fixed endpoint.
 
 ```bash
 npm run eval:recruiting-balance -- \
   --seed 20260727 --seeds 3 --seasons 4 --replay-seeds 1
 ```
 
+The deterministic player-rating audit owns the national 90+, 95+, 98+, and 99
+rarity bands, class percentiles, star-label means, monotonic development,
+50%/35%/15% timing shares, three-star-over-five-star senior crossover, and
+walk-on ordering. Its multi-league active-roster report also records initial
+team-rating percentiles, star composition, and lower-prestige rating inversions
+for direct comparison with the mature-roster recruiting diagnostics:
+
+| Rating | Players per active league |
+| ---: | ---: |
+| 90+ | 200–300 |
+| 95+ | 25–50 |
+| 98+ | 3–8 |
+| 99 | 0–2 |
+
+```bash
+npm run eval:player-ratings
+```
+
 ## Invariants
 
-- AI receives no exact ratings, future ratings, development traits, or hidden
+- AI receives no exact ratings, future ratings, or hidden
   bonuses.
 - All teams use the same public talent, fit, capacity, and commitment rules.
 - New AI admissions are exclusive; existing and player-created competition is
@@ -129,6 +246,8 @@ npm run eval:recruiting-balance -- \
 
 ## Source Map
 
+- `src/domain/recruiting/generation.ts`
+- `src/domain/recruiting/config.ts`
 - `src/domain/recruiting/publicValue.ts`
 - `src/domain/recruiting/fit.ts`
 - `src/domain/recruiting/aiCandidates.ts`
@@ -140,3 +259,4 @@ npm run eval:recruiting-balance -- \
 - `scripts/evaluation/recruiting/evaluationSeason.ts`
 - `scripts/evaluation/recruiting/evaluationMetrics.ts`
 - `scripts/eval_recruiting_balance.ts`
+- `scripts/eval_player_ratings.ts`

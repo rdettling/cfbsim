@@ -44,7 +44,11 @@ findings may remain diagnostic when the owning subsystem document says so.
 | Command | Use |
 | --- | --- |
 | `npm run eval:sim` | Simulation state, football relationships, rating authority, production diagnostics, and replay |
+| `npm run eval:box-scores` | Mixed-strength regular-season production, national score distributions, causal metric groups, and seed-block variation |
+| `npm run eval:season-balance -- --profile smoke` | Fast full-season structure, ranking-independent balance, ranked-record and Prestige 7 diagnostics, and national-margin guardrails |
+| `npm run eval:season-balance -- --profile acceptance` | Representative 40-season competitive-balance audit with deterministic replay |
 | `npm run eval:sim-stability` | Held-out tuning stability and parameter sensitivity |
+| `npm run eval:player-ratings` | Deterministic player-scale, class, star-label, development, walk-on, and elite-rarity audit |
 | `npm run tune:sim` | Bounded in-memory candidate search; never automatic acceptance |
 | `npm run generate:sim-benchmark -- --check` | Network-backed benchmark regeneration without writes |
 | `npm run eval:recruiting-balance -- --seed 20260727 --seeds 3 --seasons 4 --replay-seeds 1` | Representative multi-season recruiting balance and replay |
@@ -70,8 +74,8 @@ writer's authoritative inputs.
 | Command or lifecycle transition | Targeted command/integration tests, affected scenario, `typecheck`, `build` |
 | Loader or page contract | Loader/page tests, affected route inspection, `typecheck`, `build` |
 | Frontend presentation | Affected tests, responsive/accessibility inspection, `typecheck`, `build` |
-| Simulation behavior | Targeted tests, `eval:sim`, then stability audit when tuning is broad |
-| Recruiting or roster balance | Targeted tests, representative recruiting evaluation, annual lifecycle scenario |
+| Simulation behavior | Targeted tests, `eval:sim`, `eval:season-balance`, then stability audit when tuning is broad |
+| Recruiting or roster balance | Targeted tests, player-rating audit, representative recruiting evaluation, annual lifecycle scenario |
 | News facts, policy, copy, or scoring | Targeted tests and representative news audit |
 | Rankings, playoff, or awards | Targeted tests plus 2/4/12 postseason scenarios; `eval:awards` for scoring changes |
 | Canonical or generated static data | Owning workflow in the static-data verification matrix |

@@ -7,6 +7,7 @@ import type {
   RecruitingCountDistribution,
   RecruitingEvaluationAggregate,
   RecruitingEvaluationTeamYear,
+  RecruitingRosterRatingComparison,
   RecruitingSupplySummary,
   RecruitingTop25Composition,
 } from './types';
@@ -53,6 +54,68 @@ const BALANCE_VIOLATION_CODES: Record<
     'PRESTIGE_CLASS_SCORE_CORRELATION_OUT_OF_RANGE',
   prestigeMobilityRate: 'PRESTIGE_MOBILITY_RATE_OUT_OF_RANGE',
 };
+
+export const ROSTER_RATING_OVERLAP_TARGETS = {
+  1: { minimum: 0.2, maximum: 0.35 },
+  2: { minimum: 0.05, maximum: 0.15 },
+  3: { maximum: 0.02 },
+} as const;
+
+export const buildRosterRatingInversionsByPrestigeGap = (
+  seasons: Array<Array<Pick<
+    RecruitingEvaluationTeamYear,
+    'prestigeBefore' | 'rosterRating'
+  >>>,
+): Record<number, RecruitingRosterRatingComparison> => {
+  const counts = new Map<number, {
+    pairs: number;
+    inversions: number;
+    ties: number;
+  }>();
+  seasons.forEach(teams => {
+    teams.forEach(lower => {
+      teams.forEach(higher => {
+        const prestigeGap = higher.prestigeBefore - lower.prestigeBefore;
+        if (prestigeGap <= 0) return;
+        const entry = counts.get(prestigeGap) ?? {
+          pairs: 0,
+          inversions: 0,
+          ties: 0,
+        };
+        entry.pairs += 1;
+        if (lower.rosterRating > higher.rosterRating) entry.inversions += 1;
+        if (lower.rosterRating === higher.rosterRating) entry.ties += 1;
+        counts.set(prestigeGap, entry);
+      });
+    });
+  });
+  return Object.fromEntries(
+    [...counts.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([prestigeGap, entry]) => [
+        prestigeGap,
+        {
+          ...entry,
+          inversionRate: round(entry.inversions / entry.pairs),
+          tieRate: round(entry.ties / entry.pairs),
+        } satisfies RecruitingRosterRatingComparison,
+      ]),
+  );
+};
+
+export const evaluateRosterRatingOverlap = (
+  comparisons: Record<number, RecruitingRosterRatingComparison>,
+) => Object.entries(ROSTER_RATING_OVERLAP_TARGETS).flatMap(
+  ([prestigeGapText, target]) => {
+    const prestigeGap = Number(prestigeGapText);
+    const actual = comparisons[prestigeGap]?.inversionRate ?? 0;
+    const below = 'minimum' in target && actual < target.minimum;
+    const above = 'maximum' in target && actual > target.maximum;
+    return below || above
+      ? [{ prestigeGap, actual, ...target }]
+      : [];
+  },
+);
 
 export const evaluateRecruitingBalance = (
   aggregate: RecruitingEvaluationAggregate,

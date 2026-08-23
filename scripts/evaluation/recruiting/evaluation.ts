@@ -11,10 +11,13 @@ import {
   aggregateSupplySummaries,
   buildClassScoreDistribution,
   buildCountDistribution,
+  buildRosterRatingInversionsByPrestigeGap,
   buildTop25ClassComposition,
+  evaluateRosterRatingOverlap,
   evaluateRecruitingBalance,
   evaluationChecksum,
   mean,
+  ROSTER_RATING_OVERLAP_TARGETS,
   round,
 } from './evaluationMetrics';
 export interface EvaluateSuiteInput
@@ -204,8 +207,15 @@ export const runRecruitingEvaluationSuite = ({
       runs.reduce((sum, run) => sum + run.prestigeMobility, 0) /
         Math.max(1, allTeams.length),
     ),
+    rosterRatingInversionsByPrestigeGap:
+      buildRosterRatingInversionsByPrestigeGap(
+        allSeasons.map(season => season.teams),
+      ),
   };
   const balanceViolations = evaluateRecruitingBalance(aggregate);
+  const rosterRatingOverlapDiagnostics = evaluateRosterRatingOverlap(
+    aggregate.rosterRatingInversionsByPrestigeGap,
+  );
   const reportWithoutChecksum = {
     rootSeed,
     derivedSeeds,
@@ -227,6 +237,8 @@ export const runRecruitingEvaluationSuite = ({
       recruitStarCounts: { ...(input.recruitStarCounts ?? RECRUIT_STAR_COUNTS) },
     },
     balanceTargets: RECRUITING_BALANCE_TARGETS,
+    rosterRatingOverlapTargets: ROSTER_RATING_OVERLAP_TARGETS,
+    rosterRatingOverlapDiagnostics,
     balanceViolations,
     reproducibilityFailures,
     structuralViolations,

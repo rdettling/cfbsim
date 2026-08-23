@@ -33,13 +33,96 @@ creates those players, selects starters, and calculates team ratings before
 `startNewLeague()` commits the save. Loaders and simulation readers never
 create or repair rosters.
 
+Initial roster talent reconstructs the prestige in effect when each class
+entered school. Freshmen use the new league's starting prestige; sophomores,
+juniors, and seniors use recorded prestige from one, two, and three years
+before the start year. If an upperclass entry year is unavailable, bootstrap
+uses the nearest recorded prestige strictly before the dynasty start, with the
+earlier year winning an equal-distance tie. A program without any pre-start
+history uses its current starting prestige.
+
+Each national class is allocated against immutable team snapshots containing
+that class's resolved prestige. The authoritative `Team.prestige` is never
+rewritten, and initial origins continue to record the dynasty start as their
+acquisition year plus their class at start. Annual recruiting needs no
+historical reconstruction because players acquired under each live season's
+prestige already remain on the roster.
+
+Bootstrap allocation has no star-tier eligibility wall and no team-rating
+target. Each recruit ranks willing destinations from a soft preference score:
+four- and five-stars use the annual model's nonlinear elite-prestige curve,
+three-stars use a strong linear prestige signal, and lower labels use a weaker
+linear signal. Seeded preference noise permits recruiting upsets at every
+tier. A recruit considers the strongest 70% of those destinations, programs
+retain the best available talent for each positional need, and unresolved
+needs receive standard walk-ons. The four valid 20-player positional class
+patterns rotate across programs so national demand is not artificially
+synchronized while every team still begins with its exact 80-player position
+totals.
+
+Team ratings are deterministic projections of the selected starters. Each
+position group is averaged before its weight produces raw side quality:
+
+```text
+raw offense = 40% QB + 10% RB + 25% WR + 5% TE + 20% OL
+raw defense = 35% DL + 20% LB + 30% CB + 15% S
+```
+
+Each raw side then maps through one global 25–99 team-strength function. For
+raw quality `x` from 25 through 90, the function is:
+
+```text
+25 + 71 × ((x - 25) / 65)^2.15
+```
+
+Raw quality from 90 through 99 tapers linearly from team strength 96 through
+99. The resulting reference values are:
+
+| Raw starter quality | Team strength |
+| ---: | ---: |
+| 25 | 25 |
+| 40 | 28 |
+| 50 | 34 |
+| 60 | 44 |
+| 70 | 57 |
+| 75 | 65 |
+| 80 | 75 |
+| 90 | 96 |
+| 99 | 99 |
+
+Exact weighted side quality and the exact
+`60% raw offense + 40% raw defense` combination first round to their integer
+raw ratings, then each maps once through the function. This preserves raw
+overall ordering and ties rather than letting nonlinear side interactions or
+fractional conversion artifacts reorder teams. The global power function lets
+a compressed set of starter averages use more of the rating scale while the
+linear final segment preserves rare 96–99 endpoints. It remains a single
+player-derived transform and assigns no result to a team or prestige tier.
+Kicker and punter ratings do not enter team strength. A missing required
+starting group fails calculation because every
+finalized roster must already satisfy the starter contract. There is no
+coaching, cohesion, form, Prestige, or random adjustment in the rating formula.
+Prestige affects ratings only indirectly through acquired and developed
+players.
+
+The player-rating floor is 25. Team ratings are absolute deterministic
+transformations of their contributing starters, not season-relative
+percentiles, so a team is not expected or forced to reach 25. Identical
+starters always produce the same team ratings regardless of the rest of the
+league.
+
+New leagues receive deterministic ratings during bootstrap. Existing leagues
+retain their persisted ratings during an active season and receive the current
+formula through normal roster finalization before their next preseason; reads
+never rewrite or repair ratings.
+
 When historical realignment introduces a program, that transition creates the
 same 80-player, four-class roster for the new team. Talent follows the normal
-prestige-aware bootstrap model, while existing team ratings and rankings stay
-unchanged. The league, entry players, and `program_entry` origins commit in one
-transaction, so a new team is never persisted without a roster. Entry seniors
-then depart during the normal progression step and recruiting supplies the
-incoming freshman class.
+current-prestige bootstrap model because the program has no prior simulated
+roster. Existing team ratings and rankings stay unchanged. The league, entry
+players, and `program_entry` origins commit in one transaction, so a new team
+is never persisted without a roster. Entry seniors then depart during the
+normal progression step and recruiting supplies the incoming freshman class.
 
 ## Annual Supply
 
@@ -53,9 +136,11 @@ Every recruiting year contains 3,372 prospects:
 | 2 | 200 |
 
 The pool supplies national elite talent, ordinary three-star depth, and a
-two-star buffer. Standard one-star walk-ons are generated only when a team
-needs players to reach 80 after Signing Day. AI planning aims for two
-oversignings, while the authoritative capacity rule permits four.
+two-star buffer. Ratings come from one national 25–99 talent continuum, and
+the exact star counts are assigned from noisy scouting rank after the whole
+class is generated. Standard one-star walk-ons are lower-tail draws generated
+only when a team needs players to reach 80 after Signing Day. AI planning aims
+for two oversignings, while the authoritative capacity rule permits four.
 
 ## Progression
 
@@ -86,7 +171,7 @@ enters Recruiting Summary atomically.
 
 The page exposes names, states, positions, stars, national ranks, preferences,
 team fit, offers, lifetime points, standings, and commitments. Exact ratings,
-future ratings, development traits, seeds, and AI scores remain private.
+future ratings, seeds, and AI scores remain private.
 Roster Cuts is the first stage that reveals a freshman's exact current rating.
 
 ## Points and Commitments
@@ -148,6 +233,8 @@ deletes recruiting state, and enters `preseason` atomically.
 - Recruiting Summary is read-only and preserves public national-rank order.
 - Every finalized roster contains exactly 80 players and satisfies every
   starter minimum.
+- Identical starting lineups always produce identical offense, defense, and
+  overall ratings regardless of player input order.
 
 ## Source Map
 

@@ -122,6 +122,7 @@ export const samplePlayLiveBallSeconds = (
   : sampleManagementLiveBallSeconds(playId, action);
 
 const sampleRunoffSeconds = (
+  gameMultiplier: number,
   playId: number,
   playType: string,
   result: string,
@@ -130,7 +131,7 @@ const sampleRunoffSeconds = (
   const range = playType === 'run' || result === 'sack'
     ? SIM_TUNING.clock.runoffSeconds.runOrSack
     : SIM_TUNING.clock.runoffSeconds.completedPass;
-  const multiplier = SIM_TUNING.clock.tempoMultipliers[tempo];
+  const multiplier = SIM_TUNING.clock.tempoMultipliers[tempo] * gameMultiplier;
   const sampled = createSeededRandom(playId).fork('clock-runoff').int(range.min, range.max);
   return Math.round(sampled * multiplier);
 };
@@ -142,9 +143,23 @@ export const samplePotentialRunoffSeconds = (
   tempo: ClockTempo,
   action: ClockManagementAction | null,
   liveBallSeconds: number,
+  gameMultiplier = 1,
 ) => action === 'kneel'
   ? Math.max(0, SIM_TUNING.clock.management.kneelBudgetSeconds - liveBallSeconds)
-  : sampleRunoffSeconds(playId, playType, result, tempo);
+  : sampleRunoffSeconds(gameMultiplier, playId, playType, result, tempo);
+
+export const sampleGameRunoffMultiplier = (
+  game: Pick<SimGame, 'id' | 'year' | 'teamA' | 'teamB'>,
+) => {
+  const range = SIM_TUNING.clock.gameRunoffMultiplier;
+  const sample = createSeededRandom(game.id)
+    .fork(game.year)
+    .fork(game.teamA.id)
+    .fork(game.teamB.id)
+    .fork('clock-game-runoff')
+    .next();
+  return range.minimum + sample * (range.maximum - range.minimum);
+};
 
 export const maximumNormalRunningScrimmageSeconds = () => (
   SIM_TUNING.clock.liveBallSeconds.scrimmage.max
@@ -168,6 +183,7 @@ export const resolveRegulationTiming = (
   playId: number,
   clock: ClockState,
   context: ClockPlayContext,
+  gameMultiplier = 1,
 ): ClockResult => {
   const start = snapshot(clock);
   const outOfBounds = context.clockAction === null
@@ -223,6 +239,7 @@ export const resolveRegulationTiming = (
       context.tempo,
       context.clockAction,
       liveBallSeconds,
+      gameMultiplier,
     );
     const threshold = SIM_TUNING.clock.firstDownStopSeconds;
     const reachesTwoMinutes = (

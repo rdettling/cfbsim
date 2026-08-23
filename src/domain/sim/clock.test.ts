@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ClockState } from '../../types/sim';
+import type { ClockState, SimGame } from '../../types/sim';
 import {
   resolveOvertimeTiming,
   resolveRegulationTiming,
+  sampleGameRunoffMultiplier,
   type ClockPlayContext,
 } from './clock';
 
@@ -60,6 +61,33 @@ describe('regulation clock', () => {
 
     expect(fast.timing.elapsedSeconds).toBeLessThan(normal.timing.elapsedSeconds);
     expect(normal.timing.elapsedSeconds).toBeLessThan(chew.timing.elapsedSeconds);
+  });
+
+  it('uses one deterministic game-identity runoff environment for both teams', () => {
+    const game = {
+      id: 17,
+      year: 2026,
+      teamA: { id: 1 },
+      teamB: { id: 2 },
+    } as Pick<SimGame, 'id' | 'year' | 'teamA' | 'teamB'>;
+    const first = sampleGameRunoffMultiplier(game);
+    const second = sampleGameRunoffMultiplier(game);
+    const otherMatchup = sampleGameRunoffMultiplier({
+      ...game,
+      teamB: { id: 3 } as SimGame['teamB'],
+    });
+
+    expect(second).toBe(first);
+    expect(first).toBeGreaterThanOrEqual(0.65);
+    expect(first).toBeLessThanOrEqual(1.35);
+    expect(otherMatchup).not.toBe(first);
+  });
+
+  it('applies the shared game environment only to post-play runoff', () => {
+    const fast = resolveRegulationTiming(17, clock(), runContext(), 0.65);
+    const slow = resolveRegulationTiming(17, clock(), runContext(), 1.35);
+
+    expect(fast.timing.elapsedSeconds).toBeLessThan(slow.timing.elapsedSeconds);
   });
 
   it('stops first downs only in the final two minutes of a half', () => {

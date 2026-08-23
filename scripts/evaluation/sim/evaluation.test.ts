@@ -55,17 +55,46 @@ describe('simulation evaluation', () => {
     expect(equal.violations).toEqual([]);
   });
 
+  it('measures custom signed rating gaps without applying the default baseline', () => {
+    const options = {
+      seed: 23,
+      gamesPerDiff: 20,
+      ratingDifferences: [-35, 0, 35],
+    };
+    const first = evaluateSimulation(options);
+    const replay = evaluateSimulation(options);
+
+    expect(replay).toEqual(first);
+    expect(first.baselineApplied).toBe(false);
+    expect(first.violations).toEqual([]);
+    expect(first.ratingResults.map(result => [
+      result.ratingDifference,
+      result.teamARating,
+      result.teamBRating,
+    ])).toEqual([
+      [-35, 40, 75],
+      [0, 75, 75],
+      [35, 99, 64],
+    ]);
+    expect(first.ratingResults.every(result => (
+      Number.isFinite(result.teamAProduction.yardsPerPlay)
+      && Number.isFinite(result.teamBProduction.pointsPerDrive)
+      && result.teamAProduction.completionRate >= 0
+      && result.teamAProduction.completionRate <= 1
+    ))).toBe(true);
+  });
+
   it('characterizes the accepted modern-FBS baseline', () => {
     const result = evaluateSimulation({ seed: 20260809, gamesPerDiff: 1000 });
 
-    expect(result.checksum).toBe('1e97c7cf');
-    expect(SIM_EVALUATION_BASELINE_CHECKSUM).toBe('1e97c7cf');
+    expect(result.checksum).toBe('c26ef84f');
+    expect(SIM_EVALUATION_BASELINE_CHECKSUM).toBe('c26ef84f');
     const productionGaps = result.calibrationGaps.filter(gap => gap.startsWith('production.'));
     expect(productionGaps).toEqual([
-      'production.madeFieldGoalsPerGame:low',
       'production.passingYardsPerAttempt:low',
       'production.passingYardsPerCompletion:low',
-      'production.redZoneTouchdownRate:high',
+      'production.scrimmagePlaysPerGame:high',
+      'production.touchdownsPerGame:low',
       'production.turnoversPerGame:high',
     ]);
     expect(result.violations).toEqual([]);
@@ -73,8 +102,8 @@ describe('simulation evaluation', () => {
     expect(result.calibration.production.thirdDownAttemptsPerGame.target).toBe(26.971);
     expect(result.calibration.production.fourthDownAttemptsPerGame.target).toBe(3.872);
     expect(result.calibrationGaps).toEqual([...result.calibrationGaps].sort());
-    expect(result.calibrationGaps).toContain('production.madeFieldGoalsPerGame:low');
-    expect(result.calibrationGaps).toContain('production.redZoneTouchdownRate:high');
+    expect(result.calibration.production.madeFieldGoalsPerGame.status).toBe('aligned');
+    expect(result.calibration.production.redZoneTouchdownRate.status).toBe('aligned');
     expect(result.calibrationGaps).toContain('production.passingYardsPerAttempt:low');
     expect(result.equalTeamMetrics.scrimmagePlaysPerGame).toBeGreaterThan(0);
     expect(result.equalTeamMetrics.completionRate).toBeGreaterThan(0);

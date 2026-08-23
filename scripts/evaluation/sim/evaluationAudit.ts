@@ -9,6 +9,7 @@ import type {
 import type { SimGame, StartersCache } from '../../../src/types/sim';
 import type { RatingResult } from './calibrationMetrics';
 import {
+  sampleGameRunoffMultiplier,
   samplePlayLiveBallSeconds,
   samplePotentialRunoffSeconds,
 } from '../../../src/domain/sim/clock';
@@ -156,6 +157,7 @@ const expectedStartAfter = (
 };
 
 const evaluateGameTiming = (
+  game: SimGame,
   drives: SimulatedDrives,
   totals: EvaluationAuditTotals | null,
   violations: string[],
@@ -364,6 +366,7 @@ const evaluateGameTiming = (
           timing.tempo,
           clockAction,
           liveBallSeconds,
+          sampleGameRunoffMultiplier(game),
         );
         const actualRunoffSeconds = Math.max(0, timing.elapsedSeconds - liveBallSeconds);
         totals.timeoutSecondsSaved += Math.max(
@@ -404,7 +407,7 @@ export const auditSimulatedGame = (
   for (const violation of auditParticipantLinks(game, plays, logs, starters)) {
     addViolation(violations, violation);
   }
-  evaluateGameTiming(drives, totals, violations);
+  evaluateGameTiming(game, drives, totals, violations);
   const gameValues = [
     game.scoreA,
     game.scoreB,

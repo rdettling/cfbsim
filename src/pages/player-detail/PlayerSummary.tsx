@@ -118,7 +118,6 @@ export const PlayerSummary = ({
 
     <Stack spacing={0.15} sx={{ gridArea: 'ratings', minWidth: 0 }}>
       <PlayerStarRating label="Recruiting" value={player.stars} />
-      <PlayerStarRating label="Development" value={player.development_trait} />
     </Stack>
 
     <Typography

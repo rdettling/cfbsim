@@ -17,7 +17,10 @@ import {
   percentile,
   populationStandardDeviation,
 } from './calibrationBenchmark';
-import type { RatingResult } from './calibrationMetrics';
+import type {
+  RatingMatchupProduction,
+  RatingResult,
+} from './calibrationMetrics';
 import {
   auditSimulatedGame,
 } from './evaluationAudit';
@@ -28,7 +31,7 @@ import {
   createDefensiveMatchupTotals,
   createDefensiveTotals,
   createEqualTeamTotals,
-  recordEqualTeamMetrics,
+  recordGameMetrics,
   summarizeClock,
   summarizeConcepts,
   summarizeDefensiveMatchups,
@@ -42,9 +45,81 @@ import {
 
 const BASE_RATING = 75;
 export const SIM_EVALUATION_DIFFS = [0, 7, 14, 21] as const;
-export const SIM_EVALUATION_BASELINE_CHECKSUM = '1e97c7cf';
+export const SIM_EVALUATION_BASELINE_CHECKSUM = 'c26ef84f';
 
 const average = (value: number, count: number) => count ? value / count : 0;
+
+type RatingProductionTotals = {
+  yards: number;
+  scrimmagePlays: number;
+  points: number;
+  drives: number;
+  passAttempts: number;
+  completions: number;
+  sacks: number;
+  turnovers: number;
+  explosives: number;
+};
+
+const createRatingProductionTotals = (): RatingProductionTotals => ({
+  yards: 0,
+  scrimmagePlays: 0,
+  points: 0,
+  drives: 0,
+  passAttempts: 0,
+  completions: 0,
+  sacks: 0,
+  turnovers: 0,
+  explosives: 0,
+});
+
+const recordRatingProduction = (
+  totals: RatingProductionTotals,
+  teamId: number,
+  drives: ReturnType<typeof simGame>,
+) => {
+  const teamDrives = drives.filter(drive => drive.record.offenseId === teamId);
+  const plays = teamDrives.flatMap(drive => drive.plays).filter(play => (
+    play.call.kind !== 'try'
+    && (play.playType === 'run' || play.playType === 'pass')
+  ));
+  totals.drives += teamDrives.length;
+  totals.points += teamDrives.reduce((sum, drive) => sum + drive.record.points, 0);
+  totals.scrimmagePlays += plays.length;
+  for (const play of plays) {
+    totals.yards += play.yardsGained;
+    if (play.yardsGained >= 20) totals.explosives += 1;
+    if (play.result === 'interception' || play.result === 'fumble') {
+      totals.turnovers += 1;
+    }
+    if (play.playType !== 'pass') continue;
+    if (play.result === 'sack') totals.sacks += 1;
+    else totals.passAttempts += 1;
+    if (play.result === 'pass' || play.result === 'touchdown') {
+      totals.completions += 1;
+    }
+  }
+};
+
+const summarizeRatingProduction = (
+  totals: RatingProductionTotals,
+): RatingMatchupProduction => ({
+  yardsPerPlay: average(totals.yards, totals.scrimmagePlays),
+  pointsPerDrive: average(totals.points, totals.drives),
+  completionRate: average(totals.completions, totals.passAttempts),
+  sackRate: average(totals.sacks, totals.passAttempts + totals.sacks),
+  turnoverRate: average(totals.turnovers, totals.scrimmagePlays),
+  explosivePlayRate: average(totals.explosives, totals.scrimmagePlays),
+});
+
+const ratingPair = (ratingDifference: number): [number, number] => {
+  if (ratingDifference >= 0) {
+    const teamA = Math.min(99, BASE_RATING + ratingDifference);
+    return [teamA, teamA - ratingDifference];
+  }
+  const teamA = Math.max(25, BASE_RATING + ratingDifference);
+  return [teamA, teamA - ratingDifference];
+};
 
 const buildTeam = (id: number, rating: number): Team => ({
   id,
@@ -103,7 +178,6 @@ const buildPlayer = (
   rating_jr: BASE_RATING,
   rating_sr: BASE_RATING,
   stars: 3,
-  development_trait: 50,
   starter: true,
 });
 
@@ -199,6 +273,7 @@ const evaluateSimulationForDifferences = (
 
   withSeededMathRandom(random, () => {
     for (const ratingDifference of ratingDifferences) {
+      const [teamARating, teamBRating] = ratingPair(ratingDifference);
       let winsA = 0;
       let margin = 0;
       let yardsA = 0;
@@ -206,14 +281,18 @@ const evaluateSimulationForDifferences = (
       const margins: number[] = [];
       const scoresA: number[] = [];
       const scoresB: number[] = [];
+      const productionA = createRatingProductionTotals();
+      const productionB = createRatingProductionTotals();
       for (let gameIndex = 0; gameIndex < options.gamesPerDiff; gameIndex += 1) {
-        const teamA = buildTeam(1, BASE_RATING + ratingDifference);
-        const teamB = buildTeam(2, BASE_RATING);
+        const teamA = buildTeam(1, teamARating);
+        const teamB = buildTeam(2, teamBRating);
         const league = buildLeague([teamA, teamB]);
         const game = buildGame(gameId++, teamA, teamB);
         const drives = simGame(league, game, starters);
         const plays = drives.flatMap(drive => drive.plays);
         const logs = createGameLogsFromPlays(game, plays, starters);
+        recordRatingProduction(productionA, teamA.id, drives);
+        recordRatingProduction(productionB, teamB.id, drives);
         auditSimulatedGame(
           game,
           drives,
@@ -223,7 +302,7 @@ const evaluateSimulationForDifferences = (
           violations,
         );
         if (ratingDifference === 0) {
-          recordEqualTeamMetrics(
+          recordGameMetrics(
             equalTotals,
             conceptTotals,
             defensiveTotals,
@@ -262,6 +341,8 @@ const evaluateSimulationForDifferences = (
       }
       ratingResults.push({
         ratingDifference,
+        teamARating,
+        teamBRating,
         games: options.gamesPerDiff,
         teamAWinRate: average(winsA, options.gamesPerDiff),
         averageMargin: average(margin, options.gamesPerDiff),
@@ -278,6 +359,8 @@ const evaluateSimulationForDifferences = (
         ),
         averageYardsA: average(yardsA, options.gamesPerDiff),
         averageYardsB: average(yardsB, options.gamesPerDiff),
+        teamAProduction: summarizeRatingProduction(productionA),
+        teamBProduction: summarizeRatingProduction(productionB),
         teamAScoring: summarizeDistribution(scoresA),
         teamBScoring: summarizeDistribution(scoresB),
       });
@@ -347,8 +430,8 @@ export const evaluateSimulation = (
   options: SimulationEvaluationOptions,
 ): SimulationEvaluationSummary => evaluateSimulationForDifferences(
   options,
-  SIM_EVALUATION_DIFFS,
-  true,
+  options.ratingDifferences ?? SIM_EVALUATION_DIFFS,
+  options.ratingDifferences === undefined,
 );
 
 export const measureEqualTeamSimulation = (

@@ -59,7 +59,6 @@ export const loadPlayer = async (playerId: string) => {
     rating_jr: latestSeason?.rating ?? 0,
     rating_sr: latestSeason?.rating ?? 0,
     stars: historicalPlayer!.stars,
-    development_trait: historicalPlayer!.development_trait,
     starter: false,
   };
 

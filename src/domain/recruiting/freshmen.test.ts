@@ -39,6 +39,7 @@ describe('committed freshman conversion', () => {
       rating: 70,
       starter: false,
     });
+    expect(result.players[0]).not.toHaveProperty('development_trait');
     expect(result.nextPlayerId).toBe(13);
     expect(result.origins).toEqual([
       expect.objectContaining({

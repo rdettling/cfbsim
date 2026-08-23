@@ -79,6 +79,10 @@ export type SimTuning = {
     >;
   };
   clock: {
+    gameRunoffMultiplier: {
+      minimum: number;
+      maximum: number;
+    };
     tempoMultipliers: {
       normal: number;
       hurry_up: number;

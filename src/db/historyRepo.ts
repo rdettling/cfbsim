@@ -22,7 +22,6 @@ const IDENTITY_KEYS = [
   'last',
   'pos',
   'stars',
-  'development_trait',
 ] as const;
 
 const isHistoricalPlayer = (value: unknown): value is HistoricalPlayerRecord =>
@@ -36,8 +35,7 @@ const isHistoricalPlayer = (value: unknown): value is HistoricalPlayerRecord =>
   && value.last.length > 0
   && typeof value.pos === 'string'
   && value.pos.length > 0
-  && isFiniteNumber(value.stars)
-  && isFiniteNumber(value.development_trait);
+  && isFiniteNumber(value.stars);
 
 const PLAYER_SEASON_KEYS = [
   'year',

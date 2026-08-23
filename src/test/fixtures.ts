@@ -191,7 +191,6 @@ export const buildTestPlayer = (
   rating_jr: 80,
   rating_sr: 85,
   stars: 3,
-  development_trait: 3,
   starter: true,
   ...overrides,
 });

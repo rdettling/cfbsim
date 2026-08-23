@@ -11,7 +11,6 @@ const historicalPlayer = (
   last: 'Player',
   pos: 'lb',
   stars: 4,
-  development_trait: 3,
   ...overrides,
 });
 

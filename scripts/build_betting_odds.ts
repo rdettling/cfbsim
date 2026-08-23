@@ -103,7 +103,6 @@ const createPlayer = (
   rating_jr: rating,
   rating_sr: rating,
   stars: 5,
-  development_trait: 3,
   starter: true,
 });
 

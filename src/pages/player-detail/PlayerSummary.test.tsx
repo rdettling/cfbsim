@@ -4,7 +4,7 @@ import { buildTestPlayer } from '../../test/fixtures';
 import { PlayerSummary } from './PlayerSummary';
 
 const player = {
-  ...buildTestPlayer({ rating: 91, stars: 4, development_trait: 4 }),
+  ...buildTestPlayer({ rating: 91, stars: 4 }),
   team: 'Test State',
 };
 
@@ -37,7 +37,7 @@ describe('PlayerSummary', () => {
     expect(markup).toContain('Test State');
     expect(markup).toContain('Starter');
     expect(markup).toContain('aria-label="Recruiting 4 out of 5"');
-    expect(markup).toContain('aria-label="Development 4 out of 5"');
+    expect(markup).not.toContain('aria-label="Development');
     expect(markup).toContain('aria-label="Overall rating 91"');
     expect(markup).toContain('>OVR<');
     expect(markup).toContain('aria-labelledby="player-name-heading"');

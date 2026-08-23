@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { HistoryData } from '../types/baseData';
 import {
   buildTestLeague,
   buildTestNamesData,
@@ -7,6 +8,7 @@ import {
 import { createSeededRandom } from './utils/random';
 import {
   buildBootstrapClassTargets,
+  buildBootstrapPrestigesByClass,
   prepareInitialRostersFromData,
   prepareProgramEntryRostersFromData,
 } from './rosterBootstrap';
@@ -27,10 +29,31 @@ const names = buildTestNamesData({
   },
 });
 
-const buildInput = () => {
+const buildHistory = (
+  teams: HistoryData['teams'] = {},
+): HistoryData => ({
+  years: [2025, 2024, 2023, 2022, 2021],
+  conf_index: { Test: 0 },
+  teams,
+});
+
+const historyRow = (
+  year: number,
+  prestige: number,
+): HistoryData['teams'][string][number] => [year, 0, 1, 12, 0, prestige];
+
+const buildInput = (historyData = buildHistory()) => {
   const team = buildTestTeam({ prestige: 7 });
   return {
-    league: buildTestLeague('preseason', { teams: [team] }),
+    league: buildTestLeague('preseason', {
+      info: {
+        ...buildTestLeague('preseason').info,
+        currentYear: 2026,
+        startYear: 2026,
+      },
+      teams: [team],
+    }),
+    historyData,
     names,
     states: { TS: 1 },
     random: createSeededRandom(88),
@@ -38,6 +61,54 @@ const buildInput = () => {
 };
 
 describe('seeded initial-roster preparation', () => {
+  it('maps current and historical prestige to the four initial classes', () => {
+    const rising = buildTestTeam({ id: 1, name: 'Rising', prestige: 7 });
+    const declining = buildTestTeam({ id: 2, name: 'Declining', prestige: 3 });
+    const before = structuredClone([rising, declining]);
+    const prestiges = buildBootstrapPrestigesByClass(
+      [rising, declining],
+      buildHistory({
+        Rising: [historyRow(2025, 6), historyRow(2024, 5), historyRow(2023, 4)],
+        Declining: [historyRow(2025, 4), historyRow(2024, 5), historyRow(2023, 6)],
+      }),
+      2026,
+    );
+
+    expect(prestiges).toEqual({
+      1: { fr: 7, so: 6, jr: 5, sr: 4 },
+      2: { fr: 3, so: 4, jr: 5, sr: 6 },
+    });
+    expect([rising, declining]).toEqual(before);
+  });
+
+  it('uses nearest pre-start history with earlier-year tie-breaking', () => {
+    const team = buildTestTeam({ prestige: 7 });
+    const prestiges = buildBootstrapPrestigesByClass(
+      [team],
+      buildHistory({
+        [team.name]: [
+          historyRow(2027, 1),
+          historyRow(2025, 6),
+          historyRow(2023, 4),
+          historyRow(2021, 2),
+        ],
+      }),
+      2026,
+    );
+
+    expect(prestiges[team.id]).toEqual({ fr: 7, so: 6, jr: 4, sr: 4 });
+  });
+
+  it('uses current prestige when the program has no pre-start history', () => {
+    const team = buildTestTeam({ prestige: 5 });
+
+    expect(buildBootstrapPrestigesByClass(
+      [team],
+      buildHistory({ [team.name]: [historyRow(2027, 1)] }),
+      2026,
+    )[team.id]).toEqual({ fr: 5, so: 5, jr: 5, sr: 5 });
+  });
+
   it('is deterministic with four exact 20-player classes', () => {
     const first = prepareInitialRostersFromData(buildInput());
     const second = prepareInitialRostersFromData(buildInput());
@@ -58,6 +129,24 @@ describe('seeded initial-roster preparation', () => {
     });
   });
 
+  it('reproduces current-prestige bootstrap when every class has that prestige', () => {
+    const currentHistory = buildHistory({
+      'Test State': [
+        historyRow(2025, 7),
+        historyRow(2024, 7),
+        historyRow(2023, 7),
+      ],
+    });
+    const first = buildInput(currentHistory);
+    const second = buildInput();
+    const firstPlayers = prepareInitialRostersFromData(first);
+    const secondPlayers = prepareInitialRostersFromData(second);
+
+    expect(firstPlayers).toEqual(secondPlayers);
+    expect(first.league.teams).toEqual(second.league.teams);
+    expect(first.league.teams[0].prestige).toBe(7);
+  });
+
   it('distributes positional remainders exactly and deterministically', () => {
     const first = buildBootstrapClassTargets();
     expect(first).toEqual(buildBootstrapClassTargets());
@@ -70,6 +159,37 @@ describe('seeded initial-roster preparation', () => {
       expect(
         first.reduce((sum, targets) => sum + targets[position], 0),
       ).toBe(ROSTER[position].total);
+    });
+  });
+
+  it('stagger positional class patterns across programs', () => {
+    const teams = Array.from({ length: 4 }, (_, index) =>
+      buildTestTeam({ id: index + 1, name: `Team ${index + 1}` }),
+    );
+    const input = buildInput();
+    input.league.teams = teams;
+    const players = prepareInitialRostersFromData(input);
+
+    expect(
+      teams.map(team =>
+        players.filter(
+          player =>
+            player.teamId === team.id &&
+            player.year === 'sr' &&
+            player.pos === 'k',
+        ).length,
+      ),
+    ).toEqual([1, 0, 0, 1]);
+    teams.forEach(team => {
+      const roster = players.filter(player => player.teamId === team.id);
+      (['fr', 'so', 'jr', 'sr'] as const).forEach(year => {
+        expect(roster.filter(player => player.year === year)).toHaveLength(20);
+      });
+      POSITION_ORDER.forEach(position => {
+        expect(roster.filter(player => player.pos === position)).toHaveLength(
+          ROSTER[position].total,
+        );
+      });
     });
   });
 
@@ -104,12 +224,12 @@ describe('seeded initial-roster preparation', () => {
     expect(incumbents[0]).toEqual(incumbentBefore);
     expect(firstEntry.ranking).toBe(139);
     expect(secondEntry.ranking).toBe(140);
-    const averageStars = (teamId: number) => {
+    const averageRating = (teamId: number) => {
       const roster = players.filter(player => player.teamId === teamId);
-      return roster.reduce((sum, player) => sum + player.stars, 0) / roster.length;
+      return roster.reduce((sum, player) => sum + player.rating, 0) / roster.length;
     };
-    expect(averageStars(firstEntry.id)).toBeGreaterThan(
-      averageStars(secondEntry.id),
+    expect(averageRating(firstEntry.id)).toBeGreaterThan(
+      averageRating(secondEntry.id),
     );
     for (const team of [firstEntry, secondEntry]) {
       const roster = players.filter(player => player.teamId === team.id);

@@ -234,7 +234,6 @@ export interface PlayerRecord {
   rating_jr: number;
   rating_sr: number;
   stars: number;
-  development_trait: number;
   starter: boolean;
 }
 
@@ -254,7 +253,6 @@ export interface HistoricalPlayerRecord {
   last: string;
   pos: string;
   stars: number;
-  development_trait: number;
 }
 
 interface PlayerOriginBase {

@@ -48,7 +48,6 @@ export const buildCommittedFreshmen = ({
         rating_jr: prospect.ratingJr,
         rating_sr: prospect.ratingSr,
         stars: prospect.stars,
-        development_trait: prospect.developmentTrait,
         starter: false,
       };
       origins.push(

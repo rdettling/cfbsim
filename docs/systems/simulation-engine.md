@@ -155,6 +155,11 @@ omissions are stated explicitly.
 - **Clock behavior**:
   - Live-ball time and post-play runoff are sampled independently from a
     deterministic play-keyed source that does not consume football randomness.
+  - Each game receives one deterministic identity-keyed runoff multiplier from
+    `0.65` through `1.35`. Game and team IDs make the seed unique but no team
+    quality enters the value. Both teams share it for the entire game,
+    producing realistic fast and slow environments without changing either
+    team's player-derived strength.
   - Tempo modifies runoff only. Current NCAA first-down and out-of-bounds
     windows determine whether runoff occurs.
   - Q2/Q4 two-minute timeouts and all period boundaries are persisted as exact

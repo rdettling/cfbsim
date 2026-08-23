@@ -6,10 +6,16 @@ import {
 } from './recruiting/config';
 import {
   generateName,
-  generatePlayerRatings,
+  generateNationalRatingPool,
+  generateWalkOnRatings,
+  type GeneratedPlayerRatings,
 } from './recruiting/generation';
 import type { RandomSource } from './utils/random';
 import { ROSTER } from './rosterConfig';
+import {
+  calculateElitePrestigeFit,
+  calculatePrestigeFit,
+} from './recruiting/fit';
 
 interface BootstrapRecruit {
   rid?: number;
@@ -22,28 +28,31 @@ interface BootstrapRecruit {
   rating_so: number;
   rating_jr: number;
   rating_sr: number;
-  development_trait: number;
 }
 
-const PRESTIGE_BIAS = 8;
-const PRESTIGE_EXPONENT = 1.25;
-const RANDOMNESS = 20;
+const OTHER_PREFERENCE_NOISE = 10;
+const WILLING_TEAM_SHARE = 0.7;
+
+const prestigePreference = (prestige: number, stars: number) =>
+  stars >= 4
+    ? calculateElitePrestigeFit(prestige)
+    : calculatePrestigeFit(prestige) * (stars === 3 ? 0.6 : 0.3);
 
 const recruit = (
   pos: string,
   stars: number,
+  ratings: GeneratedPlayerRatings,
   names: NamesData,
   states: string[],
   stateWeights: number[],
   random: RandomSource,
 ): BootstrapRecruit => {
-  const ratings = generatePlayerRatings(stars, random);
   return {
-    ...generateName(pos, names, random),
+    ...generateName(pos, names, random.fork('name')),
     pos,
     stars,
     state:
-      random.weightedChoice(
+      random.fork('state').weightedChoice(
         states.map((state, index) => ({
           item: state,
           weight: stateWeights[index],
@@ -53,7 +62,6 @@ const recruit = (
     rating_so: ratings.so,
     rating_jr: ratings.jr,
     rating_sr: ratings.sr,
-    development_trait: ratings.developmentTrait,
   };
 };
 
@@ -65,30 +73,28 @@ const generatePool = (
   starCounts: RecruitStarCounts,
 ) => {
   const positions = Object.keys(ROSTER);
-  const recruits: BootstrapRecruit[] = [];
-  Object.entries(starCounts).forEach(([starKey, count]) => {
-    for (let index = 0; index < count; index += 1) {
-      const candidateRandom = random.fork(`candidate:${starKey}:${index}`);
-      const position =
-        candidateRandom.fork('position').weightedChoice(
-          positions.map(item => ({
-            item,
-            weight: ROSTER[item].total,
-          })),
-        ) ?? 'qb';
-      recruits.push(
-        recruit(
-          position,
-          Number(starKey),
-          names,
-          states,
-          stateWeights,
-          candidateRandom,
-        ),
-      );
-    }
+  return generateNationalRatingPool(
+    random.fork('rating-pool'),
+    starCounts,
+  ).map(ratings => {
+    const candidateRandom = random.fork(`candidate:${ratings.nationalRank}`);
+    const position =
+      candidateRandom.fork('position').weightedChoice(
+        positions.map(item => ({
+          item,
+          weight: ROSTER[item].total,
+        })),
+      ) ?? 'qb';
+    return recruit(
+      position,
+      ratings.stars,
+      ratings,
+      names,
+      states,
+      stateWeights,
+      candidateRandom,
+    );
   });
-  return recruits;
 };
 
 const matchPosition = (
@@ -105,18 +111,17 @@ const matchPosition = (
   const nextPreference = new Map<number, number>();
   const queue = recruits.filter(candidate => {
     const eligible = teams
-      .filter(
-        team =>
-          needs[team.id][position] > 0 && team.prestige >= candidate.stars,
-      )
+      .filter(team => needs[team.id][position] > 0)
       .map(team => ({
         teamId: team.id,
         score:
-          team.prestige ** PRESTIGE_EXPONENT * PRESTIGE_BIAS +
-          random.fork(`preference:${candidate.rid}:${team.id}`).next() *
-            RANDOMNESS,
+          prestigePreference(team.prestige, candidate.stars) +
+          random
+            .fork(`preference:${candidate.rid}:${team.id}`)
+            .normal(0, OTHER_PREFERENCE_NOISE),
       }))
-      .sort((left, right) => right.score - left.score);
+      .sort((left, right) => right.score - left.score)
+      .slice(0, Math.ceil(teams.length * WILLING_TEAM_SHARE));
     if (!eligible.length) return false;
     preferences.set(candidate.rid!, eligible.map(item => item.teamId));
     nextPreference.set(candidate.rid!, 0);
@@ -204,6 +209,11 @@ export const assignBootstrapClass = (
         recruit(
           position,
           1,
+          generateWalkOnRatings(
+            random.fork(
+              `fallback-ratings:${team.id}:${position}:${assignments[team.id].length}`,
+            ),
+          ),
           names,
           states,
           stateWeights,

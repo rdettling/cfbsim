@@ -36,6 +36,8 @@ const ratingResult = (
   averageMargin: number,
 ): RatingResult => ({
   ratingDifference,
+  teamARating: 75 + ratingDifference,
+  teamBRating: 75,
   games: 10,
   teamAWinRate,
   averageMargin,
@@ -46,6 +48,22 @@ const ratingResult = (
   favoriteBlowoutRate: 0,
   averageYardsA: 0,
   averageYardsB: 0,
+  teamAProduction: {
+    yardsPerPlay: 0,
+    pointsPerDrive: 0,
+    completionRate: 0,
+    sackRate: 0,
+    turnoverRate: 0,
+    explosivePlayRate: 0,
+  },
+  teamBProduction: {
+    yardsPerPlay: 0,
+    pointsPerDrive: 0,
+    completionRate: 0,
+    sackRate: 0,
+    turnoverRate: 0,
+    explosivePlayRate: 0,
+  },
   teamAScoring: {
     mean: 0,
     standardDeviation: 0,
@@ -227,6 +245,8 @@ describe('simulation calibration stability audit', () => {
 
     expect(result.replayMatch).toBe(true);
     expect(result.parameters['outcomes.pass.baseMean'].directions.higher.clamped).toBe(true);
+    expect(result.parameters['outcomes.pass.baseMean'].stage).toBe('base_efficiency');
+    expect(result.stages.explosiveness).toContain('outcomes.pass.positiveMultiplier');
     expect(result.parameters['outcomes.baseCompPercent'].directions.higher
       .metrics.completionRate.direction).toBe('worsened');
     for (let index = 0; index < calls.length; index += seeds.length) {

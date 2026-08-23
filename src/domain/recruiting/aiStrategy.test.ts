@@ -91,7 +91,6 @@ describe('AI recruiting public boundary', () => {
     ]);
     expect(snapshot.prospects[0]).not.toHaveProperty('ratingFr');
     expect(snapshot.prospects[0]).not.toHaveProperty('ratingSo');
-    expect(snapshot.prospects[0]).not.toHaveProperty('developmentTrait');
     expect(snapshot.prospects[0].preferenceWeights).not.toBe(
       makeState().prospects[0].preferenceWeights,
     );
@@ -105,7 +104,6 @@ describe('AI recruiting public boundary', () => {
       prospect.ratingSo = 99;
       prospect.ratingJr = 99;
       prospect.ratingSr = 99;
-      prospect.developmentTrait = -100;
       prospect.publicRatingMin = 30;
       prospect.publicRatingMax = 40;
     });

@@ -228,7 +228,6 @@ const seedExistingLeague = async () => {
     last: 'Player',
     pos: 'qb',
     stars: 3,
-    development_trait: 2,
   });
   await db.put('seasonMemories', buildTestSeasonMemory({
     year: 2025,

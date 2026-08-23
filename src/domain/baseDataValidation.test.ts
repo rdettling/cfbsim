@@ -141,6 +141,12 @@ describe('base data validation', () => {
     const history = readData('history.json');
     history.generated_at = 'legacy';
     expect(() => validateHistoryData(history)).toThrow('unexpected generated_at');
+
+    const invalidPrestige = readData('history.json');
+    invalidPrestige.teams.Georgia[0][5] = 8;
+    expect(() => validateHistoryData(invalidPrestige)).toThrow(
+      'teams.Georgia[0] contains an out-of-range value',
+    );
   });
 
   it('rejects duplicate or unordered indexes and invalid prestige totals', () => {

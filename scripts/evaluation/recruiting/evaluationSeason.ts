@@ -23,6 +23,7 @@ import {
   buildClassScoreDistribution,
   buildCountDistribution,
   buildPrestigeSummaries,
+  buildRosterRatingInversionsByPrestigeGap,
   buildRecruitingSupplySummary,
   buildTop25ClassComposition,
   countBy,
@@ -181,13 +182,7 @@ export const runRecruitingEvaluation = ({
     assertFinalRosters(league.teams, players);
     setStarters(league.teams, players);
     assertStarters(league, players);
-    recalculateTeamRatings(
-      league.teams,
-      players,
-      createSeededRandom(yearSeed)
-        .fork(`roster-finalization:${year}`)
-        .fork('team-ratings'),
-    );
+    recalculateTeamRatings(league.teams, players);
 
     const prestigeChanges = calculatePrestigeChanges(
       league,
@@ -206,6 +201,10 @@ export const runRecruitingEvaluation = ({
       .map(team => {
         const recruiting = aiTeams.get(team.id)!;
         const classResult = classByTeam.get(team.id);
+        const rosterPlayers = players.filter(player => player.teamId === team.id);
+        const ratingContributors = rosterPlayers.filter(
+          player => player.starter && player.pos !== 'k' && player.pos !== 'p',
+        );
         const teamWalkOns = walkOns.players.filter(
           player => player.teamId === team.id,
         );
@@ -236,7 +235,30 @@ export const runRecruitingEvaluation = ({
                 5: classResult.starCounts.five,
               }
             : ({} as Record<number, number>),
+          offenseRating: team.offense,
+          defenseRating: team.defense,
           rosterRating: team.rating,
+          rosterMeanRating: round(mean(
+            rosterPlayers.map(player => player.rating),
+          )),
+          ratingContributors: {
+            count: ratingContributors.length,
+            meanRating: round(mean(
+              ratingContributors.map(player => player.rating),
+            )),
+            ratings90Plus: ratingContributors.filter(
+              player => player.rating >= 90,
+            ).length,
+            ratings95Plus: ratingContributors.filter(
+              player => player.rating >= 95,
+            ).length,
+            ratings98Plus: ratingContributors.filter(
+              player => player.rating >= 98,
+            ).length,
+            ratings99: ratingContributors.filter(
+              player => player.rating === 99,
+            ).length,
+          },
         };
       })
       .sort((left, right) => left.teamId - right.teamId);
@@ -369,6 +391,8 @@ export const runRecruitingEvaluation = ({
           ? ['EXCESSIVE_WALK_ON_DEPENDENCE']
           : []),
       ],
+      rosterRatingInversionsByPrestigeGap:
+        buildRosterRatingInversionsByPrestigeGap([teams]),
       prestigeSummaries: buildPrestigeSummaries(teams),
       teams,
     };

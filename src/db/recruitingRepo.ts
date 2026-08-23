@@ -88,7 +88,6 @@ const isProspect = (value: unknown): value is RecruitingProspect => {
       'ratingSo',
       'ratingJr',
       'ratingSr',
-      'developmentTrait',
       'publicRatingMin',
       'publicRatingMax',
       'preferenceWeights',
@@ -116,7 +115,6 @@ const isProspect = (value: unknown): value is RecruitingProspect => {
     isFiniteNumber(value.ratingSo) &&
     isFiniteNumber(value.ratingJr) &&
     isFiniteNumber(value.ratingSr) &&
-    isFiniteNumber(value.developmentTrait) &&
     isFiniteNumber(value.publicRatingMin) &&
     isFiniteNumber(value.publicRatingMax) &&
     isPreferenceWeights(value.preferenceWeights) &&

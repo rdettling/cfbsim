@@ -16,6 +16,8 @@ export type DistributionSummary = {
 
 export type RatingResult = {
   ratingDifference: number;
+  teamARating: number;
+  teamBRating: number;
   games: number;
   teamAWinRate: number;
   averageMargin: number;
@@ -26,8 +28,19 @@ export type RatingResult = {
   favoriteBlowoutRate: number;
   averageYardsA: number;
   averageYardsB: number;
+  teamAProduction: RatingMatchupProduction;
+  teamBProduction: RatingMatchupProduction;
   teamAScoring: DistributionSummary;
   teamBScoring: DistributionSummary;
+};
+
+export type RatingMatchupProduction = {
+  yardsPerPlay: number;
+  pointsPerDrive: number;
+  completionRate: number;
+  sackRate: number;
+  turnoverRate: number;
+  explosivePlayRate: number;
 };
 
 export type CalibrationStatus = 'aligned' | 'low' | 'high';

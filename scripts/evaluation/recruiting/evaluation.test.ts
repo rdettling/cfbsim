@@ -14,8 +14,10 @@ import {
   buildClassScoreDistribution,
   buildCountDistribution,
   buildRecruitingSupplySummary,
+  buildRosterRatingInversionsByPrestigeGap,
   buildTop25ClassComposition,
   evaluateRecruitingBalance,
+  evaluateRosterRatingOverlap,
   pearsonCorrelation,
   RECRUITING_BALANCE_TARGETS,
 } from './evaluationMetrics';
@@ -80,7 +82,6 @@ const players: PlayerRecord[] = teams.flatMap(team => {
         rating_jr: ratings.jr,
         rating_sr: ratings.sr,
         stars: Math.max(1, Math.min(5, Math.round(team.prestige / 1.5))),
-        development_trait: 3,
         starter: index < ROSTER[position].starters,
       };
     }),
@@ -165,7 +166,6 @@ describe('multi-season recruiting evaluation', () => {
     expect(first.runs[0].seasons).toHaveLength(2);
     first.runs[0].seasons.forEach(season => {
       expect(season.teams).toHaveLength(2);
-      expect(season.teamsCompletingBaseCapacity).toBe(2);
       expect(season.structuralViolations).toEqual([]);
       expect(
         season.prestigePromotions +
@@ -173,6 +173,14 @@ describe('multi-season recruiting evaluation', () => {
           season.prestigeUnchanged,
       ).toBe(2);
       season.teams.forEach(team => {
+        expect(team.baseSignings + team.walkOns).toBeGreaterThanOrEqual(
+          team.baseCapacity,
+        );
+        expect(team.offenseRating).toBeGreaterThan(0);
+        expect(team.defenseRating).toBeGreaterThan(0);
+        expect(team.rosterMeanRating).toBeGreaterThan(0);
+        expect(team.ratingContributors.count).toBe(23);
+        expect(team.ratingContributors.meanRating).toBeGreaterThan(0);
         expect(team.prestigeAfter).toBeGreaterThanOrEqual(1);
         expect(team.prestigeAfter).toBeLessThanOrEqual(7);
       });
@@ -230,6 +238,7 @@ describe('multi-season recruiting evaluation', () => {
       steadyStateRatingSpreadChange: -10,
       prestigeMobility: 1,
       prestigeMobilityRate: 0.2,
+      rosterRatingInversionsByPrestigeGap: {},
     };
     expect(evaluateRecruitingBalance(aggregate)).toEqual([]);
     [
@@ -312,6 +321,25 @@ describe('multi-season recruiting evaluation', () => {
       3: { available: 2, signed: 1, unsigned: 1, signingRate: 0.5 },
       4: { available: 0, signed: 0, unsigned: 0, signingRate: 0 },
     });
+  });
+
+  it('measures strict lower-prestige rating inversions within each season', () => {
+    const comparisons = buildRosterRatingInversionsByPrestigeGap([[
+      { prestigeBefore: 3, rosterRating: 80 },
+      { prestigeBefore: 4, rosterRating: 78 },
+      { prestigeBefore: 5, rosterRating: 75 },
+      { prestigeBefore: 6, rosterRating: 90 },
+    ]]);
+
+    expect(comparisons).toMatchObject({
+      1: { pairs: 3, inversions: 2, inversionRate: 0.666667 },
+      2: { pairs: 2, inversions: 1, inversionRate: 0.5 },
+      3: { pairs: 1, inversions: 0, inversionRate: 0 },
+    });
+    expect(evaluateRosterRatingOverlap(comparisons)).toEqual([
+      { prestigeGap: 1, actual: 0.666667, minimum: 0.2, maximum: 0.35 },
+      { prestigeGap: 2, actual: 0.5, minimum: 0.05, maximum: 0.15 },
+    ]);
   });
 
   it('reports stable class-score distribution and tie diagnostics', () => {

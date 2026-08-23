@@ -214,7 +214,6 @@ describe('loadTeamStats', () => {
       last: 'Quarterback',
       pos: 'qb',
       stars: 4,
-      development_trait: 3,
     }]);
 
     const result = await loadTeamStats('Test State', 2024);

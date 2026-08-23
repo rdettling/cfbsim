@@ -34,7 +34,6 @@ describe('player origin loading', () => {
       last: historical.last,
       pos: historical.pos,
       stars: historical.stars,
-      development_trait: historical.development_trait,
     });
     const zeroStats = Object.fromEntries(
       PLAYER_SEASON_STAT_KEYS.map(key => [key, 0]),

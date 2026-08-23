@@ -15,6 +15,7 @@ acceptance contracts.
 | Next-season settings | `NextSeasonConfiguration` on `LeagueState` | Historical resolution and offseason commands | Stage-gated command in `realignment` |
 | Recruiting and AI rules | `src/domain/recruiting/config.ts` | Pure recruiting engine and AI planners | Deliberate tracked product or balance change |
 | Roster shape | `src/domain/rosterConfig.ts` | Bootstrap, recruiting, cuts, and starter selection | Deliberate tracked product change |
+| Team-rating formula | `src/domain/rosterRatings.ts` | Bootstrap, program entry, annual finalization, odds, rankings, and game resolution | Deliberate tracked balance change |
 | Static-data cache epoch | `STATIC_DATA_VERSION` | `src/db/baseData.ts` | Increment once for a released public-data change |
 | Persisted-schema epoch | `DB_VERSION` | `src/db/db.ts` | Increment with an exact current-schema change |
 
@@ -32,7 +33,8 @@ read the relevant fields directly. The engine is stochastic, so tuning changes
 must be evaluated over seeded samples rather than individual games.
 
 Offline simulation commands reuse the production resolver. `eval:sim` audits
-the committed model, `tune:sim` searches bounded candidates in memory,
+the committed model, `eval:box-scores` measures representative mixed-strength
+seasons, `tune:sim` searches bounded candidates in memory,
 `eval:sim-stability` measures held-out behavior and sensitivity, and
 `generate:sim-benchmark` owns the external benchmark snapshot. None of the
 evaluation or tuning commands rewrites `tuning.json` automatically.
@@ -64,10 +66,12 @@ Recruiting configuration separates locked product rules from values that may
 be deliberately balance-tuned. Class scoring owns public class value;
 recruiting configuration owns generation, interest, commitment, and AI
 planning; roster configuration owns positional totals, roster capacity, and
-starter requirements.
+starter requirements. Team-rating composition is a deterministic projection
+of current starters; it does not own a separate tuning or randomness surface.
 
-`eval:recruiting-balance` reads these current rules and runs repeated seasons in
-memory. It never writes configuration, IndexedDB, or tracked data.
+`eval:player-ratings` audits the generated national continuum and rarity bands.
+`eval:recruiting-balance` reads the same current rules and runs repeated seasons
+in memory. Neither command writes configuration, IndexedDB, or tracked data.
 
 [Recruiting Model](../systems/recruiting-model.md) owns formulas and balance
 expectations. [Roster and Recruiting Lifecycle](../systems/roster-and-recruiting.md)
@@ -109,7 +113,9 @@ the concrete commands.
 
 - `src/domain/sim/config.ts`: simulation tuning boundary.
 - `src/domain/recruiting/config.ts`: recruiting and AI rules.
+- `src/domain/recruiting/generation.ts`: national talent, development, scouting, and rating curves.
 - `src/domain/rosterConfig.ts`: roster shape.
+- `src/domain/rosterRatings.ts`: deterministic team-rating formula.
 - `src/types/league.ts`: next-season setting contract and defaults.
 - `src/domain/league/commands/nextSeasonConfiguration.ts`: stage-gated settings
   command.

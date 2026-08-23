@@ -1,6 +1,10 @@
-import type { SimGame } from '../../../src/types/sim';
-import type { ClockTempo, DefensiveIntent, OffensiveConcept, PlayRecord } from '../../../src/types/db';
-import { simGame } from '../../../src/domain/sim/engine';
+import type {
+  ClockTempo,
+  DefensiveIntent,
+  DriveRecord,
+  OffensiveConcept,
+  PlayRecord,
+} from '../../../src/types/db';
 import { OFFENSIVE_CONCEPTS } from '../../../src/domain/sim/concepts';
 import { DEFENSIVE_INTENTS } from '../../../src/domain/sim/defensiveIntents';
 import { twoPointSucceeded } from '../../../src/domain/sim/conversions';
@@ -27,6 +31,29 @@ const DRIVE_ENDING_CATEGORIES = [
   'other',
 ] as const;
 type DriveEndingCategory = typeof DRIVE_ENDING_CATEGORIES[number];
+
+type MetricGame = {
+  scoreA: number;
+  scoreB: number;
+  overtime: number;
+};
+
+type MetricPlay = Pick<
+  PlayRecord,
+  'call'
+  | 'down'
+  | 'yardsLeft'
+  | 'yardsGained'
+  | 'playType'
+  | 'result'
+  | 'startingFP'
+  | 'timing'
+>;
+
+export type MetricDrive = {
+  record: Pick<DriveRecord, 'result' | 'points' | 'startingFP'>;
+  plays: readonly MetricPlay[];
+};
 
 type EqualTeamMetrics = {
   combinedPointsPerGame: number;
@@ -435,7 +462,7 @@ export const createDefensiveMatchupTotals = () => new Map<
   new Map(OFFENSIVE_CONCEPTS.map(concept => [concept, emptyConceptTotal()])),
 ]));
 
-const recordPlayMetric = (total: ConceptTotal, play: PlayRecord) => {
+const recordPlayMetric = (total: ConceptTotal, play: MetricPlay) => {
   total.calls += 1;
   total.yards += play.yardsGained;
   if (play.playType === 'run') total.runs += 1;
@@ -462,13 +489,13 @@ const recordPlayMetric = (total: ConceptTotal, play: PlayRecord) => {
   if (play.result === 'interception') total.interceptions += 1;
 };
 
-export const recordEqualTeamMetrics = (
+export const recordGameMetrics = (
   totals: EqualTeamTotals,
   conceptTotals: Map<OffensiveConcept, ConceptTotal>,
   defensiveTotals: Map<DefensiveIntent, ConceptTotal>,
   matchupTotals: Map<DefensiveIntent, Map<OffensiveConcept, ConceptTotal>>,
-  game: SimGame,
-  drives: ReturnType<typeof simGame>,
+  game: MetricGame,
+  drives: readonly MetricDrive[],
 ) => {
   const plays = drives.flatMap(drive => drive.plays);
   const ordinaryPlays = plays.filter(play => play.call.kind !== 'try');

@@ -10,6 +10,7 @@ import {
 } from './capacity';
 import { buildRecruitingContext } from './context';
 import {
+  calculateElitePrestigeFit,
   calculatePlayingTimeFit,
   calculatePrestigeFit,
   calculateProximityFit,
@@ -67,6 +68,7 @@ describe('recruiting fit', () => {
   it('uses the locked component formulas', () => {
     expect(calculatePrestigeFit(1)).toBe(0);
     expect(calculatePrestigeFit(7)).toBe(100);
+    expect([1, 4, 7].map(calculateElitePrestigeFit)).toEqual([0, 25, 100]);
     expect(calculateProximityFit('ts', ' TS ')).toBe(100);
     expect(calculateProximityFit('TS', 'OS')).toBe(0);
     expect(calculateRecentSuccessFit(1, 10)).toBe(100);
@@ -120,6 +122,24 @@ describe('recruiting fit', () => {
         calculateTeamFit(fiveStar, team, fitContext),
       ),
     ).toEqual(fits);
+  });
+
+  it('gives three-stars a strong linear prestige preference without changing two-star fit', () => {
+    const prestigeTeams = [
+      buildTestTeam({ id: 1, prestige: 1, ranking: 3 }),
+      buildTestTeam({ id: 2, prestige: 4, ranking: 2 }),
+      buildTestTeam({ id: 3, prestige: 7, ranking: 1 }),
+    ];
+    const fitContext = buildRecruitingContext(prestigeTeams, []);
+    const twoStar = buildRecruitingProspect({ stars: 2, state: 'OS' });
+    const threeStar = { ...twoStar, stars: 3 };
+
+    expect(
+      prestigeTeams.map(team => calculateTeamFit(twoStar, team, fitContext)),
+    ).toEqual([25, 50, 75]);
+    expect(
+      prestigeTeams.map(team => calculateTeamFit(threeStar, team, fitContext)),
+    ).toEqual([8.75, 50, 91.25]);
   });
 });
 

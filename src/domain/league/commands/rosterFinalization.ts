@@ -419,11 +419,7 @@ export const finalizeRoster = async (
     const random = createSeededRandom(state.seed).fork(
       `roster-finalization:${state.year}`,
     );
-    recalculateTeamRatings(
-      league.teams,
-      players,
-      random.fork('team-ratings'),
-    );
+    recalculateTeamRatings(league.teams, players);
     const reset = await prepareSeasonReset(league, {
       rivalries: normalizeRivalriesData(
         rivalriesRecord.value,
@@ -454,7 +450,6 @@ export const finalizeRoster = async (
           last: player.last,
           pos: player.pos,
           stars: player.stars,
-          development_trait: player.development_trait,
         });
       } else {
         await originStore.delete(player.id);

@@ -187,6 +187,7 @@ const buildLeague = (
   initializeRivalryHostSeeds(league, data.rivalries, () => random.next());
   const players = prepareInitialRostersFromData({
     league,
+    historyData: data.historyData,
     names: data.names,
     states: data.states,
     random: random.fork('rosters'),

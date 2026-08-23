@@ -1,7 +1,7 @@
 import type { Team } from '../../types/domain';
 import type { RecruitingProspect } from '../../types/recruiting';
 import { ROSTER } from '../rosterConfig';
-import { STAR_RATING_TARGETS } from './config';
+import { STAR_FRESHMAN_RATING_ESTIMATES } from './config';
 import type { RecruitingContext } from './context';
 
 const clamp = (value: number, min = 0, max = 100) =>
@@ -9,9 +9,16 @@ const clamp = (value: number, min = 0, max = 100) =>
 const round3 = (value: number) => Math.round(value * 1000) / 1000;
 const ELITE_PRESTIGE_BLEND = 0.9;
 const ELITE_PRESTIGE_EXPONENT = 2;
+const THREE_STAR_PRESTIGE_BLEND = 0.65;
 
 export const calculatePrestigeFit = (prestige: number) =>
   round3(((clamp(prestige, 1, 7) - 1) / 6) * 100);
+
+export const calculateElitePrestigeFit = (prestige: number) =>
+  round3(
+    ((clamp(prestige, 1, 7) - 1) / 6) ** ELITE_PRESTIGE_EXPONENT *
+      100,
+  );
 
 export const calculateProximityFit = (
   prospectState: string,
@@ -38,8 +45,8 @@ export const calculatePlayingTimeFit = (
   const config = ROSTER[prospect.position];
   if (!config || config.starters <= 0 || config.total <= 0) return 0;
   const expectedRating =
-    (STAR_RATING_TARGETS[prospect.stars] ?? STAR_RATING_TARGETS[1])
-      .freshman;
+    STAR_FRESHMAN_RATING_ESTIMATES[prospect.stars] ??
+    STAR_FRESHMAN_RATING_ESTIMATES[1];
   const depth = context.rostersByTeamId
     .get(teamId)
     ?.positions.get(prospect.position);
@@ -79,15 +86,16 @@ export const calculateTeamFit = (
     calculateRecentSuccessFit(team.ranking, context.teamCount) *
       weights.recentSuccess;
   const fit = preferenceFit / 100;
-  const elitePrestigeFit =
-    ((clamp(team.prestige, 1, 7) - 1) / 6) **
-      ELITE_PRESTIGE_EXPONENT *
-    100;
+  const elitePrestigeFit = calculateElitePrestigeFit(team.prestige);
+  const prestigeFit = calculatePrestigeFit(team.prestige);
   return round3(
     clamp(
       prospect.stars >= 4
         ? fit * (1 - ELITE_PRESTIGE_BLEND) +
             elitePrestigeFit * ELITE_PRESTIGE_BLEND
+        : prospect.stars === 3
+          ? fit * (1 - THREE_STAR_PRESTIGE_BLEND) +
+              prestigeFit * THREE_STAR_PRESTIGE_BLEND
         : fit,
     ),
   );

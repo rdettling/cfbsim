@@ -10,6 +10,7 @@ import {
 } from './calibrationMetrics';
 import { measureEqualTeamSimulation } from './evaluation';
 import { parsePositiveInteger } from '../shared/cli';
+import type { CalibrationStage } from './calibrationStages';
 
 export type SimulationTuningOptions = {
   seed: number;
@@ -25,6 +26,7 @@ export type TuningCandidateEvaluation = {
 
 export type TunableParameter = {
   key: string;
+  stage: CalibrationStage;
   minimum: number;
   maximum: number;
   read: (tuning: SimTuning) => number;
@@ -33,50 +35,51 @@ export type TunableParameter = {
 
 const parameter = (
   key: string,
+  stage: CalibrationStage,
   minimum: number,
   maximum: number,
   read: TunableParameter['read'],
   write: TunableParameter['write'],
-): TunableParameter => ({ key, minimum, maximum, read, write });
+): TunableParameter => ({ key, stage, minimum, maximum, read, write });
 
 export const SIM_TUNING_PARAMETERS: readonly TunableParameter[] = [
-  parameter('playcalling.passWeightBase', 0.4, 0.55,
+  parameter('playcalling.passWeightBase', 'play_mix', 0.4, 0.55,
     tuning => tuning.playcalling.passWeightBase,
     (tuning, value) => { tuning.playcalling.passWeightBase = value; }),
-  parameter('outcomes.baseCompPercent', 0.55, 0.7,
+  parameter('outcomes.baseCompPercent', 'base_efficiency', 0.55, 0.7,
     tuning => tuning.outcomes.baseCompPercent,
     (tuning, value) => { tuning.outcomes.baseCompPercent = value; }),
-  parameter('outcomes.baseSackRate', 0.03, 0.1,
+  parameter('outcomes.baseSackRate', 'base_efficiency', 0.03, 0.1,
     tuning => tuning.outcomes.baseSackRate,
     (tuning, value) => { tuning.outcomes.baseSackRate = value; }),
-  parameter('outcomes.baseIntRate', 0.02, 0.12,
+  parameter('outcomes.baseIntRate', 'turnovers', 0.02, 0.12,
     tuning => tuning.outcomes.baseIntRate,
     (tuning, value) => { tuning.outcomes.baseIntRate = value; }),
-  parameter('outcomes.baseFumbleRate', 0.005, 0.03,
+  parameter('outcomes.baseFumbleRate', 'turnovers', 0.005, 0.03,
     tuning => tuning.outcomes.baseFumbleRate,
     (tuning, value) => { tuning.outcomes.baseFumbleRate = value; }),
-  parameter('outcomes.run.baseMean', 3, 6,
+  parameter('outcomes.run.baseMean', 'base_efficiency', 3, 6,
     tuning => tuning.outcomes.run.baseMean,
     (tuning, value) => { tuning.outcomes.run.baseMean = value; }),
-  parameter('outcomes.run.positiveMultiplier', 0.00005, 0.002,
+  parameter('outcomes.run.positiveMultiplier', 'explosiveness', 0.00005, 0.002,
     tuning => tuning.outcomes.run.positiveMultiplier,
     (tuning, value) => { tuning.outcomes.run.positiveMultiplier = value; }),
-  parameter('outcomes.pass.baseMean', 5, 10,
+  parameter('outcomes.pass.baseMean', 'base_efficiency', 5, 10,
     tuning => tuning.outcomes.pass.baseMean,
     (tuning, value) => { tuning.outcomes.pass.baseMean = value; }),
-  parameter('outcomes.pass.positiveMultiplier', 0.0005, 0.01,
+  parameter('outcomes.pass.positiveMultiplier', 'explosiveness', 0.0005, 0.01,
     tuning => tuning.outcomes.pass.positiveMultiplier,
     (tuning, value) => { tuning.outcomes.pass.positiveMultiplier = value; }),
-  parameter('outcomes.redZone.runPositiveYardsMultiplier', 0.6, 1.05,
+  parameter('outcomes.redZone.runPositiveYardsMultiplier', 'finishing', 0.6, 1.05,
     tuning => tuning.outcomes.redZone.runPositiveYardsMultiplier,
     (tuning, value) => { tuning.outcomes.redZone.runPositiveYardsMultiplier = value; }),
-  parameter('outcomes.redZone.passPositiveYardsMultiplier', 0.6, 1.05,
+  parameter('outcomes.redZone.passPositiveYardsMultiplier', 'finishing', 0.6, 1.05,
     tuning => tuning.outcomes.redZone.passPositiveYardsMultiplier,
     (tuning, value) => { tuning.outcomes.redZone.passPositiveYardsMultiplier = value; }),
-  parameter('outcomes.drive.thirdDownPositiveYardsMultiplier', 0.9, 1.25,
+  parameter('outcomes.drive.thirdDownPositiveYardsMultiplier', 'downs', 0.9, 1.25,
     tuning => tuning.outcomes.drive.thirdDownPositiveYardsMultiplier,
     (tuning, value) => { tuning.outcomes.drive.thirdDownPositiveYardsMultiplier = value; }),
-  parameter('outcomes.fieldGoal.accuracyMultiplier', 0.85, 1.15,
+  parameter('outcomes.fieldGoal.accuracyMultiplier', 'kicking', 0.85, 1.15,
     tuning => tuning.outcomes.fieldGoal.accuracyMultiplier,
     (tuning, value) => { tuning.outcomes.fieldGoal.accuracyMultiplier = value; }),
 ];
@@ -254,20 +257,34 @@ export const findSimulationTuningCandidate = (
   };
 
   const refined = [
-    refine(ordinaryStart),
-    refine({ tuning: driveTuning, evaluation: driveEvaluation }),
+    { origin: 'causal_or_baseline', ...refine(ordinaryStart) },
+    {
+      origin: 'drive_consistency',
+      ...refine({ tuning: driveTuning, evaluation: driveEvaluation }),
+    },
   ].sort((left, right) => compareTuningScores(left.evaluation.score, right.evaluation.score));
   const { tuning, evaluation } = refined[0];
 
-  const changedParameters = Object.fromEntries(SIM_TUNING_PARAMETERS
-    .map(parameter_ => [
-      parameter_.key,
-      {
-        before: parameter_.read(baselineTuning),
-        after: parameter_.read(tuning),
-      },
-    ] as const)
-    .filter(([, values]) => values.before !== values.after));
+  const changesFromBaseline = (values: SimTuning) => Object.fromEntries(
+    SIM_TUNING_PARAMETERS
+      .map(parameter_ => [
+        parameter_.key,
+        {
+          before: parameter_.read(baselineTuning),
+          after: parameter_.read(values),
+        },
+      ] as const)
+      .filter(([, change]) => change.before !== change.after),
+  );
+  const changedParameters = changesFromBaseline(tuning);
+  const parameterStages = Object.fromEntries([...new Set(
+    SIM_TUNING_PARAMETERS.map(parameter_ => parameter_.stage),
+  )].map(stage => [
+    stage,
+    SIM_TUNING_PARAMETERS
+      .filter(parameter_ => parameter_.stage === stage)
+      .map(parameter_ => parameter_.key),
+  ]));
 
   const report = {
     configuration: {
@@ -275,6 +292,7 @@ export const findSimulationTuningCandidate = (
       seeds: [options.seed, options.seed + 1, options.seed + 2],
       steps: SIM_TUNING_STEPS,
       parameters: SIM_TUNING_PARAMETERS.map(parameter_ => parameter_.key),
+      parameterStages,
       evaluations,
     },
     baseline: {
@@ -290,6 +308,13 @@ export const findSimulationTuningCandidate = (
       gaps: evaluation.gaps,
       violations: evaluation.violations,
     },
+    shortlist: refined.map(entry => ({
+      origin: entry.origin,
+      score: entry.evaluation.score,
+      changedParameters: changesFromBaseline(entry.tuning),
+      gaps: entry.evaluation.gaps,
+      violations: entry.evaluation.violations,
+    })),
     recommendation: evaluation.gaps.length
       ? 'Review remaining production gaps before adopting this candidate.'
       : 'Apply the exact candidate values, then run the full default audit.',

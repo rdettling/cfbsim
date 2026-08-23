@@ -185,6 +185,10 @@
     }
   },
   "clock": {
+    "gameRunoffMultiplier": {
+      "minimum": 0.65,
+      "maximum": 1.35
+    },
     "tempoMultipliers": {
       "normal": 1,
       "hurry_up": 0.7,
@@ -251,7 +255,7 @@
       "fieldGoalRangeStartFieldPosition": 63,
       "midfieldGoMaxYards": 2,
       "opponentTerritoryGoMaxYards": 3,
-      "fieldGoalTerritoryGoMaxYards": 4
+      "fieldGoalTerritoryGoMaxYards": 3
     }
   },
   "outcomes": {
@@ -264,8 +268,8 @@
     "executionDiffDivisor": 180,
     "yardsDiffDivisor": 172.8,
     "redZone": {
-      "runPositiveYardsMultiplier": 0.9218752467950635,
-      "passPositiveYardsMultiplier": 0.8086624971886522
+      "runPositiveYardsMultiplier": 0.8757814844553103,
+      "passPositiveYardsMultiplier": 0.7682293723292196
     },
     "drive": {
       "thirdDownPositiveYardsMultiplier": 1.050859941885666

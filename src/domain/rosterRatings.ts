@@ -1,6 +1,5 @@
 import type { PlayerRecord } from '../types/db';
 import type { Team } from '../types/domain';
-import type { RandomSource } from './utils/random';
 import { ROSTER } from './rosterConfig';
 
 const OFFENSE_WEIGHT = 0.6;
@@ -18,6 +17,33 @@ const DEFENSIVE_WEIGHTS: Record<string, number> = {
   cb: 30,
   s: 15,
 };
+const TEAM_STRENGTH_FLOOR = 25;
+const TEAM_STRENGTH_ELITE_RAW = 90;
+const TEAM_STRENGTH_ELITE_MAPPED = 96;
+const TEAM_STRENGTH_CEILING = 99;
+const TEAM_STRENGTH_EXPONENT = 2.15;
+
+const average = (values: number[]) =>
+  values.reduce((sum, value) => sum + value, 0) / values.length;
+
+const mapTeamStrength = (value: number) => {
+  if (value <= TEAM_STRENGTH_FLOOR) return TEAM_STRENGTH_FLOOR;
+  if (value >= TEAM_STRENGTH_CEILING) return TEAM_STRENGTH_CEILING;
+  if (value <= TEAM_STRENGTH_ELITE_RAW) {
+    const normalized = (
+      (value - TEAM_STRENGTH_FLOOR) /
+      (TEAM_STRENGTH_ELITE_RAW - TEAM_STRENGTH_FLOOR)
+    );
+    return TEAM_STRENGTH_FLOOR +
+      (TEAM_STRENGTH_ELITE_MAPPED - TEAM_STRENGTH_FLOOR) *
+        normalized ** TEAM_STRENGTH_EXPONENT;
+  }
+  return TEAM_STRENGTH_ELITE_MAPPED +
+    ((value - TEAM_STRENGTH_ELITE_RAW) /
+      (TEAM_STRENGTH_CEILING - TEAM_STRENGTH_ELITE_RAW)) *
+      (TEAM_STRENGTH_CEILING - TEAM_STRENGTH_ELITE_MAPPED);
+};
+
 export const setStarters = (teams: Team[], players: PlayerRecord[]) => {
   players.forEach(player => {
     player.starter = false;
@@ -41,49 +67,52 @@ export const setStarters = (teams: Team[], players: PlayerRecord[]) => {
 };
 
 const calculateTeamRating = (
+  team: Team,
   players: PlayerRecord[],
-  random: RandomSource,
 ) => {
-  const weightedPlayers = players
-    .filter(player => player.starter)
-    .map(player => {
-      const weight =
-        OFFENSIVE_WEIGHTS[player.pos] ?? DEFENSIVE_WEIGHTS[player.pos] ?? 0;
-      return {
-        position: player.pos,
-        weight,
-        weightedRating: player.rating * weight,
-      };
-    });
-  const calculateSide = (weights: Record<string, number>) => {
-    const side = weightedPlayers.filter(player => player.position in weights);
-    const totalWeight = side.reduce((sum, player) => sum + player.weight, 0);
-    if (!totalWeight) return 0;
-    return (
-      side.reduce((sum, player) => sum + player.weightedRating, 0) / totalWeight
-    );
+  const starters = players.filter(player => player.starter);
+  const positionRating = (position: string) => {
+    const ratings = starters
+      .filter(player => player.pos === position)
+      .map(player => player.rating);
+    if (!ratings.length) {
+      throw new Error(
+        `Cannot calculate ratings for ${team.name}: missing starting ${position.toUpperCase()}.`,
+      );
+    }
+    return average(ratings);
   };
-  const offense = calculateSide(OFFENSIVE_WEIGHTS) + random.normal(0, 3);
-  const defense = calculateSide(DEFENSIVE_WEIGHTS) + random.normal(0, 3);
+  const calculateSide = (weights: Record<string, number>) => {
+    const entries = Object.entries(weights);
+    const totalWeight = entries.reduce((sum, [, weight]) => sum + weight, 0);
+    return entries.reduce(
+      (sum, [position, weight]) => sum + positionRating(position) * weight,
+      0,
+    ) / totalWeight;
+  };
+  const rawOffense = calculateSide(OFFENSIVE_WEIGHTS);
+  const rawDefense = calculateSide(DEFENSIVE_WEIGHTS);
+  const rawOverall = Math.round(
+    rawOffense * OFFENSE_WEIGHT + rawDefense * DEFENSE_WEIGHT,
+  );
+  const offense = mapTeamStrength(Math.round(rawOffense));
+  const defense = mapTeamStrength(Math.round(rawDefense));
 
   return {
     offense: Math.round(offense),
     defense: Math.round(defense),
-    overall: Math.round(
-      offense * OFFENSE_WEIGHT + defense * DEFENSE_WEIGHT,
-    ),
+    overall: Math.round(mapTeamStrength(rawOverall)),
   };
 };
 
 export const recalculateTeamStrengths = (
   teams: Team[],
   players: PlayerRecord[],
-  random: RandomSource,
 ) => {
   teams.forEach(team => {
     const ratings = calculateTeamRating(
+      team,
       players.filter(player => player.teamId === team.id),
-      random.fork(`team:${team.id}`),
     );
     team.offense = ratings.offense;
     team.defense = ratings.defense;
@@ -94,9 +123,8 @@ export const recalculateTeamStrengths = (
 export const recalculateTeamRatings = (
   teams: Team[],
   players: PlayerRecord[],
-  random: RandomSource,
 ) => {
-  recalculateTeamStrengths(teams, players, random);
+  recalculateTeamStrengths(teams, players);
 
   [...teams]
     .sort((left, right) => right.rating - left.rating)

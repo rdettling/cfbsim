@@ -55,7 +55,18 @@ export interface RecruitingEvaluationTeamYear {
   cuts: number;
   averagePublicRating: number;
   stars: Record<number, number>;
+  offenseRating: number;
+  defenseRating: number;
   rosterRating: number;
+  rosterMeanRating: number;
+  ratingContributors: {
+    count: number;
+    meanRating: number;
+    ratings90Plus: number;
+    ratings95Plus: number;
+    ratings98Plus: number;
+    ratings99: number;
+  };
 }
 
 export interface RecruitingClassScoreDistribution {
@@ -92,6 +103,14 @@ export interface RecruitingSupplySummary {
   signed: number;
   unsigned: number;
   signingRate: number;
+}
+
+export interface RecruitingRosterRatingComparison {
+  pairs: number;
+  inversions: number;
+  ties: number;
+  inversionRate: number;
+  tieRate: number;
 }
 
 export interface RecruitingTop25PrestigeEntry {
@@ -148,6 +167,10 @@ export interface RecruitingEvaluationSeason {
   prestigeUnchanged: number;
   structuralViolations: string[];
   warnings: string[];
+  rosterRatingInversionsByPrestigeGap: Record<
+    number,
+    RecruitingRosterRatingComparison
+  >;
   prestigeSummaries: Record<
     number,
     {
@@ -238,6 +261,10 @@ export interface RecruitingEvaluationAggregate {
   steadyStateRatingSpreadChange: number;
   prestigeMobility: number;
   prestigeMobilityRate: number;
+  rosterRatingInversionsByPrestigeGap: Record<
+    number,
+    RecruitingRosterRatingComparison
+  >;
 }
 
 export interface RecruitingEvaluationReport {
@@ -261,6 +288,13 @@ export interface RecruitingEvaluationReport {
     recruitStarCounts: Record<number, number>;
   };
   balanceTargets: Record<RecruitingBalanceMetric, RecruitingBalanceRange>;
+  rosterRatingOverlapTargets: Record<number, RecruitingBalanceRange>;
+  rosterRatingOverlapDiagnostics: Array<{
+    prestigeGap: number;
+    actual: number;
+    minimum?: number;
+    maximum?: number;
+  }>;
   balanceViolations: RecruitingBalanceViolation[];
   checksum: string;
   reproducibilityFailures: number;

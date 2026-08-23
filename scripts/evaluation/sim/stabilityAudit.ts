@@ -204,6 +204,7 @@ export const buildSensitivityMatrix = (
         }];
       }));
       return [parameter_.key, {
+        stage: parameter_.stage,
         currentValue,
         minimum: parameter_.minimum,
         maximum: parameter_.maximum,
@@ -217,6 +218,15 @@ export const buildSensitivityMatrix = (
       production: baseline.production,
     },
     replayMatch,
+    stages: Object.fromEntries([...new Set(SIM_TUNING_PARAMETERS.map(
+      parameter_ => parameter_.stage,
+    ))].map(stage => [
+      stage,
+      SIM_TUNING_PARAMETERS
+        .filter(parameter_ => parameter_.stage === stage)
+        .map(parameter_ => parameter_.key)
+        .sort(),
+    ])),
     parameters,
     violations: [...violations].sort(),
   };

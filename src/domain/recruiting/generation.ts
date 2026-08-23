@@ -9,7 +9,6 @@ import { ROSTER } from '../rosterConfig';
 import {
   RECRUITING,
   RECRUIT_STAR_COUNTS,
-  STAR_RATING_TARGETS,
   type RecruitStarCounts,
 } from './config';
 import { buildRecruitingContext } from './context';
@@ -17,42 +16,188 @@ import { calculateTeamFit } from './fit';
 import type { RandomSource } from '../utils/random';
 import { createSeededRandom } from '../utils/random';
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
 const round3 = (value: number) => Math.round(value * 1000) / 1000;
-const clampRating = (value: number) => clamp(Math.round(value), 30, 99);
+const STAR_ORDER = [5, 4, 3, 2] as const;
+const MINIMUM_RATING = 25;
+const TALENT_CORRELATION = 0.3;
+const DEVELOPMENT_SCALE = Math.sqrt(1 - TALENT_CORRELATION ** 2);
+const SCOUTING_FRESHMAN_WEIGHT = 0.5;
+const SCOUTING_SENIOR_WEIGHT = 0.5;
+const SCOUTING_NOISE = 0.55;
+const DEVELOPMENT_TIMING = [
+  { item: 'so', weight: 0.5 },
+  { item: 'jr', weight: 0.35 },
+  { item: 'sr', weight: 0.15 },
+] as const;
 
-export const generatePlayerRatings = (
-  stars: number,
-  random: RandomSource,
-) => {
-  const target = STAR_RATING_TARGETS[stars] ?? STAR_RATING_TARGETS[1];
-  const developmentTrait = random.int(1, 5);
-  const freshman = clampRating(
-    random.normal(target.freshman, target.freshmanStdDev),
+type RatingCurve = ReadonlyArray<readonly [number, number]>;
+
+const FRESHMAN_RATING_CURVE: RatingCurve = [
+  [0, 25],
+  [0.01, 27],
+  [0.05, 29],
+  [0.10, 29],
+  [0.25, 34],
+  [0.50, 50],
+  [0.75, 60],
+  [0.90, 69],
+  [0.95, 76],
+  [0.99, 86],
+  [0.998, 92],
+  [0.9998, 96],
+  [0.99998, 98],
+  [0.999995, 99],
+  [0.9999995, 99],
+  [1, 99],
+];
+
+const SENIOR_RATING_CURVE: RatingCurve = [
+  [0, 25],
+  [0.01, 32],
+  [0.05, 40],
+  [0.10, 45],
+  [0.25, 55],
+  [0.50, 66],
+  [0.75, 76],
+  [0.90, 84],
+  [0.95, 89],
+  [0.99, 93],
+  [0.995, 95],
+  [0.998, 97],
+  [0.9998, 98],
+  [0.99999, 99],
+  [1, 99],
+];
+
+export interface GeneratedPlayerRatings {
+  fr: number;
+  so: number;
+  jr: number;
+  sr: number;
+}
+
+export interface RankedPlayerRatings extends GeneratedPlayerRatings {
+  nationalRank: number;
+  stars: number;
+}
+
+const normalCdf = (value: number) => {
+  const sign = value < 0 ? -1 : 1;
+  const x = Math.abs(value) / Math.sqrt(2);
+  const t = 1 / (1 + 0.3275911 * x);
+  const erf = sign * (1 - (((((1.061405429 * t - 1.453152027) * t)
+    + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t *
+    Math.exp(-x * x));
+  return (1 + erf) / 2;
+};
+
+const mapLatentRating = (value: number, curve: RatingCurve) => {
+  const percentile = normalCdf(value);
+  const upperIndex = curve.findIndex(([cutoff]) => cutoff >= percentile);
+  if (upperIndex <= 0) return curve[0][1];
+  const [lowerPercentile, lowerRating] = curve[upperIndex - 1];
+  const [upperPercentile, upperRating] = curve[upperIndex];
+  return Math.round(
+    lowerRating +
+      ((percentile - lowerPercentile) /
+        (upperPercentile - lowerPercentile)) *
+        (upperRating - lowerRating),
   );
-  const growth = Math.max(
-    2,
-    target.senior -
-      target.freshman +
-      (developmentTrait - 3) * 1.5 +
-      random.normal(0, 2),
+};
+
+const calculateSeniorLatent = (
+  freshmanLatent: number,
+  developmentLatent: number,
+) =>
+  TALENT_CORRELATION * freshmanLatent +
+  DEVELOPMENT_SCALE * developmentLatent;
+
+const buildProgression = (
+  freshmanLatent: number,
+  developmentLatent: number,
+  timingRandom: RandomSource,
+): GeneratedPlayerRatings => {
+  const seniorLatent = calculateSeniorLatent(
+    freshmanLatent,
+    developmentLatent,
   );
-  const sophomore = clampRating(
-    freshman + growth * 0.55 + random.normal(0, 1),
+  const freshman = mapLatentRating(freshmanLatent, FRESHMAN_RATING_CURVE);
+  const senior = Math.max(
+    freshman,
+    mapLatentRating(seniorLatent, SENIOR_RATING_CURVE),
   );
-  const junior = clampRating(
-    freshman + growth * 0.82 + random.normal(0, 1),
-  );
-  const senior = clampRating(freshman + growth + random.normal(0, 1));
+  const gains = { so: 0, jr: 0, sr: 0 };
+  for (let point = 0; point < senior - freshman; point += 1) {
+    const transition = timingRandom.weightedChoice([...DEVELOPMENT_TIMING]);
+    if (transition) gains[transition] += 1;
+  }
   return {
     fr: freshman,
-    so: Math.max(freshman, sophomore),
-    jr: Math.max(freshman, sophomore, junior),
-    sr: Math.max(freshman, sophomore, junior, senior),
-    developmentTrait,
+    so: freshman + gains.so,
+    jr: freshman + gains.so + gains.jr,
+    sr: senior,
   };
 };
+
+const generateScoutedRatings = (random: RandomSource) => {
+  const freshmanLatent = random.fork('freshman').normal(0, 1);
+  const developmentLatent = random.fork('development').normal(0, 1);
+  const seniorLatent = calculateSeniorLatent(
+    freshmanLatent,
+    developmentLatent,
+  );
+  return {
+    ...buildProgression(
+      freshmanLatent,
+      developmentLatent,
+      random.fork('timing'),
+    ),
+    scoutingScore:
+      SCOUTING_FRESHMAN_WEIGHT * freshmanLatent +
+      SCOUTING_SENIOR_WEIGHT * seniorLatent +
+      random.fork('scouting').normal(0, SCOUTING_NOISE),
+  };
+};
+
+export const generateNationalRatingPool = (
+  random: RandomSource,
+  starCounts: RecruitStarCounts = RECRUIT_STAR_COUNTS,
+): RankedPlayerRatings[] => {
+  const starsByRank = STAR_ORDER.flatMap(stars =>
+    Array.from({ length: starCounts[stars] ?? 0 }, () => stars),
+  );
+  const scouted = Array.from(
+    { length: starsByRank.length },
+    (_, generationIndex) => ({
+      ...generateScoutedRatings(random.fork(`talent:${generationIndex}`)),
+      generationIndex,
+    }),
+  ).sort(
+    (left, right) =>
+      right.scoutingScore - left.scoutingScore ||
+      left.generationIndex - right.generationIndex,
+  );
+  return scouted.map((entry, index) => {
+    const {
+      scoutingScore: _scoutingScore,
+      generationIndex: _generationIndex,
+      ...ratings
+    } = entry;
+    return {
+      ...ratings,
+      nationalRank: index + 1,
+      stars: starsByRank[index],
+    };
+  });
+};
+
+export const generateWalkOnRatings = (
+  random: RandomSource,
+): GeneratedPlayerRatings => buildProgression(
+  random.fork('freshman').normal(-1.6, 0.35),
+  random.fork('development').normal(-0.9, 1),
+  random.fork('timing'),
+);
 
 export const generateName = (
   position: string,
@@ -115,7 +260,10 @@ const generateWeights = (random: RandomSource): RecruitingPreferenceWeights => {
 };
 
 const generateRange = (rating: number, random: RandomSource) => {
-  const minimumLow = Math.max(30, rating - RECRUITING.ratingRangeWidth);
+  const minimumLow = Math.max(
+    MINIMUM_RATING,
+    rating - RECRUITING.ratingRangeWidth,
+  );
   const maximumLow = Math.min(rating, 99 - RECRUITING.ratingRangeWidth);
   const publicRatingMin = random.int(minimumLow, maximumLow);
   return {
@@ -153,38 +301,34 @@ export const generateProspectPool = ({
     item,
     weight,
   }));
-  const prospects: RecruitingProspect[] = [];
-  let id = 1;
-
-  [5, 4, 3, 2].forEach(stars => {
-    for (let index = 0; index < starCounts[stars]; index += 1) {
-      const random = root.fork(`prospect:${stars}:${index}`);
-      const position = random.fork('position').weightedChoice(positions) ?? 'qb';
-      const name = generateName(position, names, random.fork('name'));
-      const ratings = generatePlayerRatings(stars, random.fork('ratings'));
-      const range = generateRange(ratings.fr, random.fork('range'));
-      prospects.push({
-        id,
-        nationalRank: 0,
-        first: name.first,
-        last: name.last,
-        state:
-          random.fork('state').weightedChoice(weightedStates) ?? 'Unknown',
-        position,
-        stars,
-        ratingFr: ratings.fr,
-        ratingSo: ratings.so,
-        ratingJr: ratings.jr,
-        ratingSr: ratings.sr,
-        developmentTrait: ratings.developmentTrait,
-        ...range,
-        preferenceWeights: generateWeights(random.fork('preferences')),
-        interest: [],
-        committedTeamId: null,
-        committedRound: null,
-      });
-      id += 1;
-    }
+  const ratingPool = generateNationalRatingPool(
+    root.fork('rating-pool'),
+    starCounts,
+  );
+  const prospects: RecruitingProspect[] = ratingPool.map(ratings => {
+    const random = root.fork(`prospect:${ratings.nationalRank}`);
+    const position = random.fork('position').weightedChoice(positions) ?? 'qb';
+    const name = generateName(position, names, random.fork('name'));
+    const range = generateRange(ratings.fr, random.fork('range'));
+    return {
+      id: ratings.nationalRank,
+      nationalRank: ratings.nationalRank,
+      first: name.first,
+      last: name.last,
+      state:
+        random.fork('state').weightedChoice(weightedStates) ?? 'Unknown',
+      position,
+      stars: ratings.stars,
+      ratingFr: ratings.fr,
+      ratingSo: ratings.so,
+      ratingJr: ratings.jr,
+      ratingSr: ratings.sr,
+      ...range,
+      preferenceWeights: generateWeights(random.fork('preferences')),
+      interest: [],
+      committedTeamId: null,
+      committedRound: null,
+    };
   });
 
   prospects.forEach(prospect => {
@@ -204,22 +348,6 @@ export const generateProspectPool = ({
       .slice(0, RECRUITING.initialContenders)
       .map(({ tie: _tie, ...entry }) => entry);
   });
-
-  prospects
-    .map(prospect => ({
-      prospect,
-      midpoint: (prospect.publicRatingMin + prospect.publicRatingMax) / 2,
-      tie: root.fork(`rank:${prospect.id}`).next(),
-    }))
-    .sort(
-      (left, right) =>
-        right.prospect.stars - left.prospect.stars ||
-        right.midpoint - left.midpoint ||
-        left.tie - right.tie,
-    )
-    .forEach((entry, index) => {
-      entry.prospect.nationalRank = index + 1;
-    });
 
   return prospects;
 };

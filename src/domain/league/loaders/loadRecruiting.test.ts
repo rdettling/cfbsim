@@ -135,7 +135,6 @@ describe('loadRecruiting', () => {
     expect(result.prospects[0]).not.toHaveProperty('ratingSo');
     expect(result.prospects[0]).not.toHaveProperty('publicRatingMin');
     expect(result.prospects[0]).not.toHaveProperty('publicRatingMax');
-    expect(result.prospects[0]).not.toHaveProperty('developmentTrait');
     expect(result.cursor).not.toHaveProperty('seed');
     expect(await snapshot()).toEqual(before);
   });

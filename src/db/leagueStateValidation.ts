@@ -183,7 +183,6 @@ const PLAYER_KEYS = [
   'rating_jr',
   'rating_sr',
   'stars',
-  'development_trait',
   'starter',
 ] as const;
 
@@ -480,7 +479,6 @@ const isCurrentPlayerRecord = (value: unknown): value is PlayerRecord =>
   isFiniteNumber(value.rating_jr) &&
   isFiniteNumber(value.rating_sr) &&
   isFiniteNumber(value.stars) &&
-  isFiniteNumber(value.development_trait) &&
   typeof value.starter === 'boolean';
 
 export function assertCurrentLeagueState(

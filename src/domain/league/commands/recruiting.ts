@@ -250,7 +250,6 @@ export const initializeRecruiting = async ({
           last: player.last,
           pos: player.pos,
           stars: player.stars,
-          development_trait: player.development_trait,
         });
       } else {
         await originStore.delete(player.id);

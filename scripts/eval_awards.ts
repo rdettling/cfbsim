@@ -1,14 +1,6 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type {
-  ConferencesData,
-  HistoryData,
-  NamesData,
-  PrestigeConfig,
-  SeasonData,
-  TeamsData,
-} from '../src/types/baseData';
 import type { GameLogRecord, GameRecord, PlayerRecord } from '../src/types/db';
 import type { LeagueState } from '../src/types/league';
 import { buildAwardScoringSnapshot } from '../src/domain/league/awards';
@@ -31,30 +23,9 @@ import {
   type SeasonCorpusData,
   type SeasonSimulationSnapshot,
 } from './evaluation/shared/seasonCorpus';
-import { normalizeRivalriesData } from '../src/domain/rivalryData';
+import { loadSeasonCorpusData } from './evaluation/shared/seasonCorpusData';
 
 const START_YEAR = 2026;
-
-const readJson = <T>(path: string) =>
-  JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')) as T;
-
-const loadCorpusData = (): SeasonCorpusData => {
-  const teamsData = readJson<TeamsData>('../public/data/teams.json');
-  return {
-    yearData: readJson<SeasonData>('../public/data/seasons/2026.json'),
-    teamsData,
-    conferencesData: readJson<ConferencesData>('../public/data/conferences.json'),
-    historyData: readJson<HistoryData>('../public/data/history.json'),
-    prestigeConfig: readJson<PrestigeConfig>('../public/data/prestige_config.json'),
-    names: readJson<NamesData>('../public/data/names.json'),
-    states: readJson<Record<string, number>>('../public/data/states.json'),
-    rivalries: normalizeRivalriesData(
-      readJson<unknown>('../public/data/rivalries.json'),
-      new Set(Object.keys(teamsData.teams)),
-    ),
-    bettingOdds: readJson<unknown>('../public/data/betting_odds.json'),
-  };
-};
 
 interface CachedSeason {
   seed: number;
@@ -134,7 +105,7 @@ export const runAwardEvaluation = (arguments_: string[]) => {
   const options = parseAwardEvaluationArguments(arguments_);
   const profile = AWARD_EVALUATION_PROFILES[options.profile];
   const seeds = deriveAwardSeedFamily(options.profile, options.seed);
-  const data = loadCorpusData();
+  const data = loadSeasonCorpusData(START_YEAR);
   const seasons = collectAwardSeasonEvaluations(data, seeds, profile.seasons);
   const replayChecksums = seeds.slice(0, profile.replaySeeds).map(seed => {
     const expected = evaluateAwards({

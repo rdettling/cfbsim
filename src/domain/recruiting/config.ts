@@ -39,13 +39,10 @@ export const RECRUIT_STAR_COUNTS: RecruitStarCounts = {
   2: 200,
 };
 
-export const STAR_RATING_TARGETS: Record<
-  number,
-  { freshman: number; senior: number; freshmanStdDev: number }
-> = {
-  1: { freshman: 32, senior: 40, freshmanStdDev: 4 },
-  2: { freshman: 42, senior: 53, freshmanStdDev: 5 },
-  3: { freshman: 55, senior: 67, freshmanStdDev: 5 },
-  4: { freshman: 69, senior: 81, freshmanStdDev: 4.5 },
-  5: { freshman: 81, senior: 92, freshmanStdDev: 4 },
+export const STAR_FRESHMAN_RATING_ESTIMATES: Readonly<Record<number, number>> = {
+  1: 30,
+  2: 30,
+  3: 50,
+  4: 67,
+  5: 79,
 };

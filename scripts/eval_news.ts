@@ -1,14 +1,6 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type {
-  ConferencesData,
-  HistoryData,
-  PrestigeConfig,
-  TeamsData,
-  SeasonData,
-} from '../src/types/baseData';
-import type { NamesData } from '../src/types/baseData';
 import {
   evaluateNewsAudit,
   type NewsAuditNotice,
@@ -29,37 +21,14 @@ import { buildNewsAuditMarkdown } from './evaluation/news/report';
 import {
   generateNewsAuditCorpus,
 } from './evaluation/news/corpus';
-import type { SeasonCorpusData } from './evaluation/shared/seasonCorpus';
 import { newsAuditExitCode, parseNewsAuditArguments } from './evaluation/news/cli';
-import { normalizeRivalriesData } from '../src/domain/rivalryData';
+import { loadSeasonCorpusData } from './evaluation/shared/seasonCorpusData';
 
 const START_YEAR = 2026;
 
-const readJson = <T>(path: string) =>
-  JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')) as T;
-
-
-const loadCorpusData = (): SeasonCorpusData => {
-  const teamsData = readJson<TeamsData>('../public/data/teams.json');
-  return {
-    yearData: readJson<SeasonData>('../public/data/seasons/2026.json'),
-    teamsData,
-    conferencesData: readJson<ConferencesData>('../public/data/conferences.json'),
-    historyData: readJson<HistoryData>('../public/data/history.json'),
-    prestigeConfig: readJson<PrestigeConfig>('../public/data/prestige_config.json'),
-    names: readJson<NamesData>('../public/data/names.json'),
-    states: readJson<Record<string, number>>('../public/data/states.json'),
-    rivalries: normalizeRivalriesData(
-      readJson<unknown>('../public/data/rivalries.json'),
-      new Set(Object.keys(teamsData.teams)),
-    ),
-    bettingOdds: readJson<unknown>('../public/data/betting_odds.json'),
-  };
-};
-
 export const runNewsAudit = (arguments_: string[]) => {
   const options = parseNewsAuditArguments(arguments_);
-  const data = loadCorpusData();
+  const data = loadSeasonCorpusData(START_YEAR);
   const rankingEntries: RankingNewsAuditEntry[] = [];
   const previewEntries: PreviewNewsAuditEntry[] = [];
   const entries = generateNewsAuditCorpus(data, {

@@ -64,6 +64,11 @@ describe('simulation tuner', () => {
     });
     expect(first.configuration.evaluations).toBeGreaterThan(73);
     expect(first.configuration.parameters).toHaveLength(13);
+    expect(first.configuration.parameterStages.play_mix).toEqual([
+      'playcalling.passWeightBase',
+    ]);
+    expect(first.shortlist).toHaveLength(2);
+    expect(first.shortlist[0].score).toEqual(first.candidate.score);
     expect(SIM_TUNING.playcalling.passWeightBase).toBe(0.4734526815382582);
   });
 
@@ -86,7 +91,7 @@ describe('simulation tuner', () => {
       SIM_TUNING.outcomes.drive.thirdDownPositiveYardsMultiplier,
     );
     expect(SIM_TUNING.outcomes.redZone.passPositiveYardsMultiplier)
-      .toBe(0.8086624971886522);
+      .toBe(0.7682293723292196);
   });
 
   it('evaluates real games without leaking candidate tuning', () => {

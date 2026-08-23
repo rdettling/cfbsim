@@ -251,6 +251,7 @@ const initialRankings = new Map(
 );
 const players = prepareInitialRostersFromData({
   league,
+  historyData: history,
   names,
   states,
   random: createSeededRandom(options.seed).fork('initial-rosters'),

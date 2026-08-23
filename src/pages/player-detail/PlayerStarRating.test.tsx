@@ -3,17 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { PlayerStarRating } from './PlayerStarRating';
 
 describe('PlayerStarRating', () => {
-  it('renders two accessible five-slot meters', () => {
+  it('renders an accessible five-slot meter', () => {
     const markup = renderToStaticMarkup(
-      <>
-        <PlayerStarRating label="Recruiting" value={4} />
-        <PlayerStarRating label="Development" value={3} />
-      </>,
+      <PlayerStarRating label="Recruiting" value={4} />,
     );
 
     expect(markup).toContain('aria-label="Recruiting 4 out of 5"');
-    expect(markup).toContain('aria-label="Development 3 out of 5"');
-    expect(markup.match(/src="\/logos\/star\.png"/g)).toHaveLength(10);
+    expect(markup.match(/src="\/logos\/star\.png"/g)).toHaveLength(5);
   });
 
   it('clamps values to the supported zero-to-five range', () => {

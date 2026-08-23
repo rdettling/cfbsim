@@ -54,7 +54,7 @@ roster read merely as a side effect.
 - Loaders never clear, create, or rewrite players.
 - The recruiting projection exposes stars, national rank, preferences, fit,
   offers, points, and interest standings. Rating ranges, true/future ratings,
-  development traits, seeds, and AI decision data remain private.
+  seeds, and AI decision data remain private.
 - Recruiting Summary projects finalized prospects in public national-rank
   order. It exposes stars and the absolute class score, but not exact freshman
   ratings or links into rating-bearing player pages.
