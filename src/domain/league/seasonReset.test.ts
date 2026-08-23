@@ -49,4 +49,21 @@ describe('season reset rivalry choices', () => {
     expect(conference.championship).toBeNull();
     expect(conference.finalStandings).toBeNull();
   });
+
+  it('retains the initialized preseason poll scores while clearing records', async () => {
+    const league = buildTestLeague('summary');
+    league.teams[0].poll_score = 91.25;
+    league.teams[0].wins_over_expectation = 4.5;
+    league.teams[0].wins_over_expectation_per_game = 0.375;
+
+    await prepareSeasonReset(league, {
+      rivalries: { rivalries: [] },
+      odds: { oddsMap: {}, maxDiff: 100 },
+    });
+
+    expect(league.teams[0].poll_score).toBe(91.25);
+    expect(league.teams[0].gamesPlayed).toBe(0);
+    expect(league.teams[0].wins_over_expectation).toBe(0);
+    expect(league.teams[0].wins_over_expectation_per_game).toBe(0);
+  });
 });

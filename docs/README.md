@@ -38,6 +38,9 @@ to choose the checks required by a change.
   drives, plays, clock, calls, participants, and game finalization.
 - [Simulation Calibration](systems/simulation-calibration.md) owns the frozen
   benchmark, metric denominators, accepted baseline, and audit gates.
+- [Advanced Statistics and Performance Index](systems/advanced-statistics.md)
+  owns play-based efficiency, opponent-rating adjustment, and the derived
+  Evidence Score presentation.
 - [Scheduling and Week Advancement](systems/scheduling-and-week-advancement.md)
   owns preseason scheduling, weekly simulation, and postseason hooks.
 - [Rankings, Playoff, and Awards](systems/rankings-playoff-and-awards.md) owns

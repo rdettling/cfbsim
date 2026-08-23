@@ -25,7 +25,7 @@ const buildTeams = (count: number) => Array.from({ length: count }, (_, index) =
   abbreviation: `T${index + 1}`,
   ranking: index + 1,
   poll_score: 100 - index,
-  strength_of_record: (count - index) * 10,
+  wins_over_expectation: (count - index) * 10,
   conference: 'Test Conference',
   confName: 'Test Conference',
 }));
@@ -207,6 +207,7 @@ describe('postseason page loaders', () => {
       is_autobid: true,
       has_bye: true,
       is_champ: true,
+      wins_over_expectation_rank: 1,
       sos_rank: null,
     });
     expect(result.resume_teams[12]).toMatchObject({ seed: null, is_autobid: false, has_bye: false });
@@ -260,6 +261,7 @@ describe('postseason page loaders', () => {
       ranking: frozenFirst.ranking,
       poll_score: frozenFirst.pollScore,
       record: frozenFirst.record,
+      wins_over_expectation_rank: frozenFirst.winsOverExpectationRank,
     });
     expect(getAllGames).not.toHaveBeenCalled();
     expect(loadOddsContext).not.toHaveBeenCalled();

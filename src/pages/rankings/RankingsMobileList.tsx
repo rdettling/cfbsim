@@ -75,12 +75,10 @@ export const RankingsMobileList = ({
                 lineHeight: 1.2,
               }}
             >
-              Wins above
-              <br />
-              average
+              Poll score
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {team.gamesPlayed > 0 ? team.strength_of_record.toFixed(1) : '—'}
+              {team.poll_score.toFixed(1)}
             </Typography>
           </Box>
         </Stack>

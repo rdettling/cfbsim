@@ -125,6 +125,15 @@ describe('current league persistence boundary', () => {
       },
     },
     {
+      name: 'team with removed strength-of-record fields',
+      mutate: (league: LeagueState) => {
+        Object.assign(league.teams[0], {
+          strength_of_record: 0,
+          strength_of_record_avg: 0,
+        });
+      },
+    },
+    {
       name: 'team with removed prestige change field',
       mutate: (league: LeagueState) => {
         Object.assign(league.teams[0], { prestige_change: 1 });
@@ -265,6 +274,13 @@ describe('current league persistence boundary', () => {
       mutate: (league: LeagueState) => {
         league.resumeSnapshot = buildTestLeague('summary').resumeSnapshot;
         Object.assign(league.resumeSnapshot!, { obsoleteSnapshotField: true });
+      },
+    },
+    {
+      name: 'resume snapshot with removed SOR rank field',
+      mutate: (league: LeagueState) => {
+        league.resumeSnapshot = buildTestLeague('summary').resumeSnapshot;
+        Object.assign(league.resumeSnapshot!.teams[0], { sorRank: 1 });
       },
     },
   ])(

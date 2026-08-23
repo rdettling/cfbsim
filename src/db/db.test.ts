@@ -16,7 +16,7 @@ const deleteTestDatabase = (name: string) =>
 
 describe('current database schema', () => {
   it('uses the player-development schema epoch', () => {
-    expect(DB_VERSION).toBe(31);
+    expect(DB_VERSION).toBe(32);
   });
 
   it('creates every authoritative store in a fresh database', async () => {

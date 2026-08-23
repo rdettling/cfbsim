@@ -14,6 +14,7 @@ import {
 import { CONFERENCE_CHAMPIONSHIP_WEEK } from '../postseason';
 import { REGULAR_SEASON_WEEKS } from '../../schedule/constants';
 import type { PlayoffSelection } from './playoffSelection';
+import { formatRecord } from '../../sim/teamRecords';
 
 type ResumeComparisonInput = {
   league: LeagueState;
@@ -23,15 +24,12 @@ type ResumeComparisonInput = {
   oddsContext: OddsContext;
 };
 
-const formatRecord = (team: Team) =>
-  `${team.totalWins}-${team.totalLosses} (${team.confWins}-${team.confLosses})`;
-
-const buildSorRanks = (teams: Team[]) => {
+const buildWinsOverExpectationRanks = (teams: Team[]) => {
   const ranks = new Map<number, number>();
   teams
     .slice()
     .sort((a, b) => {
-      const difference = b.strength_of_record_avg - a.strength_of_record_avg;
+      const difference = b.wins_over_expectation_per_game - a.wins_over_expectation_per_game;
       return difference || a.id - b.id;
     })
     .forEach((team, index) => ranks.set(team.id, index + 1));
@@ -109,7 +107,7 @@ export const buildResumeComparisonTeams = ({
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const selectedTeams = selection.order.slice(0, league.settings.playoffTeams);
   const selectionById = new Map(selectedTeams.map((team, index) => [team.id, index + 1]));
-  const sorRanks = buildSorRanks(league.teams);
+  const winsOverExpectationRanks = buildWinsOverExpectationRanks(league.teams);
   const sosRanks = calculateStrengthOfScheduleRanks(
     league.teams,
     currentYearGames,
@@ -172,7 +170,7 @@ export const buildResumeComparisonTeams = ({
         conference: team.conference ?? 'Independent',
         record: formatRecord(team),
         pollScore: team.poll_score,
-        sorRank: sorRanks.get(team.id) ?? team.ranking,
+        winsOverExpectationRank: winsOverExpectationRanks.get(team.id) ?? team.ranking,
         sosRank: sosRanks.get(team.id) ?? null,
         top25Record: `${results.top25Wins}-${results.top25Losses}`,
         bestWin: toResult(results.bestWin),

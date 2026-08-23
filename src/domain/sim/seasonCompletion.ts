@@ -6,6 +6,7 @@ import {
 } from '../../db/simRepo';
 import type { LeagueState } from '../../types/league';
 import { buildCompletedSeasonArtifacts } from '../league/memory';
+import { buildPerformanceIndexMap } from '../league/utils/stats/teamPerformance';
 import { finalizePostseasonRankings } from './rankings';
 
 export const finalizeCompletedSeasonIfReady = async (league: LeagueState) => {
@@ -24,7 +25,16 @@ export const finalizeCompletedSeasonIfReady = async (league: LeagueState) => {
   ]);
   const completedLeague = structuredClone(league);
   completedLeague.info.stage = 'summary';
-  finalizePostseasonRankings(completedLeague.teams, championship);
+  const performanceIndexes = buildPerformanceIndexMap(
+    completedLeague.teams,
+    games,
+    details,
+  );
+  finalizePostseasonRankings(
+    completedLeague.teams,
+    championship,
+    performanceIndexes,
+  );
   const artifacts = buildCompletedSeasonArtifacts(
     completedLeague,
     games,

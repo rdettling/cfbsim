@@ -5,7 +5,12 @@ import type {
   TeamsData,
   SeasonData,
 } from '../../../src/types/baseData';
-import type { GameLogRecord, GameRecord, PlayerRecord } from '../../../src/types/db';
+import type {
+  GameDetailRecord,
+  GameLogRecord,
+  GameRecord,
+  PlayerRecord,
+} from '../../../src/types/db';
 import type { Team } from '../../../src/types/domain';
 import { DEFAULT_NEXT_SEASON_CONFIGURATION, type LeagueState } from '../../../src/types/league';
 import type { GameType } from '../../../src/types/news';
@@ -33,7 +38,9 @@ import {
   createGameLogsFromPlays,
 } from '../../../src/domain/sim/statistics';
 import { buildWatchability } from '../../../src/domain/sim/games';
-import { updateRankings, updateTeamRecords } from '../../../src/domain/sim/rankings';
+import { updateRankings } from '../../../src/domain/sim/rankings';
+import { updateTeamRecords } from '../../../src/domain/sim/teamRecords';
+import { buildPerformanceIndexMap } from '../../../src/domain/league/utils/stats/teamPerformance';
 import { buildBaseLabel } from '../../../src/domain/utils/gameLabels';
 import {
   createSeededRandom,
@@ -206,8 +213,8 @@ const resetSeasonRecords = (teams: Team[]) => {
     team.totalWins = 0;
     team.totalLosses = 0;
     team.gamesPlayed = 0;
-    team.strength_of_record = 0;
-    team.strength_of_record_avg = 0;
+    team.wins_over_expectation = 0;
+    team.wins_over_expectation_per_game = 0;
     team.record = '0-0 (0-0)';
     team.last_game = null;
     team.next_game = null;
@@ -296,6 +303,7 @@ const completeGame = ({
   playersById,
   allGames,
   allLogs,
+  allDetails,
   odds,
   rootSeed,
   sample,
@@ -308,6 +316,7 @@ const completeGame = ({
   playersById: Map<number, PlayerRecord>;
   allGames: GameRecord[];
   allLogs: GameLogRecord[];
+  allDetails: GameDetailRecord[];
   odds: OddsContext;
   rootSeed: number;
   sample: number;
@@ -332,6 +341,7 @@ const completeGame = ({
   record.quarter = simulated.quarter;
   record.clockSecondsLeft = simulated.clockSecondsLeft;
   const detail = buildGameDetail(record.id, record.year, driveRecords, plays, logs);
+  allDetails.push(detail);
   updateTeamRecords([simulated], league.teams, odds);
   observer.onGameComplete?.({
     rootSeed,
@@ -353,7 +363,17 @@ const playRound = (
   publishRankings = false,
 ) => {
   records.forEach(record => completeGame({ league, record, ...context }));
-  const updates = updateRankings(league.info, league.teams, league.settings);
+  const performanceIndexes = buildPerformanceIndexMap(
+    league.teams,
+    context.allGames.filter(game => game.year === league.info.currentYear),
+    context.allDetails.filter(detail => detail.year === league.info.currentYear),
+  );
+  const updates = updateRankings(
+    league.info,
+    league.teams,
+    league.settings,
+    performanceIndexes,
+  );
   if (publishRankings) context.observer.onRankingsUpdated?.({
     rootSeed: context.rootSeed,
     sample: context.sample,
@@ -503,6 +523,7 @@ export const runSeasonCorpus = (
       for (let season = 0; season < options.seasons; season += 1) {
         const seasonGames: GameRecord[] = [];
         const seasonLogs: GameLogRecord[] = [];
+        const seasonDetails: GameDetailRecord[] = [];
         const teamRankingsByWeek: SeasonSimulationSnapshot['teamRankingsByWeek'] = {};
         const captureTeamRankings = (week: number) => {
           if (!AWARD_RANKING_CHECKPOINTS.has(week)) return;
@@ -550,6 +571,7 @@ export const runSeasonCorpus = (
             playersById,
             allGames,
             allLogs: seasonLogs,
+            allDetails: seasonDetails,
             odds,
             rootSeed,
             sample,
@@ -567,6 +589,7 @@ export const runSeasonCorpus = (
           playersById,
           allGames,
           allLogs: seasonLogs,
+          allDetails: seasonDetails,
           odds,
           rootSeed,
           sample,
@@ -584,6 +607,7 @@ export const runSeasonCorpus = (
             playersById,
             allGames,
             allLogs: seasonLogs,
+            allDetails: seasonDetails,
             odds,
             rootSeed,
             sample,

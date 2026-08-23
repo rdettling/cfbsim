@@ -47,6 +47,8 @@ findings may remain diagnostic when the owning subsystem document says so.
 | `npm run eval:box-scores` | Mixed-strength regular-season production, national score distributions, causal metric groups, and seed-block variation |
 | `npm run eval:season-balance -- --profile smoke` | Fast full-season structure, ranking-independent balance, ranked-record and Prestige 7 diagnostics, and national-margin guardrails |
 | `npm run eval:season-balance -- --profile acceptance` | Representative 40-season competitive-balance audit with deterministic replay |
+| `npm run eval:rankings` | Ten-seed weekly poll-movement, prior-decay, exact-score, record-composition, and replay audit |
+| `npm run eval:performance-index` | Ten-seed held-out opponent-adjusted versus raw performance accuracy and exact replay |
 | `npm run eval:sim-stability` | Held-out tuning stability and parameter sensitivity |
 | `npm run eval:player-ratings` | Deterministic player-scale, class, star-label, development, walk-on, and elite-rarity audit |
 | `npm run tune:sim` | Bounded in-memory candidate search; never automatic acceptance |
@@ -77,7 +79,7 @@ writer's authoritative inputs.
 | Simulation behavior | Targeted tests, `eval:sim`, `eval:season-balance`, then stability audit when tuning is broad |
 | Recruiting or roster balance | Targeted tests, player-rating audit, representative recruiting evaluation, annual lifecycle scenario |
 | News facts, policy, copy, or scoring | Targeted tests and representative news audit |
-| Rankings, playoff, or awards | Targeted tests plus 2/4/12 postseason scenarios; `eval:awards` for scoring changes |
+| Rankings, playoff, or awards | Targeted tests plus 2/4/12 postseason scenarios; `eval:rankings` for poll scoring and `eval:awards` for award scoring |
 | Canonical or generated static data | Owning workflow in the static-data verification matrix |
 | Dependency graph | Full offline check, audit review, and production-server smoke test |
 

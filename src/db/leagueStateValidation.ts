@@ -69,8 +69,8 @@ const TEAM_KEYS = [
   'record',
   'movement',
   'poll_score',
-  'strength_of_record',
-  'strength_of_record_avg',
+  'wins_over_expectation',
+  'wins_over_expectation_per_game',
   'last_rank',
   'last_game',
   'next_game',
@@ -136,7 +136,7 @@ const RESUME_TEAM_KEYS = [
   'conference',
   'record',
   'pollScore',
-  'sorRank',
+  'winsOverExpectationRank',
   'sosRank',
   'top25Record',
   'bestWin',
@@ -310,8 +310,8 @@ const isCurrentTeam = (value: unknown): value is Team =>
   typeof value.record === 'string' &&
   Number.isInteger(value.movement) &&
   isFiniteNumber(value.poll_score) &&
-  isFiniteNumber(value.strength_of_record) &&
-  isFiniteNumber(value.strength_of_record_avg) &&
+  isFiniteNumber(value.wins_over_expectation) &&
+  isFiniteNumber(value.wins_over_expectation_per_game) &&
   (value.last_rank === null || isIntegerAtLeast(value.last_rank, 1)) &&
   (value.last_game === null || isScheduleGame(value.last_game)) &&
   (value.next_game === null || isScheduleGame(value.next_game));
@@ -435,7 +435,7 @@ const isResumeTeam = (value: unknown) =>
   isNonemptyString(value.conference) &&
   typeof value.record === 'string' &&
   isFiniteNumber(value.pollScore) &&
-  isIntegerAtLeast(value.sorRank, 1) &&
+  isIntegerAtLeast(value.winsOverExpectationRank, 1) &&
   (value.sosRank === null || isIntegerAtLeast(value.sosRank, 1)) &&
   typeof value.top25Record === 'string' &&
   (value.bestWin === null || isResumeResult(value.bestWin)) &&

@@ -128,5 +128,12 @@ describe('team ratings', () => {
 
     expect(stronger).toMatchObject({ ranking: 1, last_rank: 1 });
     expect(weaker).toMatchObject({ ranking: 2, last_rank: 2 });
+    expect(stronger.poll_score).toBeCloseTo(
+      ((stronger.rating - 25) / (99 - 25)) * 100,
+    );
+    expect(weaker.poll_score).toBeCloseTo(
+      ((weaker.rating - 25) / (99 - 25)) * 100,
+    );
+    expect(stronger.poll_score).toBeLessThan(100);
   });
 });

@@ -20,6 +20,7 @@ import {
   getGamesByWeek,
   getAllGames,
   getGameDetail,
+  getGameDetailsByYear,
   commitSimulationBatch,
 } from '../../db/simRepo';
 import { loadOddsContext } from '../odds';
@@ -35,13 +36,15 @@ import {
   createGameLogsFromPlays,
   loadPlayersMap,
 } from './statistics';
-import { updateTeamRecords, updateRankings, formatRecord } from './rankings';
+import { updateRankings } from './rankings';
+import { formatRecord, updateTeamRecords } from './teamRecords';
 import { handleSpecialWeeks } from './postseason';
 import { buildGameDetail, flattenGameDetail } from '../league/gameDetails';
 import { initializeSeasonSchedule } from '../league/seasonInitialization';
 import { extractGameStoryFacts } from '../news/facts';
 import { generateGameNews } from '../news/generate';
 import { generateWeeklyRankingNews } from '../news/rankings';
+import { buildPerformanceIndexMap } from '../league/utils/stats/teamPerformance';
 
 const refreshFutureGameSnapshots = (
   games: GameRecord[],
@@ -62,6 +65,7 @@ const refreshFutureGameSnapshots = (
 export const completeRankingsForWeek = (
   league: LeagueState,
   games: GameRecord[],
+  details: GameDetailRecord[],
   teamsById: Map<number, Team>,
 ) => {
   const week = league.info.currentWeek;
@@ -71,7 +75,16 @@ export const completeRankingsForWeek = (
   if (!weekGames.length || weekGames.some(game => game.winnerId === null)) {
     return { completed: false, story: null };
   }
-  const updates = updateRankings(league.info, league.teams, league.settings);
+  const updates = updateRankings(
+    league.info,
+    league.teams,
+    league.settings,
+    buildPerformanceIndexMap(
+      league.teams,
+      games.filter(game => game.year === league.info.currentYear),
+      details.filter(detail => detail.year === league.info.currentYear),
+    ),
+  );
   league.info.lastRankingsWeek = week;
   refreshFutureGameSnapshots(games, teamsById, league.teams.length);
   const story = generateWeeklyRankingNews({
@@ -235,6 +248,11 @@ export const finalizeGameSimulation = async (params: {
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const allGames = await getAllGames();
   const games = allGames.map(game => game.id === updatedRecord.id ? updatedRecord : game);
+  const storedDetails = await getGameDetailsByYear(league.info.currentYear);
+  const seasonDetails = [
+    ...storedDetails.filter(entry => entry.gameId !== detail.gameId),
+    detail,
+  ];
   const story = generateGameNews(extractGameStoryFacts({
     game: updatedRecord,
     detail,
@@ -242,7 +260,7 @@ export const finalizeGameSimulation = async (params: {
     playersById,
     games,
   })).item;
-  const rankings = completeRankingsForWeek(league, games, teamsById);
+  const rankings = completeRankingsForWeek(league, games, seasonDetails, teamsById);
 
   await commitSimulationBatch({
     league,
@@ -281,6 +299,7 @@ export const advanceWeeks = async (destWeek: number) => {
   const playersById = await loadPlayersMap(league.teams);
 
   const detailsToSave: GameDetailRecord[] = [];
+  const seasonDetails = await getGameDetailsByYear(league.info.currentYear);
   const oddsContext = await loadOddsContext();
 
   while (league.info.currentWeek < destWeek) {
@@ -316,15 +335,15 @@ export const advanceWeeks = async (destWeek: number) => {
       const playRecords = simDrives.flatMap(drive => drive.plays);
       const logs = createGameLogsFromPlays(simGameObj, playRecords, starters);
 
-      detailsToSave.push(
-        buildGameDetail(
-          gameRecord.id,
-          gameRecord.year,
-          driveRecords,
-          playRecords,
-          logs,
-        ),
+      const detail = buildGameDetail(
+        gameRecord.id,
+        gameRecord.year,
+        driveRecords,
+        playRecords,
+        logs,
       );
+      detailsToSave.push(detail);
+      seasonDetails.push(detail);
       gameRecord.scoreA = simGameObj.scoreA;
       gameRecord.scoreB = simGameObj.scoreB;
       gameRecord.winnerId = simGameObj.winner?.id ?? null;
@@ -345,7 +364,12 @@ export const advanceWeeks = async (destWeek: number) => {
       const updated = updatedById.get(game.id);
       if (updated) Object.assign(game, updated);
     });
-    const rankings = completeRankingsForWeek(league, futureGames, teamsById);
+    const rankings = completeRankingsForWeek(
+      league,
+      futureGames,
+      seasonDetails,
+      teamsById,
+    );
 
     if (simGames.length || rankings.completed) {
       const weekGameIds = new Set(unplayed.map(game => game.id));

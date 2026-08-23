@@ -16,12 +16,27 @@ acceptance contracts.
 | Recruiting and AI rules | `src/domain/recruiting/config.ts` | Pure recruiting engine and AI planners | Deliberate tracked product or balance change |
 | Roster shape | `src/domain/rosterConfig.ts` | Bootstrap, recruiting, cuts, and starter selection | Deliberate tracked product change |
 | Team-rating formula | `src/domain/rosterRatings.ts` | Bootstrap, program entry, annual finalization, odds, rankings, and game resolution | Deliberate tracked balance change |
+| Poll-ranking formula | `src/domain/sim/rankingScores.ts` and `rankings.ts` | Preseason initialization, weekly polls, playoff selection input, and final rankings | Deliberate tracked balance change |
+| Performance-index formula | `src/domain/league/utils/stats/performanceIndex.ts` and `teamPerformance.ts` | Completed-game performance adjusted by opponent Team Ratings | Deliberate tracked model change |
 | Static-data cache epoch | `STATIC_DATA_VERSION` | `src/db/baseData.ts` | Increment once for a released public-data change |
 | Persisted-schema epoch | `DB_VERSION` | `src/db/db.ts` | Increment with an exact current-schema change |
 
 Production constants stay with the domain operation that owns their meaning.
 Do not introduce a generic configuration registry, environment override, or
 second source of truth.
+
+The poll-ranking owner defines the résumé, Performance Index, Evidence Score,
+Team Score, and completed-game prior decay. `eval:rankings` runs deterministic
+production seasons and audits ranked loss movement, early top-five loss
+containment, winner and bye stability,
+loss-then-win recovery, Week 14 record composition, exact formula application,
+zero prior after eight games, score integrity, and exact replay. It reports the
+committed model and never rewrites production values.
+
+The advanced-statistics owner defines the public play metrics, Five
+Factors-inspired component weights, opponent-rating adjustment, and index
+scale. Performance Index contributes to Poll Score but
+does not affect the simulation's forward-looking Team Rating.
 
 ## Runtime Flows
 

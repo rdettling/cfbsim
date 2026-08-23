@@ -6,16 +6,17 @@ import { RankingsMobileList } from './RankingsMobileList';
 
 const rankedTeam = {
   ...buildTestTeam({
-    strength_of_record: 6.3,
-    strength_of_record_avg: 0.45,
+    poll_score: 92.46,
+    wins_over_expectation: 6.3,
+    wins_over_expectation_per_game: 0.45,
   }),
   isPlayoffTeam: true,
   last_week: null,
   current_week: null,
 };
 
-describe('rankings wins-above-average presentation', () => {
-  it('shows cumulative wins above average on desktop', () => {
+describe('rankings poll-score presentation', () => {
+  it('shows the authoritative poll score on desktop', () => {
     const markup = renderToStaticMarkup(
       <RankingsDesktopTable
         teams={[rankedTeam]}
@@ -23,24 +24,25 @@ describe('rankings wins-above-average presentation', () => {
       />,
     );
 
-    expect(markup).toContain('Wins Above Average');
-    expect(markup).toContain('Explain Wins Above Average');
+    expect(markup).toContain('Poll Score');
+    expect(markup).toContain('Explain Poll Score');
     expect(markup).toContain(
-      'An estimate of how many more or fewer games a team won than an average team would against the same opponents at the same locations.',
+      '72.2% Résumé Score and 27.8% opponent-adjusted Performance Index',
     );
-    expect(markup).toContain('6.3');
+    expect(markup).toContain('previous rank never affects the score');
+    expect(markup).toContain('92.5');
     expect(markup).toContain('Playoff');
     expect(markup).toContain('Movement');
     expect(markup).toContain('Last Week');
     expect(markup).toContain('This Week');
-    expect(markup).not.toContain('Poll');
+    expect(markup).not.toContain('Wins Above Average');
     expect(markup).not.toContain('Recent Result');
     expect(markup).not.toContain('Next Game');
-    expect(markup).not.toContain('SOR/Game');
-    expect(markup).not.toContain('SOR Rank');
+    expect(markup).not.toContain('WOE/Game');
+    expect(markup).not.toContain('WOE Rank');
   });
 
-  it('shows cumulative wins above average on mobile', () => {
+  it('shows the authoritative poll score on mobile', () => {
     const markup = renderToStaticMarkup(
       <RankingsMobileList
         teams={[rankedTeam]}
@@ -48,16 +50,15 @@ describe('rankings wins-above-average presentation', () => {
       />,
     );
 
-    expect(markup).toContain('Wins above');
-    expect(markup).toContain('average');
-    expect(markup).not.toContain('Explain Wins Above Average');
-    expect(markup).toContain('6.3');
+    expect(markup).toContain('Poll score');
+    expect(markup).not.toContain('Explain Poll Score');
+    expect(markup).toContain('92.5');
     expect(markup).toContain('Playoff');
     expect(markup).not.toContain('Recent result');
-    expect(markup).not.toContain('Poll score');
+    expect(markup).not.toContain('Wins above');
     expect(markup).not.toContain('Next game');
-    expect(markup).not.toContain('Strength of record per game');
-    expect(markup).not.toContain('SOR rank');
+    expect(markup).not.toContain('Wins Over Expectation per game');
+    expect(markup).not.toContain('Wins Over Expectation rank');
   });
 
   it('shows the fixed weekly game columns only on desktop', () => {

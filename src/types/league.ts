@@ -130,7 +130,7 @@ export interface ResumeSnapshotTeam {
   conference: string;
   record: string;
   pollScore: number;
-  sorRank: number;
+  winsOverExpectationRank: number;
   sosRank: number | null;
   top25Record: string;
   bestWin: ResumeSnapshotResult | null;

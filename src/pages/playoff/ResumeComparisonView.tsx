@@ -94,7 +94,7 @@ const ResumeDesktopTable = ({
         <TableCell sx={{ width: 118 }}>Record</TableCell>
         <TableCell sx={{ minWidth: 125 }}>Conference</TableCell>
         <TableCell align="right" sx={{ width: 110 }}>Weekly Score</TableCell>
-        <TableCell align="right" sx={{ width: 72 }}>SOR</TableCell>
+        <TableCell align="right" sx={{ width: 92 }}>WOE Rank</TableCell>
         <TableCell align="right" sx={{ width: 72 }}>SOS</TableCell>
         <TableCell align="center" sx={{ width: 104 }}>Top 25</TableCell>
         <TableCell sx={{ minWidth: 170 }}>Best Win</TableCell>
@@ -125,7 +125,7 @@ const ResumeDesktopTable = ({
           <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 500 }}>{team.record}</TableCell>
           <TableCell>{team.conference}</TableCell>
           <TableCell align="right">{team.poll_score.toFixed(1)}</TableCell>
-          <TableCell align="right">#{team.sor_rank}</TableCell>
+          <TableCell align="right">#{team.wins_over_expectation_rank}</TableCell>
           <TableCell align="right">{team.sos_rank ? `#${team.sos_rank}` : '—'}</TableCell>
           <TableCell align="center" sx={{ fontWeight: 600 }}>{team.top_25_record}</TableCell>
           <TableCell><OpponentResult result={team.best_win} onTeamClick={onTeamClick} /></TableCell>
@@ -204,7 +204,10 @@ const ResumeMobileList = ({
           }}
         >
           <Metric label="Weekly Score" value={team.poll_score.toFixed(1)} />
-          <Metric label="SOR rank" value={`#${team.sor_rank}`} />
+          <Metric
+            label="Wins Over Expectation rank"
+            value={`#${team.wins_over_expectation_rank}`}
+          />
           <Metric label="SOS rank" value={team.sos_rank ? `#${team.sos_rank}` : '—'} />
           <Metric label="Top-25 record" value={team.top_25_record} />
         </Box>

@@ -205,3 +205,52 @@ export interface RatingsStatsPageResult {
   teams: Team[];
   conferences: Conference[];
 }
+
+export interface AdvancedUnitStats {
+  successRate: number;
+  standardDownSuccessRate: number;
+  passingDownSuccessRate: number;
+  explosivePlayRate: number;
+  successfulPlayYards: number;
+  pointsPerOpportunity: number;
+  havocRate: number;
+  averageStartingFieldPosition: number;
+  lineYardsPerCarry: number;
+  stuffRate: number;
+}
+
+export type PollRankOverrideReason =
+  | 'playoff_selection'
+  | 'championship_placement'
+  | null;
+
+export interface AdvancedTeamStatsRow {
+  teamId: number;
+  teamName: string;
+  record: string;
+  games: number;
+  pollRank: number;
+  pollScore: number;
+  projectedPollScore: number;
+  pollScoreMatchesProjection: boolean;
+  pollRankOverrideReason: PollRankOverrideReason;
+  performanceIndex: number;
+  offensePerformance: number;
+  defensePerformance: number;
+  teamRating: number;
+  teamScore: number;
+  teamRatingPriorWeight: number;
+  teamScoreContribution: number;
+  evidenceScoreContribution: number;
+  resumeScore: number;
+  evidenceScore: number;
+  offense: AdvancedUnitStats;
+  defense: AdvancedUnitStats;
+}
+
+export interface AdvancedStatsPageResult {
+  info: Info;
+  team: Team;
+  conferences: Conference[];
+  rows: AdvancedTeamStatsRow[];
+}

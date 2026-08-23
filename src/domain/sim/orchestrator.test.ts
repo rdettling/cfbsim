@@ -44,7 +44,7 @@ describe('week completion rankings', () => {
       ranking: index + 1,
       last_rank: index + 1,
       poll_score: 100 - index,
-      strength_of_record_avg: 0,
+      wins_over_expectation_per_game: 0,
     }));
     const league = buildTestLeague('season', {
       info: {
@@ -61,12 +61,12 @@ describe('week completion rankings', () => {
     const games = [game(1, 4, 1), game(2, 5, null)];
     const teamsById = new Map(teams.map(team => [team.id, team]));
 
-    const first = completeRankingsForWeek(league, games, teamsById);
+    const first = completeRankingsForWeek(league, games, [], teamsById);
     expect(first).toEqual({ completed: true, story: null });
     expect(league.info.lastRankingsWeek).toBe(4);
     expect(games[1].rankATOG).toBe(teams[0].ranking);
     expect(games[1].rankBTOG).toBe(teams[1].ranking);
-    expect(completeRankingsForWeek(league, games, teamsById))
+    expect(completeRankingsForWeek(league, games, [], teamsById))
       .toEqual({ completed: false, story: null });
   });
 });

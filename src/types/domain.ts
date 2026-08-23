@@ -59,8 +59,8 @@ export interface Team {
   record: string;
   movement: number;
   poll_score: number;
-  strength_of_record: number;
-  strength_of_record_avg: number;
+  wins_over_expectation: number;
+  wins_over_expectation_per_game: number;
   last_rank: number | null;
   last_game: ScheduleGame | null;
   next_game: ScheduleGame | null;

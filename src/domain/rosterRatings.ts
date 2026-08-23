@@ -1,6 +1,11 @@
 import type { PlayerRecord } from '../types/db';
 import type { Team } from '../types/domain';
 import { ROSTER } from './rosterConfig';
+import {
+  getTeamScore,
+  TEAM_RATING_CEILING,
+  TEAM_RATING_FLOOR,
+} from './sim/rankingScores';
 
 const OFFENSE_WEIGHT = 0.6;
 const DEFENSE_WEIGHT = 0.4;
@@ -17,31 +22,29 @@ const DEFENSIVE_WEIGHTS: Record<string, number> = {
   cb: 30,
   s: 15,
 };
-const TEAM_STRENGTH_FLOOR = 25;
 const TEAM_STRENGTH_ELITE_RAW = 90;
 const TEAM_STRENGTH_ELITE_MAPPED = 96;
-const TEAM_STRENGTH_CEILING = 99;
 const TEAM_STRENGTH_EXPONENT = 2.15;
 
 const average = (values: number[]) =>
   values.reduce((sum, value) => sum + value, 0) / values.length;
 
 const mapTeamStrength = (value: number) => {
-  if (value <= TEAM_STRENGTH_FLOOR) return TEAM_STRENGTH_FLOOR;
-  if (value >= TEAM_STRENGTH_CEILING) return TEAM_STRENGTH_CEILING;
+  if (value <= TEAM_RATING_FLOOR) return TEAM_RATING_FLOOR;
+  if (value >= TEAM_RATING_CEILING) return TEAM_RATING_CEILING;
   if (value <= TEAM_STRENGTH_ELITE_RAW) {
     const normalized = (
-      (value - TEAM_STRENGTH_FLOOR) /
-      (TEAM_STRENGTH_ELITE_RAW - TEAM_STRENGTH_FLOOR)
+      (value - TEAM_RATING_FLOOR) /
+      (TEAM_STRENGTH_ELITE_RAW - TEAM_RATING_FLOOR)
     );
-    return TEAM_STRENGTH_FLOOR +
-      (TEAM_STRENGTH_ELITE_MAPPED - TEAM_STRENGTH_FLOOR) *
+    return TEAM_RATING_FLOOR +
+      (TEAM_STRENGTH_ELITE_MAPPED - TEAM_RATING_FLOOR) *
         normalized ** TEAM_STRENGTH_EXPONENT;
   }
   return TEAM_STRENGTH_ELITE_MAPPED +
     ((value - TEAM_STRENGTH_ELITE_RAW) /
-      (TEAM_STRENGTH_CEILING - TEAM_STRENGTH_ELITE_RAW)) *
-      (TEAM_STRENGTH_CEILING - TEAM_STRENGTH_ELITE_MAPPED);
+      (TEAM_RATING_CEILING - TEAM_STRENGTH_ELITE_RAW)) *
+      (TEAM_RATING_CEILING - TEAM_STRENGTH_ELITE_MAPPED);
 };
 
 export const setStarters = (teams: Team[], players: PlayerRecord[]) => {
@@ -125,11 +128,11 @@ export const recalculateTeamRatings = (
   players: PlayerRecord[],
 ) => {
   recalculateTeamStrengths(teams, players);
-
   [...teams]
-    .sort((left, right) => right.rating - left.rating)
+    .sort((left, right) => right.rating - left.rating || left.id - right.id)
     .forEach((team, index) => {
       team.ranking = index + 1;
       team.last_rank = index + 1;
+      team.poll_score = getTeamScore(team.rating);
     });
 };

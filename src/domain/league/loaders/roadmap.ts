@@ -6,5 +6,4 @@ const loadRoadmapPage = async () => {
   return buildLeagueNavigationEnvelope(league);
 };
 
-export const loadAdvancedStats = loadRoadmapPage;
 export const loadPostseasonProjections = loadRoadmapPage;

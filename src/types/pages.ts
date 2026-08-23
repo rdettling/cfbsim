@@ -30,10 +30,8 @@ import type { loadBowlGames } from '../domain/league/loaders/postseason/loadBowl
 import type { loadPlayoffBracket } from '../domain/league/loaders/postseason/loadPlayoffBracket';
 import type { loadPlayoffPicture } from '../domain/league/loaders/postseason/loadPlayoffPicture';
 import type { loadResumeComparison } from '../domain/league/loaders/postseason/loadResumeComparison';
-import type {
-  loadAdvancedStats,
-  loadPostseasonProjections,
-} from '../domain/league/loaders/roadmap';
+import type { loadPostseasonProjections } from '../domain/league/loaders/roadmap';
+import type { loadAdvancedStats } from '../domain/league/loaders/stats/advancedStats';
 
 export type HomePageData = Awaited<ReturnType<typeof loadHomeData>>;
 export type NonConPageData = Awaited<ReturnType<typeof loadNonCon>>;

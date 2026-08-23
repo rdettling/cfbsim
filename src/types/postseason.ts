@@ -25,7 +25,7 @@ export type ResumeTeamEntry = {
   conference: string;
   record: string;
   poll_score: number;
-  sor_rank: number;
+  wins_over_expectation_rank: number;
   sos_rank: number | null;
   top_25_record: string;
   best_win: ResumeResultEntry | null;

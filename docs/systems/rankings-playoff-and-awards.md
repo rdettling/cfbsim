@@ -8,7 +8,8 @@ Explains how season outcomes are transformed into ranking movement, postseason s
 
 This subsystem has three linked layers:
 
-1. **Ranking layer**: computes records and poll ordering from simulated game results.
+1. **Record and ranking layer**: `teamRecords.ts` computes records and Wins Over
+   Expectation, while `rankingScores.ts` and `rankings.ts` own poll scoring and ordering.
 2. **Postseason layer**: schedules conference championships, playoff rounds, bowls, and national championship according to format settings.
 3. **Awards layer**: aggregates player game logs into award candidate scoring and final selections.
 
@@ -19,13 +20,15 @@ as season weeks advance.
 ## Execution
 
 1. **Record + ranking updates during progression**
-- `updateTeamRecords(...)` consumes simulated games, mutating team W/L splits and strength-of-record components.
+- `updateTeamRecords(...)` consumes simulated games, mutating team W/L splits and Wins Over Expectation components.
 - Completed regular-season games within one non-independent conference update
   conference W–L; all other completed regular-season games update
   nonconference W–L. Conference championships, bowls, and playoff games update
-  the overall record, games played, SOR, and rankings without changing either
+  the overall record, games played, Wins Over Expectation, and rankings without changing either
   regular-season split.
-- `updateRankings(...)` updates `poll_score` and rank order from inertia + normalized SOR model (with postseason freeze weeks by format) and returns the completed mutation for editorial use.
+- `updateRankings(...)` updates `poll_score` and rank order from fixed-scale
+  résumé, Performance Index, and a declining Team Rating prior, with
+  postseason freeze weeks by format.
 - Week completion is idempotent: `lastRankingsWeek` records only which week was processed, while each team's `last_rank` remains the sole prior-poll snapshot.
 - Weeks 1–14 publish a rankings story only for a new No. 1, at least two top-five entrants, or at least five combined Top 25 entries and exits.
 
@@ -58,9 +61,13 @@ as season weeks advance.
 - Route-specific postseason loaders compose the bracket, playoff picture,
   résumé comparison, and bowl projection/actual views from shared selection
   context.
-- The rankings page projects each team's exact previous-week result and
-  current-week matchup; bye weeks remain empty instead of substituting the
-  nearest completed or upcoming game.
+- The rankings page projects each team's one-decimal `0–100` Poll Score, exact
+  previous-week result, and current-week matchup. Bye weeks remain empty
+  instead of substituting the nearest completed or upcoming game.
+- Advanced Statistics keeps the rankings page concise while its Poll view
+  exposes official rank, published Poll Score, every score component, and each
+  team's exact contribution math. Sorting a component never replaces the
+  displayed official rank.
 
 4. **Awards generation path**
 - Live `loadAwards()` projections provide current-year games and logs to `buildAwards(...)`.
@@ -83,9 +90,44 @@ flowchart TD
 
 ## Selection and Scoring Rules
 
-- **Strength-of-record influence**:
-  - Team strength signal tracks actual wins minus expected wins vs average team baseline.
-  - Ranking combines prior-rank inertia with normalized SOR score.
+- **Poll scoring**:
+  - Wins Over Expectation tracks actual wins minus expected wins for an average
+    team against the same opponents.
+  - The raw résumé is 70% winning percentage and 30% average wins over expectation, mapped from its fixed theoretical range onto `0–100`.
+  - Team Score maps the fixed `25–99` Team Rating scale onto `0–100`.
+  - Evidence Score is `13/18` Résumé Score and `5/18` backward-looking
+    Performance Index, approximately 72.2% and 27.8%.
+  - Performance Index uses completed play efficiency adjusted by opponents'
+    Team Ratings and never uses the evaluated team's own rating.
+  - Weekly Poll Score blends Team Score with Evidence Score according to each
+    team's completed games:
+
+    | Games played | Team Score prior |
+    | ---: | ---: |
+    | 0 | 100% |
+    | 1 | 90% |
+    | 2 | 80% |
+    | 3 | 70% |
+    | 4 | 60% |
+    | 5 | 45% |
+    | 6 | 30% |
+    | 7 | 15% |
+    | 8+ | 0% |
+  - Previous rank and game result never enter Poll Score. Previous rank is
+    retained only to display movement.
+  - First place does not imply a score of `100`.
+  - Full-precision score determines weekly rank, followed by Résumé Score,
+    Performance Index, and Team ID for deterministic ties. The UI displays one decimal.
+  - The Poll view calculates the same score breakdown through the shared ranking
+    score owner. If completed-game inputs have advanced beyond the published
+    poll, it keeps published rank and score primary and labels the new value as
+    a projection until rankings publish normally.
+- **Preseason and final polls**:
+  - Preseason rank and Poll Score map the fixed `25–99` team-rating scale onto `0–100`.
+  - The completed-season poll recomputes Evidence Score. The national champion
+    and runner-up are forced to ranks 1 and 2
+    without replacing those scores.
+  - Playoff selection rules and championship placement are the only times rank may differ from Poll Score order.
 - **Ranking freeze windows**:
   - Certain postseason weeks skip rank recomputation (format-dependent) to stabilize bracket windows.
 - **12-team playoff ordering**:
@@ -103,12 +145,14 @@ flowchart TD
 ## Invariants
 
 - Ranking and record updates depend on completed game outcomes; unplayed games are excluded.
+- Poll Scores are finite and remain on the inclusive `0–100` scale.
 - Postseason creation uses persistent playoff ID fields; bracket state is durable across reloads.
 - Every non-independent conference stages exactly one championship between its
   frozen top two teams, created only after the regular season and Week 14 poll
   are complete.
 - Awards only include completed regular-season and conference-championship games from the current year.
-- Final postseason ranking pass ensures champion/runner-up placement before rank-based score normalization.
+- Final postseason ranking pass preserves model scores while ensuring
+  champion/runner-up placement.
 
 ## Incomplete-State Handling
 
@@ -126,6 +170,8 @@ flowchart TD
 
 - `src/domain/sim/rankings.ts`
   - `updateTeamRecords`, `updateRankings`, `finalizePostseasonRankings`
+- `src/domain/sim/rankingScores.ts`
+  - Team Score, Résumé Score, Evidence Score, and the declining prior
 - `src/domain/sim/postseason.ts`
   - `handleSpecialWeeks`, postseason round and bowl creators
 - `src/domain/league/utils/standings.ts`

@@ -28,8 +28,8 @@ const team = (id: number, conference = 'Test'): Team => buildTestTeam({
   record: '0-0 (0-0)',
   movement: 0,
   poll_score: 0,
-  strength_of_record: 0,
-  strength_of_record_avg: 0,
+  wins_over_expectation: 0,
+  wins_over_expectation_per_game: 0,
   last_game: null,
   next_game: null,
 });

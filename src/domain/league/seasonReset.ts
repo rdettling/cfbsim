@@ -143,13 +143,12 @@ export const prepareSeasonReset = async (
     team.totalWins = 0;
     team.totalLosses = 0;
     team.gamesPlayed = 0;
-    team.strength_of_record = 0;
-    team.poll_score = 0;
+    team.wins_over_expectation = 0;
     team.record = '0-0 (0-0)';
     team.movement = 0;
     team.last_game = null;
     team.next_game = null;
-    team.strength_of_record_avg = 0;
+    team.wins_over_expectation_per_game = 0;
   });
 
   league.scheduleBuilt = false;

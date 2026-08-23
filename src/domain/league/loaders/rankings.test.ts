@@ -69,8 +69,8 @@ const buildLeague = (stage: LeagueStage = 'season') => {
       ranking: 1,
       last_rank: 2,
       gamesPlayed: 14,
-      strength_of_record: 6.3,
-      strength_of_record_avg: 0.45,
+      wins_over_expectation: 6.3,
+      wins_over_expectation_per_game: 0.45,
     }),
     buildTestTeam({
       id: 2,
@@ -79,8 +79,8 @@ const buildLeague = (stage: LeagueStage = 'season') => {
       ranking: 2,
       last_rank: 1,
       gamesPlayed: 15,
-      strength_of_record: 6.711,
-      strength_of_record_avg: 0.4474,
+      wins_over_expectation: 6.711,
+      wins_over_expectation_per_game: 0.4474,
     }),
     buildTestTeam({
       id: 3,
@@ -89,8 +89,8 @@ const buildLeague = (stage: LeagueStage = 'season') => {
       ranking: 3,
       last_rank: 3,
       gamesPlayed: 15,
-      strength_of_record: 6.708,
-      strength_of_record_avg: 0.4472,
+      wins_over_expectation: 6.708,
+      wins_over_expectation_per_game: 0.4472,
     }),
   ];
   return buildTestLeague(stage, {

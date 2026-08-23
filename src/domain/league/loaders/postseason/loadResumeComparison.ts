@@ -15,7 +15,7 @@ export const loadResumeComparison = async () => {
     conference: team.conference,
     record: team.record,
     poll_score: team.pollScore,
-    sor_rank: team.sorRank,
+    wins_over_expectation_rank: team.winsOverExpectationRank,
     sos_rank: team.sosRank,
     top_25_record: team.top25Record,
     best_win: team.bestWin

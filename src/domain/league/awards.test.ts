@@ -616,7 +616,7 @@ describe('buildAwards', () => {
         conference: team.conference,
         record: team.record,
         pollScore: team.poll_score,
-        sorRank: team.ranking,
+        winsOverExpectationRank: team.ranking,
         sosRank: null,
         top25Record: '0-0',
         bestWin: null,

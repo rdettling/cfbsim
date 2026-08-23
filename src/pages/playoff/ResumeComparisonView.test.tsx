@@ -9,7 +9,7 @@ const team: ResumeTeam = {
   conference: 'Test Conference',
   record: '12-0 (8-0)',
   poll_score: 98.5,
-  sor_rank: 1,
+  wins_over_expectation_rank: 1,
   sos_rank: 5,
   top_25_record: '3-0',
   best_win: null,
@@ -32,6 +32,9 @@ describe('resume comparison score presentation', () => {
     );
 
     expect(markup.match(/Weekly Score/g)).toHaveLength(2);
+    expect(markup).toContain('WOE Rank');
+    expect(markup).toContain('Wins Over Expectation rank');
+    expect(markup).not.toContain('SOR');
     expect(markup).not.toContain('Poll score');
     expect(markup).not.toContain('>Poll<');
   });
