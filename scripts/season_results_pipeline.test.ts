@@ -117,6 +117,57 @@ describe('season results transformation', () => {
     expect(result.results).not.toHaveProperty('TCU');
   });
 
+  it('corrects the known CFBD 2023 final AP Ole Miss identity error', () => {
+    const seasonTeams = [
+      ...teamNames.slice(0, 8),
+      'Ole Miss',
+      ...teamNames.slice(8, 24),
+      'Mississippi State',
+      ...teamNames.slice(24, 26),
+    ];
+    const season = yearData();
+    season.year = 2023;
+    season.conferences.Test.teams = seasonTeams;
+    const finalApTeams = seasonTeams.slice(0, 25);
+
+    const result = buildSeasonResults({
+      powerRatings: seasonTeams.map((team, index) => ({
+        year: 2023,
+        team,
+        ranking: index + 1,
+        rating: 100 - index,
+      })),
+      rankings: rankings(finalApTeams.map((school, index) => ({
+        rank: index + 1,
+        school: school === 'Ole Miss' ? 'Mississippi State' : school,
+      }))).map(entry => ({ ...entry, season: 2023 })),
+      ratingSource: 'SRS',
+      records: seasonTeams.map(team => ({
+        year: 2023,
+        team,
+        classification: 'fbs',
+        total: team === 'Ole Miss'
+          ? { games: 13, wins: 11, losses: 2, ties: 0 }
+          : team === 'Mississippi State'
+            ? { games: 12, wins: 5, losses: 7, ties: 0 }
+            : { games: 12, wins: 8, losses: 4, ties: 0 },
+      })),
+      year: 2023,
+      yearData: season,
+    });
+
+    expect(result.results['Ole Miss']).toEqual({
+      rank: 9,
+      wins: 11,
+      losses: 2,
+    });
+    expect(result.results['Mississippi State']).toEqual({
+      rank: 26,
+      wins: 5,
+      losses: 7,
+    });
+  });
+
   it('uses SRS for AP ties and enforces an exact 25-team cutoff', () => {
     const poll = teamNames.slice(0, 26).map((school, index) => ({
       rank: index < 24 ? index + 1 : 25,

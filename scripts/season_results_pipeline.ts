@@ -13,6 +13,18 @@ export const CFBD_RECORDS_ENDPOINT =
 const AP_POLL_NAME = 'AP Top 25';
 const AP_TEAM_COUNT = 25;
 
+const correctKnownFinalApTeam = ({
+  rank,
+  team,
+  year,
+}: {
+  rank: number;
+  team: string;
+  year: number;
+}) => year === 2023 && rank === 9 && team === 'Mississippi State'
+  ? 'Ole Miss'
+  : team;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -193,8 +205,9 @@ export const buildSeasonResults = ({
   const rawApRanks = selectFinalApRanks(rankings);
   const apRanks = rawApRanks.map((raw, index) => {
     if (!isRecord(raw)) throw new Error(`AP rank ${index} must be an object.`);
-    const team = requireName(raw.school, `AP rank ${index}.school`);
-    const rank = requireInteger(raw.rank, `AP rank ${team}.rank`);
+    const providerTeam = requireName(raw.school, `AP rank ${index}.school`);
+    const rank = requireInteger(raw.rank, `AP rank ${providerTeam}.rank`);
+    const team = correctKnownFinalApTeam({ rank, team: providerTeam, year });
     if (rank < 1) throw new Error(`AP rank ${team}.rank must be positive.`);
     if (!teams.has(team)) {
       throw new Error(`AP-ranked team ${team} is not in the ${year} season.`);
