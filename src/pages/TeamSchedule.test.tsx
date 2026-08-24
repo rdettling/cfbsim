@@ -19,6 +19,7 @@ const buildData = (): TeamSchedulePageData => {
   });
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: buildTestTeam(),
     schedule: [{
       kind: 'game',

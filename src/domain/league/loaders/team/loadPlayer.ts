@@ -160,6 +160,7 @@ export const loadPlayer = async (playerId: string) => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     player: { ...player, team: team.name },
     team,
     conferences: league.conferences,

@@ -94,6 +94,8 @@ const buildMatchup = (
     team2: teamB.name,
     seed1: seed(teamA.id),
     seed2: seed(teamB.id),
+    spread1: null,
+    spread2: null,
     score1: game.scoreA,
     score2: game.scoreB,
     winner:
@@ -177,29 +179,32 @@ const buildBowlEntries = (
       `Season ${memory.year} is missing the ${teamB.name} snapshot.`,
     );
     return {
-      id: game.id,
+      gameId: game.id,
       name: entry.name,
-      week: game.weekPlayed,
-      teamA: teamA.name,
-      teamB: teamB.name,
-      teamA_conf: snapshotA.conference,
-      teamB_conf: snapshotB.conference,
-      teamA_is_champ: championIds.has(teamA.id),
-      teamB_is_champ: championIds.has(teamB.id),
-      rankA: game.rankATOG,
-      rankB: game.rankBTOG,
-      recordA: snapshotA.record,
-      recordB: snapshotB.record,
-      scoreA: game.scoreA,
-      scoreB: game.scoreB,
-      winner:
-        game.winnerId === teamA.id
-          ? teamA.name
-          : game.winnerId === teamB.id
-            ? teamB.name
-            : null,
-      is_ny6: entry.tier === 'ny6',
-      is_projection: false,
+      status: 'final',
+      tier: entry.tier,
+      teams: [
+        {
+          name: teamA.name,
+          conference: snapshotA.conference,
+          isConferenceChampion: championIds.has(teamA.id),
+          ranking: game.rankATOG || null,
+          record: snapshotA.record,
+          spread: null,
+          score: game.scoreA,
+          isWinner: game.winnerId === teamA.id,
+        },
+        {
+          name: teamB.name,
+          conference: snapshotB.conference,
+          isConferenceChampion: championIds.has(teamB.id),
+          ranking: game.rankBTOG || null,
+          record: snapshotB.record,
+          spread: null,
+          score: game.scoreB,
+          isWinner: game.winnerId === teamB.id,
+        },
+      ],
     };
   });
 };

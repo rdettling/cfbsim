@@ -1,11 +1,11 @@
 import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import { TeamLogo } from '../../components/team/TeamLogo';
-import type { GameAction, PlayoffMatchup, TeamAction } from './types';
+import type { PlayoffMatchup } from '../../types/postseason';
 
 type PostseasonMatchupProps = {
   matchup: PlayoffMatchup;
-  onGameClick: GameAction;
-  onTeamClick: TeamAction;
+  onGameClick: (gameId: number) => void;
+  onTeamClick: (teamName: string) => void;
   compact?: boolean;
 };
 
@@ -14,15 +14,17 @@ const getDisplayTeam = (team: string) => (team.startsWith('Winner of') ? 'TBD' :
 const MatchupTeam = ({
   name,
   seed,
+  spread,
   score,
   winner,
   onTeamClick,
 }: {
   name: string;
   seed: number | null;
+  spread: string | null;
   score: number | null;
   winner: boolean;
-  onTeamClick: TeamAction;
+  onTeamClick: (teamName: string) => void;
 }) => {
   const displayName = getDisplayTeam(name);
   const isTbd = displayName === 'TBD';
@@ -75,6 +77,7 @@ const MatchupTeam = ({
             onClick={() => onTeamClick(name)}
             sx={{
               minWidth: 0,
+              flex: 1,
               p: 0,
               justifyContent: 'flex-start',
               color: 'text.primary',
@@ -86,6 +89,14 @@ const MatchupTeam = ({
           >
             {name}
           </Button>
+        )}
+        {spread && (
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', fontWeight: 600, flexShrink: 0 }}
+          >
+            {spread}
+          </Typography>
         )}
       </Stack>
       <Typography
@@ -119,6 +130,7 @@ export const PostseasonMatchup = ({
       <MatchupTeam
         name={matchup.team1}
         seed={matchup.seed1}
+        spread={hasResult ? null : matchup.spread1}
         score={matchup.score1}
         winner={hasResult && matchup.winner === matchup.team1}
         onTeamClick={onTeamClick}
@@ -127,6 +139,7 @@ export const PostseasonMatchup = ({
       <MatchupTeam
         name={matchup.team2}
         seed={matchup.seed2}
+        spread={hasResult ? null : matchup.spread2}
         score={matchup.score2}
         winner={hasResult && matchup.winner === matchup.team2}
         onTeamClick={onTeamClick}

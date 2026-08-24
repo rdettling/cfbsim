@@ -15,6 +15,7 @@ const buildData = (): BiggestUpsetsPageData => {
   const league = buildTestLeague('season', { teams: [winner, loser] });
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: winner,
     conferences: league.conferences,
     upsets: [{

@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAllGames, getGameById } from '../../../db/simRepo';
-import { buildTestLeague, buildTestTeam } from '../../../test/fixtures';
+import { getAllGames, getGameById, getGameDetailsByYear } from '../../../db/simRepo';
+import {
+  buildTestLeague,
+  buildTestTeam,
+  TEST_BETTING_ODDS_DATA,
+} from '../../../test/fixtures';
 import type { GameRecord } from '../../../types/db';
 import type { PlayoffTeamCount } from '../../../types/domain';
-import { loadOddsContext } from '../../odds';
+import { buildOddsContext, loadOddsContext } from '../../odds';
 import { loadLeagueOrThrow } from '../leagueStore';
 import { buildPlayoffSelection } from '../utils/playoffSelection';
 import { buildResumeComparisonSnapshot } from '../utils/resumeComparison';
 import { loadBowlGames } from './postseason/loadBowlGames';
 import { loadPlayoffBracket } from './postseason/loadPlayoffBracket';
-import { loadPlayoffPicture } from './postseason/loadPlayoffPicture';
 import { loadResumeComparison } from './postseason/loadResumeComparison';
 
 vi.mock('../../../db/simRepo');
@@ -97,93 +100,78 @@ describe('postseason page loaders', () => {
     vi.mocked(loadLeagueOrThrow).mockResolvedValue(buildLeagueWithTeams(30));
     vi.mocked(getAllGames).mockResolvedValue([]);
     vi.mocked(getGameById).mockResolvedValue(undefined);
-    vi.mocked(loadOddsContext).mockResolvedValue({ oddsMap: {}, maxDiff: 100 });
+    vi.mocked(getGameDetailsByYear).mockResolvedValue([]);
+    vi.mocked(loadOddsContext).mockResolvedValue(buildOddsContext(TEST_BETTING_ODDS_DATA));
   });
 
   it('returns only bracket page data for the bracket route', async () => {
     const result = await loadPlayoffBracket();
 
     expect(result).toHaveProperty('bracket');
-    expect(result).toHaveProperty('playoff_teams');
-    expect(result).not.toHaveProperty('bubble_teams');
-    expect(result).not.toHaveProperty('resume_teams');
-    expect(result).not.toHaveProperty('bowl_games');
+    expect(result).toMatchObject({ format: 12, isProjection: true, hasTeams: true });
     expect(getAllGames).toHaveBeenCalledOnce();
   });
 
-  it.each([2, 4, 12] as const)('uses projected rankings until a complete %i-team field is saved', async format => {
-    const league = buildLeagueWithTeams(30, format);
-    vi.mocked(loadLeagueOrThrow).mockResolvedValue(league);
+  it('shows a projected spread only for the favorite in hypothetical matchups', async () => {
+    const result = await loadPlayoffBracket();
 
-    const projected = await loadPlayoffPicture();
-    expect(projected.is_projection).toBe(true);
-    expect(projected.playoff_teams).toHaveLength(format);
-
-    league.playoff.seeds = league.teams.slice(0, format).reverse().map(team => team.id);
-    const final = await loadPlayoffPicture();
-    expect(final.is_projection).toBe(false);
-    expect(final.playoff_teams.map(team => team.name)).toEqual(
-      league.teams.slice(0, format).reverse().map(team => team.name),
-    );
+    if (!('left_bracket' in result.bracket)) throw new Error('Expected a 12-team bracket.');
+    expect(result.bracket.left_bracket.first_round[1]).toMatchObject({
+      team1: 'Team 5',
+      team2: 'Team 12',
+      spread1: '-3',
+      spread2: null,
+    });
+    expect(loadOddsContext).toHaveBeenCalledOnce();
   });
 
-  it('returns the five highest-ranked non-selected teams', async () => {
-    const league = buildLeagueWithTeams(30);
-    league.playoff.seeds = [
-      ...league.teams.slice(0, 11).map(team => team.id),
-      league.teams[19].id,
-    ];
+  it('calculates the spread when known teams do not yet have a scheduled game', async () => {
+    const league = buildLeagueWithTeams(30, 2);
+    league.teams[0].rating = 88;
+    league.teams[1].rating = 80;
+    league.playoff.seeds = league.teams.slice(0, 2).map(team => team.id);
     vi.mocked(loadLeagueOrThrow).mockResolvedValue(league);
 
-    const result = await loadPlayoffPicture();
+    const result = await loadPlayoffBracket();
 
-    expect(result.bubble_teams.map(team => team.ranking)).toEqual([12, 13, 14, 15, 16]);
-    expect(result.bubble_teams.map(team => team.name)).not.toContain('Team 20');
-    expect(result.conference_champions[0]).toMatchObject({
-      name: 'Team 1',
-      seed: 1,
-      is_projected: true,
+    if (!('championship' in result.bracket)) throw new Error('Expected a playoff bracket.');
+    expect(result.bracket.championship).toMatchObject({
+      team1: 'Team 1',
+      team2: 'Team 2',
+      spread1: '-7',
+      spread2: null,
     });
-    expect(result).not.toHaveProperty('resume_teams');
-    expect(result).not.toHaveProperty('bracket');
-    expect(getAllGames).toHaveBeenCalledOnce();
   });
 
-  it('labels a completed conference-title winner as an actual champion', async () => {
+  it('uses the persisted favorite spread for a scheduled playoff game', async () => {
     const league = buildLeagueWithTeams(30);
-    const conferenceTeams = league.teams.slice(0, 2);
-    league.teams.slice(2).forEach(team => {
-      team.conference = 'Independent';
-      team.confName = 'Independent';
-    });
-    league.conferences = [{
-      ...league.conferences[0],
-      championship: 100,
-      finalStandings: {
-        year: league.info.currentYear,
-        entries: [
-          { teamId: conferenceTeams[0].id, pollRank: 1, resolvedBy: null },
-          { teamId: conferenceTeams[1].id, pollRank: 2, resolvedBy: null },
-        ],
-      },
-      teams: conferenceTeams,
-    }];
+    league.playoff.seeds = league.teams.slice(0, 12).map(team => team.id);
+    league.playoff.left_r1_2 = 200;
+    const scheduledGame: GameRecord = {
+      ...buildGame(200, league.teams[4].id, league.teams[11].id, league.teams[4].id),
+      winnerId: null,
+      resultA: null,
+      resultB: null,
+      scoreA: null,
+      scoreB: null,
+      spreadA: '+7',
+      spreadB: '-7',
+    };
     vi.mocked(loadLeagueOrThrow).mockResolvedValue(league);
-    vi.mocked(getAllGames).mockResolvedValue([{
-      ...buildGame(100, conferenceTeams[0].id, conferenceTeams[1].id, conferenceTeams[1].id),
-      homeTeamId: null,
-      awayTeamId: null,
-      neutralSite: true,
-      gameType: 'conference_championship',
-      name: 'Test Conference championship',
-      weekPlayed: 15,
-    }]);
+    vi.mocked(getGameById).mockImplementation(async id =>
+      id === scheduledGame.id ? scheduledGame : undefined);
 
-    const result = await loadPlayoffPicture();
+    const result = await loadPlayoffBracket();
 
-    expect(result.conference_champions).toEqual([
-      expect.objectContaining({ name: 'Team 2', is_projected: false }),
-    ]);
+    if (!('left_bracket' in result.bracket)) throw new Error('Expected a 12-team bracket.');
+    expect(result.bracket.left_bracket.first_round[1]).toMatchObject({
+      game_id: 200,
+      team1: 'Team 5',
+      team2: 'Team 12',
+      spread1: null,
+      spread2: '-7',
+    });
+    expect(loadOddsContext).toHaveBeenCalledOnce();
   });
 
   it('returns every team with presentation-ready resume context', async () => {
@@ -193,27 +181,24 @@ describe('postseason page loaders', () => {
 
     const result = await loadResumeComparison();
 
-    expect(result.resume_teams).toHaveLength(30);
-    expect(result.resume_teams.map(team => team.ranking)).toEqual(
+    expect(result.teams).toHaveLength(30);
+    expect(result.teams.map(team => team.ranking)).toEqual(
       Array.from({ length: 30 }, (_, index) => index + 1),
     );
-    expect(result.resume_teams[0]).toMatchObject({
+    expect(result.teams[0]).toMatchObject({
       name: 'Team 1',
-      poll_score: 100,
-      top_25_record: '0-0',
-      best_win: null,
-      worst_loss: null,
+      resumeScoreRank: 1,
+      performanceIndexRank: 1,
+      top25Record: '0-0',
+      bestWin: null,
+      worstLoss: null,
       seed: 1,
-      is_autobid: true,
-      has_bye: true,
-      is_champ: true,
-      wins_over_expectation_rank: 1,
-      sos_rank: null,
+      isAutobid: true,
+      hasBye: true,
+      isChampion: true,
     });
-    expect(result.resume_teams[12]).toMatchObject({ seed: null, is_autobid: false, has_bye: false });
-    expect(result.is_frozen).toBe(false);
-    expect(result).not.toHaveProperty('selected_team_names');
-    expect(result).not.toHaveProperty('bubble_teams');
+    expect(result.teams[12]).toMatchObject({ seed: null, isAutobid: false, hasBye: false });
+    expect(result).toMatchObject({ format: 12, isProjection: false });
   });
 
   it('derives Top-25 record and best/worst results from opponents current rankings', async () => {
@@ -228,11 +213,11 @@ describe('postseason page loaders', () => {
     ]);
 
     const result = await loadResumeComparison();
-    const team = result.resume_teams[0];
+    const team = result.teams[0];
 
-    expect(team.top_25_record).toBe('1-1');
-    expect(team.best_win).toEqual({ opponent: 'Team 10', opponent_ranking: 10 });
-    expect(team.worst_loss).toEqual({ opponent: 'Team 30', opponent_ranking: 30 });
+    expect(team.top25Record).toBe('1-1');
+    expect(team.bestWin).toMatchObject({ opponent: 'Team 10', opponentRanking: 10 });
+    expect(team.worstLoss).toMatchObject({ opponent: 'Team 30', opponentRanking: 30 });
   });
 
   it('reads frozen resume rows without consulting later league or game state', async () => {
@@ -240,9 +225,9 @@ describe('postseason page loaders', () => {
     league.resumeSnapshot = buildResumeComparisonSnapshot({
       league,
       games: [],
+      details: [],
       selection: buildPlayoffSelection(league, [league.teams[0]]),
       championIds: new Set([league.teams[0].id]),
-      oddsContext: { oddsMap: {}, maxDiff: 100 },
     });
     const frozenFirst = structuredClone(league.resumeSnapshot.teams[0]);
     league.teams[0].ranking = 30;
@@ -253,26 +238,143 @@ describe('postseason page loaders', () => {
 
     const result = await loadResumeComparison();
 
-    expect(result.is_frozen).toBe(true);
-    expect(result.frozen_after_week).toBe(15);
-    expect(result.playoff.teams).toBe(12);
-    expect(result.resume_teams[0]).toMatchObject({
+    expect(result.isProjection).toBe(false);
+    expect(result.format).toBe(12);
+    expect(result.teams[0]).toMatchObject({
       name: frozenFirst.name,
       ranking: frozenFirst.ranking,
-      poll_score: frozenFirst.pollScore,
       record: frozenFirst.record,
-      wins_over_expectation_rank: frozenFirst.winsOverExpectationRank,
+      resumeScoreRank: frozenFirst.resumeScoreRank,
+      performanceIndexRank: frozenFirst.performanceIndexRank,
     });
     expect(getAllGames).not.toHaveBeenCalled();
+    expect(getGameDetailsByYear).not.toHaveBeenCalled();
     expect(loadOddsContext).not.toHaveBeenCalled();
   });
 
-  it('returns actual and projected bowl collections only for Bowl Games', async () => {
+  it('returns one projected bowl slate when no games are scheduled', async () => {
     const result = await loadBowlGames();
 
-    expect(result.bowl_games).toEqual([]);
-    expect(result.bowl_projections).toBeDefined();
-    expect(result).not.toHaveProperty('playoff_teams');
-    expect(result).not.toHaveProperty('resume_teams');
+    expect(result.games[0]).toMatchObject({
+      gameId: null,
+      status: 'projected',
+      tier: 'other',
+    });
+    expect(result.games[0].teams.map(team => team.spread)).toEqual([
+      expect.stringMatching(/^-/),
+      null,
+    ]);
+    expect(result.games.every(game => game.tier !== 'playoff')).toBe(true);
+    expect(loadOddsContext).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    {
+      format: 2 as const,
+      matchups: [['National Championship', 'Team 1', 'Team 2']],
+    },
+    {
+      format: 4 as const,
+      matchups: [
+        ['Playoff Semifinal', 'Team 1', 'Team 4'],
+        ['Playoff Semifinal', 'Team 2', 'Team 3'],
+      ],
+    },
+  ])('folds projected $format-team playoff games into Bowl Games', async ({ format, matchups }) => {
+    const league = buildLeagueWithTeams(30, format);
+    vi.mocked(loadLeagueOrThrow).mockResolvedValue(league);
+
+    const result = await loadBowlGames();
+    const playoffGames = result.games.filter(game => game.tier === 'playoff');
+
+    expect(playoffGames.map(game => [
+      game.name,
+      game.teams[0].name,
+      game.teams[1].name,
+    ])).toEqual(matchups);
+    expect(playoffGames).toHaveLength(format === 2 ? 1 : 2);
+    expect(playoffGames.every(game => game.status === 'projected')).toBe(true);
+    expect(playoffGames.every(game =>
+      Boolean(game.teams[0].spread) !== Boolean(game.teams[1].spread)
+    )).toBe(true);
+  });
+
+  it('returns scheduled and final bowls in one actual slate', async () => {
+    const scheduled = {
+      ...buildGame(101, 1, 2, 1),
+      name: 'Alamo Bowl',
+      gameType: 'bowl' as const,
+      winnerId: null,
+      resultA: null,
+      resultB: null,
+      scoreA: null,
+      scoreB: null,
+    };
+    const final = {
+      ...buildGame(102, 3, 4, 4),
+      name: 'Citrus Bowl',
+      gameType: 'bowl' as const,
+    };
+    vi.mocked(getAllGames).mockResolvedValue([scheduled, final]);
+
+    const result = await loadBowlGames();
+
+    expect(result.games).toMatchObject([
+      {
+        gameId: 101,
+        status: 'scheduled',
+        teams: [{ spread: '-3', score: null, isWinner: false }, { spread: null }],
+      },
+      {
+        gameId: 102,
+        status: 'final',
+        teams: [
+          { spread: null, score: 24, isWinner: false },
+          { spread: null, score: 17, isWinner: true },
+        ],
+      },
+    ]);
+    expect(loadOddsContext).not.toHaveBeenCalled();
+  });
+
+  it('keeps scheduled four-team semifinals in Bowl Games after projections become real', async () => {
+    const league = buildLeagueWithTeams(30, 4);
+    league.playoff.seeds = league.teams.slice(0, 4).map(team => team.id);
+    const semifinals: GameRecord[] = [
+      {
+        ...buildGame(201, 1, 4, 1),
+        name: 'Playoff semifinal',
+        gameType: 'playoff_semifinal',
+        winnerId: null,
+        scoreA: null,
+        scoreB: null,
+        resultA: null,
+        resultB: null,
+      },
+      {
+        ...buildGame(202, 2, 3, 2),
+        name: 'Playoff semifinal',
+        gameType: 'playoff_semifinal',
+        winnerId: null,
+        scoreA: null,
+        scoreB: null,
+        resultA: null,
+        resultB: null,
+      },
+    ];
+    vi.mocked(loadLeagueOrThrow).mockResolvedValue(league);
+    vi.mocked(getAllGames).mockResolvedValue(semifinals);
+
+    const result = await loadBowlGames();
+    const playoffGames = result.games.filter(game => game.tier === 'playoff');
+
+    expect(playoffGames).toHaveLength(2);
+    expect(playoffGames.map(game => game.name)).toEqual([
+      'Playoff Semifinal',
+      'Playoff Semifinal',
+    ]);
+    expect(playoffGames.map(game => game.gameId)).toEqual([201, 202]);
+    expect(playoffGames.every(game => game.status === 'scheduled')).toBe(true);
+    expect(loadOddsContext).not.toHaveBeenCalled();
   });
 });

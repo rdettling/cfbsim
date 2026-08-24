@@ -130,6 +130,7 @@ export const loadTeamSchedule = async (teamName?: string, yearParam?: number) =>
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team,
     schedule,
     teams: [...supportedTeamNames].sort((left, right) => left.localeCompare(right)),

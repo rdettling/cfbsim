@@ -22,6 +22,7 @@ export const loadNews = async (requestedYear?: number) => {
     }));
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: getUserTeam(league),
     conferences: league.conferences,
     year,

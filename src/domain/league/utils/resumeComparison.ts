@@ -1,119 +1,68 @@
 import type { Team } from '../../../types/domain';
-import type { GameRecord } from '../../../types/db';
+import type { GameDetailRecord, GameRecord } from '../../../types/db';
 import type {
   LeagueState,
   ResumeComparisonSnapshot,
   ResumeSnapshotResult,
   ResumeSnapshotTeam,
 } from '../../../types/league';
-import {
-  getWinProbForRatings,
-  HOME_FIELD_ADVANTAGE,
-  type OddsContext,
-} from '../../odds';
 import { CONFERENCE_CHAMPIONSHIP_WEEK } from '../postseason';
-import { REGULAR_SEASON_WEEKS } from '../../schedule/constants';
 import type { PlayoffSelection } from './playoffSelection';
 import { formatRecord } from '../../sim/teamRecords';
+import { comparePollOrder, getResumeScore } from '../../sim/rankingScores';
+import { buildPerformanceIndexMap } from './stats/teamPerformance';
 
 type ResumeComparisonInput = {
   league: LeagueState;
   games: GameRecord[];
+  details: GameDetailRecord[];
   selection: PlayoffSelection;
   championIds: Set<number>;
-  oddsContext: OddsContext;
 };
 
-const buildWinsOverExpectationRanks = (teams: Team[]) => {
-  const ranks = new Map<number, number>();
-  teams
-    .slice()
-    .sort((a, b) => {
-      const difference = b.wins_over_expectation_per_game - a.wins_over_expectation_per_game;
-      return difference || a.id - b.id;
-    })
-    .forEach((team, index) => ranks.set(team.id, index + 1));
-  return ranks;
-};
-
-export const calculateStrengthOfScheduleRanks = (
+const buildScoreRanks = (
   teams: Team[],
-  games: GameRecord[],
-  year: number,
-  oddsContext: OddsContext,
-) => {
-  const ratedTeams = teams
+  scores: ReadonlyMap<number, number>,
+) => new Map(teams
     .slice()
-    .sort((a, b) => (b.rating - a.rating) || (a.id - b.id))
-    .slice(0, Math.min(25, teams.length));
-  const averageTop25Rating = ratedTeams.reduce((sum, team) => sum + team.rating, 0)
-    / Math.max(1, ratedTeams.length);
-  const teamsById = new Map(teams.map(team => [team.id, team]));
-  const probabilitiesByTeam = new Map<number, number[]>();
-  teams.forEach(team => probabilitiesByTeam.set(team.id, []));
-
-  games
-    .filter(game => game.year === year && game.weekPlayed <= REGULAR_SEASON_WEEKS)
-    .forEach(game => {
-      const teamA = teamsById.get(game.teamAId);
-      const teamB = teamsById.get(game.teamBId);
-      if (!teamA || !teamB) return;
-
-      const probabilityFor = (team: Team, opponent: Team) => {
-        let hypotheticalRating = averageTop25Rating;
-        let opponentRating = opponent.rating;
-        if (!game.neutralSite) {
-          if (game.homeTeamId === team.id) hypotheticalRating += HOME_FIELD_ADVANTAGE;
-          if (game.homeTeamId === opponent.id) opponentRating += HOME_FIELD_ADVANTAGE;
-        }
-        return getWinProbForRatings(hypotheticalRating, opponentRating, oddsContext);
-      };
-
-      probabilitiesByTeam.get(teamA.id)!.push(probabilityFor(teamA, teamB));
-      probabilitiesByTeam.get(teamB.id)!.push(probabilityFor(teamB, teamA));
-    });
-
-  const expectedWins = new Map<number, number | null>();
-  teams.forEach(team => {
-    const probabilities = probabilitiesByTeam.get(team.id) ?? [];
-    expectedWins.set(
-      team.id,
-      probabilities.length
-        ? (probabilities.reduce((sum, probability) => sum + probability, 0) / probabilities.length) * 12
-        : null,
-    );
-  });
-
-  const ranks = new Map<number, number | null>(teams.map(team => [team.id, null]));
-  teams
-    .filter(team => expectedWins.get(team.id) !== null)
-    .sort((a, b) => {
-      const difference = Number(expectedWins.get(a.id)) - Number(expectedWins.get(b.id));
-      return difference || a.id - b.id;
-    })
-    .forEach((team, index) => ranks.set(team.id, index + 1));
-
-  return { averageTop25Rating, expectedWins, ranks };
-};
+    .sort((a, b) =>
+      (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0) || a.id - b.id)
+    .map((team, index) => [team.id, index + 1]));
 
 export const buildResumeComparisonTeams = ({
   league,
   games,
+  details,
   selection,
   championIds,
-  oddsContext,
 }: ResumeComparisonInput): ResumeSnapshotTeam[] => {
   const currentYearGames = games.filter(game => game.year === league.info.currentYear);
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const selectedTeams = selection.order.slice(0, league.settings.playoffTeams);
   const selectionById = new Map(selectedTeams.map((team, index) => [team.id, index + 1]));
-  const winsOverExpectationRanks = buildWinsOverExpectationRanks(league.teams);
-  const sosRanks = calculateStrengthOfScheduleRanks(
+  const resumeScores = new Map(league.teams.map(team => [team.id, getResumeScore(team)]));
+  const performanceIndexes = buildPerformanceIndexMap(
     league.teams,
     currentYearGames,
-    league.info.currentYear,
-    oddsContext,
-  ).ranks;
+    details,
+  );
+  const resumeScoreRanks = buildScoreRanks(league.teams, resumeScores);
+  const performanceIndexRanks = buildScoreRanks(league.teams, performanceIndexes);
+  const pollScoreRanks = new Map(league.teams
+    .slice()
+    .sort((left, right) => comparePollOrder({
+      teamId: left.id,
+      pollScore: left.poll_score,
+      resumeScore: resumeScores.get(left.id)!,
+      performanceIndex: performanceIndexes.get(left.id)!,
+    }, {
+      teamId: right.id,
+      pollScore: right.poll_score,
+      resumeScore: resumeScores.get(right.id)!,
+      performanceIndex: performanceIndexes.get(right.id)!,
+    }))
+    .map((team, index) => [team.id, index + 1]));
+  const pollScoreRankFor = (team: Team) => pollScoreRanks.get(team.id)!;
   const resultsByTeam = new Map<number, {
     top25Wins: number;
     top25Losses: number;
@@ -139,12 +88,18 @@ export const buildResumeComparisonTeams = ({
       const winnerResults = getResults(winner.id);
       const loserResults = getResults(loser.id);
 
-      if (loser.ranking <= 25) winnerResults.top25Wins += 1;
-      if (winner.ranking <= 25) loserResults.top25Losses += 1;
-      if (!winnerResults.bestWin || loser.ranking < winnerResults.bestWin.ranking) {
+      if (pollScoreRankFor(loser) <= 25) winnerResults.top25Wins += 1;
+      if (pollScoreRankFor(winner) <= 25) loserResults.top25Losses += 1;
+      if (
+        !winnerResults.bestWin ||
+        pollScoreRankFor(loser) < pollScoreRankFor(winnerResults.bestWin)
+      ) {
         winnerResults.bestWin = loser;
       }
-      if (!loserResults.worstLoss || winner.ranking > loserResults.worstLoss.ranking) {
+      if (
+        !loserResults.worstLoss ||
+        pollScoreRankFor(winner) > pollScoreRankFor(loserResults.worstLoss)
+      ) {
         loserResults.worstLoss = winner;
       }
     });
@@ -153,25 +108,24 @@ export const buildResumeComparisonTeams = ({
     ? {
         opponentId: opponent.id,
         opponent: opponent.name,
-        opponentRanking: opponent.ranking,
+        opponentRanking: pollScoreRankFor(opponent),
       }
     : null;
 
   return league.teams
     .slice()
-    .sort((a, b) => a.ranking - b.ranking)
+    .sort((a, b) => pollScoreRanks.get(a.id)! - pollScoreRanks.get(b.id)!)
     .map(team => {
       const results = getResults(team.id);
       const seed = selectionById.get(team.id) ?? null;
       return {
         teamId: team.id,
         name: team.name,
-        ranking: team.ranking,
+        ranking: pollScoreRanks.get(team.id)!,
         conference: team.conference ?? 'Independent',
         record: formatRecord(team),
-        pollScore: team.poll_score,
-        winsOverExpectationRank: winsOverExpectationRanks.get(team.id) ?? team.ranking,
-        sosRank: sosRanks.get(team.id) ?? null,
+        resumeScoreRank: resumeScoreRanks.get(team.id)!,
+        performanceIndexRank: performanceIndexRanks.get(team.id)!,
         top25Record: `${results.top25Wins}-${results.top25Losses}`,
         bestWin: toResult(results.bestWin),
         worstLoss: toResult(results.worstLoss),

@@ -96,10 +96,7 @@ const Realignment = () => {
   }
 
   const navigationData = {
-    team: data.team,
-    currentStage: data.info.stage,
-    info: data.info,
-    conferences: data.conferences,
+    ...data,
     advanceDisabled: saveStatus === 'saving' || Boolean(data.previewError),
   };
 

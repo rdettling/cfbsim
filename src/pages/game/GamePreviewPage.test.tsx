@@ -34,6 +34,7 @@ describe('GamePreviewPage', () => {
     const teamB = buildTestTeam({ id: 2, name: 'Home Tech', abbreviation: 'HME' });
     const data = {
       info: league.info,
+      playoffTeams: league.settings.playoffTeams,
       team: teamA,
       conferences: league.conferences,
       game: {

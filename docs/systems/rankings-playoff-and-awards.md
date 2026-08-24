@@ -58,9 +58,33 @@ as season weeks advance.
 - `finalizeCompletedSeasonIfReady(...)` applies final postseason ranking normalization and atomically persists completed-season artifacts with the `summary` stage when a national-championship winner exists.
 
 3. **Playoff presentation path**
-- Route-specific postseason loaders compose the bracket, playoff picture,
-  résumé comparison, and bowl projection/actual views from shared selection
-  context.
+- Route-specific postseason loaders compose the bracket, résumé comparison,
+  and single current bowl slate from shared selection context.
+- Twelve-team leagues expose the dedicated bracket. Two- and four-team leagues
+  fold their projected and scheduled playoff matchups into Bowl Games instead;
+  their postseason navigation starts with Bowl Games, followed by Resume
+  Comparison.
+- Playoff bracket matchups show the point spread beside only the favorite.
+- Projected and scheduled bowl matchups show the neutral-site or persisted point
+  spread beside only the favorite; completed bowls show final scores instead.
+  Scheduled games use their persisted pregame line; hypothetical matchups use
+  the shared odds model, including home-field advantage for projected
+  first-round games and neutral-site treatment for later rounds.
+- Resume Comparison opens in Poll Score order, and its leading rank always
+  remains the Poll Score rank when numeric columns are sorted. Résumé Score
+  and Performance Index appear as national ranks; the raw weekly score, Wins
+  Over Expectation rank, and strength-of-schedule rank are not repeated there.
+  Top 25 record, Best Win, and Worst Loss use that same Poll Score ordering for
+  opponent ranks. On narrow screens, the comparison reduces to a compact table
+  with Poll Score rank, team, Performance Index rank, and Résumé Score rank.
+  The control that expands the table beyond the Top 25 follows the table rows
+  in the same scrolling panel on both wide and narrow layouts.
+- Bowl Games presents projected, scheduled, and final matchups in a shared
+  two-column desktop and one-column narrow layout. New Year’s Six games are
+  listed ahead of other bowls without a separate heading. Within each tier,
+  matchups sort by their better-ranked team, with bowl name breaking ties.
+  Current and archived slates share the same compact team, record, conference,
+  and score presentation.
 - The rankings page projects each team's one-decimal `0–100` Poll Score, exact
   previous-week result, and current-week matchup. Bye weeks remain empty
   instead of substituting the nearest completed or upcoming game.
@@ -179,7 +203,7 @@ flowchart TD
 - `src/domain/league/postseason.ts`
   - postseason week constants and `lastWeek` mapping by playoff size
 - `src/domain/league/loaders/postseason/`
-  - route-specific bracket, picture, résumé, and bowl view composition
+  - route-specific bracket, résumé, and bowl view composition
 - `src/domain/league/utils/bowlSelection.ts`
   - authoritative bowl catalog, rotation, classification, and matchup policy
 - `src/domain/league/awards.ts`

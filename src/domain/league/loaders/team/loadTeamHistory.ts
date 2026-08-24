@@ -170,6 +170,7 @@ export const loadTeamHistory = async (teamName?: string) => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team,
     conferences: league.conferences,
     years,

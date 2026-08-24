@@ -136,7 +136,7 @@ export const buildSeasonCalendarModel = (
 export const buildLeagueCalendarModel = (
   data: AppNavigationData,
 ): LeagueCalendarModel => {
-  if (data.currentStage === 'season') {
+  if (data.info.stage === 'season') {
     return buildSeasonCalendarModel(
       data.info.currentYear,
       data.info.currentWeek,
@@ -144,10 +144,10 @@ export const buildLeagueCalendarModel = (
     );
   }
 
-  if (!isOffseasonFlowStage(data.currentStage)) {
-    throw new Error(`Stage ${data.currentStage} has no league calendar model.`);
+  if (!isOffseasonFlowStage(data.info.stage)) {
+    throw new Error(`Stage ${data.info.stage} has no league calendar model.`);
   }
-  const currentStage = data.currentStage;
+  const currentStage = data.info.stage;
   return {
     kind: 'offseason',
     year: getOffseasonTargetYear(currentStage, data.info.currentYear),

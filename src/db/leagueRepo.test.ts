@@ -277,10 +277,10 @@ describe('current league persistence boundary', () => {
       },
     },
     {
-      name: 'resume snapshot with removed SOR rank field',
+      name: 'resume snapshot with an obsolete metric field',
       mutate: (league: LeagueState) => {
         league.resumeSnapshot = buildTestLeague('summary').resumeSnapshot;
-        Object.assign(league.resumeSnapshot!.teams[0], { sorRank: 1 });
+        Object.assign(league.resumeSnapshot!.teams[0], { winsOverExpectationRank: 1 });
       },
     },
   ])(

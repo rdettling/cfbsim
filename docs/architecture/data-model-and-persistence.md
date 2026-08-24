@@ -6,7 +6,7 @@ and transaction ownership. IndexedDB is the runtime source of truth.
 ## IndexedDB Schema
 
 `DB_VERSION` in `src/db/db.ts` defines the single current destructive schema
-epoch for every authoritative persisted shape. The current epoch is 30.
+epoch for every authoritative persisted shape. The current epoch is 33.
 
 | Store | Key | Value |
 | --- | --- | --- |
@@ -35,6 +35,12 @@ separated it from a tie when applicable. Championship and snapshot fields are
 cleared together during annual reset and realignment. Exact league validation
 rejects stale years, missing, duplicate, foreign, or malformed entries rather
 than repairing them.
+
+`LeagueState.resumeSnapshot` freezes the post-conference-championship Resume
+Comparison and playoff-selection context. Each team row persists its Poll
+Score rank, Résumé Score rank, Performance Index rank, record context, notable
+results, and selection status. It does not retain the raw weekly Poll Score or
+the replaced Wins Over Expectation and strength-of-schedule ranks.
 
 `GameRecord` is an exact current-schema object. Every game repository read and
 every write owner validates its complete shape before returning or committing

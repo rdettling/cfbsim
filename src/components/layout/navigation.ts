@@ -1,11 +1,7 @@
 import { ROUTES } from '../../constants/routes';
-import type { Conference, Info, LeagueStage, Team } from '../../types/domain';
+import type { LeagueNavigationData } from '../../types/navigation';
 
-export interface AppNavigationData {
-  team: Team;
-  currentStage: LeagueStage;
-  info: Info;
-  conferences: Conference[];
+export interface AppNavigationData extends LeagueNavigationData {
   advanceDisabled?: boolean;
 }
 
@@ -49,6 +45,7 @@ export const buildNavigationModel = ({
   team,
   info,
   conferences,
+  playoffTeams,
 }: AppNavigationData, navigationTeamName = info.team || team.name): NavigationModel => ({
   entries: [
     { type: 'item', label: 'Dashboard', path: '/dashboard' },
@@ -123,11 +120,11 @@ export const buildNavigationModel = ({
       desktopLabel: 'Postseason',
       mobileLabel: 'Postseason',
       items: [
-        { type: 'item', label: 'Playoff Bracket', path: '/playoff' },
-        { type: 'item', label: 'Playoff Picture', path: '/playoff/picture' },
-        { type: 'item', label: 'Resume Comparison', path: '/playoff/resumes' },
-        { type: 'item', label: 'Projections', path: '/playoff/projections' },
+        ...(playoffTeams === 12
+          ? [{ type: 'item' as const, label: 'Playoff Bracket', path: '/playoff' }]
+          : []),
         { type: 'item', label: 'Bowl Games', path: '/playoff/bowls' },
+        { type: 'item', label: 'Resume Comparison', path: '/playoff/resumes' },
       ],
     },
   ],

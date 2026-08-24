@@ -23,6 +23,8 @@ export const loadOddsContext = async (): Promise<OddsContext> => {
   return buildOddsContext(oddsData);
 };
 
+export const favoriteSpread = (spread: string) => spread.startsWith('-') ? spread : null;
+
 export const buildOddsFields = (
   teamA: Team,
   teamB: Team,

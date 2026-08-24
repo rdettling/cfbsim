@@ -37,6 +37,7 @@ export const loadWeekSchedule = async (week: number) => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: getUserTeam(league),
     games: weekGames,
     conferences: league.conferences,

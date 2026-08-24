@@ -49,11 +49,18 @@ const AppNavigation = ({
   const teamContextName = getTeamContextName(data, location.pathname);
   const model = useMemo(
     () => buildNavigationModel(data, teamContextName),
-    [data.team, data.info.lastWeek, data.info.team, data.conferences, teamContextName],
+    [
+      data.team,
+      data.info.lastWeek,
+      data.info.team,
+      data.conferences,
+      data.playoffTeams,
+      teamContextName,
+    ],
   );
   const calendar = useMemo(
     () => buildLeagueCalendarModel(data),
-    [data.currentStage, data.info.currentWeek, data.info.currentYear, data.info.lastWeek],
+    [data.info.currentWeek, data.info.currentYear, data.info.lastWeek, data.info.stage],
   );
   const currentPath = normalizePath(location.pathname);
   const flowStage = calendar.kind === 'offseason'

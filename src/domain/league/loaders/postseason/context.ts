@@ -1,7 +1,6 @@
 import { getAllGames } from '../../../../db/simRepo';
 import type { Team } from '../../../../types/domain';
 import type { LeagueState } from '../../../../types/league';
-import type { PlayoffTeamEntry } from '../../../../types/postseason';
 import { loadLeagueOrThrow } from '../../leagueStore';
 import { buildPlayoffSelection } from '../../utils/playoffSelection';
 import {
@@ -44,32 +43,16 @@ export const loadPostseasonContext = async (loadedLeague?: LeagueState) => {
   const selection = buildPlayoffSelection(league, champions);
   const projectedTeams = selection.order.slice(0, format);
   const playoffTeams = hasPersistedField ? persistedTeams : projectedTeams;
-  const playoff_teams: PlayoffTeamEntry[] = playoffTeams.map((team, index) => ({
-    name: team.name,
-    seed: index + 1,
-    ranking: team.ranking,
-    conference: team.conference ?? 'Independent',
-    record: formatPostseasonRecord(team),
-    is_autobid: selection.autobidIds.has(team.id),
-  }));
 
   return {
     league,
+    games,
     format,
     isProjection,
     champions,
     championResolutions,
     selection,
     playoffTeams,
-    playoff_teams,
-    page: {
-      ...buildLeagueNavigationEnvelope(league),
-      playoff: {
-        teams: format,
-        autobids: league.settings.playoffAutobids,
-        conf_champ_top_4: league.settings.conferenceChampionsReceiveTopSeeds,
-      },
-      is_projection: isProjection,
-    },
+    navigation: buildLeagueNavigationEnvelope(league),
   };
 };

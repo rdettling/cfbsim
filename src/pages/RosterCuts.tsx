@@ -77,13 +77,7 @@ const RosterCuts = () => {
       desktopViewportConstrained
       navbarData={
         data
-          ? {
-              team: data.team,
-              currentStage: data.info.stage,
-              info: data.info,
-              conferences: data.conferences,
-              advanceDisabled: busyPlayerId !== null,
-            }
+          ? { ...data, advanceDisabled: busyPlayerId !== null }
           : undefined
       }
     >

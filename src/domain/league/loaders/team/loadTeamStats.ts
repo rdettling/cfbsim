@@ -194,6 +194,7 @@ export const loadTeamStats = async (
   const defenseRanks = buildTeamAggregateRanks(aggregateTables.defense, 'defense');
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team,
     teams,
     conferences: league.conferences,

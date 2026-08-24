@@ -3,6 +3,12 @@ import type { GameRecord } from '../../../../types/db';
 import type { Team } from '../../../../types/domain';
 import type { LeagueState } from '../../../../types/league';
 import type { PlayoffBracket, PlayoffMatchup } from '../../../../types/postseason';
+import { buildOddsFields, favoriteSpread, type OddsContext } from '../../../odds';
+
+const favoriteSpreads = (spread1: string, spread2: string) => ({
+  spread1: favoriteSpread(spread1),
+  spread2: favoriteSpread(spread2),
+});
 
 const buildGameResult = (
   game: GameRecord | null,
@@ -11,13 +17,30 @@ const buildGameResult = (
   getSeed: (name: string) => number | null,
   teamsById: Map<number, Team>,
   isProjection: boolean,
+  oddsContext: OddsContext,
+  hypotheticalHomeTeamName?: string,
 ): PlayoffMatchup => {
   if (!game || isProjection) {
+    const team1 = [...teamsById.values()].find(team => team.name === team1Name);
+    const team2 = [...teamsById.values()].find(team => team.name === team2Name);
+    const projectedOdds = team1 && team2
+      ? buildOddsFields(
+          team1,
+          team2,
+          hypotheticalHomeTeamName === team1Name ? team1 : null,
+          hypotheticalHomeTeamName === undefined,
+          oddsContext,
+        )
+      : null;
+
     return {
       team1: team1Name,
       team2: team2Name,
       seed1: getSeed(team1Name),
       seed2: getSeed(team2Name),
+      ...(projectedOdds
+        ? favoriteSpreads(projectedOdds.spreadA, projectedOdds.spreadB)
+        : { spread1: null, spread2: null }),
       score1: null,
       score2: null,
       winner: null,
@@ -32,6 +55,8 @@ const buildGameResult = (
       team2: team2Name,
       seed1: getSeed(team1Name),
       seed2: getSeed(team2Name),
+      spread1: null,
+      spread2: null,
       score1: null,
       score2: null,
       winner: null,
@@ -41,6 +66,8 @@ const buildGameResult = (
   const team1IsA = teamA.name === team1Name;
   const score1 = team1IsA ? game.scoreA : game.scoreB;
   const score2 = team1IsA ? game.scoreB : game.scoreA;
+  const spread1 = team1IsA ? game.spreadA : game.spreadB;
+  const spread2 = team1IsA ? game.spreadB : game.spreadA;
   const winnerName = game.winnerId
     ? game.winnerId === teamA.id ? teamA.name : teamB.name
     : null;
@@ -51,6 +78,7 @@ const buildGameResult = (
     team2: team1IsA ? teamB.name : teamA.name,
     seed1: getSeed(team1IsA ? teamA.name : teamB.name),
     seed2: getSeed(team1IsA ? teamB.name : teamA.name),
+    ...favoriteSpreads(spread1, spread2),
     score1: game.winnerId ? score1 : null,
     score2: game.winnerId ? score2 : null,
     winner: winnerName,
@@ -61,6 +89,7 @@ export const buildBracket = async (
   league: LeagueState,
   playoffTeams: Team[],
   isProjection: boolean,
+  oddsContext: OddsContext,
 ): Promise<PlayoffBracket> => {
   const teamsById = new Map(league.teams.map(team => [team.id, team]));
   const gameOrNull = async (id?: number) => (id ? (await getGameById(id)) ?? null : null);
@@ -76,7 +105,15 @@ export const buildBracket = async (
     const team1 = playoffTeams[0]?.name ?? 'TBD';
     const team2 = playoffTeams[1]?.name ?? 'TBD';
     return {
-      championship: buildGameResult(natty, team1, team2, getSeed, teamsById, isProjection),
+      championship: buildGameResult(
+        natty,
+        team1,
+        team2,
+        getSeed,
+        teamsById,
+        isProjection,
+        oddsContext,
+      ),
     };
   }
 
@@ -100,6 +137,7 @@ export const buildBracket = async (
           getSeed,
           teamsById,
           isProjection,
+          oddsContext,
         ),
         buildGameResult(
           rightSemi,
@@ -108,6 +146,7 @@ export const buildBracket = async (
           getSeed,
           teamsById,
           isProjection,
+          oddsContext,
         ),
       ],
       championship: buildGameResult(
@@ -117,6 +156,7 @@ export const buildBracket = async (
         getSeed,
         teamsById,
         isProjection,
+        oddsContext,
       ),
     };
   }
@@ -139,7 +179,17 @@ export const buildBracket = async (
     game: GameRecord | null,
     team1: string,
     team2: string,
-  ) => buildGameResult(game, team1, team2, getSeed, teamsById, isProjection);
+    hypotheticalHomeTeamName?: string,
+  ) => buildGameResult(
+    game,
+    team1,
+    team2,
+    getSeed,
+    teamsById,
+    isProjection,
+    oddsContext,
+    hypotheticalHomeTeamName,
+  );
 
   const team1LeftQuarter1 = playoffTeams[0]?.name ?? 'TBD';
   const team2LeftQuarter1 = winnerName(leftR1_1, 'Winner of left_r1_1');
@@ -159,12 +209,22 @@ export const buildBracket = async (
       first_round: [
         {
           id: 'left_r1_1',
-          ...result(leftR1_1, playoffTeams[7]?.name ?? 'TBD', playoffTeams[8]?.name ?? 'TBD'),
+          ...result(
+            leftR1_1,
+            playoffTeams[7]?.name ?? 'TBD',
+            playoffTeams[8]?.name ?? 'TBD',
+            playoffTeams[7]?.name,
+          ),
           next_game: 'left_quarter_1',
         },
         {
           id: 'left_r1_2',
-          ...result(leftR1_2, playoffTeams[4]?.name ?? 'TBD', playoffTeams[11]?.name ?? 'TBD'),
+          ...result(
+            leftR1_2,
+            playoffTeams[4]?.name ?? 'TBD',
+            playoffTeams[11]?.name ?? 'TBD',
+            playoffTeams[4]?.name,
+          ),
           next_game: 'left_quarter_2',
         },
       ],
@@ -190,12 +250,22 @@ export const buildBracket = async (
       first_round: [
         {
           id: 'right_r1_1',
-          ...result(rightR1_1, playoffTeams[6]?.name ?? 'TBD', playoffTeams[9]?.name ?? 'TBD'),
+          ...result(
+            rightR1_1,
+            playoffTeams[6]?.name ?? 'TBD',
+            playoffTeams[9]?.name ?? 'TBD',
+            playoffTeams[6]?.name,
+          ),
           next_game: 'right_quarter_1',
         },
         {
           id: 'right_r1_2',
-          ...result(rightR1_2, playoffTeams[5]?.name ?? 'TBD', playoffTeams[10]?.name ?? 'TBD'),
+          ...result(
+            rightR1_2,
+            playoffTeams[5]?.name ?? 'TBD',
+            playoffTeams[10]?.name ?? 'TBD',
+            playoffTeams[5]?.name,
+          ),
           next_game: 'right_quarter_2',
         },
       ],

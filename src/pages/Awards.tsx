@@ -28,16 +28,7 @@ const Awards = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={
-        data
-          ? {
-              team: data.team,
-              currentStage: data.info.stage,
-              info: data.info,
-              conferences: data.conferences,
-            }
-          : undefined
-      }
+      navbarData={data ?? undefined}
     >
       {data && (
         <>

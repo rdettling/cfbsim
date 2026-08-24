@@ -28,7 +28,6 @@ import type { LeagueHistoryPageData } from '../types/pages';
 import { AwardsBoard } from './awards/AwardsBoard';
 import { PostseasonBowlView } from './playoff/PostseasonBowlView';
 import { PostseasonBracketView } from './playoff/PostseasonBracketView';
-import type { PostseasonFormat } from './playoff/types';
 
 type HistorySeason = NonNullable<LeagueHistoryPageData['season']>;
 type TabId = 'overview' | 'playoff' | 'bowls' | 'awards';
@@ -227,12 +226,7 @@ const LeagueHistory = () => {
       error={error}
       containerMaxWidth="xl"
       desktopViewportConstrained
-      navbarData={data ? {
-        team: data.team,
-        currentStage: data.info.stage,
-        info: data.info,
-        conferences: data.conferences,
-      } : undefined}
+      navbarData={data ?? undefined}
     >
       {data && (
         <>
@@ -282,7 +276,7 @@ const LeagueHistory = () => {
                 {tab === 'playoff' && (
                   <PostseasonBracketView
                     bracket={data.season.playoff.bracket}
-                    format={data.season.playoff.teams as PostseasonFormat}
+                    format={data.season.playoff.teams}
                     hasTeams
                     onGameClick={gameId => navigate(`/game/${gameId}`)}
                     onTeamClick={openTeam}
@@ -291,7 +285,6 @@ const LeagueHistory = () => {
                 {tab === 'bowls' && (
                   <PostseasonBowlView
                     games={data.season.bowls}
-                    showingProjections={false}
                     onGameClick={gameId => navigate(`/game/${gameId}`)}
                     onTeamClick={openTeam}
                   />

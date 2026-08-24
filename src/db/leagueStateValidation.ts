@@ -135,9 +135,8 @@ const RESUME_TEAM_KEYS = [
   'ranking',
   'conference',
   'record',
-  'pollScore',
-  'winsOverExpectationRank',
-  'sosRank',
+  'resumeScoreRank',
+  'performanceIndexRank',
   'top25Record',
   'bestWin',
   'worstLoss',
@@ -434,9 +433,8 @@ const isResumeTeam = (value: unknown) =>
   isIntegerAtLeast(value.ranking, 1) &&
   isNonemptyString(value.conference) &&
   typeof value.record === 'string' &&
-  isFiniteNumber(value.pollScore) &&
-  isIntegerAtLeast(value.winsOverExpectationRank, 1) &&
-  (value.sosRank === null || isIntegerAtLeast(value.sosRank, 1)) &&
+  isIntegerAtLeast(value.resumeScoreRank, 1) &&
+  isIntegerAtLeast(value.performanceIndexRank, 1) &&
   typeof value.top25Record === 'string' &&
   (value.bestWin === null || isResumeResult(value.bestWin)) &&
   (value.worstLoss === null || isResumeResult(value.worstLoss)) &&

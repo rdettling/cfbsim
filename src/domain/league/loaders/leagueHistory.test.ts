@@ -185,7 +185,16 @@ describe('loadLeagueHistory', () => {
       },
       finalRankings: [{ name: 'Test State' }, { name: 'Other State' }],
       conferenceChampions: [{ team: { name: 'Test State' }, championshipGameId: 2 }],
-      bowls: [{ id: 3, name: 'Rose Bowl', is_ny6: true, winner: 'Test State' }],
+      bowls: [{
+        gameId: 3,
+        name: 'Rose Bowl',
+        status: 'final',
+        tier: 'ny6',
+        teams: [
+          { name: 'Test State', score: 31, isWinner: true },
+          { name: 'Other State', score: 24, isWinner: false },
+        ],
+      }],
       awards: [{
         categorySlug: 'nagurski',
         categoryName: 'Bronko Nagurski Trophy',

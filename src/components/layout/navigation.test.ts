@@ -83,9 +83,9 @@ describe('application navigation', () => {
     const seasonLeague = buildTestLeague('season');
     const season = buildLeagueCalendarModel({
       team: seasonLeague.teams[0],
-      currentStage: seasonLeague.info.stage,
       info: seasonLeague.info,
       conferences: seasonLeague.conferences,
+      playoffTeams: seasonLeague.settings.playoffTeams,
     });
     expect(season.kind).toBe('season');
 
@@ -93,9 +93,9 @@ describe('application navigation', () => {
     summaryLeague.info.currentYear = 2026;
     const offseason = buildLeagueCalendarModel({
       team: summaryLeague.teams[0],
-      currentStage: summaryLeague.info.stage,
       info: summaryLeague.info,
       conferences: summaryLeague.conferences,
+      playoffTeams: summaryLeague.settings.playoffTeams,
     });
     expect(offseason).toMatchObject({
       kind: 'offseason',
@@ -132,9 +132,9 @@ describe('application navigation', () => {
 
     const navigation = buildNavigationModel({
       team: league.teams[0],
-      currentStage: stage,
       info: league.info,
       conferences: league.conferences,
+      playoffTeams: league.settings.playoffTeams,
     });
 
     expect(navigation.entries[0]).toEqual({
@@ -148,9 +148,9 @@ describe('application navigation', () => {
     const league = buildTestLeague('season');
     const navigation = buildNavigationModel({
       team: league.teams[0],
-      currentStage: 'season',
       info: league.info,
       conferences: league.conferences,
+      playoffTeams: league.settings.playoffTeams,
     });
 
     expect(navigation.entries.map(entry =>
@@ -184,10 +184,8 @@ describe('application navigation', () => {
     ]);
     expect(groups.find(group => group.id === 'postseason')?.items.map(item => item.label)).toEqual([
       'Playoff Bracket',
-      'Playoff Picture',
-      'Resume Comparison',
-      'Projections',
       'Bowl Games',
+      'Resume Comparison',
     ]);
   });
 
@@ -195,9 +193,9 @@ describe('application navigation', () => {
     const league = buildTestLeague('season');
     const navigation = buildNavigationModel({
       team: league.teams[0],
-      currentStage: 'season',
       info: league.info,
       conferences: league.conferences,
+      playoffTeams: league.settings.playoffTeams,
     });
     const leagueGroup = navigation.entries.find(
       (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'league'
@@ -235,29 +233,49 @@ describe('application navigation', () => {
     const league = buildTestLeague('season');
     const navigation = buildNavigationModel({
       team: league.teams[0],
-      currentStage: 'season',
       info: league.info,
       conferences: league.conferences,
+      playoffTeams: league.settings.playoffTeams,
     });
     const postseason = navigation.entries.find(
       (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'postseason'
     )!;
     const bracket = postseason.items[0];
-    const picture = postseason.items[1];
+    const resumes = postseason.items[2];
 
     expect(isPathActive('/playoff', bracket)).toBe(true);
-    expect(isPathActive('/playoff/picture', bracket)).toBe(false);
-    expect(isPathActive('/playoff/picture', picture)).toBe(true);
+    expect(isPathActive('/playoff/resumes', bracket)).toBe(false);
+    expect(isPathActive('/playoff/resumes', resumes)).toBe(true);
     expect(isGroupActive('/playoff/resumes', postseason)).toBe(true);
+  });
+
+  it.each([2, 4] as const)('removes the bracket destination for a %i-team playoff', format => {
+    const league = buildTestLeague('season');
+    league.settings.playoffTeams = format;
+
+    const navigation = buildNavigationModel({
+      team: league.teams[0],
+      info: league.info,
+      conferences: league.conferences,
+      playoffTeams: format,
+    });
+    const postseason = navigation.entries.find(
+      (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'postseason'
+    )!;
+
+    expect(postseason.items.map(item => item.label)).toEqual([
+      'Bowl Games',
+      'Resume Comparison',
+    ]);
   });
 
   it('retains prefix matching for team schedule descendants', () => {
     const league = buildTestLeague('season');
     const navigation = buildNavigationModel({
       team: league.teams[0],
-      currentStage: 'season',
       info: league.info,
       conferences: league.conferences,
+      playoffTeams: league.settings.playoffTeams,
     });
     const teamGroup = navigation.entries.find(
       (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'team'
@@ -271,9 +289,9 @@ describe('application navigation', () => {
     const league = buildTestLeague('season');
     const navigation = buildNavigationModel({
       team: league.teams[0],
-      currentStage: 'season',
       info: league.info,
       conferences: league.conferences,
+      playoffTeams: league.settings.playoffTeams,
     });
     const team = navigation.entries.find(
       (entry): entry is NavigationGroup => entry.type === 'group' && entry.id === 'team'
@@ -297,9 +315,9 @@ describe('application navigation', () => {
     });
     const data = {
       team: viewedTeam,
-      currentStage: league.info.stage,
       info: league.info,
       conferences: league.conferences,
+      playoffTeams: league.settings.playoffTeams,
     };
 
     const teamPageName = getTeamContextName(data, '/Georgia/stats');

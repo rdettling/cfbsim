@@ -1,69 +1,20 @@
-export type PlayoffTeamEntry = {
+export type BowlTeamEntry = {
   name: string;
-  seed: number;
-  ranking: number;
   conference: string;
+  isConferenceChampion: boolean;
+  ranking: number | null;
   record: string;
-  is_autobid: boolean;
-};
-
-export type BubbleTeamEntry = {
-  name: string;
-  ranking: number;
-  conference: string;
-  record: string;
-};
-
-export type ResumeResultEntry = {
-  opponent: string;
-  opponent_ranking: number;
-};
-
-export type ResumeTeamEntry = {
-  name: string;
-  ranking: number;
-  conference: string;
-  record: string;
-  poll_score: number;
-  wins_over_expectation_rank: number;
-  sos_rank: number | null;
-  top_25_record: string;
-  best_win: ResumeResultEntry | null;
-  worst_loss: ResumeResultEntry | null;
-  seed: number | null;
-  is_autobid: boolean;
-  has_bye: boolean;
-  is_champ: boolean;
-};
-
-export type ConferenceChampionEntry = {
-  name: string;
-  ranking: number;
-  conference: string;
-  record: string;
-  seed: number | null;
-  is_projected: boolean;
+  spread: string | null;
+  score: number | null;
+  isWinner: boolean;
 };
 
 export type BowlGameEntry = {
-  id: number;
+  gameId: number | null;
   name: string;
-  week: number;
-  teamA: string;
-  teamB: string;
-  teamA_conf: string;
-  teamB_conf: string;
-  teamA_is_champ: boolean;
-  teamB_is_champ: boolean;
-  rankA: number;
-  rankB: number;
-  recordA: string;
-  recordB: string;
-  scoreA: number | null;
-  scoreB: number | null;
-  winner: string | null;
-  is_ny6: boolean;
-  is_projection: boolean;
+  status: 'projected' | 'scheduled' | 'final';
+  tier: 'playoff' | 'ny6' | 'other';
+  teams: [BowlTeamEntry, BowlTeamEntry];
 };
 
 export type PlayoffMatchup = {
@@ -74,6 +25,8 @@ export type PlayoffMatchup = {
   team2: string;
   seed1: number | null;
   seed2: number | null;
+  spread1: string | null;
+  spread2: string | null;
   score1: number | null;
   score2: number | null;
   winner: string | null;

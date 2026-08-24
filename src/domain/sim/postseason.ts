@@ -13,6 +13,7 @@ import { nextId } from './ids';
 import { buildWatchability } from './games';
 import {
   getAllGames,
+  getGameDetailsByYear,
   getGameById,
   getGamesByWeek,
   saveGamesAndLeague,
@@ -479,9 +480,9 @@ export const handleSpecialWeeks = async (league: LeagueState, oddsContext: Await
         league.resumeSnapshot = buildResumeComparisonSnapshot({
           league,
           games,
+          details: await getGameDetailsByYear(league.info.currentYear),
           selection,
           championIds: new Set(champions.map(team => team.id)),
-          oddsContext,
         });
       }
     }

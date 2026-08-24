@@ -109,6 +109,7 @@ export const loadRatingsStats = async (): Promise<RatingsStatsPageResult> => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     total_star_counts,
     prestige_stars_table,

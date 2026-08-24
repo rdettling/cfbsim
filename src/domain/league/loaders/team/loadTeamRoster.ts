@@ -14,6 +14,7 @@ export const loadTeamRoster = async (teamName?: string) => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team,
     roster,
     positions: [...orderedPositions, ...extraPositions],

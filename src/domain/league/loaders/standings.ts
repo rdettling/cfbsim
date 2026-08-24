@@ -100,6 +100,7 @@ export const loadStandings = async (conferenceName: string) => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     conference: conference?.confName ?? 'Independent',
     teams: rankedTeams,

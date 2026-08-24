@@ -28,6 +28,7 @@ const buildData = (): LeagueHistoryPageData => {
     info: league.info,
     team: champion,
     conferences: league.conferences,
+    playoffTeams: league.settings.playoffTeams,
     years: [2025],
     season: {
       year: 2025,
@@ -43,6 +44,8 @@ const buildData = (): LeagueHistoryPageData => {
             team2: runnerUp.name,
             seed1: 1,
             seed2: 2,
+            spread1: null,
+            spread2: null,
             score1: 31,
             score2: 24,
             winner: champion.name,
@@ -66,7 +69,34 @@ const buildData = (): LeagueHistoryPageData => {
         team: championHistory,
         championshipGameId: 2,
       }],
-      bowls: [],
+      bowls: [{
+        gameId: 3,
+        name: 'Rose Bowl',
+        status: 'final',
+        tier: 'ny6',
+        teams: [
+          {
+            name: champion.name,
+            conference: championHistory.conference,
+            isConferenceChampion: true,
+            ranking: 1,
+            record: championHistory.record,
+            spread: null,
+            score: 31,
+            isWinner: true,
+          },
+          {
+            name: runnerUp.name,
+            conference: runnerUpHistory.conference,
+            isConferenceChampion: false,
+            ranking: 2,
+            record: runnerUpHistory.record,
+            spread: null,
+            score: 24,
+            isWinner: false,
+          },
+        ],
+      }],
       awards: [{
         categorySlug: 'heisman',
         categoryName: 'Heisman Trophy',
@@ -144,5 +174,16 @@ describe('LeagueHistory page', () => {
     expect(markup).toContain('QB');
     expect(markup).not.toContain('View finalists');
     expect(markup).not.toContain('Score');
+  });
+
+  it('opens archived bowls with the shared result presentation', () => {
+    const markup = renderPage('/league/history/2025?tab=bowls');
+
+    expect(markup).toContain('Final');
+    expect(markup).not.toContain('final result');
+    expect(markup).toContain('Open Rose Bowl');
+    expect(markup).toContain('Test State winner');
+    expect(markup).toContain('Conference champ');
+    expect(markup).not.toContain('>-3<');
   });
 });

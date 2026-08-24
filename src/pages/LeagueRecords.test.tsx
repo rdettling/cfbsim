@@ -13,6 +13,7 @@ const buildData = (): LeagueRecordsPageData => {
   const league = buildTestLeague('season');
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: buildTestTeam(),
     conferences: league.conferences,
     coverage: {

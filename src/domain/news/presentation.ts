@@ -43,7 +43,7 @@ export const storyRoute = (story: NewsItem): string => {
         case 'preseason_poll':
           return ROUTES.RANKINGS;
         case 'national_outlook':
-          return ROUTES.PLAYOFF_PICTURE;
+          return ROUTES.PLAYOFF;
         case 'marquee_opener':
           if (story.featuredGameId === null) {
             throw new Error('A marquee opener requires a game.');

@@ -52,16 +52,7 @@ const WeekSchedule = () => {
     <PageLayout
       loading={loading}
       error={error}
-      navbarData={
-        data
-          ? {
-              team: data.team,
-              currentStage: data.info.stage,
-              info: data.info,
-              conferences: data.conferences,
-            }
-          : undefined
-      }
+      navbarData={data ?? undefined}
       containerMaxWidth="xl"
       desktopViewportConstrained
     >

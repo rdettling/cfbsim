@@ -65,6 +65,14 @@ roster read merely as a side effect.
 - Dashboard and Team Schedule reads do not initialize the season;
   `initializeSeason()` owns that write.
 - Navigation envelope construction is in-memory only.
+- `LeagueNavigationData` is the single navigation contract. Loaders include its
+  `info`, `team`, `conferences`, and `playoffTeams` fields directly in page
+  results; pages pass those results to the application shell without rebuilding
+  the envelope or duplicating the current stage outside `info.stage`.
+- Postseason loaders return route-specific camelCase contracts: the bracket
+  projection, canonical resume teams, or one resolved bowl-game slate. They do
+  not expose parallel projected/actual collections or compatibility-shaped
+  page objects.
 
 ## Source Map
 
@@ -74,4 +82,5 @@ roster read merely as a side effect.
 - `src/db/recruitingRepo.ts`
 - `src/domain/league/loaders/navigationEnvelope.ts`
 - `src/domain/league/loaders/`
+- `src/types/navigation.ts`
 - `src/types/pages.ts`

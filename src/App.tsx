@@ -32,9 +32,7 @@ const Recruiting = lazy(() => import('./pages/Recruiting'));
 const RecruitingSummary = lazy(() => import('./pages/RecruitingSummary'));
 const RosterCuts = lazy(() => import('./pages/RosterCuts'));
 const Playoff = lazy(() => import('./pages/Playoff'));
-const PlayoffPicture = lazy(() => import('./pages/PlayoffPicture'));
 const ResumeComparison = lazy(() => import('./pages/ResumeComparison'));
-const PostseasonProjections = lazy(() => import('./pages/PostseasonProjections'));
 const BowlGames = lazy(() => import('./pages/BowlGames'));
 const AdvancedStats = lazy(() => import('./pages/AdvancedStats'));
 
@@ -77,9 +75,7 @@ const App = () => {
             />
             <Route path={ROUTES.ROSTER_CUTS} element={<RosterCuts />} />
             <Route path={ROUTES.PLAYOFF} element={<Playoff />} />
-            <Route path={ROUTES.PLAYOFF_PICTURE} element={<PlayoffPicture />} />
             <Route path={ROUTES.PLAYOFF_RESUMES} element={<ResumeComparison />} />
-            <Route path={ROUTES.PLAYOFF_PROJECTIONS} element={<PostseasonProjections />} />
             <Route path={ROUTES.BOWL_GAMES} element={<BowlGames />} />
             <Route path={ROUTES.GAME} element={<GamePage />} />
             <Route path={ROUTES.PLAYER} element={<Player />} />

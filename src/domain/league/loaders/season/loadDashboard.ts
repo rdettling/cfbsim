@@ -1,4 +1,5 @@
-import type { Conference, Info, ScheduleGame, Team } from '../../../../types/domain';
+import type { ScheduleGame, Team } from '../../../../types/domain';
+import type { LeagueNavigationData } from '../../../../types/navigation';
 import { buildUserScheduleFromGames } from '../../../schedule/projection';
 import { loadLeagueOrThrow } from '../../leagueStore';
 import {
@@ -10,15 +11,12 @@ import { sortNewsItems } from '../../../news/ordering';
 import type { NewsItem } from '../../../../types/news';
 import { buildConferenceStandings } from '../../utils/standings';
 
-export interface DashboardPageResult {
-  info: Info;
+export interface DashboardPageResult extends LeagueNavigationData {
   prev_game: ScheduleGame | null;
   curr_game: ScheduleGame | null;
-  team: Team;
   confTeams: Team[];
   top_10: Team[];
   topStories: NewsItem[];
-  conferences: Conference[];
 }
 
 export const loadDashboard = async (): Promise<DashboardPageResult> => {
@@ -61,6 +59,7 @@ export const loadDashboard = async (): Promise<DashboardPageResult> => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     prev_game: prevGame,
     curr_game: currGame,
     team: userTeam,

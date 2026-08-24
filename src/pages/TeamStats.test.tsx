@@ -41,6 +41,7 @@ const buildData = (): TeamStatsPageData => {
   const league = buildTestLeague('season');
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: buildTestTeam({ gamesPlayed: 0 }),
     teams: ['Alpha Tech', 'Test State'],
     conferences: league.conferences,

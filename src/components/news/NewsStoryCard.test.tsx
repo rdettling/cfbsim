@@ -65,7 +65,7 @@ describe('NewsStoryCard', () => {
       id: 'preview:2027:national_outlook',
       primaryAngle: 'national_outlook',
       storylines: ['national_outlook'],
-    })).toBe('/playoff/picture');
+    })).toBe('/playoff');
     expect(storyRoute({
       ...preview,
       id: 'preview:2027:marquee_opener',

@@ -83,6 +83,7 @@ describe('standings presentation', () => {
 
     const data = (championship: NonNullable<StandingsPageData['championship']>): StandingsPageData => ({
       info: buildTestLeague('season').info,
+      playoffTeams: buildTestLeague('season').settings.playoffTeams,
       team: alpha,
       conference: 'Test Conference',
       teams: [standingTeam, { ...standingTeam, ...beta, tiebreaker: null }],
@@ -142,6 +143,7 @@ describe('standings presentation', () => {
     });
     const data: StandingsPageData = {
       info: buildTestLeague('season').info,
+      playoffTeams: buildTestLeague('season').settings.playoffTeams,
       team: independent,
       conference: 'Independent',
       teams: [{ ...standingTeam, ...independent, tiebreaker: null }],

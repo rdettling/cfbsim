@@ -12,6 +12,7 @@ import type {
   RivalryPlanWarning,
   PendingRivalry,
 } from './domain';
+import type { LeagueNavigationData } from './navigation';
 
 export interface HomeProgramSummary {
   name: string;
@@ -49,13 +50,10 @@ export interface StartNewLeagueInput {
   };
 }
 
-export interface NonConData {
-  info: Info;
-  team: Team;
+export interface NonConData extends LeagueNavigationData {
   schedule: ScheduleGame[];
   pending_rivalries: PendingRivalry[];
   rivalryWarnings: RivalryPlanWarning[];
-  conferences: Conference[];
 }
 
 export type ManualNonConLocation = 'Home' | 'Away';
@@ -129,9 +127,8 @@ export interface ResumeSnapshotTeam {
   ranking: number;
   conference: string;
   record: string;
-  pollScore: number;
-  winsOverExpectationRank: number;
-  sosRank: number | null;
+  resumeScoreRank: number;
+  performanceIndexRank: number;
   top25Record: string;
   bestWin: ResumeSnapshotResult | null;
   worstLoss: ResumeSnapshotResult | null;

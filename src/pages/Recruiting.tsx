@@ -99,13 +99,7 @@ const Recruiting = () => {
       desktopViewportConstrained
       navbarData={
         data
-          ? {
-              team: data.team,
-              currentStage: data.info.stage,
-              info: data.info,
-              conferences: data.conferences,
-              advanceDisabled: busy || !allocationsValid,
-            }
+          ? { ...data, advanceDisabled: busy || !allocationsValid }
           : undefined
       }
       offseasonAdvanceContext={{

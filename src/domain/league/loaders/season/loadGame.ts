@@ -167,6 +167,7 @@ export const loadGame = async (gameId: number) => {
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: userTeam,
     conferences: league.conferences,
     game,

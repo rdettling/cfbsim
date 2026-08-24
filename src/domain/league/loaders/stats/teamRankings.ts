@@ -32,6 +32,7 @@ export const loadTeamRankings = async (
 
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: league.teams.find(entry => entry.name === league.info.team) ?? league.teams[0],
     conferences: league.conferences,
     years: season.years,

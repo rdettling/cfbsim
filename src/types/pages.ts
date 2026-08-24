@@ -28,9 +28,7 @@ import type { loadTeamRoster } from '../domain/league/loaders/team/loadTeamRoste
 import type { loadTeamStats } from '../domain/league/loaders/team/loadTeamStats';
 import type { loadBowlGames } from '../domain/league/loaders/postseason/loadBowlGames';
 import type { loadPlayoffBracket } from '../domain/league/loaders/postseason/loadPlayoffBracket';
-import type { loadPlayoffPicture } from '../domain/league/loaders/postseason/loadPlayoffPicture';
 import type { loadResumeComparison } from '../domain/league/loaders/postseason/loadResumeComparison';
-import type { loadPostseasonProjections } from '../domain/league/loaders/roadmap';
 import type { loadAdvancedStats } from '../domain/league/loaders/stats/advancedStats';
 
 export type HomePageData = Awaited<ReturnType<typeof loadHomeData>>;
@@ -62,8 +60,6 @@ export type TeamInfoData = Awaited<ReturnType<typeof getTeamInfo>>;
 export type AvailableNonConOpponentsData = Awaited<ReturnType<typeof listAvailableOpponents>>;
 export type PlayerLeadersPageData = Awaited<ReturnType<typeof loadPlayerLeaders>>;
 export type PlayoffBracketPageData = Awaited<ReturnType<typeof loadPlayoffBracket>>;
-export type PlayoffPicturePageData = Awaited<ReturnType<typeof loadPlayoffPicture>>;
 export type ResumeComparisonPageData = Awaited<ReturnType<typeof loadResumeComparison>>;
 export type BowlGamesPageData = Awaited<ReturnType<typeof loadBowlGames>>;
 export type AdvancedStatsPageData = Awaited<ReturnType<typeof loadAdvancedStats>>;
-export type PostseasonProjectionsPageData = Awaited<ReturnType<typeof loadPostseasonProjections>>;

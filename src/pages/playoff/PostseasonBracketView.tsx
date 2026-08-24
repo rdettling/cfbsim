@@ -1,22 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
-import { PostseasonMatchup } from './PostseasonMatchup';
+import type { PlayoffTeamCount } from '../../types/domain';
 import type {
   FourTeamPlayoffBracket,
-  GameAction,
   PlayoffBracket,
   PlayoffMatchup,
-  PostseasonFormat,
-  TeamAction,
   TwelveTeamPlayoffBracket,
-} from './types';
+} from '../../types/postseason';
+import { PostseasonMatchup } from './PostseasonMatchup';
 
 type PostseasonBracketViewProps = {
   bracket: PlayoffBracket;
-  format: PostseasonFormat;
+  format: PlayoffTeamCount;
   hasTeams: boolean;
-  onGameClick: GameAction;
-  onTeamClick: TeamAction;
+  onGameClick: (gameId: number) => void;
+  onTeamClick: (teamName: string) => void;
 };
 
 type Round = {
@@ -71,8 +69,8 @@ const DesktopRound = ({
 }: {
   label: string;
   matchups: PlayoffMatchup[];
-  onGameClick: GameAction;
-  onTeamClick: TeamAction;
+  onGameClick: (gameId: number) => void;
+  onTeamClick: (teamName: string) => void;
 }) => (
   <Box
     sx={{

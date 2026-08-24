@@ -30,6 +30,7 @@ const buildData = (): NewsPageData => {
   const league = buildTestLeague('season');
   return {
     info: league.info,
+    playoffTeams: league.settings.playoffTeams,
     team: league.teams[0],
     conferences: league.conferences,
     year: 2026,

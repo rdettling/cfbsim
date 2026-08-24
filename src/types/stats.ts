@@ -1,4 +1,5 @@
-import type { Conference, Info, Team } from './domain';
+import type { Team } from './domain';
+import type { LeagueNavigationData } from './navigation';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -45,14 +46,11 @@ export interface TeamAggregateStats {
 export type TeamAggregateStatKey = keyof TeamAggregateStats;
 export type TeamAggregateMode = 'offense' | 'defense';
 
-export interface TeamRankingsPageResult {
-  info: Info;
+export interface TeamRankingsPageResult extends LeagueNavigationData {
   offense: Record<string, TeamAggregateStats>;
   defense: Record<string, TeamAggregateStats>;
   offense_averages: TeamAggregateStats;
   defense_averages: TeamAggregateStats;
-  team: Team;
-  conferences: Conference[];
   years: number[];
   selectedYear: number;
 }
@@ -105,10 +103,7 @@ export interface PlayerLeaderboardEntry<TStats> {
   stats: TStats;
 }
 
-export interface PlayerLeadersPageResult {
-  info: Info;
-  team: Team;
-  conferences: Conference[];
+export interface PlayerLeadersPageResult extends LeagueNavigationData {
   years: number[];
   selectedYear: number;
   stats: {
@@ -162,11 +157,8 @@ export interface RankedTeamAggregateStats {
   ranks: Record<TeamAggregateStatKey, number>;
 }
 
-export interface TeamStatsPageResult {
-  info: Info;
-  team: Team;
+export interface TeamStatsPageResult extends LeagueNavigationData {
   teams: string[];
-  conferences: Conference[];
   years: number[];
   selectedYear: number;
   teamStats: Record<TeamAggregateMode, RankedTeamAggregateStats>;
@@ -190,9 +182,7 @@ export interface PrestigeStarsRow {
   star_percentages: StarRatingRecord;
 }
 
-export interface RatingsStatsPageResult {
-  info: Info;
-  team: Team;
+export interface RatingsStatsPageResult extends LeagueNavigationData {
   prestige_stars_table: PrestigeStarsRow[];
   total_star_counts: {
     counts: StarRatingRecord;
@@ -203,7 +193,6 @@ export interface RatingsStatsPageResult {
     avg_ratings_sr: StarRatingRecord;
   };
   teams: Team[];
-  conferences: Conference[];
 }
 
 export interface AdvancedUnitStats {
@@ -248,9 +237,6 @@ export interface AdvancedTeamStatsRow {
   defense: AdvancedUnitStats;
 }
 
-export interface AdvancedStatsPageResult {
-  info: Info;
-  team: Team;
-  conferences: Conference[];
+export interface AdvancedStatsPageResult extends LeagueNavigationData {
   rows: AdvancedTeamStatsRow[];
 }
