@@ -5,8 +5,10 @@ import App from './App';
 import { appTheme } from './theme/theme';
 import { initializeDatabase } from './db/databaseLifecycle';
 import { initializeBaseDataCache } from './db/baseData';
+import { initializeCloudflareAnalytics } from './analytics/cloudflare';
 
 const startApplication = async () => {
+  initializeCloudflareAnalytics();
   await initializeDatabase();
   await initializeBaseDataCache();
   createRoot(document.getElementById('root')!).render(
