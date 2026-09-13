@@ -1,4 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material';
+import { getVersionedStaticAssetUrl } from '../../constants/staticAssets';
 
 type PlayerStarRatingProps = {
   label: string;
@@ -31,7 +32,7 @@ export const PlayerStarRating = ({ label, value }: PlayerStarRatingProps) => {
             <Box
               key={slot}
               component="img"
-              src="/logos/star.png"
+              src={getVersionedStaticAssetUrl('/logos/star.webp')}
               alt=""
               sx={{
                 display: 'block',

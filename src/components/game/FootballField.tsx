@@ -1,5 +1,6 @@
 import { alpha, Box, Typography } from '@mui/material';
 import { useLayoutEffect, useRef, useState } from 'react';
+import { getVersionedStaticAssetUrl } from '../../constants/staticAssets';
 
 type FieldTeam = {
   name: string;
@@ -278,7 +279,7 @@ const FootballField = ({
       {!neutralSite && (
         <Box
           component="img"
-          src={`/logos/teams/${homeTeam.name}.png`}
+          src={getVersionedStaticAssetUrl(`/logos/teams/${homeTeam.name}.webp`)}
           alt=""
           sx={{
             position: 'absolute',
@@ -390,7 +391,7 @@ const FootballField = ({
 
       <Box
         component="img"
-        src="/logos/football.png"
+        src={getVersionedStaticAssetUrl('/logos/football.webp')}
         alt=""
         sx={{
           position: 'absolute',

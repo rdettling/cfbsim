@@ -11,7 +11,7 @@ beforeEach(async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
+      const url = new URL(String(input), 'https://cfbsim.test').pathname;
       try {
         const value = await readFile(
           join(process.cwd(), 'public', url.replace(/^\//, '')),
@@ -68,7 +68,7 @@ describe('2004 starting-year data', () => {
           'public',
           'logos',
           'teams',
-          'Florida A&M.png',
+          'Florida A&M.webp',
         ),
       ),
     ).resolves.toBeUndefined();

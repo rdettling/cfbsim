@@ -329,7 +329,7 @@ beforeEach(async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
+      const url = new URL(String(input), 'https://cfbsim.test').pathname;
       const value = responses.get(url);
       return new Response(
         value === undefined ? 'Not found' : JSON.stringify(value),
@@ -452,7 +452,7 @@ describe('startNewLeague', () => {
 
   it('keeps season loaders read-only and initializes the season by command', async () => {
     await startNewLeague(buildInput());
-    expect(fetch).toHaveBeenCalledWith('/data/history.json');
+    expect(fetch).toHaveBeenCalledWith('/data/history.json?v=19');
     const before = await snapshotSave();
 
     await loadDashboard();

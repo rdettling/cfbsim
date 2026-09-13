@@ -203,9 +203,9 @@ export const checkData = async (
     if (!teams?.teams[team]) errors.push(`teams.json: missing metadata for ${team}.`);
     if (checkSeasons) {
       try {
-        await access(join(dataRoot, '..', 'logos', 'teams', `${team}.png`));
+        await access(join(dataRoot, '..', 'logos', 'teams', `${team}.webp`));
       } catch {
-        errors.push(`team logos: missing ${team}.png.`);
+        errors.push(`team logos: missing ${team}.webp.`);
       }
     }
   }

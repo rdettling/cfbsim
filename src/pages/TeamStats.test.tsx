@@ -165,7 +165,7 @@ describe('TeamStats page', () => {
       </MemoryRouter>,
     );
 
-    expect(markup).toContain('src="/logos/teams/Alabama.png"');
+    expect(markup).toContain('src="/logos/teams/Alabama.webp?v=19"');
     expect(markup).toContain('Georgia Bulldogs');
   });
 

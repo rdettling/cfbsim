@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import { useState } from 'react';
+import { getVersionedStaticAssetUrl } from '../../constants/staticAssets';
 
 type LogoProps = {
   name: string;
@@ -19,12 +20,15 @@ const Logo = ({
   size = 30,
 }: LogoProps & { type: LogoKind }) => {
   const [hasError, setHasError] = useState(false);
-  const logoPath = `${getBasePath()}/logos/${type}/${name}.png`;
+  const logoPath = getVersionedStaticAssetUrl(
+    `${getBasePath()}/logos/${type}/${name}.webp`,
+  );
 
   return (
     <Box
       component="img"
       src={logoPath}
+      loading="lazy"
       onError={() => {
         console.error(`Failed to load ${type} logo for ${name} from ${logoPath}`);
         setHasError(true);

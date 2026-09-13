@@ -11,7 +11,6 @@
     "build": "vite build",
     "test": "vitest run",
     "test:news:representative": "NEWS_REPRESENTATIVE=1 vitest run scripts/evaluation/news/corpus.test.ts -t \"matches the accepted representative news-content contract\"",
-    "start": "sirv dist --single --host 0.0.0.0",
     "preview": "vite preview",
     "data:build": "tsx scripts/data_build.ts",
     "data:check": "tsx scripts/data_check.ts",
@@ -40,8 +39,7 @@
     "idb": "8.0.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-router-dom": "7.18.1",
-    "sirv-cli": "3.0.1"
+    "react-router-dom": "7.18.1"
   },
   "devDependencies": {
     "@types/node": "24.13.3",

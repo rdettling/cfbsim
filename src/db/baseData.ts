@@ -1,4 +1,8 @@
 import { getDb } from './db';
+import {
+  getVersionedStaticAssetUrl,
+  STATIC_DATA_VERSION,
+} from '../constants/staticAssets';
 import { validateSeasonData } from '../domain/seasonDataValidation';
 import {
   validateBettingOddsData,
@@ -34,12 +38,11 @@ import {
   validateHistoricalGamesForTeam,
 } from '../domain/historicalGames';
 
-export const STATIC_DATA_VERSION = 18;
 const STATIC_DATA_VERSION_KEY = 'static_data_version';
 const MUTABLE_BASE_DATA_KEYS = new Set(['history']);
 
 const fetchJson = async <T,>(url: string): Promise<T> => {
-  const response = await fetch(url);
+  const response = await fetch(getVersionedStaticAssetUrl(url));
   if (!response.ok) {
     throw new Error(`Failed to load ${url}: ${response.status}`);
   }

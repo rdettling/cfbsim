@@ -9,7 +9,7 @@ describe('PlayerStarRating', () => {
     );
 
     expect(markup).toContain('aria-label="Recruiting 4 out of 5"');
-    expect(markup.match(/src="\/logos\/star\.png"/g)).toHaveLength(5);
+    expect(markup.match(/src="\/logos\/star\.webp\?v=19"/g)).toHaveLength(5);
   });
 
   it('clamps values to the supported zero-to-five range', () => {

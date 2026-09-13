@@ -1,5 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
+import { getVersionedStaticAssetUrl } from '../../constants/staticAssets';
 import type { SimMatchup } from '../../types/components';
 import { TeamLogo } from '../team/TeamLogo';
 
@@ -19,7 +20,7 @@ const formatClock = (totalSeconds: number) => {
 const PossessionIndicator = () => (
   <Box
     component="img"
-    src="/logos/football.png"
+    src={getVersionedStaticAssetUrl('/logos/football.webp')}
     alt="Possession"
     sx={{ width: 17, height: 17, objectFit: 'contain', flexShrink: 0 }}
   />

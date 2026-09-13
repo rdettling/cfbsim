@@ -164,11 +164,11 @@ const createFixture = async () => {
       }],
     }),
     writeFile(
-      join(fixtureRoot, 'public', 'logos', 'teams', 'Alpha.png'),
+      join(fixtureRoot, 'public', 'logos', 'teams', 'Alpha.webp'),
       '',
     ),
     writeFile(
-      join(fixtureRoot, 'public', 'logos', 'teams', 'Beta.png'),
+      join(fixtureRoot, 'public', 'logos', 'teams', 'Beta.webp'),
       '',
     ),
   ]);

@@ -66,8 +66,9 @@ committed asset.
 | `public/data/seasons/YYYY.json` | Maintainer plus CFBD season-result ingestion | Season topology, playoff rules, and final results |
 | `public/data/historical-games/YYYY.json` | CFBD game-history transformation | Canonical detailed games for one completed season |
 
-`public/logos/teams/<canonical team>.png` is a companion asset rather than JSON,
-but every program referenced by a season must have one.
+`public/logos/teams/<canonical team>.webp` is a companion asset rather than
+JSON. Every program referenced by a season must have one; each logo is a
+lossless WebP with a maximum 320 px long edge.
 
 ### Generated committed runtime assets
 
@@ -418,11 +419,13 @@ Important cache keys are:
 | Historical-game season | `historical-games:YYYY` |
 | Team game projection | `historical-games:team:<canonical team>` |
 
-`STATIC_DATA_VERSION` in `src/db/baseData.ts` is the manual public-data cache
-epoch. On application initialization, a version mismatch deletes every cached
-static value except mutable `history`, then records the new epoch. Increment it
-once before releasing any change to a public data asset that an installed
-client may already have cached.
+`STATIC_DATA_VERSION` in `src/constants/staticAssets.ts` is the manual
+public-data and logo cache epoch. Public-data and logo URLs include this value,
+so a version change safely invalidates immutable browser caches. On application
+initialization, a version mismatch deletes every cached static value except
+mutable `history`, then records the new epoch. Increment it once before
+releasing any change to a public data asset or logo that an installed client
+may already have cached.
 
 Starting a new league calls `clearBaseDataCache()`, which clears even mutable
 history and causes a fresh `history.json` baseline to load. This is separate
@@ -628,7 +631,7 @@ must have exact full-field results.
 ### A logo or catalog reference fails
 
 Use the canonical team or conference spelling from the season. Add missing
-program metadata and `public/logos/teams/<team>.png`; do not introduce a second
+program metadata and `public/logos/teams/<team>.webp`; do not introduce a second
 identifier.
 
 ### The app still shows old public data

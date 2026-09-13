@@ -1,7 +1,6 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  STATIC_DATA_VERSION,
   clearBaseDataCache,
   getHistoricalGamesForTeam,
   getHistoricalGamesIndex,
@@ -9,6 +8,7 @@ import {
   getTeamsData,
   initializeBaseDataCache,
 } from './baseData';
+import { STATIC_DATA_VERSION } from '../constants/staticAssets';
 import { deleteCurrentDatabase, getDb } from './db';
 
 const historicalIndex = {
@@ -138,7 +138,7 @@ describe('base data cache lifecycle', () => {
   it('loads and caches the historical index and seasons independently', async () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
-      const value = url.endsWith('/index.json')
+      const value = new URL(url, 'https://cfbsim.test').pathname.endsWith('/index.json')
         ? historicalIndex
         : historicalSeason;
       return new Response(JSON.stringify(value), { status: 200 });
@@ -154,8 +154,8 @@ describe('base data cache lifecycle', () => {
     );
 
     expect(fetchImpl.mock.calls.map(([input]) => String(input))).toEqual([
-      '/data/historical-games/index.json',
-      '/data/historical-games/2025.json',
+      '/data/historical-games/index.json?v=19',
+      '/data/historical-games/2025.json?v=19',
     ]);
     const db = await getDb();
     expect(await db.getAllKeys('baseData')).toEqual([
@@ -179,7 +179,9 @@ describe('base data cache lifecycle', () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
       return new Response(JSON.stringify(
-        url.endsWith('/index.json') ? historicalIndex : historicalTeamGames,
+        new URL(url, 'https://cfbsim.test').pathname.endsWith('/index.json')
+          ? historicalIndex
+          : historicalTeamGames,
       ), { status: 200 });
     });
     vi.stubGlobal('fetch', fetchImpl);
@@ -192,8 +194,8 @@ describe('base data cache lifecycle', () => {
     );
 
     expect(fetchImpl.mock.calls.map(([input]) => String(input))).toEqual([
-      '/data/historical-games/index.json',
-      '/data/historical-games/by-team/Alpha%20State.json',
+      '/data/historical-games/index.json?v=19',
+      '/data/historical-games/by-team/Alpha%20State.json?v=19',
     ]);
     const db = await getDb();
     expect(await db.get('baseData', 'historical-games:team:Alpha State'))

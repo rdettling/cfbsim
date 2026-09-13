@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Box, Button, Container, Typography } from '@mui/material';
 import { PageLayout } from '../components/layout/PageLayout';
+import { getVersionedStaticAssetUrl } from '../constants/staticAssets';
 import { loadHomeData } from '../domain/league/loaders/season/loadHomeData';
 import type { HomeData } from '../types/league';
 import { HomeContent } from './home/HomeContent';
@@ -77,7 +78,7 @@ const Home = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box
               component="img"
-              src="/logos/football.png"
+              src={getVersionedStaticAssetUrl('/logos/football.webp')}
               alt=""
               aria-hidden="true"
               sx={{ width: { xs: 44, sm: 52 }, height: 'auto', flexShrink: 0 }}

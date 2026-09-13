@@ -33,8 +33,8 @@ describe('PreviousMatchupsPanel', () => {
     expect(markup).toContain('Previous Matchups');
     expect(markup).toContain('Series · Alpha 3–2');
     expect(markup).toContain('2025 · Week 8');
-    expect(markup).toContain('src="/logos/teams/Beta.png"');
-    expect(markup).toContain('src="/logos/teams/Alpha.png"');
+    expect(markup).toContain('src="/logos/teams/Beta.webp?v=19"');
+    expect(markup).toContain('src="/logos/teams/Alpha.webp?v=19"');
     expect(markup).toContain('Beta');
     expect(markup).toContain('Alpha');
     expect(markup).toContain('>@<');
